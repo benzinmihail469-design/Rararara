@@ -1,8 +1,7 @@
 --[[
-    ESP для Bite By Night - Corner Box + поддержка Model
-    Зелёные уголки = Убийца
-    Красные уголки = Выжившие
-    Работает с любым типом персонажа (Model, R6, R15)
+    ESP для Bite By Night - Corner Box + поддержка Model + Speed Changer
+    Зелёные уголки = Убийца, Красные уголки = Выжившие
+    Работает с любым типом персонажа + регулировка скорости (мах 50)
 --]]
 
 -- Сервисы
@@ -16,12 +15,17 @@ local ESPObjects = {}
 
 -- Настройки
 local Settings = {
+    -- ESP
     Enabled = true,
-    KillerColor = Color3.fromRGB(0, 255, 0),      -- Зелёный для убийцы
-    SurvivorColor = Color3.fromRGB(255, 0, 0),    -- Красный для выживших
+    KillerColor = Color3.fromRGB(0, 255, 0),
+    SurvivorColor = Color3.fromRGB(255, 0, 0),
     Thickness = 2.5,
-    CornerSize = 12, -- Размер уголков в пикселях
-    MaxDistance = 2000
+    CornerSize = 12,
+    MaxDistance = 2000,
+    
+    -- Speed
+    SpeedEnabled = false,
+    SpeedValue = 16 -- Значение по умолчанию
 }
 
 -- ==================== ФУНКЦИИ ДЛЯ РАБОТЫ С МОДЕЛЯМИ ====================
@@ -92,10 +96,23 @@ local function GetHealth(model)
     return 100, 100
 end
 
+local function GetHumanoid(model)
+    local humanoid = model:FindFirstChildOfClass("Humanoid")
+    if humanoid then return humanoid end
+    
+    -- Для моделек ищем любой Humanoid в детях
+    for _, child in ipairs(model:GetDescendants()) do
+        if child:IsA("Humanoid") then
+            return child
+        end
+    end
+    
+    return nil
+end
+
 -- ==================== ОПРЕДЕЛЕНИЕ УБИЙЦЫ ====================
 
 local function FindKiller()
-    -- Способ 1: Поиск через PlayerList GUI
     for _, gui in ipairs(game:GetService("CoreGui"):GetChildren()) do
         if gui:IsA("ScreenGui") then
             for _, el in ipairs(gui:GetDescendants()) do
@@ -111,7 +128,6 @@ local function FindKiller()
         end
     end
     
-    -- Способ 2: Проверка каждого игрока
     for _, p in ipairs(Players:GetPlayers()) do
         if p ~= LocalPlayer then
             local model = p.Character
@@ -184,13 +200,11 @@ local function CreateCornerBox(player, isKiller)
     
     local drawings = {}
     
-    -- 4 вертикальные линии уголков
     drawings.TL_V = CreateDrawing("Line", {Visible = false, Color = color, Thickness = thick})
     drawings.TR_V = CreateDrawing("Line", {Visible = false, Color = color, Thickness = thick})
     drawings.BL_V = CreateDrawing("Line", {Visible = false, Color = color, Thickness = thick})
     drawings.BR_V = CreateDrawing("Line", {Visible = false, Color = color, Thickness = thick})
     
-    -- 4 горизонтальные линии уголков
     drawings.TL_H = CreateDrawing("Line", {Visible = false, Color = color, Thickness = thick})
     drawings.TR_H = CreateDrawing("Line", {Visible = false, Color = color, Thickness = thick})
     drawings.BL_H = CreateDrawing("Line", {Visible = false, Color = color, Thickness = thick})
@@ -255,34 +269,61 @@ local function UpdatePositions()
         local y = headPos.Y
         local cs = Settings.CornerSize
         
-        -- Делаем все линии видимыми
         for _, d in pairs(data) do d.Visible = true end
         
-        -- Top-Left уголок
         data.TL_V.From = Vector2.new(x, y)
         data.TL_V.To = Vector2.new(x, y + cs)
         data.TL_H.From = Vector2.new(x, y)
         data.TL_H.To = Vector2.new(x + cs, y)
         
-        -- Top-Right уголок
         data.TR_V.From = Vector2.new(x + width, y)
         data.TR_V.To = Vector2.new(x + width, y + cs)
         data.TR_H.From = Vector2.new(x + width - cs, y)
         data.TR_H.To = Vector2.new(x + width, y)
         
-        -- Bottom-Left уголок
         data.BL_V.From = Vector2.new(x, y + height - cs)
         data.BL_V.To = Vector2.new(x, y + height)
         data.BL_H.From = Vector2.new(x, y + height)
         data.BL_H.To = Vector2.new(x + cs, y + height)
         
-        -- Bottom-Right уголок
         data.BR_V.From = Vector2.new(x + width, y + height - cs)
         data.BR_V.To = Vector2.new(x + width, y + height)
         data.BR_H.From = Vector2.new(x + width - cs, y + height)
         data.BR_H.To = Vector2.new(x + width, y + height)
     end
 end
+
+-- ==================== ФУНКЦИЯ ИЗМЕНЕНИЯ СКОРОСТИ ====================
+
+local function UpdateSpeed()
+    local character = LocalPlayer.Character
+    if not character then return end
+    
+    local humanoid = GetHumanoid(character)
+    if humanoid then
+        if Settings.SpeedEnabled then
+            humanoid.WalkSpeed = Settings.SpeedValue
+        else
+            humanoid.WalkSpeed = 16 -- Стандартная скорость
+        end
+    end
+end
+
+-- Постоянное обновление скорости (на случай респавна)
+task.spawn(function()
+    while true do
+        if Settings.SpeedEnabled then
+            UpdateSpeed()
+        end
+        task.wait(0.5)
+    end
+end)
+
+-- При изменении персонажа
+LocalPlayer.CharacterAdded:Connect(function()
+    task.wait(0.5)
+    UpdateSpeed()
+end)
 
 -- ==================== ЗАПУСК И ОБРАБОТЧИКИ ====================
 
@@ -311,11 +352,11 @@ RunService.RenderStepped:Connect(UpdatePositions)
 -- ==================== GUI ====================
 
 local ScreenGui = Instance.new("ScreenGui")
-ScreenGui.Name = "KillerESP_Corner"
+ScreenGui.Name = "KillerESP_Corner_Speed"
 ScreenGui.Parent = game:GetService("CoreGui")
 
 local Frame = Instance.new("Frame")
-Frame.Size = UDim2.new(0, 200, 0, 130)
+Frame.Size = UDim2.new(0, 220, 0, 220)
 Frame.Position = UDim2.new(0, 10, 0, 10)
 Frame.BackgroundColor3 = Color3.fromRGB(15, 15, 15)
 Frame.BackgroundTransparency = 0.2
@@ -327,7 +368,7 @@ Instance.new("UICorner", Frame).CornerRadius = UDim.new(0, 8)
 local Title = Instance.new("TextLabel")
 Title.Size = UDim2.new(1, 0, 0, 30)
 Title.BackgroundTransparency = 1
-Title.Text = "ESP Corner Box"
+Title.Text = "ESP + Speed"
 Title.TextColor3 = Color3.fromRGB(0, 255, 0)
 Title.TextSize = 14
 Title.Font = Enum.Font.GothamBold
@@ -343,34 +384,136 @@ Status.TextSize = 12
 Status.Font = Enum.Font.Gotham
 Status.Parent = Frame
 
-local ToggleBtn = Instance.new("TextButton")
-ToggleBtn.Size = UDim2.new(0.8, 0, 0, 30)
-ToggleBtn.Position = UDim2.new(0.1, 0, 0, 65)
-ToggleBtn.BackgroundColor3 = Color3.fromRGB(0, 170, 0)
-ToggleBtn.Text = "ESP: ON"
-ToggleBtn.TextColor3 = Color3.fromRGB(255, 255, 255)
-ToggleBtn.TextSize = 13
-ToggleBtn.Font = Enum.Font.Gotham
-ToggleBtn.AutoButtonColor = false
-ToggleBtn.Parent = Frame
+-- Кнопка ESP
+local EspBtn = Instance.new("TextButton")
+EspBtn.Size = UDim2.new(0.8, 0, 0, 30)
+EspBtn.Position = UDim2.new(0.1, 0, 0, 65)
+EspBtn.BackgroundColor3 = Color3.fromRGB(0, 170, 0)
+EspBtn.Text = "ESP: ON"
+EspBtn.TextColor3 = Color3.fromRGB(255, 255, 255)
+EspBtn.TextSize = 13
+EspBtn.Font = Enum.Font.Gotham
+EspBtn.AutoButtonColor = false
+EspBtn.Parent = Frame
 
-Instance.new("UICorner", ToggleBtn).CornerRadius = UDim.new(0, 6)
+Instance.new("UICorner", EspBtn).CornerRadius = UDim.new(0, 6)
 
-ToggleBtn.MouseButton1Click:Connect(function()
+EspBtn.MouseButton1Click:Connect(function()
     Settings.Enabled = not Settings.Enabled
-    ToggleBtn.Text = Settings.Enabled and "ESP: ON" or "ESP: OFF"
-    ToggleBtn.BackgroundColor3 = Settings.Enabled and Color3.fromRGB(0, 170, 0) or Color3.fromRGB(170, 0, 0)
+    EspBtn.Text = Settings.Enabled and "ESP: ON" or "ESP: OFF"
+    EspBtn.BackgroundColor3 = Settings.Enabled and Color3.fromRGB(0, 170, 0) or Color3.fromRGB(170, 0, 0)
 end)
 
+-- Кнопка Speed
+local SpeedBtn = Instance.new("TextButton")
+SpeedBtn.Size = UDim2.new(0.8, 0, 0, 30)
+SpeedBtn.Position = UDim2.new(0.1, 0, 0, 105)
+SpeedBtn.BackgroundColor3 = Color3.fromRGB(170, 0, 0)
+SpeedBtn.Text = "Speed: OFF"
+SpeedBtn.TextColor3 = Color3.fromRGB(255, 255, 255)
+SpeedBtn.TextSize = 13
+SpeedBtn.Font = Enum.Font.Gotham
+SpeedBtn.AutoButtonColor = false
+SpeedBtn.Parent = Frame
+
+Instance.new("UICorner", SpeedBtn).CornerRadius = UDim.new(0, 6)
+
+SpeedBtn.MouseButton1Click:Connect(function()
+    Settings.SpeedEnabled = not Settings.SpeedEnabled
+    SpeedBtn.Text = Settings.SpeedEnabled and "Speed: ON" or "Speed: OFF"
+    SpeedBtn.BackgroundColor3 = Settings.SpeedEnabled and Color3.fromRGB(0, 170, 0) or Color3.fromRGB(170, 0, 0)
+    UpdateSpeed()
+end)
+
+-- Слайдер скорости
+local SliderFrame = Instance.new("Frame")
+SliderFrame.Size = UDim2.new(0.8, 0, 0, 25)
+SliderFrame.Position = UDim2.new(0.1, 0, 0, 145)
+SliderFrame.BackgroundColor3 = Color3.fromRGB(40, 40, 40)
+SliderFrame.BorderSizePixel = 0
+SliderFrame.Parent = Frame
+
+Instance.new("UICorner", SliderFrame).CornerRadius = UDim.new(0, 4)
+
+local SliderFill = Instance.new("Frame")
+SliderFill.Size = UDim2.new((Settings.SpeedValue - 16) / (50 - 16), 0, 1, 0)
+SliderFill.BackgroundColor3 = Color3.fromRGB(0, 170, 255)
+SliderFill.BorderSizePixel = 0
+SliderFill.Parent = SliderFrame
+
+Instance.new("UICorner", SliderFill).CornerRadius = UDim.new(0, 4)
+
+local SpeedValue = Instance.new("TextLabel")
+SpeedValue.Size = UDim2.new(1, 0, 1, 0)
+SpeedValue.BackgroundTransparency = 1
+SpeedValue.Text = "Speed: " .. Settings.SpeedValue
+SpeedValue.TextColor3 = Color3.fromRGB(255, 255, 255)
+SpeedValue.TextSize = 12
+SpeedValue.Font = Enum.Font.Gotham
+SpeedValue.Parent = SliderFrame
+
+-- Логика слайдера
+local UserInputService = game:GetService("UserInputService")
+local dragging = false
+
+local function UpdateSliderPosition(input)
+    local pos = Vector2.new(math.clamp(input.Position.X - SliderFrame.AbsolutePosition.X, 0, SliderFrame.AbsoluteSize.X), 0)
+    local percent = pos.X / SliderFrame.AbsoluteSize.X
+    Settings.SpeedValue = math.floor(16 + percent * (50 - 16))
+    SliderFill.Size = UDim2.new(percent, 0, 1, 0)
+    SpeedValue.Text = "Speed: " .. Settings.SpeedValue
+    if Settings.SpeedEnabled then
+        UpdateSpeed()
+    end
+end
+
+SliderFrame.InputBegan:Connect(function(input)
+    if input.UserInputType == Enum.UserInputType.MouseButton1 then
+        dragging = true
+        UpdateSliderPosition(input)
+    end
+end)
+
+SliderFrame.InputEnded:Connect(function(input)
+    if input.UserInputType == Enum.UserInputType.MouseButton1 then
+        dragging = false
+    end
+end)
+
+UserInputService.InputChanged:Connect(function(input)
+    if dragging and input.UserInputType == Enum.UserInputType.MouseMovement then
+        UpdateSliderPosition(input)
+    end
+end)
+
+-- Информация
 local Info = Instance.new("TextLabel")
 Info.Size = UDim2.new(1, 0, 0, 20)
-Info.Position = UDim2.new(0, 0, 0, 105)
+Info.Position = UDim2.new(0, 0, 0, 180)
 Info.BackgroundTransparency = 1
 Info.Text = "🟢 Killer  |  🔴 Survivor"
 Info.TextColor3 = Color3.fromRGB(200, 200, 200)
 Info.TextSize = 11
 Info.Font = Enum.Font.Gotham
 Info.Parent = Frame
+
+-- Кнопка закрытия
+local CloseBtn = Instance.new("TextButton")
+CloseBtn.Size = UDim2.new(0, 20, 0, 20)
+CloseBtn.Position = UDim2.new(1, -25, 0, 5)
+CloseBtn.BackgroundColor3 = Color3.fromRGB(200, 0, 0)
+CloseBtn.Text = "X"
+CloseBtn.TextColor3 = Color3.fromRGB(255, 255, 255)
+CloseBtn.TextSize = 14
+CloseBtn.Font = Enum.Font.GothamBold
+CloseBtn.AutoButtonColor = false
+CloseBtn.Parent = Frame
+
+Instance.new("UICorner", CloseBtn).CornerRadius = UDim.new(0, 4)
+
+CloseBtn.MouseButton1Click:Connect(function()
+    ScreenGui:Destroy()
+end)
 
 Status.InputBegan:Connect(function(input)
     if input.UserInputType == Enum.UserInputType.MouseButton1 then
@@ -391,4 +534,4 @@ task.spawn(function()
     end
 end)
 
-print("ESP Corner Box loaded! Green corners = Killer, Red corners = Survivor")
+print("ESP + Speed loaded! Max speed: 50")
