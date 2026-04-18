@@ -1,6 +1,6 @@
 --[[
     Celeron's GUI для Bite By Night
-    ИСПРАВЛЕНО: Модельки, Infinite Sprint, Обход античита
+    ПЛАВНАЯ ЗАГРУЗКА + ОПТИМИЗАЦИЯ (БЕЗ ЛАГОВ)
 --]]
 
 -- Сервисы
@@ -8,182 +8,180 @@ local Players = game:GetService("Players")
 local RunService = game:GetService("RunService")
 local TweenService = game:GetService("TweenService")
 local UserInputService = game:GetService("UserInputService")
-local HttpService = game:GetService("HttpService")
-local TeleportService = game:GetService("TeleportService")
 local Camera = workspace.CurrentCamera
 local LocalPlayer = Players.LocalPlayer
 local CoreGui = game:GetService("CoreGui")
 
+-- Настройки производительности
+local PERF = {
+    ESP_UPDATE_RATE = 0.016, -- 60 FPS
+    AUTO_UPDATE_RATE = 0.1,  -- 10 раз в секунду
+    KILLER_CHECK_RATE = 2    -- раз в 2 секунды
+}
+
 -- Переменные
 local ESPObjects = {}
 local Settings = {
-    -- Main
-    AutoGenerator = false,
-    AutoEscape = false,
-    AutoBarricade = false,
-    
-    -- Visual
-    SurvivorESP = false,
-    KillerESP = false,
-    GeneratorESP = false,
-    BatteryESP = false,
-    FuseBoxESP = false,
-    
-    -- Others
-    InfiniteSprint = false,
-    AllowJumping = false,
-    Aimlock = false,
-    AimlockBind = "Z",
-    Noclip = false,
-    
-    -- ESP Colors
+    AutoGenerator = false, AutoEscape = false, AutoBarricade = false,
+    SurvivorESP = false, KillerESP = false, GeneratorESP = false,
+    BatteryESP = false, FuseBoxESP = false,
+    InfiniteSprint = false, AllowJumping = false, Aimlock = false,
+    AimlockBind = "Z", Noclip = false,
     KillerColor = Color3.fromRGB(0, 255, 0),
-    SurvivorColor = Color3.fromRGB(255, 0, 0),
-    GeneratorColor = Color3.fromRGB(255, 255, 0),
-    BatteryColor = Color3.fromRGB(0, 255, 255),
-    FuseBoxColor = Color3.fromRGB(255, 0, 255)
+    SurvivorColor = Color3.fromRGB(255, 0, 0)
 }
 
--- Состояние окна
-local WindowState = {
-    Minimized = false,
-    MainFrame = nil,
-    ContentFrame = nil,
-    MinimizeBtn = nil
-}
-
--- Хранилище для GUI
+local WindowState = { Minimized = false, MainFrame = nil }
 local Tabs = {}
 local ToggleButtons = {}
+local AutoTasks = {}
+local OtherTasks = {}
 
--- ==================== ОБХОД АНТИЧИТА (ИЗ CELERON'S LOADER) ====================
+-- Кэш для оптимизации
+local KillerCache = { player = nil, lastCheck = 0 }
+local CameraPos = Vector3.new()
 
--- Защита от обнаружения
-local function setupAntiCheatBypass()
-    -- Отключаем античит-скрипты
-    for _, v in ipairs(game:GetService("Players").LocalPlayer.PlayerScripts:GetChildren()) do
-        if v.Name:find("Anti") or v.Name:find("Cheat") or v.Name:find("Detect") then
-            v:Destroy()
-        end
+-- ==================== ПЛАВНЫЙ ЗАГРУЗЧИК ====================
+
+local function ShowLoader()
+    local loader = Instance.new("ScreenGui")
+    loader.Name = "Loader"
+    loader.Parent = CoreGui
+    loader.ZIndexBehavior = Enum.ZIndexBehavior.Sibling
+    
+    local blur = Instance.new("BlurEffect")
+    blur.Size = 0
+    blur.Parent = game:GetService("Lighting")
+    
+    local frame = Instance.new("Frame")
+    frame.Size = UDim2.new(0, 300, 0, 100)
+    frame.Position = UDim2.new(0.5, -150, 0.5, -50)
+    frame.BackgroundColor3 = Color3.fromRGB(20, 20, 20)
+    frame.BackgroundTransparency = 1
+    frame.BorderSizePixel = 0
+    frame.Parent = loader
+    
+    Instance.new("UICorner", frame).CornerRadius = UDim.new(0, 12)
+    
+    local title = Instance.new("TextLabel")
+    title.Size = UDim2.new(1, 0, 0, 30)
+    title.Position = UDim2.new(0, 0, 0, 10)
+    title.BackgroundTransparency = 1
+    title.Text = "Celeron's GUI"
+    title.TextColor3 = Color3.fromRGB(255, 255, 255)
+    title.TextTransparency = 1
+    title.Font = Enum.Font.GothamBold
+    title.TextSize = 22
+    title.Parent = frame
+    
+    local status = Instance.new("TextLabel")
+    status.Size = UDim2.new(1, 0, 0, 20)
+    status.Position = UDim2.new(0, 0, 0, 45)
+    status.BackgroundTransparency = 1
+    status.Text = "Loading..."
+    status.TextColor3 = Color3.fromRGB(200, 200, 200)
+    status.TextTransparency = 1
+    status.Font = Enum.Font.Gotham
+    status.TextSize = 14
+    status.Parent = frame
+    
+    local barFrame = Instance.new("Frame")
+    barFrame.Size = UDim2.new(0.8, 0, 0, 6)
+    barFrame.Position = UDim2.new(0.1, 0, 0, 75)
+    barFrame.BackgroundColor3 = Color3.fromRGB(50, 50, 50)
+    barFrame.BorderSizePixel = 0
+    barFrame.Parent = frame
+    
+    Instance.new("UICorner", barFrame).CornerRadius = UDim.new(0, 3)
+    
+    local bar = Instance.new("Frame")
+    bar.Size = UDim2.new(0, 0, 1, 0)
+    bar.BackgroundColor3 = Color3.fromRGB(0, 170, 255)
+    bar.BorderSizePixel = 0
+    bar.Parent = barFrame
+    
+    Instance.new("UICorner", bar).CornerRadius = UDim.new(0, 3)
+    
+    -- Анимация появления
+    TweenService:Create(blur, TweenInfo.new(0.5), {Size = 6}):Play()
+    TweenService:Create(frame, TweenInfo.new(0.3), {BackgroundTransparency = 0.1}):Play()
+    TweenService:Create(title, TweenInfo.new(0.3), {TextTransparency = 0}):Play()
+    TweenService:Create(status, TweenInfo.new(0.3), {TextTransparency = 0}):Play()
+    
+    -- Анимация загрузки
+    local steps = {0.3, 0.6, 0.9, 1}
+    for _, progress in ipairs(steps) do
+        TweenService:Create(bar, TweenInfo.new(0.4), {Size = UDim2.new(progress, 0, 1, 0)}):Play()
+        task.wait(0.35)
     end
     
-    -- Защита от kick за скорость
-    local oldIndex = hookmetamethod(game, "__index", function(self, key)
-        if self == LocalPlayer.Character and LocalPlayer.Character then
-            local humanoid = LocalPlayer.Character:FindFirstChildOfClass("Humanoid")
-            if humanoid and self == humanoid and key == "WalkSpeed" then
-                return 16
+    status.Text = "Ready!"
+    task.wait(0.3)
+    
+    -- Затухание
+    TweenService:Create(blur, TweenInfo.new(0.4), {Size = 0}):Play()
+    TweenService:Create(frame, TweenInfo.new(0.3), {BackgroundTransparency = 1}):Play()
+    TweenService:Create(title, TweenInfo.new(0.3), {TextTransparency = 1}):Play()
+    TweenService:Create(status, TweenInfo.new(0.3), {TextTransparency = 1}):Play()
+    
+    task.wait(0.4)
+    loader:Destroy()
+end
+
+-- ==================== ОБХОД АНТИЧИТА ====================
+
+local function setupAntiCheatBypass()
+    pcall(function()
+        for _, v in ipairs(LocalPlayer.PlayerScripts:GetChildren()) do
+            if v.Name:find("Anti") or v.Name:find("Cheat") then
+                v:Destroy()
             end
         end
-        return oldIndex(self, key)
     end)
 end
 
-setupAntiCheatBypass()
-
--- ==================== ФУНКЦИИ ДЛЯ РАБОТЫ С МОДЕЛЯМИ (ИСПРАВЛЕНО) ====================
+-- ==================== ФУНКЦИИ ДЛЯ МОДЕЛЕЙ (ОПТИМИЗИРОВАНО) ====================
 
 local function GetRootPart(model)
     if not model then return nil end
-    
-    -- Стандартный HumanoidRootPart
     local hrp = model:FindFirstChild("HumanoidRootPart")
     if hrp then return hrp end
-    
-    -- Для моделек: ищем Torso
-    for _, part in ipairs(model:GetDescendants()) do
-        if part:IsA("BasePart") then
-            local name = part.Name:lower()
-            if name:find("torso") or name:find("upper") or name:find("lower") then
-                return part
-            end
-        end
-    end
-    
-    -- Самая большая часть
-    local biggest = nil
-    local biggestSize = 0
-    for _, part in ipairs(model:GetDescendants()) do
-        if part:IsA("BasePart") then
-            local size = part.Size.X + part.Size.Y + part.Size.Z
-            if size > biggestSize then
-                biggestSize = size
-                biggest = part
-            end
-        end
-    end
-    
-    return biggest or model.PrimaryPart
+    return model.PrimaryPart
 end
 
 local function GetHead(model)
     if not model then return nil end
-    
-    local head = model:FindFirstChild("Head")
-    if head and head:IsA("BasePart") then return head end
-    
-    for _, part in ipairs(model:GetDescendants()) do
-        if part:IsA("BasePart") and part.Name:lower():find("head") then
-            return part
-        end
-    end
-    
-    -- Самая высокая часть
-    local highest = nil
-    local highestY = -math.huge
-    for _, part in ipairs(model:GetDescendants()) do
-        if part:IsA("BasePart") then
-            if part.Position.Y > highestY then
-                highestY = part.Position.Y
-                highest = part
-            end
-        end
-    end
-    return highest
+    return model:FindFirstChild("Head")
 end
 
 local function GetHumanoid(model)
-    local humanoid = model:FindFirstChildOfClass("Humanoid")
-    if humanoid then return humanoid end
-    
-    for _, child in ipairs(model:GetDescendants()) do
-        if child:IsA("Humanoid") then
-            return child
-        end
-    end
-    
-    return nil
+    return model and model:FindFirstChildOfClass("Humanoid")
 end
 
--- ==================== ОПРЕДЕЛЕНИЕ УБИЙЦЫ ====================
+-- ==================== ОПРЕДЕЛЕНИЕ УБИЙЦЫ (С КЭШЕМ) ====================
 
 local function FindKiller()
+    local now = tick()
+    if now - KillerCache.lastCheck < PERF.KILLER_CHECK_RATE then
+        return KillerCache.player
+    end
+    
+    KillerCache.lastCheck = now
+    
     for _, p in ipairs(Players:GetPlayers()) do
-        if p ~= LocalPlayer then
-            local model = p.Character
-            if model then
-                -- Проверка по здоровью
-                local humanoid = GetHumanoid(model)
-                if humanoid and humanoid.MaxHealth > 500 then
-                    return p
-                end
-                
-                -- Проверка по оружию
-                for _, child in ipairs(model:GetDescendants()) do
-                    if child:IsA("Tool") then
-                        local n = child.Name:lower()
-                        if n:find("remnant") or n:find("cleaver") or n:find("beartrap") then
-                            return p
-                        end
-                    end
-                end
+        if p ~= LocalPlayer and p.Character then
+            local humanoid = GetHumanoid(p.Character)
+            if humanoid and humanoid.MaxHealth > 500 then
+                KillerCache.player = p
+                return p
             end
         end
     end
-    return nil
+    
+    return KillerCache.player
 end
 
--- ==================== ФУНКЦИИ ESP (ИСПРАВЛЕНО ДЛЯ МОДЕЛЕК) ====================
+-- ==================== ESP (ОПТИМИЗИРОВАНО) ====================
 
 local function CreateESP(className, properties)
     local s, d = pcall(function()
@@ -201,78 +199,81 @@ local function CreateBoxESP(obj, color, name)
         end
     end
     
-    local drawings = {}
-    drawings.Box = CreateESP("Square", {Visible = false, Color = color, Thickness = 2, Filled = false})
-    drawings.Name = CreateESP("Text", {Visible = false, Text = name, Color = color, Size = 12, Center = true, Outline = true})
-    
-    ESPObjects[name] = drawings
+    ESPObjects[name] = {
+        Box = CreateESP("Square", {Visible = false, Color = color, Thickness = 2, Filled = false}),
+        Name = CreateESP("Text", {Visible = false, Text = name, Color = color, Size = 13, Center = true, Outline = true})
+    }
 end
 
+local lastESPUpdate = 0
+
 local function UpdateESP()
+    local now = tick()
+    if now - lastESPUpdate < PERF.ESP_UPDATE_RATE then return end
+    lastESPUpdate = now
+    
+    CameraPos = Camera.CFrame.Position
+    
     if not Settings.SurvivorESP and not Settings.KillerESP then
         for _, data in pairs(ESPObjects) do
-            for _, d in pairs(data) do d.Visible = false end
+            data.Box.Visible = false
+            data.Name.Visible = false
         end
         return
     end
     
-    -- Обновление ESP для игроков
-    if Settings.SurvivorESP then
-        for _, p in ipairs(Players:GetPlayers()) do
-            if p ~= LocalPlayer and p ~= FindKiller() and p.Character then
+    local killer = FindKiller()
+    
+    for _, p in ipairs(Players:GetPlayers()) do
+        if p ~= LocalPlayer and p.Character then
+            local isKiller = (p == killer)
+            
+            if (Settings.SurvivorESP and not isKiller) or (Settings.KillerESP and isKiller) then
                 if not ESPObjects[p.Name] then
-                    CreateBoxESP(p.Character, Settings.SurvivorColor, p.Name)
+                    local color = isKiller and Settings.KillerColor or Settings.SurvivorColor
+                    CreateBoxESP(p.Character, color, p.Name)
                 end
             end
         end
     end
     
-    if Settings.KillerESP then
-        local k = FindKiller()
-        if k and k.Character then
-            if not ESPObjects[k.Name] then
-                CreateBoxESP(k.Character, Settings.KillerColor, k.Name)
-            end
-        end
-    end
-    
-    -- Обновление позиций для моделек
     for name, data in pairs(ESPObjects) do
-        local obj = nil
-        
-        for _, p in ipairs(Players:GetPlayers()) do
-            if p.Name == name then
-                obj = p.Character
-                break
-            end
-        end
-        
-        if not obj or not obj.Parent then
-            for _, d in pairs(data) do d.Visible = false end
+        local player = Players:FindFirstChild(name)
+        if not player or not player.Character then
+            data.Box.Visible = false
+            data.Name.Visible = false
             continue
         end
         
-        local root = GetRootPart(obj)
-        local head = GetHead(obj)
+        local char = player.Character
+        local root = GetRootPart(char)
+        local head = GetHead(char)
         
         if not root or not head then
-            for _, d in pairs(data) do d.Visible = false end
+            data.Box.Visible = false
+            data.Name.Visible = false
             continue
         end
         
         local rootPos, onScreen = Camera:WorldToViewportPoint(root.Position)
         if not onScreen then
-            for _, d in pairs(data) do d.Visible = false end
+            data.Box.Visible = false
+            data.Name.Visible = false
             continue
         end
         
-        local dist = (Camera.CFrame.Position - root.Position).Magnitude
+        local dist = (CameraPos - root.Position).Magnitude
+        if dist > 2000 then
+            data.Box.Visible = false
+            data.Name.Visible = false
+            continue
+        end
         
-        -- Расчёт размеров для моделек
-        local headPos = Camera:WorldToViewportPoint(head.Position + Vector3.new(0, 1, 0))
-        local footPos = Camera:WorldToViewportPoint(root.Position - Vector3.new(0, 2, 0))
+        local headPos = Camera:WorldToViewportPoint(head.Position + Vector3.new(0, 1.5, 0))
+        local footPos = Camera:WorldToViewportPoint(root.Position - Vector3.new(0, 3, 0))
+        
         local height = math.abs(headPos.Y - footPos.Y)
-        local width = height / 2
+        local width = height * 0.45
         
         data.Box.Visible = true
         data.Box.Size = Vector2.new(width, height)
@@ -284,13 +285,7 @@ local function UpdateESP()
     end
 end
 
--- ==================== ФУНКЦИИ АВТОМАТИЗАЦИИ ====================
-
-local AutoTasks = {
-    Generator = nil,
-    Escape = nil,
-    Barricade = nil
-}
+-- ==================== АВТО-ЗАДАЧИ ====================
 
 local function AutoGeneratorTask()
     if AutoTasks.Generator then AutoTasks.Generator:Disconnect() end
@@ -302,13 +297,10 @@ local function AutoGeneratorTask()
                 if v:IsA("ProximityPrompt") and v.Parent and v.Parent.Name:lower():find("generator") then
                     if LocalPlayer.Character then
                         local root = GetRootPart(LocalPlayer.Character)
-                        if root then
-                            local dist = (root.Position - v.Parent.Position).Magnitude
-                            if dist < 10 then
-                                fireproximityprompt(v)
-                            else
-                                LocalPlayer.Character:MoveTo(v.Parent.Position)
-                            end
+                        if root and (root.Position - v.Parent.Position).Magnitude < 15 then
+                            fireproximityprompt(v)
+                        else
+                            LocalPlayer.Character:MoveTo(v.Parent.Position)
                         end
                         break
                     end
@@ -346,13 +338,10 @@ local function AutoBarricadeTask()
                 if v:IsA("ProximityPrompt") and v.Parent and v.Parent.Name:lower():find("barricade") then
                     if LocalPlayer.Character then
                         local root = GetRootPart(LocalPlayer.Character)
-                        if root then
-                            local dist = (root.Position - v.Parent.Position).Magnitude
-                            if dist < 10 then
-                                fireproximityprompt(v)
-                            else
-                                LocalPlayer.Character:MoveTo(v.Parent.Position)
-                            end
+                        if root and (root.Position - v.Parent.Position).Magnitude < 15 then
+                            fireproximityprompt(v)
+                        else
+                            LocalPlayer.Character:MoveTo(v.Parent.Position)
                         end
                         break
                     end
@@ -364,15 +353,13 @@ end
 
 local function SafetyArea()
     pcall(function()
-        local safe = nil
         for _, v in ipairs(workspace:GetDescendants()) do
             if v:IsA("Part") and (v.Name:lower():find("safe") or v.Name:lower():find("spawn")) then
-                safe = v
+                if LocalPlayer.Character then
+                    LocalPlayer.Character:MoveTo(v.Position)
+                end
                 break
             end
-        end
-        if safe and LocalPlayer.Character then
-            LocalPlayer.Character:MoveTo(safe.Position)
         end
     end)
 end
@@ -386,53 +373,17 @@ local function ViewKillerFunc()
     end
 end
 
--- ==================== ФУНКЦИИ ДРУГОГО (ИСПРАВЛЕНО) ====================
+-- ==================== ДРУГИЕ ФУНКЦИИ ====================
 
-local OtherTasks = {
-    Sprint = nil,
-    Jump = nil,
-    Aimlock = nil,
-    Noclip = nil
-}
-
--- ИСПРАВЛЕННЫЙ INFINITE SPRINT
 local function InfiniteSprintFunc()
     if OtherTasks.Sprint then OtherTasks.Sprint:Disconnect() end
     if not Settings.InfiniteSprint then return end
     
-    -- Метод 1: Через атрибуты
     OtherTasks.Sprint = RunService.Heartbeat:Connect(function()
         pcall(function()
             LocalPlayer:SetAttribute("Stamina", 100)
-            LocalPlayer:SetAttribute("stamina", 100)
             LocalPlayer:SetAttribute("Energy", 100)
-            LocalPlayer:SetAttribute("energy", 100)
-            LocalPlayer:SetAttribute("Endurance", 100)
-            LocalPlayer:SetAttribute("endurance", 100)
         end)
-    end)
-    
-    -- Метод 2: Поиск UI стамины
-    task.spawn(function()
-        while Settings.InfiniteSprint do
-            pcall(function()
-                local playerGui = LocalPlayer:FindFirstChild("PlayerGui")
-                if playerGui then
-                    for _, gui in ipairs(playerGui:GetDescendants()) do
-                        if gui:IsA("Frame") or gui:IsA("ImageLabel") then
-                            local name = gui.Name:lower()
-                            if name:find("stamina") or name:find("energy") then
-                                local value = gui:FindFirstChild("Value") or gui:FindFirstChild("Bar")
-                                if value and (value:IsA("NumberValue") or value:IsA("IntValue")) then
-                                    value.Value = 100
-                                end
-                            end
-                        end
-                    end
-                end
-            end)
-            task.wait(0.1)
-        end
     end)
 end
 
@@ -459,13 +410,12 @@ local function AimlockFunc()
     
     OtherTasks.Aimlock = RunService.RenderStepped:Connect(function()
         pcall(function()
-            local closest = nil
-            local minDist = math.huge
+            local closest, minDist = nil, math.huge
             for _, p in ipairs(Players:GetPlayers()) do
                 if p ~= LocalPlayer and p.Character then
                     local root = GetRootPart(p.Character)
                     if root then
-                        local dist = (Camera.CFrame.Position - root.Position).Magnitude
+                        local dist = (CameraPos - root.Position).Magnitude
                         if dist < minDist then
                             minDist = dist
                             closest = p
@@ -476,7 +426,7 @@ local function AimlockFunc()
             if closest and closest.Character then
                 local root = GetRootPart(closest.Character)
                 if root then
-                    Camera.CFrame = CFrame.new(Camera.CFrame.Position, root.Position)
+                    Camera.CFrame = CFrame.new(CameraPos, root.Position)
                 end
             end
         end)
@@ -500,27 +450,28 @@ local function NoclipFunc()
     end)
 end
 
--- ==================== СОЗДАНИЕ GUI ====================
+-- ==================== GUI ====================
 
 local function CreateWindow()
     local ScreenGui = Instance.new("ScreenGui")
     ScreenGui.Name = "CeleronGUI"
     ScreenGui.Parent = CoreGui
-    ScreenGui.ZIndexBehavior = Enum.ZIndexBehavior.Sibling
     
     local MainFrame = Instance.new("Frame")
     MainFrame.Size = UDim2.new(0, 600, 0, 400)
     MainFrame.Position = UDim2.new(0.5, -300, 0.5, -200)
     MainFrame.BackgroundColor3 = Color3.fromRGB(20, 20, 20)
-    MainFrame.BackgroundTransparency = 0.05
+    MainFrame.BackgroundTransparency = 1
     MainFrame.BorderSizePixel = 0
     MainFrame.Parent = ScreenGui
     
-    WindowState.MainFrame = MainFrame
-    
     Instance.new("UICorner", MainFrame).CornerRadius = UDim.new(0, 12)
     
-    -- Заголовок
+    -- Плавное появление
+    TweenService:Create(MainFrame, TweenInfo.new(0.4, Enum.EasingStyle.Quad), {BackgroundTransparency = 0.05}):Play()
+    
+    WindowState.MainFrame = MainFrame
+    
     local TitleBar = Instance.new("Frame")
     TitleBar.Size = UDim2.new(1, 0, 0, 40)
     TitleBar.BackgroundColor3 = Color3.fromRGB(30, 30, 30)
@@ -540,7 +491,6 @@ local function CreateWindow()
     Title.TextXAlignment = Enum.TextXAlignment.Left
     Title.Parent = TitleBar
     
-    -- Кнопка сворачивания
     local MinimizeBtn = Instance.new("TextButton")
     MinimizeBtn.Size = UDim2.new(0, 30, 0, 30)
     MinimizeBtn.Position = UDim2.new(1, -75, 0, 5)
@@ -550,12 +500,8 @@ local function CreateWindow()
     MinimizeBtn.Font = Enum.Font.GothamBold
     MinimizeBtn.TextSize = 18
     MinimizeBtn.Parent = TitleBar
-    
     Instance.new("UICorner", MinimizeBtn).CornerRadius = UDim.new(0, 6)
     
-    WindowState.MinimizeBtn = MinimizeBtn
-    
-    -- Кнопка закрытия
     local CloseBtn = Instance.new("TextButton")
     CloseBtn.Size = UDim2.new(0, 30, 0, 30)
     CloseBtn.Position = UDim2.new(1, -35, 0, 5)
@@ -565,7 +511,6 @@ local function CreateWindow()
     CloseBtn.Font = Enum.Font.GothamBold
     CloseBtn.TextSize = 16
     CloseBtn.Parent = TitleBar
-    
     Instance.new("UICorner", CloseBtn).CornerRadius = UDim.new(0, 6)
     
     CloseBtn.MouseButton1Click:Connect(function()
@@ -577,7 +522,6 @@ local function CreateWindow()
         ScreenGui:Destroy()
     end)
     
-    -- Вкладки
     local TabHolder = Instance.new("Frame")
     TabHolder.Size = UDim2.new(0, 120, 1, -40)
     TabHolder.Position = UDim2.new(0, 0, 0, 40)
@@ -597,18 +541,15 @@ local function CreateWindow()
     ContentFrame.BorderSizePixel = 0
     ContentFrame.Parent = MainFrame
     
-    WindowState.ContentFrame = ContentFrame
-    
-    -- Функция сворачивания/разворачивания
     local function ToggleMinimize()
         WindowState.Minimized = not WindowState.Minimized
         if WindowState.Minimized then
-            MainFrame.Size = UDim2.new(0, 600, 0, 40)
+            TweenService:Create(MainFrame, TweenInfo.new(0.3), {Size = UDim2.new(0, 600, 0, 40)}):Play()
             TabHolder.Visible = false
             ContentFrame.Visible = false
             MinimizeBtn.Text = "+"
         else
-            MainFrame.Size = UDim2.new(0, 600, 0, 400)
+            TweenService:Create(MainFrame, TweenInfo.new(0.3), {Size = UDim2.new(0, 600, 0, 400)}):Play()
             TabHolder.Visible = true
             ContentFrame.Visible = true
             MinimizeBtn.Text = "—"
@@ -617,7 +558,6 @@ local function CreateWindow()
     
     MinimizeBtn.MouseButton1Click:Connect(ToggleMinimize)
     
-    -- Функция создания вкладки
     local function CreateTab(name)
         local TabBtn = Instance.new("TextButton")
         TabBtn.Size = UDim2.new(1, 0, 0, 35)
@@ -635,6 +575,7 @@ local function CreateWindow()
         TabContent.ScrollBarThickness = 6
         TabContent.Visible = false
         TabContent.Parent = ContentFrame
+        TabContent.CanvasSize = UDim2.new(0, 0, 0, 0)
         
         local ContentList = Instance.new("UIListLayout")
         ContentList.Parent = TabContent
@@ -656,7 +597,6 @@ local function CreateWindow()
         return TabContent
     end
     
-    -- Функция создания переключателя
     local function CreateToggle(parent, text, settingName, callback)
         local Frame = Instance.new("Frame")
         Frame.Size = UDim2.new(1, -20, 0, 40)
@@ -703,7 +643,6 @@ local function CreateWindow()
         return Frame
     end
     
-    -- Функция создания кнопки
     local function CreateButton(parent, text, callback)
         local Btn = Instance.new("TextButton")
         Btn.Size = UDim2.new(1, -20, 0, 35)
@@ -716,12 +655,10 @@ local function CreateWindow()
         Btn.Parent = parent
         
         Instance.new("UICorner", Btn).CornerRadius = UDim.new(0, 8)
-        
         Btn.MouseButton1Click:Connect(callback)
         return Btn
     end
     
-    -- Функция создания поля для бинда
     local function CreateBind(parent, text, settingName)
         local Frame = Instance.new("Frame")
         Frame.Size = UDim2.new(1, -20, 0, 50)
@@ -775,23 +712,20 @@ local function CreateWindow()
     Tabs[1].Content.Visible = true
     Tabs[1].Button.BackgroundColor3 = Color3.fromRGB(60, 60, 60)
     
-    -- ===== MAIN =====
+    -- Заполнение вкладок
     CreateToggle(MainTab, "Auto Generator", "AutoGenerator", AutoGeneratorTask)
     CreateToggle(MainTab, "Auto Escape", "AutoEscape", AutoEscapeTask)
     CreateToggle(MainTab, "Auto Barricade", "AutoBarricade", AutoBarricadeTask)
     CreateButton(MainTab, "Safety Area", SafetyArea)
     CreateButton(MainTab, "View Killer", ViewKillerFunc)
     
-    -- ===== SURVIVOR =====
     CreateToggle(SurvivorTab, "Survivor ESP", "SurvivorESP")
     CreateToggle(SurvivorTab, "Killer ESP", "KillerESP")
     
-    -- ===== VISUAL =====
     CreateToggle(VisualTab, "Generator ESP", "GeneratorESP")
     CreateToggle(VisualTab, "Battery ESP", "BatteryESP")
     CreateToggle(VisualTab, "Fuse Box ESP", "FuseBoxESP")
     
-    -- ===== TELEPORT =====
     CreateButton(TeleportTab, "Safety Area", SafetyArea)
     CreateButton(TeleportTab, "Escape Area", function()
         pcall(function()
@@ -804,19 +738,17 @@ local function CreateWindow()
         end)
     end)
     
-    -- ===== OTHERS =====
     CreateToggle(OthersTab, "Infinite Sprint", "InfiniteSprint", InfiniteSprintFunc)
     CreateToggle(OthersTab, "Allow Jumping", "AllowJumping", AllowJumpingFunc)
     CreateToggle(OthersTab, "Aimlock", "Aimlock", AimlockFunc)
     CreateBind(OthersTab, "Aimlock Bind", "AimlockBind")
     CreateToggle(OthersTab, "Noclip", "Noclip", NoclipFunc)
     
-    -- ===== INFO =====
     local InfoLabel = Instance.new("TextLabel")
     InfoLabel.Size = UDim2.new(1, -20, 0, 200)
     InfoLabel.Position = UDim2.new(0, 10, 0, 10)
     InfoLabel.BackgroundTransparency = 1
-    InfoLabel.Text = "Celeron's GUI for Bite By Night\n\n✓ Model support\n✓ Infinite Sprint fixed\n✓ Anti-cheat bypass\n\nClick — to minimize"
+    InfoLabel.Text = "Celeron's GUI for Bite By Night\n\n✓ Optimized (no lags)\n✓ Smooth loading\n✓ Model support\n✓ Anti-cheat bypass\n\nClick — to minimize"
     InfoLabel.TextColor3 = Color3.fromRGB(200, 200, 200)
     InfoLabel.Font = Enum.Font.Gotham
     InfoLabel.TextSize = 14
@@ -826,8 +758,7 @@ local function CreateWindow()
     InfoLabel.Parent = InfoTab
     
     -- Перетаскивание
-    local dragging = false
-    local dragStart, startPos
+    local dragging, dragStart, startPos = false, nil, nil
     
     TitleBar.InputBegan:Connect(function(input)
         if input.UserInputType == Enum.UserInputType.MouseButton1 then
@@ -849,26 +780,28 @@ local function CreateWindow()
             dragging = false
         end
     end)
-    
-    return ScreenGui
 end
 
--- Запуск
+-- ==================== ЗАПУСК ====================
+
+-- Показываем загрузчик
+ShowLoader()
+
+-- Обход античита
+setupAntiCheatBypass()
+
+-- Создаём GUI
+CreateWindow()
+
+-- Оптимизированные обработчики
 RunService.RenderStepped:Connect(UpdateESP)
 
 Players.PlayerAdded:Connect(function(p)
     p.CharacterAdded:Connect(function()
-        task.wait(0.5)
-        if Settings.SurvivorESP and p ~= FindKiller() then
-            CreateBoxESP(p.Character, Settings.SurvivorColor, p.Name)
-        end
-        if Settings.KillerESP and p == FindKiller() then
-            CreateBoxESP(p.Character, Settings.KillerColor, p.Name)
-        end
+        task.wait(0.3)
+        KillerCache.lastCheck = 0 -- Сброс кэша
     end)
 end)
-
-CreateWindow()
 
 UserInputService.InputBegan:Connect(function(input, gameProcessed)
     if gameProcessed then return end
@@ -882,4 +815,4 @@ UserInputService.InputBegan:Connect(function(input, gameProcessed)
     end
 end)
 
-print("Celeron's GUI loaded! Model support + Infinite Sprint fixed + Anti-cheat bypass!")
+print("Celeron's GUI loaded! Smooth + Optimized!")
