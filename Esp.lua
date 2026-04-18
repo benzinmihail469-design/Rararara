@@ -1,7 +1,8 @@
 --[[
     Celeron's GUI для Bite By Night
     Полноценный хаб с ESP, телепортами, автовыполнением и визуалом
-]]
+    ДОБАВЛЕНЫ: Кнопки вкл/выкл для всех функций + Сворачивание окна
+--]]
 
 -- Сервисы
 local Players = game:GetService("Players")
@@ -21,7 +22,6 @@ local Settings = {
     AutoGenerator = false,
     AutoEscape = false,
     AutoBarricade = false,
-    ViewKiller = false,
     
     -- Visual
     SurvivorESP = false,
@@ -45,9 +45,17 @@ local Settings = {
     FuseBoxColor = Color3.fromRGB(255, 0, 255)
 }
 
+-- Состояние окна
+local WindowState = {
+    Minimized = false,
+    MainFrame = nil,
+    ContentFrame = nil,
+    MinimizeBtn = nil
+}
+
 -- Хранилище для GUI
 local Tabs = {}
-local Window
+local ToggleButtons = {}
 
 -- ==================== ФУНКЦИИ ДЛЯ РАБОТЫ С МОДЕЛЯМИ ====================
 
@@ -131,11 +139,58 @@ local function CreateBoxESP(obj, color, name)
 end
 
 local function UpdateESP()
+    -- Очистка невидимых объектов
+    for name, data in pairs(ESPObjects) do
+        local found = false
+        
+        -- Проверка игроков
+        for _, p in ipairs(Players:GetPlayers()) do
+            if p.Name == name and p.Character then
+                found = true
+                break
+            end
+        end
+        
+        -- Проверка предметов
+        if not found then
+            for _, v in ipairs(workspace:GetDescendants()) do
+                if v.Name == name or (v:IsA("Model") and v.Name:find(name)) then
+                    found = true
+                    break
+                end
+            end
+        end
+        
+        if not found then
+            for _, d in pairs(data) do d.Visible = false end
+        end
+    end
+    
+    -- Обновление ESP для игроков
+    if Settings.SurvivorESP then
+        for _, p in ipairs(Players:GetPlayers()) do
+            if p ~= LocalPlayer and p ~= FindKiller() and p.Character then
+                if not ESPObjects[p.Name] then
+                    CreateBoxESP(p.Character, Settings.SurvivorColor, p.Name)
+                end
+            end
+        end
+    end
+    
+    if Settings.KillerESP then
+        local k = FindKiller()
+        if k and k.Character then
+            if not ESPObjects[k.Name] then
+                CreateBoxESP(k.Character, Settings.KillerColor, k.Name)
+            end
+        end
+    end
+    
+    -- Обновление позиций
     for name, data in pairs(ESPObjects) do
         local obj = nil
         local isPlayer = false
         
-        -- Поиск объекта (игрок или предмет)
         for _, p in ipairs(Players:GetPlayers()) do
             if p.Name == name then
                 obj = p.Character
@@ -180,7 +235,7 @@ local function UpdateESP()
             local height = math.abs(headPos.Y - footPos.Y)
             local width = height / 2
             
-            data.Box.Visible = true
+            data.Box.Visible = Settings.SurvivorESP or Settings.KillerESP
             data.Box.Size = Vector2.new(width, height)
             data.Box.Position = Vector2.new(rootPos.X - width/2, headPos.Y)
             
@@ -211,68 +266,73 @@ end
 
 -- ==================== ФУНКЦИИ АВТОМАТИЗАЦИИ ====================
 
+local AutoTasks = {
+    Generator = nil,
+    Escape = nil,
+    Barricade = nil
+}
+
 local function AutoGeneratorTask()
-    task.spawn(function()
-        while Settings.AutoGenerator do
-            pcall(function()
-                local gens = {}
-                for _, v in ipairs(workspace:GetDescendants()) do
-                    if v:IsA("ProximityPrompt") and v.Parent and v.Parent.Name:lower():find("generator") then
-                        table.insert(gens, v)
+    if AutoTasks.Generator then AutoTasks.Generator:Disconnect() end
+    if not Settings.AutoGenerator then return end
+    
+    AutoTasks.Generator = RunService.Heartbeat:Connect(function()
+        pcall(function()
+            for _, v in ipairs(workspace:GetDescendants()) do
+                if v:IsA("ProximityPrompt") and v.Parent and v.Parent.Name:lower():find("generator") then
+                    if LocalPlayer.Character and LocalPlayer.Character:FindFirstChild("HumanoidRootPart") then
+                        local dist = (LocalPlayer.Character.HumanoidRootPart.Position - v.Parent.Position).Magnitude
+                        if dist < 10 then
+                            fireproximityprompt(v)
+                        else
+                            LocalPlayer.Character:MoveTo(v.Parent.Position)
+                        end
+                        break
                     end
                 end
-                for _, gen in ipairs(gens) do
-                    if Settings.AutoGenerator and LocalPlayer.Character then
-                        LocalPlayer.Character:MoveTo(gen.Parent.Position)
-                        task.wait(0.5)
-                        fireproximityprompt(gen)
-                    end
-                end
-            end)
-            task.wait(1)
-        end
+            end
+        end)
     end)
 end
 
 local function AutoEscapeTask()
-    task.spawn(function()
-        while Settings.AutoEscape do
-            pcall(function()
-                local exits = {}
-                for _, v in ipairs(workspace:GetDescendants()) do
-                    if v:IsA("Part") and v.Name:lower():find("exit") or v.Name:lower():find("escape") then
-                        table.insert(exits, v)
+    if AutoTasks.Escape then AutoTasks.Escape:Disconnect() end
+    if not Settings.AutoEscape then return end
+    
+    AutoTasks.Escape = RunService.Heartbeat:Connect(function()
+        pcall(function()
+            for _, v in ipairs(workspace:GetDescendants()) do
+                if v:IsA("Part") and (v.Name:lower():find("exit") or v.Name:lower():find("escape")) then
+                    if LocalPlayer.Character and LocalPlayer.Character:FindFirstChild("HumanoidRootPart") then
+                        LocalPlayer.Character:MoveTo(v.Position)
                     end
+                    break
                 end
-                if #exits > 0 and LocalPlayer.Character then
-                    LocalPlayer.Character:MoveTo(exits[1].Position)
-                end
-            end)
-            task.wait(3)
-        end
+            end
+        end)
     end)
 end
 
 local function AutoBarricadeTask()
-    task.spawn(function()
-        while Settings.AutoBarricade do
-            pcall(function()
-                local barricades = {}
-                for _, v in ipairs(workspace:GetDescendants()) do
-                    if v:IsA("ProximityPrompt") and v.Parent and v.Parent.Name:lower():find("barricade") then
-                        table.insert(barricades, v)
+    if AutoTasks.Barricade then AutoTasks.Barricade:Disconnect() end
+    if not Settings.AutoBarricade then return end
+    
+    AutoTasks.Barricade = RunService.Heartbeat:Connect(function()
+        pcall(function()
+            for _, v in ipairs(workspace:GetDescendants()) do
+                if v:IsA("ProximityPrompt") and v.Parent and v.Parent.Name:lower():find("barricade") then
+                    if LocalPlayer.Character and LocalPlayer.Character:FindFirstChild("HumanoidRootPart") then
+                        local dist = (LocalPlayer.Character.HumanoidRootPart.Position - v.Parent.Position).Magnitude
+                        if dist < 10 then
+                            fireproximityprompt(v)
+                        else
+                            LocalPlayer.Character:MoveTo(v.Parent.Position)
+                        end
+                        break
                     end
                 end
-                for _, bar in ipairs(barricades) do
-                    if Settings.AutoBarricade and LocalPlayer.Character then
-                        LocalPlayer.Character:MoveTo(bar.Parent.Position)
-                        task.wait(0.5)
-                        fireproximityprompt(bar)
-                    end
-                end
-            end)
-            task.wait(1)
-        end
+            end
+        end)
     end)
 end
 
@@ -295,78 +355,87 @@ local function ViewKillerFunc()
     local killer = FindKiller()
     if killer and killer.Character then
         Camera.CameraSubject = killer.Character
+        task.wait(3)
+        Camera.CameraSubject = LocalPlayer.Character
     end
 end
 
 -- ==================== ФУНКЦИИ ДРУГОГО ====================
 
+local OtherTasks = {
+    Sprint = nil,
+    Jump = nil,
+    Aimlock = nil,
+    Noclip = nil
+}
+
 local function InfiniteSprintFunc()
-    task.spawn(function()
-        while Settings.InfiniteSprint do
-            pcall(function()
-                LocalPlayer:SetAttribute("Stamina", 100)
-                LocalPlayer:SetAttribute("Energy", 100)
-            end)
-            task.wait(0.1)
-        end
+    if OtherTasks.Sprint then OtherTasks.Sprint:Disconnect() end
+    if not Settings.InfiniteSprint then return end
+    
+    OtherTasks.Sprint = RunService.Heartbeat:Connect(function()
+        pcall(function()
+            LocalPlayer:SetAttribute("Stamina", 100)
+            LocalPlayer:SetAttribute("Energy", 100)
+        end)
     end)
 end
 
 local function AllowJumpingFunc()
-    task.spawn(function()
-        while Settings.AllowJumping do
-            pcall(function()
-                if LocalPlayer.Character then
-                    local humanoid = GetHumanoid(LocalPlayer.Character)
-                    if humanoid then
-                        humanoid.JumpPower = 50
-                        humanoid.Jump = true
-                    end
+    if OtherTasks.Jump then OtherTasks.Jump:Disconnect() end
+    if not Settings.AllowJumping then return end
+    
+    OtherTasks.Jump = RunService.Heartbeat:Connect(function()
+        pcall(function()
+            if LocalPlayer.Character then
+                local humanoid = GetHumanoid(LocalPlayer.Character)
+                if humanoid then
+                    humanoid.JumpPower = 50
+                    humanoid.Jump = true
                 end
-            end)
-            task.wait(0.5)
-        end
+            end
+        end)
     end)
 end
 
 local function AimlockFunc()
-    task.spawn(function()
-        while Settings.Aimlock do
-            pcall(function()
-                local closest = nil
-                local minDist = math.huge
-                for _, p in ipairs(Players:GetPlayers()) do
-                    if p ~= LocalPlayer and p.Character and p.Character:FindFirstChild("HumanoidRootPart") then
-                        local dist = (Camera.CFrame.Position - p.Character.HumanoidRootPart.Position).Magnitude
-                        if dist < minDist then
-                            minDist = dist
-                            closest = p
-                        end
+    if OtherTasks.Aimlock then OtherTasks.Aimlock:Disconnect() end
+    if not Settings.Aimlock then return end
+    
+    OtherTasks.Aimlock = RunService.RenderStepped:Connect(function()
+        pcall(function()
+            local closest = nil
+            local minDist = math.huge
+            for _, p in ipairs(Players:GetPlayers()) do
+                if p ~= LocalPlayer and p.Character and p.Character:FindFirstChild("HumanoidRootPart") then
+                    local dist = (Camera.CFrame.Position - p.Character.HumanoidRootPart.Position).Magnitude
+                    if dist < minDist then
+                        minDist = dist
+                        closest = p
                     end
                 end
-                if closest and closest.Character then
-                    Camera.CFrame = CFrame.new(Camera.CFrame.Position, closest.Character.HumanoidRootPart.Position)
-                end
-            end)
-            task.wait()
-        end
+            end
+            if closest and closest.Character then
+                Camera.CFrame = CFrame.new(Camera.CFrame.Position, closest.Character.HumanoidRootPart.Position)
+            end
+        end)
     end)
 end
 
 local function NoclipFunc()
-    task.spawn(function()
-        while Settings.Noclip do
-            pcall(function()
-                if LocalPlayer.Character then
-                    for _, part in ipairs(LocalPlayer.Character:GetDescendants()) do
-                        if part:IsA("BasePart") then
-                            part.CanCollide = false
-                        end
+    if OtherTasks.Noclip then OtherTasks.Noclip:Disconnect() end
+    if not Settings.Noclip then return end
+    
+    OtherTasks.Noclip = RunService.Heartbeat:Connect(function()
+        pcall(function()
+            if LocalPlayer.Character then
+                for _, part in ipairs(LocalPlayer.Character:GetDescendants()) do
+                    if part:IsA("BasePart") then
+                        part.CanCollide = false
                     end
                 end
-            end)
-            task.wait(0.1)
-        end
+            end
+        end)
     end)
 end
 
@@ -386,6 +455,8 @@ local function CreateWindow()
     MainFrame.BorderSizePixel = 0
     MainFrame.Parent = ScreenGui
     
+    WindowState.MainFrame = MainFrame
+    
     Instance.new("UICorner", MainFrame).CornerRadius = UDim.new(0, 12)
     
     -- Заголовок
@@ -398,7 +469,7 @@ local function CreateWindow()
     Instance.new("UICorner", TitleBar).CornerRadius = UDim.new(0, 12)
     
     local Title = Instance.new("TextLabel")
-    Title.Size = UDim2.new(1, -40, 1, 0)
+    Title.Size = UDim2.new(1, -80, 1, 0)
     Title.Position = UDim2.new(0, 20, 0, 0)
     Title.BackgroundTransparency = 1
     Title.Text = "Celeron's GUI (Bite By Night)"
@@ -407,6 +478,21 @@ local function CreateWindow()
     Title.Font = Enum.Font.GothamBold
     Title.TextXAlignment = Enum.TextXAlignment.Left
     Title.Parent = TitleBar
+    
+    -- Кнопка сворачивания
+    local MinimizeBtn = Instance.new("TextButton")
+    MinimizeBtn.Size = UDim2.new(0, 30, 0, 30)
+    MinimizeBtn.Position = UDim2.new(1, -75, 0, 5)
+    MinimizeBtn.BackgroundColor3 = Color3.fromRGB(100, 100, 100)
+    MinimizeBtn.Text = "—"
+    MinimizeBtn.TextColor3 = Color3.fromRGB(255, 255, 255)
+    MinimizeBtn.Font = Enum.Font.GothamBold
+    MinimizeBtn.TextSize = 18
+    MinimizeBtn.Parent = TitleBar
+    
+    Instance.new("UICorner", MinimizeBtn).CornerRadius = UDim.new(0, 6)
+    
+    WindowState.MinimizeBtn = MinimizeBtn
     
     -- Кнопка закрытия
     local CloseBtn = Instance.new("TextButton")
@@ -422,10 +508,16 @@ local function CreateWindow()
     Instance.new("UICorner", CloseBtn).CornerRadius = UDim.new(0, 6)
     
     CloseBtn.MouseButton1Click:Connect(function()
-        ScreenGui:Destroy()
+        -- Отключаем все задачи
+        for _, task in pairs(AutoTasks) do if task then task:Disconnect() end end
+        for _, task in pairs(OtherTasks) do if task then task:Disconnect() end end
+        
+        -- Очищаем ESP
         for _, v in pairs(ESPObjects) do
             for _, d in pairs(v) do pcall(function() d:Remove() end) end
         end
+        
+        ScreenGui:Destroy()
     end)
     
     -- Вкладки
@@ -447,6 +539,26 @@ local function CreateWindow()
     ContentFrame.BackgroundColor3 = Color3.fromRGB(35, 35, 35)
     ContentFrame.BorderSizePixel = 0
     ContentFrame.Parent = MainFrame
+    
+    WindowState.ContentFrame = ContentFrame
+    
+    -- Функция сворачивания/разворачивания
+    local function ToggleMinimize()
+        WindowState.Minimized = not WindowState.Minimized
+        if WindowState.Minimized then
+            MainFrame.Size = UDim2.new(0, 600, 0, 40)
+            TabHolder.Visible = false
+            ContentFrame.Visible = false
+            MinimizeBtn.Text = "+"
+        else
+            MainFrame.Size = UDim2.new(0, 600, 0, 400)
+            TabHolder.Visible = true
+            ContentFrame.Visible = true
+            MinimizeBtn.Text = "—"
+        end
+    end
+    
+    MinimizeBtn.MouseButton1Click:Connect(ToggleMinimize)
     
     -- Функция создания вкладки
     local function CreateTab(name)
@@ -487,7 +599,7 @@ local function CreateWindow()
         return TabContent
     end
     
-    -- Функция создания кнопки-переключателя
+    -- Функция создания переключателя с кнопкой вкл/выкл
     local function CreateToggle(parent, text, settingName, callback)
         local Frame = Instance.new("Frame")
         Frame.Size = UDim2.new(1, -20, 0, 40)
@@ -499,19 +611,19 @@ local function CreateWindow()
         Instance.new("UICorner", Frame).CornerRadius = UDim.new(0, 8)
         
         local Label = Instance.new("TextLabel")
-        Label.Size = UDim2.new(0.7, 0, 1, 0)
+        Label.Size = UDim2.new(0.6, 0, 1, 0)
         Label.Position = UDim2.new(0, 15, 0, 0)
         Label.BackgroundTransparency = 1
         Label.Text = text
         Label.TextColor3 = Color3.fromRGB(255, 255, 255)
         Label.Font = Enum.Font.Gotham
-        Label.TextSize = 14
+        Label.TextSize = 13
         Label.TextXAlignment = Enum.TextXAlignment.Left
         Label.Parent = Frame
         
         local Toggle = Instance.new("TextButton")
-        Toggle.Size = UDim2.new(0, 50, 0, 24)
-        Toggle.Position = UDim2.new(1, -65, 0.5, -12)
+        Toggle.Size = UDim2.new(0, 60, 0, 24)
+        Toggle.Position = UDim2.new(1, -75, 0.5, -12)
         Toggle.BackgroundColor3 = Settings[settingName] and Color3.fromRGB(0, 170, 0) or Color3.fromRGB(170, 0, 0)
         Toggle.Text = Settings[settingName] and "ON" or "OFF"
         Toggle.TextColor3 = Color3.fromRGB(255, 255, 255)
@@ -521,6 +633,8 @@ local function CreateWindow()
         Toggle.Parent = Frame
         
         Instance.new("UICorner", Toggle).CornerRadius = UDim.new(0, 6)
+        
+        ToggleButtons[settingName] = Toggle
         
         Toggle.MouseButton1Click:Connect(function()
             Settings[settingName] = not Settings[settingName]
@@ -607,33 +721,38 @@ local function CreateWindow()
     
     -- ===== MAIN =====
     CreateToggle(MainTab, "Auto Generator", "AutoGenerator", function(enabled)
-        if enabled then AutoGeneratorTask() end
+        AutoGeneratorTask()
     end)
     CreateToggle(MainTab, "Auto Escape", "AutoEscape", function(enabled)
-        if enabled then AutoEscapeTask() end
+        AutoEscapeTask()
     end)
     CreateToggle(MainTab, "Auto Barricade", "AutoBarricade", function(enabled)
-        if enabled then AutoBarricadeTask() end
+        AutoBarricadeTask()
     end)
     CreateButton(MainTab, "Safety Area", SafetyArea)
     CreateButton(MainTab, "View Killer", ViewKillerFunc)
     
     -- ===== SURVIVOR =====
-    CreateButton(SurvivorTab, "Survivor ESP", function()
-        Settings.SurvivorESP = not Settings.SurvivorESP
-        if Settings.SurvivorESP then
-            for _, p in ipairs(Players:GetPlayers()) do
-                if p ~= LocalPlayer and p ~= FindKiller() then
-                    CreateBoxESP(p.Character, Settings.SurvivorColor, p.Name)
+    CreateToggle(SurvivorTab, "Survivor ESP", "SurvivorESP", function(enabled)
+        if not enabled then
+            for name, data in pairs(ESPObjects) do
+                local isKiller = false
+                local k = FindKiller()
+                if k and k.Name == name then isKiller = true end
+                if not isKiller then
+                    for _, d in pairs(data) do pcall(function() d:Remove() end) end
+                    ESPObjects[name] = nil
                 end
             end
         end
     end)
-    CreateButton(SurvivorTab, "Killer ESP", function()
-        Settings.KillerESP = not Settings.KillerESP
-        if Settings.KillerESP then
+    CreateToggle(SurvivorTab, "Killer ESP", "KillerESP", function(enabled)
+        if not enabled then
             local k = FindKiller()
-            if k then CreateBoxESP(k.Character, Settings.KillerColor, k.Name) end
+            if k and ESPObjects[k.Name] then
+                for _, d in pairs(ESPObjects[k.Name]) do pcall(function() d:Remove() end) end
+                ESPObjects[k.Name] = nil
+            end
         end
     end)
     
@@ -657,17 +776,17 @@ local function CreateWindow()
     
     -- ===== OTHERS =====
     CreateToggle(OthersTab, "Infinite Sprint", "InfiniteSprint", function(enabled)
-        if enabled then InfiniteSprintFunc() end
+        InfiniteSprintFunc()
     end)
     CreateToggle(OthersTab, "Allow Jumping", "AllowJumping", function(enabled)
-        if enabled then AllowJumpingFunc() end
+        AllowJumpingFunc()
     end)
     CreateToggle(OthersTab, "Aimlock", "Aimlock", function(enabled)
-        if enabled then AimlockFunc() end
+        AimlockFunc()
     end)
     CreateBind(OthersTab, "Aimlock Bind", "AimlockBind")
     CreateToggle(OthersTab, "Noclip", "Noclip", function(enabled)
-        if enabled then NoclipFunc() end
+        NoclipFunc()
     end)
     
     -- ===== INFO =====
@@ -675,7 +794,7 @@ local function CreateWindow()
     InfoLabel.Size = UDim2.new(1, -20, 0, 200)
     InfoLabel.Position = UDim2.new(0, 10, 0, 10)
     InfoLabel.BackgroundTransparency = 1
-    InfoLabel.Text = "Celeron's GUI for Bite By Night\n\nMade with ♥\n\nFeatures:\n- Auto tasks\n- ESP for all objects\n- Teleports\n- Character modifications"
+    InfoLabel.Text = "Celeron's GUI for Bite By Night\n\nMade with ♥\n\nFeatures:\n- Auto tasks\n- ESP for all objects\n- Teleports\n- Character modifications\n\nClick — to minimize"
     InfoLabel.TextColor3 = Color3.fromRGB(200, 200, 200)
     InfoLabel.Font = Enum.Font.Gotham
     InfoLabel.TextSize = 14
@@ -717,12 +836,15 @@ RunService.RenderStepped:Connect(UpdateESP)
 
 -- Обработчики игроков
 Players.PlayerAdded:Connect(function(p)
-    if Settings.SurvivorESP and p ~= FindKiller() then
-        p.CharacterAdded:Connect(function()
-            task.wait(0.5)
+    p.CharacterAdded:Connect(function()
+        task.wait(0.5)
+        if Settings.SurvivorESP and p ~= FindKiller() then
             CreateBoxESP(p.Character, Settings.SurvivorColor, p.Name)
-        end)
-    end
+        end
+        if Settings.KillerESP and p == FindKiller() then
+            CreateBoxESP(p.Character, Settings.KillerColor, p.Name)
+        end
+    end)
 end)
 
 -- Создание окна
@@ -733,8 +855,12 @@ UserInputService.InputBegan:Connect(function(input, gameProcessed)
     if gameProcessed then return end
     if input.KeyCode == Enum.KeyCode[Settings.AimlockBind] then
         Settings.Aimlock = not Settings.Aimlock
-        if Settings.Aimlock then AimlockFunc() end
+        if ToggleButtons["Aimlock"] then
+            ToggleButtons["Aimlock"].Text = Settings.Aimlock and "ON" or "OFF"
+            ToggleButtons["Aimlock"].BackgroundColor3 = Settings.Aimlock and Color3.fromRGB(0, 170, 0) or Color3.fromRGB(170, 0, 0)
+        end
+        AimlockFunc()
     end
 end)
 
-print("Celeron's GUI for Bite By Night loaded!")
+print("Celeron's GUI for Bite By Night loaded! Click — to minimize.")
