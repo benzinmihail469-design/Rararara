@@ -9,6 +9,7 @@ local Players = game:GetService("Players")
 local RunService = game:GetService("RunService")
 local Camera = workspace.CurrentCamera
 local LocalPlayer = Players.LocalPlayer
+local UserInputService = game:GetService("UserInputService")
 
 -- Хранилище ESP
 local ESPObjects = {}
@@ -100,7 +101,6 @@ local function GetHumanoid(model)
     local humanoid = model:FindFirstChildOfClass("Humanoid")
     if humanoid then return humanoid end
     
-    -- Для моделек ищем любой Humanoid в детях
     for _, child in ipairs(model:GetDescendants()) do
         if child:IsA("Humanoid") then
             return child
@@ -304,12 +304,11 @@ local function UpdateSpeed()
         if Settings.SpeedEnabled then
             humanoid.WalkSpeed = Settings.SpeedValue
         else
-            humanoid.WalkSpeed = 16 -- Стандартная скорость
+            humanoid.WalkSpeed = 16
         end
     end
 end
 
--- Постоянное обновление скорости (на случай респавна)
 task.spawn(function()
     while true do
         if Settings.SpeedEnabled then
@@ -319,7 +318,6 @@ task.spawn(function()
     end
 end)
 
--- При изменении персонажа
 LocalPlayer.CharacterAdded:Connect(function()
     task.wait(0.5)
     UpdateSpeed()
@@ -349,14 +347,14 @@ end
 
 RunService.RenderStepped:Connect(UpdatePositions)
 
--- ==================== GUI ====================
+-- ==================== GUI С БЕЛЫМ ПОЛЗУНКОМ ====================
 
 local ScreenGui = Instance.new("ScreenGui")
 ScreenGui.Name = "KillerESP_Corner_Speed"
 ScreenGui.Parent = game:GetService("CoreGui")
 
 local Frame = Instance.new("Frame")
-Frame.Size = UDim2.new(0, 220, 0, 220)
+Frame.Size = UDim2.new(0, 240, 0, 230)
 Frame.Position = UDim2.new(0, 10, 0, 10)
 Frame.BackgroundColor3 = Color3.fromRGB(15, 15, 15)
 Frame.BackgroundTransparency = 0.2
@@ -368,7 +366,7 @@ Instance.new("UICorner", Frame).CornerRadius = UDim.new(0, 8)
 local Title = Instance.new("TextLabel")
 Title.Size = UDim2.new(1, 0, 0, 30)
 Title.BackgroundTransparency = 1
-Title.Text = "ESP + Speed"
+Title.Text = "ESP + Speed Control"
 Title.TextColor3 = Color3.fromRGB(0, 255, 0)
 Title.TextSize = 14
 Title.Font = Enum.Font.GothamBold
@@ -425,71 +423,106 @@ SpeedBtn.MouseButton1Click:Connect(function()
     UpdateSpeed()
 end)
 
--- Слайдер скорости
-local SliderFrame = Instance.new("Frame")
-SliderFrame.Size = UDim2.new(0.8, 0, 0, 25)
-SliderFrame.Position = UDim2.new(0.1, 0, 0, 145)
-SliderFrame.BackgroundColor3 = Color3.fromRGB(40, 40, 40)
-SliderFrame.BorderSizePixel = 0
-SliderFrame.Parent = Frame
+-- Текст "Speed Control"
+local SpeedLabel = Instance.new("TextLabel")
+SpeedLabel.Size = UDim2.new(1, 0, 0, 20)
+SpeedLabel.Position = UDim2.new(0, 0, 0, 145)
+SpeedLabel.BackgroundTransparency = 1
+SpeedLabel.Text = "Speed: 16"
+SpeedLabel.TextColor3 = Color3.fromRGB(255, 255, 255)
+SpeedLabel.TextSize = 12
+SpeedLabel.Font = Enum.Font.Gotham
+SpeedLabel.Parent = Frame
 
-Instance.new("UICorner", SliderFrame).CornerRadius = UDim.new(0, 4)
+-- Фон слайдера (серый)
+local SliderBg = Instance.new("Frame")
+SliderBg.Size = UDim2.new(0.8, 0, 0, 8)
+SliderBg.Position = UDim2.new(0.1, 0, 0, 170)
+SliderBg.BackgroundColor3 = Color3.fromRGB(60, 60, 60)
+SliderBg.BorderSizePixel = 0
+SliderBg.Parent = Frame
 
+Instance.new("UICorner", SliderBg).CornerRadius = UDim.new(0, 4)
+
+-- Заполнение слайдера (синее)
 local SliderFill = Instance.new("Frame")
-SliderFill.Size = UDim2.new((Settings.SpeedValue - 16) / (50 - 16), 0, 1, 0)
+SliderFill.Size = UDim2.new(0, 0, 1, 0)
 SliderFill.BackgroundColor3 = Color3.fromRGB(0, 170, 255)
 SliderFill.BorderSizePixel = 0
-SliderFill.Parent = SliderFrame
+SliderFill.Parent = SliderBg
 
 Instance.new("UICorner", SliderFill).CornerRadius = UDim.new(0, 4)
 
-local SpeedValue = Instance.new("TextLabel")
-SpeedValue.Size = UDim2.new(1, 0, 1, 0)
-SpeedValue.BackgroundTransparency = 1
-SpeedValue.Text = "Speed: " .. Settings.SpeedValue
-SpeedValue.TextColor3 = Color3.fromRGB(255, 255, 255)
-SpeedValue.TextSize = 12
-SpeedValue.Font = Enum.Font.Gotham
-SpeedValue.Parent = SliderFrame
+-- БЕЛЫЙ ПОЛЗУНОК (кружок)
+local SliderKnob = Instance.new("Frame")
+SliderKnob.Size = UDim2.new(0, 16, 0, 16)
+SliderKnob.Position = UDim2.new(0, -8, 0.5, -8)
+SliderKnob.BackgroundColor3 = Color3.fromRGB(255, 255, 255)
+SliderKnob.BorderSizePixel = 0
+SliderKnob.Parent = SliderBg
+
+Instance.new("UICorner", SliderKnob).CornerRadius = UDim.new(1, 0)
+
+-- Добавляем обводку для ползунка
+local KnobStroke = Instance.new("UIStroke")
+KnobStroke.Color = Color3.fromRGB(200, 200, 200)
+KnobStroke.Thickness = 1
+KnobStroke.Parent = SliderKnob
 
 -- Логика слайдера
-local UserInputService = game:GetService("UserInputService")
 local dragging = false
 
-local function UpdateSliderPosition(input)
-    local pos = Vector2.new(math.clamp(input.Position.X - SliderFrame.AbsolutePosition.X, 0, SliderFrame.AbsoluteSize.X), 0)
-    local percent = pos.X / SliderFrame.AbsoluteSize.X
-    Settings.SpeedValue = math.floor(16 + percent * (50 - 16))
-    SliderFill.Size = UDim2.new(percent, 0, 1, 0)
-    SpeedValue.Text = "Speed: " .. Settings.SpeedValue
+local function UpdateSlider(value)
+    Settings.SpeedValue = math.floor(16 + value * (50 - 16))
+    SpeedLabel.Text = "Speed: " .. Settings.SpeedValue
+    SliderFill.Size = UDim2.new(value, 0, 1, 0)
+    SliderKnob.Position = UDim2.new(value, -8, 0.5, -8)
+    
     if Settings.SpeedEnabled then
         UpdateSpeed()
     end
 end
 
-SliderFrame.InputBegan:Connect(function(input)
+local function SetSliderFromX(xPos)
+    local sliderMin = SliderBg.AbsolutePosition.X
+    local sliderMax = sliderMin + SliderBg.AbsoluteSize.X
+    local clampedX = math.clamp(xPos, sliderMin, sliderMax)
+    local value = (clampedX - sliderMin) / SliderBg.AbsoluteSize.X
+    UpdateSlider(value)
+end
+
+SliderBg.InputBegan:Connect(function(input)
     if input.UserInputType == Enum.UserInputType.MouseButton1 then
         dragging = true
-        UpdateSliderPosition(input)
+        SetSliderFromX(input.Position.X)
     end
 end)
 
-SliderFrame.InputEnded:Connect(function(input)
+SliderKnob.InputBegan:Connect(function(input)
     if input.UserInputType == Enum.UserInputType.MouseButton1 then
-        dragging = false
+        dragging = true
     end
 end)
 
 UserInputService.InputChanged:Connect(function(input)
     if dragging and input.UserInputType == Enum.UserInputType.MouseMovement then
-        UpdateSliderPosition(input)
+        SetSliderFromX(input.Position.X)
     end
 end)
+
+UserInputService.InputEnded:Connect(function(input)
+    if input.UserInputType == Enum.UserInputType.MouseButton1 then
+        dragging = false
+    end
+end)
+
+-- Устанавливаем начальное значение (16)
+UpdateSlider(0)
 
 -- Информация
 local Info = Instance.new("TextLabel")
 Info.Size = UDim2.new(1, 0, 0, 20)
-Info.Position = UDim2.new(0, 0, 0, 180)
+Info.Position = UDim2.new(0, 0, 0, 195)
 Info.BackgroundTransparency = 1
 Info.Text = "🟢 Killer  |  🔴 Survivor"
 Info.TextColor3 = Color3.fromRGB(200, 200, 200)
@@ -534,4 +567,4 @@ task.spawn(function()
     end
 end)
 
-print("ESP + Speed loaded! Max speed: 50")
+print("ESP + Speed loaded! White slider added. Max speed: 50")
