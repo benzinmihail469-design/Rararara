@@ -1,6 +1,6 @@
 --[[
-    ESP + Speed 40 + Infinite Stamina + Generator ESP + FPS Boost (ОТЛОЖЕННЫЙ ЗАПУСК)
-    ВСЁ РАБОТАЕТ + АНТИЧИТ ОБХОД + БЕЗ ЛАГОВ ПРИ СТАРТЕ
+    ESP + Speed 40 + Infinite Stamina + Generator ESP
+    ВСЁ РАБОТАЕТ + АНТИЧИТ ОБХОД
 --]]
 
 -- Сервисы
@@ -10,8 +10,6 @@ local Camera = workspace.CurrentCamera
 local LocalPlayer = Players.LocalPlayer
 local UserInputService = game:GetService("UserInputService")
 local CoreGui = game:GetService("CoreGui")
-local Lighting = game:GetService("Lighting")
-local Terrain = workspace:FindFirstChildOfClass("Terrain")
 
 -- Хранилище ESP
 local ESPObjects = {}
@@ -36,124 +34,8 @@ local Settings = {
     StaminaEnabled = false,
     
     -- Generator ESP
-    GeneratorESP = false,
-    
-    -- FPS Boost
-    FPSBoostEnabled = false
+    GeneratorESP = false
 }
-
--- Сохранение оригинальных настроек графики
-local OriginalGraphics = {
-    GlobalShadows = Lighting.GlobalShadows,
-    Brightness = Lighting.Brightness,
-    FogEnd = Lighting.FogEnd,
-    FogStart = Lighting.FogStart,
-    ShadowSoftness = Lighting.ShadowSoftness,
-    ClockTime = Lighting.ClockTime,
-    ExposureCompensation = Lighting.ExposureCompensation,
-    OutdoorAmbient = Lighting.OutdoorAmbient,
-    Technology = Lighting.Technology,
-    EnvironmentDiffuseScale = Lighting.EnvironmentDiffuseScale,
-    EnvironmentSpecularScale = Lighting.EnvironmentSpecularScale
-}
-
--- ==================== ОПТИМИЗИРОВАННЫЙ FPS BOOST (БЕЗ ЛАГОВ ПРИ ЗАПУСКЕ) ====================
-
-local function EnableFPSBoost()
-    -- Отключаем тени
-    Lighting.GlobalShadows = false
-    
-    -- Убираем туман
-    Lighting.FogEnd = 100000
-    Lighting.FogStart = 100000
-    
-    -- Уменьшаем качество теней
-    Lighting.ShadowSoftness = 0
-    
-    -- Фиксируем время
-    Lighting.ClockTime = 12
-    
-    -- Отключаем лишние эффекты
-    Lighting.ExposureCompensation = 0
-    Lighting.OutdoorAmbient = Color3.fromRGB(128, 128, 128)
-    
-    -- Устанавливаем минимальное качество графики
-    pcall(function() Lighting.Technology = Enum.Technology.Legacy end)
-    Lighting.EnvironmentDiffuseScale = 1
-    Lighting.EnvironmentSpecularScale = 0
-    
-    -- Отключаем эффекты в Lighting
-    for _, effect in ipairs(Lighting:GetChildren()) do
-        if effect:IsA("BlurEffect") or effect:IsA("DepthOfFieldEffect") or effect:IsA("SunRaysEffect") or effect:IsA("ColorCorrectionEffect") then
-            effect.Enabled = false
-        end
-    end
-    
-    print("FPS Boost ВКЛЮЧЕН")
-end
-
-local function DisableFPSBoost()
-    -- Восстанавливаем оригинальные настройки
-    pcall(function() Lighting.GlobalShadows = OriginalGraphics.GlobalShadows end)
-    pcall(function() Lighting.Brightness = OriginalGraphics.Brightness end)
-    pcall(function() Lighting.FogEnd = OriginalGraphics.FogEnd end)
-    pcall(function() Lighting.FogStart = OriginalGraphics.FogStart end)
-    pcall(function() Lighting.ShadowSoftness = OriginalGraphics.ShadowSoftness end)
-    pcall(function() Lighting.ClockTime = OriginalGraphics.ClockTime end)
-    pcall(function() Lighting.ExposureCompensation = OriginalGraphics.ExposureCompensation end)
-    pcall(function() Lighting.OutdoorAmbient = OriginalGraphics.OutdoorAmbient end)
-    pcall(function() Lighting.Technology = OriginalGraphics.Technology end)
-    pcall(function() Lighting.EnvironmentDiffuseScale = OriginalGraphics.EnvironmentDiffuseScale end)
-    pcall(function() Lighting.EnvironmentSpecularScale = OriginalGraphics.EnvironmentSpecularScale end)
-    
-    -- Восстанавливаем эффекты
-    for _, effect in ipairs(Lighting:GetChildren()) do
-        if effect:IsA("BlurEffect") or effect:IsA("DepthOfFieldEffect") or effect:IsA("SunRaysEffect") or effect:IsA("ColorCorrectionEffect") then
-            effect.Enabled = true
-        end
-    end
-    
-    print("FPS Boost ВЫКЛЮЧЕН")
-end
-
-local function UpdateFPSBoost()
-    if Settings.FPSBoostEnabled then
-        EnableFPSBoost()
-    else
-        DisableFPSBoost()
-    end
-end
-
--- ==================== ОТЛОЖЕННАЯ ОПТИМИЗАЦИЯ WORSPACE (ЗАПУСКАЕТСЯ ПОСТЕПЕННО) ====================
-
-local function OptimizeWorkspace()
-    task.spawn(function()
-        -- Отключаем частицы постепенно (без лагов)
-        local count = 0
-        for _, obj in ipairs(workspace:GetDescendants()) do
-            if obj:IsA("ParticleEmitter") or obj:IsA("Fire") or obj:IsA("Smoke") or obj:IsA("Sparkles") then
-                pcall(function() obj.Enabled = false end)
-                count = count + 1
-                if count % 10 == 0 then task.wait() end -- Пауза каждые 10 объектов
-            end
-        end
-        
-        -- Отключаем декорации постепенно
-        count = 0
-        for _, obj in ipairs(workspace:GetDescendants()) do
-            if obj:IsA("BasePart") then
-                local name = obj.Name:lower()
-                if name:find("grass") or name:find("plant") or name:find("tree") or name:find("bush") then
-                    pcall(function() obj.Transparency = 0.9 end)
-                    count = count + 1
-                    if count % 5 == 0 then task.wait() end -- Пауза каждые 5 объектов
-                end
-            end
-        end
-        
-        print("Оптимизация Workspace завершена!")
-    end)
-end
 
 -- ==================== ОБХОД АНТИЧИТА ====================
 
@@ -625,9 +507,7 @@ local function UpdateStamina()
     end
 end
 
--- ==================== ОТЛОЖЕННЫЙ ЗАПУСК (БЕЗ ЛАГОВ) ====================
-
-task.wait(1) -- Ждём 1 секунду перед запуском тяжёлых функций
+-- ==================== ЗАПУСК ====================
 
 task.spawn(function()
     while true do
@@ -649,7 +529,6 @@ RunService.RenderStepped:Connect(UpdatePositions)
 
 Players.PlayerAdded:Connect(function(p)
     p.CharacterAdded:Connect(function()
-        task.wait(0.5)
         UpdateAllOutlines()
     end)
 end)
@@ -659,19 +538,13 @@ Players.PlayerRemoving:Connect(function(p)
     if p == CurrentKiller then CurrentKiller = nil end
 end)
 
--- Отложенное создание ESP для существующих игроков
-task.spawn(function()
-    task.wait(1.5)
-    for _, p in ipairs(Players:GetPlayers()) do
-        if p ~= LocalPlayer and p.Character then
-            UpdateAllOutlines()
-            task.wait(0.1) -- Пауза между созданием ESP для каждого игрока
-        end
+for _, p in ipairs(Players:GetPlayers()) do
+    if p ~= LocalPlayer and p.Character then
+        UpdateAllOutlines()
     end
-end)
+end
 
 LocalPlayer.CharacterAdded:Connect(function()
-    task.wait(0.5)
     UpdateSpeed()
     if Settings.StaminaEnabled then
         EnableInfiniteStamina()
@@ -681,11 +554,11 @@ end)
 -- ==================== GUI ====================
 
 local ScreenGui = Instance.new("ScreenGui")
-ScreenGui.Name = "ESP_Speed_Stamina_Gen_FPS"
+ScreenGui.Name = "ESP_Speed_Stamina_Gen"
 ScreenGui.Parent = CoreGui
 
 local Frame = Instance.new("Frame")
-Frame.Size = UDim2.new(0, 200, 0, 255)
+Frame.Size = UDim2.new(0, 200, 0, 220)
 Frame.Position = UDim2.new(0, 10, 0, 10)
 Frame.BackgroundColor3 = Color3.fromRGB(15, 15, 15)
 Frame.BackgroundTransparency = 0.2
@@ -697,9 +570,9 @@ Instance.new("UICorner", Frame).CornerRadius = UDim.new(0, 8)
 local Title = Instance.new("TextLabel")
 Title.Size = UDim2.new(1, 0, 0, 30)
 Title.BackgroundTransparency = 1
-Title.Text = "ESP + Speed + Stamina + FPS"
+Title.Text = "ESP + Speed + Stamina"
 Title.TextColor3 = Color3.fromRGB(0, 255, 0)
-Title.TextSize = 11
+Title.TextSize = 12
 Title.Font = Enum.Font.GothamBold
 Title.Parent = Frame
 
@@ -795,37 +668,10 @@ StaminaBtn.MouseButton1Click:Connect(function()
     UpdateStamina()
 end)
 
--- Кнопка FPS Boost
-local FPSBtn = Instance.new("TextButton")
-FPSBtn.Size = UDim2.new(0.8, 0, 0, 28)
-FPSBtn.Position = UDim2.new(0.1, 0, 0, 192)
-FPSBtn.BackgroundColor3 = Color3.fromRGB(170, 0, 0)
-FPSBtn.Text = "FPS Boost: OFF"
-FPSBtn.TextColor3 = Color3.fromRGB(255, 255, 255)
-FPSBtn.TextSize = 12
-FPSBtn.Font = Enum.Font.Gotham
-FPSBtn.AutoButtonColor = false
-FPSBtn.Parent = Frame
-
-Instance.new("UICorner", FPSBtn).CornerRadius = UDim.new(0, 6)
-
-FPSBtn.MouseButton1Click:Connect(function()
-    Settings.FPSBoostEnabled = not Settings.FPSBoostEnabled
-    FPSBtn.Text = Settings.FPSBoostEnabled and "FPS Boost: ON" or "FPS Boost: OFF"
-    FPSBtn.BackgroundColor3 = Settings.FPSBoostEnabled and Color3.fromRGB(0, 170, 0) or Color3.fromRGB(170, 0, 0)
-    
-    if Settings.FPSBoostEnabled then
-        EnableFPSBoost()
-        OptimizeWorkspace() -- Запускаем постепенную оптимизацию без лагов
-    else
-        DisableFPSBoost()
-    end
-end)
-
 -- Информация
 local Info = Instance.new("TextLabel")
 Info.Size = UDim2.new(1, 0, 0, 20)
-Info.Position = UDim2.new(0, 0, 0, 225)
+Info.Position = UDim2.new(0, 0, 0, 195)
 Info.BackgroundTransparency = 1
 Info.Text = "🟢 Killer | 🔴 Survivor | 💛 Gen"
 Info.TextColor3 = Color3.fromRGB(200, 200, 200)
@@ -849,7 +695,6 @@ Instance.new("UICorner", CloseBtn).CornerRadius = UDim.new(0, 4)
 
 CloseBtn.MouseButton1Click:Connect(function()
     DisableInfiniteStamina()
-    DisableFPSBoost()
     ScreenGui:Destroy()
 end)
 
@@ -866,5 +711,4 @@ task.spawn(function()
     end
 end)
 
-print("ESP + Speed 40 + Stamina + Generator ESP + FPS Boost (ОТЛОЖЕННЫЙ ЗАПУСК) загружен!")
-print("Всё работает плавно, без лагов при старте!")
+print("ESP + Speed 40 + Stamina + Generator ESP loaded!")
