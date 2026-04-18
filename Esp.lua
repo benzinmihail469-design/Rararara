@@ -1,8 +1,8 @@
 --[[
-    ESP для Bite By Night - Автоопределение Убийцы
-    Зелёный контур = Убийца (Killer)
+    ESP для Bite By Night - Автоопределение Убийцы (Исправлено)
+    Зелёный контур = Убийца (The Rotten, Mimic, Ennard)
     Красный контур = Выжившие (Survivors)
-    Работает без ключей.
+    Использует комплексный анализ: Health, Speed, GUI, Tools.
 --]]
 
 -- Сервисы
@@ -19,63 +19,95 @@ local Settings = {
     Enabled = true,
     KillerColor = Color3.fromRGB(0, 255, 0), -- Зелёный для убийцы
     SurvivorColor = Color3.fromRGB(255, 0, 0), -- Красный для выживших
-    LocalColor = Color3.fromRGB(0, 128, 255), -- Синий для себя (если нужно)
+    LocalColor = Color3.fromRGB(0, 128, 255), -- Синий для себя (если ShowLocalPlayer = true)
     Thickness = 2,
     MaxDistance = 2000,
     ShowLocalPlayer = false -- Показывать ли себя
 }
 
--- Функция для определения, является ли игрок убийцей
--- В Bite By Night убийцу можно определить по наличию специфичных инструментов/способностей
+-- Функция для определения, является ли игрок убийцей (исправленная)
 local function IsKiller(player)
     local character = player.Character
     if not character then return false end
-    
-    -- Проверяем характерные для убийцы предметы и способности
-    -- В Bite By Night убийца имеет уникальные инструменты в Backpack или Character
-    
-    -- Способ 1: Проверить наличие Remnant Cleaver (топор убийцы)
+
+    -- 1. Проверка по здоровью (у убийц от 1750 HP, у выживших 100 HP) [citation:10]
+    local humanoid = character:FindFirstChildOfClass("Humanoid")
+    if humanoid and humanoid.MaxHealth >= 1000 then
+        return true
+    end
+
+    -- 2. Проверка по скорости (у убийц базовое WalkSpeed выше) [citation:10]
+    if humanoid and humanoid.WalkSpeed >= 14 then
+        -- Дополнительная проверка, чтобы не спутать с баффами выживших
+        local success, result = pcall(function()
+            return player:FindFirstChildOfClass("Backpack"):FindFirstChild("Remnant Cleaver")
+        end)
+        if success and result then return true end
+        -- Если не нашли Cleaver, но скорость подозрительная, смотрим другие признаки
+    end
+
+    -- 3. Проверка по специфическому GUI убийцы (Scream, Charge, Mode Switch и т.д.) [citation:2]
+    local playerGui = player:FindFirstChild("PlayerGui")
+    if playerGui then
+        for _, gui in ipairs(playerGui:GetChildren()) do
+            if gui:IsA("ScreenGui") then
+                local guiName = gui.Name:lower()
+                -- Имена GUI убийц: Abilities, KillerUI, SkillTree, HUD
+                if guiName:find("killer") or guiName:find("abilit") or guiName:find("skill") then
+                    return true
+                end
+                -- Проверка по элементам внутри (кнопки способностей)
+                for _, element in ipairs(gui:GetDescendants()) do
+                    if element:IsA("ImageButton") or element:IsA("TextButton") then
+                        local elementName = element.Name:lower()
+                        if elementName:find("scream") or elementName:find("charge") or elementName:find("mode") or elementName:find("grab") then
+                            return true
+                        end
+                    end
+                end
+            end
+        end
+    end
+
+    -- 4. Проверка по оружию убийцы в Backpack
     local backpack = player:FindFirstChildOfClass("Backpack")
     if backpack then
         for _, tool in ipairs(backpack:GetChildren()) do
-            if tool:IsA("Tool") and (tool.Name:find("Remnant") or tool.Name:find("Cleaver") or tool.Name:find("Axe")) then
-                return true
+            if tool:IsA("Tool") then
+                local toolName = tool.Name:lower()
+                -- Оружие The Rotten (Springtrap) [citation:2]
+                if toolName:find("remnant") or toolName:find("cleaver") or toolName:find("beartrap") then
+                    return true
+                end
+                -- Оружие/способности других убийц [citation:2]
+                if toolName:find("wire") or toolName:find("grab") or toolName:find("stealer") then
+                    return true
+                end
             end
         end
     end
-    
-    -- Способ 2: Проверить Character на наличие оружия убийцы
+
+    -- 5. Прямая проверка наличия оружия в руках персонажа
     for _, tool in ipairs(character:GetChildren()) do
-        if tool:IsA("Tool") and (tool.Name:find("Remnant") or tool.Name:find("Cleaver") or tool.Name:find("Axe") or tool.Name:find("Scream")) then
-            return true
-        end
-    end
-    
-    -- Способ 3: Проверить наличие способностей убийцы (они могут быть в PlayerGui или через атрибуты)
-    local playerGui = player:FindFirstChild("PlayerGui")
-    if playerGui then
-        -- У убийцы обычно есть специфичный GUI для способностей
-        for _, screenGui in ipairs(playerGui:GetChildren()) do
-            if screenGui:IsA("ScreenGui") and (screenGui.Name:find("Killer") or screenGui.Name:find("Ability")) then
+        if tool:IsA("Tool") then
+            local toolName = tool.Name:lower()
+            if toolName:find("remnant") or toolName:find("cleaver") or toolName:find("beartrap") then
+                return true
+            end
+            if toolName:find("wire") or toolName:find("grab") or toolName:find("stealer") then
                 return true
             end
         end
     end
-    
-    -- Способ 4: Проверка по атрибутам (некоторые скрипты ставят метки)
-    if player:GetAttribute("IsKiller") or character:GetAttribute("IsKiller") then
+
+    -- 6. Проверка по атрибутам (если разработчики добавляют их)
+    local success, attr = pcall(function()
+        return player:GetAttribute("IsKiller") or character:GetAttribute("IsKiller")
+    end)
+    if success and attr then
         return true
     end
-    
-    -- Способ 5: Если игрок - единственный с большой скоростью или нестандартными статами
-    -- (Убийца обычно быстрее и имеет больше здоровья)
-    local humanoid = character:FindFirstChildOfClass("Humanoid")
-    if humanoid then
-        if humanoid.WalkSpeed > 20 or humanoid.MaxHealth > 150 then
-            return true
-        end
-    end
-    
+
     return false
 end
 
@@ -199,11 +231,11 @@ end
 -- Обработчики событий
 local function OnPlayerAdded(player)
     player.CharacterAdded:Connect(function()
-        task.wait(0.5) -- Небольшая задержка для загрузки оружия/способностей
+        task.wait(1) -- Даём время на загрузку GUI и оружия
         CreateOutline(player)
     end)
     if player.Character then
-        task.wait(0.5)
+        task.wait(1)
         CreateOutline(player)
     end
 end
@@ -220,7 +252,7 @@ end
 Players.PlayerAdded:Connect(OnPlayerAdded)
 Players.PlayerRemoving:Connect(OnPlayerRemoving)
 
--- Периодически перепроверяем роли (на случай смены убийцы)
+-- Периодически перепроверяем роли (каждые 3 секунды)
 task.spawn(function()
     while true do
         for _, player in ipairs(Players:GetPlayers()) do
@@ -228,7 +260,7 @@ task.spawn(function()
                 CreateOutline(player)
             end
         end
-        task.wait(2)
+        task.wait(3)
     end
 end)
 
@@ -238,11 +270,11 @@ RunService.RenderStepped:Connect(UpdateOutlines)
 -- Создаём GUI для управления
 local function CreateControlGUI()
     local ScreenGui = Instance.new("ScreenGui")
-    ScreenGui.Name = "BiteByNight_ESP"
+    ScreenGui.Name = "BiteByNight_ESP_Fixed"
     ScreenGui.Parent = game:GetService("CoreGui")
     
     local Frame = Instance.new("Frame")
-    Frame.Size = UDim2.new(0, 200, 0, 120)
+    Frame.Size = UDim2.new(0, 200, 0, 140)
     Frame.Position = UDim2.new(0, 10, 0, 10)
     Frame.BackgroundColor3 = Color3.fromRGB(20, 20, 20)
     Frame.BackgroundTransparency = 0.2
@@ -254,9 +286,9 @@ local function CreateControlGUI()
     local Title = Instance.new("TextLabel")
     Title.Size = UDim2.new(1, 0, 0, 30)
     Title.BackgroundTransparency = 1
-    Title.Text = "Bite By Night ESP"
+    Title.Text = "Bite By Night ESP (Fixed)"
     Title.TextColor3 = Color3.fromRGB(255, 255, 255)
-    Title.TextSize = 14
+    Title.TextSize = 13
     Title.Font = Enum.Font.GothamBold
     Title.Parent = Frame
     
@@ -282,13 +314,14 @@ local function CreateControlGUI()
     
     -- Информация о цветах
     local Info = Instance.new("TextLabel")
-    Info.Size = UDim2.new(1, 0, 0, 40)
+    Info.Size = UDim2.new(1, 0, 0, 50)
     Info.Position = UDim2.new(0, 0, 0, 80)
     Info.BackgroundTransparency = 1
-    Info.Text = "🟢 Killer | 🔴 Survivor"
+    Info.Text = "🟢 Killer (HP/Speed/GUI)\n🔴 Survivor"
     Info.TextColor3 = Color3.fromRGB(255, 255, 255)
-    Info.TextSize = 12
+    Info.TextSize = 11
     Info.Font = Enum.Font.Gotham
+    Info.TextWrapped = true
     Info.Parent = Frame
     
     -- Кнопка закрытия
@@ -312,4 +345,4 @@ end
 
 CreateControlGUI()
 
-print("Bite By Night Killer ESP loaded! Green = Killer, Red = Survivor")
+print("Bite By Night ESP Fixed loaded! Detects Killer by Health, Speed, GUI, and Tools.")
