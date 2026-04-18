@@ -1,6 +1,6 @@
 --[[
     Celeron's GUI для Bite By Night
-    ПЛАВНАЯ ЗАГРУЗКА + ОПТИМИЗАЦИЯ (БЕЗ ЛАГОВ)
+    ИСПРАВЛЕНО: Infinite Sprint (обход античита) + Generator ESP (модельки)
 --]]
 
 -- Сервисы
@@ -11,16 +11,19 @@ local UserInputService = game:GetService("UserInputService")
 local Camera = workspace.CurrentCamera
 local LocalPlayer = Players.LocalPlayer
 local CoreGui = game:GetService("CoreGui")
+local ReplicatedStorage = game:GetService("ReplicatedStorage")
 
 -- Настройки производительности
 local PERF = {
-    ESP_UPDATE_RATE = 0.016, -- 60 FPS
-    AUTO_UPDATE_RATE = 0.1,  -- 10 раз в секунду
-    KILLER_CHECK_RATE = 2    -- раз в 2 секунды
+    ESP_UPDATE_RATE = 0.016,
+    AUTO_UPDATE_RATE = 0.1,
+    KILLER_CHECK_RATE = 2,
+    GENERATOR_CHECK_RATE = 0.5
 }
 
 -- Переменные
 local ESPObjects = {}
+local GeneratorESPList = {}
 local Settings = {
     AutoGenerator = false, AutoEscape = false, AutoBarricade = false,
     SurvivorESP = false, KillerESP = false, GeneratorESP = false,
@@ -28,7 +31,8 @@ local Settings = {
     InfiniteSprint = false, AllowJumping = false, Aimlock = false,
     AimlockBind = "Z", Noclip = false,
     KillerColor = Color3.fromRGB(0, 255, 0),
-    SurvivorColor = Color3.fromRGB(255, 0, 0)
+    SurvivorColor = Color3.fromRGB(255, 0, 0),
+    GeneratorColor = Color3.fromRGB(255, 255, 0)
 }
 
 local WindowState = { Minimized = false, MainFrame = nil }
@@ -36,9 +40,11 @@ local Tabs = {}
 local ToggleButtons = {}
 local AutoTasks = {}
 local OtherTasks = {}
+local SprintBypass = nil
 
--- Кэш для оптимизации
+-- Кэш
 local KillerCache = { player = nil, lastCheck = 0 }
+local GeneratorCache = { list = {}, lastCheck = 0 }
 local CameraPos = Vector3.new()
 
 -- ==================== ПЛАВНЫЙ ЗАГРУЗЧИК ====================
@@ -102,13 +108,11 @@ local function ShowLoader()
     
     Instance.new("UICorner", bar).CornerRadius = UDim.new(0, 3)
     
-    -- Анимация появления
     TweenService:Create(blur, TweenInfo.new(0.5), {Size = 6}):Play()
     TweenService:Create(frame, TweenInfo.new(0.3), {BackgroundTransparency = 0.1}):Play()
     TweenService:Create(title, TweenInfo.new(0.3), {TextTransparency = 0}):Play()
     TweenService:Create(status, TweenInfo.new(0.3), {TextTransparency = 0}):Play()
     
-    -- Анимация загрузки
     local steps = {0.3, 0.6, 0.9, 1}
     for _, progress in ipairs(steps) do
         TweenService:Create(bar, TweenInfo.new(0.4), {Size = UDim2.new(progress, 0, 1, 0)}):Play()
@@ -118,7 +122,6 @@ local function ShowLoader()
     status.Text = "Ready!"
     task.wait(0.3)
     
-    -- Затухание
     TweenService:Create(blur, TweenInfo.new(0.4), {Size = 0}):Play()
     TweenService:Create(frame, TweenInfo.new(0.3), {BackgroundTransparency = 1}):Play()
     TweenService:Create(title, TweenInfo.new(0.3), {TextTransparency = 1}):Play()
@@ -133,14 +136,24 @@ end
 local function setupAntiCheatBypass()
     pcall(function()
         for _, v in ipairs(LocalPlayer.PlayerScripts:GetChildren()) do
-            if v.Name:find("Anti") or v.Name:find("Cheat") then
+            if v.Name:find("Anti") or v.Name:find("Cheat") or v.Name:find("Detect") then
                 v:Destroy()
             end
         end
     end)
+    
+    -- Hook для защиты от обнаружения скорости
+    local oldIndex = hookmetamethod(game, "__index", function(self, key)
+        if self == LocalPlayer then
+            if key == "Stamina" or key == "stamina" or key == "Energy" or key == "energy" then
+                return 100
+            end
+        end
+        return oldIndex(self, key)
+    end)
 end
 
--- ==================== ФУНКЦИИ ДЛЯ МОДЕЛЕЙ (ОПТИМИЗИРОВАНО) ====================
+-- ==================== ФУНКЦИИ ДЛЯ МОДЕЛЕЙ ====================
 
 local function GetRootPart(model)
     if not model then return nil end
@@ -158,7 +171,7 @@ local function GetHumanoid(model)
     return model and model:FindFirstChildOfClass("Humanoid")
 end
 
--- ==================== ОПРЕДЕЛЕНИЕ УБИЙЦЫ (С КЭШЕМ) ====================
+-- ==================== ОПРЕДЕЛЕНИЕ УБИЙЦЫ ====================
 
 local function FindKiller()
     local now = tick()
@@ -181,9 +194,50 @@ local function FindKiller()
     return KillerCache.player
 end
 
--- ==================== ESP (ОПТИМИЗИРОВАНО) ====================
+-- ==================== ПОИСК ГЕНЕРАТОРОВ (МОДЕЛЬКИ) ====================
 
-local function CreateESP(className, properties)
+local function FindGenerators()
+    local now = tick()
+    if now - GeneratorCache.lastCheck < PERF.GENERATOR_CHECK_RATE then
+        return GeneratorCache.list
+    end
+    
+    GeneratorCache.lastCheck = now
+    GeneratorCache.list = {}
+    
+    for _, obj in ipairs(workspace:GetDescendants()) do
+        if obj:IsA("Model") and obj.Name:lower():find("generator") then
+            table.insert(GeneratorCache.list, obj)
+        elseif obj:IsA("BasePart") and obj.Name:lower():find("generator") then
+            table.insert(GeneratorCache.list, obj.Parent or obj)
+        end
+    end
+    
+    -- Также ищем по ProximityPrompt
+    for _, prompt in ipairs(workspace:GetDescendants()) do
+        if prompt:IsA("ProximityPrompt") and prompt.Parent then
+            local name = prompt.Parent.Name:lower()
+            if name:find("generator") then
+                local found = false
+                for _, gen in ipairs(GeneratorCache.list) do
+                    if gen == prompt.Parent then
+                        found = true
+                        break
+                    end
+                end
+                if not found then
+                    table.insert(GeneratorCache.list, prompt.Parent)
+                end
+            end
+        end
+    end
+    
+    return GeneratorCache.list
+end
+
+-- ==================== ESP ====================
+
+local function CreateDrawing(className, properties)
     local s, d = pcall(function()
         local dr = Drawing.new(className)
         for k, v in pairs(properties) do pcall(function() dr[k] = v end) end
@@ -192,16 +246,35 @@ local function CreateESP(className, properties)
     return s and d or nil
 end
 
-local function CreateBoxESP(obj, color, name)
+local function ClearESP(name)
     if ESPObjects[name] then
         for _, d in pairs(ESPObjects[name]) do
             pcall(function() d:Remove() end)
         end
+        ESPObjects[name] = nil
+    end
+end
+
+local function CreatePlayerESP(player, color)
+    ClearESP(player.Name)
+    
+    ESPObjects[player.Name] = {
+        Box = CreateDrawing("Square", {Visible = false, Color = color, Thickness = 2, Filled = false}),
+        Name = CreateDrawing("Text", {Visible = false, Text = player.Name, Color = color, Size = 13, Center = true, Outline = true})
+    }
+end
+
+local function CreateGeneratorESP(generator, color)
+    local id = "Gen_" .. generator:GetFullName()
+    if GeneratorESPList[id] then
+        for _, d in pairs(GeneratorESPList[id]) do
+            pcall(function() d:Remove() end)
+        end
     end
     
-    ESPObjects[name] = {
-        Box = CreateESP("Square", {Visible = false, Color = color, Thickness = 2, Filled = false}),
-        Name = CreateESP("Text", {Visible = false, Text = name, Color = color, Size = 13, Center = true, Outline = true})
+    GeneratorESPList[id] = {
+        Box = CreateDrawing("Square", {Visible = false, Color = color, Thickness = 2, Filled = false}),
+        Name = CreateDrawing("Text", {Visible = false, Text = "GENERATOR", Color = color, Size = 13, Center = true, Outline = true})
     }
 end
 
@@ -213,30 +286,25 @@ local function UpdateESP()
     lastESPUpdate = now
     
     CameraPos = Camera.CFrame.Position
-    
-    if not Settings.SurvivorESP and not Settings.KillerESP then
-        for _, data in pairs(ESPObjects) do
-            data.Box.Visible = false
-            data.Name.Visible = false
-        end
-        return
-    end
-    
     local killer = FindKiller()
     
-    for _, p in ipairs(Players:GetPlayers()) do
-        if p ~= LocalPlayer and p.Character then
-            local isKiller = (p == killer)
-            
-            if (Settings.SurvivorESP and not isKiller) or (Settings.KillerESP and isKiller) then
-                if not ESPObjects[p.Name] then
-                    local color = isKiller and Settings.KillerColor or Settings.SurvivorColor
-                    CreateBoxESP(p.Character, color, p.Name)
+    -- ESP игроков
+    if Settings.SurvivorESP or Settings.KillerESP then
+        for _, p in ipairs(Players:GetPlayers()) do
+            if p ~= LocalPlayer and p.Character then
+                local isKiller = (p == killer)
+                
+                if (Settings.SurvivorESP and not isKiller) or (Settings.KillerESP and isKiller) then
+                    if not ESPObjects[p.Name] then
+                        local color = isKiller and Settings.KillerColor or Settings.SurvivorColor
+                        CreatePlayerESP(p, color)
+                    end
                 end
             end
         end
     end
     
+    -- Обновление ESP игроков
     for name, data in pairs(ESPObjects) do
         local player = Players:FindFirstChild(name)
         if not player or not player.Character then
@@ -283,6 +351,90 @@ local function UpdateESP()
         data.Name.Text = name .. " [" .. math.floor(dist) .. "]"
         data.Name.Position = Vector2.new(rootPos.X, headPos.Y - 15)
     end
+    
+    -- ESP генераторов (МОДЕЛЬКИ)
+    if Settings.GeneratorESP then
+        local generators = FindGenerators()
+        for _, gen in ipairs(generators) do
+            local id = "Gen_" .. gen:GetFullName()
+            if not GeneratorESPList[id] then
+                CreateGeneratorESP(gen, Settings.GeneratorColor)
+            end
+        end
+    end
+    
+    -- Обновление ESP генераторов
+    for id, data in pairs(GeneratorESPList) do
+        if not Settings.GeneratorESP then
+            data.Box.Visible = false
+            data.Name.Visible = false
+            continue
+        end
+        
+        -- Извлекаем объект из ID
+        local gen = nil
+        pcall(function()
+            gen = workspace:FindFirstChild(id:sub(5))
+        end)
+        
+        if not gen or not gen.Parent then
+            data.Box.Visible = false
+            data.Name.Visible = false
+            continue
+        end
+        
+        -- Находим корневую часть генератора
+        local root = gen:IsA("BasePart") and gen or gen.PrimaryPart
+        if not root then
+            for _, part in ipairs(gen:GetDescendants()) do
+                if part:IsA("BasePart") then
+                    root = part
+                    break
+                end
+            end
+        end
+        
+        if not root then
+            data.Box.Visible = false
+            data.Name.Visible = false
+            continue
+        end
+        
+        local rootPos, onScreen = Camera:WorldToViewportPoint(root.Position)
+        if not onScreen then
+            data.Box.Visible = false
+            data.Name.Visible = false
+            continue
+        end
+        
+        local dist = (CameraPos - root.Position).Magnitude
+        if dist > 2000 then
+            data.Box.Visible = false
+            data.Name.Visible = false
+            continue
+        end
+        
+        -- Размеры для генератора
+        local size = root.Size
+        local height = size.Y * 100 / dist
+        local width = size.X * 100 / dist
+        
+        data.Box.Visible = true
+        data.Box.Size = Vector2.new(width, height)
+        data.Box.Position = Vector2.new(rootPos.X - width/2, rootPos.Y - height/2)
+        
+        data.Name.Visible = true
+        data.Name.Text = "GENERATOR [" .. math.floor(dist) .. "]"
+        data.Name.Position = Vector2.new(rootPos.X, rootPos.Y - height/2 - 15)
+    end
+    
+    -- Очистка неактивных генераторов
+    if not Settings.GeneratorESP then
+        for id, data in pairs(GeneratorESPList) do
+            data.Box.Visible = false
+            data.Name.Visible = false
+        end
+    end
 end
 
 -- ==================== АВТО-ЗАДАЧИ ====================
@@ -293,14 +445,18 @@ local function AutoGeneratorTask()
     
     AutoTasks.Generator = RunService.Heartbeat:Connect(function()
         pcall(function()
-            for _, v in ipairs(workspace:GetDescendants()) do
-                if v:IsA("ProximityPrompt") and v.Parent and v.Parent.Name:lower():find("generator") then
+            for _, gen in ipairs(FindGenerators()) do
+                local prompt = gen:FindFirstChildOfClass("ProximityPrompt")
+                if prompt then
                     if LocalPlayer.Character then
                         local root = GetRootPart(LocalPlayer.Character)
-                        if root and (root.Position - v.Parent.Position).Magnitude < 15 then
-                            fireproximityprompt(v)
-                        else
-                            LocalPlayer.Character:MoveTo(v.Parent.Position)
+                        if root then
+                            local genPos = gen:IsA("BasePart") and gen.Position or (gen.PrimaryPart and gen.PrimaryPart.Position)
+                            if genPos and (root.Position - genPos).Magnitude < 15 then
+                                fireproximityprompt(prompt)
+                            else
+                                LocalPlayer.Character:MoveTo(genPos)
+                            end
                         end
                         break
                     end
@@ -373,17 +529,75 @@ local function ViewKillerFunc()
     end
 end
 
--- ==================== ДРУГИЕ ФУНКЦИИ ====================
+-- ==================== INFINITE SPRINT (ИСПРАВЛЕННЫЙ ОБХОД) ====================
 
 local function InfiniteSprintFunc()
-    if OtherTasks.Sprint then OtherTasks.Sprint:Disconnect() end
-    if not Settings.InfiniteSprint then return end
+    if OtherTasks.Sprint then 
+        OtherTasks.Sprint:Disconnect() 
+        OtherTasks.Sprint = nil
+    end
     
+    if not Settings.InfiniteSprint then 
+        return 
+    end
+    
+    -- Множественные методы обхода
     OtherTasks.Sprint = RunService.Heartbeat:Connect(function()
         pcall(function()
+            -- Метод 1: Атрибуты
             LocalPlayer:SetAttribute("Stamina", 100)
+            LocalPlayer:SetAttribute("stamina", 100)
             LocalPlayer:SetAttribute("Energy", 100)
+            LocalPlayer:SetAttribute("energy", 100)
+            LocalPlayer:SetAttribute("Endurance", 100)
+            LocalPlayer:SetAttribute("endurance", 100)
         end)
+    end)
+    
+    -- Метод 2: Поиск и установка значений в GUI
+    task.spawn(function()
+        while Settings.InfiniteSprint do
+            pcall(function()
+                local playerGui = LocalPlayer:FindFirstChild("PlayerGui")
+                if playerGui then
+                    for _, gui in ipairs(playerGui:GetDescendants()) do
+                        if gui:IsA("Frame") or gui:IsA("ImageLabel") then
+                            local name = gui.Name:lower()
+                            if name:find("stamina") or name:find("energy") or name:find("sprint") then
+                                local value = gui:FindFirstChild("Value") or gui:FindFirstChild("Bar") or gui:FindFirstChild("Progress")
+                                if value and (value:IsA("NumberValue") or value:IsA("IntValue") or value:IsA("Frame")) then
+                                    if value:IsA("Frame") then
+                                        value.Size = UDim2.new(1, 0, 1, 0)
+                                    else
+                                        value.Value = 100
+                                    end
+                                end
+                            end
+                        end
+                    end
+                end
+            end)
+            task.wait(0.05)
+        end
+    end)
+    
+    -- Метод 3: Перехват RemoteEvent для стамины
+    task.spawn(function()
+        for _, obj in ipairs(ReplicatedStorage:GetDescendants()) do
+            if obj:IsA("RemoteEvent") then
+                local name = obj.Name:lower()
+                if name:find("stamina") or name:find("energy") or name:find("sprint") then
+                    local oldNamecall = hookmetamethod(game, "__namecall", function(self, ...)
+                        local method = getnamecallmethod()
+                        if self == obj and method == "FireServer" then
+                            return nil
+                        end
+                        return oldNamecall(self, ...)
+                    end)
+                    break
+                end
+            end
+        end
     end)
 end
 
@@ -466,8 +680,6 @@ local function CreateWindow()
     MainFrame.Parent = ScreenGui
     
     Instance.new("UICorner", MainFrame).CornerRadius = UDim.new(0, 12)
-    
-    -- Плавное появление
     TweenService:Create(MainFrame, TweenInfo.new(0.4, Enum.EasingStyle.Quad), {BackgroundTransparency = 0.05}):Play()
     
     WindowState.MainFrame = MainFrame
@@ -517,6 +729,9 @@ local function CreateWindow()
         for _, task in pairs(AutoTasks) do if task then task:Disconnect() end end
         for _, task in pairs(OtherTasks) do if task then task:Disconnect() end end
         for _, v in pairs(ESPObjects) do
+            for _, d in pairs(v) do pcall(function() d:Remove() end) end
+        end
+        for _, v in pairs(GeneratorESPList) do
             for _, d in pairs(v) do pcall(function() d:Remove() end) end
         end
         ScreenGui:Destroy()
@@ -712,7 +927,6 @@ local function CreateWindow()
     Tabs[1].Content.Visible = true
     Tabs[1].Button.BackgroundColor3 = Color3.fromRGB(60, 60, 60)
     
-    -- Заполнение вкладок
     CreateToggle(MainTab, "Auto Generator", "AutoGenerator", AutoGeneratorTask)
     CreateToggle(MainTab, "Auto Escape", "AutoEscape", AutoEscapeTask)
     CreateToggle(MainTab, "Auto Barricade", "AutoBarricade", AutoBarricadeTask)
@@ -748,7 +962,7 @@ local function CreateWindow()
     InfoLabel.Size = UDim2.new(1, -20, 0, 200)
     InfoLabel.Position = UDim2.new(0, 10, 0, 10)
     InfoLabel.BackgroundTransparency = 1
-    InfoLabel.Text = "Celeron's GUI for Bite By Night\n\n✓ Optimized (no lags)\n✓ Smooth loading\n✓ Model support\n✓ Anti-cheat bypass\n\nClick — to minimize"
+    InfoLabel.Text = "Celeron's GUI for Bite By Night\n\n✓ Infinite Sprint (bypass)\n✓ Generator ESP (models)\n✓ Smooth loading\n✓ Anti-cheat bypass"
     InfoLabel.TextColor3 = Color3.fromRGB(200, 200, 200)
     InfoLabel.Font = Enum.Font.Gotham
     InfoLabel.TextSize = 14
@@ -784,22 +998,16 @@ end
 
 -- ==================== ЗАПУСК ====================
 
--- Показываем загрузчик
 ShowLoader()
-
--- Обход античита
 setupAntiCheatBypass()
-
--- Создаём GUI
 CreateWindow()
 
--- Оптимизированные обработчики
 RunService.RenderStepped:Connect(UpdateESP)
 
 Players.PlayerAdded:Connect(function(p)
     p.CharacterAdded:Connect(function()
         task.wait(0.3)
-        KillerCache.lastCheck = 0 -- Сброс кэша
+        KillerCache.lastCheck = 0
     end)
 end)
 
@@ -815,4 +1023,4 @@ UserInputService.InputBegan:Connect(function(input, gameProcessed)
     end
 end)
 
-print("Celeron's GUI loaded! Smooth + Optimized!")
+print("Celeron's GUI loaded! Infinite Sprint bypass + Generator ESP!")
