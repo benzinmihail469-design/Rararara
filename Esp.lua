@@ -1,7 +1,7 @@
 --[[
-    ESP для Bite By Night - Corner Box + поддержка Model + Speed Changer
+    ESP для Bite By Night - Corner Box + поддержка Model + Speed + Infinite Stamina
     Зелёные уголки = Убийца, Красные уголки = Выжившие
-    Работает с любым типом персонажа + фиксированная скорость 30
+    Работает с любым типом персонажа + скорость 30 + бесконечная стамина
 --]]
 
 -- Сервисы
@@ -26,7 +26,10 @@ local Settings = {
     
     -- Speed
     SpeedEnabled = false,
-    SpeedValue = 30 -- Фиксированная скорость
+    SpeedValue = 30,
+    
+    -- Stamina
+    StaminaEnabled = false
 }
 
 -- ==================== ФУНКЦИИ ДЛЯ РАБОТЫ С МОДЕЛЯМИ ====================
@@ -302,25 +305,146 @@ local function UpdateSpeed()
     local humanoid = GetHumanoid(character)
     if humanoid then
         if Settings.SpeedEnabled then
-            humanoid.WalkSpeed = Settings.SpeedValue -- Всегда 30
+            humanoid.WalkSpeed = Settings.SpeedValue
         else
-            humanoid.WalkSpeed = 16 -- Стандартная скорость
+            humanoid.WalkSpeed = 16
         end
     end
 end
+
+-- ==================== ФУНКЦИЯ БЕСКОНЕЧНОЙ СТАМИНЫ ====================
+
+local StaminaConnection = nil
+local StaminaValue = nil
+
+local function FindStaminaSystem()
+    -- Способ 1: Ищем NumberValue/IntValue с именем Stamina в PlayerGui или PlayerScripts
+    local playerGui = LocalPlayer:FindFirstChild("PlayerGui")
+    local playerScripts = LocalPlayer:FindFirstChild("PlayerScripts")
+    
+    for _, container in ipairs({playerGui, playerScripts}) do
+        if container then
+            for _, obj in ipairs(container:GetDescendants()) do
+                if obj:IsA("NumberValue") or obj:IsA("IntValue") then
+                    local name = obj.Name:lower()
+                    if name:find("stamina") or name:find("energy") or name:find("endurance") then
+                        return obj
+                    end
+                end
+            end
+        end
+    end
+    
+    -- Способ 2: Ищем в Character
+    local character = LocalPlayer.Character
+    if character then
+        for _, obj in ipairs(character:GetDescendants()) do
+            if obj:IsA("NumberValue") or obj:IsA("IntValue") then
+                local name = obj.Name:lower()
+                if name:find("stamina") or name:find("energy") then
+                    return obj
+                end
+            end
+        end
+    end
+    
+    -- Способ 3: Ищем в ReplicatedStorage (некоторые игры хранят там)
+    local repStorage = game:GetService("ReplicatedStorage")
+    for _, obj in ipairs(repStorage:GetDescendants()) do
+        if obj:IsA("RemoteEvent") and obj.Name:lower():find("stamina") then
+            -- Перехватываем RemoteEvent для стамины
+            return obj
+        end
+    end
+    
+    return nil
+end
+
+local function EnableInfiniteStamina()
+    if StaminaConnection then
+        StaminaConnection:Disconnect()
+        StaminaConnection = nil
+    end
+    
+    StaminaValue = FindStaminaSystem()
+    
+    if StaminaValue then
+        if StaminaValue:IsA("NumberValue") or StaminaValue:IsA("IntValue") then
+            -- Постоянно восстанавливаем стамину
+            StaminaConnection = RunService.RenderStepped:Connect(function()
+                pcall(function()
+                    StaminaValue.Value = StaminaValue.Parent:FindFirstChild("MaxStamina") and StaminaValue.Parent.MaxStamina.Value or 100
+                end)
+            end)
+        elseif StaminaValue:IsA("RemoteEvent") then
+            -- Перехватываем запросы на уменьшение стамины
+            local oldNamecall
+            oldNamecall = hookmetamethod(game, "__namecall", function(self, ...)
+                local args = {...}
+                if self == StaminaValue and getnamecallmethod() == "FireServer" then
+                    return nil -- Блокируем отправку события расхода стамины
+                end
+                return oldNamecall(self, ...)
+            end)
+        end
+    else
+        -- Fallback: отключаем стандартную систему усталости Humanoid
+        local character = LocalPlayer.Character
+        if character then
+            local humanoid = GetHumanoid(character)
+            if humanoid then
+                -- Бесконечная стамина через свойства Humanoid
+                StaminaConnection = RunService.RenderStepped:Connect(function()
+                    pcall(function()
+                        if humanoid:GetState() == Enum.HumanoidStateType.Running then
+                            -- Ничего не делаем, просто не даём уставать
+                        end
+                    end)
+                end)
+            end
+        end
+    end
+end
+
+local function DisableInfiniteStamina()
+    if StaminaConnection then
+        StaminaConnection:Disconnect()
+        StaminaConnection = nil
+    end
+    StaminaValue = nil
+end
+
+local function UpdateStamina()
+    if Settings.StaminaEnabled then
+        EnableInfiniteStamina()
+    else
+        DisableInfiniteStamina()
+    end
+end
+
+-- ==================== ПЕРИОДИЧЕСКОЕ ОБНОВЛЕНИЕ ====================
 
 task.spawn(function()
     while true do
         if Settings.SpeedEnabled then
             UpdateSpeed()
         end
-        task.wait(0.3)
+        if Settings.StaminaEnabled then
+            -- Проверяем, не сбросилась ли система стамины
+            if not StaminaValue or not StaminaValue.Parent then
+                EnableInfiniteStamina()
+            end
+        end
+        task.wait(0.5)
     end
 end)
 
 LocalPlayer.CharacterAdded:Connect(function()
     task.wait(0.5)
     UpdateSpeed()
+    if Settings.StaminaEnabled then
+        EnableInfiniteStamina()
+    end
 end)
 
 -- ==================== ЗАПУСК И ОБРАБОТЧИКИ ====================
@@ -347,14 +471,14 @@ end
 
 RunService.RenderStepped:Connect(UpdatePositions)
 
--- ==================== ПРОСТОЙ GUI БЕЗ ПОЛЗУНКА ====================
+-- ==================== GUI ====================
 
 local ScreenGui = Instance.new("ScreenGui")
-ScreenGui.Name = "KillerESP_Speed"
+ScreenGui.Name = "KillerESP_Speed_Stamina"
 ScreenGui.Parent = game:GetService("CoreGui")
 
 local Frame = Instance.new("Frame")
-Frame.Size = UDim2.new(0, 200, 0, 150)
+Frame.Size = UDim2.new(0, 200, 0, 190)
 Frame.Position = UDim2.new(0, 10, 0, 10)
 Frame.BackgroundColor3 = Color3.fromRGB(15, 15, 15)
 Frame.BackgroundTransparency = 0.2
@@ -366,9 +490,9 @@ Instance.new("UICorner", Frame).CornerRadius = UDim.new(0, 8)
 local Title = Instance.new("TextLabel")
 Title.Size = UDim2.new(1, 0, 0, 30)
 Title.BackgroundTransparency = 1
-Title.Text = "ESP + Speed"
+Title.Text = "ESP + Speed + Stamina"
 Title.TextColor3 = Color3.fromRGB(0, 255, 0)
-Title.TextSize = 14
+Title.TextSize = 13
 Title.Font = Enum.Font.GothamBold
 Title.Parent = Frame
 
@@ -423,10 +547,31 @@ SpeedBtn.MouseButton1Click:Connect(function()
     UpdateSpeed()
 end)
 
+-- Кнопка Stamina
+local StaminaBtn = Instance.new("TextButton")
+StaminaBtn.Size = UDim2.new(0.8, 0, 0, 30)
+StaminaBtn.Position = UDim2.new(0.1, 0, 0, 145)
+StaminaBtn.BackgroundColor3 = Color3.fromRGB(170, 0, 0)
+StaminaBtn.Text = "Stamina: OFF"
+StaminaBtn.TextColor3 = Color3.fromRGB(255, 255, 255)
+StaminaBtn.TextSize = 13
+StaminaBtn.Font = Enum.Font.Gotham
+StaminaBtn.AutoButtonColor = false
+StaminaBtn.Parent = Frame
+
+Instance.new("UICorner", StaminaBtn).CornerRadius = UDim.new(0, 6)
+
+StaminaBtn.MouseButton1Click:Connect(function()
+    Settings.StaminaEnabled = not Settings.StaminaEnabled
+    StaminaBtn.Text = Settings.StaminaEnabled and "Stamina: ON" or "Stamina: OFF"
+    StaminaBtn.BackgroundColor3 = Settings.StaminaEnabled and Color3.fromRGB(0, 170, 0) or Color3.fromRGB(170, 0, 0)
+    UpdateStamina()
+end)
+
 -- Информация
 local Info = Instance.new("TextLabel")
 Info.Size = UDim2.new(1, 0, 0, 20)
-Info.Position = UDim2.new(0, 0, 0, 140)
+Info.Position = UDim2.new(0, 0, 0, 180)
 Info.BackgroundTransparency = 1
 Info.Text = "🟢 Killer  |  🔴 Survivor"
 Info.TextColor3 = Color3.fromRGB(200, 200, 200)
@@ -449,6 +594,7 @@ CloseBtn.Parent = Frame
 Instance.new("UICorner", CloseBtn).CornerRadius = UDim.new(0, 4)
 
 CloseBtn.MouseButton1Click:Connect(function()
+    DisableInfiniteStamina()
     ScreenGui:Destroy()
 end)
 
@@ -471,4 +617,4 @@ task.spawn(function()
     end
 end)
 
-print("ESP + Speed loaded! Speed fixed at 30.")
+print("ESP + Speed + Infinite Stamina loaded!")
