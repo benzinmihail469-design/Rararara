@@ -1,7 +1,7 @@
 --[[
     ESP для Bite By Night - Corner Box + поддержка Model + Speed 40 + Infinite Stamina
     Зелёные уголки = Убийца, Красные уголки = Выжившие
-    ОПТИМИЗИРОВАННАЯ ВЕРСИЯ С ОБХОДОМ АНТИЧИТА
+    ВСЕ ФУНКЦИИ ВОССТАНОВЛЕНЫ + ОБХОД АНТИЧИТА + ОПТИМИЗАЦИЯ
 --]]
 
 -- Сервисы
@@ -22,57 +22,170 @@ local Settings = {
     SurvivorColor = Color3.fromRGB(255, 0, 0),
     Thickness = 2.5,
     CornerSize = 12,
-    MaxDistance = 1500, -- Уменьшено для оптимизации
+    MaxDistance = 2000,
     
     -- Speed
     SpeedEnabled = false,
-    SpeedValue = 40, -- Увеличено до 40
+    SpeedValue = 40,
     
     -- Stamina
     StaminaEnabled = false
 }
 
--- ==================== ОПТИМИЗИРОВАННЫЕ ФУНКЦИИ ДЛЯ МОДЕЛЕЙ ====================
+-- ==================== ФУНКЦИИ ДЛЯ РАБОТЫ С МОДЕЛЯМИ (ВОССТАНОВЛЕНЫ) ====================
 
 local function GetRootPart(model)
     if not model then return nil end
+    
     local hrp = model:FindFirstChild("HumanoidRootPart")
     if hrp then return hrp end
-    return model.PrimaryPart
+    
+    for _, part in ipairs(model:GetDescendants()) do
+        if part:IsA("BasePart") and part.Name:lower():find("torso") then
+            return part
+        end
+    end
+    
+    local biggest = nil
+    local biggestSize = 0
+    for _, part in ipairs(model:GetDescendants()) do
+        if part:IsA("BasePart") then
+            local size = part.Size.X + part.Size.Y + part.Size.Z
+            if size > biggestSize then
+                biggestSize = size
+                biggest = part
+            end
+        end
+    end
+    return biggest or model.PrimaryPart
 end
 
 local function GetHead(model)
     if not model then return nil end
+    
     local head = model:FindFirstChild("Head")
     if head and head:IsA("BasePart") then return head end
-    return nil
+    
+    for _, part in ipairs(model:GetDescendants()) do
+        if part:IsA("BasePart") and part.Name:lower():find("head") then
+            return part
+        end
+    end
+    
+    local highest = nil
+    local highestY = -math.huge
+    for _, part in ipairs(model:GetDescendants()) do
+        if part:IsA("BasePart") then
+            if part.Position.Y > highestY then
+                highestY = part.Position.Y
+                highest = part
+            end
+        end
+    end
+    return highest
+end
+
+local function GetHealth(model)
+    local humanoid = model:FindFirstChildOfClass("Humanoid")
+    if humanoid then return humanoid.Health, humanoid.MaxHealth end
+    
+    local healthVal = model:FindFirstChild("Health") or model:FindFirstChild("HP")
+    if healthVal and (healthVal:IsA("IntValue") or healthVal:IsA("NumberValue")) then
+        return healthVal.Value, healthVal.Value
+    end
+    
+    local health = model:GetAttribute("Health") or model:GetAttribute("HP")
+    if health then return tonumber(health) or 100, tonumber(health) or 100 end
+    
+    return 100, 100
 end
 
 local function GetHumanoid(model)
-    return model and model:FindFirstChildOfClass("Humanoid")
+    local humanoid = model:FindFirstChildOfClass("Humanoid")
+    if humanoid then return humanoid end
+    
+    for _, child in ipairs(model:GetDescendants()) do
+        if child:IsA("Humanoid") then
+            return child
+        end
+    end
+    
+    return nil
 end
 
--- ==================== ОПРЕДЕЛЕНИЕ УБИЙЦЫ (ОПТИМИЗИРОВАНО) ====================
+-- ==================== ОПРЕДЕЛЕНИЕ УБИЙЦЫ (ВОССТАНОВЛЕНО) ====================
 
 local CurrentKiller = nil
 local lastKillerCheck = 0
 
 local function FindKiller()
-    -- Проверяем не чаще раза в секунду
+    -- Проверяем не чаще раза в секунду (оптимизация)
     if tick() - lastKillerCheck < 1 then
         return CurrentKiller
     end
     lastKillerCheck = tick()
     
-    -- Быстрая проверка через PlayerGui
+    -- Способ 1: Поиск через PlayerList GUI
+    for _, gui in ipairs(game:GetService("CoreGui"):GetChildren()) do
+        if gui:IsA("ScreenGui") then
+            for _, el in ipairs(gui:GetDescendants()) do
+                if el:IsA("TextLabel") then
+                    local text = el.Text:lower()
+                    if text:find("killer") or text:find("(killer)") then
+                        for _, p in ipairs(Players:GetPlayers()) do
+                            if text:find(p.Name:lower()) then 
+                                CurrentKiller = p
+                                return p 
+                            end
+                        end
+                    end
+                end
+            end
+        end
+    end
+    
+    -- Способ 2: Проверка каждого игрока
     for _, p in ipairs(Players:GetPlayers()) do
         if p ~= LocalPlayer then
-            local pgui = p:FindFirstChild("PlayerGui")
-            if pgui then
-                for _, g in ipairs(pgui:GetDescendants()) do
-                    if g:IsA("TextLabel") and g.Text:lower():find("killer") then
+            local model = p.Character
+            if model then
+                local _, maxHP = GetHealth(model)
+                if maxHP > 500 then 
+                    CurrentKiller = p
+                    return p 
+                end
+                
+                for _, child in ipairs(model:GetDescendants()) do
+                    if child:IsA("Tool") then
+                        local n = child.Name:lower()
+                        if n:find("remnant") or n:find("cleaver") or n:find("beartrap") then 
+                            CurrentKiller = p
+                            return p 
+                        end
+                    end
+                end
+                
+                local pgui = p:FindFirstChild("PlayerGui")
+                if pgui then
+                    for _, g in ipairs(pgui:GetDescendants()) do
+                        if g:IsA("TextLabel") then
+                            local t = g.Text:lower()
+                            if t:find("killer") or t:find("scream") or t:find("charge") then 
+                                CurrentKiller = p
+                                return p 
+                            end
+                        end
+                    end
+                end
+            end
+            
+            local bp = p:FindFirstChildOfClass("Backpack")
+            if bp then
+                for _, tool in ipairs(bp:GetChildren()) do
+                    local n = tool.Name:lower()
+                    if n:find("remnant") or n:find("cleaver") then 
                         CurrentKiller = p
-                        return p
+                        return p 
                     end
                 end
             end
@@ -81,19 +194,15 @@ local function FindKiller()
     return CurrentKiller
 end
 
--- ==================== DRAWING ОБЪЕКТЫ (ОПТИМИЗИРОВАНО) ====================
+-- ==================== DRAWING ОБЪЕКТЫ ====================
 
 local function CreateDrawing(className, properties)
     local s, d = pcall(function()
-        return Drawing.new(className)
+        local dr = Drawing.new(className)
+        for k, v in pairs(properties) do pcall(function() dr[k] = v end) end
+        return dr
     end)
-    if s and d then
-        for k, v in pairs(properties) do
-            pcall(function() d[k] = v end)
-        end
-        return d
-    end
-    return nil
+    return s and d or nil
 end
 
 local function ClearESP(player)
@@ -105,7 +214,7 @@ local function ClearESP(player)
     end
 end
 
--- ==================== СОЗДАНИЕ CORNER BOX (ОПТИМИЗИРОВАНО) ====================
+-- ==================== СОЗДАНИЕ CORNER BOX (ПОЛНОЦЕННЫЙ) ====================
 
 local function CreateCornerBox(player, isKiller)
     if player == LocalPlayer then return end
@@ -118,11 +227,15 @@ local function CreateCornerBox(player, isKiller)
     
     local drawings = {}
     
-    -- Создаём только 4 линии вместо 8 для оптимизации
-    drawings.TL = CreateDrawing("Line", {Visible = false, Color = color, Thickness = thick})
-    drawings.TR = CreateDrawing("Line", {Visible = false, Color = color, Thickness = thick})
-    drawings.BL = CreateDrawing("Line", {Visible = false, Color = color, Thickness = thick})
-    drawings.BR = CreateDrawing("Line", {Visible = false, Color = color, Thickness = thick})
+    drawings.TL_V = CreateDrawing("Line", {Visible = false, Color = color, Thickness = thick})
+    drawings.TR_V = CreateDrawing("Line", {Visible = false, Color = color, Thickness = thick})
+    drawings.BL_V = CreateDrawing("Line", {Visible = false, Color = color, Thickness = thick})
+    drawings.BR_V = CreateDrawing("Line", {Visible = false, Color = color, Thickness = thick})
+    
+    drawings.TL_H = CreateDrawing("Line", {Visible = false, Color = color, Thickness = thick})
+    drawings.TR_H = CreateDrawing("Line", {Visible = false, Color = color, Thickness = thick})
+    drawings.BL_H = CreateDrawing("Line", {Visible = false, Color = color, Thickness = thick})
+    drawings.BR_H = CreateDrawing("Line", {Visible = false, Color = color, Thickness = thick})
     
     ESPObjects[player] = drawings
 end
@@ -138,7 +251,7 @@ local function UpdateAllOutlines()
     end
 end
 
--- ==================== ОБНОВЛЕНИЕ ПОЗИЦИЙ (ОПТИМИЗИРОВАНО) ====================
+-- ==================== ОБНОВЛЕНИЕ ПОЗИЦИЙ CORNER BOX (ПОЛНОЦЕННЫЙ) ====================
 
 local function UpdatePositions()
     if not Settings.Enabled then
@@ -147,8 +260,6 @@ local function UpdatePositions()
         end
         return
     end
-    
-    local cameraPos = Camera.CFrame.Position
     
     for player, data in pairs(ESPObjects) do
         local model = player.Character
@@ -164,8 +275,8 @@ local function UpdatePositions()
             continue
         end
         
-        -- Быстрая проверка дистанции
-        if (cameraPos - root.Position).Magnitude > Settings.MaxDistance then
+        local dist = (Camera.CFrame.Position - root.Position).Magnitude
+        if dist > Settings.MaxDistance then
             for _, d in pairs(data) do d.Visible = false end
             continue
         end
@@ -176,8 +287,8 @@ local function UpdatePositions()
             continue
         end
         
-        local headPos = Camera:WorldToViewportPoint(head.Position + Vector3.new(0, 1, 0))
-        local footPos = Camera:WorldToViewportPoint(root.Position - Vector3.new(0, 2, 0))
+        local headPos = Camera:WorldToViewportPoint(head.Position + Vector3.new(0, head.Size.Y/2, 0))
+        local footPos = Camera:WorldToViewportPoint(root.Position - Vector3.new(0, root.Size.Y/2, 0))
         
         local height = math.abs(headPos.Y - footPos.Y)
         local width = height / 2.2
@@ -185,22 +296,27 @@ local function UpdatePositions()
         local y = headPos.Y
         local cs = Settings.CornerSize
         
-        -- Упрощённые уголки (L-образные)
-        data.TL.Visible = true
-        data.TL.From = Vector2.new(x, y + cs)
-        data.TL.To = Vector2.new(x, y)
+        for _, d in pairs(data) do d.Visible = true end
         
-        data.TR.Visible = true
-        data.TR.From = Vector2.new(x + width - cs, y)
-        data.TR.To = Vector2.new(x + width, y)
+        data.TL_V.From = Vector2.new(x, y)
+        data.TL_V.To = Vector2.new(x, y + cs)
+        data.TL_H.From = Vector2.new(x, y)
+        data.TL_H.To = Vector2.new(x + cs, y)
         
-        data.BL.Visible = true
-        data.BL.From = Vector2.new(x, y + height - cs)
-        data.BL.To = Vector2.new(x, y + height)
+        data.TR_V.From = Vector2.new(x + width, y)
+        data.TR_V.To = Vector2.new(x + width, y + cs)
+        data.TR_H.From = Vector2.new(x + width - cs, y)
+        data.TR_H.To = Vector2.new(x + width, y)
         
-        data.BR.Visible = true
-        data.BR.From = Vector2.new(x + width - cs, y + height)
-        data.BR.To = Vector2.new(x + width, y + height)
+        data.BL_V.From = Vector2.new(x, y + height - cs)
+        data.BL_V.To = Vector2.new(x, y + height)
+        data.BL_H.From = Vector2.new(x, y + height)
+        data.BL_H.To = Vector2.new(x + cs, y + height)
+        
+        data.BR_V.From = Vector2.new(x + width, y + height - cs)
+        data.BR_V.To = Vector2.new(x + width, y + height)
+        data.BR_H.From = Vector2.new(x + width - cs, y + height)
+        data.BR_H.To = Vector2.new(x + width, y + height)
     end
 end
 
@@ -241,24 +357,75 @@ local function EnableInfiniteStamina()
     if staminaBypass then pcall(function() staminaBypass = nil end) end
     if staminaLoop then staminaLoop:Disconnect() end
     
+    -- Способ 1: Перехват запросов стамины
     staminaBypass = hookmetamethod(game, "__index", function(self, key)
-        if self == LocalPlayer and (key == "Stamina" or key == "stamina" or key == "Energy" or key == "energy") then
+        if self == LocalPlayer and (key == "Stamina" or key == "stamina" or key == "Energy" or key == "energy" or key == "Endurance" or key == "endurance") then
             return 100
         end
         return staminaBypass(self, key)
     end)
     
+    -- Способ 2: Установка атрибутов
     staminaLoop = RunService.Heartbeat:Connect(function()
         pcall(function()
             LocalPlayer:SetAttribute("Stamina", 100)
+            LocalPlayer:SetAttribute("stamina", 100)
             LocalPlayer:SetAttribute("Energy", 100)
+            LocalPlayer:SetAttribute("energy", 100)
+            LocalPlayer:SetAttribute("Endurance", 100)
+            LocalPlayer:SetAttribute("endurance", 100)
         end)
     end)
+    
+    -- Способ 3: Поиск UI стамины
+    local playerGui = LocalPlayer:FindFirstChild("PlayerGui")
+    if playerGui then
+        for _, gui in ipairs(playerGui:GetDescendants()) do
+            if gui:IsA("Frame") or gui:IsA("ImageLabel") then
+                local name = gui.Name:lower()
+                if name:find("stamina") or name:find("energy") or name:find("endurance") then
+                    local value = gui:FindFirstChild("Value") or gui:FindFirstChild("Bar")
+                    if value and (value:IsA("NumberValue") or value:IsA("IntValue")) then
+                        task.spawn(function()
+                            while Settings.StaminaEnabled do
+                                pcall(function() value.Value = 100 end)
+                                task.wait(0.1)
+                            end
+                        end)
+                        break
+                    end
+                end
+            end
+        end
+    end
+    
+    -- Способ 4: Блокировка RemoteEvent
+    local repStorage = game:GetService("ReplicatedStorage")
+    for _, obj in ipairs(repStorage:GetDescendants()) do
+        if obj:IsA("RemoteEvent") then
+            local name = obj.Name:lower()
+            if name:find("stamina") or name:find("energy") or name:find("sprint") then
+                local oldNamecall = hookmetamethod(game, "__namecall", function(self, ...)
+                    local method = getnamecallmethod()
+                    if self == obj and method == "FireServer" then
+                        return nil
+                    end
+                    return oldNamecall(self, ...)
+                end)
+                break
+            end
+        end
+    end
 end
 
 local function DisableInfiniteStamina()
-    if staminaLoop then staminaLoop:Disconnect(); staminaLoop = nil end
-    if staminaBypass then pcall(function() staminaBypass = nil end) end
+    if staminaLoop then 
+        staminaLoop:Disconnect()
+        staminaLoop = nil 
+    end
+    if staminaBypass then 
+        pcall(function() staminaBypass = nil end) 
+    end
 end
 
 local function UpdateStamina()
@@ -269,17 +436,17 @@ local function UpdateStamina()
     end
 end
 
--- ==================== ОПТИМИЗИРОВАННЫЙ ЗАПУСК ====================
+-- ==================== ЗАПУСК И ОБРАБОТЧИКИ ====================
 
--- Медленное обновление (раз в 2 секунды)
+-- Периодическое обновление контуров (раз в 1 секунду)
 task.spawn(function()
     while true do
         UpdateAllOutlines()
-        task.wait(2)
+        task.wait(1)
     end
 end)
 
--- Среднее обновление скорости
+-- Обновление скорости
 task.spawn(function()
     while true do
         if Settings.SpeedEnabled then
@@ -289,7 +456,7 @@ task.spawn(function()
     end
 end)
 
--- Быстрое обновление ESP позиций
+-- Рендер ESP
 RunService.RenderStepped:Connect(UpdatePositions)
 
 -- Обработчики игроков
@@ -305,7 +472,7 @@ Players.PlayerRemoving:Connect(function(p)
     if p == CurrentKiller then CurrentKiller = nil end
 end)
 
--- Запуск для текущих
+-- Запуск для текущих игроков
 for _, p in ipairs(Players:GetPlayers()) do
     if p ~= LocalPlayer and p.Character then 
         task.wait(0.5) 
@@ -324,7 +491,7 @@ end)
 -- ==================== GUI ====================
 
 local ScreenGui = Instance.new("ScreenGui")
-ScreenGui.Name = "ESP_Speed_Stamina_Opt"
+ScreenGui.Name = "ESP_Speed_Stamina_Full"
 ScreenGui.Parent = game:GetService("CoreGui")
 
 local Frame = Instance.new("Frame")
@@ -467,4 +634,4 @@ task.spawn(function()
     end
 end)
 
-print("ESP + Speed 40 + Infinite Stamina loaded! (Optimized + Anti-Cheat Bypass)")
+print("ESP + Speed 40 + Infinite Stamina loaded! (All functions restored + Anti-Cheat Bypass)")
