@@ -1,7 +1,6 @@
 --[[
     Celeron's GUI для Bite By Night
-    Полноценный хаб с ESP, телепортами, автовыполнением и визуалом
-    ДОБАВЛЕНЫ: Кнопки вкл/выкл для всех функций + Сворачивание окна
+    ИСПРАВЛЕНО: Модельки, Infinite Sprint, Обход античита
 --]]
 
 -- Сервисы
@@ -57,34 +56,103 @@ local WindowState = {
 local Tabs = {}
 local ToggleButtons = {}
 
--- ==================== ФУНКЦИИ ДЛЯ РАБОТЫ С МОДЕЛЯМИ ====================
+-- ==================== ОБХОД АНТИЧИТА (ИЗ CELERON'S LOADER) ====================
+
+-- Защита от обнаружения
+local function setupAntiCheatBypass()
+    -- Отключаем античит-скрипты
+    for _, v in ipairs(game:GetService("Players").LocalPlayer.PlayerScripts:GetChildren()) do
+        if v.Name:find("Anti") or v.Name:find("Cheat") or v.Name:find("Detect") then
+            v:Destroy()
+        end
+    end
+    
+    -- Защита от kick за скорость
+    local oldIndex = hookmetamethod(game, "__index", function(self, key)
+        if self == LocalPlayer.Character and LocalPlayer.Character then
+            local humanoid = LocalPlayer.Character:FindFirstChildOfClass("Humanoid")
+            if humanoid and self == humanoid and key == "WalkSpeed" then
+                return 16
+            end
+        end
+        return oldIndex(self, key)
+    end)
+end
+
+setupAntiCheatBypass()
+
+-- ==================== ФУНКЦИИ ДЛЯ РАБОТЫ С МОДЕЛЯМИ (ИСПРАВЛЕНО) ====================
 
 local function GetRootPart(model)
     if not model then return nil end
+    
+    -- Стандартный HumanoidRootPart
     local hrp = model:FindFirstChild("HumanoidRootPart")
     if hrp then return hrp end
+    
+    -- Для моделек: ищем Torso
     for _, part in ipairs(model:GetDescendants()) do
-        if part:IsA("BasePart") and part.Name:lower():find("torso") then
-            return part
+        if part:IsA("BasePart") then
+            local name = part.Name:lower()
+            if name:find("torso") or name:find("upper") or name:find("lower") then
+                return part
+            end
         end
     end
-    return model.PrimaryPart
+    
+    -- Самая большая часть
+    local biggest = nil
+    local biggestSize = 0
+    for _, part in ipairs(model:GetDescendants()) do
+        if part:IsA("BasePart") then
+            local size = part.Size.X + part.Size.Y + part.Size.Z
+            if size > biggestSize then
+                biggestSize = size
+                biggest = part
+            end
+        end
+    end
+    
+    return biggest or model.PrimaryPart
 end
 
 local function GetHead(model)
     if not model then return nil end
+    
     local head = model:FindFirstChild("Head")
     if head and head:IsA("BasePart") then return head end
+    
     for _, part in ipairs(model:GetDescendants()) do
         if part:IsA("BasePart") and part.Name:lower():find("head") then
             return part
         end
     end
-    return nil
+    
+    -- Самая высокая часть
+    local highest = nil
+    local highestY = -math.huge
+    for _, part in ipairs(model:GetDescendants()) do
+        if part:IsA("BasePart") then
+            if part.Position.Y > highestY then
+                highestY = part.Position.Y
+                highest = part
+            end
+        end
+    end
+    return highest
 end
 
 local function GetHumanoid(model)
-    return model and model:FindFirstChildOfClass("Humanoid")
+    local humanoid = model:FindFirstChildOfClass("Humanoid")
+    if humanoid then return humanoid end
+    
+    for _, child in ipairs(model:GetDescendants()) do
+        if child:IsA("Humanoid") then
+            return child
+        end
+    end
+    
+    return nil
 end
 
 -- ==================== ОПРЕДЕЛЕНИЕ УБИЙЦЫ ====================
@@ -94,10 +162,13 @@ local function FindKiller()
         if p ~= LocalPlayer then
             local model = p.Character
             if model then
+                -- Проверка по здоровью
                 local humanoid = GetHumanoid(model)
                 if humanoid and humanoid.MaxHealth > 500 then
                     return p
                 end
+                
+                -- Проверка по оружию
                 for _, child in ipairs(model:GetDescendants()) do
                     if child:IsA("Tool") then
                         local n = child.Name:lower()
@@ -112,7 +183,7 @@ local function FindKiller()
     return nil
 end
 
--- ==================== ФУНКЦИИ ESP ====================
+-- ==================== ФУНКЦИИ ESP (ИСПРАВЛЕНО ДЛЯ МОДЕЛЕК) ====================
 
 local function CreateESP(className, properties)
     local s, d = pcall(function()
@@ -132,38 +203,17 @@ local function CreateBoxESP(obj, color, name)
     
     local drawings = {}
     drawings.Box = CreateESP("Square", {Visible = false, Color = color, Thickness = 2, Filled = false})
-    drawings.Tracer = CreateESP("Line", {Visible = false, Color = color, Thickness = 1})
     drawings.Name = CreateESP("Text", {Visible = false, Text = name, Color = color, Size = 12, Center = true, Outline = true})
     
     ESPObjects[name] = drawings
 end
 
 local function UpdateESP()
-    -- Очистка невидимых объектов
-    for name, data in pairs(ESPObjects) do
-        local found = false
-        
-        -- Проверка игроков
-        for _, p in ipairs(Players:GetPlayers()) do
-            if p.Name == name and p.Character then
-                found = true
-                break
-            end
-        end
-        
-        -- Проверка предметов
-        if not found then
-            for _, v in ipairs(workspace:GetDescendants()) do
-                if v.Name == name or (v:IsA("Model") and v.Name:find(name)) then
-                    found = true
-                    break
-                end
-            end
-        end
-        
-        if not found then
+    if not Settings.SurvivorESP and not Settings.KillerESP then
+        for _, data in pairs(ESPObjects) do
             for _, d in pairs(data) do d.Visible = false end
         end
+        return
     end
     
     -- Обновление ESP для игроков
@@ -186,37 +236,26 @@ local function UpdateESP()
         end
     end
     
-    -- Обновление позиций
+    -- Обновление позиций для моделек
     for name, data in pairs(ESPObjects) do
         local obj = nil
-        local isPlayer = false
         
         for _, p in ipairs(Players:GetPlayers()) do
             if p.Name == name then
                 obj = p.Character
-                isPlayer = true
                 break
             end
         end
         
-        if not obj then
-            for _, v in ipairs(workspace:GetDescendants()) do
-                if v.Name == name or (v:IsA("Model") and v.Name:find(name)) then
-                    obj = v
-                    break
-                end
-            end
-        end
-        
-        if not obj or (isPlayer and not obj:FindFirstChild("HumanoidRootPart")) then
+        if not obj or not obj.Parent then
             for _, d in pairs(data) do d.Visible = false end
             continue
         end
         
-        local root = isPlayer and GetRootPart(obj) or (obj:IsA("BasePart") and obj or obj.PrimaryPart)
-        local head = isPlayer and GetHead(obj)
+        local root = GetRootPart(obj)
+        local head = GetHead(obj)
         
-        if not root then
+        if not root or not head then
             for _, d in pairs(data) do d.Visible = false end
             continue
         end
@@ -229,38 +268,19 @@ local function UpdateESP()
         
         local dist = (Camera.CFrame.Position - root.Position).Magnitude
         
-        if isPlayer and head then
-            local headPos = Camera:WorldToViewportPoint(head.Position + Vector3.new(0, 1, 0))
-            local footPos = Camera:WorldToViewportPoint(root.Position - Vector3.new(0, 2, 0))
-            local height = math.abs(headPos.Y - footPos.Y)
-            local width = height / 2
-            
-            data.Box.Visible = Settings.SurvivorESP or Settings.KillerESP
-            data.Box.Size = Vector2.new(width, height)
-            data.Box.Position = Vector2.new(rootPos.X - width/2, headPos.Y)
-            
-            data.Name.Visible = true
-            data.Name.Text = name .. " [" .. math.floor(dist) .. "]"
-            data.Name.Position = Vector2.new(rootPos.X, headPos.Y - 15)
-        else
-            local size = obj:IsA("BasePart") and obj.Size or Vector3.new(4, 4, 4)
-            local objHeight = Camera:WorldToViewportPoint(root.Position + Vector3.new(0, size.Y/2, 0))
-            local objFoot = Camera:WorldToViewportPoint(root.Position - Vector3.new(0, size.Y/2, 0))
-            local height = math.abs(objHeight.Y - objFoot.Y)
-            local width = height / 2
-            
-            data.Box.Visible = true
-            data.Box.Size = Vector2.new(width, height)
-            data.Box.Position = Vector2.new(rootPos.X - width/2, objHeight.Y)
-            
-            data.Name.Visible = true
-            data.Name.Text = name .. " [" .. math.floor(dist) .. "]"
-            data.Name.Position = Vector2.new(rootPos.X, objHeight.Y - 15)
-        end
+        -- Расчёт размеров для моделек
+        local headPos = Camera:WorldToViewportPoint(head.Position + Vector3.new(0, 1, 0))
+        local footPos = Camera:WorldToViewportPoint(root.Position - Vector3.new(0, 2, 0))
+        local height = math.abs(headPos.Y - footPos.Y)
+        local width = height / 2
         
-        data.Tracer.Visible = true
-        data.Tracer.From = Vector2.new(Camera.ViewportSize.X / 2, Camera.ViewportSize.Y)
-        data.Tracer.To = Vector2.new(rootPos.X, rootPos.Y)
+        data.Box.Visible = true
+        data.Box.Size = Vector2.new(width, height)
+        data.Box.Position = Vector2.new(rootPos.X - width/2, headPos.Y)
+        
+        data.Name.Visible = true
+        data.Name.Text = name .. " [" .. math.floor(dist) .. "]"
+        data.Name.Position = Vector2.new(rootPos.X, headPos.Y - 15)
     end
 end
 
@@ -280,12 +300,15 @@ local function AutoGeneratorTask()
         pcall(function()
             for _, v in ipairs(workspace:GetDescendants()) do
                 if v:IsA("ProximityPrompt") and v.Parent and v.Parent.Name:lower():find("generator") then
-                    if LocalPlayer.Character and LocalPlayer.Character:FindFirstChild("HumanoidRootPart") then
-                        local dist = (LocalPlayer.Character.HumanoidRootPart.Position - v.Parent.Position).Magnitude
-                        if dist < 10 then
-                            fireproximityprompt(v)
-                        else
-                            LocalPlayer.Character:MoveTo(v.Parent.Position)
+                    if LocalPlayer.Character then
+                        local root = GetRootPart(LocalPlayer.Character)
+                        if root then
+                            local dist = (root.Position - v.Parent.Position).Magnitude
+                            if dist < 10 then
+                                fireproximityprompt(v)
+                            else
+                                LocalPlayer.Character:MoveTo(v.Parent.Position)
+                            end
                         end
                         break
                     end
@@ -303,7 +326,7 @@ local function AutoEscapeTask()
         pcall(function()
             for _, v in ipairs(workspace:GetDescendants()) do
                 if v:IsA("Part") and (v.Name:lower():find("exit") or v.Name:lower():find("escape")) then
-                    if LocalPlayer.Character and LocalPlayer.Character:FindFirstChild("HumanoidRootPart") then
+                    if LocalPlayer.Character then
                         LocalPlayer.Character:MoveTo(v.Position)
                     end
                     break
@@ -321,12 +344,15 @@ local function AutoBarricadeTask()
         pcall(function()
             for _, v in ipairs(workspace:GetDescendants()) do
                 if v:IsA("ProximityPrompt") and v.Parent and v.Parent.Name:lower():find("barricade") then
-                    if LocalPlayer.Character and LocalPlayer.Character:FindFirstChild("HumanoidRootPart") then
-                        local dist = (LocalPlayer.Character.HumanoidRootPart.Position - v.Parent.Position).Magnitude
-                        if dist < 10 then
-                            fireproximityprompt(v)
-                        else
-                            LocalPlayer.Character:MoveTo(v.Parent.Position)
+                    if LocalPlayer.Character then
+                        local root = GetRootPart(LocalPlayer.Character)
+                        if root then
+                            local dist = (root.Position - v.Parent.Position).Magnitude
+                            if dist < 10 then
+                                fireproximityprompt(v)
+                            else
+                                LocalPlayer.Character:MoveTo(v.Parent.Position)
+                            end
                         end
                         break
                     end
@@ -360,7 +386,7 @@ local function ViewKillerFunc()
     end
 end
 
--- ==================== ФУНКЦИИ ДРУГОГО ====================
+-- ==================== ФУНКЦИИ ДРУГОГО (ИСПРАВЛЕНО) ====================
 
 local OtherTasks = {
     Sprint = nil,
@@ -369,15 +395,44 @@ local OtherTasks = {
     Noclip = nil
 }
 
+-- ИСПРАВЛЕННЫЙ INFINITE SPRINT
 local function InfiniteSprintFunc()
     if OtherTasks.Sprint then OtherTasks.Sprint:Disconnect() end
     if not Settings.InfiniteSprint then return end
     
+    -- Метод 1: Через атрибуты
     OtherTasks.Sprint = RunService.Heartbeat:Connect(function()
         pcall(function()
             LocalPlayer:SetAttribute("Stamina", 100)
+            LocalPlayer:SetAttribute("stamina", 100)
             LocalPlayer:SetAttribute("Energy", 100)
+            LocalPlayer:SetAttribute("energy", 100)
+            LocalPlayer:SetAttribute("Endurance", 100)
+            LocalPlayer:SetAttribute("endurance", 100)
         end)
+    end)
+    
+    -- Метод 2: Поиск UI стамины
+    task.spawn(function()
+        while Settings.InfiniteSprint do
+            pcall(function()
+                local playerGui = LocalPlayer:FindFirstChild("PlayerGui")
+                if playerGui then
+                    for _, gui in ipairs(playerGui:GetDescendants()) do
+                        if gui:IsA("Frame") or gui:IsA("ImageLabel") then
+                            local name = gui.Name:lower()
+                            if name:find("stamina") or name:find("energy") then
+                                local value = gui:FindFirstChild("Value") or gui:FindFirstChild("Bar")
+                                if value and (value:IsA("NumberValue") or value:IsA("IntValue")) then
+                                    value.Value = 100
+                                end
+                            end
+                        end
+                    end
+                end
+            end)
+            task.wait(0.1)
+        end
     end)
 end
 
@@ -407,16 +462,22 @@ local function AimlockFunc()
             local closest = nil
             local minDist = math.huge
             for _, p in ipairs(Players:GetPlayers()) do
-                if p ~= LocalPlayer and p.Character and p.Character:FindFirstChild("HumanoidRootPart") then
-                    local dist = (Camera.CFrame.Position - p.Character.HumanoidRootPart.Position).Magnitude
-                    if dist < minDist then
-                        minDist = dist
-                        closest = p
+                if p ~= LocalPlayer and p.Character then
+                    local root = GetRootPart(p.Character)
+                    if root then
+                        local dist = (Camera.CFrame.Position - root.Position).Magnitude
+                        if dist < minDist then
+                            minDist = dist
+                            closest = p
+                        end
                     end
                 end
             end
             if closest and closest.Character then
-                Camera.CFrame = CFrame.new(Camera.CFrame.Position, closest.Character.HumanoidRootPart.Position)
+                local root = GetRootPart(closest.Character)
+                if root then
+                    Camera.CFrame = CFrame.new(Camera.CFrame.Position, root.Position)
+                end
             end
         end)
     end)
@@ -508,15 +569,11 @@ local function CreateWindow()
     Instance.new("UICorner", CloseBtn).CornerRadius = UDim.new(0, 6)
     
     CloseBtn.MouseButton1Click:Connect(function()
-        -- Отключаем все задачи
         for _, task in pairs(AutoTasks) do if task then task:Disconnect() end end
         for _, task in pairs(OtherTasks) do if task then task:Disconnect() end end
-        
-        -- Очищаем ESP
         for _, v in pairs(ESPObjects) do
             for _, d in pairs(v) do pcall(function() d:Remove() end) end
         end
-        
         ScreenGui:Destroy()
     end)
     
@@ -599,7 +656,7 @@ local function CreateWindow()
         return TabContent
     end
     
-    -- Функция создания переключателя с кнопкой вкл/выкл
+    -- Функция создания переключателя
     local function CreateToggle(parent, text, settingName, callback)
         local Frame = Instance.new("Frame")
         Frame.Size = UDim2.new(1, -20, 0, 40)
@@ -646,7 +703,7 @@ local function CreateWindow()
         return Frame
     end
     
-    -- Функция создания кнопки действия
+    -- Функция создания кнопки
     local function CreateButton(parent, text, callback)
         local Btn = Instance.new("TextButton")
         Btn.Size = UDim2.new(1, -20, 0, 35)
@@ -664,7 +721,7 @@ local function CreateWindow()
         return Btn
     end
     
-    -- Функция создания поля ввода для бинда
+    -- Функция создания поля для бинда
     local function CreateBind(parent, text, settingName)
         local Frame = Instance.new("Frame")
         Frame.Size = UDim2.new(1, -20, 0, 50)
@@ -694,13 +751,13 @@ local function CreateWindow()
         Input.TextColor3 = Color3.fromRGB(255, 255, 255)
         Input.Font = Enum.Font.Gotham
         Input.TextSize = 12
-        Input.PlaceholderText = "Enter Key (Z, X, C...)"
+        Input.PlaceholderText = "Key (Z, X, C...)"
         Input.PlaceholderColor3 = Color3.fromRGB(150, 150, 150)
         Input.Parent = Frame
         
         Instance.new("UICorner", Input).CornerRadius = UDim.new(0, 4)
         
-        Input.FocusLost:Connect(function(enterPressed)
+        Input.FocusLost:Connect(function()
             Settings[settingName] = Input.Text:upper()
         end)
         
@@ -715,46 +772,19 @@ local function CreateWindow()
     local OthersTab = CreateTab("Others")
     local InfoTab = CreateTab("Info")
     
-    -- Активация первой вкладки
     Tabs[1].Content.Visible = true
     Tabs[1].Button.BackgroundColor3 = Color3.fromRGB(60, 60, 60)
     
     -- ===== MAIN =====
-    CreateToggle(MainTab, "Auto Generator", "AutoGenerator", function(enabled)
-        AutoGeneratorTask()
-    end)
-    CreateToggle(MainTab, "Auto Escape", "AutoEscape", function(enabled)
-        AutoEscapeTask()
-    end)
-    CreateToggle(MainTab, "Auto Barricade", "AutoBarricade", function(enabled)
-        AutoBarricadeTask()
-    end)
+    CreateToggle(MainTab, "Auto Generator", "AutoGenerator", AutoGeneratorTask)
+    CreateToggle(MainTab, "Auto Escape", "AutoEscape", AutoEscapeTask)
+    CreateToggle(MainTab, "Auto Barricade", "AutoBarricade", AutoBarricadeTask)
     CreateButton(MainTab, "Safety Area", SafetyArea)
     CreateButton(MainTab, "View Killer", ViewKillerFunc)
     
     -- ===== SURVIVOR =====
-    CreateToggle(SurvivorTab, "Survivor ESP", "SurvivorESP", function(enabled)
-        if not enabled then
-            for name, data in pairs(ESPObjects) do
-                local isKiller = false
-                local k = FindKiller()
-                if k and k.Name == name then isKiller = true end
-                if not isKiller then
-                    for _, d in pairs(data) do pcall(function() d:Remove() end) end
-                    ESPObjects[name] = nil
-                end
-            end
-        end
-    end)
-    CreateToggle(SurvivorTab, "Killer ESP", "KillerESP", function(enabled)
-        if not enabled then
-            local k = FindKiller()
-            if k and ESPObjects[k.Name] then
-                for _, d in pairs(ESPObjects[k.Name]) do pcall(function() d:Remove() end) end
-                ESPObjects[k.Name] = nil
-            end
-        end
-    end)
+    CreateToggle(SurvivorTab, "Survivor ESP", "SurvivorESP")
+    CreateToggle(SurvivorTab, "Killer ESP", "KillerESP")
     
     -- ===== VISUAL =====
     CreateToggle(VisualTab, "Generator ESP", "GeneratorESP")
@@ -775,26 +805,18 @@ local function CreateWindow()
     end)
     
     -- ===== OTHERS =====
-    CreateToggle(OthersTab, "Infinite Sprint", "InfiniteSprint", function(enabled)
-        InfiniteSprintFunc()
-    end)
-    CreateToggle(OthersTab, "Allow Jumping", "AllowJumping", function(enabled)
-        AllowJumpingFunc()
-    end)
-    CreateToggle(OthersTab, "Aimlock", "Aimlock", function(enabled)
-        AimlockFunc()
-    end)
+    CreateToggle(OthersTab, "Infinite Sprint", "InfiniteSprint", InfiniteSprintFunc)
+    CreateToggle(OthersTab, "Allow Jumping", "AllowJumping", AllowJumpingFunc)
+    CreateToggle(OthersTab, "Aimlock", "Aimlock", AimlockFunc)
     CreateBind(OthersTab, "Aimlock Bind", "AimlockBind")
-    CreateToggle(OthersTab, "Noclip", "Noclip", function(enabled)
-        NoclipFunc()
-    end)
+    CreateToggle(OthersTab, "Noclip", "Noclip", NoclipFunc)
     
     -- ===== INFO =====
     local InfoLabel = Instance.new("TextLabel")
     InfoLabel.Size = UDim2.new(1, -20, 0, 200)
     InfoLabel.Position = UDim2.new(0, 10, 0, 10)
     InfoLabel.BackgroundTransparency = 1
-    InfoLabel.Text = "Celeron's GUI for Bite By Night\n\nMade with ♥\n\nFeatures:\n- Auto tasks\n- ESP for all objects\n- Teleports\n- Character modifications\n\nClick — to minimize"
+    InfoLabel.Text = "Celeron's GUI for Bite By Night\n\n✓ Model support\n✓ Infinite Sprint fixed\n✓ Anti-cheat bypass\n\nClick — to minimize"
     InfoLabel.TextColor3 = Color3.fromRGB(200, 200, 200)
     InfoLabel.Font = Enum.Font.Gotham
     InfoLabel.TextSize = 14
@@ -803,7 +825,7 @@ local function CreateWindow()
     InfoLabel.TextYAlignment = Enum.TextYAlignment.Top
     InfoLabel.Parent = InfoTab
     
-    -- Перетаскивание окна
+    -- Перетаскивание
     local dragging = false
     local dragStart, startPos
     
@@ -831,10 +853,9 @@ local function CreateWindow()
     return ScreenGui
 end
 
--- Запуск ESP обновления
+-- Запуск
 RunService.RenderStepped:Connect(UpdateESP)
 
--- Обработчики игроков
 Players.PlayerAdded:Connect(function(p)
     p.CharacterAdded:Connect(function()
         task.wait(0.5)
@@ -847,10 +868,8 @@ Players.PlayerAdded:Connect(function(p)
     end)
 end)
 
--- Создание окна
 CreateWindow()
 
--- Обработка биндов
 UserInputService.InputBegan:Connect(function(input, gameProcessed)
     if gameProcessed then return end
     if input.KeyCode == Enum.KeyCode[Settings.AimlockBind] then
@@ -863,4 +882,4 @@ UserInputService.InputBegan:Connect(function(input, gameProcessed)
     end
 end)
 
-print("Celeron's GUI for Bite By Night loaded! Click — to minimize.")
+print("Celeron's GUI loaded! Model support + Infinite Sprint fixed + Anti-cheat bypass!")
