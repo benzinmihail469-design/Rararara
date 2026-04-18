@@ -1,8 +1,7 @@
 --[[
     ESP для Bite By Night - Corner Box + поддержка Model + Speed Changer
     Зелёные уголки = Убийца, Красные уголки = Выжившие
-    Работает с любым типом персонажа + регулировка скорости (мах 50)
-    ПОЛНОСТЬЮ РАБОЧИЙ ПОЛЗУНОК С РУЧНЫМ УПРАВЛЕНИЕМ
+    Работает с любым типом персонажа + фиксированная скорость 30
 --]]
 
 -- Сервисы
@@ -11,7 +10,6 @@ local RunService = game:GetService("RunService")
 local Camera = workspace.CurrentCamera
 local LocalPlayer = Players.LocalPlayer
 local UserInputService = game:GetService("UserInputService")
-local TweenService = game:GetService("TweenService")
 
 -- Хранилище ESP
 local ESPObjects = {}
@@ -28,7 +26,7 @@ local Settings = {
     
     -- Speed
     SpeedEnabled = false,
-    SpeedValue = 16
+    SpeedValue = 30 -- Фиксированная скорость
 }
 
 -- ==================== ФУНКЦИИ ДЛЯ РАБОТЫ С МОДЕЛЯМИ ====================
@@ -304,9 +302,9 @@ local function UpdateSpeed()
     local humanoid = GetHumanoid(character)
     if humanoid then
         if Settings.SpeedEnabled then
-            humanoid.WalkSpeed = Settings.SpeedValue
+            humanoid.WalkSpeed = Settings.SpeedValue -- Всегда 30
         else
-            humanoid.WalkSpeed = 16
+            humanoid.WalkSpeed = 16 -- Стандартная скорость
         end
     end
 end
@@ -349,14 +347,14 @@ end
 
 RunService.RenderStepped:Connect(UpdatePositions)
 
--- ==================== GUI С РУЧНЫМ УПРАВЛЕНИЕМ (100% РАБОЧИЙ ПОЛЗУНОК) ====================
+-- ==================== ПРОСТОЙ GUI БЕЗ ПОЛЗУНКА ====================
 
 local ScreenGui = Instance.new("ScreenGui")
-ScreenGui.Name = "KillerESP_Speed_Fixed"
+ScreenGui.Name = "KillerESP_Speed"
 ScreenGui.Parent = game:GetService("CoreGui")
 
 local Frame = Instance.new("Frame")
-Frame.Size = UDim2.new(0, 240, 0, 230)
+Frame.Size = UDim2.new(0, 200, 0, 150)
 Frame.Position = UDim2.new(0, 10, 0, 10)
 Frame.BackgroundColor3 = Color3.fromRGB(15, 15, 15)
 Frame.BackgroundTransparency = 0.2
@@ -368,7 +366,7 @@ Instance.new("UICorner", Frame).CornerRadius = UDim.new(0, 8)
 local Title = Instance.new("TextLabel")
 Title.Size = UDim2.new(1, 0, 0, 30)
 Title.BackgroundTransparency = 1
-Title.Text = "ESP + Speed Control"
+Title.Text = "ESP + Speed"
 Title.TextColor3 = Color3.fromRGB(0, 255, 0)
 Title.TextSize = 14
 Title.Font = Enum.Font.GothamBold
@@ -420,154 +418,15 @@ Instance.new("UICorner", SpeedBtn).CornerRadius = UDim.new(0, 6)
 
 SpeedBtn.MouseButton1Click:Connect(function()
     Settings.SpeedEnabled = not Settings.SpeedEnabled
-    SpeedBtn.Text = Settings.SpeedEnabled and "Speed: ON" or "Speed: OFF"
+    SpeedBtn.Text = Settings.SpeedEnabled and "Speed: 30" or "Speed: OFF"
     SpeedBtn.BackgroundColor3 = Settings.SpeedEnabled and Color3.fromRGB(0, 170, 0) or Color3.fromRGB(170, 0, 0)
     UpdateSpeed()
 end)
 
--- Текст скорости
-local SpeedLabel = Instance.new("TextLabel")
-SpeedLabel.Size = UDim2.new(1, 0, 0, 20)
-SpeedLabel.Position = UDim2.new(0, 0, 0, 145)
-SpeedLabel.BackgroundTransparency = 1
-SpeedLabel.Text = "Speed: 16"
-SpeedLabel.TextColor3 = Color3.fromRGB(255, 255, 255)
-SpeedLabel.TextSize = 12
-SpeedLabel.Font = Enum.Font.Gotham
-SpeedLabel.Parent = Frame
-
--- Слайдер - фон
-local SliderFrame = Instance.new("Frame")
-SliderFrame.Size = UDim2.new(0.8, 0, 0, 8)
-SliderFrame.Position = UDim2.new(0.1, 0, 0, 170)
-SliderFrame.BackgroundColor3 = Color3.fromRGB(60, 60, 60)
-SliderFrame.BorderSizePixel = 0
-SliderFrame.Parent = Frame
-SliderFrame.ZIndex = 1
-
-Instance.new("UICorner", SliderFrame).CornerRadius = UDim.new(0, 4)
-
--- Синий заполнитель
-local SliderFill = Instance.new("Frame")
-SliderFill.Size = UDim2.new(0, 0, 1, 0)
-SliderFill.BackgroundColor3 = Color3.fromRGB(0, 170, 255)
-SliderFill.BorderSizePixel = 0
-SliderFill.Parent = SliderFrame
-SliderFill.ZIndex = 2
-
-Instance.new("UICorner", SliderFill).CornerRadius = UDim.new(0, 4)
-
--- Белый ползунок
-local SliderKnob = Instance.new("TextButton")
-SliderKnob.Size = UDim2.new(0, 18, 0, 18)
-SliderKnob.AnchorPoint = Vector2.new(0.5, 0.5)
-SliderKnob.Position = UDim2.new(0, 0, 0.5, 0)
-SliderKnob.BackgroundColor3 = Color3.fromRGB(255, 255, 255)
-SliderKnob.BorderSizePixel = 0
-SliderKnob.Text = ""
-SliderKnob.AutoButtonColor = false
-SliderKnob.Parent = SliderFrame
-SliderKnob.ZIndex = 10
-
-Instance.new("UICorner", SliderKnob).CornerRadius = UDim.new(1, 0)
-
-local KnobStroke = Instance.new("UIStroke")
-KnobStroke.Color = Color3.fromRGB(150, 150, 150)
-KnobStroke.Thickness = 1.5
-KnobStroke.Parent = SliderKnob
-
--- ПЕРЕМЕННЫЕ ДЛЯ РУЧНОГО ПЕРЕТАСКИВАНИЯ
-local isDragging = false
-local dragConnection = nil
-local releaseConnection = nil
-
--- Функция обновления слайдера
-local function UpdateSlider(percent)
-    percent = math.clamp(percent, 0, 1)
-    
-    -- Вычисляем скорость (16-50)
-    Settings.SpeedValue = math.floor(16 + percent * 34)
-    SpeedLabel.Text = "Speed: " .. Settings.SpeedValue
-    
-    -- Обновляем визуал
-    SliderFill.Size = UDim2.new(percent, 0, 1, 0)
-    SliderKnob.Position = UDim2.new(percent, 0, 0.5, 0)
-    
-    -- Применяем скорость
-    if Settings.SpeedEnabled then
-        UpdateSpeed()
-    end
-end
-
--- Функция получения процента из позиции мыши (ТОЛЬКО ПО ГОРИЗОНТАЛИ)
-local function GetPercentFromMouse(mouseX)
-    local minX = SliderFrame.AbsolutePosition.X
-    local maxX = minX + SliderFrame.AbsoluteSize.X
-    local clampedX = math.clamp(mouseX, minX, maxX)
-    return (clampedX - minX) / SliderFrame.AbsoluteSize.X
-end
-
--- НАЧАЛО ПЕРЕТАСКИВАНИЯ
-local function StartDrag()
-    isDragging = true
-    
-    -- Подключаем отслеживание движения мыши
-    dragConnection = UserInputService.InputChanged:Connect(function(input)
-        if input.UserInputType == Enum.UserInputType.MouseMovement then
-            local percent = GetPercentFromMouse(input.Position.X)
-            UpdateSlider(percent)
-        end
-    end)
-    
-    -- Подключаем отслеживание отпускания кнопки
-    releaseConnection = UserInputService.InputEnded:Connect(function(input)
-        if input.UserInputType == Enum.UserInputType.MouseButton1 then
-            StopDrag()
-        end
-    end)
-end
-
--- ОСТАНОВКА ПЕРЕТАСКИВАНИЯ
-function StopDrag()
-    isDragging = false
-    if dragConnection then
-        dragConnection:Disconnect()
-        dragConnection = nil
-    end
-    if releaseConnection then
-        releaseConnection:Disconnect()
-        releaseConnection = nil
-    end
-end
-
--- КЛИК ПО ПОЛЗУНКУ (начало перетаскивания)
-SliderKnob.MouseButton1Down:Connect(function()
-    StartDrag()
-end)
-
--- КЛИК ПО ФОНУ СЛАЙДЕРА (сразу двигаем и начинаем перетаскивание)
-SliderFrame.InputBegan:Connect(function(input)
-    if input.UserInputType == Enum.UserInputType.MouseButton1 then
-        local percent = GetPercentFromMouse(input.Position.X)
-        UpdateSlider(percent)
-        StartDrag()
-    end
-end)
-
--- ЗАЩИТА ОТ ЗАЛИПАНИЯ (если мышь отпущена вне окна)
-UserInputService.WindowFocusReleased:Connect(function()
-    if isDragging then
-        StopDrag()
-    end
-end)
-
--- Начальное значение (16)
-UpdateSlider(0)
-
 -- Информация
 local Info = Instance.new("TextLabel")
 Info.Size = UDim2.new(1, 0, 0, 20)
-Info.Position = UDim2.new(0, 0, 0, 195)
+Info.Position = UDim2.new(0, 0, 0, 140)
 Info.BackgroundTransparency = 1
 Info.Text = "🟢 Killer  |  🔴 Survivor"
 Info.TextColor3 = Color3.fromRGB(200, 200, 200)
@@ -590,7 +449,6 @@ CloseBtn.Parent = Frame
 Instance.new("UICorner", CloseBtn).CornerRadius = UDim.new(0, 4)
 
 CloseBtn.MouseButton1Click:Connect(function()
-    StopDrag()
     ScreenGui:Destroy()
 end)
 
@@ -613,4 +471,4 @@ task.spawn(function()
     end
 end)
 
-print("ESP + Speed loaded! Manual slider - drag works perfectly!")
+print("ESP + Speed loaded! Speed fixed at 30.")
