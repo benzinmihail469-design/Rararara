@@ -1,39 +1,85 @@
 --[[
-    ESP Script (Wallhack / Player Highlight) без ключ-системы
-    Работает в любом Roblox-исполнителе.
-    Функции: Box, Tracer, Name, Distance, Health Bar
+    ESP для Bite By Night - Автоопределение Убийцы
+    Зелёный контур = Убийца (Killer)
+    Красный контур = Выжившие (Survivors)
+    Работает без ключей.
 --]]
 
 -- Сервисы
 local Players = game:GetService("Players")
 local RunService = game:GetService("RunService")
-local CoreGui = game:GetService("CoreGui")
 local Camera = workspace.CurrentCamera
-
--- Локальный игрок
 local LocalPlayer = Players.LocalPlayer
 
--- Хранилище для объектов ESP
+-- Хранилище ESP
 local ESPObjects = {}
 
--- Настройки ESP
+-- Настройки
 local Settings = {
     Enabled = true,
-    Box = true,
-    BoxColor = Color3.fromRGB(255, 255, 255),
-    Tracer = true,
-    TracerColor = Color3.fromRGB(255, 255, 255),
-    Name = true,
-    NameColor = Color3.fromRGB(255, 255, 255),
-    Distance = true,
-    DistanceColor = Color3.fromRGB(255, 255, 255),
-    HealthBar = true,
-    TeamCheck = false, -- true = не подсвечивать членов своей команды
-    MaxDistance = 2000, -- максимальная дистанция отрисовки
-    UpdateInterval = 0 -- 0 = каждый кадр
+    KillerColor = Color3.fromRGB(0, 255, 0), -- Зелёный для убийцы
+    SurvivorColor = Color3.fromRGB(255, 0, 0), -- Красный для выживших
+    LocalColor = Color3.fromRGB(0, 128, 255), -- Синий для себя (если нужно)
+    Thickness = 2,
+    MaxDistance = 2000,
+    ShowLocalPlayer = false -- Показывать ли себя
 }
 
--- Функция для безопасного создания Drawing-объектов
+-- Функция для определения, является ли игрок убийцей
+-- В Bite By Night убийцу можно определить по наличию специфичных инструментов/способностей
+local function IsKiller(player)
+    local character = player.Character
+    if not character then return false end
+    
+    -- Проверяем характерные для убийцы предметы и способности
+    -- В Bite By Night убийца имеет уникальные инструменты в Backpack или Character
+    
+    -- Способ 1: Проверить наличие Remnant Cleaver (топор убийцы)
+    local backpack = player:FindFirstChildOfClass("Backpack")
+    if backpack then
+        for _, tool in ipairs(backpack:GetChildren()) do
+            if tool:IsA("Tool") and (tool.Name:find("Remnant") or tool.Name:find("Cleaver") or tool.Name:find("Axe")) then
+                return true
+            end
+        end
+    end
+    
+    -- Способ 2: Проверить Character на наличие оружия убийцы
+    for _, tool in ipairs(character:GetChildren()) do
+        if tool:IsA("Tool") and (tool.Name:find("Remnant") or tool.Name:find("Cleaver") or tool.Name:find("Axe") or tool.Name:find("Scream")) then
+            return true
+        end
+    end
+    
+    -- Способ 3: Проверить наличие способностей убийцы (они могут быть в PlayerGui или через атрибуты)
+    local playerGui = player:FindFirstChild("PlayerGui")
+    if playerGui then
+        -- У убийцы обычно есть специфичный GUI для способностей
+        for _, screenGui in ipairs(playerGui:GetChildren()) do
+            if screenGui:IsA("ScreenGui") and (screenGui.Name:find("Killer") or screenGui.Name:find("Ability")) then
+                return true
+            end
+        end
+    end
+    
+    -- Способ 4: Проверка по атрибутам (некоторые скрипты ставят метки)
+    if player:GetAttribute("IsKiller") or character:GetAttribute("IsKiller") then
+        return true
+    end
+    
+    -- Способ 5: Если игрок - единственный с большой скоростью или нестандартными статами
+    -- (Убийца обычно быстрее и имеет больше здоровья)
+    local humanoid = character:FindFirstChildOfClass("Humanoid")
+    if humanoid then
+        if humanoid.WalkSpeed > 20 or humanoid.MaxHealth > 150 then
+            return true
+        end
+    end
+    
+    return false
+end
+
+-- Функция создания Drawing-объектов
 local function CreateDrawing(className, properties)
     local success, drawing = pcall(function()
         local d = Drawing.new(className)
@@ -47,7 +93,7 @@ local function CreateDrawing(className, properties)
     return success and drawing or nil
 end
 
--- Очистка ESP для конкретного игрока
+-- Очистка ESP для игрока
 local function ClearESP(player)
     if ESPObjects[player] then
         for _, drawing in pairs(ESPObjects[player]) do
@@ -57,9 +103,9 @@ local function ClearESP(player)
     end
 end
 
--- Создание ESP для игрока
-local function CreateESP(player)
-    if player == LocalPlayer then return end
+-- Создание контура для игрока
+local function CreateOutline(player)
+    if not Settings.ShowLocalPlayer and player == LocalPlayer then return end
     
     local character = player.Character
     if not character then return end
@@ -68,93 +114,41 @@ local function CreateESP(player)
     local humanoid = character:FindFirstChildOfClass("Humanoid")
     if not humanoidRootPart or not humanoid then return end
     
-    -- Проверка команд (если TeamCheck включен)
-    if Settings.TeamCheck and LocalPlayer.Team and player.Team == LocalPlayer.Team then
-        return
+    -- Определяем цвет в зависимости от роли
+    local color
+    if player == LocalPlayer then
+        color = Settings.LocalColor
+    elseif IsKiller(player) then
+        color = Settings.KillerColor
+    else
+        color = Settings.SurvivorColor
     end
     
-    -- Очищаем старый ESP
+    -- Очищаем старый контур
     ClearESP(player)
     
     local drawings = {}
     
-    -- Box (2D квадрат)
-    if Settings.Box then
-        local box = CreateDrawing("Square", {
-            Visible = false,
-            Color = Settings.BoxColor,
-            Thickness = 1,
-            Filled = false
-        })
-        if box then drawings.Box = box end
-    end
+    -- Создаём квадратный контур
+    local box = CreateDrawing("Square", {
+        Visible = false,
+        Color = color,
+        Thickness = Settings.Thickness,
+        Filled = false
+    })
     
-    -- Tracer (линия от низа экрана)
-    if Settings.Tracer then
-        local tracer = CreateDrawing("Line", {
-            Visible = false,
-            Color = Settings.TracerColor,
-            Thickness = 1
-        })
-        if tracer then drawings.Tracer = tracer end
+    if box then
+        drawings.Box = box
+        ESPObjects[player] = drawings
     end
-    
-    -- Имя
-    if Settings.Name then
-        local nameText = CreateDrawing("Text", {
-            Visible = false,
-            Text = player.Name,
-            Color = Settings.NameColor,
-            Size = 13,
-            Center = true,
-            Outline = true,
-            OutlineColor = Color3.new(0, 0, 0)
-        })
-        if nameText then drawings.Name = nameText end
-    end
-    
-    -- Дистанция
-    if Settings.Distance then
-        local distanceText = CreateDrawing("Text", {
-            Visible = false,
-            Text = "",
-            Color = Settings.DistanceColor,
-            Size = 13,
-            Center = true,
-            Outline = true,
-            OutlineColor = Color3.new(0, 0, 0)
-        })
-        if distanceText then drawings.Distance = distanceText end
-    end
-    
-    -- Health Bar
-    if Settings.HealthBar then
-        local healthBarBg = CreateDrawing("Square", {
-            Visible = false,
-            Color = Color3.new(0, 0, 0),
-            Filled = true
-        })
-        local healthBarFill = CreateDrawing("Square", {
-            Visible = false,
-            Color = Color3.new(0, 255, 0),
-            Filled = true
-        })
-        if healthBarBg and healthBarFill then
-            drawings.HealthBarBg = healthBarBg
-            drawings.HealthBarFill = healthBarFill
-        end
-    end
-    
-    ESPObjects[player] = drawings
 end
 
--- Обновление ESP каждый кадр
-local function UpdateESP()
+-- Обновление позиций контуров
+local function UpdateOutlines()
     if not Settings.Enabled then
-        -- Скрываем все объекты
-        for player, drawings in pairs(ESPObjects) do
-            for _, drawing in pairs(drawings) do
-                drawing.Visible = false
+        for _, drawings in pairs(ESPObjects) do
+            if drawings.Box then
+                drawings.Box.Visible = false
             end
         end
         return
@@ -166,10 +160,9 @@ local function UpdateESP()
         local humanoid = character and character:FindFirstChildOfClass("Humanoid")
         local head = character and character:FindFirstChild("Head")
         
-        if not humanoidRootPart or not humanoid or not head then
-            -- Скрываем, если персонаж не загружен
-            for _, drawing in pairs(drawings) do
-                drawing.Visible = false
+        if not humanoidRootPart or not humanoid or not head or not drawings.Box then
+            if drawings.Box then
+                drawings.Box.Visible = false
             end
             continue
         end
@@ -177,20 +170,16 @@ local function UpdateESP()
         -- Проверка дистанции
         local distance = (Camera.CFrame.Position - humanoidRootPart.Position).Magnitude
         if distance > Settings.MaxDistance then
-            for _, drawing in pairs(drawings) do
-                drawing.Visible = false
-            end
+            drawings.Box.Visible = false
             continue
         end
         
-        -- Получаем позицию на экране
+        -- Получаем позиции на экране
         local rootPos, rootOnScreen = Camera:WorldToViewportPoint(humanoidRootPart.Position)
-        local headPos, headOnScreen = Camera:WorldToViewportPoint(head.Position + Vector3.new(0, 0.5, 0))
+        local headPos = Camera:WorldToViewportPoint(head.Position + Vector3.new(0, 0.5, 0))
         
         if not rootOnScreen then
-            for _, drawing in pairs(drawings) do
-                drawing.Visible = false
-            end
+            drawings.Box.Visible = false
             continue
         end
         
@@ -200,72 +189,22 @@ local function UpdateESP()
         local boxX = rootPos.X - boxWidth / 2
         local boxY = rootPos.Y - boxHeight / 2
         
-        -- Box
-        if drawings.Box then
-            drawings.Box.Visible = true
-            drawings.Box.Size = Vector2.new(boxWidth, boxHeight)
-            drawings.Box.Position = Vector2.new(boxX, boxY)
-        end
-        
-        -- Tracer
-        if drawings.Tracer then
-            drawings.Tracer.Visible = true
-            drawings.Tracer.From = Vector2.new(Camera.ViewportSize.X / 2, Camera.ViewportSize.Y)
-            drawings.Tracer.To = Vector2.new(rootPos.X, rootPos.Y)
-        end
-        
-        -- Name
-        if drawings.Name then
-            drawings.Name.Visible = true
-            drawings.Name.Text = player.Name
-            drawings.Name.Position = Vector2.new(rootPos.X, boxY - 15)
-        end
-        
-        -- Distance
-        if drawings.Distance then
-            drawings.Distance.Visible = true
-            drawings.Distance.Text = string.format("%.0f studs", distance)
-            drawings.Distance.Position = Vector2.new(rootPos.X, boxY + boxHeight + 5)
-        end
-        
-        -- Health Bar
-        if drawings.HealthBarBg and drawings.HealthBarFill then
-            local health = humanoid.Health
-            local maxHealth = humanoid.MaxHealth
-            local healthPercent = health / maxHealth
-            
-            local barWidth = 2
-            local barHeight = boxHeight
-            local barX = boxX - barWidth - 2
-            local barY = boxY
-            
-            drawings.HealthBarBg.Visible = true
-            drawings.HealthBarBg.Size = Vector2.new(barWidth, barHeight)
-            drawings.HealthBarBg.Position = Vector2.new(barX, barY)
-            
-            drawings.HealthBarFill.Visible = true
-            drawings.HealthBarFill.Size = Vector2.new(barWidth, barHeight * healthPercent)
-            drawings.HealthBarFill.Position = Vector2.new(barX, barY + barHeight * (1 - healthPercent))
-            
-            -- Цвет в зависимости от здоровья
-            if healthPercent > 0.6 then
-                drawings.HealthBarFill.Color = Color3.new(0, 255, 0)
-            elseif healthPercent > 0.3 then
-                drawings.HealthBarFill.Color = Color3.new(255, 255, 0)
-            else
-                drawings.HealthBarFill.Color = Color3.new(255, 0, 0)
-            end
-        end
+        -- Обновляем Box
+        drawings.Box.Visible = true
+        drawings.Box.Size = Vector2.new(boxWidth, boxHeight)
+        drawings.Box.Position = Vector2.new(boxX, boxY)
     end
 end
 
 -- Обработчики событий
 local function OnPlayerAdded(player)
-    player.CharacterAdded:Connect(function(character)
-        CreateESP(player)
+    player.CharacterAdded:Connect(function()
+        task.wait(0.5) -- Небольшая задержка для загрузки оружия/способностей
+        CreateOutline(player)
     end)
     if player.Character then
-        CreateESP(player)
+        task.wait(0.5)
+        CreateOutline(player)
     end
 end
 
@@ -273,7 +212,7 @@ local function OnPlayerRemoving(player)
     ClearESP(player)
 end
 
--- Подключаем события для всех текущих игроков
+-- Подключаем события для всех игроков
 for _, player in ipairs(Players:GetPlayers()) do
     OnPlayerAdded(player)
 end
@@ -281,24 +220,29 @@ end
 Players.PlayerAdded:Connect(OnPlayerAdded)
 Players.PlayerRemoving:Connect(OnPlayerRemoving)
 
--- Главный цикл обновления
-if Settings.UpdateInterval > 0 then
+-- Периодически перепроверяем роли (на случай смены убийцы)
+task.spawn(function()
     while true do
-        UpdateESP()
-        task.wait(Settings.UpdateInterval)
+        for _, player in ipairs(Players:GetPlayers()) do
+            if player.Character and player ~= LocalPlayer then
+                CreateOutline(player)
+            end
+        end
+        task.wait(2)
     end
-else
-    RunService.RenderStepped:Connect(UpdateESP)
-end
+end)
 
--- Создаём простой GUI для управления ESP
+-- Главный цикл обновления
+RunService.RenderStepped:Connect(UpdateOutlines)
+
+-- Создаём GUI для управления
 local function CreateControlGUI()
     local ScreenGui = Instance.new("ScreenGui")
-    ScreenGui.Name = "ESPControl"
-    ScreenGui.Parent = CoreGui
+    ScreenGui.Name = "BiteByNight_ESP"
+    ScreenGui.Parent = game:GetService("CoreGui")
     
     local Frame = Instance.new("Frame")
-    Frame.Size = UDim2.new(0, 200, 0, 150)
+    Frame.Size = UDim2.new(0, 200, 0, 120)
     Frame.Position = UDim2.new(0, 10, 0, 10)
     Frame.BackgroundColor3 = Color3.fromRGB(20, 20, 20)
     Frame.BackgroundTransparency = 0.2
@@ -310,17 +254,18 @@ local function CreateControlGUI()
     local Title = Instance.new("TextLabel")
     Title.Size = UDim2.new(1, 0, 0, 30)
     Title.BackgroundTransparency = 1
-    Title.Text = "ESP Control"
+    Title.Text = "Bite By Night ESP"
     Title.TextColor3 = Color3.fromRGB(255, 255, 255)
-    Title.TextSize = 16
+    Title.TextSize = 14
     Title.Font = Enum.Font.GothamBold
     Title.Parent = Frame
     
+    -- Кнопка вкл/выкл
     local ToggleButton = Instance.new("TextButton")
     ToggleButton.Size = UDim2.new(0.8, 0, 0, 30)
     ToggleButton.Position = UDim2.new(0.1, 0, 0, 40)
-    ToggleButton.BackgroundColor3 = Settings.Enabled and Color3.fromRGB(0, 170, 0) or Color3.fromRGB(170, 0, 0)
-    ToggleButton.Text = Settings.Enabled and "ESP: ON" or "ESP: OFF"
+    ToggleButton.BackgroundColor3 = Color3.fromRGB(0, 170, 0)
+    ToggleButton.Text = "ESP: ON"
     ToggleButton.TextColor3 = Color3.fromRGB(255, 255, 255)
     ToggleButton.TextSize = 14
     ToggleButton.Font = Enum.Font.Gotham
@@ -335,32 +280,18 @@ local function CreateControlGUI()
         ToggleButton.BackgroundColor3 = Settings.Enabled and Color3.fromRGB(0, 170, 0) or Color3.fromRGB(170, 0, 0)
     end)
     
-    -- Кнопка TeamCheck
-    local TeamButton = Instance.new("TextButton")
-    TeamButton.Size = UDim2.new(0.8, 0, 0, 30)
-    TeamButton.Position = UDim2.new(0.1, 0, 0, 80)
-    TeamButton.BackgroundColor3 = Settings.TeamCheck and Color3.fromRGB(0, 170, 0) or Color3.fromRGB(170, 0, 0)
-    TeamButton.Text = Settings.TeamCheck and "Team Check: ON" or "Team Check: OFF"
-    TeamButton.TextColor3 = Color3.fromRGB(255, 255, 255)
-    TeamButton.TextSize = 14
-    TeamButton.Font = Enum.Font.Gotham
-    TeamButton.AutoButtonColor = false
-    TeamButton.Parent = Frame
+    -- Информация о цветах
+    local Info = Instance.new("TextLabel")
+    Info.Size = UDim2.new(1, 0, 0, 40)
+    Info.Position = UDim2.new(0, 0, 0, 80)
+    Info.BackgroundTransparency = 1
+    Info.Text = "🟢 Killer | 🔴 Survivor"
+    Info.TextColor3 = Color3.fromRGB(255, 255, 255)
+    Info.TextSize = 12
+    Info.Font = Enum.Font.Gotham
+    Info.Parent = Frame
     
-    Instance.new("UICorner", TeamButton).CornerRadius = UDim.new(0, 6)
-    
-    TeamButton.MouseButton1Click:Connect(function()
-        Settings.TeamCheck = not Settings.TeamCheck
-        TeamButton.Text = Settings.TeamCheck and "Team Check: ON" or "Team Check: OFF"
-        TeamButton.BackgroundColor3 = Settings.TeamCheck and Color3.fromRGB(0, 170, 0) or Color3.fromRGB(170, 0, 0)
-        -- Обновляем ESP для всех игроков
-        for _, player in ipairs(Players:GetPlayers()) do
-            ClearESP(player)
-            OnPlayerAdded(player)
-        end
-    end)
-    
-    -- Кнопка закрытия GUI
+    -- Кнопка закрытия
     local CloseButton = Instance.new("TextButton")
     CloseButton.Size = UDim2.new(0, 20, 0, 20)
     CloseButton.Position = UDim2.new(1, -25, 0, 5)
@@ -379,7 +310,6 @@ local function CreateControlGUI()
     end)
 end
 
--- Запускаем GUI управления
 CreateControlGUI()
 
-print("ESP Script loaded! Control GUI is on the top-left.")
+print("Bite By Night Killer ESP loaded! Green = Killer, Red = Survivor")
