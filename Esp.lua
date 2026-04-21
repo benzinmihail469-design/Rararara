@@ -1,6 +1,6 @@
 --[[
     Celeron's GUI для Bite By Night
-    БЕЗ ЛАГОВ ПРИ ЗАПУСКЕ
+    ОПТИМИЗИРОВАННЫЙ ЗАПУСК БЕЗ ЛАГОВ
 --]]
 
 -- Сервисы
@@ -10,39 +10,28 @@ local UserInputService = game:GetService("UserInputService")
 local Camera = workspace.CurrentCamera
 local LocalPlayer = Players.LocalPlayer
 local CoreGui = game:GetService("CoreGui")
-
--- ==================== МГНОВЕННЫЙ ЗАГРУЗЧИК ====================
-local loader = Instance.new("ScreenGui", CoreGui)
-loader.Name = "Loader"
-
-local frame = Instance.new("Frame", loader)
-frame.Size = UDim2.new(0, 200, 0, 40)
-frame.Position = UDim2.new(0.5, -100, 0.5, -20)
-frame.BackgroundColor3 = Color3.fromRGB(20, 20, 20)
-frame.BorderSizePixel = 0
-Instance.new("UICorner", frame).CornerRadius = UDim.new(0, 6)
-
-local title = Instance.new("TextLabel", frame)
-title.Size = UDim2.new(1, 0, 1, 0)
-title.BackgroundTransparency = 1
-title.Text = "Loading..."
-title.TextColor3 = Color3.fromRGB(255, 255, 255)
-title.Font = Enum.Font.Gotham
-title.TextSize = 14
+local StarterGui = game:GetService("StarterGui")
 
 -- ==================== НАСТРОЙКИ ====================
 local Settings = {
     ESPEnabled = true,
+    SurvivorESP = true,
+    KillerESP = true,
     GeneratorESP = true,
+    
+    KillerColor = Color3.fromRGB(0, 255, 0),
+    SurvivorColor = Color3.fromRGB(255, 0, 0),
+    GeneratorColor = Color3.fromRGB(255, 255, 0),
+    
+    AutoGenerator = false,
+    AutoEscape = false,
+    
     SpeedEnabled = false,
     SpeedValue = 40,
     InfiniteSprint = false,
     Noclip = false,
     Aimlock = false,
-    AutoGenerator = false,
-    KillerColor = Color3.fromRGB(0, 255, 0),
-    SurvivorColor = Color3.fromRGB(255, 0, 0),
-    GeneratorColor = Color3.fromRGB(255, 255, 0)
+    AimlockBind = "Z"
 }
 
 -- ==================== ХРАНИЛИЩЕ ====================
@@ -56,33 +45,27 @@ local Cache = {
     ESPUpdate = 0
 }
 
--- ==================== ОБХОД АНТИЧИТА ====================
-pcall(function()
-    for _, v in ipairs(LocalPlayer.PlayerScripts:GetChildren()) do
-        if v.Name:find("Anti") or v.Name:find("Cheat") then v:Destroy() end
-    end
-    
-    local oldNamecall = hookmetamethod(game, "__namecall", function(self, ...)
-        local method = getnamecallmethod()
-        if method == "FireServer" then
-            local name = self.Name:lower()
-            if name:find("kick") or name:find("ban") or name:find("stamina") then
-                return nil
+-- ==================== ОБХОД АНТИЧИТА (ОПТИМИЗИРОВАН) ====================
+local function setupAntiCheat()
+    pcall(function()
+        for _, v in ipairs(LocalPlayer.PlayerScripts:GetChildren()) do
+            if v.Name:find("Anti") or v.Name:find("Cheat") then v:Destroy() end
+        end
+        
+        local oldIndex = hookmetamethod(game, "__index", function(self, k)
+            if self == LocalPlayer then
+                if k == "Stamina" or k == "Energy" then return 100 end
+                if k == "WalkSpeed" then return 16 end
             end
-        end
-        return oldNamecall(self, ...)
+            return oldIndex(self, k)
+        end)
     end)
-    
-    local oldIndex = hookmetamethod(game, "__index", function(self, key)
-        if self == LocalPlayer then
-            if key == "Stamina" or key == "Energy" then return 100 end
-            if key == "WalkSpeed" then return 16 end
-        end
-        return oldIndex(self, key)
-    end)
-end)
+end
 
--- ==================== ФУНКЦИИ ====================
+-- Запускаем обход античита сразу
+setupAntiCheat()
+
+-- ==================== ФУНКЦИИ ДЛЯ МОДЕЛЕЙ ====================
 local function GetRootPart(m)
     if not m then return nil end
     return m:FindFirstChild("HumanoidRootPart") or m.PrimaryPart or m:FindFirstChildOfClass("BasePart")
@@ -92,23 +75,21 @@ local function GetHumanoid(m)
     return m and m:FindFirstChildOfClass("Humanoid")
 end
 
+-- ==================== ОПРЕДЕЛЕНИЕ УБИЙЦЫ ====================
 local function FindKiller()
     local now = tick()
     if now - Cache.Killer.time < 2 then return Cache.Killer.player end
     Cache.Killer.time = now
-    
     for _, p in ipairs(Players:GetPlayers()) do
         if p ~= LocalPlayer and p.Character then
             local h = GetHumanoid(p.Character)
-            if h and h.MaxHealth > 500 then
-                Cache.Killer.player = p
-                return p
-            end
+            if h and h.MaxHealth > 500 then Cache.Killer.player = p; return p end
         end
     end
     return Cache.Killer.player
 end
 
+-- ==================== ПОИСК ГЕНЕРАТОРОВ ====================
 local function FindGenerators()
     local now = tick()
     if now - Cache.Generators.time < 2 then return Cache.Generators.list end
@@ -129,31 +110,33 @@ local function FindGenerators()
     return Cache.Generators.list
 end
 
+-- ==================== ESP (ЛЁГКАЯ) ====================
 local function CreateDrawing(class, props)
     local s, d = pcall(function() return Drawing.new(class) end)
     if s and d then for k, v in pairs(props) do pcall(function() d[k] = v end) end return d end
 end
 
--- ==================== ESP ====================
 local function UpdateESP()
     local now = tick()
-    if now - Cache.ESPUpdate < 0.12 then return end  -- ~8 FPS
+    if now - Cache.ESPUpdate < 0.15 then return end
     Cache.ESPUpdate = now
     
     Cache.CameraPos = Camera.CFrame.Position
     local killer = FindKiller()
     
-    -- Создание ESP
     if Settings.ESPEnabled then
         for _, p in ipairs(Players:GetPlayers()) do
             if p ~= LocalPlayer and p.Character then
                 local isKiller = (p == killer)
-                if not ESPObjects[p] then
-                    if ESPObjects[p] then for _, d in pairs(ESPObjects[p]) do d:Remove() end end
-                    ESPObjects[p] = {
-                        Box = CreateDrawing("Square", {Visible = false, Color = isKiller and Settings.KillerColor or Settings.SurvivorColor, Thickness = 2, Filled = false}),
-                        Name = CreateDrawing("Text", {Visible = false, Text = p.Name, Color = isKiller and Settings.KillerColor or Settings.SurvivorColor, Size = 13, Center = true})
-                    }
+                if (Settings.SurvivorESP and not isKiller) or (Settings.KillerESP and isKiller) then
+                    if not ESPObjects[p] then
+                        if ESPObjects[p] then for _, d in pairs(ESPObjects[p]) do d:Remove() end end
+                        local c = isKiller and Settings.KillerColor or Settings.SurvivorColor
+                        ESPObjects[p] = {
+                            Box = CreateDrawing("Square", {Visible = false, Color = c, Thickness = 2, Filled = false}),
+                            Name = CreateDrawing("Text", {Visible = false, Text = p.Name, Color = c, Size = 13, Center = true})
+                        }
+                    end
                 end
             end
         end
@@ -172,20 +155,15 @@ local function UpdateESP()
         end
     end
     
-    -- Обновление позиций
     for p, data in pairs(ESPObjects) do
         local player = type(p) == "string" and Players:FindFirstChild(p) or p
         if not player or not player.Character then data.Box.Visible = false; data.Name.Visible = false; continue end
-        
         local root = GetRootPart(player.Character)
         if not root then data.Box.Visible = false; data.Name.Visible = false; continue end
-        
         local dist = (Cache.CameraPos - root.Position).Magnitude
         if dist > 1500 or not Settings.ESPEnabled then data.Box.Visible = false; data.Name.Visible = false; continue end
-        
         local pos, on = Camera:WorldToViewportPoint(root.Position)
         if not on then data.Box.Visible = false; data.Name.Visible = false; continue end
-        
         local h = 1200 / dist
         local w = h * 0.45
         data.Box.Visible = true
@@ -195,21 +173,16 @@ local function UpdateESP()
         data.Name.Position = Vector2.new(pos.X, pos.Y - h/2 - 15)
     end
     
-    for id, data in pairs(ObjectESPList) do
+    for _, data in pairs(ObjectESPList) do
         if not Settings.ESPEnabled or not Settings.GeneratorESP then data.Box.Visible = false; data.Name.Visible = false; continue end
-        
         local obj = data.Obj
         if not obj or not obj.Parent then data.Box.Visible = false; data.Name.Visible = false; continue end
-        
         local root = obj:IsA("BasePart") and obj or obj.PrimaryPart or obj:FindFirstChildOfClass("BasePart")
         if not root then data.Box.Visible = false; data.Name.Visible = false; continue end
-        
         local dist = (Cache.CameraPos - root.Position).Magnitude
         if dist > 1500 then data.Box.Visible = false; data.Name.Visible = false; continue end
-        
         local pos, on = Camera:WorldToViewportPoint(root.Position)
         if not on then data.Box.Visible = false; data.Name.Visible = false; continue end
-        
         local h = 1000 / dist
         local w = h * 0.8
         data.Box.Visible = true
@@ -305,13 +278,13 @@ local function AutoGeneratorTask()
     end)
 end
 
--- ==================== GUI ====================
+-- ==================== GUI (ОПТИМИЗИРОВАН) ====================
 local function CreateGUI()
-    loader:Destroy() -- Убираем загрузчик
-    
     local gui = Instance.new("ScreenGui", CoreGui)
+    gui.Name = "CeleronGUI"
+    
     local Main = Instance.new("Frame", gui)
-    Main.Size = UDim2.new(0, 180, 0, 200)
+    Main.Size = UDim2.new(0, 180, 0, 210)
     Main.Position = UDim2.new(0, 10, 0, 10)
     Main.BackgroundColor3 = Color3.fromRGB(15, 15, 15)
     Main.BackgroundTransparency = 0.15
@@ -436,13 +409,14 @@ local function CreateGUI()
 end
 
 -- ==================== ОТЛОЖЕННЫЙ ЗАПУСК ====================
-task.wait(0.2) -- Даём время на загрузку
+-- Сначала создаём GUI (легко)
 CreateGUI()
 
 -- Запускаем ESP с задержкой
 task.wait(0.3)
 RunService.RenderStepped:Connect(UpdateESP)
 
+-- Обработчики событий
 LocalPlayer.CharacterAdded:Connect(function()
     task.wait(0.3)
     if Settings.SpeedEnabled then SpeedTask() end
@@ -452,8 +426,16 @@ end)
 
 UserInputService.InputBegan:Connect(function(i, g)
     if g then return end
-    if i.KeyCode == Enum.KeyCode.Z then
+    if i.KeyCode == Enum.KeyCode[Settings.AimlockBind] then
         Settings.Aimlock = not Settings.Aimlock
         AimlockTask()
     end
 end)
+
+-- Уведомление с задержкой
+task.wait(0.5)
+StarterGui:SetCore("SendNotification", {
+    Title = "Celeron's GUI",
+    Text = "Loaded!",
+    Duration = 2
+})
