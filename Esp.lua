@@ -1,18 +1,16 @@
 --[[
     Celeron's GUI для Bite By Night
-    ОПТИМИЗИРОВАННЫЙ ЗАПУСК БЕЗ ЛАГОВ
+    ПОЛНЫЙ ФУНКЦИОНАЛ + ПЛАВНЫЙ ЗАПУСК
 --]]
 
--- Сервисы
 local Players = game:GetService("Players")
 local RunService = game:GetService("RunService")
 local UserInputService = game:GetService("UserInputService")
 local Camera = workspace.CurrentCamera
 local LocalPlayer = Players.LocalPlayer
 local CoreGui = game:GetService("CoreGui")
-local StarterGui = game:GetService("StarterGui")
 
--- ==================== НАСТРОЙКИ ====================
+-- Настройки
 local Settings = {
     ESPEnabled = true,
     SurvivorESP = true,
@@ -34,7 +32,6 @@ local Settings = {
     AimlockBind = "Z"
 }
 
--- ==================== ХРАНИЛИЩЕ ====================
 local ESPObjects = {}
 local ObjectESPList = {}
 local Tasks = {}
@@ -45,37 +42,30 @@ local Cache = {
     ESPUpdate = 0
 }
 
--- ==================== ОБХОД АНТИЧИТА (ОПТИМИЗИРОВАН) ====================
-local function setupAntiCheat()
-    pcall(function()
-        for _, v in ipairs(LocalPlayer.PlayerScripts:GetChildren()) do
-            if v.Name:find("Anti") or v.Name:find("Cheat") then v:Destroy() end
+-- Обход античита
+pcall(function()
+    for _, v in ipairs(LocalPlayer.PlayerScripts:GetChildren()) do
+        if v.Name:find("Anti") or v.Name:find("Cheat") then v:Destroy() end
+    end
+    local oldIndex = hookmetamethod(game, "__index", function(self, k)
+        if self == LocalPlayer then
+            if k == "Stamina" or k == "Energy" then return 100 end
+            if k == "WalkSpeed" then return 16 end
         end
-        
-        local oldIndex = hookmetamethod(game, "__index", function(self, k)
-            if self == LocalPlayer then
-                if k == "Stamina" or k == "Energy" then return 100 end
-                if k == "WalkSpeed" then return 16 end
-            end
-            return oldIndex(self, k)
-        end)
+        return oldIndex(self, k)
     end)
-end
+end)
 
--- Запускаем обход античита сразу
-setupAntiCheat()
-
--- ==================== ФУНКЦИИ ДЛЯ МОДЕЛЕЙ ====================
+-- Функции моделей
 local function GetRootPart(m)
     if not m then return nil end
     return m:FindFirstChild("HumanoidRootPart") or m.PrimaryPart or m:FindFirstChildOfClass("BasePart")
 end
-
 local function GetHumanoid(m)
     return m and m:FindFirstChildOfClass("Humanoid")
 end
 
--- ==================== ОПРЕДЕЛЕНИЕ УБИЙЦЫ ====================
+-- Поиск убийцы
 local function FindKiller()
     local now = tick()
     if now - Cache.Killer.time < 2 then return Cache.Killer.player end
@@ -89,13 +79,12 @@ local function FindKiller()
     return Cache.Killer.player
 end
 
--- ==================== ПОИСК ГЕНЕРАТОРОВ ====================
+-- Поиск генераторов
 local function FindGenerators()
     local now = tick()
     if now - Cache.Generators.time < 2 then return Cache.Generators.list end
     Cache.Generators.time = now
     Cache.Generators.list = {}
-    
     for _, obj in ipairs(workspace:GetDescendants()) do
         if obj:IsA("Model") and obj.Name:lower():find("generator") then
             table.insert(Cache.Generators.list, obj)
@@ -110,17 +99,17 @@ local function FindGenerators()
     return Cache.Generators.list
 end
 
--- ==================== ESP (ЛЁГКАЯ) ====================
+-- Drawing
 local function CreateDrawing(class, props)
     local s, d = pcall(function() return Drawing.new(class) end)
     if s and d then for k, v in pairs(props) do pcall(function() d[k] = v end) end return d end
 end
 
+-- ESP
 local function UpdateESP()
     local now = tick()
     if now - Cache.ESPUpdate < 0.15 then return end
     Cache.ESPUpdate = now
-    
     Cache.CameraPos = Camera.CFrame.Position
     local killer = FindKiller()
     
@@ -193,17 +182,15 @@ local function UpdateESP()
     end
 end
 
--- ==================== ЗАДАЧИ ====================
+-- Задачи
 local function SpeedTask()
     if Tasks.Speed then Tasks.Speed:Disconnect() end
     if not Settings.SpeedEnabled then return end
     Tasks.Speed = RunService.Heartbeat:Connect(function()
-        pcall(function()
-            if LocalPlayer.Character then
-                local h = GetHumanoid(LocalPlayer.Character)
-                if h then h.WalkSpeed = Settings.SpeedValue end
-            end
-        end)
+        if LocalPlayer.Character then
+            local h = GetHumanoid(LocalPlayer.Character)
+            if h then h.WalkSpeed = Settings.SpeedValue end
+        end
     end)
 end
 
@@ -211,10 +198,8 @@ local function SprintTask()
     if Tasks.Sprint then Tasks.Sprint:Disconnect() end
     if not Settings.InfiniteSprint then return end
     Tasks.Sprint = RunService.Heartbeat:Connect(function()
-        pcall(function()
-            LocalPlayer:SetAttribute("Stamina", 100)
-            LocalPlayer:SetAttribute("Energy", 100)
-        end)
+        LocalPlayer:SetAttribute("Stamina", 100)
+        LocalPlayer:SetAttribute("Energy", 100)
     end)
 end
 
@@ -222,13 +207,11 @@ local function NoclipTask()
     if Tasks.Noclip then Tasks.Noclip:Disconnect() end
     if not Settings.Noclip then return end
     Tasks.Noclip = RunService.Heartbeat:Connect(function()
-        pcall(function()
-            if LocalPlayer.Character then
-                for _, p in ipairs(LocalPlayer.Character:GetDescendants()) do
-                    if p:IsA("BasePart") then p.CanCollide = false end
-                end
+        if LocalPlayer.Character then
+            for _, p in ipairs(LocalPlayer.Character:GetDescendants()) do
+                if p:IsA("BasePart") then p.CanCollide = false end
             end
-        end)
+        end
     end)
 end
 
@@ -236,22 +219,20 @@ local function AimlockTask()
     if Tasks.Aimlock then Tasks.Aimlock:Disconnect() end
     if not Settings.Aimlock then return end
     Tasks.Aimlock = RunService.RenderStepped:Connect(function()
-        pcall(function()
-            local closest, minDist = nil, math.huge
-            for _, p in ipairs(Players:GetPlayers()) do
-                if p ~= LocalPlayer and p.Character then
-                    local root = GetRootPart(p.Character)
-                    if root then
-                        local dist = (Cache.CameraPos - root.Position).Magnitude
-                        if dist < minDist then minDist = dist; closest = p end
-                    end
+        local closest, minDist = nil, math.huge
+        for _, p in ipairs(Players:GetPlayers()) do
+            if p ~= LocalPlayer and p.Character then
+                local root = GetRootPart(p.Character)
+                if root then
+                    local dist = (Cache.CameraPos - root.Position).Magnitude
+                    if dist < minDist then minDist = dist; closest = p end
                 end
             end
-            if closest and closest.Character then
-                local root = GetRootPart(closest.Character)
-                if root then Camera.CFrame = CFrame.new(Cache.CameraPos, root.Position) end
-            end
-        end)
+        end
+        if closest and closest.Character then
+            local root = GetRootPart(closest.Character)
+            if root then Camera.CFrame = CFrame.new(Cache.CameraPos, root.Position) end
+        end
     end)
 end
 
@@ -259,137 +240,266 @@ local function AutoGeneratorTask()
     if Tasks.Generator then Tasks.Generator:Disconnect() end
     if not Settings.AutoGenerator then return end
     Tasks.Generator = RunService.Heartbeat:Connect(function()
-        pcall(function()
-            if not LocalPlayer.Character then return end
-            for _, gen in ipairs(FindGenerators()) do
-                local prompt = gen:FindFirstChildOfClass("ProximityPrompt")
-                if prompt then
-                    local pos = gen:IsA("BasePart") and gen.Position or (gen.PrimaryPart and gen.PrimaryPart.Position)
-                    if pos then
-                        LocalPlayer.Character:MoveTo(pos)
-                        if (LocalPlayer.Character:GetPivot().Position - pos).Magnitude < 15 then
-                            fireproximityprompt(prompt)
-                        end
+        if not LocalPlayer.Character then return end
+        for _, gen in ipairs(FindGenerators()) do
+            local prompt = gen:FindFirstChildOfClass("ProximityPrompt")
+            if prompt then
+                local pos = gen:IsA("BasePart") and gen.Position or (gen.PrimaryPart and gen.PrimaryPart.Position)
+                if pos then
+                    LocalPlayer.Character:MoveTo(pos)
+                    if (LocalPlayer.Character:GetPivot().Position - pos).Magnitude < 15 then
+                        fireproximityprompt(prompt)
                     end
-                    break
                 end
+                break
             end
-        end)
+        end
     end)
 end
 
--- ==================== GUI (ОПТИМИЗИРОВАН) ====================
+local function AutoEscapeTask()
+    if Tasks.Escape then Tasks.Escape:Disconnect() end
+    if not Settings.AutoEscape then return end
+    Tasks.Escape = RunService.Heartbeat:Connect(function()
+        if not LocalPlayer.Character then return end
+        for _, v in ipairs(workspace:GetDescendants()) do
+            if v:IsA("Part") and (v.Name:lower():find("exit") or v.Name:lower():find("escape")) then
+                LocalPlayer.Character:MoveTo(v.Position)
+                break
+            end
+        end
+    end)
+end
+
+-- GUI
 local function CreateGUI()
     local gui = Instance.new("ScreenGui", CoreGui)
     gui.Name = "CeleronGUI"
     
     local Main = Instance.new("Frame", gui)
-    Main.Size = UDim2.new(0, 180, 0, 210)
-    Main.Position = UDim2.new(0, 10, 0, 10)
-    Main.BackgroundColor3 = Color3.fromRGB(15, 15, 15)
-    Main.BackgroundTransparency = 0.15
+    Main.Size = UDim2.new(0, 500, 0, 350)
+    Main.Position = UDim2.new(0.5, -250, 0.5, -175)
+    Main.BackgroundColor3 = Color3.fromRGB(20, 20, 20)
+    Main.BackgroundTransparency = 0.05
     Main.BorderSizePixel = 0
-    Instance.new("UICorner", Main).CornerRadius = UDim.new(0, 8)
+    Instance.new("UICorner", Main).CornerRadius = UDim.new(0, 10)
     
+    -- Заголовок
     local TitleBar = Instance.new("Frame", Main)
-    TitleBar.Size = UDim2.new(1, 0, 0, 28)
-    TitleBar.BackgroundColor3 = Color3.fromRGB(25, 25, 25)
+    TitleBar.Size = UDim2.new(1, 0, 0, 35)
+    TitleBar.BackgroundColor3 = Color3.fromRGB(30, 30, 30)
     TitleBar.BorderSizePixel = 0
-    Instance.new("UICorner", TitleBar).CornerRadius = UDim.new(0, 8)
+    Instance.new("UICorner", TitleBar).CornerRadius = UDim.new(0, 10)
     
     local Title = Instance.new("TextLabel", TitleBar)
-    Title.Size = UDim2.new(1, -50, 1, 0)
-    Title.Position = UDim2.new(0, 10, 0, 0)
+    Title.Size = UDim2.new(1, -80, 1, 0)
+    Title.Position = UDim2.new(0, 15, 0, 0)
     Title.BackgroundTransparency = 1
-    Title.Text = "Celeron's GUI"
-    Title.TextColor3 = Color3.fromRGB(0, 255, 0)
-    Title.TextSize = 12
+    Title.Text = "Celeron's GUI (Bite By Night)"
+    Title.TextColor3 = Color3.fromRGB(255, 255, 255)
+    Title.TextSize = 15
     Title.Font = Enum.Font.GothamBold
     Title.TextXAlignment = Enum.TextXAlignment.Left
     
     local Minimize = Instance.new("TextButton", TitleBar)
-    Minimize.Size = UDim2.new(0, 22, 0, 22)
-    Minimize.Position = UDim2.new(1, -48, 0, 3)
-    Minimize.BackgroundColor3 = Color3.fromRGB(100, 100, 100)
+    Minimize.Size = UDim2.new(0, 28, 0, 28)
+    Minimize.Position = UDim2.new(1, -65, 0, 4)
+    Minimize.BackgroundColor3 = Color3.fromRGB(80, 80, 80)
     Minimize.Text = "—"
     Minimize.TextColor3 = Color3.fromRGB(255, 255, 255)
     Minimize.Font = Enum.Font.GothamBold
-    Minimize.TextSize = 12
+    Minimize.TextSize = 16
     Minimize.AutoButtonColor = false
-    Instance.new("UICorner", Minimize).CornerRadius = UDim.new(0, 4)
+    Instance.new("UICorner", Minimize).CornerRadius = UDim.new(0, 5)
     
     local Close = Instance.new("TextButton", TitleBar)
-    Close.Size = UDim2.new(0, 22, 0, 22)
-    Close.Position = UDim2.new(1, -24, 0, 3)
-    Close.BackgroundColor3 = Color3.fromRGB(200, 0, 0)
+    Close.Size = UDim2.new(0, 28, 0, 28)
+    Close.Position = UDim2.new(1, -32, 0, 4)
+    Close.BackgroundColor3 = Color3.fromRGB(200, 50, 50)
     Close.Text = "X"
     Close.TextColor3 = Color3.fromRGB(255, 255, 255)
     Close.Font = Enum.Font.GothamBold
-    Close.TextSize = 12
+    Close.TextSize = 14
     Close.AutoButtonColor = false
-    Instance.new("UICorner", Close).CornerRadius = UDim.new(0, 4)
-    
+    Instance.new("UICorner", Close).CornerRadius = UDim.new(0, 5)
     Close.MouseButton1Click:Connect(function()
         for _, t in pairs(Tasks) do if t then t:Disconnect() end end
         gui:Destroy()
     end)
     
+    -- Вкладки
+    local TabHolder = Instance.new("Frame", Main)
+    TabHolder.Size = UDim2.new(0, 110, 1, -35)
+    TabHolder.Position = UDim2.new(0, 0, 0, 35)
+    TabHolder.BackgroundColor3 = Color3.fromRGB(25, 25, 25)
+    TabHolder.BorderSizePixel = 0
+    
+    local TabList = Instance.new("UIListLayout", TabHolder)
+    TabList.SortOrder = Enum.SortOrder.LayoutOrder
+    TabList.Padding = UDim.new(0, 2)
+    
     local Content = Instance.new("Frame", Main)
-    Content.Size = UDim2.new(1, 0, 1, -28)
-    Content.Position = UDim2.new(0, 0, 0, 28)
-    Content.BackgroundTransparency = 1
+    Content.Size = UDim2.new(1, -110, 1, -35)
+    Content.Position = UDim2.new(0, 110, 0, 35)
+    Content.BackgroundColor3 = Color3.fromRGB(35, 35, 35)
+    Content.BorderSizePixel = 0
     
-    local contentElements = {Content}
-    local yPos = 5
-    
-    local function CreateButton(text, setting, callback)
-        local btn = Instance.new("TextButton", Content)
-        btn.Size = UDim2.new(0.85, 0, 0, 26)
-        btn.Position = UDim2.new(0.075, 0, 0, yPos)
-        btn.BackgroundColor3 = Settings[setting] and Color3.fromRGB(0, 170, 0) or Color3.fromRGB(170, 0, 0)
-        btn.Text = text
-        btn.TextColor3 = Color3.fromRGB(255, 255, 255)
-        btn.TextSize = 11
+    local Tabs = {}
+    local function CreateTab(name)
+        local btn = Instance.new("TextButton", TabHolder)
+        btn.Size = UDim2.new(1, 0, 0, 32)
+        btn.BackgroundColor3 = Color3.fromRGB(40, 40, 40)
+        btn.Text = name
+        btn.TextColor3 = Color3.fromRGB(200, 200, 200)
         btn.Font = Enum.Font.Gotham
-        btn.AutoButtonColor = false
-        Instance.new("UICorner", btn).CornerRadius = UDim.new(0, 5)
-        table.insert(contentElements, btn)
+        btn.TextSize = 13
+        
+        local page = Instance.new("ScrollingFrame", Content)
+        page.Size = UDim2.new(1, 0, 1, 0)
+        page.BackgroundTransparency = 1
+        page.BorderSizePixel = 0
+        page.ScrollBarThickness = 5
+        page.Visible = false
+        
+        local list = Instance.new("UIListLayout", page)
+        list.SortOrder = Enum.SortOrder.LayoutOrder
+        list.Padding = UDim.new(0, 8)
+        Instance.new("UIPadding", page).PaddingTop = UDim.new(0, 8)
         
         btn.MouseButton1Click:Connect(function()
-            Settings[setting] = not Settings[setting]
-            btn.Text = Settings[setting] and text:gsub("OFF", "ON") or text:gsub("ON", "OFF")
-            btn.BackgroundColor3 = Settings[setting] and Color3.fromRGB(0, 170, 0) or Color3.fromRGB(170, 0, 0)
-            if callback then callback() end
+            for _, t in pairs(Tabs) do
+                t.Page.Visible = false
+                t.Btn.BackgroundColor3 = Color3.fromRGB(40, 40, 40)
+            end
+            page.Visible = true
+            btn.BackgroundColor3 = Color3.fromRGB(60, 60, 60)
         end)
         
-        yPos = yPos + 30
-        return btn
+        table.insert(Tabs, {Btn = btn, Page = page})
+        return page
     end
     
-    CreateButton("ESP: ON", "ESPEnabled")
-    CreateButton("Generator: ON", "GeneratorESP")
-    CreateButton("Speed 40: OFF", "SpeedEnabled", SpeedTask)
-    CreateButton("Inf Sprint: OFF", "InfiniteSprint", SprintTask)
-    CreateButton("Noclip: OFF", "Noclip", NoclipTask)
-    CreateButton("Aimlock: OFF", "Aimlock", AimlockTask)
-    CreateButton("Auto Gen: OFF", "AutoGenerator", AutoGeneratorTask)
+    local function CreateToggle(parent, text, setting, callback)
+        local f = Instance.new("Frame", parent)
+        f.Size = UDim2.new(1, -20, 0, 36)
+        f.Position = UDim2.new(0, 10, 0, 0)
+        f.BackgroundColor3 = Color3.fromRGB(45, 45, 45)
+        f.BorderSizePixel = 0
+        Instance.new("UICorner", f).CornerRadius = UDim.new(0, 6)
+        
+        local l = Instance.new("TextLabel", f)
+        l.Size = UDim2.new(0.6, 0, 1, 0)
+        l.Position = UDim2.new(0, 12, 0, 0)
+        l.BackgroundTransparency = 1
+        l.Text = text
+        l.TextColor3 = Color3.fromRGB(255, 255, 255)
+        l.Font = Enum.Font.Gotham
+        l.TextSize = 12
+        l.TextXAlignment = Enum.TextXAlignment.Left
+        
+        local t = Instance.new("TextButton", f)
+        t.Size = UDim2.new(0, 55, 0, 22)
+        t.Position = UDim2.new(1, -65, 0.5, -11)
+        t.BackgroundColor3 = Settings[setting] and Color3.fromRGB(0, 170, 0) or Color3.fromRGB(170, 0, 0)
+        t.Text = Settings[setting] and "ON" or "OFF"
+        t.TextColor3 = Color3.fromRGB(255, 255, 255)
+        t.Font = Enum.Font.GothamBold
+        t.TextSize = 11
+        t.AutoButtonColor = false
+        Instance.new("UICorner", t).CornerRadius = UDim.new(0, 5)
+        
+        t.MouseButton1Click:Connect(function()
+            Settings[setting] = not Settings[setting]
+            t.Text = Settings[setting] and "ON" or "OFF"
+            t.BackgroundColor3 = Settings[setting] and Color3.fromRGB(0, 170, 0) or Color3.fromRGB(170, 0, 0)
+            if callback then callback() end
+        end)
+    end
     
+    local function CreateButton(parent, text, callback)
+        local b = Instance.new("TextButton", parent)
+        b.Size = UDim2.new(1, -20, 0, 32)
+        b.Position = UDim2.new(0, 10, 0, 0)
+        b.BackgroundColor3 = Color3.fromRGB(0, 120, 200)
+        b.Text = text
+        b.TextColor3 = Color3.fromRGB(255, 255, 255)
+        b.Font = Enum.Font.Gotham
+        b.TextSize = 13
+        b.Parent = parent
+        Instance.new("UICorner", b).CornerRadius = UDim.new(0, 6)
+        b.MouseButton1Click:Connect(callback)
+    end
+    
+    local MainTab = CreateTab("Main")
+    local VisualTab = CreateTab("Visual")
+    local TeleportTab = CreateTab("Teleport")
+    local OthersTab = CreateTab("Others")
+    
+    Tabs[1].Page.Visible = true
+    Tabs[1].Btn.BackgroundColor3 = Color3.fromRGB(60, 60, 60)
+    
+    CreateToggle(MainTab, "Auto Generator", "AutoGenerator", AutoGeneratorTask)
+    CreateToggle(MainTab, "Auto Escape", "AutoEscape", AutoEscapeTask)
+    CreateButton(MainTab, "Safety Area", function()
+        for _, v in ipairs(workspace:GetDescendants()) do
+            if v:IsA("Part") and (v.Name:lower():find("safe") or v.Name:lower():find("spawn")) then
+                LocalPlayer.Character:MoveTo(v.Position)
+                break
+            end
+        end
+    end)
+    CreateButton(MainTab, "View Killer", function()
+        local k = FindKiller()
+        if k and k.Character then Camera.CameraSubject = k.Character; task.wait(3); Camera.CameraSubject = LocalPlayer.Character end
+    end)
+    
+    CreateToggle(VisualTab, "ESP", "ESPEnabled")
+    CreateToggle(VisualTab, "Survivor ESP", "SurvivorESP")
+    CreateToggle(VisualTab, "Killer ESP", "KillerESP")
+    CreateToggle(VisualTab, "Generator ESP", "GeneratorESP")
+    
+    CreateButton(TeleportTab, "Safety Area", function()
+        for _, v in ipairs(workspace:GetDescendants()) do
+            if v:IsA("Part") and (v.Name:lower():find("safe") or v.Name:lower():find("spawn")) then
+                LocalPlayer.Character:MoveTo(v.Position)
+                break
+            end
+        end
+    end)
+    CreateButton(TeleportTab, "Escape Area", function()
+        for _, v in ipairs(workspace:GetDescendants()) do
+            if v:IsA("Part") and (v.Name:lower():find("exit") or v.Name:lower():find("escape")) then
+                LocalPlayer.Character:MoveTo(v.Position)
+                break
+            end
+        end
+    end)
+    
+    CreateToggle(OthersTab, "Speed 40", "SpeedEnabled", SpeedTask)
+    CreateToggle(OthersTab, "Infinite Sprint", "InfiniteSprint", SprintTask)
+    CreateToggle(OthersTab, "Noclip", "Noclip", NoclipTask)
+    CreateToggle(OthersTab, "Aimlock", "Aimlock", AimlockTask)
+    
+    -- Сворачивание
     local minimized = false
     local originalSize = Main.Size
     Minimize.MouseButton1Click:Connect(function()
         minimized = not minimized
         if minimized then
-            Main.Size = UDim2.new(0, 180, 0, 28)
-            for _, el in pairs(contentElements) do el.Visible = false end
+            Main.Size = UDim2.new(0, 500, 0, 35)
+            TabHolder.Visible = false
+            Content.Visible = false
             Minimize.Text = "+"
         else
             Main.Size = originalSize
-            for _, el in pairs(contentElements) do el.Visible = true end
+            TabHolder.Visible = true
+            Content.Visible = true
             Minimize.Text = "—"
         end
     end)
     
-    local dragging, startPos, dragStart = false
+    -- Перетаскивание
+    local dragging, dragStart, startPos = false
     TitleBar.InputBegan:Connect(function(i)
         if i.UserInputType == Enum.UserInputType.MouseButton1 then
             dragging = true
@@ -397,26 +507,20 @@ local function CreateGUI()
             startPos = Main.Position
         end
     end)
-    
     UserInputService.InputChanged:Connect(function(i)
         if dragging and i.UserInputType == Enum.UserInputType.MouseMovement then
-            local d = i.Position - dragStart
-            Main.Position = UDim2.new(startPos.X.Scale, startPos.X.Offset + d.X, startPos.Y.Scale, startPos.Y.Offset + d.Y)
+            local delta = i.Position - dragStart
+            Main.Position = UDim2.new(startPos.X.Scale, startPos.X.Offset + delta.X, startPos.Y.Scale, startPos.Y.Offset + delta.Y)
         end
     end)
-    
     UserInputService.InputEnded:Connect(function() dragging = false end)
 end
 
--- ==================== ОТЛОЖЕННЫЙ ЗАПУСК ====================
--- Сначала создаём GUI (легко)
+-- Запуск
+task.wait(0.5) -- Даём игре загрузиться
 CreateGUI()
-
--- Запускаем ESP с задержкой
-task.wait(0.3)
 RunService.RenderStepped:Connect(UpdateESP)
 
--- Обработчики событий
 LocalPlayer.CharacterAdded:Connect(function()
     task.wait(0.3)
     if Settings.SpeedEnabled then SpeedTask() end
@@ -431,11 +535,3 @@ UserInputService.InputBegan:Connect(function(i, g)
         AimlockTask()
     end
 end)
-
--- Уведомление с задержкой
-task.wait(0.5)
-StarterGui:SetCore("SendNotification", {
-    Title = "Celeron's GUI",
-    Text = "Loaded!",
-    Duration = 2
-})
