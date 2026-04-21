@@ -1,4 +1,4 @@
--- Celeron's GUI - Ultra Light (No Lags)
+-- Celeron's GUI - Ultra Light (No Lags) - FULL FUNCTIONS
 local Players = game:GetService("Players")
 local RunService = game:GetService("RunService")
 local Camera = workspace.CurrentCamera
@@ -12,6 +12,9 @@ local Generator_ESP = true
 local Speed_Enabled = false
 local Sprint_Enabled = false
 local Noclip_Enabled = false
+local Aimlock_Enabled = false
+local AutoGen_Enabled = false
+local AutoEscape_Enabled = false
 
 -- Обход античита
 pcall(function()
@@ -160,11 +163,64 @@ local function ToggleNoclip()
         end
     end)
 end
+local function ToggleAimlock()
+    if tasks.Aimlock then tasks.Aimlock:Disconnect() end
+    if not Aimlock_Enabled then return end
+    tasks.Aimlock = RunService.RenderStepped:Connect(function()
+        local closest, minDist = nil, math.huge
+        for _, p in ipairs(Players:GetPlayers()) do
+            if p ~= LocalPlayer and p.Character then
+                local root = GetRoot(p.Character)
+                if root then
+                    local dist = (camPos - root.Position).Magnitude
+                    if dist < minDist then minDist = dist; closest = p end
+                end
+            end
+        end
+        if closest and closest.Character then
+            local root = GetRoot(closest.Character)
+            if root then Camera.CFrame = CFrame.new(camPos, root.Position) end
+        end
+    end)
+end
+local function ToggleAutoGen()
+    if tasks.AutoGen then tasks.AutoGen:Disconnect() end
+    if not AutoGen_Enabled then return end
+    tasks.AutoGen = RunService.Heartbeat:Connect(function()
+        if not LocalPlayer.Character then return end
+        for _, g in ipairs(FindGenerators()) do
+            local prompt = g:FindFirstChildOfClass("ProximityPrompt")
+            if prompt then
+                local pos = g:IsA("BasePart") and g.Position or (g.PrimaryPart and g.PrimaryPart.Position)
+                if pos then
+                    LocalPlayer.Character:MoveTo(pos)
+                    if (LocalPlayer.Character:GetPivot().Position - pos).Magnitude < 15 then
+                        fireproximityprompt(prompt)
+                    end
+                end
+                break
+            end
+        end
+    end)
+end
+local function ToggleAutoEscape()
+    if tasks.AutoEscape then tasks.AutoEscape:Disconnect() end
+    if not AutoEscape_Enabled then return end
+    tasks.AutoEscape = RunService.Heartbeat:Connect(function()
+        if not LocalPlayer.Character then return end
+        for _, v in ipairs(workspace:GetDescendants()) do
+            if v:IsA("Part") and (v.Name:lower():find("exit") or v.Name:lower():find("escape")) then
+                LocalPlayer.Character:MoveTo(v.Position)
+                break
+            end
+        end
+    end)
+end
 
--- GUI (кнопки в ряд)
+-- GUI (компактная панель)
 local gui = Instance.new("ScreenGui", CoreGui)
 local frame = Instance.new("Frame", gui)
-frame.Size = UDim2.new(0, 400, 0, 35)
+frame.Size = UDim2.new(0, 500, 0, 35)
 frame.Position = UDim2.new(0, 10, 0, 10)
 frame.BackgroundColor3 = Color3.fromRGB(20,20,20)
 frame.BackgroundTransparency = 0.2
@@ -186,39 +242,56 @@ local function AddButton(text, x, callback)
     return btn
 end
 
-local espBtn = AddButton("ESP ON", 5, function()
+local espBtn = AddButton("ESP", 5, function()
     ESP_Enabled = not ESP_Enabled
-    espBtn.Text = ESP_Enabled and "ESP ON" or "ESP OFF"
     espBtn.BackgroundColor3 = ESP_Enabled and Color3.fromRGB(0,170,0) or Color3.fromRGB(170,0,0)
 end)
 espBtn.BackgroundColor3 = Color3.fromRGB(0,170,0)
 
-local genBtn = AddButton("GEN ON", 80, function()
+local genBtn = AddButton("GEN", 80, function()
     Generator_ESP = not Generator_ESP
-    genBtn.Text = Generator_ESP and "GEN ON" or "GEN OFF"
     genBtn.BackgroundColor3 = Generator_ESP and Color3.fromRGB(0,170,0) or Color3.fromRGB(170,0,0)
 end)
 genBtn.BackgroundColor3 = Color3.fromRGB(0,170,0)
 
 local spdBtn = AddButton("SPEED", 155, function()
     Speed_Enabled = not Speed_Enabled
-    spdBtn.Text = Speed_Enabled and "SPEED 40" or "SPEED"
     spdBtn.BackgroundColor3 = Speed_Enabled and Color3.fromRGB(0,170,0) or Color3.fromRGB(170,0,0)
     ToggleSpeed()
 end)
 
 local sprBtn = AddButton("SPRINT", 230, function()
     Sprint_Enabled = not Sprint_Enabled
-    sprBtn.Text = Sprint_Enabled and "SPRINT" or "SPRINT"
     sprBtn.BackgroundColor3 = Sprint_Enabled and Color3.fromRGB(0,170,0) or Color3.fromRGB(170,0,0)
     ToggleSprint()
 end)
 
 local noclipBtn = AddButton("NOCLIP", 305, function()
     Noclip_Enabled = not Noclip_Enabled
-    noclipBtn.Text = Noclip_Enabled and "NOCLIP" or "NOCLIP"
     noclipBtn.BackgroundColor3 = Noclip_Enabled and Color3.fromRGB(0,170,0) or Color3.fromRGB(170,0,0)
     ToggleNoclip()
+end)
+
+local aimBtn = AddButton("AIMLOCK", 380, function()
+    Aimlock_Enabled = not Aimlock_Enabled
+    aimBtn.BackgroundColor3 = Aimlock_Enabled and Color3.fromRGB(0,170,0) or Color3.fromRGB(170,0,0)
+    ToggleAimlock()
+end)
+
+-- Вторая строка для AutoGen и AutoEscape (можно добавить, но места мало; вынесем в отдельную панель или добавим кнопки справа)
+-- Для простоты добавим ещё две кнопки на эту же панель, увеличив ширину
+frame.Size = UDim2.new(0, 600, 0, 35)
+
+local autoGenBtn = AddButton("AUTO GEN", 455, function()
+    AutoGen_Enabled = not AutoGen_Enabled
+    autoGenBtn.BackgroundColor3 = AutoGen_Enabled and Color3.fromRGB(0,170,0) or Color3.fromRGB(170,0,0)
+    ToggleAutoGen()
+end)
+
+local autoEscBtn = AddButton("AUTO ESC", 530, function()
+    AutoEscape_Enabled = not AutoEscape_Enabled
+    autoEscBtn.BackgroundColor3 = AutoEscape_Enabled and Color3.fromRGB(0,170,0) or Color3.fromRGB(170,0,0)
+    ToggleAutoEscape()
 end)
 
 -- Перетаскивание панели
@@ -246,4 +319,16 @@ LocalPlayer.CharacterAdded:Connect(function()
     if Speed_Enabled then ToggleSpeed() end
     if Sprint_Enabled then ToggleSprint() end
     if Noclip_Enabled then ToggleNoclip() end
+    if AutoGen_Enabled then ToggleAutoGen() end
+    if AutoEscape_Enabled then ToggleAutoEscape() end
+end)
+
+-- Бинд для Aimlock (Z)
+UserInputService.InputBegan:Connect(function(i, g)
+    if g then return end
+    if i.KeyCode == Enum.KeyCode.Z then
+        Aimlock_Enabled = not Aimlock_Enabled
+        aimBtn.BackgroundColor3 = Aimlock_Enabled and Color3.fromRGB(0,170,0) or Color3.fromRGB(170,0,0)
+        ToggleAimlock()
+    end
 end)
