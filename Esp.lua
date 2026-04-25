@@ -1,6 +1,6 @@
 -- ============================================
--- BITE BY NIGHT v12.6 — ИСПРАВЛЕННЫЙ ESP
--- Убийца только по высокому HP (>900). Выжившие — только если не убийца.
+-- BITE BY NIGHT v12.6 — ESP ТОЛЬКО ПО МОДЕЛИ УБИЙЦЫ
+-- Убрана проверка по здоровью. Только по модели.
 -- ============================================
 
 local Players = game:GetService("Players")
@@ -169,14 +169,29 @@ local function clearAllESP()
     end
 end
 
--- ========== ДЕТЕКЦИЯ УБИЙЦЫ — ТОЛЬКО ПО ЗДОРОВЬЮ (строго) ==========
+-- ========== ДЕТЕКЦИЯ УБИЙЦЫ ТОЛЬКО ПО МОДЕЛИ ==========
 local function isKiller(player)
     if not player or not player.Character then return false end
-    local hum = player.Character:FindFirstChildOfClass("Humanoid")
-    if not hum then return false end
-    
-    -- Очень строгий порог — обычные выжившие почти никогда не имеют столько HP
-    return hum.Health > 900 or hum.MaxHealth > 900
+    local char = player.Character
+
+    -- Проверка по имени персонажа
+    local nameLower = char.Name:lower()
+    if nameLower:find("springtrap") or nameLower:find("mimic") or nameLower:find("ennard") or 
+       nameLower:find("rotten") or nameLower:find("doppelganger") or nameLower:find("animatronic") or 
+       nameLower:find("killer") or nameLower:find("project") then
+        return true
+    end
+
+    -- Проверка по частям модели (самый надёжный способ)
+    for _, part in ipairs(char:GetChildren()) do
+        local n = part.Name:lower()
+        if n:find("springtrap") or n:find("mimic") or n:find("ennard") or 
+           n:find("animatronic") or n:find("killer") or n:find("trap") then
+            return true
+        end
+    end
+
+    return false
 end
 
 local function updateESP()
@@ -208,11 +223,11 @@ local function updateESP()
         local char = player.Character
 
         if ESP_Killer and isKiller(player) then
-            -- Это убийца — только красный ESP
+            -- Убийца
             removeESP(char)
             createESP(char, Color3.fromRGB(255, 50, 50), "🔪 KILLER")
         elseif ESP_Survivors and not isKiller(player) then
-            -- Это выживший — только синий ESP
+            -- Выживший
             removeESP(char)
             createESP(char, Color3.fromRGB(80, 180, 255), player.Name)
         else
@@ -226,7 +241,7 @@ local function refreshESP()
     updateESP()
 end
 
--- ========== GUI (оставлено как в твоём скрипте) ==========
+-- ========== GUI (оставлено без изменений) ==========
 local gui = Instance.new("ScreenGui")
 gui.Name = "BiteByNight_Hack"
 gui.Parent = CoreGui
@@ -445,4 +460,4 @@ task.spawn(function()
     end
 end)
 
-print("✅ BITE BY NIGHT v12.6 — ESP исправлен: игроки больше не подсвечиваются как убийцы!")
+print("✅ BITE BY NIGHT v12.6 — ESP по модели убийцы (без проверки здоровья)")
