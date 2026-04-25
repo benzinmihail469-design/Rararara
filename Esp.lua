@@ -1,6 +1,6 @@
 -- ============================================
--- BITE BY NIGHT v12.5 — ФИНАЛЬНАЯ ИСПРАВЛЕННАЯ ВЕРСИЯ
--- Полностью рабочее сворачивание + убран общий ESP
+-- BITE BY NIGHT v12.5 — ФИНАЛЬНАЯ ВЕРСИЯ
+-- Исправлено: ESP кнопки + Полное сворачивание GUI
 -- ============================================
 
 local Players = game:GetService("Players")
@@ -27,7 +27,7 @@ local espObjects = {}
 local speedConnection = nil
 local noclipConnection = nil
 
--- ========== 1. Удаление античитов ==========
+-- ========== Античит ==========
 local function killAntiCheatScripts(container)
     if not container then return end
     for _, obj in ipairs(container:GetDescendants()) do
@@ -40,7 +40,7 @@ local function killAntiCheatScripts(container)
     end
 end
 
--- ========== 2. Infinite Stamina ==========
+-- ========== Infinite Stamina ==========
 local function applyInfiniteStamina()
     if not StaminaEnabled then return end
     local conn = RunService.Heartbeat:Connect(function()
@@ -64,10 +64,9 @@ local function applyInfiniteStamina()
     table.insert(connections, conn)
 end
 
--- ========== 3. Speed Hack ==========
+-- ========== Speed ==========
 local function applySpeed()
     if speedConnection then speedConnection:Disconnect() end
-
     if not SpeedEnabled then
         pcall(function()
             local hum = LocalPlayer.Character and LocalPlayer.Character:FindFirstChildOfClass("Humanoid")
@@ -93,19 +92,16 @@ local function applySpeed()
     end)
 end
 
--- ========== 4. NoClip ==========
+-- ========== NoClip ==========
 local function applyNoClip()
     if noclipConnection then noclipConnection:Disconnect() end
-
     if NoClipEnabled then
         noclipConnection = RunService.Stepped:Connect(function()
             pcall(function()
                 local char = LocalPlayer.Character
                 if char then
                     for _, part in ipairs(char:GetDescendants()) do
-                        if part:IsA("BasePart") then
-                            part.CanCollide = false
-                        end
+                        if part:IsA("BasePart") then part.CanCollide = false end
                     end
                 end
             end)
@@ -122,7 +118,7 @@ local function applyNoClip()
     end
 end
 
--- ========== 5. ESP ==========
+-- ========== ESP ==========
 local function createESP(obj, color, text)
     if espObjects[obj] then return end
     local root = obj:FindFirstChild("HumanoidRootPart") or obj:FindFirstChildWhichIsA("BasePart")
@@ -157,12 +153,11 @@ local function createESP(obj, color, text)
 end
 
 local function updateESP()
-    -- Очистка удалённых объектов
     for obj, data in pairs(espObjects) do
         if not obj or not obj.Parent then
             pcall(function()
-                data.billboard:Destroy()
-                data.highlight:Destroy()
+                if data.billboard then data.billboard:Destroy() end
+                if data.highlight then data.highlight:Destroy() end
             end)
             espObjects[obj] = nil
         end
@@ -197,7 +192,7 @@ local function updateESP()
     end
 end
 
--- ========== 6. GUI ==========
+-- ========== GUI ==========
 local gui = Instance.new("ScreenGui")
 gui.Name = "BiteByNight_Hack"
 gui.Parent = CoreGui
@@ -246,9 +241,20 @@ btnMin.MouseButton1Click:Connect(function()
     if minimized then
         mainFrame.Size = UDim2.new(0, 270, 0, 45)
         btnMin.Text = "+"
+        -- Скрываем все дочерние элементы кроме title и btnMin
+        for _, child in ipairs(mainFrame:GetChildren()) do
+            if child ~= title and child ~= btnMin then
+                child.Visible = false
+            end
+        end
     else
         mainFrame.Size = fullSize
         btnMin.Text = "−"
+        for _, child in ipairs(mainFrame:GetChildren()) do
+            if child ~= title and child ~= btnMin then
+                child.Visible = true
+            end
+        end
     end
 end)
 
@@ -277,7 +283,7 @@ UserInputService.InputEnded:Connect(function(input)
     end
 end)
 
--- ========== GUI Элементы ==========
+-- ========== GUI элементы ==========
 local yOffset = 55
 local speedLabel
 
@@ -347,9 +353,7 @@ local function updateSlider()
     local percent = (SpeedValue - 16) / (MaxSpeed - 16)
     sliderFill.Size = UDim2.new(percent, 0, 1, 0)
     sliderKnob.Position = UDim2.new(percent, -5, 0.5, -10)
-    if speedLabel then
-        speedLabel.Text = "⚡ Скорость: " .. math.floor(SpeedValue)
-    end
+    if speedLabel then speedLabel.Text = "⚡ Скорость: " .. math.floor(SpeedValue) end
 end
 
 sliderBg.InputBegan:Connect(function(input)
@@ -374,7 +378,7 @@ end)
 
 yOffset += 45
 
--- Кнопки (без общего ESP)
+-- Кнопки
 addToggle("SPEED: ON", SpeedEnabled, function(state)
     SpeedEnabled = state
     applySpeed()
@@ -430,4 +434,4 @@ task.spawn(function()
     end
 end)
 
-print("✅ BITE BY NIGHT v12.5 — Сворачивание работает + ESP кнопки исправлены!")
+print("✅ BITE BY NIGHT v12.5 — ESP кнопки и сворачивание полностью исправлены!")
