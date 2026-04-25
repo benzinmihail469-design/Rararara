@@ -1,6 +1,7 @@
 -- ============================================
--- BITE BY NIGHT v12.5 — ESP KILLER ТОЛЬКО ПО ЗДОРОВЬЮ
--- Убрана проверка по скорости, только по HP
+-- BITE BY NIGHT v12.6 — ЧЁТКОЕ РАЗДЕЛЕНИЕ ESP
+-- Убийца: только по здоровью (>600 HP)
+-- Выжившие: только если НЕ убийца
 -- ============================================
 
 local Players = game:GetService("Players")
@@ -22,7 +23,10 @@ local ESP_Generators = true
 local ESP_Killer = true
 local ESP_Survivors = true
 
-local espObjects = {}
+-- Раздельные хранилища ESP
+local killerESP = {} -- { [player] = {billboard, highlight, character} }
+local survivorESP = {} -- { [player] = {billboard, highlight, character} }
+local generatorESP = {} -- { [object] = {billboard, highlight} }
 local speedConnection = nil
 local noclipConnection = nil
 local staminaConnection = nil
@@ -118,24 +122,119 @@ local function applyNoClip()
     end
 end
 
--- ========== ESP ==========
-local function createESP(obj, color, text)
-    if espObjects[obj] then return end
-    local root = obj:FindFirstChild("HumanoidRootPart") or obj:FindFirstChildWhichIsA("BasePart")
+-- ========== ESP ФУНКЦИИ ==========
+-- Создание ESP для убийцы
+local function createKillerESP(player)
+    if killerESP[player] then return end -- уже есть
+    
+    local char = player.Character
+    if not char then return end
+    
+    local root = char:FindFirstChild("HumanoidRootPart") or char:FindFirstChildWhichIsA("BasePart")
     if not root then return end
 
+    -- BillboardGui с предупреждением
     local bg = Instance.new("BillboardGui")
     bg.Adornee = root
-    bg.Size = UDim2.new(0, 200, 0, 50)
-    bg.StudsOffset = Vector3.new(0, 3.5, 0)
+    bg.Size = UDim2.new(0, 250, 0, 60)
+    bg.StudsOffset = Vector3.new(0, 4, 0)
     bg.AlwaysOnTop = true
     bg.Parent = CoreGui
 
     local lbl = Instance.new("TextLabel")
     lbl.Size = UDim2.new(1,0,1,0)
     lbl.BackgroundTransparency = 1
-    lbl.Text = text
-    lbl.TextColor3 = color
+    lbl.Text = "⚠️ УБИЙЦА\n" .. player.Name
+    lbl.TextColor3 = Color3.fromRGB(255, 30, 30)
+    lbl.TextStrokeTransparency = 0.3
+    lbl.TextStrokeColor3 = Color3.fromRGB(0, 0, 0)
+    lbl.TextSize = 20
+    lbl.Font = Enum.Font.GothamBold
+    lbl.Parent = bg
+
+    -- Красный Highlight
+    local hl = Instance.new("Highlight")
+    hl.Adornee = char
+    hl.FillColor = Color3.fromRGB(255, 0, 0)
+    hl.OutlineColor = Color3.fromRGB(255, 50, 50)
+    hl.FillTransparency = 0.6
+    hl.OutlineTransparency = 0.1
+    hl.OutlineBulge = 0.3
+    hl.Parent = char
+
+    killerESP[player] = {
+        billboard = bg, 
+        highlight = hl, 
+        character = char,
+        player = player
+    }
+end
+
+-- Создание ESP для выжившего
+local function createSurvivorESP(player)
+    if survivorESP[player] then return end -- уже есть
+    if killerESP[player] then return end -- это убийца, не трогаем
+    
+    local char = player.Character
+    if not char then return end
+    
+    local root = char:FindFirstChild("HumanoidRootPart") or char:FindFirstChildWhichIsA("BasePart")
+    if not root then return end
+
+    -- BillboardGui с именем
+    local bg = Instance.new("BillboardGui")
+    bg.Adornee = root
+    bg.Size = UDim2.new(0, 200, 0, 40)
+    bg.StudsOffset = Vector3.new(0, 3, 0)
+    bg.AlwaysOnTop = true
+    bg.Parent = CoreGui
+
+    local lbl = Instance.new("TextLabel")
+    lbl.Size = UDim2.new(1,0,1,0)
+    lbl.BackgroundTransparency = 1
+    lbl.Text = player.Name
+    lbl.TextColor3 = Color3.fromRGB(80, 180, 255)
+    lbl.TextStrokeTransparency = 0.5
+    lbl.TextSize = 16
+    lbl.Font = Enum.Font.GothamBold
+    lbl.Parent = bg
+
+    -- Синий Highlight
+    local hl = Instance.new("Highlight")
+    hl.Adornee = char
+    hl.FillColor = Color3.fromRGB(80, 180, 255)
+    hl.OutlineColor = Color3.fromRGB(100, 200, 255)
+    hl.FillTransparency = 0.7
+    hl.OutlineTransparency = 0.3
+    hl.Parent = char
+
+    survivorESP[player] = {
+        billboard = bg, 
+        highlight = hl, 
+        character = char,
+        player = player
+    }
+end
+
+-- Создание ESP для генератора
+local function createGeneratorESP(obj)
+    if generatorESP[obj] then return end
+    
+    local root = obj:FindFirstChildWhichIsA("BasePart") or obj.PrimaryPart
+    if not root then return end
+
+    local bg = Instance.new("BillboardGui")
+    bg.Adornee = root
+    bg.Size = UDim2.new(0, 180, 0, 40)
+    bg.StudsOffset = Vector3.new(0, 2, 0)
+    bg.AlwaysOnTop = true
+    bg.Parent = CoreGui
+
+    local lbl = Instance.new("TextLabel")
+    lbl.Size = UDim2.new(1,0,1,0)
+    lbl.BackgroundTransparency = 1
+    lbl.Text = "⚡ GENERATOR"
+    lbl.TextColor3 = Color3.fromRGB(0, 255, 100)
     lbl.TextStrokeTransparency = 0.5
     lbl.TextSize = 15
     lbl.Font = Enum.Font.GothamBold
@@ -143,80 +242,138 @@ local function createESP(obj, color, text)
 
     local hl = Instance.new("Highlight")
     hl.Adornee = obj
-    hl.FillColor = color
-    hl.OutlineColor = color
+    hl.FillColor = Color3.fromRGB(0, 255, 100)
+    hl.OutlineColor = Color3.fromRGB(0, 200, 80)
     hl.FillTransparency = 0.7
-    hl.OutlineTransparency = 0.2
+    hl.OutlineTransparency = 0.3
     hl.Parent = obj
 
-    espObjects[obj] = {billboard = bg, highlight = hl}
+    generatorESP[obj] = {billboard = bg, highlight = hl}
 end
 
-local function removeESP(obj)
-    if espObjects[obj] then
-        pcall(function()
-            espObjects[obj].billboard:Destroy()
-            espObjects[obj].highlight:Destroy()
-        end)
-        espObjects[obj] = nil
+-- Удаление ESP
+local function removeKillerESP(player)
+    local data = killerESP[player]
+    if data then
+        pcall(function() data.billboard:Destroy() end)
+        pcall(function() data.highlight:Destroy() end)
+        killerESP[player] = nil
     end
 end
 
+local function removeSurvivorESP(player)
+    local data = survivorESP[player]
+    if data then
+        pcall(function() data.billboard:Destroy() end)
+        pcall(function() data.highlight:Destroy() end)
+        survivorESP[player] = nil
+    end
+end
+
+local function removeGeneratorESP(obj)
+    local data = generatorESP[obj]
+    if data then
+        pcall(function() data.billboard:Destroy() end)
+        pcall(function() data.highlight:Destroy() end)
+        generatorESP[obj] = nil
+    end
+end
+
+-- Очистка всей ESP
 local function clearAllESP()
-    for obj in pairs(espObjects) do
-        removeESP(obj)
-    end
+    for player in pairs(killerESP) do removeKillerESP(player) end
+    for player in pairs(survivorESP) do removeSurvivorESP(player) end
+    for obj in pairs(generatorESP) do removeGeneratorESP(obj) end
 end
 
--- ========== НОВАЯ ДЕТЕКЦИЯ УБИЙЦЫ — ТОЛЬКО ПО ЗДОРОВЬЮ ==========
+-- ========== ДЕТЕКЦИЯ УБИЙЦЫ — ТОЛЬКО ПО ЗДОРОВЬЮ ==========
 local function isKiller(player)
     if not player or not player.Character then return false end
     local hum = player.Character:FindFirstChildOfClass("Humanoid")
     if not hum then return false end
-
-    -- Убийцы имеют очень высокое здоровье (обычно 1000+)
-    -- Выжившие — около 100 HP
+    
     return hum.Health > 600 or hum.MaxHealth > 600
 end
 
+-- ========== ОБНОВЛЕНИЕ ESP ==========
 local function updateESP()
-    -- Очистка удалённых объектов
-    for obj, data in pairs(espObjects) do
+    -- Очистка невалидных ESP
+    for player, data in pairs(killerESP) do
+        if not data.character or not data.character.Parent or 
+           data.character ~= player.Character or not isKiller(player) then
+            removeKillerESP(player)
+        end
+    end
+    
+    for player, data in pairs(survivorESP) do
+        if not data.character or not data.character.Parent or 
+           data.character ~= player.Character or isKiller(player) then
+            removeSurvivorESP(player)
+        end
+    end
+    
+    for obj, data in pairs(generatorESP) do
         if not obj or not obj.Parent then
-            removeESP(obj)
+            removeGeneratorESP(obj)
         end
     end
 
-    -- Генераторы
+    -- Обновление генераторов
     if ESP_Generators then
         for _, obj in ipairs(Workspace:GetDescendants()) do
             local n = obj.Name:lower()
-            if (obj:IsA("Model") or obj:IsA("Folder")) and (n:find("generator") or n:find("gen") or n:find("battery")) and not espObjects[obj] then
-                createESP(obj, Color3.fromRGB(0, 255, 100), "⚡ GENERATOR")
+            if (obj:IsA("Model") or obj:IsA("Folder")) and 
+               (n:find("generator") or n:find("gen") or n:find("battery")) then
+                createGeneratorESP(obj)
             end
+        end
+    else
+        -- Если ESP генераторов выключен, удаляем все
+        for obj in pairs(generatorESP) do
+            removeGeneratorESP(obj)
         end
     end
 
-    -- УБИЙЦА (приоритет)
-    if ESP_Killer then
-        for _, p in ipairs(Players:GetPlayers()) do
-            if p ~= LocalPlayer and p.Character then
-                if isKiller(p) then
-                    removeESP(p.Character) -- убираем предыдущий ESP
-                    createESP(p.Character, Color3.fromRGB(255, 50, 50), "🔪 KILLER")
+    -- Обновление игроков
+    for _, player in ipairs(Players:GetPlayers()) do
+        if player == LocalPlayer then continue end
+        
+        if player.Character and player.Character:FindFirstChildOfClass("Humanoid") then
+            if ESP_Killer and isKiller(player) then
+                -- Если это убийца и ESP убийц включен
+                if survivorESP[player] then
+                    removeSurvivorESP(player) -- Убираем из выживших если был там
+                end
+                createKillerESP(player)
+            elseif not isKiller(player) then
+                -- Если это выживший
+                if killerESP[player] then
+                    removeKillerESP(player) -- Убираем из убийц если был там
+                end
+                
+                if ESP_Survivors then
+                    createSurvivorESP(player)
+                else
+                    removeSurvivorESP(player)
                 end
             end
+        else
+            -- Если персонажа нет, удаляем всю ESP для этого игрока
+            removeKillerESP(player)
+            removeSurvivorESP(player)
         end
     end
-
-    -- ВЫЖИВШИЕ (только если НЕ убийца)
-    if ESP_Survivors then
-        for _, p in ipairs(Players:GetPlayers()) do
-            if p ~= LocalPlayer and p.Character and not espObjects[p.Character] then
-                if not isKiller(p) then
-                    createESP(p.Character, Color3.fromRGB(80, 180, 255), p.Name)
-                end
-            end
+    
+    -- Если ESP выключен, удаляем соответствующую категорию
+    if not ESP_Killer then
+        for player in pairs(killerESP) do
+            removeKillerESP(player)
+        end
+    end
+    
+    if not ESP_Survivors then
+        for player in pairs(survivorESP) do
+            removeSurvivorESP(player)
         end
     end
 end
@@ -272,7 +429,7 @@ local title = Instance.new("TextLabel")
 title.Size = UDim2.new(1, -70, 0, 40)
 title.Position = UDim2.new(0, 15, 0, 0)
 title.BackgroundTransparency = 1
-title.Text = "🦇 BITE BY NIGHT v12.5"
+title.Text = "🦇 BITE BY NIGHT v12.6"
 title.TextColor3 = Color3.fromRGB(0, 255, 160)
 title.TextSize = 18
 title.Font = Enum.Font.GothamBold
@@ -445,4 +602,4 @@ task.spawn(function()
     end
 end)
 
-print("✅ BITE BY NIGHT v12.5 — Детекция убийцы теперь ТОЛЬКО по здоровью!")
+print("✅ BITE BY NIGHT v12.6 — Чёткое разделение ESP: Убийцы (красный) и Выжившие (синий)!")
