@@ -43,9 +43,12 @@ local function killAntiCheatScripts(container)
     end
 end
 
--- ========== Celeron-style WalkSpeed ==========
+-- ========== Celeron-style WalkSpeed (улучшенная версия) ==========
 local function applySpeed()
-    if speedConnection then speedConnection:Disconnect() end
+    if speedConnection then 
+        speedConnection:Disconnect() 
+        speedConnection = nil 
+    end
     
     if not SpeedEnabled then
         pcall(function()
@@ -59,15 +62,18 @@ local function applySpeed()
         pcall(function()
             local char = LocalPlayer.Character
             if not char then return end
+            
             local hum = char:FindFirstChildOfClass("Humanoid")
             local root = char:FindFirstChild("HumanoidRootPart")
             if not hum or not root then return end
 
+            -- Основная скорость
             hum.WalkSpeed = SpeedValue
 
-            -- Дополнительное ускорение (Celeron-style)
+            -- Дополнительное Celeron-style ускорение (плавное)
             if hum.MoveDirection.Magnitude > 0 then
-                root.CFrame += hum.MoveDirection * (SpeedValue * 0.85) * dt
+                local boost = SpeedValue * 0.9 * dt   -- коэффициент можно менять (0.7–1.1)
+                root.CFrame += hum.MoveDirection * boost
             end
         end)
     end)
@@ -77,6 +83,7 @@ end
 local function applyInfiniteStamina()
     if staminaConnection then staminaConnection:Disconnect() end
     if not StaminaEnabled then return end
+    
     staminaConnection = RunService.Heartbeat:Connect(function()
         pcall(function()
             local char = LocalPlayer.Character
@@ -84,7 +91,9 @@ local function applyInfiniteStamina()
             local hum = char:FindFirstChildOfClass("Humanoid")
             if hum then
                 for _, name in ipairs({"Stamina", "SprintStamina", "Energy", "Fatigue", "StaminaValue"}) do
-                    if hum:GetAttribute(name) ~= nil then hum:SetAttribute(name, 100) end
+                    if hum:GetAttribute(name) ~= nil then 
+                        hum:SetAttribute(name, 100) 
+                    end
                 end
             end
             for _, v in ipairs(char:GetDescendants()) do
@@ -260,7 +269,7 @@ local function refreshESP()
     updateESP()
 end
 
--- ========== GUI (остаётся прежней) ==========
+-- ========== GUI ==========
 local gui = Instance.new("ScreenGui")
 gui.Name = "BiteByNight_Hack"
 gui.Parent = CoreGui
@@ -389,7 +398,7 @@ end
 
 addLabel("⚡ Скорость: " .. SpeedValue, Color3.fromRGB(0, 255, 120))
 
--- Slider
+-- Slider скорости
 local sliderBg = Instance.new("Frame")
 sliderBg.Size = UDim2.new(0.92, 0, 0, 12)
 sliderBg.Position = UDim2.new(0.04, 0, 0, yOffset)
@@ -429,7 +438,10 @@ sliderBg.InputBegan:Connect(function(input)
                 if SpeedEnabled then applySpeed() end
             end
         end)
-        UserInputService.InputEnded:Connect(function() moving = false moveConn:Disconnect() end)
+        UserInputService.InputEnded:Connect(function() 
+            moving = false 
+            moveConn:Disconnect() 
+        end)
     end
 end)
 
@@ -474,4 +486,4 @@ task.spawn(function()
     end
 end)
 
-print("✅ BITE BY NIGHT v12.7 | WalkSpeed от Celeron + Auto Repair загружены!")
+print("✅ BITE BY NIGHT v12.7 | Улучшенный WalkSpeed от Celeron + Auto Repair загружен!")
