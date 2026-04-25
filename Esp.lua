@@ -1,6 +1,6 @@
 -- ============================================
--- BITE BY NIGHT v12.6 — С АВТО-ПОЧИНКОЙ ГЕНЕРАТОРОВ
--- ESP по модели + Auto Repair Generators
+-- BITE BY NIGHT v12.7 — AUTO REPAIR (только после ручного открытия)
+-- ESP по модели + Auto Repair Generators (manual start)
 -- ============================================
 
 local Players = game:GetService("Players")
@@ -17,7 +17,7 @@ local SpeedValue = 35
 local MaxSpeed = 50
 local StaminaEnabled = true
 local NoClipEnabled = false
-local AutoRepairEnabled = false   -- Новая настройка
+local AutoRepairEnabled = false
 
 local ESP_Generators = true
 local ESP_Killer = true
@@ -120,7 +120,7 @@ local function applyNoClip()
     end
 end
 
--- ========== AUTO REPAIR GENERATORS ==========
+-- ========== AUTO REPAIR (только после того, как ты вручную открыл генератор) ==========
 local function applyAutoRepair()
     if autoRepairConnection then autoRepairConnection:Disconnect() end
     if not AutoRepairEnabled then return end
@@ -138,17 +138,36 @@ local function applyAutoRepair()
                    (n:find("generator") or n:find("gen") or n:find("battery")) then
                     
                     local genRoot = gen:FindFirstChild("HumanoidRootPart") or gen:FindFirstChildWhichIsA("BasePart")
-                    if genRoot and (genRoot.Position - root.Position).Magnitude < 15 then
+                    if not genRoot or (genRoot.Position - root.Position).Magnitude > 15 then
+                        continue
+                    end
+
+                    -- Ищем индикаторы ремонта
+                    local isRepairing = false
+                    local progressValue = nil
+
+                    for _, v in ipairs(gen:GetDescendants()) do
+                        if v.Name == "Repairing" or v.Name == "IsRepairing" then
+                            isRepairing = v.Value == true
+                        end
+                        if (v:IsA("NumberValue") or v:IsA("IntValue")) and 
+                           (v.Name:lower():find("progress") or v.Name:lower():find("repair")) then
+                            progressValue = v
+                        end
+                    end
+
+                    -- Если ремонт активен (ты нажал на генератор) — ускоряем прогресс
+                    if isRepairing or (progressValue and progressValue.Value > 0 and progressValue.Value < 100) then
+                        if progressValue then
+                            progressValue.Value = math.min(100, progressValue.Value + 2.5)  -- скорость ремонта (подбери под себя)
+                        end
                         
-                        -- Авто-взаимодействие с генератором
-                        local prompt = gen:FindFirstChildWhichIsA("ProximityPrompt") or 
-                                       gen:FindFirstChild("RepairPrompt") or 
-                                       gen:FindFirstChild("Activate")
-                        
-                        if prompt and prompt.Enabled then
-                            prompt:InputHoldBegin()
-                            task.wait(0.1)
-                            prompt:InputHoldEnd()
+                        -- Дополнительно: ставим максимум на все связанные значения
+                        for _, v in ipairs(gen:GetDescendants()) do
+                            if (v:IsA("NumberValue") or v:IsA("IntValue")) and 
+                               (v.Name:lower():find("progress") or v.Name:lower():find("repair") or v.Name:lower():find("completion")) then
+                                v.Value = math.min(100, v.Value + 1.8)
+                            end
                         end
                     end
                 end
@@ -157,7 +176,7 @@ local function applyAutoRepair()
     end)
 end
 
--- ========== ESP ==========
+-- ========== ESP (без изменений) ==========
 local function createESP(obj, color, text)
     if espObjects[obj] then return end
     local root = obj:FindFirstChild("HumanoidRootPart") or obj:FindFirstChildWhichIsA("BasePart")
@@ -207,7 +226,6 @@ local function clearAllESP()
     end
 end
 
--- ========== ДЕТЕКЦИЯ УБИЙЦЫ ТОЛЬКО ПО МОДЕЛИ ==========
 local function isKiller(player)
     if not player or not player.Character then return false end
     local char = player.Character
@@ -226,7 +244,6 @@ local function isKiller(player)
             return true
         end
     end
-
     return false
 end
 
@@ -256,10 +273,8 @@ local function updateESP()
         local char = player.Character
 
         if ESP_Killer and isKiller(player) then
-            removeESP(char)
             createESP(char, Color3.fromRGB(255, 50, 50), "🔪 KILLER")
         elseif ESP_Survivors and not isKiller(player) then
-            removeESP(char)
             createESP(char, Color3.fromRGB(80, 180, 255), player.Name)
         else
             removeESP(char)
@@ -272,14 +287,14 @@ local function refreshESP()
     updateESP()
 end
 
--- ========== GUI ==========
+-- ========== GUI (осталось почти без изменений) ==========
 local gui = Instance.new("ScreenGui")
 gui.Name = "BiteByNight_Hack"
 gui.Parent = CoreGui
 gui.ResetOnSpawn = false
 
 local mainFrame = Instance.new("Frame")
-mainFrame.Size = UDim2.new(0, 270, 0, 520)  -- увеличил высоту под новую кнопку
+mainFrame.Size = UDim2.new(0, 270, 0, 520)
 mainFrame.Position = UDim2.new(1, -290, 0, 40)
 mainFrame.BackgroundColor3 = Color3.fromRGB(18, 18, 24)
 mainFrame.BackgroundTransparency = 0.05
@@ -318,7 +333,7 @@ local title = Instance.new("TextLabel")
 title.Size = UDim2.new(1, -70, 0, 40)
 title.Position = UDim2.new(0, 15, 0, 0)
 title.BackgroundTransparency = 1
-title.Text = "🦇 BITE BY NIGHT v12.6"
+title.Text = "🦇 BITE BY NIGHT v12.7"
 title.TextColor3 = Color3.fromRGB(0, 255, 160)
 title.TextSize = 18
 title.Font = Enum.Font.GothamBold
@@ -341,7 +356,7 @@ minButton.MouseButton1Click:Connect(function()
     updateMinimizedState()
 end)
 
--- Drag
+-- Drag (без изменений)
 local dragging = false
 local dragStart, startPos
 mainFrame.InputBegan:Connect(function(input)
@@ -361,9 +376,7 @@ UserInputService.InputEnded:Connect(function(input)
     if input.UserInputType == Enum.UserInputType.MouseButton1 or input.UserInputType == Enum.UserInputType.Touch then dragging = false end
 end)
 
--- ========== GUI элементы ==========
 local yOffset = 55
-local speedLabel
 
 local function addLabel(text, color)
     local lbl = Instance.new("TextLabel")
@@ -406,9 +419,9 @@ local function addToggle(text, defaultEnabled, callback)
     return btn
 end
 
-speedLabel = addLabel("⚡ Скорость: " .. SpeedValue, Color3.fromRGB(0, 255, 120))
+addLabel("⚡ Скорость: " .. SpeedValue, Color3.fromRGB(0, 255, 120))
 
--- Slider (оставлен без изменений)
+-- Slider (оставлен как был)
 local sliderBg = Instance.new("Frame")
 sliderBg.Size = UDim2.new(0.92, 0, 0, 12)
 sliderBg.Position = UDim2.new(0.04, 0, 0, yOffset)
@@ -459,7 +472,7 @@ end)
 
 yOffset += 45
 
--- ========== Кнопки (добавлена новая) ==========
+-- ========== Тогглы ==========
 addToggle("SPEED", SpeedEnabled, function(state) SpeedEnabled = state applySpeed() end)
 addToggle("STAMINA", StaminaEnabled, function(state) StaminaEnabled = state applyInfiniteStamina() end)
 addToggle("NOCLIP", NoClipEnabled, function(state) NoClipEnabled = state applyNoClip() end)
@@ -467,8 +480,8 @@ addToggle("ESP Генераторы", ESP_Generators, function(state) ESP_Genera
 addToggle("ESP Убийца", ESP_Killer, function(state) ESP_Killer = state refreshESP() end)
 addToggle("ESP Выжившие", ESP_Survivors, function(state) ESP_Survivors = state refreshESP() end)
 
--- НОВАЯ КНОПКА АВТО-ПОЧИНКИ
-addToggle("AUTO REPAIR", AutoRepairEnabled, function(state)
+-- Авто-ремонт (новая логика)
+addToggle("AUTO REPAIR (после открытия)", AutoRepairEnabled, function(state)
     AutoRepairEnabled = state
     applyAutoRepair()
 end)
@@ -500,4 +513,4 @@ task.spawn(function()
     end
 end)
 
-print("✅ BITE BY NIGHT v12.6 — Добавлена кнопка Auto Repair Generators!")
+print("✅ BITE BY NIGHT v12.7 — Auto Repair теперь работает только после ручного нажатия на генератор!")
