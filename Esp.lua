@@ -1,6 +1,6 @@
 -- ============================================
--- BITE BY NIGHT v12.5 — ФИНАЛЬНАЯ ВЕРСИЯ
--- Исправлено: Сворачивание до одной полоски с заголовком
+-- BITE BY NIGHT v12.5 — ИСПРАВЛЕННАЯ ВЕРСИЯ
+-- ESP кнопки теперь работают корректно + стабильное сворачивание
 -- ============================================
 
 local Players = game:GetService("Players")
@@ -163,6 +163,7 @@ local function updateESP()
         end
     end
 
+    -- Генераторы
     if ESP_Generators then
         for _, obj in ipairs(Workspace:GetDescendants()) do
             local n = obj.Name:lower()
@@ -172,6 +173,7 @@ local function updateESP()
         end
     end
 
+    -- Выжившие
     if ESP_Survivors then
         for _, p in ipairs(Players:GetPlayers()) do
             if p ~= LocalPlayer and p.Character and not espObjects[p.Character] then
@@ -180,6 +182,7 @@ local function updateESP()
         end
     end
 
+    -- Убийца
     if ESP_Killer then
         for _, p in ipairs(Players:GetPlayers()) do
             if p ~= LocalPlayer and p.Character then
@@ -211,10 +214,30 @@ stroke.Color = Color3.fromRGB(0, 255, 160)
 stroke.Thickness = 2
 
 local minimized = false
-local fullSize = mainFrame.Size
-local fullHeight = 480
+local fullSize = UDim2.new(0, 270, 0, 480)
+local collapsibleElements = {}
 
--- Заголовок (остается видимым всегда)
+local function addCollapsible(element)
+    if element then table.insert(collapsibleElements, element) end
+end
+
+local function updateMinimizedState()
+    if minimized then
+        mainFrame.Size = UDim2.new(0, 270, 0, 45)
+        for _, el in ipairs(collapsibleElements) do
+            if el and el.Parent then el.Visible = false end
+        end
+        minButton.Text = "＋"
+    else
+        mainFrame.Size = fullSize
+        for _, el in ipairs(collapsibleElements) do
+            if el and el.Parent then el.Visible = true end
+        end
+        minButton.Text = "−"
+    end
+end
+
+-- Заголовок
 local title = Instance.new("TextLabel")
 title.Size = UDim2.new(1, -70, 0, 40)
 title.Position = UDim2.new(0, 15, 0, 0)
@@ -238,41 +261,12 @@ minButton.Font = Enum.Font.GothamBold
 minButton.Parent = mainFrame
 Instance.new("UICorner", minButton).CornerRadius = UDim.new(0, 8)
 
--- Список всех элементов, которые нужно скрывать/показывать при сворачивании
-local collapsibleElements = {}
-
-local function addCollapsible(element)
-    table.insert(collapsibleElements, element)
-end
-
-local function updateMinimizedState()
-    if minimized then
-        -- Сворачиваем: оставляем только заголовок и кнопку
-        mainFrame.Size = UDim2.new(0, 270, 0, 45)
-        for _, element in ipairs(collapsibleElements) do
-            if element and element.Parent then
-                element.Visible = false
-            end
-        end
-        minButton.Text = "▼"
-    else
-        -- Разворачиваем
-        mainFrame.Size = UDim2.new(0, 270, fullHeight)
-        for _, element in ipairs(collapsibleElements) do
-            if element and element.Parent then
-                element.Visible = true
-            end
-        end
-        minButton.Text = "−"
-    end
-end
-
 minButton.MouseButton1Click:Connect(function()
     minimized = not minimized
     updateMinimizedState()
 end)
 
--- Drag (перетаскивание)
+-- Drag
 local dragging = false
 local dragStart, startPos
 
@@ -317,7 +311,8 @@ local function addLabel(text, color)
     return lbl
 end
 
-local function addToggle(text, enabled, callback)
+local function addToggle(text, defaultEnabled, callback)
+    local enabled = defaultEnabled
     local btn = Instance.new("TextButton")
     btn.Size = UDim2.new(0.92, 0, 0, 36)
     btn.Position = UDim2.new(0.04, 0, 0, yOffset)
@@ -370,7 +365,9 @@ local function updateSlider()
     local percent = (SpeedValue - 16) / (MaxSpeed - 16)
     sliderFill.Size = UDim2.new(percent, 0, 1, 0)
     sliderKnob.Position = UDim2.new(percent, -5, 0.5, -10)
-    if speedLabel then speedLabel.Text = "⚡ Скорость: " .. math.floor(SpeedValue) end
+    if speedLabel then 
+        speedLabel.Text = "⚡ Скорость: " .. math.floor(SpeedValue) 
+    end
 end
 
 sliderBg.InputBegan:Connect(function(input)
@@ -395,7 +392,7 @@ end)
 
 yOffset += 45
 
--- Кнопки
+-- ========== Кнопки (исправленные) ==========
 addToggle("SPEED: ON", SpeedEnabled, function(state)
     SpeedEnabled = state
     applySpeed()
@@ -451,4 +448,4 @@ task.spawn(function()
     end
 end)
 
-print("✅ BITE BY NIGHT v12.5 — Сворачивание до заголовка работает!")
+print("✅ BITE BY NIGHT v12.5 — ESP кнопки теперь работают корректно!")
