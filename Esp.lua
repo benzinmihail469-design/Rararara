@@ -1,6 +1,6 @@
 -- ============================================
--- BITE BY NIGHT v12.5 — ПОЛНОСТЬЮ РАБОЧИЕ КНОПКИ
--- Все функции корректно включаются/выключаются
+-- BITE BY NIGHT v12.5 — ИСПРАВЛЕННЫЙ ESP
+-- Убийца и Выжившие теперь не смешиваются
 -- ============================================
 
 local Players = game:GetService("Players")
@@ -22,11 +22,11 @@ local ESP_Generators = true
 local ESP_Killer = true
 local ESP_Survivors = true
 
-local connections = {}  -- для stamina connection
+local connections = {}
 local espObjects = {}
 local speedConnection = nil
 local noclipConnection = nil
-local staminaConnection = nil  -- отдельный коннект для стамины
+local staminaConnection = nil
 
 -- ========== Античит ==========
 local function killAntiCheatScripts(container)
@@ -41,18 +41,14 @@ local function killAntiCheatScripts(container)
     end
 end
 
--- ========== Infinite Stamina (исправлено: можно выключить) ==========
+-- ========== Stamina ==========
 local function stopStamina()
-    if staminaConnection then
-        staminaConnection:Disconnect()
-        staminaConnection = nil
-    end
+    if staminaConnection then staminaConnection:Disconnect() staminaConnection = nil end
 end
 
 local function startStamina()
-    if staminaConnection then stopStamina() end
+    stopStamina()
     if not StaminaEnabled then return end
-    
     staminaConnection = RunService.Heartbeat:Connect(function()
         pcall(function()
             local char = LocalPlayer.Character
@@ -64,8 +60,7 @@ local function startStamina()
                 end
             end
             for _, v in ipairs(char:GetDescendants()) do
-                if (v:IsA("NumberValue") or v:IsA("IntValue")) and 
-                   (v.Name:lower():find("stamina") or v.Name:lower():find("energy")) then
+                if (v:IsA("NumberValue") or v:IsA("IntValue")) and (v.Name:lower():find("stamina") or v.Name:lower():find("energy")) then
                     v.Value = 100
                 end
             end
@@ -74,19 +69,12 @@ local function startStamina()
 end
 
 local function applyInfiniteStamina()
-    if StaminaEnabled then
-        startStamina()
-    else
-        stopStamina()
-    end
+    if StaminaEnabled then startStamina() else stopStamina() end
 end
 
--- ========== Speed (исправлено: можно выключить) ==========
+-- ========== Speed ==========
 local function stopSpeed()
-    if speedConnection then
-        speedConnection:Disconnect()
-        speedConnection = nil
-    end
+    if speedConnection then speedConnection:Disconnect() speedConnection = nil end
     pcall(function()
         local hum = LocalPlayer.Character and LocalPlayer.Character:FindFirstChildOfClass("Humanoid")
         if hum then hum.WalkSpeed = 16 end
@@ -94,9 +82,9 @@ local function stopSpeed()
 end
 
 local function startSpeed()
-    if speedConnection then stopSpeed() end
+    stopSpeed()
     if not SpeedEnabled then return end
-    
+
     local char = LocalPlayer.Character
     if not char then return end
     local hum = char:FindFirstChildOfClass("Humanoid")
@@ -106,9 +94,7 @@ local function startSpeed()
     hum.WalkSpeed = SpeedValue
 
     speedConnection = RunService.Heartbeat:Connect(function(dt)
-        if not SpeedEnabled or not hum or not hum.Parent or not root or not root.Parent then 
-            return 
-        end
+        if not SpeedEnabled or not hum or not root then return end
         hum.WalkSpeed = SpeedValue
         if hum.MoveDirection.Magnitude > 0 then
             root.CFrame += hum.MoveDirection * SpeedValue * dt * 1.05
@@ -117,19 +103,12 @@ local function startSpeed()
 end
 
 local function applySpeed()
-    if SpeedEnabled then
-        startSpeed()
-    else
-        stopSpeed()
-    end
+    if SpeedEnabled then startSpeed() else stopSpeed() end
 end
 
--- ========== NoClip (исправлено: можно выключить) ==========
+-- ========== NoClip ==========
 local function stopNoClip()
-    if noclipConnection then
-        noclipConnection:Disconnect()
-        noclipConnection = nil
-    end
+    if noclipConnection then noclipConnection:Disconnect() noclipConnection = nil end
     pcall(function()
         local char = LocalPlayer.Character
         if char then
@@ -141,9 +120,8 @@ local function stopNoClip()
 end
 
 local function startNoClip()
-    if noclipConnection then stopNoClip() end
+    stopNoClip()
     if not NoClipEnabled then return end
-    
     noclipConnection = RunService.Stepped:Connect(function()
         pcall(function()
             local char = LocalPlayer.Character
@@ -157,14 +135,10 @@ local function startNoClip()
 end
 
 local function applyNoClip()
-    if NoClipEnabled then
-        startNoClip()
-    else
-        stopNoClip()
-    end
+    if NoClipEnabled then startNoClip() else stopNoClip() end
 end
 
--- ========== ESP (исправлено: можно выключить) ==========
+-- ========== ESP — ИСПРАВЛЕНО ==========
 local function createESP(obj, color, text)
     if espObjects[obj] then return end
     local root = obj:FindFirstChild("HumanoidRootPart") or obj:FindFirstChildWhichIsA("BasePart")
@@ -199,7 +173,7 @@ local function createESP(obj, color, text)
 end
 
 local function clearAllESP()
-    for obj, data in pairs(espObjects) do
+    for _, data in pairs(espObjects) do
         pcall(function()
             if data.billboard then data.billboard:Destroy() end
             if data.highlight then data.highlight:Destroy() end
@@ -208,8 +182,16 @@ local function clearAllESP()
     espObjects = {}
 end
 
+local function isKiller(player)
+    if not player or not player.Character then return false end
+    local hum = player.Character:FindFirstChildOfClass("Humanoid")
+    if not hum then return false end
+    -- Более точная детекция убийцы (увеличил пороги)
+    return hum.WalkSpeed > 25 or hum.Health > 1500 or hum.MaxHealth > 1500
+end
+
 local function updateESP()
-    -- Очищаем несуществующие объекты
+    -- Очистка несуществующих
     for obj, data in pairs(espObjects) do
         if not obj or not obj.Parent then
             pcall(function()
@@ -230,35 +212,35 @@ local function updateESP()
         end
     end
 
-    -- Выжившие
-    if ESP_Survivors then
+    -- Убийца (с приоритетом)
+    if ESP_Killer then
         for _, p in ipairs(Players:GetPlayers()) do
             if p ~= LocalPlayer and p.Character and not espObjects[p.Character] then
-                createESP(p.Character, Color3.fromRGB(80, 180, 255), p.Name)
+                if isKiller(p) then
+                    createESP(p.Character, Color3.fromRGB(255, 50, 50), "🔪 KILLER")
+                end
             end
         end
     end
 
-    -- Убийца
-    if ESP_Killer then
+    -- Выжившие (только если это НЕ убийца)
+    if ESP_Survivors then
         for _, p in ipairs(Players:GetPlayers()) do
-            if p ~= LocalPlayer and p.Character then
-                local h = p.Character:FindFirstChildOfClass("Humanoid")
-                if h and (h.WalkSpeed > 22 or h.Health > 1200) and not espObjects[p.Character] then
-                    createESP(p.Character, Color3.fromRGB(255, 50, 50), "🔪 KILLER")
+            if p ~= LocalPlayer and p.Character and not espObjects[p.Character] then
+                if not isKiller(p) then
+                    createESP(p.Character, Color3.fromRGB(80, 180, 255), p.Name)
                 end
             end
         end
     end
 end
 
--- Перезапуск ESP после изменения настроек
 local function refreshESP()
     clearAllESP()
     updateESP()
 end
 
--- ========== GUI ==========
+-- ========== GUI (без изменений, только исправленный addToggle) ==========
 local gui = Instance.new("ScreenGui")
 gui.Name = "BiteByNight_Hack"
 gui.Parent = CoreGui
@@ -300,7 +282,6 @@ local function updateMinimizedState()
     end
 end
 
--- Заголовок
 local title = Instance.new("TextLabel")
 title.Size = UDim2.new(1, -70, 0, 40)
 title.Position = UDim2.new(0, 15, 0, 0)
@@ -312,7 +293,6 @@ title.Font = Enum.Font.GothamBold
 title.TextXAlignment = Enum.TextXAlignment.Left
 title.Parent = mainFrame
 
--- Кнопка сворачивания
 local minButton = Instance.new("TextButton")
 minButton.Size = UDim2.new(0, 50, 0, 30)
 minButton.Position = UDim2.new(1, -65, 0, 5)
@@ -329,10 +309,9 @@ minButton.MouseButton1Click:Connect(function()
     updateMinimizedState()
 end)
 
--- Drag
+-- Drag (оставлен без изменений)
 local dragging = false
 local dragStart, startPos
-
 mainFrame.InputBegan:Connect(function(input)
     if input.UserInputType == Enum.UserInputType.MouseButton1 or input.UserInputType == Enum.UserInputType.Touch then
         dragging = true
@@ -340,18 +319,14 @@ mainFrame.InputBegan:Connect(function(input)
         startPos = mainFrame.Position
     end
 end)
-
 UserInputService.InputChanged:Connect(function(input)
     if dragging and (input.UserInputType == Enum.UserInputType.MouseMovement or input.UserInputType == Enum.UserInputType.Touch) then
         local delta = input.Position - dragStart
         mainFrame.Position = UDim2.new(startPos.X.Scale, startPos.X.Offset + delta.X, startPos.Y.Scale, startPos.Y.Offset + delta.Y)
     end
 end)
-
 UserInputService.InputEnded:Connect(function(input)
-    if input.UserInputType == Enum.UserInputType.MouseButton1 or input.UserInputType == Enum.UserInputType.Touch then
-        dragging = false
-    end
+    if input.UserInputType == Enum.UserInputType.MouseButton1 or input.UserInputType == Enum.UserInputType.Touch then dragging = false end
 end)
 
 -- ========== GUI элементы ==========
@@ -428,9 +403,7 @@ local function updateSlider()
     local percent = (SpeedValue - 16) / (MaxSpeed - 16)
     sliderFill.Size = UDim2.new(percent, 0, 1, 0)
     sliderKnob.Position = UDim2.new(percent, -5, 0.5, -10)
-    if speedLabel then 
-        speedLabel.Text = "⚡ Скорость: " .. math.floor(SpeedValue) 
-    end
+    if speedLabel then speedLabel.Text = "⚡ Скорость: " .. math.floor(SpeedValue) end
     if SpeedEnabled then applySpeed() end
 end
 
@@ -444,7 +417,6 @@ sliderBg.InputBegan:Connect(function(input)
                 updateSlider()
             end
         end)
-
         local endConn = UserInputService.InputEnded:Connect(function()
             moving = false
             moveConn:Disconnect()
@@ -455,7 +427,7 @@ end)
 
 yOffset += 45
 
--- ========== Кнопки (все работают!) ==========
+-- Кнопки
 addToggle("SPEED", SpeedEnabled, function(state)
     SpeedEnabled = state
     applySpeed()
@@ -487,13 +459,12 @@ addToggle("ESP Выжившие", ESP_Survivors, function(state)
 end)
 
 -- ========== Запуск ==========
-LocalPlayer.CharacterAdded:Connect(function(char)
+LocalPlayer.CharacterAdded:Connect(function()
     task.wait(0.8)
-    pcall(killAntiCheatScripts, char)
+    pcall(killAntiCheatScripts, LocalPlayer.Character)
     applySpeed()
     applyInfiniteStamina()
     applyNoClip()
-    task.wait(0.5)
     refreshESP()
 end)
 
@@ -509,7 +480,4 @@ end)
 task.spawn(function()
     while task.wait(2) do
         updateESP()
-    end
-end)
-
-print("✅ BITE BY NIGHT v12.5 — Все кнопки работают! Функции включаются/выключаются корректно.")
+   
