@@ -1,6 +1,6 @@
 -- ============================================
 -- BITE BY NIGHT v12.5 — ФИНАЛЬНАЯ ВЕРСИЯ
--- Исправлено: Полное сворачивание GUI (в кружок)
+-- Исправлено: Сворачивание до одной полоски с заголовком
 -- ============================================
 
 local Players = game:GetService("Players")
@@ -212,8 +212,9 @@ stroke.Thickness = 2
 
 local minimized = false
 local fullSize = mainFrame.Size
+local fullHeight = 480
 
--- Заголовок
+-- Заголовок (остается видимым всегда)
 local title = Instance.new("TextLabel")
 title.Size = UDim2.new(1, -70, 0, 40)
 title.Position = UDim2.new(0, 15, 0, 0)
@@ -225,7 +226,7 @@ title.Font = Enum.Font.GothamBold
 title.TextXAlignment = Enum.TextXAlignment.Left
 title.Parent = mainFrame
 
--- Кнопка сворачивания (она будет единственной видна в свернутом режиме)
+-- Кнопка сворачивания
 local minButton = Instance.new("TextButton")
 minButton.Size = UDim2.new(0, 50, 0, 30)
 minButton.Position = UDim2.new(1, -65, 0, 5)
@@ -237,59 +238,41 @@ minButton.Font = Enum.Font.GothamBold
 minButton.Parent = mainFrame
 Instance.new("UICorner", minButton).CornerRadius = UDim.new(0, 8)
 
--- Функция обновления интерфейса при сворачивании/разворачивании
+-- Список всех элементов, которые нужно скрывать/показывать при сворачивании
+local collapsibleElements = {}
+
+local function addCollapsible(element)
+    table.insert(collapsibleElements, element)
+end
+
 local function updateMinimizedState()
     if minimized then
-        -- Сворачиваем в кружок 50x50
-        mainFrame.Size = UDim2.new(0, 50, 0, 50)
-        mainFrame.BackgroundTransparency = 0.1
-        -- Делаем скругление максимальным (круг)
-        mainFrame:FindFirstChildWhichIsA("UICorner").CornerRadius = UDim.new(1, 0)
-        -- Все остальные элементы скрываем
-        title.Visible = false
-        stroke.Visible = false
-        for _, child in ipairs(mainFrame:GetChildren()) do
-            if child ~= minButton then
-                child.Visible = false
+        -- Сворачиваем: оставляем только заголовок и кнопку
+        mainFrame.Size = UDim2.new(0, 270, 0, 45)
+        for _, element in ipairs(collapsibleElements) do
+            if element and element.Parent then
+                element.Visible = false
             end
         end
-        -- Настраиваем кнопку: делаем её на весь фрейм и меняем текст
-        minButton.Size = UDim2.new(1, -8, 1, -8)
-        minButton.Position = UDim2.new(0, 4, 0, 4)
-        minButton.Text = "+"
-        minButton.TextSize = 30
-        minButton.BackgroundColor3 = Color3.fromRGB(0, 255, 160)
-        minButton.TextColor3 = Color3.fromRGB(0,0,0)
-        minButton.Visible = true
+        minButton.Text = "▼"
     else
-        -- Разворачиваем обратно
-        mainFrame.Size = fullSize
-        mainFrame.BackgroundTransparency = 0.05
-        mainFrame:FindFirstChildWhichIsA("UICorner").CornerRadius = UDim.new(0, 14)
-        title.Visible = true
-        stroke.Visible = true
-        for _, child in ipairs(mainFrame:GetChildren()) do
-            if child ~= minButton then
-                child.Visible = true
+        -- Разворачиваем
+        mainFrame.Size = UDim2.new(0, 270, fullHeight)
+        for _, element in ipairs(collapsibleElements) do
+            if element and element.Parent then
+                element.Visible = true
             end
         end
-        minButton.Size = UDim2.new(0, 50, 0, 30)
-        minButton.Position = UDim2.new(1, -65, 0, 5)
         minButton.Text = "−"
-        minButton.TextSize = 24
-        minButton.BackgroundColor3 = Color3.fromRGB(30, 30, 35)
-        minButton.TextColor3 = Color3.new(1,1,1)
-        minButton.Visible = true
     end
 end
 
--- Обработчик клика по кнопке сворачивания
 minButton.MouseButton1Click:Connect(function()
     minimized = not minimized
     updateMinimizedState()
 end)
 
--- Drag (перетаскивание) - работает и в свернутом, и в развернутом режиме
+-- Drag (перетаскивание)
 local dragging = false
 local dragStart, startPos
 
@@ -329,6 +312,7 @@ local function addLabel(text, color)
     lbl.Font = Enum.Font.GothamBold
     lbl.TextXAlignment = Enum.TextXAlignment.Left
     lbl.Parent = mainFrame
+    addCollapsible(lbl)
     yOffset += 32
     return lbl
 end
@@ -344,6 +328,7 @@ local function addToggle(text, enabled, callback)
     btn.Font = Enum.Font.GothamBold
     btn.Parent = mainFrame
     Instance.new("UICorner", btn).CornerRadius = UDim.new(0, 9)
+    addCollapsible(btn)
 
     btn.MouseButton1Click:Connect(function()
         enabled = not enabled
@@ -365,6 +350,7 @@ sliderBg.Position = UDim2.new(0.04, 0, 0, yOffset)
 sliderBg.BackgroundColor3 = Color3.fromRGB(40, 40, 48)
 sliderBg.Parent = mainFrame
 Instance.new("UICorner", sliderBg).CornerRadius = UDim.new(1, 0)
+addCollapsible(sliderBg)
 
 local sliderFill = Instance.new("Frame")
 sliderFill.Size = UDim2.new((SpeedValue-16)/(MaxSpeed-16), 1, 1, 0)
@@ -465,4 +451,4 @@ task.spawn(function()
     end
 end)
 
-print("✅ BITE BY NIGHT v12.5 — Полное сворачивание GUI в кружок реализовано!")
+print("✅ BITE BY NIGHT v12.5 — Сворачивание до заголовка работает!")
