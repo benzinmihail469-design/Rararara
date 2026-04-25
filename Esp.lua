@@ -1,6 +1,6 @@
 -- ============================================
 -- BITE BY NIGHT v12.5 — ФИНАЛЬНАЯ ВЕРСИЯ
--- Исправлено: ESP кнопки + Полное сворачивание GUI
+-- Исправлено: Полное сворачивание GUI (в кружок)
 -- ============================================
 
 local Players = game:GetService("Players")
@@ -213,6 +213,7 @@ stroke.Thickness = 2
 local minimized = false
 local fullSize = mainFrame.Size
 
+-- Заголовок
 local title = Instance.new("TextLabel")
 title.Size = UDim2.new(1, -70, 0, 40)
 title.Position = UDim2.new(0, 15, 0, 0)
@@ -224,41 +225,71 @@ title.Font = Enum.Font.GothamBold
 title.TextXAlignment = Enum.TextXAlignment.Left
 title.Parent = mainFrame
 
-local btnMin = Instance.new("TextButton")
-btnMin.Size = UDim2.new(0, 50, 0, 30)
-btnMin.Position = UDim2.new(1, -65, 0, 5)
-btnMin.BackgroundColor3 = Color3.fromRGB(30, 30, 35)
-btnMin.Text = "−"
-btnMin.TextColor3 = Color3.new(1,1,1)
-btnMin.TextSize = 24
-btnMin.Font = Enum.Font.GothamBold
-btnMin.Parent = mainFrame
-Instance.new("UICorner", btnMin).CornerRadius = UDim.new(0, 8)
+-- Кнопка сворачивания (она будет единственной видна в свернутом режиме)
+local minButton = Instance.new("TextButton")
+minButton.Size = UDim2.new(0, 50, 0, 30)
+minButton.Position = UDim2.new(1, -65, 0, 5)
+minButton.BackgroundColor3 = Color3.fromRGB(30, 30, 35)
+minButton.Text = "−"
+minButton.TextColor3 = Color3.new(1,1,1)
+minButton.TextSize = 24
+minButton.Font = Enum.Font.GothamBold
+minButton.Parent = mainFrame
+Instance.new("UICorner", minButton).CornerRadius = UDim.new(0, 8)
 
--- **ИСПРАВЛЕННОЕ СВОРАЧИВАНИЕ**
-btnMin.MouseButton1Click:Connect(function()
-    minimized = not minimized
+-- Функция обновления интерфейса при сворачивании/разворачивании
+local function updateMinimizedState()
     if minimized then
-        mainFrame.Size = UDim2.new(0, 270, 0, 45)
-        btnMin.Text = "+"
-        -- Скрываем все дочерние элементы кроме title и btnMin
+        -- Сворачиваем в кружок 50x50
+        mainFrame.Size = UDim2.new(0, 50, 0, 50)
+        mainFrame.BackgroundTransparency = 0.1
+        -- Делаем скругление максимальным (круг)
+        mainFrame:FindFirstChildWhichIsA("UICorner").CornerRadius = UDim.new(1, 0)
+        -- Все остальные элементы скрываем
+        title.Visible = false
+        stroke.Visible = false
         for _, child in ipairs(mainFrame:GetChildren()) do
-            if child ~= title and child ~= btnMin then
+            if child ~= minButton then
                 child.Visible = false
             end
         end
+        -- Настраиваем кнопку: делаем её на весь фрейм и меняем текст
+        minButton.Size = UDim2.new(1, -8, 1, -8)
+        minButton.Position = UDim2.new(0, 4, 0, 4)
+        minButton.Text = "+"
+        minButton.TextSize = 30
+        minButton.BackgroundColor3 = Color3.fromRGB(0, 255, 160)
+        minButton.TextColor3 = Color3.fromRGB(0,0,0)
+        minButton.Visible = true
     else
+        -- Разворачиваем обратно
         mainFrame.Size = fullSize
-        btnMin.Text = "−"
+        mainFrame.BackgroundTransparency = 0.05
+        mainFrame:FindFirstChildWhichIsA("UICorner").CornerRadius = UDim.new(0, 14)
+        title.Visible = true
+        stroke.Visible = true
         for _, child in ipairs(mainFrame:GetChildren()) do
-            if child ~= title and child ~= btnMin then
+            if child ~= minButton then
                 child.Visible = true
             end
         end
+        minButton.Size = UDim2.new(0, 50, 0, 30)
+        minButton.Position = UDim2.new(1, -65, 0, 5)
+        minButton.Text = "−"
+        minButton.TextSize = 24
+        minButton.BackgroundColor3 = Color3.fromRGB(30, 30, 35)
+        minButton.TextColor3 = Color3.new(1,1,1)
+        minButton.Visible = true
     end
+end
+
+-- Обработчик клика по кнопке сворачивания
+minButton.MouseButton1Click:Connect(function()
+    minimized = not minimized
+    updateMinimizedState()
 end)
 
--- Drag
+-- Drag (перетаскивание) - работает и в свернутом, и в развернутом режиме
 local dragging = false
 local dragStart, startPos
 
@@ -434,4 +465,4 @@ task.spawn(function()
     end
 end)
 
-print("✅ BITE BY NIGHT v12.5 — ESP кнопки и сворачивание полностью исправлены!")
+print("✅ BITE BY NIGHT v12.5 — Полное сворачивание GUI в кружок реализовано!")
