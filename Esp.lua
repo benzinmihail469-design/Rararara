@@ -1,6 +1,6 @@
 -- ============================================
--- BITE BY NIGHT v12.5 — ИСПРАВЛЕННЫЙ ESP (приоритет убийцы)
--- Выжившие больше не подсвечивают убийцу
+-- BITE BY NIGHT v12.5 — ESP KILLER ТОЛЬКО ПО ЗДОРОВЬЮ
+-- Убрана проверка по скорости, только по HP
 -- ============================================
 
 local Players = game:GetService("Players")
@@ -44,7 +44,6 @@ end
 local function applyInfiniteStamina()
     if staminaConnection then staminaConnection:Disconnect() end
     if not StaminaEnabled then return end
-
     staminaConnection = RunService.Heartbeat:Connect(function()
         pcall(function()
             local char = LocalPlayer.Character
@@ -119,10 +118,9 @@ local function applyNoClip()
     end
 end
 
--- ========== ESP — ИСПРАВЛЕНО ==========
+-- ========== ESP ==========
 local function createESP(obj, color, text)
     if espObjects[obj] then return end
-
     local root = obj:FindFirstChild("HumanoidRootPart") or obj:FindFirstChildWhichIsA("BasePart")
     if not root then return end
 
@@ -165,24 +163,24 @@ local function removeESP(obj)
 end
 
 local function clearAllESP()
-    for obj, _ in pairs(espObjects) do
+    for obj in pairs(espObjects) do
         removeESP(obj)
     end
-    espObjects = {}
 end
 
--- Улучшенная детекция убийцы
+-- ========== НОВАЯ ДЕТЕКЦИЯ УБИЙЦЫ — ТОЛЬКО ПО ЗДОРОВЬЮ ==========
 local function isKiller(player)
     if not player or not player.Character then return false end
     local hum = player.Character:FindFirstChildOfClass("Humanoid")
     if not hum then return false end
-    
-    -- Более надёжная проверка (увеличил пороги + проверка на имя/роль если есть)
-    return hum.WalkSpeed >= 24 or hum.Health >= 1400 or hum.MaxHealth >= 1400
+
+    -- Убийцы имеют очень высокое здоровье (обычно 1000+)
+    -- Выжившие — около 100 HP
+    return hum.Health > 600 or hum.MaxHealth > 600
 end
 
 local function updateESP()
-    -- Удаляем ESP от несуществующих объектов
+    -- Очистка удалённых объектов
     for obj, data in pairs(espObjects) do
         if not obj or not obj.Parent then
             removeESP(obj)
@@ -199,19 +197,19 @@ local function updateESP()
         end
     end
 
-    -- === УБИЙЦА (приоритет выше всего) ===
+    -- УБИЙЦА (приоритет)
     if ESP_Killer then
         for _, p in ipairs(Players:GetPlayers()) do
             if p ~= LocalPlayer and p.Character then
                 if isKiller(p) then
-                    removeESP(p.Character)  -- сначала удаляем старый ESP (если был выживший)
+                    removeESP(p.Character) -- убираем предыдущий ESP
                     createESP(p.Character, Color3.fromRGB(255, 50, 50), "🔪 KILLER")
                 end
             end
         end
     end
 
-    -- === ВЫЖИВШИЕ (только те, кто НЕ убийца) ===
+    -- ВЫЖИВШИЕ (только если НЕ убийца)
     if ESP_Survivors then
         for _, p in ipairs(Players:GetPlayers()) do
             if p ~= LocalPlayer and p.Character and not espObjects[p.Character] then
@@ -228,7 +226,7 @@ local function refreshESP()
     updateESP()
 end
 
--- ========== GUI (оставлено как было, только улучшен addToggle) ==========
+-- ========== GUI ==========
 local gui = Instance.new("ScreenGui")
 gui.Name = "BiteByNight_Hack"
 gui.Parent = CoreGui
@@ -364,7 +362,6 @@ end
 
 speedLabel = addLabel("⚡ Скорость: " .. SpeedValue, Color3.fromRGB(0, 255, 120))
 
--- Slider (оставлен как был)
 local sliderBg = Instance.new("Frame")
 sliderBg.Size = UDim2.new(0.92, 0, 0, 12)
 sliderBg.Position = UDim2.new(0.04, 0, 0, yOffset)
@@ -443,9 +440,9 @@ task.spawn(function()
 end)
 
 task.spawn(function()
-    while task.wait(2) do
+    while task.wait(1.5) do
         updateESP()
     end
 end)
 
-print("✅ BITE BY NIGHT v12.5 — ESP исправлен: Убийца и Выжившие теперь отдельно!")
+print("✅ BITE BY NIGHT v12.5 — Детекция убийцы теперь ТОЛЬКО по здоровью!")
