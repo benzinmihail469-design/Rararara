@@ -1,12 +1,11 @@
 -- ============================================
--- SPEEDHACK + INF STAMINA + ESP + NOCLIP v12.5 – BiteByNight Edition
--- Исправленная версия: работающий ползунок + сворачивание GUI
+-- BITE BY NIGHT v12.5 — ФИНАЛЬНАЯ ИСПРАВЛЕННАЯ ВЕРСИЯ
+-- Полностью рабочее сворачивание + убран общий ESP
 -- ============================================
 
 local Players = game:GetService("Players")
 local RunService = game:GetService("RunService")
 local UserInputService = game:GetService("UserInputService")
-local TweenService = game:GetService("TweenService")
 local CoreGui = game:GetService("CoreGui")
 local Workspace = game:GetService("Workspace")
 
@@ -19,13 +18,14 @@ local MaxSpeed = 50
 local StaminaEnabled = true
 local NoClipEnabled = false
 
-local ESP_Enabled = true
 local ESP_Generators = true
 local ESP_Killer = true
 local ESP_Survivors = true
 
 local connections = {}
 local espObjects = {}
+local speedConnection = nil
+local noclipConnection = nil
 
 -- ========== 1. Удаление античитов ==========
 local function killAntiCheatScripts(container)
@@ -50,9 +50,7 @@ local function applyInfiniteStamina()
             local hum = char:FindFirstChildOfClass("Humanoid")
             if hum then
                 for _, name in ipairs({"Stamina", "SprintStamina", "Energy", "Fatigue", "StaminaValue"}) do
-                    if hum:GetAttribute(name) ~= nil then
-                        hum:SetAttribute(name, 100)
-                    end
+                    if hum:GetAttribute(name) ~= nil then hum:SetAttribute(name, 100) end
                 end
             end
             for _, v in ipairs(char:GetDescendants()) do
@@ -66,13 +64,9 @@ local function applyInfiniteStamina()
     table.insert(connections, conn)
 end
 
--- ========== 3. Speed (с CFrame) ==========
+-- ========== 3. Speed Hack ==========
 local function applySpeed()
-    for _, c in ipairs(connections) do 
-        if c.Name ~= "NoClipConn" then 
-            pcall(function() c:Disconnect() end) 
-        end 
-    end
+    if speedConnection then speedConnection:Disconnect() end
 
     if not SpeedEnabled then
         pcall(function()
@@ -82,33 +76,29 @@ local function applySpeed()
         return
     end
 
-    local char = LocalPlayer.Character or LocalPlayer.CharacterAdded:Wait()
-    local hum = char:WaitForChild("Humanoid", 3)
-    local root = char:WaitForChild("HumanoidRootPart", 3)
+    local char = LocalPlayer.Character
+    if not char then return end
+    local hum = char:FindFirstChildOfClass("Humanoid")
+    local root = char:FindFirstChild("HumanoidRootPart")
+    if not hum or not root then return end
 
-    if hum then hum.WalkSpeed = SpeedValue end
+    hum.WalkSpeed = SpeedValue
 
-    local conn = RunService.Heartbeat:Connect(function(dt)
-        pcall(function()
-            if not hum or not root or not SpeedEnabled then return end
-            hum.WalkSpeed = SpeedValue
-            if hum.MoveDirection.Magnitude > 0 then
-                root.CFrame += hum.MoveDirection * SpeedValue * dt * 1.05
-            end
-        end)
+    speedConnection = RunService.Heartbeat:Connect(function(dt)
+        if not SpeedEnabled or not hum or not root then return end
+        hum.WalkSpeed = SpeedValue
+        if hum.MoveDirection.Magnitude > 0 then
+            root.CFrame += hum.MoveDirection * SpeedValue * dt * 1.05
+        end
     end)
-    conn.Name = "SpeedConn"
-    table.insert(connections, conn)
 end
 
 -- ========== 4. NoClip ==========
 local function applyNoClip()
-    for _, c in ipairs(connections) do 
-        if c.Name == "NoClipConn" then c:Disconnect() end 
-    end
+    if noclipConnection then noclipConnection:Disconnect() end
 
     if NoClipEnabled then
-        local conn = RunService.Stepped:Connect(function()
+        noclipConnection = RunService.Stepped:Connect(function()
             pcall(function()
                 local char = LocalPlayer.Character
                 if char then
@@ -120,8 +110,6 @@ local function applyNoClip()
                 end
             end)
         end)
-        conn.Name = "NoClipConn"
-        table.insert(connections, conn)
     else
         pcall(function()
             local char = LocalPlayer.Character
@@ -169,17 +157,16 @@ local function createESP(obj, color, text)
 end
 
 local function updateESP()
+    -- Очистка удалённых объектов
     for obj, data in pairs(espObjects) do
         if not obj or not obj.Parent then
             pcall(function()
-                if data.billboard then data.billboard:Destroy() end
-                if data.highlight then data.highlight:Destroy() end
+                data.billboard:Destroy()
+                data.highlight:Destroy()
             end)
             espObjects[obj] = nil
         end
     end
-
-    if not ESP_Enabled then return end
 
     if ESP_Generators then
         for _, obj in ipairs(Workspace:GetDescendants()) do
@@ -212,15 +199,15 @@ end
 
 -- ========== 6. GUI ==========
 local gui = Instance.new("ScreenGui")
-gui.Name = "BiteByNight_Hack_" .. math.random(1000,9999)
+gui.Name = "BiteByNight_Hack"
 gui.Parent = CoreGui
 gui.ResetOnSpawn = false
 
 local mainFrame = Instance.new("Frame")
-mainFrame.Size = UDim2.new(0, 260, 0, 520)  -- увеличил высоту из-за доп. кнопок
-mainFrame.Position = UDim2.new(1, -280, 0, 40)
+mainFrame.Size = UDim2.new(0, 270, 0, 480)
+mainFrame.Position = UDim2.new(1, -290, 0, 40)
 mainFrame.BackgroundColor3 = Color3.fromRGB(18, 18, 24)
-mainFrame.BackgroundTransparency = 0.1
+mainFrame.BackgroundTransparency = 0.05
 mainFrame.Parent = gui
 
 Instance.new("UICorner", mainFrame).CornerRadius = UDim.new(0, 14)
@@ -248,24 +235,24 @@ btnMin.Position = UDim2.new(1, -65, 0, 5)
 btnMin.BackgroundColor3 = Color3.fromRGB(30, 30, 35)
 btnMin.Text = "−"
 btnMin.TextColor3 = Color3.new(1,1,1)
-btnMin.TextSize = 22
+btnMin.TextSize = 24
 btnMin.Font = Enum.Font.GothamBold
 btnMin.Parent = mainFrame
 Instance.new("UICorner", btnMin).CornerRadius = UDim.new(0, 8)
 
--- Фикс сворачивания
+-- **ИСПРАВЛЕННОЕ СВОРАЧИВАНИЕ**
 btnMin.MouseButton1Click:Connect(function()
     minimized = not minimized
     if minimized then
-        mainFrame.Size = UDim2.new(0, 260, 0, 45)
-        btnMin.Text = "＋"
+        mainFrame.Size = UDim2.new(0, 270, 0, 45)
+        btnMin.Text = "+"
     else
         mainFrame.Size = fullSize
         btnMin.Text = "−"
     end
 end)
 
--- Drag functionality
+-- Drag
 local dragging = false
 local dragStart, startPos
 
@@ -280,12 +267,7 @@ end)
 UserInputService.InputChanged:Connect(function(input)
     if dragging and (input.UserInputType == Enum.UserInputType.MouseMovement or input.UserInputType == Enum.UserInputType.Touch) then
         local delta = input.Position - dragStart
-        mainFrame.Position = UDim2.new(
-            startPos.X.Scale, 
-            startPos.X.Offset + delta.X, 
-            startPos.Y.Scale, 
-            startPos.Y.Offset + delta.Y
-        )
+        mainFrame.Position = UDim2.new(startPos.X.Scale, startPos.X.Offset + delta.X, startPos.Y.Scale, startPos.Y.Offset + delta.Y)
     end
 end)
 
@@ -295,7 +277,7 @@ UserInputService.InputEnded:Connect(function(input)
     end
 end)
 
--- ========== Переменные для GUI ==========
+-- ========== GUI Элементы ==========
 local yOffset = 55
 local speedLabel
 
@@ -329,9 +311,7 @@ local function addToggle(text, enabled, callback)
     btn.MouseButton1Click:Connect(function()
         enabled = not enabled
         btn.BackgroundColor3 = enabled and Color3.fromRGB(0, 180, 0) or Color3.fromRGB(140, 0, 0)
-        local newText = text:gsub(": ON", ": OFF"):gsub(": OFF", ": ON")
-        btn.Text = newText
-        text = newText  -- обновляем для следующего переключения
+        btn.Text = text:gsub(": ON", ": OFF"):gsub(": OFF", ": ON")
         if callback then callback(enabled) end
     end)
 
@@ -343,7 +323,7 @@ end
 speedLabel = addLabel("⚡ Скорость: " .. SpeedValue, Color3.fromRGB(0, 255, 120))
 
 local sliderBg = Instance.new("Frame")
-sliderBg.Size = UDim2.new(0.92, 0, 0, 10)
+sliderBg.Size = UDim2.new(0.92, 0, 0, 12)
 sliderBg.Position = UDim2.new(0.04, 0, 0, yOffset)
 sliderBg.BackgroundColor3 = Color3.fromRGB(40, 40, 48)
 sliderBg.Parent = mainFrame
@@ -356,91 +336,82 @@ sliderFill.Parent = sliderBg
 Instance.new("UICorner", sliderFill).CornerRadius = UDim.new(1, 0)
 
 local sliderKnob = Instance.new("TextButton")
-sliderKnob.Size = UDim2.new(0, 18, 0, 18)
-sliderKnob.Position = UDim2.new((SpeedValue-16)/(MaxSpeed-16), -4, 0.5, -9)
+sliderKnob.Size = UDim2.new(0, 20, 0, 20)
+sliderKnob.Position = UDim2.new((SpeedValue-16)/(MaxSpeed-16), -5, 0.5, -10)
 sliderKnob.BackgroundColor3 = Color3.fromRGB(0, 255, 160)
 sliderKnob.Text = ""
 sliderKnob.Parent = sliderBg
 Instance.new("UICorner", sliderKnob).CornerRadius = UDim.new(1, 0)
 
--- **Исправленный ползунок**
-local function updateSpeedLabel()
+local function updateSlider()
+    local percent = (SpeedValue - 16) / (MaxSpeed - 16)
+    sliderFill.Size = UDim2.new(percent, 0, 1, 0)
+    sliderKnob.Position = UDim2.new(percent, -5, 0.5, -10)
     if speedLabel then
         speedLabel.Text = "⚡ Скорость: " .. math.floor(SpeedValue)
     end
 end
 
-sliderBg.InputBegan:Connect(function(inp)
-    if inp.UserInputType == Enum.UserInputType.MouseButton1 then
-        local moveConn
-        moveConn = UserInputService.InputChanged:Connect(function(move)
-            if move.UserInputType == Enum.UserInputType.MouseMovement then
+sliderBg.InputBegan:Connect(function(input)
+    if input.UserInputType == Enum.UserInputType.MouseButton1 then
+        local moving = true
+        local moveConn = UserInputService.InputChanged:Connect(function(move)
+            if move.UserInputType == Enum.UserInputType.MouseMovement and moving then
                 local percent = math.clamp((move.Position.X - sliderBg.AbsolutePosition.X) / sliderBg.AbsoluteSize.X, 0, 1)
-                SpeedValue = 16 + percent * (MaxSpeed - 16)
-                SpeedValue = math.floor(SpeedValue)
-
-                sliderFill.Size = UDim2.new(percent, 1, 1, 0)
-                sliderKnob.Position = UDim2.new(percent, -9, 0.5, -9)
-
-                updateSpeedLabel()
+                SpeedValue = 16 + math.floor(percent * (MaxSpeed - 16))
+                updateSlider()
                 if SpeedEnabled then applySpeed() end
             end
         end)
 
-        local endConn
-        endConn = UserInputService.InputEnded:Connect(function()
-            if moveConn then moveConn:Disconnect() end
-            if endConn then endConn:Disconnect() end
+        local endConn = UserInputService.InputEnded:Connect(function()
+            moving = false
+            moveConn:Disconnect()
+            endConn:Disconnect()
         end)
     end
 end)
 
-yOffset += 40
+yOffset += 45
 
--- Кнопки
-local speedBtn = addToggle("SPEED: ON", SpeedEnabled, function(state)
+-- Кнопки (без общего ESP)
+addToggle("SPEED: ON", SpeedEnabled, function(state)
     SpeedEnabled = state
     applySpeed()
 end)
 
-local staminaBtn = addToggle("STAMINA: ON", StaminaEnabled, function(state)
+addToggle("STAMINA: ON", StaminaEnabled, function(state)
     StaminaEnabled = state
     applyInfiniteStamina()
 end)
 
-local noclipBtn = addToggle("NOCLIP: OFF", NoClipEnabled, function(state)
+addToggle("NOCLIP: OFF", NoClipEnabled, function(state)
     NoClipEnabled = state
     applyNoClip()
 end)
 
-local espBtn = addToggle("ESP: ON", ESP_Enabled, function(state)
-    ESP_Enabled = state
-    updateESP()
-end)
-
-local genBtn = addToggle("ESP Генераторы: ON", ESP_Generators, function(state)
+addToggle("ESP Генераторы: ON", ESP_Generators, function(state)
     ESP_Generators = state
     updateESP()
 end)
 
-local killerBtn = addToggle("ESP Убийца: ON", ESP_Killer, function(state)
+addToggle("ESP Убийца: ON", ESP_Killer, function(state)
     ESP_Killer = state
     updateESP()
 end)
 
-local survBtn = addToggle("ESP Выжившие: ON", ESP_Survivors, function(state)
+addToggle("ESP Выжившие: ON", ESP_Survivors, function(state)
     ESP_Survivors = state
     updateESP()
 end)
 
--- ========== 7. Запуск ==========
+-- ========== Запуск ==========
 LocalPlayer.CharacterAdded:Connect(function()
-    task.wait(0.7)
+    task.wait(0.8)
     pcall(killAntiCheatScripts, LocalPlayer.Character)
     applySpeed()
     applyInfiniteStamina()
     applyNoClip()
-    task.wait(0.8)
     updateESP()
 end)
 
@@ -459,4 +430,4 @@ task.spawn(function()
     end
 end)
 
-print("✅ erafox v12.5 | Ползунок скорости и сворачивание GUI исправлены!")
+print("✅ BITE BY NIGHT v12.5 — Сворачивание работает + ESP кнопки исправлены!")
