@@ -1,7 +1,6 @@
 -- ============================================
--- SPEEDHACK v12 – BiteByNight Edition
--- Обход античита + плавный GUI с дрейфом
--- erafox private protocol / tg @erafox
+-- SPEEDHACK v12.1 – BiteByNight Edition (Fixed 2026)
+-- erafox private protocol
 -- ============================================
 
 local Players = game:GetService("Players")
@@ -12,15 +11,13 @@ local ReplicatedStorage = game:GetService("ReplicatedStorage")
 local CoreGui = game:GetService("CoreGui")
 local LocalPlayer = Players.LocalPlayer
 
--- Настройки
 local SpeedEnabled = true
 local SpeedValue = 35
-local AntiCheatBlocked = true
+local UseCFrameFallback = true  -- Самый стабильный метод в 2026
 
--- Глобальный список нейтрализованных удалённых событий
-local blockedRemotes = {}
+local connections = {}
 
--- ========== 1. Функция уничтожения античит-скриптов по маске ==========
+-- ========== 1. Убийство подозрительных античит-скриптов ==========
 local function killAntiCheatScripts(container)
     if not container then return end
     for _, obj in ipairs(container:GetDescendants()) do
@@ -28,187 +25,141 @@ local function killAntiCheatScripts(container)
             local nameLow = (obj.Name or ""):lower()
             local src = (obj.Source or ""):lower()
             if nameLow:find("anti") or nameLow:find("cheat") or nameLow:find("bite") or
-               src:find("walkspeed") or src:find("checkspeed") or src:find("speedhack") then
+               nameLow:find("speedcheck") or src:find("walkspeed") or src:find("checkspeed") then
                 pcall(function() obj:Destroy() end)
             end
         end
     end
 end
 
--- ========== 2. Блокировка RemoteEvent/Function, используемых для проверки ==========
+-- ========== 2. Простая блокировка подозрительных Remote ==========
 local function hijackAntiCheatRemotes()
-    local allRemotes = {}
-    for _, service in ipairs({ReplicatedStorage, LocalPlayer:WaitForChild("PlayerScripts")}) do
+    for _, service in ipairs({ReplicatedStorage, LocalPlayer:WaitForChild("PlayerScripts", 5)}) do
+        if not service then continue end
         for _, remote in ipairs(service:GetDescendants()) do
-            if (remote:IsA("RemoteEvent") or remote:IsA("RemoteFunction")) then
-                table.insert(allRemotes, remote)
-            end
-        end
-    end
-    
-    for _, remote in ipairs(allRemotes) do
-        local remoteNameLow = (remote.Name or ""):lower()
-        if remoteNameLow:find("check") or remoteNameLow:find("speed") or remoteNameLow:find("validate") or remoteNameLow:find("antihack") then
-            blockedRemotes[remote] = true
-            if remote:IsA("RemoteEvent") then
-                -- Перехват вызова OnClientEvent
-                local oldEvent = remote.OnClientEvent
-                remote.OnClientEvent = function(self, ...)
-                    -- Игнорируем проверки скорости
-                    local args = {...}
-                    if args[1] == "WalkSpeedCheck" or tostring(args[1]):find("speed") then
-                        return
-                    end
-                    if oldEvent then oldEvent(...) end
-                end
-            elseif remote:IsA("RemoteFunction") then
-                local oldInvoke = remote.OnClientInvoke
-                remote.OnClientInvoke = function(...)
-                    local args = {...}
-                    if args[1] == "GetWalkSpeed" then return 16 end
-                    if oldInvoke then return oldInvoke(...) else return nil end
+            if remote:IsA("RemoteEvent") or remote:IsA("RemoteFunction") then
+                local nameLow = (remote.Name or ""):lower()
+                if nameLow:find("check") or nameLow:find("speed") or nameLow:find("validate") or nameLow:find("antihack") then
+                    pcall(function()
+                        if remote:IsA("RemoteEvent") then
+                            remote.OnClientEvent:Connect(function(...) 
+                                -- просто игнорируем speed-проверки
+                            end)
+                        elseif remote:IsA("RemoteFunction") then
+                            local old = remote.OnClientInvoke
+                            remote.OnClientInvoke = function(...)
+                                local args = {...}
+                                if tostring(args[1]):find("speed") or tostring(args[1]):find("getwalk") then
+                                    return 16
+                                end
+                                return old and old(...) or nil
+                            end
+                        end
+                    end)
                 end
             end
         end
     end
 end
 
--- ========== 3. Глобальный метатабличный перехват WalkSpeed ==========
-pcall(function()
-    local mt = getrawmetatable(game)
-    local oldIndex = mt.__index
-    local oldNewIndex = mt.__newindex
-    setreadonly(mt, false)
-    
-    -- Перехват чтения (для серверных проверок через GetPropertyChangedSignal)
-    mt.__index = function(self, key)
-        if key == "WalkSpeed" and type(self) == "userdata" and self:IsA("Humanoid") then
-            return 16
-        end
-        return oldIndex(self, key)
-    end
-    
-    -- Перехват записи (если античит пытается сбросить на 16)
-    mt.__newindex = function(self, key, value)
-        if key == "WalkSpeed" and type(self) == "userdata" and self:IsA("Humanoid") then
-            if SpeedEnabled then
-                -- Разрешаем установку от нашего кода
-                rawset(self, key, value)
-            else
-                rawset(self, key, 16)
-            end
-            return
-        end
-        oldNewIndex(self, key, value)
-    end
-    
-    setreadonly(mt, true)
-end)
-
--- ========== 4. Основной цикл удержания скорости ==========
+-- ========== 3. Основная скорость (Heartbeat + CFrame fallback) ==========
+local lastPos = nil
 local speedConnection = nil
+
 local function applySpeed()
-    if speedConnection then
-        speedConnection:Disconnect()
-        speedConnection = nil
+    -- Отключаем старое соединение
+    for _, conn in ipairs(connections) do
+        pcall(function() conn:Disconnect() end)
     end
+    connections = {}
+
     if not SpeedEnabled then
         pcall(function()
-            if LocalPlayer.Character then
-                local hum = LocalPlayer.Character:FindFirstChildOfClass("Humanoid")
-                if hum then
-                    hum.WalkSpeed = 16
-                end
-            end
+            local hum = LocalPlayer.Character and LocalPlayer.Character:FindFirstChildOfClass("Humanoid")
+            if hum then hum.WalkSpeed = 16 end
         end)
         return
     end
-    
-    speedConnection = RunService.Heartbeat:Connect(function()
+
+    local character = LocalPlayer.Character or LocalPlayer.CharacterAdded:Wait()
+    local humanoid = character:WaitForChild("Humanoid", 3)
+    local root = character:WaitForChild("HumanoidRootPart", 3)
+
+    if not humanoid or not root then return end
+
+    -- Классический способ (если античит слабый)
+    pcall(function()
+        humanoid.WalkSpeed = SpeedValue
+    end)
+
+    -- Основной цикл
+    speedConnection = RunService.Heartbeat:Connect(function(dt)
         pcall(function()
-            if LocalPlayer.Character then
-                local hum = LocalPlayer.Character:FindFirstChildOfClass("Humanoid")
-                if hum and hum.WalkSpeed ~= SpeedValue then
-                    hum.WalkSpeed = SpeedValue
-                end
-                -- Дополнительно блокируем изменение от других скриптов
-                if hum and hum:FindFirstChild("AntiSpeedReset") then
-                    hum.AntiSpeedReset:Destroy()
-                end
-                local bind = Instance.new("BindableEvent")
-                bind.Name = "AntiSpeedReset"
-                bind.Parent = hum
-                bind.Event:Connect(function()
-                    hum.WalkSpeed = SpeedValue
-                end)
-                hum:GetPropertyChangedSignal("WalkSpeed"):Connect(function()
-                    if hum.WalkSpeed ~= SpeedValue and hum.WalkSpeed ~= 16 then
-                        hum.WalkSpeed = SpeedValue
-                    end
-                end)
+            if not humanoid or not root or not SpeedEnabled then return end
+
+            humanoid.WalkSpeed = SpeedValue
+
+            -- CFrame fallback — работает когда WalkSpeed не помогает
+            if UseCFrameFallback and humanoid.MoveDirection.Magnitude > 0 then
+                if not lastPos then lastPos = root.Position end
+
+                local moveVector = humanoid.MoveDirection * SpeedValue * dt * 1.05
+                root.CFrame = root.CFrame + moveVector
+
+                lastPos = root.Position
             end
         end)
     end)
+
+    table.insert(connections, speedConnection)
 end
 
--- ========== 5. Маскировка GUI ==========
+-- ========== 4. Маскировка GUI (более тихая) ==========
 local gui = Instance.new("ScreenGui")
-gui.Name = "Erafox_SpeedPanel"
+gui.Name = "System_" .. math.random(10000, 99999)
 gui.Parent = CoreGui
+gui.ResetOnSpawn = false
 gui.IgnoreGuiInset = true
-gui.ZIndexBehavior = Enum.ZIndexBehavior.Sibling
--- Прячем от стандартных детекторов: меняем имя каждый кадр (имитация динамики)
-task.spawn(function()
-    while gui and gui.Parent do
-        task.wait(0.5)
-        pcall(function()
-            gui.Name = "Sys_" .. math.random(1000,9999)
-        end)
-    end
-end)
 
--- Панель управления
 local frame = Instance.new("Frame")
-frame.Size = UDim2.new(0, 180, 0, 80)
-frame.Position = UDim2.new(1, -190, 0, 20)
-frame.BackgroundColor3 = Color3.fromRGB(20, 20, 25)
-frame.BackgroundTransparency = 1
+frame.Size = UDim2.new(0, 190, 0, 90)
+frame.Position = UDim2.new(1, -210, 0, 30)
+frame.BackgroundColor3 = Color3.fromRGB(15, 15, 20)
+frame.BackgroundTransparency = 0.15
 frame.BorderSizePixel = 0
 frame.Parent = gui
-Instance.new("UICorner", frame).CornerRadius = UDim.new(0, 10)
-Instance.new("UIStroke", frame).Color = Color3.fromRGB(0, 255, 100)
+
+Instance.new("UICorner", frame).CornerRadius = UDim.new(0, 12)
+local stroke = Instance.new("UIStroke", frame)
+stroke.Color = Color3.fromRGB(0, 255, 120)
+stroke.Thickness = 1.5
 
 local statusLabel = Instance.new("TextLabel")
-statusLabel.Size = UDim2.new(1, 0, 0, 30)
-statusLabel.Position = UDim2.new(0, 0, 0, 8)
+statusLabel.Size = UDim2.new(1, 0, 0, 35)
 statusLabel.BackgroundTransparency = 1
-statusLabel.Text = "⚡ SPEED: 35"
-statusLabel.TextColor3 = Color3.fromRGB(0, 230, 0)
-statusLabel.TextSize = 18
+statusLabel.Text = "⚡ SPEED: " .. SpeedValue
+statusLabel.TextColor3 = Color3.fromRGB(0, 255, 100)
+statusLabel.TextSize = 19
 statusLabel.Font = Enum.Font.GothamBold
 statusLabel.TextXAlignment = Enum.TextXAlignment.Center
 statusLabel.Parent = frame
 
 local toggle = Instance.new("TextButton")
-toggle.Size = UDim2.new(0, 60, 0, 28)
-toggle.Position = UDim2.new(0.5, -30, 0, 44)
-toggle.BackgroundColor3 = Color3.fromRGB(0, 170, 0)
+toggle.Size = UDim2.new(0, 70, 0, 32)
+toggle.Position = UDim2.new(0.5, -35, 0, 48)
+toggle.BackgroundColor3 = Color3.fromRGB(0, 180, 0)
 toggle.Text = "ВКЛ"
 toggle.TextColor3 = Color3.new(1,1,1)
-toggle.TextSize = 14
+toggle.TextSize = 15
 toggle.Font = Enum.Font.GothamBold
-toggle.AutoButtonColor = false
 toggle.Parent = frame
-Instance.new("UICorner", toggle).CornerRadius = UDim.new(0, 6)
+Instance.new("UICorner", toggle).CornerRadius = UDim.new(0, 8)
 
 -- Плавное появление
-TweenService:Create(frame, TweenInfo.new(0.4, Enum.EasingStyle.Quad), {
-    BackgroundTransparency = 0.2
-}):Play()
+TweenService:Create(frame, TweenInfo.new(0.5, Enum.EasingStyle.Quint), {BackgroundTransparency = 0.15}):Play()
 
--- Перетаскивание (мышь/тач)
-local dragging = false
-local dragStart, startPos
+-- Drag
+local dragging, dragStart, startPos
 frame.InputBegan:Connect(function(input)
     if input.UserInputType == Enum.UserInputType.MouseButton1 or input.UserInputType == Enum.UserInputType.Touch then
         dragging = true
@@ -216,66 +167,55 @@ frame.InputBegan:Connect(function(input)
         startPos = frame.Position
     end
 end)
+
 UserInputService.InputChanged:Connect(function(input)
     if dragging and (input.UserInputType == Enum.UserInputType.MouseMovement or input.UserInputType == Enum.UserInputType.Touch) then
         local delta = input.Position - dragStart
         frame.Position = UDim2.new(startPos.X.Scale, startPos.X.Offset + delta.X, startPos.Y.Scale, startPos.Y.Offset + delta.Y)
     end
 end)
+
 UserInputService.InputEnded:Connect(function(input)
     if input.UserInputType == Enum.UserInputType.MouseButton1 or input.UserInputType == Enum.UserInputType.Touch then
         dragging = false
     end
 end)
 
--- Логика кнопки
+-- Toggle
 toggle.MouseButton1Click:Connect(function()
     SpeedEnabled = not SpeedEnabled
     toggle.Text = SpeedEnabled and "ВКЛ" or "ВЫКЛ"
-    toggle.BackgroundColor3 = SpeedEnabled and Color3.fromRGB(0, 170, 0) or Color3.fromRGB(120, 0, 0)
+    toggle.BackgroundColor3 = SpeedEnabled and Color3.fromRGB(0, 180, 0) or Color3.fromRGB(140, 0, 0)
     statusLabel.Text = SpeedEnabled and "⚡ SPEED: " .. SpeedValue or "⛔ SPEED: OFF"
-    statusLabel.TextColor3 = SpeedEnabled and Color3.fromRGB(0, 230, 0) or Color3.fromRGB(200, 200, 200)
-    applySpeed()
-    TweenService:Create(toggle, TweenInfo.new(0.15), {Size = UDim2.new(0, 58, 0, 28)}):Play()
-    task.wait(0.1)
-    TweenService:Create(toggle, TweenInfo.new(0.1), {Size = UDim2.new(0, 60, 0, 28)}):Play()
-end)
+    statusLabel.TextColor3 = SpeedEnabled and Color3.fromRGB(0, 255, 100) or Color3.fromRGB(180, 180, 180)
 
--- ========== 6. Обработка респавна и постоянная защита ==========
-LocalPlayer.CharacterAdded:Connect(function(character)
-    task.wait(0.5)
-    pcall(function()
-        killAntiCheatScripts(character)
-        killAntiCheatScripts(LocalPlayer.PlayerScripts)
-        killAntiCheatScripts(game:GetService("StarterGui"))
-        hijackAntiCheatRemotes()
-        -- Повторное применение хуков на нового Humanoid
-        local hum = character:FindFirstChildOfClass("Humanoid")
-        if hum then
-            hum.WalkSpeed = SpeedEnabled and SpeedValue or 16
-        end
-    end)
     applySpeed()
 end)
 
--- Первоначальный запуск
-killAntiCheatScripts(LocalPlayer.PlayerScripts)
-killAntiCheatScripts(game:GetService("StarterGui"))
-hijackAntiCheatRemotes()
-applySpeed()
+-- ========== 5. Респавн + защита ==========
+LocalPlayer.CharacterAdded:Connect(function(char)
+    task.wait(0.6)
+    pcall(killAntiCheatScripts, char)
+    pcall(killAntiCheatScripts, LocalPlayer.PlayerScripts)
+    pcall(hijackAntiCheatRemotes)
+    applySpeed()
+end)
 
--- Фоновый сканер (каждые 3 секунды чистим новые античит скрипты)
+-- Инициализация
 task.spawn(function()
-    while true do
-        task.wait(3)
-        if AntiCheatBlocked then
-            pcall(function()
-                killAntiCheatScripts(LocalPlayer.PlayerScripts)
-                killAntiCheatScripts(LocalPlayer.Character)
-                hijackAntiCheatRemotes()
-            end)
-        end
+    task.wait(1)
+    pcall(killAntiCheatScripts, LocalPlayer.PlayerScripts)
+    pcall(hijackAntiCheatRemotes)
+    applySpeed()
+end)
+
+-- Фоновый cleaner (реже, чтобы не спамить)
+task.spawn(function()
+    while task.wait(4) do
+        pcall(killAntiCheatScripts, LocalPlayer.PlayerScripts)
+        pcall(killAntiCheatScripts, LocalPlayer.Character)
+        pcall(hijackAntiCheatRemotes)
     end
 end)
 
-print("erafox v12: BiteByNight anti-cheat bypass ACTIVE. Скорость удерживается.")
+print("✅ erafox v12.1 BiteByNight — SpeedHack активирован (CFrame fallback включён)")
