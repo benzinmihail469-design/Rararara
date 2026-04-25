@@ -12,8 +12,7 @@ local LocalPlayer = Players.LocalPlayer
 
 -- Настройки
 local SpeedEnabled = true
-local SpeedValue = 35
-local MaxSpeed = 50
+local SpeedValue = 24
 local StaminaEnabled = true
 local NoClipEnabled = false
 local AutoRepairEnabled = false
@@ -72,7 +71,7 @@ local function applySpeed()
 
             -- Дополнительное Celeron-style ускорение (плавное)
             if hum.MoveDirection.Magnitude > 0 then
-                local boost = SpeedValue * 0.9 * dt   -- коэффициент можно менять (0.7–1.1)
+                local boost = SpeedValue * 0.9 * dt
                 root.CFrame += hum.MoveDirection * boost
             end
         end)
@@ -276,7 +275,7 @@ gui.Parent = CoreGui
 gui.ResetOnSpawn = false
 
 local mainFrame = Instance.new("Frame")
-mainFrame.Size = UDim2.new(0, 270, 0, 520)
+mainFrame.Size = UDim2.new(0, 270, 0, 480)
 mainFrame.Position = UDim2.new(1, -290, 0, 40)
 mainFrame.BackgroundColor3 = Color3.fromRGB(18, 18, 24)
 mainFrame.BackgroundTransparency = 0.05
@@ -396,56 +395,7 @@ local function addToggle(text, defaultEnabled, callback)
     return btn
 end
 
-addLabel("⚡ Скорость: " .. SpeedValue, Color3.fromRGB(0, 255, 120))
-
--- Slider скорости
-local sliderBg = Instance.new("Frame")
-sliderBg.Size = UDim2.new(0.92, 0, 0, 12)
-sliderBg.Position = UDim2.new(0.04, 0, 0, yOffset)
-sliderBg.BackgroundColor3 = Color3.fromRGB(40, 40, 48)
-sliderBg.Parent = mainFrame
-Instance.new("UICorner", sliderBg).CornerRadius = UDim.new(1, 0)
-addCollapsible(sliderBg)
-
-local sliderFill = Instance.new("Frame")
-sliderFill.Size = UDim2.new((SpeedValue-16)/(MaxSpeed-16), 1, 1, 0)
-sliderFill.BackgroundColor3 = Color3.fromRGB(0, 255, 130)
-sliderFill.Parent = sliderBg
-Instance.new("UICorner", sliderFill).CornerRadius = UDim.new(1, 0)
-
-local sliderKnob = Instance.new("TextButton")
-sliderKnob.Size = UDim2.new(0, 20, 0, 20)
-sliderKnob.Position = UDim2.new((SpeedValue-16)/(MaxSpeed-16), -5, 0.5, -10)
-sliderKnob.BackgroundColor3 = Color3.fromRGB(0, 255, 160)
-sliderKnob.Text = ""
-sliderKnob.Parent = sliderBg
-Instance.new("UICorner", sliderKnob).CornerRadius = UDim.new(1, 0)
-
-local function updateSlider()
-    local percent = (SpeedValue - 16) / (MaxSpeed - 16)
-    sliderFill.Size = UDim2.new(percent, 0, 1, 0)
-    sliderKnob.Position = UDim2.new(percent, -5, 0.5, -10)
-end
-
-sliderBg.InputBegan:Connect(function(input)
-    if input.UserInputType == Enum.UserInputType.MouseButton1 then
-        local moving = true
-        local moveConn = UserInputService.InputChanged:Connect(function(move)
-            if move.UserInputType == Enum.UserInputType.MouseMovement and moving then
-                local percent = math.clamp((move.Position.X - sliderBg.AbsolutePosition.X) / sliderBg.AbsoluteSize.X, 0, 1)
-                SpeedValue = 16 + math.floor(percent * (MaxSpeed - 16))
-                updateSlider()
-                if SpeedEnabled then applySpeed() end
-            end
-        end)
-        UserInputService.InputEnded:Connect(function() 
-            moving = false 
-            moveConn:Disconnect() 
-        end)
-    end
-end)
-
-yOffset += 45
+addLabel("⚡ Скорость: 24", Color3.fromRGB(0, 255, 120))
 
 -- Тогглы
 addToggle("SPEED", SpeedEnabled, function(s) SpeedEnabled = s applySpeed() end)
@@ -486,4 +436,4 @@ task.spawn(function()
     end
 end)
 
-print("✅ BITE BY NIGHT v12.7 | Улучшенный WalkSpeed от Celeron + Auto Repair загружен!")
+print("✅ BITE BY NIGHT v12.7 | Скорость 24 + Auto Repair загружен!")
