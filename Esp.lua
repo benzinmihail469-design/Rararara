@@ -1,6 +1,6 @@
 -- ============================================
--- BITE BY NIGHT v12.7 — AUTO REPAIR (только после ручного открытия)
--- ESP по модели + Auto Repair Generators (manual start)
+-- BITE BY NIGHT v12.7 — AUTO REPAIR (Celeron Style)
+-- Ты сам открываешь генератор → скрипт чинит сам
 -- ============================================
 
 local Players = game:GetService("Players")
@@ -28,6 +28,8 @@ local speedConnection = nil
 local noclipConnection = nil
 local staminaConnection = nil
 local autoRepairConnection = nil
+local firingConnection = nil
+local lastFireTime = 0
 
 -- ========== Античит ==========
 local function killAntiCheatScripts(container)
@@ -120,57 +122,40 @@ local function applyNoClip()
     end
 end
 
--- ========== AUTO REPAIR (только после того, как ты вручную открыл генератор) ==========
+-- ========== AUTO REPAIR (Celeron Style) ==========
 local function applyAutoRepair()
     if autoRepairConnection then autoRepairConnection:Disconnect() end
+    if firingConnection then firingConnection:Disconnect() end
+    lastFireTime = 0
+
     if not AutoRepairEnabled then return end
 
     autoRepairConnection = RunService.Heartbeat:Connect(function()
         pcall(function()
-            local char = LocalPlayer.Character
-            if not char then return end
-            local root = char:FindFirstChild("HumanoidRootPart")
-            if not root then return end
-
-            for _, gen in ipairs(Workspace:GetDescendants()) do
-                local n = gen.Name:lower()
-                if (gen:IsA("Model") or gen:IsA("Folder")) and 
-                   (n:find("generator") or n:find("gen") or n:find("battery")) then
-                    
-                    local genRoot = gen:FindFirstChild("HumanoidRootPart") or gen:FindFirstChildWhichIsA("BasePart")
-                    if not genRoot or (genRoot.Position - root.Position).Magnitude > 15 then
-                        continue
-                    end
-
-                    -- Ищем индикаторы ремонта
-                    local isRepairing = false
-                    local progressValue = nil
-
-                    for _, v in ipairs(gen:GetDescendants()) do
-                        if v.Name == "Repairing" or v.Name == "IsRepairing" then
-                            isRepairing = v.Value == true
-                        end
-                        if (v:IsA("NumberValue") or v:IsA("IntValue")) and 
-                           (v.Name:lower():find("progress") or v.Name:lower():find("repair")) then
-                            progressValue = v
-                        end
-                    end
-
-                    -- Если ремонт активен (ты нажал на генератор) — ускоряем прогресс
-                    if isRepairing or (progressValue and progressValue.Value > 0 and progressValue.Value < 100) then
-                        if progressValue then
-                            progressValue.Value = math.min(100, progressValue.Value + 2.5)  -- скорость ремонта (подбери под себя)
-                        end
+            local genGui = LocalPlayer.PlayerGui:FindFirstChild("Gen")
+            if genGui and genGui:FindFirstChild("GeneratorMain") then
+                -- Открыт генератор → запускаем авто-файр
+                if not firingConnection then
+                    firingConnection = RunService.Heartbeat:Connect(function()
+                        if not AutoRepairEnabled then return end
                         
-                        -- Дополнительно: ставим максимум на все связанные значения
-                        for _, v in ipairs(gen:GetDescendants()) do
-                            if (v:IsA("NumberValue") or v:IsA("IntValue")) and 
-                               (v.Name:lower():find("progress") or v.Name:lower():find("repair") or v.Name:lower():find("completion")) then
-                                v.Value = math.min(100, v.Value + 1.8)
-                            end
+                        local currentTime = tick()
+                        if currentTime - lastFireTime >= 0 then  -- 0 = максимально быстро (Blatant)
+                            pcall(function()
+                                local args = {{ Wires = true, Switches = true, Lever = true }}
+                                LocalPlayer.PlayerGui.Gen.GeneratorMain.Event:FireServer(unpack(args))
+                            end)
+                            lastFireTime = currentTime
                         end
-                    end
+                    end)
                 end
+            else
+                -- Генератор закрыт → останавливаем
+                if firingConnection then
+                    firingConnection:Disconnect()
+                    firingConnection = nil
+                end
+                lastFireTime = 0
             end
         end)
     end)
@@ -221,15 +206,12 @@ local function removeESP(obj)
 end
 
 local function clearAllESP()
-    for obj in pairs(espObjects) do
-        removeESP(obj)
-    end
+    for obj in pairs(espObjects) do removeESP(obj) end
 end
 
 local function isKiller(player)
     if not player or not player.Character then return false end
     local char = player.Character
-
     local nameLower = char.Name:lower()
     if nameLower:find("springtrap") or nameLower:find("mimic") or nameLower:find("ennard") or 
        nameLower:find("rotten") or nameLower:find("doppel") or nameLower:find("animatronic") or 
@@ -239,8 +221,7 @@ local function isKiller(player)
 
     for _, part in ipairs(char:GetChildren()) do
         local n = part.Name:lower()
-        if n:find("springtrap") or n:find("mimic") or n:find("ennard") or 
-           n:find("animatronic") or n:find("killer") then
+        if n:find("springtrap") or n:find("mimic") or n:find("ennard") or n:find("animatronic") or n:find("killer") then
             return true
         end
     end
@@ -249,9 +230,7 @@ end
 
 local function updateESP()
     for obj, _ in pairs(espObjects) do
-        if not obj or not obj.Parent then
-            removeESP(obj)
-        end
+        if not obj or not obj.Parent then removeESP(obj) end
     end
 
     if ESP_Generators then
@@ -265,13 +244,9 @@ local function updateESP()
 
     for _, player in ipairs(Players:GetPlayers()) do
         if player == LocalPlayer then continue end
-        if not player.Character then 
-            removeESP(player.Character)
-            continue 
-        end
+        if not player.Character then continue end
 
         local char = player.Character
-
         if ESP_Killer and isKiller(player) then
             createESP(char, Color3.fromRGB(255, 50, 50), "🔪 KILLER")
         elseif ESP_Survivors and not isKiller(player) then
@@ -287,7 +262,7 @@ local function refreshESP()
     updateESP()
 end
 
--- ========== GUI (осталось почти без изменений) ==========
+-- ========== GUI ==========
 local gui = Instance.new("ScreenGui")
 gui.Name = "BiteByNight_Hack"
 gui.Parent = CoreGui
@@ -301,9 +276,8 @@ mainFrame.BackgroundTransparency = 0.05
 mainFrame.Parent = gui
 
 Instance.new("UICorner", mainFrame).CornerRadius = UDim.new(0, 14)
-local stroke = Instance.new("UIStroke", mainFrame)
-stroke.Color = Color3.fromRGB(0, 255, 160)
-stroke.Thickness = 2
+Instance.new("UIStroke", mainFrame).Color = Color3.fromRGB(0, 255, 160)
+Instance.new("UIStroke", mainFrame).Thickness = 2
 
 local minimized = false
 local fullSize = mainFrame.Size
@@ -316,15 +290,11 @@ end
 local function updateMinimizedState()
     if minimized then
         mainFrame.Size = UDim2.new(0, 270, 0, 45)
-        for _, el in ipairs(collapsibleElements) do
-            if el and el.Parent then el.Visible = false end
-        end
+        for _, el in ipairs(collapsibleElements) do if el then el.Visible = false end end
         minButton.Text = "＋"
     else
         mainFrame.Size = fullSize
-        for _, el in ipairs(collapsibleElements) do
-            if el and el.Parent then el.Visible = true end
-        end
+        for _, el in ipairs(collapsibleElements) do if el then el.Visible = true end end
         minButton.Text = "−"
     end
 end
@@ -356,7 +326,7 @@ minButton.MouseButton1Click:Connect(function()
     updateMinimizedState()
 end)
 
--- Drag (без изменений)
+-- Drag
 local dragging = false
 local dragStart, startPos
 mainFrame.InputBegan:Connect(function(input)
@@ -421,7 +391,7 @@ end
 
 addLabel("⚡ Скорость: " .. SpeedValue, Color3.fromRGB(0, 255, 120))
 
--- Slider (оставлен как был)
+-- Slider (скорость)
 local sliderBg = Instance.new("Frame")
 sliderBg.Size = UDim2.new(0.92, 0, 0, 12)
 sliderBg.Position = UDim2.new(0.04, 0, 0, yOffset)
@@ -448,8 +418,6 @@ local function updateSlider()
     local percent = (SpeedValue - 16) / (MaxSpeed - 16)
     sliderFill.Size = UDim2.new(percent, 0, 1, 0)
     sliderKnob.Position = UDim2.new(percent, -5, 0.5, -10)
-    if speedLabel then speedLabel.Text = "⚡ Скорость: " .. math.floor(SpeedValue) end
-    if SpeedEnabled then applySpeed() end
 end
 
 sliderBg.InputBegan:Connect(function(input)
@@ -460,29 +428,28 @@ sliderBg.InputBegan:Connect(function(input)
                 local percent = math.clamp((move.Position.X - sliderBg.AbsolutePosition.X) / sliderBg.AbsoluteSize.X, 0, 1)
                 SpeedValue = 16 + math.floor(percent * (MaxSpeed - 16))
                 updateSlider()
+                if SpeedEnabled then applySpeed() end
             end
         end)
-        local endConn = UserInputService.InputEnded:Connect(function()
+        UserInputService.InputEnded:Connect(function()
             moving = false
             moveConn:Disconnect()
-            endConn:Disconnect()
         end)
     end
 end)
 
 yOffset += 45
 
--- ========== Тогглы ==========
-addToggle("SPEED", SpeedEnabled, function(state) SpeedEnabled = state applySpeed() end)
-addToggle("STAMINA", StaminaEnabled, function(state) StaminaEnabled = state applyInfiniteStamina() end)
-addToggle("NOCLIP", NoClipEnabled, function(state) NoClipEnabled = state applyNoClip() end)
-addToggle("ESP Генераторы", ESP_Generators, function(state) ESP_Generators = state refreshESP() end)
-addToggle("ESP Убийца", ESP_Killer, function(state) ESP_Killer = state refreshESP() end)
-addToggle("ESP Выжившие", ESP_Survivors, function(state) ESP_Survivors = state refreshESP() end)
+-- Тогглы
+addToggle("SPEED", SpeedEnabled, function(s) SpeedEnabled = s applySpeed() end)
+addToggle("STAMINA", StaminaEnabled, function(s) StaminaEnabled = s applyInfiniteStamina() end)
+addToggle("NOCLIP", NoClipEnabled, function(s) NoClipEnabled = s applyNoClip() end)
+addToggle("ESP Генераторы", ESP_Generators, function(s) ESP_Generators = s refreshESP() end)
+addToggle("ESP Убийца", ESP_Killer, function(s) ESP_Killer = s refreshESP() end)
+addToggle("ESP Выжившие", ESP_Survivors, function(s) ESP_Survivors = s refreshESP() end)
 
--- Авто-ремонт (новая логика)
-addToggle("AUTO REPAIR (после открытия)", AutoRepairEnabled, function(state)
-    AutoRepairEnabled = state
+addToggle("AUTO REPAIR (Celeron)", AutoRepairEnabled, function(s)
+    AutoRepairEnabled = s
     applyAutoRepair()
 end)
 
@@ -513,4 +480,4 @@ task.spawn(function()
     end
 end)
 
-print("✅ BITE BY NIGHT v12.7 — Auto Repair теперь работает только после ручного нажатия на генератор!")
+print("✅ BITE BY NIGHT v12.7 загружен | Auto Repair от Celeron добавлен!")
