@@ -1,5 +1,5 @@
 -- ============================================
--- SPEEDHACK v12.1 – BiteByNight Edition (Fixed 2026)
+-- SPEEDHACK + INFINITE STAMINA v12.2 – BiteByNight Edition (2026)
 -- erafox private protocol
 -- ============================================
 
@@ -13,11 +13,12 @@ local LocalPlayer = Players.LocalPlayer
 
 local SpeedEnabled = true
 local SpeedValue = 35
-local UseCFrameFallback = true  -- Самый стабильный метод в 2026
+local StaminaEnabled = true
+local UseCFrameFallback = true
 
 local connections = {}
 
--- ========== 1. Убийство подозрительных античит-скриптов ==========
+-- ========== 1. Убийство античит-скриптов ==========
 local function killAntiCheatScripts(container)
     if not container then return end
     for _, obj in ipairs(container:GetDescendants()) do
@@ -25,32 +26,30 @@ local function killAntiCheatScripts(container)
             local nameLow = (obj.Name or ""):lower()
             local src = (obj.Source or ""):lower()
             if nameLow:find("anti") or nameLow:find("cheat") or nameLow:find("bite") or
-               nameLow:find("speedcheck") or src:find("walkspeed") or src:find("checkspeed") then
+               nameLow:find("speedcheck") or src:find("walkspeed") or src:find("stamina") then
                 pcall(function() obj:Destroy() end)
             end
         end
     end
 end
 
--- ========== 2. Простая блокировка подозрительных Remote ==========
+-- ========== 2. Блокировка подозрительных Remote ==========
 local function hijackAntiCheatRemotes()
     for _, service in ipairs({ReplicatedStorage, LocalPlayer:WaitForChild("PlayerScripts", 5)}) do
         if not service then continue end
         for _, remote in ipairs(service:GetDescendants()) do
             if remote:IsA("RemoteEvent") or remote:IsA("RemoteFunction") then
                 local nameLow = (remote.Name or ""):lower()
-                if nameLow:find("check") or nameLow:find("speed") or nameLow:find("validate") or nameLow:find("antihack") then
+                if nameLow:find("check") or nameLow:find("speed") or nameLow:find("stamina") or nameLow:find("validate") then
                     pcall(function()
                         if remote:IsA("RemoteEvent") then
-                            remote.OnClientEvent:Connect(function(...) 
-                                -- просто игнорируем speed-проверки
-                            end)
+                            remote.OnClientEvent:Connect(function() end)
                         elseif remote:IsA("RemoteFunction") then
                             local old = remote.OnClientInvoke
                             remote.OnClientInvoke = function(...)
                                 local args = {...}
-                                if tostring(args[1]):find("speed") or tostring(args[1]):find("getwalk") then
-                                    return 16
+                                if tostring(args[1]):find("stamina") or tostring(args[1]):find("speed") then
+                                    return 100
                                 end
                                 return old and old(...) or nil
                             end
@@ -62,12 +61,48 @@ local function hijackAntiCheatRemotes()
     end
 end
 
--- ========== 3. Основная скорость (Heartbeat + CFrame fallback) ==========
-local lastPos = nil
-local speedConnection = nil
+-- ========== 3. Бесконечная стамина ==========
+local staminaConnection = nil
 
+local function applyInfiniteStamina()
+    if staminaConnection then
+        pcall(function() staminaConnection:Disconnect() end)
+    end
+
+    if not StaminaEnabled then return end
+
+    staminaConnection = RunService.Heartbeat:Connect(function()
+        pcall(function()
+            local char = LocalPlayer.Character
+            if not char then return end
+
+            local humanoid = char:FindFirstChildOfClass("Humanoid")
+            if humanoid then
+                -- Основные возможные названия атрибутов в Bite By Night
+                for _, attrName in ipairs({"Stamina", "SprintStamina", "Energy", "Fatigue", "StaminaValue"}) do
+                    if humanoid:GetAttribute(attrName) then
+                        humanoid:SetAttribute(attrName, 100)
+                    end
+                end
+            end
+
+            -- Проверка внутри Character (Values / NumberValues)
+            for _, v in ipairs(char:GetDescendants()) do
+                if v:IsA("NumberValue") or v:IsA("IntValue") then
+                    local nameLow = v.Name:lower()
+                    if nameLow:find("stamina") or nameLow:find("energy") or nameLow:find("fatigue") then
+                        v.Value = 100
+                    end
+                end
+            end
+        end)
+    end)
+
+    table.insert(connections, staminaConnection)
+end
+
+-- ========== 4. Скорость (оставил как в прошлой версии) ==========
 local function applySpeed()
-    -- Отключаем старое соединение
     for _, conn in ipairs(connections) do
         pcall(function() conn:Disconnect() end)
     end
@@ -85,45 +120,33 @@ local function applySpeed()
     local humanoid = character:WaitForChild("Humanoid", 3)
     local root = character:WaitForChild("HumanoidRootPart", 3)
 
-    if not humanoid or not root then return end
+    if humanoid then humanoid.WalkSpeed = SpeedValue end
 
-    -- Классический способ (если античит слабый)
-    pcall(function()
-        humanoid.WalkSpeed = SpeedValue
-    end)
-
-    -- Основной цикл
-    speedConnection = RunService.Heartbeat:Connect(function(dt)
+    local speedConn = RunService.Heartbeat:Connect(function(dt)
         pcall(function()
             if not humanoid or not root or not SpeedEnabled then return end
-
             humanoid.WalkSpeed = SpeedValue
 
-            -- CFrame fallback — работает когда WalkSpeed не помогает
             if UseCFrameFallback and humanoid.MoveDirection.Magnitude > 0 then
-                if not lastPos then lastPos = root.Position end
-
                 local moveVector = humanoid.MoveDirection * SpeedValue * dt * 1.05
                 root.CFrame = root.CFrame + moveVector
-
-                lastPos = root.Position
             end
         end)
     end)
 
-    table.insert(connections, speedConnection)
+    table.insert(connections, speedConn)
 end
 
--- ========== 4. Маскировка GUI (более тихая) ==========
+-- ========== 5. GUI (добавлены кнопки для стамины) ==========
 local gui = Instance.new("ScreenGui")
-gui.Name = "System_" .. math.random(10000, 99999)
+gui.Name = "System_" .. math.random(10000,99999)
 gui.Parent = CoreGui
 gui.ResetOnSpawn = false
 gui.IgnoreGuiInset = true
 
 local frame = Instance.new("Frame")
-frame.Size = UDim2.new(0, 190, 0, 90)
-frame.Position = UDim2.new(1, -210, 0, 30)
+frame.Size = UDim2.new(0, 210, 0, 130)
+frame.Position = UDim2.new(1, -230, 0, 30)
 frame.BackgroundColor3 = Color3.fromRGB(15, 15, 20)
 frame.BackgroundTransparency = 0.15
 frame.BorderSizePixel = 0
@@ -131,32 +154,61 @@ frame.Parent = gui
 
 Instance.new("UICorner", frame).CornerRadius = UDim.new(0, 12)
 local stroke = Instance.new("UIStroke", frame)
-stroke.Color = Color3.fromRGB(0, 255, 120)
-stroke.Thickness = 1.5
+stroke.Color = Color3.fromRGB(0, 255, 140)
+stroke.Thickness = 1.6
 
-local statusLabel = Instance.new("TextLabel")
-statusLabel.Size = UDim2.new(1, 0, 0, 35)
-statusLabel.BackgroundTransparency = 1
-statusLabel.Text = "⚡ SPEED: " .. SpeedValue
-statusLabel.TextColor3 = Color3.fromRGB(0, 255, 100)
-statusLabel.TextSize = 19
-statusLabel.Font = Enum.Font.GothamBold
-statusLabel.TextXAlignment = Enum.TextXAlignment.Center
-statusLabel.Parent = frame
+local title = Instance.new("TextLabel")
+title.Size = UDim2.new(1, 0, 0, 30)
+title.BackgroundTransparency = 1
+title.Text = "🦇 BITE BY NIGHT HACK"
+title.TextColor3 = Color3.fromRGB(0, 255, 120)
+title.TextSize = 16
+title.Font = Enum.Font.GothamBold
+title.Parent = frame
 
-local toggle = Instance.new("TextButton")
-toggle.Size = UDim2.new(0, 70, 0, 32)
-toggle.Position = UDim2.new(0.5, -35, 0, 48)
-toggle.BackgroundColor3 = Color3.fromRGB(0, 180, 0)
-toggle.Text = "ВКЛ"
-toggle.TextColor3 = Color3.new(1,1,1)
-toggle.TextSize = 15
-toggle.Font = Enum.Font.GothamBold
-toggle.Parent = frame
-Instance.new("UICorner", toggle).CornerRadius = UDim.new(0, 8)
+local speedLabel = Instance.new("TextLabel")
+speedLabel.Size = UDim2.new(1, 0, 0, 25)
+speedLabel.Position = UDim2.new(0, 0, 0, 35)
+speedLabel.BackgroundTransparency = 1
+speedLabel.Text = "⚡ SPEED: " .. SpeedValue
+speedLabel.TextColor3 = Color3.fromRGB(0, 255, 100)
+speedLabel.TextSize = 18
+speedLabel.Font = Enum.Font.GothamBold
+speedLabel.Parent = frame
 
--- Плавное появление
-TweenService:Create(frame, TweenInfo.new(0.5, Enum.EasingStyle.Quint), {BackgroundTransparency = 0.15}):Play()
+local staminaLabel = Instance.new("TextLabel")
+staminaLabel.Size = UDim2.new(1, 0, 0, 25)
+staminaLabel.Position = UDim2.new(0, 0, 0, 60)
+staminaLabel.BackgroundTransparency = 1
+staminaLabel.Text = "♾️ STAMINA: ON"
+staminaLabel.TextColor3 = Color3.fromRGB(0, 255, 100)
+staminaLabel.TextSize = 18
+staminaLabel.Font = Enum.Font.GothamBold
+staminaLabel.Parent = frame
+
+-- Кнопка скорости
+local btnSpeed = Instance.new("TextButton")
+btnSpeed.Size = UDim2.new(0.45, 0, 0, 32)
+btnSpeed.Position = UDim2.new(0.03, 0, 0, 90)
+btnSpeed.BackgroundColor3 = Color3.fromRGB(0, 170, 0)
+btnSpeed.Text = "SPEED ON"
+btnSpeed.TextColor3 = Color3.new(1,1,1)
+btnSpeed.TextSize = 14
+btnSpeed.Font = Enum.Font.GothamBold
+btnSpeed.Parent = frame
+Instance.new("UICorner", btnSpeed).CornerRadius = UDim.new(0, 8)
+
+-- Кнопка стамины
+local btnStamina = Instance.new("TextButton")
+btnStamina.Size = UDim2.new(0.45, 0, 0, 32)
+btnStamina.Position = UDim2.new(0.52, 0, 0, 90)
+btnStamina.BackgroundColor3 = Color3.fromRGB(0, 170, 0)
+btnStamina.Text = "STAMINA ON"
+btnStamina.TextColor3 = Color3.new(1,1,1)
+btnStamina.TextSize = 14
+btnStamina.Font = Enum.Font.GothamBold
+btnStamina.Parent = frame
+Instance.new("UICorner", btnStamina).CornerRadius = UDim.new(0, 8)
 
 -- Drag
 local dragging, dragStart, startPos
@@ -176,46 +228,51 @@ UserInputService.InputChanged:Connect(function(input)
 end)
 
 UserInputService.InputEnded:Connect(function(input)
-    if input.UserInputType == Enum.UserInputType.MouseButton1 or input.UserInputType == Enum.UserInputType.Touch then
-        dragging = false
-    end
+    if input.UserInputType == Enum.UserInputType.MouseButton1 or input.UserInputType == Enum.UserInputType.Touch then dragging = false end
 end)
 
--- Toggle
-toggle.MouseButton1Click:Connect(function()
+-- Логика кнопок
+btnSpeed.MouseButton1Click:Connect(function()
     SpeedEnabled = not SpeedEnabled
-    toggle.Text = SpeedEnabled and "ВКЛ" or "ВЫКЛ"
-    toggle.BackgroundColor3 = SpeedEnabled and Color3.fromRGB(0, 180, 0) or Color3.fromRGB(140, 0, 0)
-    statusLabel.Text = SpeedEnabled and "⚡ SPEED: " .. SpeedValue or "⛔ SPEED: OFF"
-    statusLabel.TextColor3 = SpeedEnabled and Color3.fromRGB(0, 255, 100) or Color3.fromRGB(180, 180, 180)
-
+    btnSpeed.Text = SpeedEnabled and "SPEED ON" or "SPEED OFF"
+    btnSpeed.BackgroundColor3 = SpeedEnabled and Color3.fromRGB(0, 170, 0) or Color3.fromRGB(140, 0, 0)
+    speedLabel.Text = SpeedEnabled and "⚡ SPEED: " .. SpeedValue or "⚡ SPEED: OFF"
     applySpeed()
 end)
 
--- ========== 5. Респавн + защита ==========
-LocalPlayer.CharacterAdded:Connect(function(char)
-    task.wait(0.6)
-    pcall(killAntiCheatScripts, char)
-    pcall(killAntiCheatScripts, LocalPlayer.PlayerScripts)
+btnStamina.MouseButton1Click:Connect(function()
+    StaminaEnabled = not StaminaEnabled
+    btnStamina.Text = StaminaEnabled and "STAMINA ON" or "STAMINA OFF"
+    btnStamina.BackgroundColor3 = StaminaEnabled and Color3.fromRGB(0, 170, 0) or Color3.fromRGB(140, 0, 0)
+    staminaLabel.Text = StaminaEnabled and "♾️ STAMINA: ON" or "♾️ STAMINA: OFF"
+    staminaLabel.TextColor3 = StaminaEnabled and Color3.fromRGB(0, 255, 100) or Color3.fromRGB(180, 180, 180)
+    applyInfiniteStamina()
+end)
+
+-- ========== 6. Респавн и запуск ==========
+LocalPlayer.CharacterAdded:Connect(function()
+    task.wait(0.7)
+    pcall(killAntiCheatScripts, LocalPlayer.Character)
     pcall(hijackAntiCheatRemotes)
     applySpeed()
+    applyInfiniteStamina()
 end)
 
--- Инициализация
 task.spawn(function()
     task.wait(1)
     pcall(killAntiCheatScripts, LocalPlayer.PlayerScripts)
     pcall(hijackAntiCheatRemotes)
     applySpeed()
+    applyInfiniteStamina()
 end)
 
--- Фоновый cleaner (реже, чтобы не спамить)
+-- Фоновый cleaner
 task.spawn(function()
-    while task.wait(4) do
+    while task.wait(5) do
         pcall(killAntiCheatScripts, LocalPlayer.PlayerScripts)
         pcall(killAntiCheatScripts, LocalPlayer.Character)
         pcall(hijackAntiCheatRemotes)
     end
 end)
 
-print("✅ erafox v12.1 BiteByNight — SpeedHack активирован (CFrame fallback включён)")
+print("✅ erafox v12.2 | Speed + Infinite Stamina для Bite By Night — активировано")
