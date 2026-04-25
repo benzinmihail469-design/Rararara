@@ -1,6 +1,6 @@
 -- ============================================
--- BITE BY NIGHT v12.5 — ИСПРАВЛЕННАЯ ВЕРСИЯ
--- ESP кнопки теперь работают корректно + стабильное сворачивание
+-- BITE BY NIGHT v12.5 — ПОЛНОСТЬЮ РАБОЧИЕ КНОПКИ
+-- Все функции корректно включаются/выключаются
 -- ============================================
 
 local Players = game:GetService("Players")
@@ -22,10 +22,11 @@ local ESP_Generators = true
 local ESP_Killer = true
 local ESP_Survivors = true
 
-local connections = {}
+local connections = {}  -- для stamina connection
 local espObjects = {}
 local speedConnection = nil
 local noclipConnection = nil
+local staminaConnection = nil  -- отдельный коннект для стамины
 
 -- ========== Античит ==========
 local function killAntiCheatScripts(container)
@@ -40,10 +41,19 @@ local function killAntiCheatScripts(container)
     end
 end
 
--- ========== Infinite Stamina ==========
-local function applyInfiniteStamina()
+-- ========== Infinite Stamina (исправлено: можно выключить) ==========
+local function stopStamina()
+    if staminaConnection then
+        staminaConnection:Disconnect()
+        staminaConnection = nil
+    end
+end
+
+local function startStamina()
+    if staminaConnection then stopStamina() end
     if not StaminaEnabled then return end
-    local conn = RunService.Heartbeat:Connect(function()
+    
+    staminaConnection = RunService.Heartbeat:Connect(function()
         pcall(function()
             local char = LocalPlayer.Character
             if not char then return end
@@ -61,20 +71,32 @@ local function applyInfiniteStamina()
             end
         end)
     end)
-    table.insert(connections, conn)
 end
 
--- ========== Speed ==========
-local function applySpeed()
-    if speedConnection then speedConnection:Disconnect() end
-    if not SpeedEnabled then
-        pcall(function()
-            local hum = LocalPlayer.Character and LocalPlayer.Character:FindFirstChildOfClass("Humanoid")
-            if hum then hum.WalkSpeed = 16 end
-        end)
-        return
+local function applyInfiniteStamina()
+    if StaminaEnabled then
+        startStamina()
+    else
+        stopStamina()
     end
+end
 
+-- ========== Speed (исправлено: можно выключить) ==========
+local function stopSpeed()
+    if speedConnection then
+        speedConnection:Disconnect()
+        speedConnection = nil
+    end
+    pcall(function()
+        local hum = LocalPlayer.Character and LocalPlayer.Character:FindFirstChildOfClass("Humanoid")
+        if hum then hum.WalkSpeed = 16 end
+    end)
+end
+
+local function startSpeed()
+    if speedConnection then stopSpeed() end
+    if not SpeedEnabled then return end
+    
     local char = LocalPlayer.Character
     if not char then return end
     local hum = char:FindFirstChildOfClass("Humanoid")
@@ -84,7 +106,9 @@ local function applySpeed()
     hum.WalkSpeed = SpeedValue
 
     speedConnection = RunService.Heartbeat:Connect(function(dt)
-        if not SpeedEnabled or not hum or not root then return end
+        if not SpeedEnabled or not hum or not hum.Parent or not root or not root.Parent then 
+            return 
+        end
         hum.WalkSpeed = SpeedValue
         if hum.MoveDirection.Magnitude > 0 then
             root.CFrame += hum.MoveDirection * SpeedValue * dt * 1.05
@@ -92,33 +116,55 @@ local function applySpeed()
     end)
 end
 
--- ========== NoClip ==========
-local function applyNoClip()
-    if noclipConnection then noclipConnection:Disconnect() end
-    if NoClipEnabled then
-        noclipConnection = RunService.Stepped:Connect(function()
-            pcall(function()
-                local char = LocalPlayer.Character
-                if char then
-                    for _, part in ipairs(char:GetDescendants()) do
-                        if part:IsA("BasePart") then part.CanCollide = false end
-                    end
-                end
-            end)
-        end)
+local function applySpeed()
+    if SpeedEnabled then
+        startSpeed()
     else
+        stopSpeed()
+    end
+end
+
+-- ========== NoClip (исправлено: можно выключить) ==========
+local function stopNoClip()
+    if noclipConnection then
+        noclipConnection:Disconnect()
+        noclipConnection = nil
+    end
+    pcall(function()
+        local char = LocalPlayer.Character
+        if char then
+            for _, part in ipairs(char:GetDescendants()) do
+                if part:IsA("BasePart") then part.CanCollide = true end
+            end
+        end
+    end)
+end
+
+local function startNoClip()
+    if noclipConnection then stopNoClip() end
+    if not NoClipEnabled then return end
+    
+    noclipConnection = RunService.Stepped:Connect(function()
         pcall(function()
             local char = LocalPlayer.Character
             if char then
                 for _, part in ipairs(char:GetDescendants()) do
-                    if part:IsA("BasePart") then part.CanCollide = true end
+                    if part:IsA("BasePart") then part.CanCollide = false end
                 end
             end
         end)
+    end)
+end
+
+local function applyNoClip()
+    if NoClipEnabled then
+        startNoClip()
+    else
+        stopNoClip()
     end
 end
 
--- ========== ESP ==========
+-- ========== ESP (исправлено: можно выключить) ==========
 local function createESP(obj, color, text)
     if espObjects[obj] then return end
     local root = obj:FindFirstChild("HumanoidRootPart") or obj:FindFirstChildWhichIsA("BasePart")
@@ -152,7 +198,18 @@ local function createESP(obj, color, text)
     espObjects[obj] = {billboard = bg, highlight = hl}
 end
 
+local function clearAllESP()
+    for obj, data in pairs(espObjects) do
+        pcall(function()
+            if data.billboard then data.billboard:Destroy() end
+            if data.highlight then data.highlight:Destroy() end
+        end)
+    end
+    espObjects = {}
+end
+
 local function updateESP()
+    -- Очищаем несуществующие объекты
     for obj, data in pairs(espObjects) do
         if not obj or not obj.Parent then
             pcall(function()
@@ -193,6 +250,12 @@ local function updateESP()
             end
         end
     end
+end
+
+-- Перезапуск ESP после изменения настроек
+local function refreshESP()
+    clearAllESP()
+    updateESP()
 end
 
 -- ========== GUI ==========
@@ -317,7 +380,7 @@ local function addToggle(text, defaultEnabled, callback)
     btn.Size = UDim2.new(0.92, 0, 0, 36)
     btn.Position = UDim2.new(0.04, 0, 0, yOffset)
     btn.BackgroundColor3 = enabled and Color3.fromRGB(0, 180, 0) or Color3.fromRGB(140, 0, 0)
-    btn.Text = text
+    btn.Text = text .. (enabled and ": ON" or ": OFF")
     btn.TextColor3 = Color3.new(1,1,1)
     btn.TextSize = 15
     btn.Font = Enum.Font.GothamBold
@@ -328,7 +391,7 @@ local function addToggle(text, defaultEnabled, callback)
     btn.MouseButton1Click:Connect(function()
         enabled = not enabled
         btn.BackgroundColor3 = enabled and Color3.fromRGB(0, 180, 0) or Color3.fromRGB(140, 0, 0)
-        btn.Text = text:gsub(": ON", ": OFF"):gsub(": OFF", ": ON")
+        btn.Text = text .. (enabled and ": ON" or ": OFF")
         if callback then callback(enabled) end
     end)
 
@@ -368,6 +431,7 @@ local function updateSlider()
     if speedLabel then 
         speedLabel.Text = "⚡ Скорость: " .. math.floor(SpeedValue) 
     end
+    if SpeedEnabled then applySpeed() end
 end
 
 sliderBg.InputBegan:Connect(function(input)
@@ -378,7 +442,6 @@ sliderBg.InputBegan:Connect(function(input)
                 local percent = math.clamp((move.Position.X - sliderBg.AbsolutePosition.X) / sliderBg.AbsoluteSize.X, 0, 1)
                 SpeedValue = 16 + math.floor(percent * (MaxSpeed - 16))
                 updateSlider()
-                if SpeedEnabled then applySpeed() end
             end
         end)
 
@@ -392,45 +455,46 @@ end)
 
 yOffset += 45
 
--- ========== Кнопки (исправленные) ==========
-addToggle("SPEED: ON", SpeedEnabled, function(state)
+-- ========== Кнопки (все работают!) ==========
+addToggle("SPEED", SpeedEnabled, function(state)
     SpeedEnabled = state
     applySpeed()
 end)
 
-addToggle("STAMINA: ON", StaminaEnabled, function(state)
+addToggle("STAMINA", StaminaEnabled, function(state)
     StaminaEnabled = state
     applyInfiniteStamina()
 end)
 
-addToggle("NOCLIP: OFF", NoClipEnabled, function(state)
+addToggle("NOCLIP", NoClipEnabled, function(state)
     NoClipEnabled = state
     applyNoClip()
 end)
 
-addToggle("ESP Генераторы: ON", ESP_Generators, function(state)
+addToggle("ESP Генераторы", ESP_Generators, function(state)
     ESP_Generators = state
-    updateESP()
+    refreshESP()
 end)
 
-addToggle("ESP Убийца: ON", ESP_Killer, function(state)
+addToggle("ESP Убийца", ESP_Killer, function(state)
     ESP_Killer = state
-    updateESP()
+    refreshESP()
 end)
 
-addToggle("ESP Выжившие: ON", ESP_Survivors, function(state)
+addToggle("ESP Выжившие", ESP_Survivors, function(state)
     ESP_Survivors = state
-    updateESP()
+    refreshESP()
 end)
 
 -- ========== Запуск ==========
-LocalPlayer.CharacterAdded:Connect(function()
+LocalPlayer.CharacterAdded:Connect(function(char)
     task.wait(0.8)
-    pcall(killAntiCheatScripts, LocalPlayer.Character)
+    pcall(killAntiCheatScripts, char)
     applySpeed()
     applyInfiniteStamina()
     applyNoClip()
-    updateESP()
+    task.wait(0.5)
+    refreshESP()
 end)
 
 task.spawn(function()
@@ -439,7 +503,7 @@ task.spawn(function()
     applySpeed()
     applyInfiniteStamina()
     applyNoClip()
-    updateESP()
+    refreshESP()
 end)
 
 task.spawn(function()
@@ -448,4 +512,4 @@ task.spawn(function()
     end
 end)
 
-print("✅ BITE BY NIGHT v12.5 — ESP кнопки теперь работают корректно!")
+print("✅ BITE BY NIGHT v12.5 — Все кнопки работают! Функции включаются/выключаются корректно.")
