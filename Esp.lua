@@ -1,6 +1,5 @@
 -- ============================================
--- BITE BY NIGHT v12.7 — AUTO REPAIR (Celeron Style)
--- Ты сам открываешь генератор → скрипт чинит сам
+-- BITE BY NIGHT v12.7 — Celeron WalkSpeed + Auto Repair
 -- ============================================
 
 local Players = game:GetService("Players")
@@ -44,6 +43,36 @@ local function killAntiCheatScripts(container)
     end
 end
 
+-- ========== Celeron-style WalkSpeed ==========
+local function applySpeed()
+    if speedConnection then speedConnection:Disconnect() end
+    
+    if not SpeedEnabled then
+        pcall(function()
+            local hum = LocalPlayer.Character and LocalPlayer.Character:FindFirstChildOfClass("Humanoid")
+            if hum then hum.WalkSpeed = 16 end
+        end)
+        return
+    end
+
+    speedConnection = RunService.Heartbeat:Connect(function(dt)
+        pcall(function()
+            local char = LocalPlayer.Character
+            if not char then return end
+            local hum = char:FindFirstChildOfClass("Humanoid")
+            local root = char:FindFirstChild("HumanoidRootPart")
+            if not hum or not root then return end
+
+            hum.WalkSpeed = SpeedValue
+
+            -- Дополнительное ускорение (Celeron-style)
+            if hum.MoveDirection.Magnitude > 0 then
+                root.CFrame += hum.MoveDirection * (SpeedValue * 0.85) * dt
+            end
+        end)
+    end)
+end
+
 -- ========== Stamina ==========
 local function applyInfiniteStamina()
     if staminaConnection then staminaConnection:Disconnect() end
@@ -65,34 +94,6 @@ local function applyInfiniteStamina()
                 end
             end
         end)
-    end)
-end
-
--- ========== Speed ==========
-local function applySpeed()
-    if speedConnection then speedConnection:Disconnect() end
-    if not SpeedEnabled then
-        pcall(function()
-            local hum = LocalPlayer.Character and LocalPlayer.Character:FindFirstChildOfClass("Humanoid")
-            if hum then hum.WalkSpeed = 16 end
-        end)
-        return
-    end
-
-    local char = LocalPlayer.Character
-    if not char then return end
-    local hum = char:FindFirstChildOfClass("Humanoid")
-    local root = char:FindFirstChild("HumanoidRootPart")
-    if not hum or not root then return end
-
-    hum.WalkSpeed = SpeedValue
-
-    speedConnection = RunService.Heartbeat:Connect(function(dt)
-        if not SpeedEnabled or not hum or not root then return end
-        hum.WalkSpeed = SpeedValue
-        if hum.MoveDirection.Magnitude > 0 then
-            root.CFrame += hum.MoveDirection * SpeedValue * dt * 1.05
-        end
     end)
 end
 
@@ -134,13 +135,11 @@ local function applyAutoRepair()
         pcall(function()
             local genGui = LocalPlayer.PlayerGui:FindFirstChild("Gen")
             if genGui and genGui:FindFirstChild("GeneratorMain") then
-                -- Открыт генератор → запускаем авто-файр
                 if not firingConnection then
                     firingConnection = RunService.Heartbeat:Connect(function()
                         if not AutoRepairEnabled then return end
-                        
                         local currentTime = tick()
-                        if currentTime - lastFireTime >= 0 then  -- 0 = максимально быстро (Blatant)
+                        if currentTime - lastFireTime >= 0 then
                             pcall(function()
                                 local args = {{ Wires = true, Switches = true, Lever = true }}
                                 LocalPlayer.PlayerGui.Gen.GeneratorMain.Event:FireServer(unpack(args))
@@ -150,7 +149,6 @@ local function applyAutoRepair()
                     end)
                 end
             else
-                -- Генератор закрыт → останавливаем
                 if firingConnection then
                     firingConnection:Disconnect()
                     firingConnection = nil
@@ -262,7 +260,7 @@ local function refreshESP()
     updateESP()
 end
 
--- ========== GUI ==========
+-- ========== GUI (остаётся прежней) ==========
 local gui = Instance.new("ScreenGui")
 gui.Name = "BiteByNight_Hack"
 gui.Parent = CoreGui
@@ -391,7 +389,7 @@ end
 
 addLabel("⚡ Скорость: " .. SpeedValue, Color3.fromRGB(0, 255, 120))
 
--- Slider (скорость)
+-- Slider
 local sliderBg = Instance.new("Frame")
 sliderBg.Size = UDim2.new(0.92, 0, 0, 12)
 sliderBg.Position = UDim2.new(0.04, 0, 0, yOffset)
@@ -431,10 +429,7 @@ sliderBg.InputBegan:Connect(function(input)
                 if SpeedEnabled then applySpeed() end
             end
         end)
-        UserInputService.InputEnded:Connect(function()
-            moving = false
-            moveConn:Disconnect()
-        end)
+        UserInputService.InputEnded:Connect(function() moving = false moveConn:Disconnect() end)
     end
 end)
 
@@ -447,7 +442,6 @@ addToggle("NOCLIP", NoClipEnabled, function(s) NoClipEnabled = s applyNoClip() e
 addToggle("ESP Генераторы", ESP_Generators, function(s) ESP_Generators = s refreshESP() end)
 addToggle("ESP Убийца", ESP_Killer, function(s) ESP_Killer = s refreshESP() end)
 addToggle("ESP Выжившие", ESP_Survivors, function(s) ESP_Survivors = s refreshESP() end)
-
 addToggle("AUTO REPAIR (Celeron)", AutoRepairEnabled, function(s)
     AutoRepairEnabled = s
     applyAutoRepair()
@@ -480,4 +474,4 @@ task.spawn(function()
     end
 end)
 
-print("✅ BITE BY NIGHT v12.7 загружен | Auto Repair от Celeron добавлен!")
+print("✅ BITE BY NIGHT v12.7 | WalkSpeed от Celeron + Auto Repair загружены!")
