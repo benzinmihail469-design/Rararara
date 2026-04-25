@@ -1,6 +1,6 @@
 -- ============================================
--- BITE BY NIGHT v12.6 — ESP ПО МОДЕЛИ + ЛИДЕРБОРДУ
--- Убийца определяется надёжно, ESP снова работает
+-- BITE BY NIGHT v12.6 — ESP ПО МОДЕЛИ УБИЙЦЫ
+-- Убийца определяется по модели + высокому HP (страховка)
 -- ============================================
 
 local Players = game:GetService("Players")
@@ -23,12 +23,11 @@ local ESP_Killer = true
 local ESP_Survivors = true
 
 local espObjects = {}
-
 local speedConnection = nil
 local noclipConnection = nil
 local staminaConnection = nil
 
--- ========== Античит (оставлено) ==========
+-- ========== Античит ==========
 local function killAntiCheatScripts(container)
     if not container then return end
     for _, obj in ipairs(container:GetDescendants()) do
@@ -41,7 +40,7 @@ local function killAntiCheatScripts(container)
     end
 end
 
--- ========== Stamina, Speed, NoClip (без изменений) ==========
+-- ========== Stamina ==========
 local function applyInfiniteStamina()
     if staminaConnection then staminaConnection:Disconnect() end
     if not StaminaEnabled then return end
@@ -56,7 +55,8 @@ local function applyInfiniteStamina()
                 end
             end
             for _, v in ipairs(char:GetDescendants()) do
-                if (v:IsA("NumberValue") or v:IsA("IntValue")) and (v.Name:lower():find("stamina") or v.Name:lower():find("energy")) then
+                if (v:IsA("NumberValue") or v:IsA("IntValue")) and 
+                   (v.Name:lower():find("stamina") or v.Name:lower():find("energy")) then
                     v.Value = 100
                 end
             end
@@ -64,6 +64,7 @@ local function applyInfiniteStamina()
     end)
 end
 
+-- ========== Speed ==========
 local function applySpeed()
     if speedConnection then speedConnection:Disconnect() end
     if not SpeedEnabled then
@@ -73,6 +74,7 @@ local function applySpeed()
         end)
         return
     end
+
     local char = LocalPlayer.Character
     if not char then return end
     local hum = char:FindFirstChildOfClass("Humanoid")
@@ -80,6 +82,7 @@ local function applySpeed()
     if not hum or not root then return end
 
     hum.WalkSpeed = SpeedValue
+
     speedConnection = RunService.Heartbeat:Connect(function(dt)
         if not SpeedEnabled or not hum or not root then return end
         hum.WalkSpeed = SpeedValue
@@ -89,6 +92,7 @@ local function applySpeed()
     end)
 end
 
+-- ========== NoClip ==========
 local function applyNoClip()
     if noclipConnection then noclipConnection:Disconnect() end
     if NoClipEnabled then
@@ -123,4 +127,342 @@ local function createESP(obj, color, text)
     local bg = Instance.new("BillboardGui")
     bg.Adornee = root
     bg.Size = UDim2.new(0, 200, 0, 50)
-    bg.StudsOffset
+    bg.StudsOffset = Vector3.new(0, 3.5, 0)
+    bg.AlwaysOnTop = true
+    bg.Parent = CoreGui
+
+    local lbl = Instance.new("TextLabel")
+    lbl.Size = UDim2.new(1,0,1,0)
+    lbl.BackgroundTransparency = 1
+    lbl.Text = text
+    lbl.TextColor3 = color
+    lbl.TextStrokeTransparency = 0.4
+    lbl.TextSize = 16
+    lbl.Font = Enum.Font.GothamBold
+    lbl.Parent = bg
+
+    local hl = Instance.new("Highlight")
+    hl.Adornee = obj
+    hl.FillColor = color
+    hl.OutlineColor = color
+    hl.FillTransparency = 0.65
+    hl.OutlineTransparency = 0.2
+    hl.Parent = obj
+
+    espObjects[obj] = {billboard = bg, highlight = hl}
+end
+
+local function removeESP(obj)
+    if espObjects[obj] then
+        pcall(function()
+            espObjects[obj].billboard:Destroy()
+            espObjects[obj].highlight:Destroy()
+        end)
+        espObjects[obj] = nil
+    end
+end
+
+local function clearAllESP()
+    for obj in pairs(espObjects) do
+        removeESP(obj)
+    end
+end
+
+-- ========== НОВАЯ ДЕТЕКЦИЯ УБИЙЦЫ ПО МОДЕЛИ ==========
+local function isKiller(player)
+    if not player or not player.Character then return false end
+    local char = player.Character
+
+    -- Проверка по имени модели убийцы (основной способ)
+    local modelName = char.Name:lower()
+    if modelName:find("springtrap") or modelName:find("mimic") or modelName:find("ennard") or 
+       modelName:find("rotten") or modelName:find("doppel") or modelName:find("animatronic") or 
+       modelName:find("killer") or modelName:find("project") then
+        return true
+    end
+
+    -- Проверка по частям модели
+    for _, v in ipairs(char:GetChildren()) do
+        local n = v.Name:lower()
+        if n:find("springtrap") or n:find("mimic") or n:find("ennard") or 
+           n:find("animatronic") or n:find("killer") then
+            return true
+        end
+    end
+
+    -- Страховка: очень высокое здоровье
+    local hum = char:FindFirstChildOfClass("Humanoid")
+    if hum and (hum.Health > 800 or hum.MaxHealth > 800) then
+        return true
+    end
+
+    return false
+end
+
+local function updateESP()
+    -- Очистка невалидных объектов
+    for obj, _ in pairs(espObjects) do
+        if not obj or not obj.Parent then
+            removeESP(obj)
+        end
+    end
+
+    -- Генераторы
+    if ESP_Generators then
+        for _, obj in ipairs(Workspace:GetDescendants()) do
+            local n = obj.Name:lower()
+            if (obj:IsA("Model") or obj:IsA("Folder")) and (n:find("generator") or n:find("gen") or n:find("battery")) and not espObjects[obj] then
+                createESP(obj, Color3.fromRGB(0, 255, 100), "⚡ GENERATOR")
+            end
+        end
+    end
+
+    -- Игроки
+    for _, player in ipairs(Players:GetPlayers()) do
+        if player == LocalPlayer then continue end
+        if not player.Character then 
+            removeESP(player.Character)
+            continue 
+        end
+
+        local char = player.Character
+
+        if ESP_Killer and isKiller(player) then
+            -- Это убийца → только красный ESP
+            removeESP(char)
+            createESP(char, Color3.fromRGB(255, 50, 50), "🔪 KILLER")
+        elseif ESP_Survivors and not isKiller(player) then
+            -- Это выживший → синий ESP с ником
+            removeESP(char)
+            createESP(char, Color3.fromRGB(80, 180, 255), player.Name)
+        else
+            removeESP(char)
+        end
+    end
+end
+
+local function refreshESP()
+    clearAllESP()
+    updateESP()
+end
+
+-- ========== GUI ==========
+local gui = Instance.new("ScreenGui")
+gui.Name = "BiteByNight_Hack"
+gui.Parent = CoreGui
+gui.ResetOnSpawn = false
+
+local mainFrame = Instance.new("Frame")
+mainFrame.Size = UDim2.new(0, 270, 0, 480)
+mainFrame.Position = UDim2.new(1, -290, 0, 40)
+mainFrame.BackgroundColor3 = Color3.fromRGB(18, 18, 24)
+mainFrame.BackgroundTransparency = 0.05
+mainFrame.Parent = gui
+
+Instance.new("UICorner", mainFrame).CornerRadius = UDim.new(0, 14)
+local stroke = Instance.new("UIStroke", mainFrame)
+stroke.Color = Color3.fromRGB(0, 255, 160)
+stroke.Thickness = 2
+
+local minimized = false
+local fullSize = UDim2.new(0, 270, 0, 480)
+local collapsibleElements = {}
+
+local function addCollapsible(element)
+    if element then table.insert(collapsibleElements, element) end
+end
+
+local function updateMinimizedState()
+    if minimized then
+        mainFrame.Size = UDim2.new(0, 270, 0, 45)
+        for _, el in ipairs(collapsibleElements) do
+            if el and el.Parent then el.Visible = false end
+        end
+        minButton.Text = "＋"
+    else
+        mainFrame.Size = fullSize
+        for _, el in ipairs(collapsibleElements) do
+            if el and el.Parent then el.Visible = true end
+        end
+        minButton.Text = "−"
+    end
+end
+
+local title = Instance.new("TextLabel")
+title.Size = UDim2.new(1, -70, 0, 40)
+title.Position = UDim2.new(0, 15, 0, 0)
+title.BackgroundTransparency = 1
+title.Text = "🦇 BITE BY NIGHT v12.6"
+title.TextColor3 = Color3.fromRGB(0, 255, 160)
+title.TextSize = 18
+title.Font = Enum.Font.GothamBold
+title.TextXAlignment = Enum.TextXAlignment.Left
+title.Parent = mainFrame
+
+local minButton = Instance.new("TextButton")
+minButton.Size = UDim2.new(0, 50, 0, 30)
+minButton.Position = UDim2.new(1, -65, 0, 5)
+minButton.BackgroundColor3 = Color3.fromRGB(30, 30, 35)
+minButton.Text = "−"
+minButton.TextColor3 = Color3.new(1,1,1)
+minButton.TextSize = 24
+minButton.Font = Enum.Font.GothamBold
+minButton.Parent = mainFrame
+Instance.new("UICorner", minButton).CornerRadius = UDim.new(0, 8)
+
+minButton.MouseButton1Click:Connect(function()
+    minimized = not minimized
+    updateMinimizedState()
+end)
+
+-- Drag
+local dragging = false
+local dragStart, startPos
+mainFrame.InputBegan:Connect(function(input)
+    if input.UserInputType == Enum.UserInputType.MouseButton1 or input.UserInputType == Enum.UserInputType.Touch then
+        dragging = true
+        dragStart = input.Position
+        startPos = mainFrame.Position
+    end
+end)
+UserInputService.InputChanged:Connect(function(input)
+    if dragging and (input.UserInputType == Enum.UserInputType.MouseMovement or input.UserInputType == Enum.UserInputType.Touch) then
+        local delta = input.Position - dragStart
+        mainFrame.Position = UDim2.new(startPos.X.Scale, startPos.X.Offset + delta.X, startPos.Y.Scale, startPos.Y.Offset + delta.Y)
+    end
+end)
+UserInputService.InputEnded:Connect(function(input)
+    if input.UserInputType == Enum.UserInputType.MouseButton1 or input.UserInputType == Enum.UserInputType.Touch then dragging = false end
+end)
+
+-- ========== GUI элементы ==========
+local yOffset = 55
+local speedLabel
+
+local function addLabel(text, color)
+    local lbl = Instance.new("TextLabel")
+    lbl.Size = UDim2.new(0.92, 0, 0, 28)
+    lbl.Position = UDim2.new(0.04, 0, 0, yOffset)
+    lbl.BackgroundTransparency = 1
+    lbl.Text = text
+    lbl.TextColor3 = color or Color3.fromRGB(0, 255, 140)
+    lbl.TextSize = 16
+    lbl.Font = Enum.Font.GothamBold
+    lbl.TextXAlignment = Enum.TextXAlignment.Left
+    lbl.Parent = mainFrame
+    addCollapsible(lbl)
+    yOffset += 32
+    return lbl
+end
+
+local function addToggle(text, defaultEnabled, callback)
+    local enabled = defaultEnabled
+    local btn = Instance.new("TextButton")
+    btn.Size = UDim2.new(0.92, 0, 0, 36)
+    btn.Position = UDim2.new(0.04, 0, 0, yOffset)
+    btn.BackgroundColor3 = enabled and Color3.fromRGB(0, 180, 0) or Color3.fromRGB(140, 0, 0)
+    btn.Text = text .. (enabled and ": ON" or ": OFF")
+    btn.TextColor3 = Color3.new(1,1,1)
+    btn.TextSize = 15
+    btn.Font = Enum.Font.GothamBold
+    btn.Parent = mainFrame
+    Instance.new("UICorner", btn).CornerRadius = UDim.new(0, 9)
+    addCollapsible(btn)
+
+    btn.MouseButton1Click:Connect(function()
+        enabled = not enabled
+        btn.BackgroundColor3 = enabled and Color3.fromRGB(0, 180, 0) or Color3.fromRGB(140, 0, 0)
+        btn.Text = text .. (enabled and ": ON" or ": OFF")
+        if callback then callback(enabled) end
+    end)
+
+    yOffset += 42
+    return btn
+end
+
+speedLabel = addLabel("⚡ Скорость: " .. SpeedValue, Color3.fromRGB(0, 255, 120))
+
+local sliderBg = Instance.new("Frame")
+sliderBg.Size = UDim2.new(0.92, 0, 0, 12)
+sliderBg.Position = UDim2.new(0.04, 0, 0, yOffset)
+sliderBg.BackgroundColor3 = Color3.fromRGB(40, 40, 48)
+sliderBg.Parent = mainFrame
+Instance.new("UICorner", sliderBg).CornerRadius = UDim.new(1, 0)
+addCollapsible(sliderBg)
+
+local sliderFill = Instance.new("Frame")
+sliderFill.Size = UDim2.new((SpeedValue-16)/(MaxSpeed-16), 1, 1, 0)
+sliderFill.BackgroundColor3 = Color3.fromRGB(0, 255, 130)
+sliderFill.Parent = sliderBg
+Instance.new("UICorner", sliderFill).CornerRadius = UDim.new(1, 0)
+
+local sliderKnob = Instance.new("TextButton")
+sliderKnob.Size = UDim2.new(0, 20, 0, 20)
+sliderKnob.Position = UDim2.new((SpeedValue-16)/(MaxSpeed-16), -5, 0.5, -10)
+sliderKnob.BackgroundColor3 = Color3.fromRGB(0, 255, 160)
+sliderKnob.Text = ""
+sliderKnob.Parent = sliderBg
+Instance.new("UICorner", sliderKnob).CornerRadius = UDim.new(1, 0)
+
+local function updateSlider()
+    local percent = (SpeedValue - 16) / (MaxSpeed - 16)
+    sliderFill.Size = UDim2.new(percent, 0, 1, 0)
+    sliderKnob.Position = UDim2.new(percent, -5, 0.5, -10)
+    if speedLabel then speedLabel.Text = "⚡ Скорость: " .. math.floor(SpeedValue) end
+    if SpeedEnabled then applySpeed() end
+end
+
+sliderBg.InputBegan:Connect(function(input)
+    if input.UserInputType == Enum.UserInputType.MouseButton1 then
+        local moving = true
+        local moveConn = UserInputService.InputChanged:Connect(function(move)
+            if move.UserInputType == Enum.UserInputType.MouseMovement and moving then
+                local percent = math.clamp((move.Position.X - sliderBg.AbsolutePosition.X) / sliderBg.AbsoluteSize.X, 0, 1)
+                SpeedValue = 16 + math.floor(percent * (MaxSpeed - 16))
+                updateSlider()
+            end
+        end)
+        local endConn = UserInputService.InputEnded:Connect(function()
+            moving = false
+            moveConn:Disconnect()
+            endConn:Disconnect()
+        end)
+    end
+end)
+
+yOffset += 45
+
+-- Кнопки
+addToggle("SPEED", SpeedEnabled, function(state) SpeedEnabled = state applySpeed() end)
+addToggle("STAMINA", StaminaEnabled, function(state) StaminaEnabled = state applyInfiniteStamina() end)
+addToggle("NOCLIP", NoClipEnabled, function(state) NoClipEnabled = state applyNoClip() end)
+addToggle("ESP Генераторы", ESP_Generators, function(state) ESP_Generators = state refreshESP() end)
+addToggle("ESP Убийца", ESP_Killer, function(state) ESP_Killer = state refreshESP() end)
+addToggle("ESP Выжившие", ESP_Survivors, function(state) ESP_Survivors = state refreshESP() end)
+
+-- ========== Запуск ==========
+LocalPlayer.CharacterAdded:Connect(function()
+    task.wait(0.8)
+    pcall(killAntiCheatScripts, LocalPlayer.Character)
+    applySpeed()
+    applyInfiniteStamina()
+    applyNoClip()
+    refreshESP()
+end)
+
+task.spawn(function()
+    task.wait(1)
+    pcall(killAntiCheatScripts, LocalPlayer.PlayerScripts)
+    applySpeed()
+    applyInfiniteStamina()
+    applyNoClip()
+    refreshESP()
+end)
+
+task.spawn(function()
+    while task.wait(1) do
+        updateESP()
+    end
+end)
+
+print("✅ BITE BY NIGHT v12.6 — ESP по модели убийцы работает!")
