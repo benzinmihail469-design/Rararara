@@ -480,4 +480,7 @@ end)
 task.spawn(function()
     while task.wait(2) do
         updateESP()
-   
+    end
+end)
+
+print("✅ BITE BY NIGHT v12.5 — ESP Убийца и Выжившие теперь работают отдельно!")
