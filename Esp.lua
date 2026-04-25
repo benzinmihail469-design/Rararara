@@ -1,6 +1,6 @@
 -- ============================================
--- BITE BY NIGHT v12.6 — ESP ТОЛЬКО ПО МОДЕЛИ УБИЙЦЫ
--- Убрана проверка по здоровью. Только по модели.
+-- BITE BY NIGHT v12.6 — С АВТО-ПОЧИНКОЙ ГЕНЕРАТОРОВ
+-- ESP по модели + Auto Repair Generators
 -- ============================================
 
 local Players = game:GetService("Players")
@@ -17,16 +17,17 @@ local SpeedValue = 35
 local MaxSpeed = 50
 local StaminaEnabled = true
 local NoClipEnabled = false
+local AutoRepairEnabled = false   -- Новая настройка
 
 local ESP_Generators = true
 local ESP_Killer = true
 local ESP_Survivors = true
 
 local espObjects = {}
-
 local speedConnection = nil
 local noclipConnection = nil
 local staminaConnection = nil
+local autoRepairConnection = nil
 
 -- ========== Античит ==========
 local function killAntiCheatScripts(container)
@@ -119,6 +120,43 @@ local function applyNoClip()
     end
 end
 
+-- ========== AUTO REPAIR GENERATORS ==========
+local function applyAutoRepair()
+    if autoRepairConnection then autoRepairConnection:Disconnect() end
+    if not AutoRepairEnabled then return end
+
+    autoRepairConnection = RunService.Heartbeat:Connect(function()
+        pcall(function()
+            local char = LocalPlayer.Character
+            if not char then return end
+            local root = char:FindFirstChild("HumanoidRootPart")
+            if not root then return end
+
+            for _, gen in ipairs(Workspace:GetDescendants()) do
+                local n = gen.Name:lower()
+                if (gen:IsA("Model") or gen:IsA("Folder")) and 
+                   (n:find("generator") or n:find("gen") or n:find("battery")) then
+                    
+                    local genRoot = gen:FindFirstChild("HumanoidRootPart") or gen:FindFirstChildWhichIsA("BasePart")
+                    if genRoot and (genRoot.Position - root.Position).Magnitude < 15 then
+                        
+                        -- Авто-взаимодействие с генератором
+                        local prompt = gen:FindFirstChildWhichIsA("ProximityPrompt") or 
+                                       gen:FindFirstChild("RepairPrompt") or 
+                                       gen:FindFirstChild("Activate")
+                        
+                        if prompt and prompt.Enabled then
+                            prompt:InputHoldBegin()
+                            task.wait(0.1)
+                            prompt:InputHoldEnd()
+                        end
+                    end
+                end
+            end
+        end)
+    end)
+end
+
 -- ========== ESP ==========
 local function createESP(obj, color, text)
     if espObjects[obj] then return end
@@ -174,19 +212,17 @@ local function isKiller(player)
     if not player or not player.Character then return false end
     local char = player.Character
 
-    -- Проверка по имени персонажа
     local nameLower = char.Name:lower()
     if nameLower:find("springtrap") or nameLower:find("mimic") or nameLower:find("ennard") or 
-       nameLower:find("rotten") or nameLower:find("doppelganger") or nameLower:find("animatronic") or 
+       nameLower:find("rotten") or nameLower:find("doppel") or nameLower:find("animatronic") or 
        nameLower:find("killer") or nameLower:find("project") then
         return true
     end
 
-    -- Проверка по частям модели (самый надёжный способ)
     for _, part in ipairs(char:GetChildren()) do
         local n = part.Name:lower()
         if n:find("springtrap") or n:find("mimic") or n:find("ennard") or 
-           n:find("animatronic") or n:find("killer") or n:find("trap") then
+           n:find("animatronic") or n:find("killer") then
             return true
         end
     end
@@ -195,14 +231,12 @@ local function isKiller(player)
 end
 
 local function updateESP()
-    -- Очистка невалидных
     for obj, _ in pairs(espObjects) do
         if not obj or not obj.Parent then
             removeESP(obj)
         end
     end
 
-    -- Генераторы
     if ESP_Generators then
         for _, obj in ipairs(Workspace:GetDescendants()) do
             local n = obj.Name:lower()
@@ -212,7 +246,6 @@ local function updateESP()
         end
     end
 
-    -- Игроки
     for _, player in ipairs(Players:GetPlayers()) do
         if player == LocalPlayer then continue end
         if not player.Character then 
@@ -223,11 +256,9 @@ local function updateESP()
         local char = player.Character
 
         if ESP_Killer and isKiller(player) then
-            -- Убийца
             removeESP(char)
             createESP(char, Color3.fromRGB(255, 50, 50), "🔪 KILLER")
         elseif ESP_Survivors and not isKiller(player) then
-            -- Выживший
             removeESP(char)
             createESP(char, Color3.fromRGB(80, 180, 255), player.Name)
         else
@@ -241,14 +272,14 @@ local function refreshESP()
     updateESP()
 end
 
--- ========== GUI (оставлено без изменений) ==========
+-- ========== GUI ==========
 local gui = Instance.new("ScreenGui")
 gui.Name = "BiteByNight_Hack"
 gui.Parent = CoreGui
 gui.ResetOnSpawn = false
 
 local mainFrame = Instance.new("Frame")
-mainFrame.Size = UDim2.new(0, 270, 0, 480)
+mainFrame.Size = UDim2.new(0, 270, 0, 520)  -- увеличил высоту под новую кнопку
 mainFrame.Position = UDim2.new(1, -290, 0, 40)
 mainFrame.BackgroundColor3 = Color3.fromRGB(18, 18, 24)
 mainFrame.BackgroundTransparency = 0.05
@@ -260,7 +291,7 @@ stroke.Color = Color3.fromRGB(0, 255, 160)
 stroke.Thickness = 2
 
 local minimized = false
-local fullSize = UDim2.new(0, 270, 0, 480)
+local fullSize = mainFrame.Size
 local collapsibleElements = {}
 
 local function addCollapsible(element)
@@ -377,6 +408,7 @@ end
 
 speedLabel = addLabel("⚡ Скорость: " .. SpeedValue, Color3.fromRGB(0, 255, 120))
 
+-- Slider (оставлен без изменений)
 local sliderBg = Instance.new("Frame")
 sliderBg.Size = UDim2.new(0.92, 0, 0, 12)
 sliderBg.Position = UDim2.new(0.04, 0, 0, yOffset)
@@ -427,13 +459,19 @@ end)
 
 yOffset += 45
 
--- Кнопки
+-- ========== Кнопки (добавлена новая) ==========
 addToggle("SPEED", SpeedEnabled, function(state) SpeedEnabled = state applySpeed() end)
 addToggle("STAMINA", StaminaEnabled, function(state) StaminaEnabled = state applyInfiniteStamina() end)
 addToggle("NOCLIP", NoClipEnabled, function(state) NoClipEnabled = state applyNoClip() end)
 addToggle("ESP Генераторы", ESP_Generators, function(state) ESP_Generators = state refreshESP() end)
 addToggle("ESP Убийца", ESP_Killer, function(state) ESP_Killer = state refreshESP() end)
 addToggle("ESP Выжившие", ESP_Survivors, function(state) ESP_Survivors = state refreshESP() end)
+
+-- НОВАЯ КНОПКА АВТО-ПОЧИНКИ
+addToggle("AUTO REPAIR", AutoRepairEnabled, function(state)
+    AutoRepairEnabled = state
+    applyAutoRepair()
+end)
 
 -- ========== Запуск ==========
 LocalPlayer.CharacterAdded:Connect(function()
@@ -442,6 +480,7 @@ LocalPlayer.CharacterAdded:Connect(function()
     applySpeed()
     applyInfiniteStamina()
     applyNoClip()
+    applyAutoRepair()
     refreshESP()
 end)
 
@@ -451,6 +490,7 @@ task.spawn(function()
     applySpeed()
     applyInfiniteStamina()
     applyNoClip()
+    applyAutoRepair()
     refreshESP()
 end)
 
@@ -460,4 +500,4 @@ task.spawn(function()
     end
 end)
 
-print("✅ BITE BY NIGHT v12.6 — ESP по модели убийцы (без проверки здоровья)")
+print("✅ BITE BY NIGHT v12.6 — Добавлена кнопка Auto Repair Generators!")
