@@ -1,6 +1,6 @@
 -- ============================================
 -- SPEEDHACK + INF STAMINA + ESP + NOCLIP v12.5 – BiteByNight Edition
--- erafox private protocol
+-- Исправленная версия: работающий ползунок + сворачивание GUI
 -- ============================================
 
 local Players = game:GetService("Players")
@@ -68,8 +68,11 @@ end
 
 -- ========== 3. Speed (с CFrame) ==========
 local function applySpeed()
-    for _, c in ipairs(connections) do pcall(function() c:Disconnect() end) end
-    connections = {}
+    for _, c in ipairs(connections) do 
+        if c.Name ~= "NoClipConn" then 
+            pcall(function() c:Disconnect() end) 
+        end 
+    end
 
     if not SpeedEnabled then
         pcall(function()
@@ -94,6 +97,7 @@ local function applySpeed()
             end
         end)
     end)
+    conn.Name = "SpeedConn"
     table.insert(connections, conn)
 end
 
@@ -168,8 +172,8 @@ local function updateESP()
     for obj, data in pairs(espObjects) do
         if not obj or not obj.Parent then
             pcall(function()
-                data.billboard:Destroy()
-                data.highlight:Destroy()
+                if data.billboard then data.billboard:Destroy() end
+                if data.highlight then data.highlight:Destroy() end
             end)
             espObjects[obj] = nil
         end
@@ -177,7 +181,6 @@ local function updateESP()
 
     if not ESP_Enabled then return end
 
-    -- Генераторы
     if ESP_Generators then
         for _, obj in ipairs(Workspace:GetDescendants()) do
             local n = obj.Name:lower()
@@ -187,7 +190,6 @@ local function updateESP()
         end
     end
 
-    -- Выжившие
     if ESP_Survivors then
         for _, p in ipairs(Players:GetPlayers()) do
             if p ~= LocalPlayer and p.Character and not espObjects[p.Character] then
@@ -196,7 +198,6 @@ local function updateESP()
         end
     end
 
-    -- Убийца
     if ESP_Killer then
         for _, p in ipairs(Players:GetPlayers()) do
             if p ~= LocalPlayer and p.Character then
@@ -209,14 +210,14 @@ local function updateESP()
     end
 end
 
--- ========== 6. GUI (все кнопки теперь видны) ==========
+-- ========== 6. GUI ==========
 local gui = Instance.new("ScreenGui")
 gui.Name = "BiteByNight_Hack_" .. math.random(1000,9999)
 gui.Parent = CoreGui
 gui.ResetOnSpawn = false
 
 local mainFrame = Instance.new("Frame")
-mainFrame.Size = UDim2.new(0, 260, 0, 460)
+mainFrame.Size = UDim2.new(0, 260, 0, 520)  -- увеличил высоту из-за доп. кнопок
 mainFrame.Position = UDim2.new(1, -280, 0, 40)
 mainFrame.BackgroundColor3 = Color3.fromRGB(18, 18, 24)
 mainFrame.BackgroundTransparency = 0.1
@@ -252,15 +253,22 @@ btnMin.Font = Enum.Font.GothamBold
 btnMin.Parent = mainFrame
 Instance.new("UICorner", btnMin).CornerRadius = UDim.new(0, 8)
 
+-- Фикс сворачивания
 btnMin.MouseButton1Click:Connect(function()
     minimized = not minimized
-    mainFrame.Size = minimized and UDim2.new(0, 260, 0, 45) or fullSize
-    btnMin.Text = minimized and "＋" or "−"
+    if minimized then
+        mainFrame.Size = UDim2.new(0, 260, 0, 45)
+        btnMin.Text = "＋"
+    else
+        mainFrame.Size = fullSize
+        btnMin.Text = "−"
+    end
 end)
 
--- Drag
+-- Drag functionality
 local dragging = false
-local dragInput, dragStart, startPos
+local dragStart, startPos
+
 mainFrame.InputBegan:Connect(function(input)
     if input.UserInputType == Enum.UserInputType.MouseButton1 or input.UserInputType == Enum.UserInputType.Touch then
         dragging = true
@@ -268,20 +276,28 @@ mainFrame.InputBegan:Connect(function(input)
         startPos = mainFrame.Position
     end
 end)
+
 UserInputService.InputChanged:Connect(function(input)
     if dragging and (input.UserInputType == Enum.UserInputType.MouseMovement or input.UserInputType == Enum.UserInputType.Touch) then
         local delta = input.Position - dragStart
-        mainFrame.Position = UDim2.new(startPos.X.Scale, startPos.X.Offset + delta.X, startPos.Y.Scale, startPos.Y.Offset + delta.Y)
+        mainFrame.Position = UDim2.new(
+            startPos.X.Scale, 
+            startPos.X.Offset + delta.X, 
+            startPos.Y.Scale, 
+            startPos.Y.Offset + delta.Y
+        )
     end
 end)
+
 UserInputService.InputEnded:Connect(function(input)
     if input.UserInputType == Enum.UserInputType.MouseButton1 or input.UserInputType == Enum.UserInputType.Touch then
         dragging = false
     end
 end)
 
--- Позиция по вертикали
+-- ========== Переменные для GUI ==========
 local yOffset = 55
+local speedLabel
 
 local function addLabel(text, color)
     local lbl = Instance.new("TextLabel")
@@ -313,7 +329,9 @@ local function addToggle(text, enabled, callback)
     btn.MouseButton1Click:Connect(function()
         enabled = not enabled
         btn.BackgroundColor3 = enabled and Color3.fromRGB(0, 180, 0) or Color3.fromRGB(140, 0, 0)
-        btn.Text = text:gsub(": ON", ": OFF"):gsub(": OFF", ": ON")
+        local newText = text:gsub(": ON", ": OFF"):gsub(": OFF", ": ON")
+        btn.Text = newText
+        text = newText  -- обновляем для следующего переключения
         if callback then callback(enabled) end
     end)
 
@@ -322,7 +340,7 @@ local function addToggle(text, enabled, callback)
 end
 
 -- Speed Label + Slider
-addLabel("⚡ Скорость: " .. SpeedValue, Color3.fromRGB(0, 255, 120))
+speedLabel = addLabel("⚡ Скорость: " .. SpeedValue, Color3.fromRGB(0, 255, 120))
 
 local sliderBg = Instance.new("Frame")
 sliderBg.Size = UDim2.new(0.92, 0, 0, 10)
@@ -345,28 +363,39 @@ sliderKnob.Text = ""
 sliderKnob.Parent = sliderBg
 Instance.new("UICorner", sliderKnob).CornerRadius = UDim.new(1, 0)
 
--- Slider logic
+-- **Исправленный ползунок**
+local function updateSpeedLabel()
+    if speedLabel then
+        speedLabel.Text = "⚡ Скорость: " .. math.floor(SpeedValue)
+    end
+end
+
 sliderBg.InputBegan:Connect(function(inp)
     if inp.UserInputType == Enum.UserInputType.MouseButton1 then
-        local moveConn = UserInputService.InputChanged:Connect(function(move)
+        local moveConn
+        moveConn = UserInputService.InputChanged:Connect(function(move)
             if move.UserInputType == Enum.UserInputType.MouseMovement then
                 local percent = math.clamp((move.Position.X - sliderBg.AbsolutePosition.X) / sliderBg.AbsoluteSize.X, 0, 1)
                 SpeedValue = 16 + percent * (MaxSpeed - 16)
+                SpeedValue = math.floor(SpeedValue)
+
                 sliderFill.Size = UDim2.new(percent, 1, 1, 0)
                 sliderKnob.Position = UDim2.new(percent, -9, 0.5, -9)
-                addLabel("⚡ Скорость: " .. math.floor(SpeedValue), Color3.fromRGB(0, 255, 120)) -- обновляем текст (упрощённо)
+
+                updateSpeedLabel()
                 if SpeedEnabled then applySpeed() end
             end
         end)
+
         local endConn
         endConn = UserInputService.InputEnded:Connect(function()
-            moveConn:Disconnect()
-            endConn:Disconnect()
+            if moveConn then moveConn:Disconnect() end
+            if endConn then endConn:Disconnect() end
         end)
     end
 end)
 
-yOffset += 35
+yOffset += 40
 
 -- Кнопки
 local speedBtn = addToggle("SPEED: ON", SpeedEnabled, function(state)
@@ -430,4 +459,4 @@ task.spawn(function()
     end
 end)
 
-print("✅ erafox v12.5 | Все кнопки добавлены — Speed, Stamina, NoClip, ESP (полностью) для Bite By Night")
+print("✅ erafox v12.5 | Ползунок скорости и сворачивание GUI исправлены!")
