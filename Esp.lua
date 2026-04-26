@@ -1,5 +1,5 @@
 -- ============================================
--- BITE BY NIGHT v12.9 — Speed 24 + Исправленный ESP Генераторов
+-- BITE BY NIGHT v12.9 — Ringta Style Stamina + Speed Slider
 -- ============================================
 
 local Players = game:GetService("Players")
@@ -12,7 +12,7 @@ local LocalPlayer = Players.LocalPlayer
 
 -- Настройки
 local SpeedEnabled = true
-local SpeedValue = 24          -- снижено до 24 по твоей просьбе
+local SpeedValue = 24
 local MaxSpeed = 55
 local StaminaEnabled = true
 local NoClipEnabled = false
@@ -30,7 +30,40 @@ local autoRepairConnection = nil
 local firingConnection = nil
 local lastFireTime = 0
 
--- ========== SPEED КАК В RINGTA (сниженная скорость) ==========
+-- ========== RINGTA STYLE INFINITE STAMINA (лучше обходит античит) ==========
+local function applyInfiniteStamina()
+    if staminaConnection then staminaConnection:Disconnect() end
+    if not StaminaEnabled then return end
+
+    staminaConnection = RunService.Heartbeat:Connect(function()
+        pcall(function()
+            local char = LocalPlayer.Character
+            if not char then return end
+            local hum = char:FindFirstChildOfClass("Humanoid")
+            if not hum then return end
+
+            -- Основной сброс (Ringta метод)
+            hum:SetAttribute("Stamina", 100)
+            hum:SetAttribute("SprintStamina", 100)
+            hum:SetAttribute("Energy", 100)
+            hum:SetAttribute("Fatigue", 0)
+            hum:SetAttribute("StaminaValue", 100)
+            hum:SetAttribute("Sprinting", true)
+
+            -- Дополнительный сброс всех Value объектов
+            for _, v in ipairs(char:GetDescendants()) do
+                if v:IsA("NumberValue") or v:IsA("IntValue") then
+                    local n = v.Name:lower()
+                    if n:find("stamina") or n:find("energy") or n:find("fatigue") or n:find("sprint") then
+                        v.Value = 100
+                    end
+                end
+            end
+        end)
+    end)
+end
+
+-- ========== SPEED + MOVEMENT ==========
 local function applySpeed()
     if speedConnection then speedConnection:Disconnect() speedConnection = nil end
     
@@ -53,38 +86,25 @@ local function applySpeed()
             hum.WalkSpeed = SpeedValue
 
             if hum.MoveDirection.Magnitude > 0 then
-                local moveVec = hum.MoveDirection * (SpeedValue * 1.05) * dt
+                local moveVec = hum.MoveDirection * SpeedValue * dt * 1.05
                 root.CFrame += moveVec
-                
-                -- Wall speed эффект
-                root.Velocity = Vector3.new(moveVec.X * 30, root.Velocity.Y, moveVec.Z * 30)
+                root.Velocity = Vector3.new(moveVec.X * 28, root.Velocity.Y, moveVec.Z * 28)
             end
         end)
     end)
 end
 
--- ========== Stamina ==========
-local function applyInfiniteStamina()
-    if staminaConnection then staminaConnection:Disconnect() end
-    if not StaminaEnabled then return end
-    staminaConnection = RunService.Heartbeat:Connect(function()
-        pcall(function()
-            local char = LocalPlayer.Character
-            if not char then return end
-            local hum = char:FindFirstChildOfClass("Humanoid")
-            if hum then
-                for _, name in ipairs({"Stamina", "SprintStamina", "Energy", "Fatigue", "StaminaValue"}) do
-                    if hum:GetAttribute(name) ~= nil then hum:SetAttribute(name, 100) end
-                end
+-- ========== Античит ==========
+local function killAntiCheatScripts(container)
+    if not container then return end
+    for _, obj in ipairs(container:GetDescendants()) do
+        if obj:IsA("Script") or obj:IsA("LocalScript") then
+            local n = (obj.Name or ""):lower()
+            if n:find("anti") or n:find("cheat") or n:find("detect") or n:find("bite") or n:find("stamina") then
+                pcall(function() obj:Destroy() end)
             end
-            for _, v in ipairs(char:GetDescendants()) do
-                if (v:IsA("NumberValue") or v:IsA("IntValue")) and 
-                   (v.Name:lower():find("stamina") or v.Name:lower():find("energy")) then
-                    v.Value = 100
-                end
-            end
-        end)
-    end)
+        end
+    end
 end
 
 -- ========== NoClip ==========
@@ -149,7 +169,7 @@ local function applyAutoRepair()
     end)
 end
 
--- ========== ESP СИСТЕМА ==========
+-- ========== ESP (с улучшенным фильтром генераторов) ==========
 local function createESP(obj, color, text)
     if espObjects[obj] then return end
     local root = obj:FindFirstChild("HumanoidRootPart") or obj:FindFirstChildWhichIsA("BasePart")
@@ -217,7 +237,6 @@ local function isKiller(player)
     return false
 end
 
--- ========== ИСПРАВЛЕННЫЙ ESP ГЕНЕРАТОРОВ ==========
 local function updateESP()
     for obj, _ in pairs(espObjects) do
         if not obj or not obj.Parent then removeESP(obj) end
@@ -228,29 +247,21 @@ local function updateESP()
             if not obj.Parent then continue end
             local lowerName = obj.Name:lower()
 
-            -- Строгий фильтр для генераторов
-            local isGen = (lowerName:find("generator") or lowerName:find("%f[%a]gen%f[%A]") or 
-                          lowerName:find("powerbox") or lowerName:find("fusebox") or lowerName:find("battery"))
+            local isGen = lowerName:find("generator") or lowerName:find("%f[%a]gen%f[%A]") or 
+                         lowerName:find("powerbox") or lowerName:find("fusebox") or lowerName:find("battery")
 
             if (obj:IsA("Model") or obj:IsA("Folder")) and isGen and not espObjects[obj] then
-                
-                -- Проверка на реальные части генератора
-                local hasRealGenParts = obj:FindFirstChild("Wires") or obj:FindFirstChild("Wire") or 
-                                       obj:FindFirstChild("Lever") or obj:FindFirstChild("Switch") or 
-                                       obj:FindFirstChild("Generator") or lowerName:find("generator")
+                local hasParts = obj:FindFirstChild("Wires") or obj:FindFirstChild("Lever") or 
+                                obj:FindFirstChild("Switch") or lowerName:find("generator")
 
-                if hasRealGenParts and 
-                   not lowerName:find("door") and not lowerName:find("gate") and 
-                   not lowerName:find("light") and not lowerName:find("lamp") and 
-                   not lowerName:find("box") and not lowerName:find("panel") then
-                    
+                if hasParts and not lowerName:find("door") and not lowerName:find("gate") and 
+                   not lowerName:find("light") and not lowerName:find("lamp") then
                     createESP(obj, Color3.fromRGB(0, 255, 100), "⚡ GENERATOR")
                 end
             end
         end
     end
 
-    -- ESP игроков
     for _, player in ipairs(Players:GetPlayers()) do
         if player == LocalPlayer then continue end
         if not player.Character then continue end
@@ -448,11 +459,14 @@ end)
 yOffset += 48
 
 -- ========== ТОГГЛЫ ==========
-addToggle("SPEED + AUTO SPRINT (Ringta Style)", SpeedEnabled, function(s) 
+addToggle("SPEED + AUTO SPRINT", SpeedEnabled, function(s) 
     SpeedEnabled = s 
     applySpeed() 
 end)
-addToggle("STAMINA", StaminaEnabled, function(s) StaminaEnabled = s applyInfiniteStamina() end)
+addToggle("STAMINA (Ringta Style)", StaminaEnabled, function(s) 
+    StaminaEnabled = s 
+    applyInfiniteStamina() 
+end)
 addToggle("NOCLIP", NoClipEnabled, function(s) NoClipEnabled = s applyNoClip() end)
 addToggle("ESP Генераторы", ESP_Generators, function(s) ESP_Generators = s refreshESP() end)
 addToggle("ESP Убийца", ESP_Killer, function(s) ESP_Killer = s refreshESP() end)
@@ -462,6 +476,7 @@ addToggle("AUTO REPAIR", AutoRepairEnabled, function(s) AutoRepairEnabled = s ap
 -- ========== Запуск ==========
 LocalPlayer.CharacterAdded:Connect(function()
     task.wait(0.8)
+    pcall(killAntiCheatScripts, LocalPlayer.Character)
     applySpeed()
     applyInfiniteStamina()
     applyNoClip()
@@ -471,6 +486,7 @@ end)
 
 task.spawn(function()
     task.wait(1)
+    pcall(killAntiCheatScripts, LocalPlayer.PlayerScripts)
     applySpeed()
     applyInfiniteStamina()
     applyNoClip()
@@ -484,4 +500,4 @@ task.spawn(function()
     end
 end)
 
-print("✅ BITE BY NIGHT v12.9 загружен | Скорость 24 + Исправленный ESP Генераторов")
+print("✅ BITE BY NIGHT v12.9 загружен | Ringta Style Stamina + Speed Slider")
