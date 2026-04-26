@@ -1,5 +1,5 @@
 -- ============================================
--- BITE BY NIGHT v12.8 — ESP Генераторы + Speed + Auto Sprint
+-- BITE BY NIGHT v12.8 — ESP Генераторы из Celeron + Speed + Auto Sprint
 -- ============================================
 
 local Players = game:GetService("Players")
@@ -17,7 +17,7 @@ local MaxSpeed = 55
 local StaminaEnabled = true
 local NoClipEnabled = false
 local AutoRepairEnabled = false
-local AutoSprintEnabled = true   -- Новый параметр для авто-бега
+local AutoSprintEnabled = true
 
 local ESP_Generators = true
 local ESP_Killer = true
@@ -30,7 +30,7 @@ local staminaConnection = nil
 local autoRepairConnection = nil
 local firingConnection = nil
 local lastFireTime = 0
-local autoSprintConnection = nil   -- Новое соединение
+local autoSprintConnection = nil
 
 -- ========== AUTO SPRINT (даже в лобби) ==========
 local function applyAutoSprint()
@@ -43,13 +43,12 @@ local function applyAutoSprint()
 
     autoSprintConnection = RunService.Heartbeat:Connect(function()
         pcall(function()
-            -- Постоянно "зажимаем" Shift для автоматического бега
             game:GetService("VirtualInputManager"):SendKeyEvent(true, Enum.KeyCode.LeftShift, false, game)
         end)
     end)
 end
 
--- ========== Античит (без изменений) ==========
+-- ========== Античит ==========
 local function killAntiCheatScripts(container)
     if not container then return end
     for _, obj in ipairs(container:GetDescendants()) do
@@ -62,7 +61,7 @@ local function killAntiCheatScripts(container)
     end
 end
 
--- ========== WalkSpeed (добавлен вызов AutoSprint) ==========
+-- ========== WalkSpeed ==========
 local function applySpeed()
     if speedConnection then speedConnection:Disconnect() speedConnection = nil end
     
@@ -71,7 +70,7 @@ local function applySpeed()
             local hum = LocalPlayer.Character and LocalPlayer.Character:FindFirstChildOfClass("Humanoid")
             if hum then hum.WalkSpeed = 16 end
         end)
-        applyAutoSprint()  -- выключаем авто-бег
+        applyAutoSprint()
         return
     end
 
@@ -91,10 +90,10 @@ local function applySpeed()
         end)
     end)
 
-    applyAutoSprint()  -- включаем авто-бег
+    applyAutoSprint()
 end
 
--- ========== Stamina (без изменений) ==========
+-- ========== Stamina ==========
 local function applyInfiniteStamina()
     if staminaConnection then staminaConnection:Disconnect() end
     if not StaminaEnabled then return end
@@ -118,7 +117,7 @@ local function applyInfiniteStamina()
     end)
 end
 
--- ========== NoClip (без изменений) ==========
+-- ========== NoClip ==========
 local function applyNoClip()
     if noclipConnection then noclipConnection:Disconnect() end
     if NoClipEnabled then
@@ -144,7 +143,7 @@ local function applyNoClip()
     end
 end
 
--- ========== AUTO REPAIR (без изменений) ==========
+-- ========== AUTO REPAIR ==========
 local function applyAutoRepair()
     if autoRepairConnection then autoRepairConnection:Disconnect() end
     if firingConnection then firingConnection:Disconnect() end
@@ -180,9 +179,10 @@ local function applyAutoRepair()
     end)
 end
 
--- ========== ESP (без изменений) ==========
+-- ========== ESP (улучшенный из Celeron's Loader) ==========
 local function createESP(obj, color, text)
     if espObjects[obj] then return end
+
     local root = obj:FindFirstChild("HumanoidRootPart") or obj:FindFirstChildWhichIsA("BasePart")
     if not root then return end
 
@@ -248,23 +248,32 @@ local function isKiller(player)
     return false
 end
 
+-- ========== УЛУЧШЕННЫЙ ПОИСК ГЕНЕРАТОРОВ ИЗ CELERON ==========
 local function updateESP()
+    -- Очистка удалённых объектов
     for obj, _ in pairs(espObjects) do
         if not obj or not obj.Parent then removeESP(obj) end
     end
 
+    -- ESP Генераторов (улучшенная версия из Celeron's Loader)
     if ESP_Generators then
         for _, obj in ipairs(Workspace:GetDescendants()) do
             if not obj.Parent then continue end
-            local n = obj.Name:lower()
-            if (obj:IsA("Model") or obj:IsA("Folder") or obj:IsA("Part")) and 
-               (n:find("generator") or n:find("gen") or n:find("battery") or n:find("power")) and 
-               not espObjects[obj] then
+            local lowerName = obj.Name:lower()
+            
+            -- Расширенный поиск генераторов
+            if (obj:IsA("Model") or obj:IsA("Folder") or obj:IsA("Part") or obj:IsA("MeshPart")) and
+               (lowerName:find("generator") or lowerName:find("gen") or lowerName:find("battery") or 
+                lowerName:find("power") or lowerName:find("fuse") or lowerName:find("box") or 
+                lowerName:find("panel") or lowerName:find("electric")) and 
+               not espObjects[obj] and not lowerName:find("door") and not lowerName:find("gate") then
+                
                 createESP(obj, Color3.fromRGB(0, 255, 100), "⚡ GENERATOR")
             end
         end
     end
 
+    -- ESP игроков (без изменений)
     for _, player in ipairs(Players:GetPlayers()) do
         if player == LocalPlayer then continue end
         if not player.Character then continue end
@@ -285,7 +294,7 @@ local function refreshESP()
     updateESP()
 end
 
--- ========== GUI (только кнопка SPEED изменена) ==========
+-- ========== GUI (кнопка SPEED + AUTO SPRINT) ==========
 local gui = Instance.new("ScreenGui")
 gui.Name = "BiteByNight_Hack"
 gui.Parent = CoreGui
@@ -414,7 +423,7 @@ end
 
 local speedLabel = addLabel("⚡ Скорость: " .. SpeedValue, Color3.fromRGB(0, 255, 120))
 
--- Slider скорости (без изменений)
+-- Slider скорости
 local sliderBg = Instance.new("Frame")
 sliderBg.Size = UDim2.new(0.92, 0, 0, 12)
 sliderBg.Position = UDim2.new(0.04, 0, 0, yOffset)
@@ -461,12 +470,11 @@ end)
 
 yOffset += 48
 
--- ========== ТОГГЛЫ (главное изменение здесь) ==========
+-- ========== ТОГГЛЫ ==========
 addToggle("SPEED + AUTO SPRINT", SpeedEnabled, function(s) 
     SpeedEnabled = s 
     applySpeed() 
 end)
-
 addToggle("STAMINA", StaminaEnabled, function(s) StaminaEnabled = s applyInfiniteStamina() end)
 addToggle("NOCLIP", NoClipEnabled, function(s) NoClipEnabled = s applyNoClip() end)
 addToggle("ESP Генераторы", ESP_Generators, function(s) ESP_Generators = s refreshESP() end)
@@ -495,10 +503,11 @@ task.spawn(function()
     refreshESP()
 end)
 
+-- Обновление ESP каждую секунду
 task.spawn(function()
     while task.wait(1) do
         updateESP()
     end
 end)
 
-print("✅ BITE BY NIGHT v12.8 загружен | Speed + Auto Sprint даже в лобби")
+print("✅ BITE BY NIGHT v12.8 загружен | Улучшенный ESP Генераторов из Celeron + Auto Sprint")
