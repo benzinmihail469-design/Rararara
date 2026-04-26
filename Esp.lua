@@ -1,5 +1,5 @@
 -- ============================================
--- BITE BY NIGHT v13.1 — Улучшенный мобильный ползунок + Супер жёсткая стамина
+-- BITE BY NIGHT v13.2 — Фикс ползунка + Супер жёсткая стамина
 -- ============================================
 
 local Players = game:GetService("Players")
@@ -30,7 +30,7 @@ local autoRepairConnection = nil
 local firingConnection = nil
 local lastFireTime = 0
 
--- ========== СУПЕР ЖЁСТКАЯ БЕСКОНЕЧНАЯ СТАМИНА ==========
+-- ========== СУПЕР ЖЁСТКАЯ СТАМИНА ==========
 local function applyInfiniteStamina()
     if staminaConnection then staminaConnection:Disconnect() end
     if not StaminaEnabled then return end
@@ -42,36 +42,29 @@ local function applyInfiniteStamina()
             local hum = char:FindFirstChildOfClass("Humanoid")
             if not hum then return end
 
-            -- Основные атрибуты (самые частые)
+            -- Основные атрибуты
             for _, name in ipairs({
                 "Stamina", "SprintStamina", "Energy", "StaminaValue", 
                 "RunStamina", "SprintEnergy", "StaminaRegen", "Fatigue",
-                "CurrentStamina", "MaxStamina"
+                "CurrentStamina", "MaxStamina", "Exhaustion"
             }) do
                 if hum:GetAttribute(name) ~= nil then
                     hum:SetAttribute(name, 100)
                 end
             end
 
-            -- Сброс усталости и негативных эффектов
+            -- Сброс усталости
             if hum:GetAttribute("Fatigue") then hum:SetAttribute("Fatigue", 0) end
             if hum:GetAttribute("Exhaustion") then hum:SetAttribute("Exhaustion", 0) end
 
-            -- Поиск всех значений внутри персонажа
+            -- Все значения внутри персонажа
             for _, v in ipairs(char:GetDescendants()) do
-                if v:IsA("NumberValue") or v:IsA("IntValue") or v:IsA("NumberValue") then
+                if v:IsA("NumberValue") or v:IsA("IntValue") then
                     local n = v.Name:lower()
                     if n:find("stamina") or n:find("energy") or n:find("sprint") or n:find("run") or n:find("fatigue") then
-                        if v.Value < 98 then
-                            v.Value = 100
-                        end
+                        v.Value = 100
                     end
                 end
-            end
-
-            -- Дополнительная страховка
-            if hum:GetAttribute("Stamina") and hum:GetAttribute("Stamina") < 95 then
-                hum:SetAttribute("Stamina", 100)
             end
         end)
     end)
@@ -108,7 +101,7 @@ local function applySpeed()
     end)
 end
 
--- ========== NoClip (без изменений) ==========
+-- ========== NoClip ==========
 local function applyNoClip()
     if noclipConnection then noclipConnection:Disconnect() end
     if NoClipEnabled then
@@ -136,7 +129,7 @@ local function applyNoClip()
     end
 end
 
--- ========== AUTO REPAIR (без изменений) ==========
+-- ========== AUTO REPAIR ==========
 local function applyAutoRepair()
     if autoRepairConnection then autoRepairConnection:Disconnect() end
     if firingConnection then firingConnection:Disconnect() end
@@ -148,7 +141,9 @@ local function applyAutoRepair()
         pcall(function()
             local genGui = LocalPlayer.PlayerGui:FindFirstChild("Gen") or LocalPlayer.PlayerGui:FindFirstChild("Generator")
             if genGui then
-                local event = genGui:FindFirstChild("GeneratorMain") and genGui.GeneratorMain:FindFirstChild("Event") or genGui:FindFirstChild("Event")
+                local main = genGui:FindFirstChild("GeneratorMain") or genGui:FindFirstChild("Main")
+                local event = main and (main:FindFirstChild("Event") or main.Event) or genGui:FindFirstChild("Event")
+                
                 if event and not firingConnection then
                     firingConnection = RunService.Heartbeat:Connect(function()
                         if not AutoRepairEnabled then return end
@@ -162,13 +157,17 @@ local function applyAutoRepair()
                     end)
                 end
             else
-                if firingConnection then firingConnection:Disconnect() firingConnection = nil end
+                if firingConnection then 
+                    firingConnection:Disconnect() 
+                    firingConnection = nil 
+                end
+                lastFireTime = 0
             end
         end)
     end)
 end
 
--- ========== ESP (оставлен как в предыдущей версии) ==========
+-- ========== ESP (оставлен без изменений, он уже хороший) ==========
 local function createESP(obj, color, text)
     if espObjects[obj] then return end
     local root = obj:FindFirstChild("HumanoidRootPart") or obj:FindFirstChildWhichIsA("BasePart")
@@ -236,6 +235,7 @@ local function updateESP()
         for _, obj in ipairs(Workspace:GetDescendants()) do
             if not (obj:IsA("Model") or obj:IsA("Folder")) then continue end
             local n = obj.Name:lower()
+
             if (n:find("^generator") or n:find("generator%d") or n == "gen" or n:find("powergen") or n:find("main generator")) 
                and not n:find("door") and not n:find("gate") and not n:find("light") 
                and not n:find("lamp") and not n:find("battery") and not n:find("fuse") 
@@ -307,7 +307,7 @@ local title = Instance.new("TextLabel")
 title.Size = UDim2.new(1, -70, 0, 40)
 title.Position = UDim2.new(0, 15, 0, 0)
 title.BackgroundTransparency = 1
-title.Text = "🦇 BITE BY NIGHT v13.1"
+title.Text = "🦇 BITE BY NIGHT v13.2"
 title.TextColor3 = Color3.fromRGB(0, 255, 160)
 title.TextSize = 18
 title.Font = Enum.Font.GothamBold
@@ -330,7 +330,7 @@ minButton.MouseButton1Click:Connect(function()
     updateMinimizedState()
 end)
 
--- Drag
+-- Drag (ПК + Телефон)
 local dragging = false
 local dragStart, startPos
 mainFrame.InputBegan:Connect(function(input)
@@ -397,7 +397,7 @@ end
 
 local speedLabel = addLabel("⚡ Скорость: " .. SpeedValue, Color3.fromRGB(0, 255, 120))
 
--- ========== УЛУЧШЕННЫЙ ПОЛЗУНОК ДЛЯ ТЕЛЕФОНА ==========
+-- ========== ИСПРАВЛЕННЫЙ ПОЛЗУНОК ДЛЯ ТЕЛЕФОНА ==========
 local sliderBg = Instance.new("Frame")
 sliderBg.Size = UDim2.new(0.92, 0, 0, 22)
 sliderBg.Position = UDim2.new(0.04, 0, 0, yOffset)
@@ -428,26 +428,30 @@ local function updateSlider()
 end
 
 local function handleSliderMove(input)
+    if not sliderBg or not sliderBg.AbsoluteSize then return end
     local percent = math.clamp((input.Position.X - sliderBg.AbsolutePosition.X) / sliderBg.AbsoluteSize.X, 0, 1)
     SpeedValue = math.floor(percent * MaxSpeed + 0.5)
     updateSlider()
-    if SpeedEnabled then applySpeed() end
+    if SpeedEnabled then 
+        applySpeed() 
+    end
 end
 
--- Поддержка мыши + тач (улучшенная)
+-- Поддержка мыши и тача (исправленная версия)
 sliderBg.InputBegan:Connect(function(input)
     if input.UserInputType == Enum.UserInputType.MouseButton1 or input.UserInputType == Enum.UserInputType.Touch then
         handleSliderMove(input)
 
-        local moveConn = UserInputService.InputChanged:Connect(function(move)
-            if (move.UserInputType == Enum.UserInputType.MouseMovement or move.UserInputType == Enum.UserInputType.Touch) then
-                handleSliderMove(move)
+        local moveConn = UserInputService.InputChanged:Connect(function(moveInput)
+            if moveInput.UserInputType == Enum.UserInputType.MouseMovement or 
+               moveInput.UserInputType == Enum.UserInputType.Touch then
+                handleSliderMove(moveInput)
             end
         end)
 
-        local endConn
-        endConn = UserInputService.InputEnded:Connect(function(endInput)
-            if endInput.UserInputType == Enum.UserInputType.MouseButton1 or endInput.UserInputType == Enum.UserInputType.Touch then
+        local endConn = UserInputService.InputEnded:Connect(function(endInput)
+            if endInput.UserInputType == Enum.UserInputType.MouseButton1 or 
+               endInput.UserInputType == Enum.UserInputType.Touch then
                 moveConn:Disconnect()
                 endConn:Disconnect()
             end
@@ -486,9 +490,9 @@ task.spawn(function()
 end)
 
 task.spawn(function()
-    while task.wait(1) do
+    while task.wait(1.1) do
         updateESP()
     end
 end)
 
-print("✅ BITE BY NIGHT v13.1 загружен | Ползунок оптимизирован для телефона | Стамина стала ещё жёстче")
+print("✅ BITE BY NIGHT v13.2 загружен | Ползунок исправлен для телефона | Стамина супер жёсткая")
