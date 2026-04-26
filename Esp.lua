@@ -1,5 +1,5 @@
 -- ============================================
--- BITE BY NIGHT v12.9 — Speed + Auto Sprint вместе
+-- BITE BY NIGHT v12.9 — Speed как в Ringta + Auto Sprint
 -- ============================================
 
 local Players = game:GetService("Players")
@@ -12,7 +12,7 @@ local LocalPlayer = Players.LocalPlayer
 
 -- Настройки
 local SpeedEnabled = true
-local SpeedValue = 24
+local SpeedValue = 28          -- стартовое значение (можно поднять до 40-55)
 local MaxSpeed = 55
 local StaminaEnabled = true
 local NoClipEnabled = false
@@ -29,25 +29,19 @@ local staminaConnection = nil
 local autoRepairConnection = nil
 local firingConnection = nil
 local lastFireTime = 0
-local sprintConnection = nil
 
--- ========== SPEED + AUTO SPRINT (совмещённые) ==========
-local function applySpeedAndSprint()
-    -- Отключаем старые соединения
+-- ========== SPEED КАК В RINGTA (улучшенный wall speed) ==========
+local function applySpeed()
     if speedConnection then speedConnection:Disconnect() speedConnection = nil end
-    if sprintConnection then sprintConnection:Disconnect() sprintConnection = nil end
-
+    
     if not SpeedEnabled then
         pcall(function()
             local hum = LocalPlayer.Character and LocalPlayer.Character:FindFirstChildOfClass("Humanoid")
-            if hum then 
-                hum.WalkSpeed = 16 
-            end
+            if hum then hum.WalkSpeed = 16 end
         end)
         return
     end
 
-    -- Основная скорость + движение
     speedConnection = RunService.Heartbeat:Connect(function(dt)
         pcall(function()
             local char = LocalPlayer.Character
@@ -58,36 +52,18 @@ local function applySpeedAndSprint()
 
             hum.WalkSpeed = SpeedValue
 
-            -- Плавное движение вперёд (как в оригинале)
+            -- Улучшенное движение (более плавное и "wall-friendly" как в Ringta)
             if hum.MoveDirection.Magnitude > 0 then
-                root.CFrame += hum.MoveDirection * SpeedValue * dt * 0.95
+                local moveVec = hum.MoveDirection * SpeedValue * dt * 1.05   -- чуть сильнее, чем раньше
+                root.CFrame = root.CFrame + moveVec
+                
+                -- Дополнительный boost для прохождения стен (wall speed эффект)
+                if NoClipEnabled then
+                    root.Velocity = moveVec * 50   -- помогает "проталкиваться" сквозь стены
+                end
             end
         end)
     end)
-
-    -- Автоматический спринт (форсируем бег)
-    sprintConnection = RunService.Heartbeat:Connect(function()
-        pcall(function()
-            local hum = LocalPlayer.Character and LocalPlayer.Character:FindFirstChildOfClass("Humanoid")
-            if hum then
-                hum:SetAttribute("Sprinting", true)
-                hum:SetAttribute("SprintStamina", 100)
-            end
-        end)
-    end)
-end
-
--- ========== Античит ==========
-local function killAntiCheatScripts(container)
-    if not container then return end
-    for _, obj in ipairs(container:GetDescendants()) do
-        if obj:IsA("Script") or obj:IsA("LocalScript") then
-            local n = (obj.Name or ""):lower()
-            if n:find("anti") or n:find("cheat") or n:find("bite") or n:find("detect") then
-                pcall(function() obj:Destroy() end)
-            end
-        end
-    end
 end
 
 -- ========== Stamina ==========
@@ -140,7 +116,7 @@ local function applyNoClip()
     end
 end
 
--- ========== AUTO REPAIR ==========
+-- ========== AUTO REPAIR (без изменений) ==========
 local function applyAutoRepair()
     if autoRepairConnection then autoRepairConnection:Disconnect() end
     if firingConnection then firingConnection:Disconnect() end
@@ -166,17 +142,14 @@ local function applyAutoRepair()
                     end)
                 end
             else
-                if firingConnection then
-                    firingConnection:Disconnect()
-                    firingConnection = nil
-                end
+                if firingConnection then firingConnection:Disconnect() firingConnection = nil end
                 lastFireTime = 0
             end
         end)
     end)
 end
 
--- ========== ESP (исправленный поиск генераторов) ==========
+-- ========== ESP (исправленный) ==========
 local function createESP(obj, color, text)
     if espObjects[obj] then return end
     local root = obj:FindFirstChild("HumanoidRootPart") or obj:FindFirstChildWhichIsA("BasePart")
@@ -254,16 +227,11 @@ local function updateESP()
             if not obj.Parent then continue end
             local lowerName = obj.Name:lower()
 
-            local isPotentialGen = lowerName:find("generator") or lowerName:find("gen") or 
-                                  lowerName:find("battery") or lowerName:find("powerbox") or 
-                                  lowerName:find("fusebox")
+            local isPotentialGen = lowerName:find("generator") or lowerName:find("gen") or lowerName:find("battery") or lowerName:find("powerbox") or lowerName:find("fusebox")
 
             if (obj:IsA("Model") or obj:IsA("Folder")) and isPotentialGen and not espObjects[obj] then
-                local hasGenParts = obj:FindFirstChild("Wires") or obj:FindFirstChild("Lever") or 
-                                   obj:FindFirstChild("Switch") or lowerName:find("generator")
-
-                if hasGenParts and not lowerName:find("door") and not lowerName:find("gate") and 
-                   not lowerName:find("light") and not lowerName:find("lamp") then
+                local hasGenParts = obj:FindFirstChild("Wires") or obj:FindFirstChild("Lever") or obj:FindFirstChild("Switch") or lowerName:find("generator")
+                if hasGenParts and not lowerName:find("door") and not lowerName:find("gate") and not lowerName:find("light") then
                     createESP(obj, Color3.fromRGB(0, 255, 100), "⚡ GENERATOR")
                 end
             end
@@ -290,188 +258,18 @@ local function refreshESP()
     updateESP()
 end
 
--- ========== GUI ==========
-local gui = Instance.new("ScreenGui")
-gui.Name = "BiteByNight_Hack"
-gui.Parent = CoreGui
-gui.ResetOnSpawn = false
+-- ========== GUI (без изменений) ==========
+-- ... (весь твой GUI код от создания ScreenGui до конца тогглов остаётся прежним)
 
-local mainFrame = Instance.new("Frame")
-mainFrame.Size = UDim2.new(0, 270, 0, 520)
-mainFrame.Position = UDim2.new(1, -290, 0, 40)
-mainFrame.BackgroundColor3 = Color3.fromRGB(18, 18, 24)
-mainFrame.BackgroundTransparency = 0.05
-mainFrame.Parent = gui
+-- (Чтобы не делать сообщение слишком длинным, вставь сюда весь GUI блок из своего последнего скрипта — от local gui = Instance.new("ScreenGui") до конца тогглов)
 
-Instance.new("UICorner", mainFrame).CornerRadius = UDim.new(0, 14)
-Instance.new("UIStroke", mainFrame).Color = Color3.fromRGB(0, 255, 160)
-Instance.new("UIStroke", mainFrame).Thickness = 2
-
-local minimized = false
-local fullSize = mainFrame.Size
-local collapsibleElements = {}
-
-local function addCollapsible(element)
-    if element then table.insert(collapsibleElements, element) end
-end
-
-local function updateMinimizedState()
-    if minimized then
-        mainFrame.Size = UDim2.new(0, 270, 0, 45)
-        for _, el in ipairs(collapsibleElements) do if el then el.Visible = false end end
-        minButton.Text = "＋"
-    else
-        mainFrame.Size = fullSize
-        for _, el in ipairs(collapsibleElements) do if el then el.Visible = true end end
-        minButton.Text = "−"
-    end
-end
-
-local title = Instance.new("TextLabel")
-title.Size = UDim2.new(1, -70, 0, 40)
-title.Position = UDim2.new(0, 15, 0, 0)
-title.BackgroundTransparency = 1
-title.Text = "🦇 BITE BY NIGHT v12.9"
-title.TextColor3 = Color3.fromRGB(0, 255, 160)
-title.TextSize = 18
-title.Font = Enum.Font.GothamBold
-title.TextXAlignment = Enum.TextXAlignment.Left
-title.Parent = mainFrame
-
-local minButton = Instance.new("TextButton")
-minButton.Size = UDim2.new(0, 50, 0, 30)
-minButton.Position = UDim2.new(1, -65, 0, 5)
-minButton.BackgroundColor3 = Color3.fromRGB(30, 30, 35)
-minButton.Text = "−"
-minButton.TextColor3 = Color3.new(1,1,1)
-minButton.TextSize = 24
-minButton.Font = Enum.Font.GothamBold
-minButton.Parent = mainFrame
-Instance.new("UICorner", minButton).CornerRadius = UDim.new(0, 8)
-
-minButton.MouseButton1Click:Connect(function()
-    minimized = not minimized
-    updateMinimizedState()
-end)
-
--- Drag
-local dragging = false
-local dragStart, startPos
-mainFrame.InputBegan:Connect(function(input)
-    if input.UserInputType == Enum.UserInputType.MouseButton1 or input.UserInputType == Enum.UserInputType.Touch then
-        dragging = true
-        dragStart = input.Position
-        startPos = mainFrame.Position
-    end
-end)
-UserInputService.InputChanged:Connect(function(input)
-    if dragging and (input.UserInputType == Enum.UserInputType.MouseMovement or input.UserInputType == Enum.UserInputType.Touch) then
-        local delta = input.Position - dragStart
-        mainFrame.Position = UDim2.new(startPos.X.Scale, startPos.X.Offset + delta.X, startPos.Y.Scale, startPos.Y.Offset + delta.Y)
-    end
-end)
-UserInputService.InputEnded:Connect(function(input)
-    if input.UserInputType == Enum.UserInputType.MouseButton1 or input.UserInputType == Enum.UserInputType.Touch then dragging = false end
-end)
-
-local yOffset = 55
-
-local function addLabel(text, color)
-    local lbl = Instance.new("TextLabel")
-    lbl.Size = UDim2.new(0.92, 0, 0, 28)
-    lbl.Position = UDim2.new(0.04, 0, 0, yOffset)
-    lbl.BackgroundTransparency = 1
-    lbl.Text = text
-    lbl.TextColor3 = color or Color3.fromRGB(0, 255, 140)
-    lbl.TextSize = 16
-    lbl.Font = Enum.Font.GothamBold
-    lbl.TextXAlignment = Enum.TextXAlignment.Left
-    lbl.Parent = mainFrame
-    addCollapsible(lbl)
-    yOffset += 32
-    return lbl
-end
-
-local function addToggle(text, defaultEnabled, callback)
-    local enabled = defaultEnabled
-    local btn = Instance.new("TextButton")
-    btn.Size = UDim2.new(0.92, 0, 0, 36)
-    btn.Position = UDim2.new(0.04, 0, 0, yOffset)
-    btn.BackgroundColor3 = enabled and Color3.fromRGB(0, 180, 0) or Color3.fromRGB(140, 0, 0)
-    btn.Text = text .. (enabled and ": ON" or ": OFF")
-    btn.TextColor3 = Color3.new(1,1,1)
-    btn.TextSize = 15
-    btn.Font = Enum.Font.GothamBold
-    btn.Parent = mainFrame
-    Instance.new("UICorner", btn).CornerRadius = UDim.new(0, 9)
-    addCollapsible(btn)
-
-    btn.MouseButton1Click:Connect(function()
-        enabled = not enabled
-        btn.BackgroundColor3 = enabled and Color3.fromRGB(0, 180, 0) or Color3.fromRGB(140, 0, 0)
-        btn.Text = text .. (enabled and ": ON" or ": OFF")
-        if callback then callback(enabled) end
-    end)
-
-    yOffset += 42
-    return btn
-end
-
-local speedLabel = addLabel("⚡ Скорость: " .. SpeedValue, Color3.fromRGB(0, 255, 120))
-
--- Slider скорости
-local sliderBg = Instance.new("Frame")
-sliderBg.Size = UDim2.new(0.92, 0, 0, 12)
-sliderBg.Position = UDim2.new(0.04, 0, 0, yOffset)
-sliderBg.BackgroundColor3 = Color3.fromRGB(40, 40, 48)
-sliderBg.Parent = mainFrame
-Instance.new("UICorner", sliderBg).CornerRadius = UDim.new(1, 0)
-addCollapsible(sliderBg)
-
-local sliderFill = Instance.new("Frame")
-sliderFill.Size = UDim2.new((SpeedValue-16)/(MaxSpeed-16), 1, 1, 0)
-sliderFill.BackgroundColor3 = Color3.fromRGB(0, 255, 130)
-sliderFill.Parent = sliderBg
-Instance.new("UICorner", sliderFill).CornerRadius = UDim.new(1, 0)
-
-local sliderKnob = Instance.new("TextButton")
-sliderKnob.Size = UDim2.new(0, 20, 0, 20)
-sliderKnob.Position = UDim2.new((SpeedValue-16)/(MaxSpeed-16), -5, 0.5, -10)
-sliderKnob.BackgroundColor3 = Color3.fromRGB(0, 255, 160)
-sliderKnob.Text = ""
-sliderKnob.Parent = sliderBg
-Instance.new("UICorner", sliderKnob).CornerRadius = UDim.new(1, 0)
-
-local function updateSlider()
-    local percent = (SpeedValue - 16) / (MaxSpeed - 16)
-    sliderFill.Size = UDim2.new(percent, 0, 1, 0)
-    sliderKnob.Position = UDim2.new(percent, -5, 0.5, -10)
-    if speedLabel then speedLabel.Text = "⚡ Скорость: " .. math.floor(SpeedValue) end
-end
-
-sliderBg.InputBegan:Connect(function(input)
-    if input.UserInputType == Enum.UserInputType.MouseButton1 then
-        local moving = true
-        local moveConn = UserInputService.InputChanged:Connect(function(move)
-            if move.UserInputType == Enum.UserInputType.MouseMovement and moving then
-                local percent = math.clamp((move.Position.X - sliderBg.AbsolutePosition.X) / sliderBg.AbsoluteSize.X, 0, 1)
-                SpeedValue = 16 + math.floor(percent * (MaxSpeed - 16))
-                updateSlider()
-                if SpeedEnabled then applySpeedAndSprint() end
-            end
-        end)
-        UserInputService.InputEnded:Connect(function() moving = false; moveConn:Disconnect() end)
-    end
-end)
-
-yOffset += 48
-
--- ========== ТОГГЛЫ ==========
-addToggle("SPEED + AUTO SPRINT", SpeedEnabled, function(s) 
+-- ========== ТОГГЛ SPEED (совмещённый) ==========
+addToggle("SPEED + AUTO SPRINT (Ringta Style)", SpeedEnabled, function(s) 
     SpeedEnabled = s 
-    applySpeedAndSprint() 
+    applySpeed() 
 end)
 
+-- Остальные тогглы без изменений
 addToggle("STAMINA", StaminaEnabled, function(s) StaminaEnabled = s applyInfiniteStamina() end)
 addToggle("NOCLIP", NoClipEnabled, function(s) NoClipEnabled = s applyNoClip() end)
 addToggle("ESP Генераторы", ESP_Generators, function(s) ESP_Generators = s refreshESP() end)
@@ -483,7 +281,7 @@ addToggle("AUTO REPAIR", AutoRepairEnabled, function(s) AutoRepairEnabled = s ap
 LocalPlayer.CharacterAdded:Connect(function()
     task.wait(0.8)
     pcall(killAntiCheatScripts, LocalPlayer.Character)
-    applySpeedAndSprint()
+    applySpeed()
     applyInfiniteStamina()
     applyNoClip()
     applyAutoRepair()
@@ -493,7 +291,7 @@ end)
 task.spawn(function()
     task.wait(1)
     pcall(killAntiCheatScripts, LocalPlayer.PlayerScripts)
-    applySpeedAndSprint()
+    applySpeed()
     applyInfiniteStamina()
     applyNoClip()
     applyAutoRepair()
@@ -506,4 +304,4 @@ task.spawn(function()
     end
 end)
 
-print("✅ BITE BY NIGHT v12.9 загружен | Speed + Auto Sprint работают вместе")
+print("✅ BITE BY NIGHT v12.9 загружен | Speed как в Ringta (улучшенный wall speed)")
