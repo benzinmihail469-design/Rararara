@@ -1,5 +1,5 @@
 -- ============================================
--- BITE BY NIGHT v12.9 — Ringta Style Stamina + Speed Slider
+-- BITE BY NIGHT v12.9 — Ringta Style Stamina + Speed Slider (исправлено)
 -- ============================================
 
 local Players = game:GetService("Players")
@@ -30,7 +30,7 @@ local autoRepairConnection = nil
 local firingConnection = nil
 local lastFireTime = 0
 
--- ========== RINGTA STYLE INFINITE STAMINA (лучше обходит античит) ==========
+-- ========== RINGTA STYLE INFINITE STAMINA (исправленная — меньше блокировок) ==========
 local function applyInfiniteStamina()
     if staminaConnection then staminaConnection:Disconnect() end
     if not StaminaEnabled then return end
@@ -42,19 +42,23 @@ local function applyInfiniteStamina()
             local hum = char:FindFirstChildOfClass("Humanoid")
             if not hum then return end
 
-            -- Основной сброс (Ringta метод)
-            hum:SetAttribute("Stamina", 100)
-            hum:SetAttribute("SprintStamina", 100)
-            hum:SetAttribute("Energy", 100)
-            hum:SetAttribute("Fatigue", 0)
-            hum:SetAttribute("StaminaValue", 100)
-            hum:SetAttribute("Sprinting", true)
+            -- Мягкий сброс только когда стамина падает
+            for _, name in ipairs({"Stamina", "SprintStamina", "Energy", "StaminaValue", "RunStamina", "SprintEnergy"}) do
+                if hum:GetAttribute(name) and hum:GetAttribute(name) < 90 then
+                    hum:SetAttribute(name, 100)
+                end
+            end
 
-            -- Дополнительный сброс всех Value объектов
+            -- Fatigue сбрасываем только если он высокий
+            if hum:GetAttribute("Fatigue") and hum:GetAttribute("Fatigue") > 8 then
+                hum:SetAttribute("Fatigue", 0)
+            end
+
+            -- Сброс через NumberValue / IntValue (мягко)
             for _, v in ipairs(char:GetDescendants()) do
-                if v:IsA("NumberValue") or v:IsA("IntValue") then
+                if (v:IsA("NumberValue") or v:IsA("IntValue")) then
                     local n = v.Name:lower()
-                    if n:find("stamina") or n:find("energy") or n:find("fatigue") or n:find("sprint") then
+                    if (n:find("stamina") or n:find("energy") or n:find("sprint")) and v.Value < 90 then
                         v.Value = 100
                     end
                 end
@@ -169,7 +173,7 @@ local function applyAutoRepair()
     end)
 end
 
--- ========== ESP (с улучшенным фильтром генераторов) ==========
+-- ========== ESP ==========
 local function createESP(obj, color, text)
     if espObjects[obj] then return end
     local root = obj:FindFirstChild("HumanoidRootPart") or obj:FindFirstChildWhichIsA("BasePart")
@@ -282,7 +286,7 @@ local function refreshESP()
     updateESP()
 end
 
--- ========== GUI (твой оригинальный) ==========
+-- ========== GUI ==========
 local gui = Instance.new("ScreenGui")
 gui.Name = "BiteByNight_Hack"
 gui.Parent = CoreGui
@@ -500,4 +504,4 @@ task.spawn(function()
     end
 end)
 
-print("✅ BITE BY NIGHT v12.9 загружен | Ringta Style Stamina + Speed Slider")
+print("✅ BITE BY NIGHT v12.9 загружен | Stamina исправлена (мягче, меньше блокировок)")
