@@ -1,5 +1,5 @@
 -- ============================================
--- BITE BY NIGHT v13.4 — Улучшенный мобильный ползунок + ESP Mimic Fix + Скрытная стамина
+-- BITE BY NIGHT v13.5 — Серверная + Скрытная стамина + Улучшенный ползунок + ESP Mimic Fix
 -- ============================================
 
 local Players = game:GetService("Players")
@@ -30,7 +30,32 @@ local autoRepairConnection = nil
 local firingConnection = nil
 local lastFireTime = 0
 
--- ========== СКРЫТНАЯ БЕСКОНЕЧНАЯ СТАМИНА ==========
+-- ========== СЕРВЕРНАЯ БЕСКОНЕЧНАЯ СТАМИНА (через PlayerData) ==========
+local function setupServerStamina()
+    -- Ждём, пока появится PlayerData (сервер создаст его при PlayerAdded)
+    task.spawn(function()
+        local playerData = LocalPlayer:WaitForChild("PlayerData", 10)
+        if playerData then
+            local staminaValue = playerData:WaitForChild("Stamina", 5)
+            local hasInfinite = playerData:WaitForChild("HasInfiniteStamina", 5)
+
+            if hasInfinite then
+                hasInfinite.Value = true  -- Включаем серверную бесконечную стамину
+            end
+
+            if staminaValue then
+                -- Дополнительная клиентская страховка
+                staminaValue.Changed:Connect(function(newVal)
+                    if hasInfinite and hasInfinite.Value and newVal < 100 then
+                        staminaValue.Value = 100
+                    end
+                end)
+            end
+        end
+    end)
+end
+
+-- ========== СКРЫТНАЯ КЛИЕНТСКАЯ СТАМИНА (подстраховка) ==========
 local function applyInfiniteStamina()
     if staminaConnection then staminaConnection:Disconnect() end
     if not StaminaEnabled then return end
@@ -42,7 +67,7 @@ local function applyInfiniteStamina()
             local hum = char:FindFirstChildOfClass("Humanoid")
             if not hum then return end
 
-            if math.random(1, 3) ~= 1 then return end
+            if math.random(1, 4) ~= 1 then return end  -- Ещё реже для скрытности
 
             for _, name in ipairs({
                 "Stamina", "SprintStamina", "Energy", "StaminaValue", 
@@ -50,8 +75,7 @@ local function applyInfiniteStamina()
                 "CurrentStamina", "MaxStamina", "Exhaustion"
             }) do
                 if hum:GetAttribute(name) ~= nil then
-                    local randomValue = 97 + math.random(0, 3)
-                    hum:SetAttribute(name, randomValue)
+                    hum:SetAttribute(name, 97 + math.random(0, 3))
                 end
             end
 
@@ -59,7 +83,7 @@ local function applyInfiniteStamina()
             if hum:GetAttribute("Exhaustion") then hum:SetAttribute("Exhaustion", 0) end
 
             for _, v in ipairs(char:GetDescendants()) do
-                if (v:IsA("NumberValue") or v:IsA("IntValue")) and math.random(1, 5) == 1 then
+                if (v:IsA("NumberValue") or v:IsA("IntValue")) and math.random(1, 6) == 1 then
                     local n = v.Name:lower()
                     if n:find("stamina") or n:find("energy") or n:find("sprint") or n:find("run") or n:find("fatigue") then
                         v.Value = 97 + math.random(0, 3)
@@ -101,7 +125,7 @@ local function applySpeed()
     end)
 end
 
--- ========== NoClip ==========
+-- ========== NoClip, Auto Repair, ESP — без изменений (как в v13.4) ==========
 local function applyNoClip()
     if noclipConnection then noclipConnection:Disconnect() end
     if NoClipEnabled then
@@ -110,9 +134,7 @@ local function applyNoClip()
                 local char = LocalPlayer.Character
                 if char then
                     for _, part in ipairs(char:GetDescendants()) do
-                        if part:IsA("BasePart") then
-                            part.CanCollide = false
-                        end
+                        if part:IsA("BasePart") then part.CanCollide = false end
                     end
                 end
             end)
@@ -129,7 +151,6 @@ local function applyNoClip()
     end
 end
 
--- ========== AUTO REPAIR ==========
 local function applyAutoRepair()
     if autoRepairConnection then autoRepairConnection:Disconnect() end
     if firingConnection then firingConnection:Disconnect() end
@@ -144,31 +165,25 @@ local function applyAutoRepair()
                 if not firingConnection then
                     firingConnection = RunService.Heartbeat:Connect(function()
                         if not AutoRepairEnabled then return end
-                        local currentTime = tick()
-                        if currentTime - lastFireTime >= 0.08 then
+                        if tick() - lastFireTime >= 0.08 then
                             pcall(function()
                                 local args = {{ Wires = true, Switches = true, Lever = true }}
                                 local event = genGui:FindFirstChild("GeneratorMain") and genGui.GeneratorMain.Event or genGui:FindFirstChild("Event")
-                                if event then
-                                    event:FireServer(unpack(args))
-                                end
+                                if event then event:FireServer(unpack(args)) end
                             end)
-                            lastFireTime = currentTime
+                            lastFireTime = tick()
                         end
                     end)
                 end
             else
-                if firingConnection then
-                    firingConnection:Disconnect()
-                    firingConnection = nil
-                end
+                if firingConnection then firingConnection:Disconnect() firingConnection = nil end
                 lastFireTime = 0
             end
         end)
     end)
 end
 
--- ========== ESP с исправлением Mimic ==========
+-- ========== ESP (с Mimic) ==========
 local function createESP(obj, color, text)
     if espObjects[obj] then return end
     local root = obj:FindFirstChild("HumanoidRootPart") or obj:FindFirstChildWhichIsA("BasePart")
@@ -221,11 +236,7 @@ local function isKiller(player)
     local char = player.Character
     local nameLower = (char.Name or ""):lower()
 
-    local keywords = {
-        "springtrap", "mimic", "ennard", "rotten", "doppel", 
-        "animatronic", "killer", "project", "m2", "theproject", 
-        "the project", "doppelganger", "mistake"
-    }
+    local keywords = {"springtrap", "mimic", "ennard", "rotten", "doppel", "animatronic", "killer", "project", "m2", "theproject", "the project", "doppelganger", "mistake"}
 
     for _, kw in ipairs(keywords) do
         if nameLower:find(kw) then return true end
@@ -249,11 +260,10 @@ local function updateESP()
         for _, obj in ipairs(Workspace:GetDescendants()) do
             if not (obj:IsA("Model") or obj:IsA("Folder")) then continue end
             local n = obj.Name:lower()
-
             if (n:find("^generator") or n:find("generator%d") or n == "gen" or n:find("powergen") or n:find("main generator")) 
-               and not n:find("door") and not n:find("gate") and not n:find("light") 
-               and not n:find("lamp") and not n:find("battery") and not n:find("fuse") 
-               and not n:find("box") and not espObjects[obj] then
+               and not string.find(n, "door") and not string.find(n, "gate") and not string.find(n, "light") 
+               and not string.find(n, "lamp") and not string.find(n, "battery") and not string.find(n, "fuse") 
+               and not string.find(n, "box") and not espObjects[obj] then
                 
                 createESP(obj, Color3.fromRGB(0, 255, 100), "⚡ GENERATOR")
             end
@@ -280,7 +290,7 @@ local function refreshESP()
     updateESP()
 end
 
--- ========== GUI ==========
+-- ========== GUI + УЛУЧШЕННЫЙ ПОЛЗУНОК (из твоего примера) ==========
 local gui = Instance.new("ScreenGui")
 gui.Name = "BiteByNight_Hack"
 gui.Parent = CoreGui
@@ -302,7 +312,7 @@ local fullSize = mainFrame.Size
 local collapsibleElements = {}
 
 local function addCollapsible(element)
-    if element then table.insert(collapsibleElements, element) end
+    table.insert(collapsibleElements, element)
 end
 
 local function updateMinimizedState()
@@ -321,7 +331,7 @@ local title = Instance.new("TextLabel")
 title.Size = UDim2.new(1, -70, 0, 40)
 title.Position = UDim2.new(0, 15, 0, 0)
 title.BackgroundTransparency = 1
-title.Text = "🦇 BITE BY NIGHT v13.4"
+title.Text = "🦇 BITE BY NIGHT v13.5"
 title.TextColor3 = Color3.fromRGB(0, 255, 160)
 title.TextSize = 18
 title.Font = Enum.Font.GothamBold
@@ -344,25 +354,25 @@ minButton.MouseButton1Click:Connect(function()
     updateMinimizedState()
 end)
 
--- Drag главного окна
-local dragging = false
+-- Drag окна
+local draggingWindow = false
 local dragStart, startPos
 mainFrame.InputBegan:Connect(function(input)
     if input.UserInputType == Enum.UserInputType.MouseButton1 or input.UserInputType == Enum.UserInputType.Touch then
-        dragging = true
+        draggingWindow = true
         dragStart = input.Position
         startPos = mainFrame.Position
     end
 end)
 UserInputService.InputChanged:Connect(function(input)
-    if dragging and (input.UserInputType == Enum.UserInputType.MouseMovement or input.UserInputType == Enum.UserInputType.Touch) then
+    if draggingWindow and (input.UserInputType == Enum.UserInputType.MouseMovement or input.UserInputType == Enum.UserInputType.Touch) then
         local delta = input.Position - dragStart
         mainFrame.Position = UDim2.new(startPos.X.Scale, startPos.X.Offset + delta.X, startPos.Y.Scale, startPos.Y.Offset + delta.Y)
     end
 end)
 UserInputService.InputEnded:Connect(function(input)
     if input.UserInputType == Enum.UserInputType.MouseButton1 or input.UserInputType == Enum.UserInputType.Touch then 
-        dragging = false 
+        draggingWindow = false 
     end
 end)
 
@@ -411,7 +421,7 @@ end
 
 local speedLabel = addLabel("⚡ Скорость: " .. SpeedValue, Color3.fromRGB(0, 255, 120))
 
--- ========== УЛУЧШЕННЫЙ ПОЛЗУНОК (на основе твоего примера) ==========
+-- ========== УЛУЧШЕННЫЙ ПОЛЗУНОК ==========
 local sliderBg = Instance.new("Frame")
 sliderBg.Size = UDim2.new(0.92, 0, 0, 18)
 sliderBg.Position = UDim2.new(0.04, 0, 0, yOffset)
@@ -421,14 +431,14 @@ Instance.new("UICorner", sliderBg).CornerRadius = UDim.new(1, 0)
 addCollapsible(sliderBg)
 
 local sliderFill = Instance.new("Frame")
-sliderFill.Size = UDim2.new((SpeedValue / MaxSpeed), 1, 1, 0)
+sliderFill.Size = UDim2.new(SpeedValue / MaxSpeed, 1, 1, 0)
 sliderFill.BackgroundColor3 = Color3.fromRGB(0, 255, 130)
 sliderFill.Parent = sliderBg
 Instance.new("UICorner", sliderFill).CornerRadius = UDim.new(1, 0)
 
-local sliderKnob = Instance.new("TextButton")  -- handle
+local sliderKnob = Instance.new("TextButton")
 sliderKnob.Size = UDim2.new(0, 28, 0, 28)
-sliderKnob.Position = UDim2.new((SpeedValue / MaxSpeed), -14, 0.5, -14)
+sliderKnob.Position = UDim2.new(SpeedValue / MaxSpeed, -14, 0.5, -14)
 sliderKnob.BackgroundColor3 = Color3.fromRGB(0, 255, 160)
 sliderKnob.Text = ""
 sliderKnob.Parent = sliderBg
@@ -442,32 +452,28 @@ local function updateSlider()
 end
 
 local function handleSliderMove(input)
-    if not sliderBg or not sliderBg.AbsoluteSize then return end
     local percent = math.clamp((input.Position.X - sliderBg.AbsolutePosition.X) / sliderBg.AbsoluteSize.X, 0, 1)
     SpeedValue = math.floor(percent * MaxSpeed + 0.5)
-    if SpeedValue < 0 then SpeedValue = 0 end
-    if SpeedValue > MaxSpeed then SpeedValue = MaxSpeed end
     updateSlider()
     if SpeedEnabled then applySpeed() end
 end
 
--- Улучшенная логика перетаскивания (на основе твоего примера)
 local sliderDragging = false
 
-sliderKnob.InputBegan:Connect(function(input)  -- или sliderBg, если хочешь цеплять весь бар
-    if input.UserInputType == Enum.UserInputType.Touch or input.UserInputType == Enum.UserInputType.MouseButton1 then
+sliderKnob.InputBegan:Connect(function(input)
+    if input.UserInputType == Enum.UserInputType.MouseButton1 or input.UserInputType == Enum.UserInputType.Touch then
         sliderDragging = true
     end
 end)
 
 UserInputService.InputEnded:Connect(function(input)
-    if input.UserInputType == Enum.UserInputType.Touch or input.UserInputType == Enum.UserInputType.MouseButton1 then
+    if input.UserInputType == Enum.UserInputType.MouseButton1 or input.UserInputType == Enum.UserInputType.Touch then
         sliderDragging = false
     end
 end)
 
 UserInputService.InputChanged:Connect(function(input)
-    if sliderDragging and (input.UserInputType == Enum.UserInputType.Touch or input.UserInputType == Enum.UserInputType.MouseMovement) then
+    if sliderDragging and (input.UserInputType == Enum.UserInputType.MouseMovement or input.UserInputType == Enum.UserInputType.Touch) then
         handleSliderMove(input)
     end
 end)
@@ -476,7 +482,10 @@ yOffset += 55
 
 -- ========== ТОГГЛЫ ==========
 addToggle("SPEED + AUTO SPRINT", SpeedEnabled, function(s) SpeedEnabled = s applySpeed() end)
-addToggle("STAMINA (Скрытная)", StaminaEnabled, function(s) StaminaEnabled = s applyInfiniteStamina() end)
+addToggle("STAMINA (Сервер + Скрытная)", StaminaEnabled, function(s) 
+    StaminaEnabled = s 
+    applyInfiniteStamina() 
+end)
 addToggle("NOCLIP", NoClipEnabled, function(s) NoClipEnabled = s applyNoClip() end)
 addToggle("ESP Генераторы", ESP_Generators, function(s) ESP_Generators = s refreshESP() end)
 addToggle("ESP Убийца", ESP_Killer, function(s) ESP_Killer = s refreshESP() end)
@@ -484,6 +493,8 @@ addToggle("ESP Выжившие", ESP_Survivors, function(s) ESP_Survivors = s r
 addToggle("AUTO REPAIR", AutoRepairEnabled, function(s) AutoRepairEnabled = s applyAutoRepair() end)
 
 -- ========== Запуск ==========
+setupServerStamina()  -- Включаем серверную стамину
+
 LocalPlayer.CharacterAdded:Connect(function()
     task.wait(0.8)
     applySpeed()
@@ -508,4 +519,4 @@ task.spawn(function()
     end
 end)
 
-print("✅ BITE BY NIGHT v13.4 загружен | Ползунок сильно улучшен для телефона | ESP Mimic + скрытная стамина")
+print("✅ BITE BY NIGHT v13.5 загружен | Серверная стамина + скрытная клиентская | Ползунок улучшен")
