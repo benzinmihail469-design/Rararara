@@ -12,7 +12,7 @@ local LocalPlayer = Players.LocalPlayer
 
 -- Настройки
 local SpeedEnabled = true
-local SpeedValue = 24          -- ← Изменено на 24 по твоему запросу
+local SpeedValue = 24
 local MaxSpeed = 55
 local StaminaEnabled = true
 local NoClipEnabled = false
@@ -43,12 +43,9 @@ local function killAntiCheatScripts(container)
     end
 end
 
--- ========== WalkSpeed (улучшенная Celeron-style) ==========
+-- ========== WalkSpeed ==========
 local function applySpeed()
-    if speedConnection then 
-        speedConnection:Disconnect() 
-        speedConnection = nil 
-    end
+    if speedConnection then speedConnection:Disconnect() speedConnection = nil end
     
     if not SpeedEnabled then
         pcall(function()
@@ -125,7 +122,7 @@ local function applyNoClip()
     end
 end
 
--- ========== AUTO REPAIR (Celeron Style) ==========
+-- ========== AUTO REPAIR ==========
 local function applyAutoRepair()
     if autoRepairConnection then autoRepairConnection:Disconnect() end
     if firingConnection then firingConnection:Disconnect() end
@@ -161,9 +158,10 @@ local function applyAutoRepair()
     end)
 end
 
--- ========== ESP (с твоим ESP генераторов) ==========
+-- ========== ESP (улучшенный из Celeron's Loader) ==========
 local function createESP(obj, color, text)
     if espObjects[obj] then return end
+
     local root = obj:FindFirstChild("HumanoidRootPart") or obj:FindFirstChildWhichIsA("BasePart")
     if not root then return end
 
@@ -172,6 +170,7 @@ local function createESP(obj, color, text)
     bg.Size = UDim2.new(0, 200, 0, 50)
     bg.StudsOffset = Vector3.new(0, 3.5, 0)
     bg.AlwaysOnTop = true
+    bg.LightInfluence = 0
     bg.Parent = CoreGui
 
     local lbl = Instance.new("TextLabel")
@@ -229,20 +228,26 @@ local function isKiller(player)
 end
 
 local function updateESP()
+    -- Очистка удалённых объектов
     for obj, _ in pairs(espObjects) do
         if not obj or not obj.Parent then removeESP(obj) end
     end
 
+    -- ESP Генераторов (из Celeron's Loader)
     if ESP_Generators then
         for _, obj in ipairs(Workspace:GetDescendants()) do
+            if not obj.Parent then continue end
             local n = obj.Name:lower()
-            if (obj:IsA("Model") or obj:IsA("Folder")) and 
-               (n:find("generator") or n:find("gen") or n:find("battery")) and not espObjects[obj] then
+            if (obj:IsA("Model") or obj:IsA("Folder") or obj:IsA("Part")) and 
+               (n:find("generator") or n:find("gen") or n:find("battery") or n:find("power")) and 
+               not espObjects[obj] then
+                
                 createESP(obj, Color3.fromRGB(0, 255, 100), "⚡ GENERATOR")
             end
         end
     end
 
+    -- ESP игроков
     for _, player in ipairs(Players:GetPlayers()) do
         if player == LocalPlayer then continue end
         if not player.Character then continue end
@@ -263,7 +268,7 @@ local function refreshESP()
     updateESP()
 end
 
--- ========== GUI ==========
+-- ========== GUI (твой оригинальный) ==========
 local gui = Instance.new("ScreenGui")
 gui.Name = "BiteByNight_Hack"
 gui.Parent = CoreGui
@@ -433,7 +438,7 @@ sliderBg.InputBegan:Connect(function(input)
                 if SpeedEnabled then applySpeed() end
             end
         end)
-        UserInputService.InputEnded:Connect(function() moving = false moveConn:Disconnect() end)
+        UserInputService.InputEnded:Connect(function() moving = false; moveConn:Disconnect() end)
     end
 end)
 
@@ -446,10 +451,7 @@ addToggle("NOCLIP", NoClipEnabled, function(s) NoClipEnabled = s applyNoClip() e
 addToggle("ESP Генераторы", ESP_Generators, function(s) ESP_Generators = s refreshESP() end)
 addToggle("ESP Убийца", ESP_Killer, function(s) ESP_Killer = s refreshESP() end)
 addToggle("ESP Выжившие", ESP_Survivors, function(s) ESP_Survivors = s refreshESP() end)
-addToggle("AUTO REPAIR (Celeron)", AutoRepairEnabled, function(s)
-    AutoRepairEnabled = s
-    applyAutoRepair()
-end)
+addToggle("AUTO REPAIR", AutoRepairEnabled, function(s) AutoRepairEnabled = s applyAutoRepair() end)
 
 -- ========== Запуск ==========
 LocalPlayer.CharacterAdded:Connect(function()
@@ -472,10 +474,11 @@ task.spawn(function()
     refreshESP()
 end)
 
+-- Обновление ESP каждую секунду
 task.spawn(function()
     while task.wait(1) do
         updateESP()
     end
 end)
 
-print("✅ BITE BY NIGHT v12.8 загружен | Скорость по умолчанию 24 + ESP Генераторы")
+print("✅ BITE BY NIGHT v12.8 загружен | Скорость 24 + улучшенный ESP Генераторов из Celeron")
