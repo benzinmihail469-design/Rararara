@@ -1,5 +1,5 @@
 -- ============================================
--- BITE BY NIGHT v13.6 — Метатабличный хук стамины + Улучшенный ползунок + ESP Mimic
+-- BITE BY NIGHT v13.8 — Новый метод стамины (RenderStepped 99) + Скрытная подстраховка
 -- ============================================
 
 local Players = game:GetService("Players")
@@ -30,45 +30,37 @@ local autoRepairConnection = nil
 local firingConnection = nil
 local lastFireTime = 0
 
--- ========== МЕТАТАБЛИЧНЫЙ ХУК СТАМИНЫ (твой код) ==========
-local function applyMetatableStaminaHook()
-    task.spawn(function()
-        local character = LocalPlayer.Character or LocalPlayer.CharacterAdded:Wait()
-        local staminaValue = nil
+-- ========== НОВЫЙ МЕТОД СТАМИНЫ (твой код — RenderStepped) ==========
+local function applyNewStaminaMethod()
+    if not StaminaEnabled then return end
 
-        -- Ищем объект стамины (можно добавить другие варианты имён, если нужно)
-        staminaValue = LocalPlayer:FindFirstChild("Stamina")
-        
-        if not staminaValue then
-            -- Альтернативный поиск внутри персонажа
-            local hum = character:FindFirstChildOfClass("Humanoid")
-            if hum then
-                staminaValue = hum:FindFirstChild("Stamina") or hum:FindFirstChild("SprintStamina") or hum:FindFirstChild("Energy")
-            end
+    task.spawn(function()
+        local staminaObject = nil
+
+        -- Ищем объект стамины (можно расширить список имён)
+        local possibleNames = {"Stamina", "SprintStamina", "Energy", "RunStamina", "StaminaValue", "CurrentStamina"}
+
+        for _, name in ipairs(possibleNames) do
+            staminaObject = LocalPlayer:FindFirstChild(name, true) 
+                         or (LocalPlayer.Character and LocalPlayer.Character:FindFirstChild(name, true))
+            if staminaObject then break end
         end
 
-        if staminaValue and (staminaValue:IsA("NumberValue") or staminaValue:IsA("IntValue")) then
-            local mt = getrawmetatable(game)
-            local oldIndex = mt.__index
-            setreadonly(mt, false)
-
-            mt.__index = newcclosure(function(t, k)
-                if t == staminaValue and k == "Value" then
-                    return 100  -- Всегда возвращаем 100 для других скриптов
-                end
-                return oldIndex(t, k)
+        if staminaObject and (staminaObject:IsA("NumberValue") or staminaObject:IsA("IntValue")) then
+            RunService.RenderStepped:Connect(function()
+                pcall(function()
+                    staminaObject.Value = 99   -- Ставим 99 вместо 100 (меньше подозрений)
+                end)
             end)
-
-            setreadonly(mt, true)
-            print("✅ Метатабличный хук стамины успешно применён")
+            print("✅ Новый метод стамины (RenderStepped 99) активирован")
         else
-            warn("⚠️ Объект Stamina не найден для метатабличного хука. Используем обычный метод.")
+            warn("⚠️ Объект стамины не найден! Новый метод не работает.")
         end
     end)
 end
 
--- ========== СКРЫТНАЯ КЛИЕНТСКАЯ СТАМИНА (подстраховка) ==========
-local function applyInfiniteStamina()
+-- ========== СКРЫТНАЯ СТАМИНА (подстраховка) ==========
+local function applyHiddenStamina()
     if staminaConnection then staminaConnection:Disconnect() end
     if not StaminaEnabled then return end
 
@@ -79,25 +71,16 @@ local function applyInfiniteStamina()
             local hum = char:FindFirstChildOfClass("Humanoid")
             if not hum then return end
 
-            if math.random(1, 4) ~= 1 then return end
+            if math.random(1, 6) ~= 1 then return end
 
             for _, name in ipairs({"Stamina", "SprintStamina", "Energy", "StaminaValue", "RunStamina", "SprintEnergy", "CurrentStamina", "MaxStamina", "Exhaustion"}) do
                 if hum:GetAttribute(name) ~= nil then
-                    hum:SetAttribute(name, 97 + math.random(0, 3))
+                    hum:SetAttribute(name, 96 + math.random(0, 4))
                 end
             end
 
             if hum:GetAttribute("Fatigue") then hum:SetAttribute("Fatigue", 0) end
             if hum:GetAttribute("Exhaustion") then hum:SetAttribute("Exhaustion", 0) end
-
-            for _, v in ipairs(char:GetDescendants()) do
-                if (v:IsA("NumberValue") or v:IsA("IntValue")) and math.random(1, 6) == 1 then
-                    local n = v.Name:lower()
-                    if n:find("stamina") or n:find("energy") or n:find("sprint") or n:find("run") or n:find("fatigue") then
-                        v.Value = 97 + math.random(0, 3)
-                    end
-                end
-            end
         end)
     end)
 end
@@ -178,26 +161,21 @@ local function applyAutoRepair()
                             pcall(function()
                                 local args = {{ Wires = true, Switches = true, Lever = true }}
                                 local event = genGui:FindFirstChild("GeneratorMain") and genGui.GeneratorMain.Event or genGui:FindFirstChild("Event")
-                                if event then
-                                    event:FireServer(unpack(args))
-                                end
+                                if event then event:FireServer(unpack(args)) end
                             end)
                             lastFireTime = tick()
                         end
                     end)
                 end
             else
-                if firingConnection then
-                    firingConnection:Disconnect()
-                    firingConnection = nil
-                end
+                if firingConnection then firingConnection:Disconnect() firingConnection = nil end
                 lastFireTime = 0
             end
         end)
     end)
 end
 
--- ========== ESP ==========
+-- ========== ESP (без изменений) ==========
 local function createESP(obj, color, text)
     if espObjects[obj] then return end
     local root = obj:FindFirstChild("HumanoidRootPart") or obj:FindFirstChildWhichIsA("BasePart")
@@ -300,7 +278,7 @@ local function refreshESP()
     updateESP()
 end
 
--- ========== GUI (из твоего старого скрипта) ==========
+-- ========== GUI + Ползунок (из твоего старого скрипта) ==========
 local gui = Instance.new("ScreenGui")
 gui.Name = "BiteByNight_Hack"
 gui.Parent = CoreGui
@@ -341,7 +319,7 @@ local title = Instance.new("TextLabel")
 title.Size = UDim2.new(1, -70, 0, 40)
 title.Position = UDim2.new(0, 15, 0, 0)
 title.BackgroundTransparency = 1
-title.Text = "🦇 BITE BY NIGHT v13.6"
+title.Text = "🦇 BITE BY NIGHT v13.8"
 title.TextColor3 = Color3.fromRGB(0, 255, 160)
 title.TextSize = 18
 title.Font = Enum.Font.GothamBold
@@ -492,9 +470,10 @@ yOffset += 55
 
 -- ========== ТОГГЛЫ ==========
 addToggle("SPEED + AUTO SPRINT", SpeedEnabled, function(s) SpeedEnabled = s applySpeed() end)
-addToggle("STAMINA (Метатабличный хук)", StaminaEnabled, function(s) 
+addToggle("STAMINA (RenderStepped 99)", StaminaEnabled, function(s) 
     StaminaEnabled = s 
-    applyInfiniteStamina() 
+    applyNewStaminaMethod()
+    applyHiddenStamina()   -- подстраховка
 end)
 addToggle("NOCLIP", NoClipEnabled, function(s) NoClipEnabled = s applyNoClip() end)
 addToggle("ESP Генераторы", ESP_Generators, function(s) ESP_Generators = s refreshESP() end)
@@ -505,9 +484,9 @@ addToggle("AUTO REPAIR", AutoRepairEnabled, function(s) AutoRepairEnabled = s ap
 -- ========== Запуск ==========
 LocalPlayer.CharacterAdded:Connect(function()
     task.wait(0.8)
-    applyMetatableStaminaHook()
     applySpeed()
-    applyInfiniteStamina()
+    applyNewStaminaMethod()
+    applyHiddenStamina()
     applyNoClip()
     applyAutoRepair()
     refreshESP()
@@ -515,9 +494,9 @@ end)
 
 task.spawn(function()
     task.wait(1)
-    applyMetatableStaminaHook()
     applySpeed()
-    applyInfiniteStamina()
+    applyNewStaminaMethod()
+    applyHiddenStamina()
     applyNoClip()
     applyAutoRepair()
     refreshESP()
@@ -529,4 +508,4 @@ task.spawn(function()
     end
 end)
 
-print("✅ BITE BY NIGHT v13.6 загружен | Метатабличный хук стамины вставлен")
+print("✅ BITE BY NIGHT v13.8 загружен | Новый метод стамины (RenderStepped 99) добавлен")
