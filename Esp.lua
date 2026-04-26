@@ -1,6 +1,6 @@
 -- ============================================
 -- BITE BY NIGHT v12.8 — Infinite Sprint + ESP Генераторы
--- Исправлено: Работа в Лобби + Улучшенный Anti-Cheat Bypass
+-- Улучшенный Anti-Cheat Bypass (агрессивный) + Работа в Лобби
 -- ============================================
 
 local Players = game:GetService("Players")
@@ -9,6 +9,7 @@ local UserInputService = game:GetService("UserInputService")
 local CoreGui = game:GetService("CoreGui")
 local Workspace = game:GetService("Workspace")
 local ReplicatedStorage = game:GetService("ReplicatedStorage")
+local StarterPlayer = game:GetService("StarterPlayer")
 
 local LocalPlayer = Players.LocalPlayer
 
@@ -28,7 +29,7 @@ local autoRepairConnection = nil
 local firingConnection = nil
 local lastFireTime = 0
 
--- ========== УЛУЧШЕННЫЙ ANTI-CHEAT BYPASS ==========
+-- ========== АГРЕССИВНЫЙ ANTI-CHEAT BYPASS (вставлено сюда) ==========
 local function killAntiCheatScripts()
     local containers = {
         LocalPlayer:FindFirstChild("PlayerScripts"),
@@ -36,7 +37,7 @@ local function killAntiCheatScripts()
         Workspace,
         ReplicatedStorage,
         CoreGui,
-        game:GetService("StarterPlayer"):FindFirstChild("StarterPlayerScripts")
+        StarterPlayer:FindFirstChild("StarterPlayerScripts")
     }
     
     for _, container in ipairs(containers) do
@@ -45,7 +46,9 @@ local function killAntiCheatScripts()
                 if obj:IsA("Script") or obj:IsA("LocalScript") or obj:IsA("ModuleScript") then
                     local name = (obj.Name or ""):lower()
                     if name:find("anti") or name:find("cheat") or name:find("detect") or name:find("ac_") or 
-                       name:find("ban") or name:find("kick") or name:find("bite") or name:find("stamina") then
+                       name:find("ban") or name:find("kick") or name:find("bite") or name:find("stamina") or 
+                       name:find("speed") or name:find("hook") or name:find("monitor") or name:find("validate") then
+                        
                         pcall(function()
                             obj:Destroy()
                             if obj.Parent then obj.Parent = nil end
@@ -55,6 +58,18 @@ local function killAntiCheatScripts()
             end
         end
     end
+
+    -- Уничтожаем подозрительные Remote
+    pcall(function()
+        for _, v in ipairs(ReplicatedStorage:GetDescendants()) do
+            if v:IsA("RemoteEvent") or v:IsA("RemoteFunction") then
+                local n = v.Name:lower()
+                if n:find("anti") or n:find("cheat") or n:find("detect") or n:find("validate") or n:find("report") then
+                    pcall(function() v:Destroy() end)
+                end
+            end
+        end
+    end)
 end
 
 -- ========== INFINITE SPRINT (Celeron Style) ==========
@@ -230,7 +245,7 @@ local function refreshESP()
     updateESP()
 end
 
--- ========== GUI ==========
+-- ========== GUI (твой оригинальный) ==========
 local gui = Instance.new("ScreenGui")
 gui.Name = "BiteByNight_Hack"
 gui.ResetOnSpawn = false
@@ -357,7 +372,7 @@ local function addToggle(text, defaultEnabled, callback)
     return btn
 end
 
--- Тогглы
+-- ========== Тогглы ==========
 addLabel("Infinite Sprint (Celeron Style)", Color3.fromRGB(0, 255, 120))
 addToggle("INFINITE SPRINT", InfiniteStaminaEnabled, function(s) InfiniteStaminaEnabled = s applyInfiniteStamina() end)
 addToggle("NOCLIP", NoClipEnabled, function(s) NoClipEnabled = s applyNoClip() end)
@@ -366,12 +381,13 @@ addToggle("ESP Убийца", ESP_Killer, function(s) ESP_Killer = s refreshESP(
 addToggle("ESP Выжившие", ESP_Survivors, function(s) ESP_Survivors = s refreshESP() end)
 addToggle("AUTO REPAIR", AutoRepairEnabled, function(s) AutoRepairEnabled = s applyAutoRepair() end)
 
--- ========== ЗАПУСК ДЛЯ ЛОББИ ==========
+-- ========== ЗАПУСК ==========
 task.spawn(function()
-    task.wait(0.3)
-    killAntiCheatScripts()
-    
-    -- Принудительно запускаем функции даже без персонажа
+    task.wait(0.2)
+    for i = 1, 5 do
+        killAntiCheatScripts()
+        task.wait(0.1)
+    end
     applyInfiniteStamina()
     applyNoClip()
     applyAutoRepair()
@@ -379,26 +395,27 @@ task.spawn(function()
 end)
 
 LocalPlayer.CharacterAdded:Connect(function()
-    task.wait(0.4)
-    killAntiCheatScripts()
+    task.wait(0.3)
+    for i = 1, 3 do
+        killAntiCheatScripts()
+        task.wait(0.1)
+    end
     applyInfiniteStamina()
     applyNoClip()
     applyAutoRepair()
     refreshESP()
 end)
 
--- Постоянное обновление ESP (работает и в лобби)
 task.spawn(function()
-    while task.wait(0.7) do
+    while task.wait(0.6) do
         pcall(updateESP)
     end
 end)
 
--- Дополнительный bypass каждые 5 секунд
 task.spawn(function()
-    while task.wait(5) do
+    while task.wait(4) do
         pcall(killAntiCheatScripts)
     end
 end)
 
-print("✅ BITE BY NIGHT v12.8 загружен | Исправлено для Лобби")
+print("✅ BITE BY NIGHT v12.8 загружен | Агрессивный Anti-Cheat Bypass вставлен")
