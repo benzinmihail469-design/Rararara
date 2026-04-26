@@ -1,5 +1,5 @@
 -- ============================================
--- BITE BY NIGHT v12.7 — Celeron WalkSpeed + Auto Repair
+-- BITE BY NIGHT v12.8 — ESP Генераторы + Speed = 24
 -- ============================================
 
 local Players = game:GetService("Players")
@@ -12,7 +12,8 @@ local LocalPlayer = Players.LocalPlayer
 
 -- Настройки
 local SpeedEnabled = true
-local SpeedValue = 24
+local SpeedValue = 24          -- ← Изменено на 24 по твоему запросу
+local MaxSpeed = 55
 local StaminaEnabled = true
 local NoClipEnabled = false
 local AutoRepairEnabled = false
@@ -42,7 +43,7 @@ local function killAntiCheatScripts(container)
     end
 end
 
--- ========== Celeron-style WalkSpeed (улучшенная версия) ==========
+-- ========== WalkSpeed (улучшенная Celeron-style) ==========
 local function applySpeed()
     if speedConnection then 
         speedConnection:Disconnect() 
@@ -61,18 +62,14 @@ local function applySpeed()
         pcall(function()
             local char = LocalPlayer.Character
             if not char then return end
-            
             local hum = char:FindFirstChildOfClass("Humanoid")
             local root = char:FindFirstChild("HumanoidRootPart")
             if not hum or not root then return end
 
-            -- Основная скорость
             hum.WalkSpeed = SpeedValue
 
-            -- Дополнительное Celeron-style ускорение (плавное)
             if hum.MoveDirection.Magnitude > 0 then
-                local boost = SpeedValue * 0.9 * dt
-                root.CFrame += hum.MoveDirection * boost
+                root.CFrame += hum.MoveDirection * SpeedValue * dt * 0.95
             end
         end)
     end)
@@ -82,7 +79,6 @@ end
 local function applyInfiniteStamina()
     if staminaConnection then staminaConnection:Disconnect() end
     if not StaminaEnabled then return end
-    
     staminaConnection = RunService.Heartbeat:Connect(function()
         pcall(function()
             local char = LocalPlayer.Character
@@ -90,9 +86,7 @@ local function applyInfiniteStamina()
             local hum = char:FindFirstChildOfClass("Humanoid")
             if hum then
                 for _, name in ipairs({"Stamina", "SprintStamina", "Energy", "Fatigue", "StaminaValue"}) do
-                    if hum:GetAttribute(name) ~= nil then 
-                        hum:SetAttribute(name, 100) 
-                    end
+                    if hum:GetAttribute(name) ~= nil then hum:SetAttribute(name, 100) end
                 end
             end
             for _, v in ipairs(char:GetDescendants()) do
@@ -167,7 +161,7 @@ local function applyAutoRepair()
     end)
 end
 
--- ========== ESP (без изменений) ==========
+-- ========== ESP (с твоим ESP генераторов) ==========
 local function createESP(obj, color, text)
     if espObjects[obj] then return end
     local root = obj:FindFirstChild("HumanoidRootPart") or obj:FindFirstChildWhichIsA("BasePart")
@@ -242,7 +236,8 @@ local function updateESP()
     if ESP_Generators then
         for _, obj in ipairs(Workspace:GetDescendants()) do
             local n = obj.Name:lower()
-            if (obj:IsA("Model") or obj:IsA("Folder")) and (n:find("generator") or n:find("gen") or n:find("battery")) and not espObjects[obj] then
+            if (obj:IsA("Model") or obj:IsA("Folder")) and 
+               (n:find("generator") or n:find("gen") or n:find("battery")) and not espObjects[obj] then
                 createESP(obj, Color3.fromRGB(0, 255, 100), "⚡ GENERATOR")
             end
         end
@@ -275,7 +270,7 @@ gui.Parent = CoreGui
 gui.ResetOnSpawn = false
 
 local mainFrame = Instance.new("Frame")
-mainFrame.Size = UDim2.new(0, 270, 0, 480)
+mainFrame.Size = UDim2.new(0, 270, 0, 520)
 mainFrame.Position = UDim2.new(1, -290, 0, 40)
 mainFrame.BackgroundColor3 = Color3.fromRGB(18, 18, 24)
 mainFrame.BackgroundTransparency = 0.05
@@ -309,7 +304,7 @@ local title = Instance.new("TextLabel")
 title.Size = UDim2.new(1, -70, 0, 40)
 title.Position = UDim2.new(0, 15, 0, 0)
 title.BackgroundTransparency = 1
-title.Text = "🦇 BITE BY NIGHT v12.7"
+title.Text = "🦇 BITE BY NIGHT v12.8"
 title.TextColor3 = Color3.fromRGB(0, 255, 160)
 title.TextSize = 18
 title.Font = Enum.Font.GothamBold
@@ -395,9 +390,56 @@ local function addToggle(text, defaultEnabled, callback)
     return btn
 end
 
-addLabel("⚡ Скорость: 24", Color3.fromRGB(0, 255, 120))
+local speedLabel = addLabel("⚡ Скорость: " .. SpeedValue, Color3.fromRGB(0, 255, 120))
 
--- Тогглы
+-- Slider скорости
+local sliderBg = Instance.new("Frame")
+sliderBg.Size = UDim2.new(0.92, 0, 0, 12)
+sliderBg.Position = UDim2.new(0.04, 0, 0, yOffset)
+sliderBg.BackgroundColor3 = Color3.fromRGB(40, 40, 48)
+sliderBg.Parent = mainFrame
+Instance.new("UICorner", sliderBg).CornerRadius = UDim.new(1, 0)
+addCollapsible(sliderBg)
+
+local sliderFill = Instance.new("Frame")
+sliderFill.Size = UDim2.new((SpeedValue-16)/(MaxSpeed-16), 1, 1, 0)
+sliderFill.BackgroundColor3 = Color3.fromRGB(0, 255, 130)
+sliderFill.Parent = sliderBg
+Instance.new("UICorner", sliderFill).CornerRadius = UDim.new(1, 0)
+
+local sliderKnob = Instance.new("TextButton")
+sliderKnob.Size = UDim2.new(0, 20, 0, 20)
+sliderKnob.Position = UDim2.new((SpeedValue-16)/(MaxSpeed-16), -5, 0.5, -10)
+sliderKnob.BackgroundColor3 = Color3.fromRGB(0, 255, 160)
+sliderKnob.Text = ""
+sliderKnob.Parent = sliderBg
+Instance.new("UICorner", sliderKnob).CornerRadius = UDim.new(1, 0)
+
+local function updateSlider()
+    local percent = (SpeedValue - 16) / (MaxSpeed - 16)
+    sliderFill.Size = UDim2.new(percent, 0, 1, 0)
+    sliderKnob.Position = UDim2.new(percent, -5, 0.5, -10)
+    if speedLabel then speedLabel.Text = "⚡ Скорость: " .. math.floor(SpeedValue) end
+end
+
+sliderBg.InputBegan:Connect(function(input)
+    if input.UserInputType == Enum.UserInputType.MouseButton1 then
+        local moving = true
+        local moveConn = UserInputService.InputChanged:Connect(function(move)
+            if move.UserInputType == Enum.UserInputType.MouseMovement and moving then
+                local percent = math.clamp((move.Position.X - sliderBg.AbsolutePosition.X) / sliderBg.AbsoluteSize.X, 0, 1)
+                SpeedValue = 16 + math.floor(percent * (MaxSpeed - 16))
+                updateSlider()
+                if SpeedEnabled then applySpeed() end
+            end
+        end)
+        UserInputService.InputEnded:Connect(function() moving = false moveConn:Disconnect() end)
+    end
+end)
+
+yOffset += 48
+
+-- ========== Тогглы ==========
 addToggle("SPEED", SpeedEnabled, function(s) SpeedEnabled = s applySpeed() end)
 addToggle("STAMINA", StaminaEnabled, function(s) StaminaEnabled = s applyInfiniteStamina() end)
 addToggle("NOCLIP", NoClipEnabled, function(s) NoClipEnabled = s applyNoClip() end)
@@ -436,4 +478,4 @@ task.spawn(function()
     end
 end)
 
-print("✅ BITE BY NIGHT v12.7 | Скорость 24 + Auto Repair загружен!")
+print("✅ BITE BY NIGHT v12.8 загружен | Скорость по умолчанию 24 + ESP Генераторы")
