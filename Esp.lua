@@ -1,5 +1,5 @@
 -- ============================================
--- BITE BY NIGHT v12.9 — Ringta Style Stamina + Speed Slider (исправлено)
+-- BITE BY NIGHT v12.9 — Ringta Style Stamina + Mobile-Friendly Speed Slider
 -- ============================================
 
 local Players = game:GetService("Players")
@@ -13,7 +13,7 @@ local LocalPlayer = Players.LocalPlayer
 -- Настройки
 local SpeedEnabled = true
 local SpeedValue = 24
-local MaxSpeed = 55
+local MaxSpeed = 50          -- Максимум теперь 50
 local StaminaEnabled = true
 local NoClipEnabled = false
 local AutoRepairEnabled = false
@@ -30,7 +30,7 @@ local autoRepairConnection = nil
 local firingConnection = nil
 local lastFireTime = 0
 
--- ========== RINGTA STYLE INFINITE STAMINA (исправленная — меньше блокировок) ==========
+-- ========== RINGTA STYLE INFINITE STAMINA (мягкая версия) ==========
 local function applyInfiniteStamina()
     if staminaConnection then staminaConnection:Disconnect() end
     if not StaminaEnabled then return end
@@ -42,19 +42,16 @@ local function applyInfiniteStamina()
             local hum = char:FindFirstChildOfClass("Humanoid")
             if not hum then return end
 
-            -- Мягкий сброс только когда стамина падает
             for _, name in ipairs({"Stamina", "SprintStamina", "Energy", "StaminaValue", "RunStamina", "SprintEnergy"}) do
                 if hum:GetAttribute(name) and hum:GetAttribute(name) < 90 then
                     hum:SetAttribute(name, 100)
                 end
             end
 
-            -- Fatigue сбрасываем только если он высокий
             if hum:GetAttribute("Fatigue") and hum:GetAttribute("Fatigue") > 8 then
                 hum:SetAttribute("Fatigue", 0)
             end
 
-            -- Сброс через NumberValue / IntValue (мягко)
             for _, v in ipairs(char:GetDescendants()) do
                 if (v:IsA("NumberValue") or v:IsA("IntValue")) then
                     local n = v.Name:lower()
@@ -67,7 +64,7 @@ local function applyInfiniteStamina()
     end)
 end
 
--- ========== SPEED + MOVEMENT ==========
+-- ========== SPEED ==========
 local function applySpeed()
     if speedConnection then speedConnection:Disconnect() speedConnection = nil end
     
@@ -98,7 +95,7 @@ local function applySpeed()
     end)
 end
 
--- ========== Античит ==========
+-- ========== Античит, NoClip, Auto Repair (без изменений) ==========
 local function killAntiCheatScripts(container)
     if not container then return end
     for _, obj in ipairs(container:GetDescendants()) do
@@ -111,7 +108,6 @@ local function killAntiCheatScripts(container)
     end
 end
 
--- ========== NoClip ==========
 local function applyNoClip()
     if noclipConnection then noclipConnection:Disconnect() end
     if NoClipEnabled then
@@ -137,7 +133,6 @@ local function applyNoClip()
     end
 end
 
--- ========== AUTO REPAIR ==========
 local function applyAutoRepair()
     if autoRepairConnection then autoRepairConnection:Disconnect() end
     if firingConnection then firingConnection:Disconnect() end
@@ -173,7 +168,7 @@ local function applyAutoRepair()
     end)
 end
 
--- ========== ESP ==========
+-- ========== ESP (без изменений) ==========
 local function createESP(obj, color, text)
     if espObjects[obj] then return end
     local root = obj:FindFirstChild("HumanoidRootPart") or obj:FindFirstChildWhichIsA("BasePart")
@@ -250,14 +245,11 @@ local function updateESP()
         for _, obj in ipairs(Workspace:GetDescendants()) do
             if not obj.Parent then continue end
             local lowerName = obj.Name:lower()
-
             local isGen = lowerName:find("generator") or lowerName:find("%f[%a]gen%f[%A]") or 
                          lowerName:find("powerbox") or lowerName:find("fusebox") or lowerName:find("battery")
 
             if (obj:IsA("Model") or obj:IsA("Folder")) and isGen and not espObjects[obj] then
-                local hasParts = obj:FindFirstChild("Wires") or obj:FindFirstChild("Lever") or 
-                                obj:FindFirstChild("Switch") or lowerName:find("generator")
-
+                local hasParts = obj:FindFirstChild("Wires") or obj:FindFirstChild("Lever") or obj:FindFirstChild("Switch")
                 if hasParts and not lowerName:find("door") and not lowerName:find("gate") and 
                    not lowerName:find("light") and not lowerName:find("lamp") then
                     createESP(obj, Color3.fromRGB(0, 255, 100), "⚡ GENERATOR")
@@ -350,7 +342,7 @@ minButton.MouseButton1Click:Connect(function()
     updateMinimizedState()
 end)
 
--- Drag
+-- Drag (работает на ПК и телефоне)
 local dragging = false
 local dragStart, startPos
 mainFrame.InputBegan:Connect(function(input)
@@ -367,7 +359,9 @@ UserInputService.InputChanged:Connect(function(input)
     end
 end)
 UserInputService.InputEnded:Connect(function(input)
-    if input.UserInputType == Enum.UserInputType.MouseButton1 or input.UserInputType == Enum.UserInputType.Touch then dragging = false end
+    if input.UserInputType == Enum.UserInputType.MouseButton1 or input.UserInputType == Enum.UserInputType.Touch then 
+        dragging = false 
+    end
 end)
 
 local yOffset = 55
@@ -415,9 +409,9 @@ end
 
 local speedLabel = addLabel("⚡ Скорость: " .. SpeedValue, Color3.fromRGB(0, 255, 120))
 
--- Slider скорости
+-- ========== УЛУЧШЕННЫЙ ПОЛЗУНОК (работает на ПК и телефоне) ==========
 local sliderBg = Instance.new("Frame")
-sliderBg.Size = UDim2.new(0.92, 0, 0, 12)
+sliderBg.Size = UDim2.new(0.92, 0, 0, 14)
 sliderBg.Position = UDim2.new(0.04, 0, 0, yOffset)
 sliderBg.BackgroundColor3 = Color3.fromRGB(40, 40, 48)
 sliderBg.Parent = mainFrame
@@ -431,8 +425,8 @@ sliderFill.Parent = sliderBg
 Instance.new("UICorner", sliderFill).CornerRadius = UDim.new(1, 0)
 
 local sliderKnob = Instance.new("TextButton")
-sliderKnob.Size = UDim2.new(0, 20, 0, 20)
-sliderKnob.Position = UDim2.new((SpeedValue-16)/(MaxSpeed-16), -5, 0.5, -10)
+sliderKnob.Size = UDim2.new(0, 24, 0, 24)
+sliderKnob.Position = UDim2.new((SpeedValue-16)/(MaxSpeed-16), -6, 0.5, -12)
 sliderKnob.BackgroundColor3 = Color3.fromRGB(0, 255, 160)
 sliderKnob.Text = ""
 sliderKnob.Parent = sliderBg
@@ -441,26 +435,44 @@ Instance.new("UICorner", sliderKnob).CornerRadius = UDim.new(1, 0)
 local function updateSlider()
     local percent = (SpeedValue - 16) / (MaxSpeed - 16)
     sliderFill.Size = UDim2.new(percent, 0, 1, 0)
-    sliderKnob.Position = UDim2.new(percent, -5, 0.5, -10)
-    if speedLabel then speedLabel.Text = "⚡ Скорость: " .. math.floor(SpeedValue) end
+    sliderKnob.Position = UDim2.new(percent, -6, 0.5, -12)
+    if speedLabel then 
+        speedLabel.Text = "⚡ Скорость: " .. math.floor(SpeedValue) 
+    end
+end
+
+-- Обработка движения ползунка (мышь + тач)
+local function handleSliderMove(input)
+    local percent = math.clamp((input.Position.X - sliderBg.AbsolutePosition.X) / sliderBg.AbsoluteSize.X, 0, 1)
+    SpeedValue = 16 + math.floor(percent * (MaxSpeed - 16))
+    updateSlider()
+    if SpeedEnabled then 
+        applySpeed() 
+    end
 end
 
 sliderBg.InputBegan:Connect(function(input)
-    if input.UserInputType == Enum.UserInputType.MouseButton1 then
+    if input.UserInputType == Enum.UserInputType.MouseButton1 or input.UserInputType == Enum.UserInputType.Touch then
+        handleSliderMove(input)
         local moving = true
+
         local moveConn = UserInputService.InputChanged:Connect(function(move)
-            if move.UserInputType == Enum.UserInputType.MouseMovement and moving then
-                local percent = math.clamp((move.Position.X - sliderBg.AbsolutePosition.X) / sliderBg.AbsoluteSize.X, 0, 1)
-                SpeedValue = 16 + math.floor(percent * (MaxSpeed - 16))
-                updateSlider()
-                if SpeedEnabled then applySpeed() end
+            if (move.UserInputType == Enum.UserInputType.MouseMovement or move.UserInputType == Enum.UserInputType.Touch) and moving then
+                handleSliderMove(move)
             end
         end)
-        UserInputService.InputEnded:Connect(function() moving = false; moveConn:Disconnect() end)
+
+        local endConn = UserInputService.InputEnded:Connect(function(endInput)
+            if endInput.UserInputType == Enum.UserInputType.MouseButton1 or endInput.UserInputType == Enum.UserInputType.Touch then
+                moving = false
+                moveConn:Disconnect()
+                endConn:Disconnect()
+            end
+        end)
     end
 end)
 
-yOffset += 48
+yOffset += 50
 
 -- ========== ТОГГЛЫ ==========
 addToggle("SPEED + AUTO SPRINT", SpeedEnabled, function(s) 
@@ -504,4 +516,4 @@ task.spawn(function()
     end
 end)
 
-print("✅ BITE BY NIGHT v12.9 загружен | Stamina исправлена (мягче, меньше блокировок)")
+print("✅ BITE BY NIGHT v12.9 загружен | Ползунок скорости работает на ПК и телефоне!")
