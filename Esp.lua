@@ -1,5 +1,5 @@
 -- ============================================
--- BITE BY NIGHT v12.9 — Speed как в Ringta + ESP из Celeron
+-- BITE BY NIGHT v12.9 — Speed 24 + Исправленный ESP Генераторов
 -- ============================================
 
 local Players = game:GetService("Players")
@@ -12,7 +12,7 @@ local LocalPlayer = Players.LocalPlayer
 
 -- Настройки
 local SpeedEnabled = true
-local SpeedValue = 28          -- Рекомендую начинать с 28-35
+local SpeedValue = 24          -- снижено до 24 по твоей просьбе
 local MaxSpeed = 55
 local StaminaEnabled = true
 local NoClipEnabled = false
@@ -30,7 +30,7 @@ local autoRepairConnection = nil
 local firingConnection = nil
 local lastFireTime = 0
 
--- ========== SPEED КАК В RINGTA (улучшенный wall speed) ==========
+-- ========== SPEED КАК В RINGTA (сниженная скорость) ==========
 local function applySpeed()
     if speedConnection then speedConnection:Disconnect() speedConnection = nil end
     
@@ -53,11 +53,11 @@ local function applySpeed()
             hum.WalkSpeed = SpeedValue
 
             if hum.MoveDirection.Magnitude > 0 then
-                local moveVec = hum.MoveDirection * (SpeedValue * 1.08) * dt   -- Ringta-style boost
+                local moveVec = hum.MoveDirection * (SpeedValue * 1.05) * dt
                 root.CFrame += moveVec
                 
-                -- Дополнительный wall speed эффект (лучше проходит стены)
-                root.Velocity = Vector3.new(moveVec.X * 35, root.Velocity.Y, moveVec.Z * 35)
+                -- Wall speed эффект
+                root.Velocity = Vector3.new(moveVec.X * 30, root.Velocity.Y, moveVec.Z * 30)
             end
         end)
     end)
@@ -149,7 +149,7 @@ local function applyAutoRepair()
     end)
 end
 
--- ========== ESP (улучшенный из Celeron) ==========
+-- ========== ESP СИСТЕМА ==========
 local function createESP(obj, color, text)
     if espObjects[obj] then return end
     local root = obj:FindFirstChild("HumanoidRootPart") or obj:FindFirstChildWhichIsA("BasePart")
@@ -217,6 +217,7 @@ local function isKiller(player)
     return false
 end
 
+-- ========== ИСПРАВЛЕННЫЙ ESP ГЕНЕРАТОРОВ ==========
 local function updateESP()
     for obj, _ in pairs(espObjects) do
         if not obj or not obj.Parent then removeESP(obj) end
@@ -226,18 +227,30 @@ local function updateESP()
         for _, obj in ipairs(Workspace:GetDescendants()) do
             if not obj.Parent then continue end
             local lowerName = obj.Name:lower()
-            
-            if (obj:IsA("Model") or obj:IsA("Folder") or obj:IsA("Part") or obj:IsA("MeshPart")) and
-               (lowerName:find("generator") or lowerName:find("gen") or lowerName:find("battery") or 
-                lowerName:find("power") or lowerName:find("fuse") or lowerName:find("box") or 
-                lowerName:find("panel") or lowerName:find("electric")) and 
-               not espObjects[obj] and not lowerName:find("door") and not lowerName:find("gate") then
+
+            -- Строгий фильтр для генераторов
+            local isGen = (lowerName:find("generator") or lowerName:find("%f[%a]gen%f[%A]") or 
+                          lowerName:find("powerbox") or lowerName:find("fusebox") or lowerName:find("battery"))
+
+            if (obj:IsA("Model") or obj:IsA("Folder")) and isGen and not espObjects[obj] then
                 
-                createESP(obj, Color3.fromRGB(0, 255, 100), "⚡ GENERATOR")
+                -- Проверка на реальные части генератора
+                local hasRealGenParts = obj:FindFirstChild("Wires") or obj:FindFirstChild("Wire") or 
+                                       obj:FindFirstChild("Lever") or obj:FindFirstChild("Switch") or 
+                                       obj:FindFirstChild("Generator") or lowerName:find("generator")
+
+                if hasRealGenParts and 
+                   not lowerName:find("door") and not lowerName:find("gate") and 
+                   not lowerName:find("light") and not lowerName:find("lamp") and 
+                   not lowerName:find("box") and not lowerName:find("panel") then
+                    
+                    createESP(obj, Color3.fromRGB(0, 255, 100), "⚡ GENERATOR")
+                end
             end
         end
     end
 
+    -- ESP игроков
     for _, player in ipairs(Players:GetPlayers()) do
         if player == LocalPlayer then continue end
         if not player.Character then continue end
@@ -449,7 +462,6 @@ addToggle("AUTO REPAIR", AutoRepairEnabled, function(s) AutoRepairEnabled = s ap
 -- ========== Запуск ==========
 LocalPlayer.CharacterAdded:Connect(function()
     task.wait(0.8)
-    pcall(killAntiCheatScripts, LocalPlayer.Character)  -- Добавь функцию killAntiCheatScripts если её нет
     applySpeed()
     applyInfiniteStamina()
     applyNoClip()
@@ -459,7 +471,6 @@ end)
 
 task.spawn(function()
     task.wait(1)
-    pcall(killAntiCheatScripts, LocalPlayer.PlayerScripts)
     applySpeed()
     applyInfiniteStamina()
     applyNoClip()
@@ -468,9 +479,9 @@ task.spawn(function()
 end)
 
 task.spawn(function()
-    while task.wait(1) do
+    while task.wait(1.2) do
         updateESP()
     end
 end)
 
-print("✅ BITE BY NIGHT v12.9 загружен | Speed как в Ringta")
+print("✅ BITE BY NIGHT v12.9 загружен | Скорость 24 + Исправленный ESP Генераторов")
