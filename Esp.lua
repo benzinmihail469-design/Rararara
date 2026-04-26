@@ -1,5 +1,5 @@
 -- ============================================
--- BITE BY NIGHT v13.2 — Фикс ползунка + Супер жёсткая стамина
+-- BITE BY NIGHT v13.3 — ESP Mimic Fix + Скрытная стамина
 -- ============================================
 
 local Players = game:GetService("Players")
@@ -30,7 +30,7 @@ local autoRepairConnection = nil
 local firingConnection = nil
 local lastFireTime = 0
 
--- ========== СУПЕР ЖЁСТКАЯ СТАМИНА ==========
+-- ========== СКРЫТНАЯ БЕСКОНЕЧНАЯ СТАМИНА ==========
 local function applyInfiniteStamina()
     if staminaConnection then staminaConnection:Disconnect() end
     if not StaminaEnabled then return end
@@ -42,6 +42,9 @@ local function applyInfiniteStamina()
             local hum = char:FindFirstChildOfClass("Humanoid")
             if not hum then return end
 
+            -- Скрытность: проверяем не каждый кадр
+            if math.random(1, 3) ~= 1 then return end
+
             -- Основные атрибуты
             for _, name in ipairs({
                 "Stamina", "SprintStamina", "Energy", "StaminaValue", 
@@ -49,7 +52,8 @@ local function applyInfiniteStamina()
                 "CurrentStamina", "MaxStamina", "Exhaustion"
             }) do
                 if hum:GetAttribute(name) ~= nil then
-                    hum:SetAttribute(name, 100)
+                    local randomValue = 97 + math.random(0, 3)  -- 97..100
+                    hum:SetAttribute(name, randomValue)
                 end
             end
 
@@ -57,12 +61,12 @@ local function applyInfiniteStamina()
             if hum:GetAttribute("Fatigue") then hum:SetAttribute("Fatigue", 0) end
             if hum:GetAttribute("Exhaustion") then hum:SetAttribute("Exhaustion", 0) end
 
-            -- Все значения внутри персонажа
+            -- Значения внутри персонажа (ещё реже)
             for _, v in ipairs(char:GetDescendants()) do
-                if v:IsA("NumberValue") or v:IsA("IntValue") then
+                if (v:IsA("NumberValue") or v:IsA("IntValue")) and math.random(1, 5) == 1 then
                     local n = v.Name:lower()
                     if n:find("stamina") or n:find("energy") or n:find("sprint") or n:find("run") or n:find("fatigue") then
-                        v.Value = 100
+                        v.Value = 97 + math.random(0, 3)
                     end
                 end
             end
@@ -140,26 +144,27 @@ local function applyAutoRepair()
     autoRepairConnection = RunService.Heartbeat:Connect(function()
         pcall(function()
             local genGui = LocalPlayer.PlayerGui:FindFirstChild("Gen") or LocalPlayer.PlayerGui:FindFirstChild("Generator")
-            if genGui then
-                local main = genGui:FindFirstChild("GeneratorMain") or genGui:FindFirstChild("Main")
-                local event = main and (main:FindFirstChild("Event") or main.Event) or genGui:FindFirstChild("Event")
-                
-                if event and not firingConnection then
+            if genGui and (genGui:FindFirstChild("GeneratorMain") or genGui:FindFirstChild("Main")) then
+                if not firingConnection then
                     firingConnection = RunService.Heartbeat:Connect(function()
                         if not AutoRepairEnabled then return end
-                        if tick() - lastFireTime >= 0.08 then
+                        local currentTime = tick()
+                        if currentTime - lastFireTime >= 0.08 then
                             pcall(function()
                                 local args = {{ Wires = true, Switches = true, Lever = true }}
-                                event:FireServer(unpack(args))
+                                local event = genGui:FindFirstChild("GeneratorMain") and genGui.GeneratorMain.Event or genGui:FindFirstChild("Event")
+                                if event then
+                                    event:FireServer(unpack(args))
+                                end
                             end)
-                            lastFireTime = tick()
+                            lastFireTime = currentTime
                         end
                     end)
                 end
             else
-                if firingConnection then 
-                    firingConnection:Disconnect() 
-                    firingConnection = nil 
+                if firingConnection then
+                    firingConnection:Disconnect()
+                    firingConnection = nil
                 end
                 lastFireTime = 0
             end
@@ -167,7 +172,7 @@ local function applyAutoRepair()
     end)
 end
 
--- ========== ESP (оставлен без изменений, он уже хороший) ==========
+-- ========== ESP с исправлением Mimic ==========
 local function createESP(obj, color, text)
     if espObjects[obj] then return end
     local root = obj:FindFirstChild("HumanoidRootPart") or obj:FindFirstChildWhichIsA("BasePart")
@@ -219,9 +224,24 @@ local function isKiller(player)
     if not player or not player.Character then return false end
     local char = player.Character
     local nameLower = (char.Name or ""):lower()
-    local keywords = {"springtrap", "mimic", "ennard", "rotten", "doppel", "animatronic", "killer", "project"}
+
+    -- Расширенный список для всех киллеров, включая Mimic (The Project / M2)
+    local keywords = {
+        "springtrap", "mimic", "ennard", "rotten", "doppel", 
+        "animatronic", "killer", "project", "m2", "theproject", 
+        "the project", "doppelganger", "mistake"
+    }
+
     for _, kw in ipairs(keywords) do
         if nameLower:find(kw) then return true end
+    end
+
+    -- Проверка по частям модели
+    for _, part in ipairs(char:GetChildren()) do
+        local n = part.Name:lower()
+        for _, kw in ipairs(keywords) do
+            if n:find(kw) then return true end
+        end
     end
     return false
 end
@@ -266,7 +286,7 @@ local function refreshESP()
     updateESP()
 end
 
--- ========== GUI ==========
+-- ========== GUI (полностью из твоей версии v13.0) ==========
 local gui = Instance.new("ScreenGui")
 gui.Name = "BiteByNight_Hack"
 gui.Parent = CoreGui
@@ -307,7 +327,7 @@ local title = Instance.new("TextLabel")
 title.Size = UDim2.new(1, -70, 0, 40)
 title.Position = UDim2.new(0, 15, 0, 0)
 title.BackgroundTransparency = 1
-title.Text = "🦇 BITE BY NIGHT v13.2"
+title.Text = "🦇 BITE BY NIGHT v13.3"
 title.TextColor3 = Color3.fromRGB(0, 255, 160)
 title.TextSize = 18
 title.Font = Enum.Font.GothamBold
@@ -397,9 +417,9 @@ end
 
 local speedLabel = addLabel("⚡ Скорость: " .. SpeedValue, Color3.fromRGB(0, 255, 120))
 
--- ========== ИСПРАВЛЕННЫЙ ПОЛЗУНОК ДЛЯ ТЕЛЕФОНА ==========
+-- ========== УЛУЧШЕННЫЙ ПОЛЗУНОК ==========
 local sliderBg = Instance.new("Frame")
-sliderBg.Size = UDim2.new(0.92, 0, 0, 22)
+sliderBg.Size = UDim2.new(0.92, 0, 0, 18)
 sliderBg.Position = UDim2.new(0.04, 0, 0, yOffset)
 sliderBg.BackgroundColor3 = Color3.fromRGB(40, 40, 48)
 sliderBg.Parent = mainFrame
@@ -407,51 +427,49 @@ Instance.new("UICorner", sliderBg).CornerRadius = UDim.new(1, 0)
 addCollapsible(sliderBg)
 
 local sliderFill = Instance.new("Frame")
-sliderFill.Size = UDim2.new(SpeedValue / MaxSpeed, 1, 1, 0)
+sliderFill.Size = UDim2.new((SpeedValue / MaxSpeed), 1, 1, 0)
 sliderFill.BackgroundColor3 = Color3.fromRGB(0, 255, 130)
 sliderFill.Parent = sliderBg
 Instance.new("UICorner", sliderFill).CornerRadius = UDim.new(1, 0)
 
 local sliderKnob = Instance.new("TextButton")
-sliderKnob.Size = UDim2.new(0, 32, 0, 32)
-sliderKnob.Position = UDim2.new(SpeedValue / MaxSpeed, -16, 0.5, -16)
+sliderKnob.Size = UDim2.new(0, 28, 0, 28)
+sliderKnob.Position = UDim2.new((SpeedValue / MaxSpeed), -14, 0.5, -14)
 sliderKnob.BackgroundColor3 = Color3.fromRGB(0, 255, 160)
 sliderKnob.Text = ""
 sliderKnob.Parent = sliderBg
 Instance.new("UICorner", sliderKnob).CornerRadius = UDim.new(1, 0)
 
 local function updateSlider()
-    local percent = math.clamp(SpeedValue / MaxSpeed, 0, 1)
+    local percent = SpeedValue / MaxSpeed
     sliderFill.Size = UDim2.new(percent, 0, 1, 0)
-    sliderKnob.Position = UDim2.new(percent, -16, 0.5, -16)
+    sliderKnob.Position = UDim2.new(percent, -14, 0.5, -14)
     speedLabel.Text = "⚡ Скорость: " .. math.floor(SpeedValue)
 end
 
 local function handleSliderMove(input)
-    if not sliderBg or not sliderBg.AbsoluteSize then return end
     local percent = math.clamp((input.Position.X - sliderBg.AbsolutePosition.X) / sliderBg.AbsoluteSize.X, 0, 1)
     SpeedValue = math.floor(percent * MaxSpeed + 0.5)
+    if SpeedValue < 0 then SpeedValue = 0 end
+    if SpeedValue > MaxSpeed then SpeedValue = MaxSpeed end
     updateSlider()
-    if SpeedEnabled then 
-        applySpeed() 
-    end
+    if SpeedEnabled then applySpeed() end
 end
 
--- Поддержка мыши и тача (исправленная версия)
 sliderBg.InputBegan:Connect(function(input)
     if input.UserInputType == Enum.UserInputType.MouseButton1 or input.UserInputType == Enum.UserInputType.Touch then
         handleSliderMove(input)
+        local moving = true
 
         local moveConn = UserInputService.InputChanged:Connect(function(moveInput)
-            if moveInput.UserInputType == Enum.UserInputType.MouseMovement or 
-               moveInput.UserInputType == Enum.UserInputType.Touch then
+            if (moveInput.UserInputType == Enum.UserInputType.MouseMovement or moveInput.UserInputType == Enum.UserInputType.Touch) and moving then
                 handleSliderMove(moveInput)
             end
         end)
 
         local endConn = UserInputService.InputEnded:Connect(function(endInput)
-            if endInput.UserInputType == Enum.UserInputType.MouseButton1 or 
-               endInput.UserInputType == Enum.UserInputType.Touch then
+            if endInput.UserInputType == Enum.UserInputType.MouseButton1 or endInput.UserInputType == Enum.UserInputType.Touch then
+                moving = false
                 moveConn:Disconnect()
                 endConn:Disconnect()
             end
@@ -459,11 +477,11 @@ sliderBg.InputBegan:Connect(function(input)
     end
 end)
 
-yOffset += 60
+yOffset += 55
 
 -- ========== ТОГГЛЫ ==========
 addToggle("SPEED + AUTO SPRINT", SpeedEnabled, function(s) SpeedEnabled = s applySpeed() end)
-addToggle("STAMINA (Супер жёсткая)", StaminaEnabled, function(s) StaminaEnabled = s applyInfiniteStamina() end)
+addToggle("STAMINA (Скрытная)", StaminaEnabled, function(s) StaminaEnabled = s applyInfiniteStamina() end)
 addToggle("NOCLIP", NoClipEnabled, function(s) NoClipEnabled = s applyNoClip() end)
 addToggle("ESP Генераторы", ESP_Generators, function(s) ESP_Generators = s refreshESP() end)
 addToggle("ESP Убийца", ESP_Killer, function(s) ESP_Killer = s refreshESP() end)
@@ -495,4 +513,4 @@ task.spawn(function()
     end
 end)
 
-print("✅ BITE BY NIGHT v13.2 загружен | Ползунок исправлен для телефона | Стамина супер жёсткая")
+print("✅ BITE BY NIGHT v13.3 загружен | ESP на Mimic исправлен | Стамина стала скрытной")
