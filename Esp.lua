@@ -1,5 +1,6 @@
 -- ============================================
 -- BITE BY NIGHT v12.8 — Infinite Sprint + ESP Генераторы
+-- Улучшенный Anti-Cheat Bypass + Работа в Лобби
 -- ============================================
 
 local Players = game:GetService("Players")
@@ -7,6 +8,7 @@ local RunService = game:GetService("RunService")
 local UserInputService = game:GetService("UserInputService")
 local CoreGui = game:GetService("CoreGui")
 local Workspace = game:GetService("Workspace")
+local ReplicatedStorage = game:GetService("ReplicatedStorage")
 
 local LocalPlayer = Players.LocalPlayer
 
@@ -26,20 +28,41 @@ local autoRepairConnection = nil
 local firingConnection = nil
 local lastFireTime = 0
 
--- ========== Античит ==========
-local function killAntiCheatScripts(container)
-    if not container then return end
-    for _, obj in ipairs(container:GetDescendants()) do
-        if obj:IsA("Script") or obj:IsA("LocalScript") then
-            local n = (obj.Name or ""):lower()
-            if n:find("anti") or n:find("cheat") or n:find("bite") or n:find("speed") or n:find("stamina") then
-                pcall(function() obj:Destroy() end)
+-- ========== УЛУЧШЕННЫЙ ANTI-CHEAT BYPASS ==========
+local function killAntiCheatScripts()
+    local containers = {LocalPlayer.PlayerScripts, LocalPlayer.Character, workspace, ReplicatedStorage, CoreGui, game:GetService("StarterPlayer").StarterPlayerScripts}
+    
+    for _, container in ipairs(containers) do
+        if container then
+            for _, obj in ipairs(container:GetDescendants()) do
+                if obj:IsA("Script") or obj:IsA("LocalScript") or obj:IsA("ModuleScript") then
+                    local name = (obj.Name or ""):lower()
+                    if name:find("anti") or name:find("cheat") or name:find("bite") or name:find("detect") or 
+                       name:find("ac_") or name:find("ban") or name:find("kick") or name:find("stamina") or name:find("speed") then
+                        pcall(function() 
+                            obj:Destroy() 
+                            if obj.Parent then obj.Parent = nil end
+                        end)
+                    end
+                end
             end
         end
     end
+    
+    -- Дополнительно отключаем возможные Remote Events античита
+    pcall(function()
+        for _, v in ipairs(ReplicatedStorage:GetDescendants()) do
+            if v:IsA("RemoteEvent") or v:IsA("RemoteFunction") then
+                local n = v.Name:lower()
+                if n:find("anti") or n:find("cheat") or n:find("detect") then
+                    v:Destroy()
+                end
+            end
+        end
+    end)
 end
 
--- ========== INFINITE SPRINT (взят и улучшен из стиля Celeron) ==========
+-- ========== INFINITE SPRINT (Celeron Style) ==========
 local function applyInfiniteStamina()
     if staminaConnection then staminaConnection:Disconnect() end
     if not InfiniteStaminaEnabled then return end
@@ -51,14 +74,13 @@ local function applyInfiniteStamina()
             local hum = char:FindFirstChildOfClass("Humanoid")
             if not hum then return end
 
-            -- Основные атрибуты
-            for _, name in ipairs({"Stamina", "SprintStamina", "Energy", "Fatigue", "StaminaValue", "SprintEnergy"}) do
+            -- Агрессивный сброс всех возможных значений стамины
+            for _, name in ipairs({"Stamina", "SprintStamina", "Energy", "Fatigue", "StaminaValue", "SprintEnergy", "RunStamina"}) do
                 if hum:GetAttribute(name) ~= nil then
                     hum:SetAttribute(name, 100)
                 end
             end
 
-            -- Все NumberValue / IntValue со словами stamina/energy
             for _, v in ipairs(char:GetDescendants()) do
                 if (v:IsA("NumberValue") or v:IsA("IntValue") or v:IsA("FloatValue")) and 
                    (v.Name:lower():find("stamina") or v.Name:lower():find("energy") or v.Name:lower():find("fatigue")) then
@@ -66,10 +88,7 @@ local function applyInfiniteStamina()
                 end
             end
 
-            -- Дополнительно сбрасываем состояние бега
-            if hum:GetAttribute("IsSprinting") ~= nil then
-                hum:SetAttribute("IsSprinting", true)
-            end
+            if hum:GetAttribute("IsSprinting") ~= nil then hum:SetAttribute("IsSprinting", true) end
         end)
     end)
 end
@@ -83,23 +102,12 @@ local function applyNoClip()
                 local char = LocalPlayer.Character
                 if char then
                     for _, part in ipairs(char:GetDescendants()) do
-                        if part:IsA("BasePart") and part.CanCollide then
+                        if part:IsA("BasePart") then
                             part.CanCollide = false
                         end
                     end
                 end
             end)
-        end)
-    else
-        pcall(function()
-            local char = LocalPlayer.Character
-            if char then
-                for _, part in ipairs(char:GetDescendants()) do
-                    if part:IsA("BasePart") then
-                        part.CanCollide = true
-                    end
-                end
-            end
         end)
     end
 end
@@ -114,33 +122,26 @@ local function applyAutoRepair()
 
     autoRepairConnection = RunService.Heartbeat:Connect(function()
         pcall(function()
-            local genGui = LocalPlayer.PlayerGui:FindFirstChild("Gen")
+            local genGui = LocalPlayer:FindFirstChild("PlayerGui") and LocalPlayer.PlayerGui:FindFirstChild("Gen")
             if genGui and genGui:FindFirstChild("GeneratorMain") then
                 if not firingConnection then
                     firingConnection = RunService.Heartbeat:Connect(function()
                         if not AutoRepairEnabled then return end
-                        local currentTime = tick()
-                        if currentTime - lastFireTime >= 0.1 then  -- небольшая задержка для стабильности
+                        if tick() - lastFireTime >= 0.08 then
                             pcall(function()
-                                local args = {{ Wires = true, Switches = true, Lever = true }}
-                                LocalPlayer.PlayerGui.Gen.GeneratorMain.Event:FireServer(unpack(args))
+                                local args = {{Wires = true, Switches = true, Lever = true}}
+                                genGui.GeneratorMain.Event:FireServer(unpack(args))
                             end)
-                            lastFireTime = currentTime
+                            lastFireTime = tick()
                         end
                     end)
                 end
-            else
-                if firingConnection then
-                    firingConnection:Disconnect()
-                    firingConnection = nil
-                end
-                lastFireTime = 0
             end
         end)
     end)
 end
 
--- ========== ESP (улучшенный) ==========
+-- ========== ESP ==========
 local function createESP(obj, color, text)
     if espObjects[obj] then return end
     local root = obj:FindFirstChild("HumanoidRootPart") or obj:FindFirstChildWhichIsA("BasePart")
@@ -192,18 +193,10 @@ end
 local function isKiller(player)
     if not player or not player.Character then return false end
     local char = player.Character
-    local nameLower = char.Name:lower()
-    if nameLower:find("springtrap") or nameLower:find("mimic") or nameLower:find("ennard") or 
-       nameLower:find("rotten") or nameLower:find("doppel") or nameLower:find("animatronic") or 
-       nameLower:find("killer") or nameLower:find("project") then
+    local nameLower = (char.Name or ""):lower()
+    if nameLower:find("springtrap") or nameLower:find("mimic") or nameLower:find("ennard") or nameLower:find("rotten") or 
+       nameLower:find("doppel") or nameLower:find("animatronic") or nameLower:find("killer") then
         return true
-    end
-
-    for _, part in ipairs(char:GetChildren()) do
-        local n = part.Name:lower()
-        if n:find("springtrap") or n:find("mimic") or n:find("ennard") or n:find("animatronic") or n:find("killer") then
-            return true
-        end
     end
     return false
 end
@@ -218,17 +211,14 @@ local function updateESP()
             if not obj.Parent then continue end
             local n = obj.Name:lower()
             if (obj:IsA("Model") or obj:IsA("Folder") or obj:IsA("Part")) and 
-               (n:find("generator") or n:find("gen") or n:find("battery") or n:find("power")) and 
-               not espObjects[obj] then
+               (n:find("generator") or n:find("gen") or n:find("battery") or n:find("power")) and not espObjects[obj] then
                 createESP(obj, Color3.fromRGB(0, 255, 100), "⚡ GENERATOR")
             end
         end
     end
 
     for _, player in ipairs(Players:GetPlayers()) do
-        if player == LocalPlayer then continue end
-        if not player.Character then continue end
-
+        if player == LocalPlayer or not player.Character then continue end
         local char = player.Character
         if ESP_Killer and isKiller(player) then
             createESP(char, Color3.fromRGB(255, 50, 50), "🔪 KILLER")
@@ -245,14 +235,14 @@ local function refreshESP()
     updateESP()
 end
 
--- ========== GUI ==========
+-- ========== GUI (без изменений по высоте) ==========
 local gui = Instance.new("ScreenGui")
 gui.Name = "BiteByNight_Hack"
-gui.Parent = CoreGui
 gui.ResetOnSpawn = false
+gui.Parent = CoreGui
 
 local mainFrame = Instance.new("Frame")
-mainFrame.Size = UDim2.new(0, 270, 0, 460)  -- уменьшил высоту, т.к. убрали speed
+mainFrame.Size = UDim2.new(0, 270, 0, 460)
 mainFrame.Position = UDim2.new(1, -290, 0, 40)
 mainFrame.BackgroundColor3 = Color3.fromRGB(18, 18, 24)
 mainFrame.BackgroundTransparency = 0.05
@@ -262,12 +252,14 @@ Instance.new("UICorner", mainFrame).CornerRadius = UDim.new(0, 14)
 Instance.new("UIStroke", mainFrame).Color = Color3.fromRGB(0, 255, 160)
 Instance.new("UIStroke", mainFrame).Thickness = 2
 
+-- (Остальная часть GUI остаётся такой же, как в предыдущей версии — минимизация, drag, тогглы и т.д.)
+
 local minimized = false
 local fullSize = mainFrame.Size
 local collapsibleElements = {}
 
 local function addCollapsible(element)
-    if element then table.insert(collapsibleElements, element) end
+    table.insert(collapsibleElements, element)
 end
 
 local function updateMinimizedState()
@@ -309,7 +301,7 @@ minButton.MouseButton1Click:Connect(function()
     updateMinimizedState()
 end)
 
--- Drag
+-- Drag (оставлен без изменений)
 local dragging = false
 local dragStart, startPos
 mainFrame.InputBegan:Connect(function(input)
@@ -372,7 +364,7 @@ local function addToggle(text, defaultEnabled, callback)
     return btn
 end
 
--- ========== Тогглы ==========
+-- Тогглы
 addLabel("Infinite Sprint (Celeron Style)", Color3.fromRGB(0, 255, 120))
 addToggle("INFINITE SPRINT", InfiniteStaminaEnabled, function(s) InfiniteStaminaEnabled = s applyInfiniteStamina() end)
 addToggle("NOCLIP", NoClipEnabled, function(s) NoClipEnabled = s applyNoClip() end)
@@ -381,29 +373,33 @@ addToggle("ESP Убийца", ESP_Killer, function(s) ESP_Killer = s refreshESP(
 addToggle("ESP Выжившие", ESP_Survivors, function(s) ESP_Survivors = s refreshESP() end)
 addToggle("AUTO REPAIR", AutoRepairEnabled, function(s) AutoRepairEnabled = s applyAutoRepair() end)
 
--- ========== Запуск ==========
+-- ========== ЗАПУСК (работает в лобби + при респавне) ==========
+killAntiCheatScripts()  -- сразу при загрузке
+
 LocalPlayer.CharacterAdded:Connect(function()
+    task.wait(0.5)
+    killAntiCheatScripts()
+    applyInfiniteStamina()
+    applyNoClip()
+    applyAutoRepair()
+    refreshESP()
+end)
+
+-- Запуск в лобби и при первом появлении
+task.spawn(function()
     task.wait(0.8)
-    pcall(killAntiCheatScripts, LocalPlayer.Character)
+    killAntiCheatScripts()
     applyInfiniteStamina()
     applyNoClip()
     applyAutoRepair()
     refreshESP()
 end)
 
+-- Постоянное обновление ESP
 task.spawn(function()
-    task.wait(1)
-    pcall(killAntiCheatScripts, LocalPlayer.PlayerScripts)
-    applyInfiniteStamina()
-    applyNoClip()
-    applyAutoRepair()
-    refreshESP()
-end)
-
-task.spawn(function()
-    while task.wait(1) do
+    while task.wait(0.8) do
         updateESP()
     end
 end)
 
-print("✅ BITE BY NIGHT v12.8 загружен | Infinite Sprint (Celeron Style) + ESP Генераторы")
+print("✅ BITE BY NIGHT v12.8 загружен | Улучшенный Anti-Cheat Bypass + Работа в Лобби")
