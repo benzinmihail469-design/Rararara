@@ -1,5 +1,5 @@
 -- ============================================
--- BITE BY NIGHT v13.3 — ESP Mimic Fix + Скрытная стамина
+-- BITE BY NIGHT v13.4 — Улучшенный мобильный ползунок + ESP Mimic Fix + Скрытная стамина
 -- ============================================
 
 local Players = game:GetService("Players")
@@ -42,26 +42,22 @@ local function applyInfiniteStamina()
             local hum = char:FindFirstChildOfClass("Humanoid")
             if not hum then return end
 
-            -- Скрытность: проверяем не каждый кадр
             if math.random(1, 3) ~= 1 then return end
 
-            -- Основные атрибуты
             for _, name in ipairs({
                 "Stamina", "SprintStamina", "Energy", "StaminaValue", 
                 "RunStamina", "SprintEnergy", "StaminaRegen", "Fatigue",
                 "CurrentStamina", "MaxStamina", "Exhaustion"
             }) do
                 if hum:GetAttribute(name) ~= nil then
-                    local randomValue = 97 + math.random(0, 3)  -- 97..100
+                    local randomValue = 97 + math.random(0, 3)
                     hum:SetAttribute(name, randomValue)
                 end
             end
 
-            -- Сброс усталости
             if hum:GetAttribute("Fatigue") then hum:SetAttribute("Fatigue", 0) end
             if hum:GetAttribute("Exhaustion") then hum:SetAttribute("Exhaustion", 0) end
 
-            -- Значения внутри персонажа (ещё реже)
             for _, v in ipairs(char:GetDescendants()) do
                 if (v:IsA("NumberValue") or v:IsA("IntValue")) and math.random(1, 5) == 1 then
                     local n = v.Name:lower()
@@ -225,7 +221,6 @@ local function isKiller(player)
     local char = player.Character
     local nameLower = (char.Name or ""):lower()
 
-    -- Расширенный список для всех киллеров, включая Mimic (The Project / M2)
     local keywords = {
         "springtrap", "mimic", "ennard", "rotten", "doppel", 
         "animatronic", "killer", "project", "m2", "theproject", 
@@ -236,7 +231,6 @@ local function isKiller(player)
         if nameLower:find(kw) then return true end
     end
 
-    -- Проверка по частям модели
     for _, part in ipairs(char:GetChildren()) do
         local n = part.Name:lower()
         for _, kw in ipairs(keywords) do
@@ -286,7 +280,7 @@ local function refreshESP()
     updateESP()
 end
 
--- ========== GUI (полностью из твоей версии v13.0) ==========
+-- ========== GUI ==========
 local gui = Instance.new("ScreenGui")
 gui.Name = "BiteByNight_Hack"
 gui.Parent = CoreGui
@@ -327,7 +321,7 @@ local title = Instance.new("TextLabel")
 title.Size = UDim2.new(1, -70, 0, 40)
 title.Position = UDim2.new(0, 15, 0, 0)
 title.BackgroundTransparency = 1
-title.Text = "🦇 BITE BY NIGHT v13.3"
+title.Text = "🦇 BITE BY NIGHT v13.4"
 title.TextColor3 = Color3.fromRGB(0, 255, 160)
 title.TextSize = 18
 title.Font = Enum.Font.GothamBold
@@ -350,7 +344,7 @@ minButton.MouseButton1Click:Connect(function()
     updateMinimizedState()
 end)
 
--- Drag (ПК + Телефон)
+-- Drag главного окна
 local dragging = false
 local dragStart, startPos
 mainFrame.InputBegan:Connect(function(input)
@@ -417,7 +411,7 @@ end
 
 local speedLabel = addLabel("⚡ Скорость: " .. SpeedValue, Color3.fromRGB(0, 255, 120))
 
--- ========== УЛУЧШЕННЫЙ ПОЛЗУНОК ==========
+-- ========== УЛУЧШЕННЫЙ ПОЛЗУНОК (на основе твоего примера) ==========
 local sliderBg = Instance.new("Frame")
 sliderBg.Size = UDim2.new(0.92, 0, 0, 18)
 sliderBg.Position = UDim2.new(0.04, 0, 0, yOffset)
@@ -432,7 +426,7 @@ sliderFill.BackgroundColor3 = Color3.fromRGB(0, 255, 130)
 sliderFill.Parent = sliderBg
 Instance.new("UICorner", sliderFill).CornerRadius = UDim.new(1, 0)
 
-local sliderKnob = Instance.new("TextButton")
+local sliderKnob = Instance.new("TextButton")  -- handle
 sliderKnob.Size = UDim2.new(0, 28, 0, 28)
 sliderKnob.Position = UDim2.new((SpeedValue / MaxSpeed), -14, 0.5, -14)
 sliderKnob.BackgroundColor3 = Color3.fromRGB(0, 255, 160)
@@ -441,13 +435,14 @@ sliderKnob.Parent = sliderBg
 Instance.new("UICorner", sliderKnob).CornerRadius = UDim.new(1, 0)
 
 local function updateSlider()
-    local percent = SpeedValue / MaxSpeed
+    local percent = math.clamp(SpeedValue / MaxSpeed, 0, 1)
     sliderFill.Size = UDim2.new(percent, 0, 1, 0)
     sliderKnob.Position = UDim2.new(percent, -14, 0.5, -14)
     speedLabel.Text = "⚡ Скорость: " .. math.floor(SpeedValue)
 end
 
 local function handleSliderMove(input)
+    if not sliderBg or not sliderBg.AbsoluteSize then return end
     local percent = math.clamp((input.Position.X - sliderBg.AbsolutePosition.X) / sliderBg.AbsoluteSize.X, 0, 1)
     SpeedValue = math.floor(percent * MaxSpeed + 0.5)
     if SpeedValue < 0 then SpeedValue = 0 end
@@ -456,24 +451,24 @@ local function handleSliderMove(input)
     if SpeedEnabled then applySpeed() end
 end
 
-sliderBg.InputBegan:Connect(function(input)
-    if input.UserInputType == Enum.UserInputType.MouseButton1 or input.UserInputType == Enum.UserInputType.Touch then
+-- Улучшенная логика перетаскивания (на основе твоего примера)
+local sliderDragging = false
+
+sliderKnob.InputBegan:Connect(function(input)  -- или sliderBg, если хочешь цеплять весь бар
+    if input.UserInputType == Enum.UserInputType.Touch or input.UserInputType == Enum.UserInputType.MouseButton1 then
+        sliderDragging = true
+    end
+end)
+
+UserInputService.InputEnded:Connect(function(input)
+    if input.UserInputType == Enum.UserInputType.Touch or input.UserInputType == Enum.UserInputType.MouseButton1 then
+        sliderDragging = false
+    end
+end)
+
+UserInputService.InputChanged:Connect(function(input)
+    if sliderDragging and (input.UserInputType == Enum.UserInputType.Touch or input.UserInputType == Enum.UserInputType.MouseMovement) then
         handleSliderMove(input)
-        local moving = true
-
-        local moveConn = UserInputService.InputChanged:Connect(function(moveInput)
-            if (moveInput.UserInputType == Enum.UserInputType.MouseMovement or moveInput.UserInputType == Enum.UserInputType.Touch) and moving then
-                handleSliderMove(moveInput)
-            end
-        end)
-
-        local endConn = UserInputService.InputEnded:Connect(function(endInput)
-            if endInput.UserInputType == Enum.UserInputType.MouseButton1 or endInput.UserInputType == Enum.UserInputType.Touch then
-                moving = false
-                moveConn:Disconnect()
-                endConn:Disconnect()
-            end
-        end)
     end
 end)
 
@@ -513,4 +508,4 @@ task.spawn(function()
     end
 end)
 
-print("✅ BITE BY NIGHT v13.3 загружен | ESP на Mimic исправлен | Стамина стала скрытной")
+print("✅ BITE BY NIGHT v13.4 загружен | Ползунок сильно улучшен для телефона | ESP Mimic + скрытная стамина")
