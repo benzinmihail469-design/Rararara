@@ -1,5 +1,5 @@
 -- ============================================
--- BITE BY NIGHT v12.8 — ESP Генераторы + Speed = 24
+-- BITE BY NIGHT v12.8 — Infinite Sprint + ESP Генераторы
 -- ============================================
 
 local Players = game:GetService("Players")
@@ -11,10 +11,7 @@ local Workspace = game:GetService("Workspace")
 local LocalPlayer = Players.LocalPlayer
 
 -- Настройки
-local SpeedEnabled = true
-local SpeedValue = 24
-local MaxSpeed = 55
-local StaminaEnabled = true
+local InfiniteStaminaEnabled = true
 local NoClipEnabled = false
 local AutoRepairEnabled = false
 
@@ -23,9 +20,8 @@ local ESP_Killer = true
 local ESP_Survivors = true
 
 local espObjects = {}
-local speedConnection = nil
-local noclipConnection = nil
 local staminaConnection = nil
+local noclipConnection = nil
 local autoRepairConnection = nil
 local firingConnection = nil
 local lastFireTime = 0
@@ -43,54 +39,36 @@ local function killAntiCheatScripts(container)
     end
 end
 
--- ========== WalkSpeed ==========
-local function applySpeed()
-    if speedConnection then speedConnection:Disconnect() speedConnection = nil end
-    
-    if not SpeedEnabled then
-        pcall(function()
-            local hum = LocalPlayer.Character and LocalPlayer.Character:FindFirstChildOfClass("Humanoid")
-            if hum then hum.WalkSpeed = 16 end
-        end)
-        return
-    end
-
-    speedConnection = RunService.Heartbeat:Connect(function(dt)
-        pcall(function()
-            local char = LocalPlayer.Character
-            if not char then return end
-            local hum = char:FindFirstChildOfClass("Humanoid")
-            local root = char:FindFirstChild("HumanoidRootPart")
-            if not hum or not root then return end
-
-            hum.WalkSpeed = SpeedValue
-
-            if hum.MoveDirection.Magnitude > 0 then
-                root.CFrame += hum.MoveDirection * SpeedValue * dt * 0.95
-            end
-        end)
-    end)
-end
-
--- ========== Stamina ==========
+-- ========== INFINITE SPRINT (взят и улучшен из стиля Celeron) ==========
 local function applyInfiniteStamina()
     if staminaConnection then staminaConnection:Disconnect() end
-    if not StaminaEnabled then return end
+    if not InfiniteStaminaEnabled then return end
+
     staminaConnection = RunService.Heartbeat:Connect(function()
         pcall(function()
             local char = LocalPlayer.Character
             if not char then return end
             local hum = char:FindFirstChildOfClass("Humanoid")
-            if hum then
-                for _, name in ipairs({"Stamina", "SprintStamina", "Energy", "Fatigue", "StaminaValue"}) do
-                    if hum:GetAttribute(name) ~= nil then hum:SetAttribute(name, 100) end
+            if not hum then return end
+
+            -- Основные атрибуты
+            for _, name in ipairs({"Stamina", "SprintStamina", "Energy", "Fatigue", "StaminaValue", "SprintEnergy"}) do
+                if hum:GetAttribute(name) ~= nil then
+                    hum:SetAttribute(name, 100)
                 end
             end
+
+            -- Все NumberValue / IntValue со словами stamina/energy
             for _, v in ipairs(char:GetDescendants()) do
-                if (v:IsA("NumberValue") or v:IsA("IntValue")) and 
-                   (v.Name:lower():find("stamina") or v.Name:lower():find("energy")) then
+                if (v:IsA("NumberValue") or v:IsA("IntValue") or v:IsA("FloatValue")) and 
+                   (v.Name:lower():find("stamina") or v.Name:lower():find("energy") or v.Name:lower():find("fatigue")) then
                     v.Value = 100
                 end
+            end
+
+            -- Дополнительно сбрасываем состояние бега
+            if hum:GetAttribute("IsSprinting") ~= nil then
+                hum:SetAttribute("IsSprinting", true)
             end
         end)
     end)
@@ -105,7 +83,9 @@ local function applyNoClip()
                 local char = LocalPlayer.Character
                 if char then
                     for _, part in ipairs(char:GetDescendants()) do
-                        if part:IsA("BasePart") then part.CanCollide = false end
+                        if part:IsA("BasePart") and part.CanCollide then
+                            part.CanCollide = false
+                        end
                     end
                 end
             end)
@@ -115,7 +95,9 @@ local function applyNoClip()
             local char = LocalPlayer.Character
             if char then
                 for _, part in ipairs(char:GetDescendants()) do
-                    if part:IsA("BasePart") then part.CanCollide = true end
+                    if part:IsA("BasePart") then
+                        part.CanCollide = true
+                    end
                 end
             end
         end)
@@ -138,7 +120,7 @@ local function applyAutoRepair()
                     firingConnection = RunService.Heartbeat:Connect(function()
                         if not AutoRepairEnabled then return end
                         local currentTime = tick()
-                        if currentTime - lastFireTime >= 0 then
+                        if currentTime - lastFireTime >= 0.1 then  -- небольшая задержка для стабильности
                             pcall(function()
                                 local args = {{ Wires = true, Switches = true, Lever = true }}
                                 LocalPlayer.PlayerGui.Gen.GeneratorMain.Event:FireServer(unpack(args))
@@ -158,10 +140,9 @@ local function applyAutoRepair()
     end)
 end
 
--- ========== ESP (улучшенный из Celeron's Loader) ==========
+-- ========== ESP (улучшенный) ==========
 local function createESP(obj, color, text)
     if espObjects[obj] then return end
-
     local root = obj:FindFirstChild("HumanoidRootPart") or obj:FindFirstChildWhichIsA("BasePart")
     if not root then return end
 
@@ -228,12 +209,10 @@ local function isKiller(player)
 end
 
 local function updateESP()
-    -- Очистка удалённых объектов
     for obj, _ in pairs(espObjects) do
         if not obj or not obj.Parent then removeESP(obj) end
     end
 
-    -- ESP Генераторов (из Celeron's Loader)
     if ESP_Generators then
         for _, obj in ipairs(Workspace:GetDescendants()) do
             if not obj.Parent then continue end
@@ -241,13 +220,11 @@ local function updateESP()
             if (obj:IsA("Model") or obj:IsA("Folder") or obj:IsA("Part")) and 
                (n:find("generator") or n:find("gen") or n:find("battery") or n:find("power")) and 
                not espObjects[obj] then
-                
                 createESP(obj, Color3.fromRGB(0, 255, 100), "⚡ GENERATOR")
             end
         end
     end
 
-    -- ESP игроков
     for _, player in ipairs(Players:GetPlayers()) do
         if player == LocalPlayer then continue end
         if not player.Character then continue end
@@ -268,14 +245,14 @@ local function refreshESP()
     updateESP()
 end
 
--- ========== GUI (твой оригинальный) ==========
+-- ========== GUI ==========
 local gui = Instance.new("ScreenGui")
 gui.Name = "BiteByNight_Hack"
 gui.Parent = CoreGui
 gui.ResetOnSpawn = false
 
 local mainFrame = Instance.new("Frame")
-mainFrame.Size = UDim2.new(0, 270, 0, 520)
+mainFrame.Size = UDim2.new(0, 270, 0, 460)  -- уменьшил высоту, т.к. убрали speed
 mainFrame.Position = UDim2.new(1, -290, 0, 40)
 mainFrame.BackgroundColor3 = Color3.fromRGB(18, 18, 24)
 mainFrame.BackgroundTransparency = 0.05
@@ -395,58 +372,9 @@ local function addToggle(text, defaultEnabled, callback)
     return btn
 end
 
-local speedLabel = addLabel("⚡ Скорость: " .. SpeedValue, Color3.fromRGB(0, 255, 120))
-
--- Slider скорости
-local sliderBg = Instance.new("Frame")
-sliderBg.Size = UDim2.new(0.92, 0, 0, 12)
-sliderBg.Position = UDim2.new(0.04, 0, 0, yOffset)
-sliderBg.BackgroundColor3 = Color3.fromRGB(40, 40, 48)
-sliderBg.Parent = mainFrame
-Instance.new("UICorner", sliderBg).CornerRadius = UDim.new(1, 0)
-addCollapsible(sliderBg)
-
-local sliderFill = Instance.new("Frame")
-sliderFill.Size = UDim2.new((SpeedValue-16)/(MaxSpeed-16), 1, 1, 0)
-sliderFill.BackgroundColor3 = Color3.fromRGB(0, 255, 130)
-sliderFill.Parent = sliderBg
-Instance.new("UICorner", sliderFill).CornerRadius = UDim.new(1, 0)
-
-local sliderKnob = Instance.new("TextButton")
-sliderKnob.Size = UDim2.new(0, 20, 0, 20)
-sliderKnob.Position = UDim2.new((SpeedValue-16)/(MaxSpeed-16), -5, 0.5, -10)
-sliderKnob.BackgroundColor3 = Color3.fromRGB(0, 255, 160)
-sliderKnob.Text = ""
-sliderKnob.Parent = sliderBg
-Instance.new("UICorner", sliderKnob).CornerRadius = UDim.new(1, 0)
-
-local function updateSlider()
-    local percent = (SpeedValue - 16) / (MaxSpeed - 16)
-    sliderFill.Size = UDim2.new(percent, 0, 1, 0)
-    sliderKnob.Position = UDim2.new(percent, -5, 0.5, -10)
-    if speedLabel then speedLabel.Text = "⚡ Скорость: " .. math.floor(SpeedValue) end
-end
-
-sliderBg.InputBegan:Connect(function(input)
-    if input.UserInputType == Enum.UserInputType.MouseButton1 then
-        local moving = true
-        local moveConn = UserInputService.InputChanged:Connect(function(move)
-            if move.UserInputType == Enum.UserInputType.MouseMovement and moving then
-                local percent = math.clamp((move.Position.X - sliderBg.AbsolutePosition.X) / sliderBg.AbsoluteSize.X, 0, 1)
-                SpeedValue = 16 + math.floor(percent * (MaxSpeed - 16))
-                updateSlider()
-                if SpeedEnabled then applySpeed() end
-            end
-        end)
-        UserInputService.InputEnded:Connect(function() moving = false; moveConn:Disconnect() end)
-    end
-end)
-
-yOffset += 48
-
 -- ========== Тогглы ==========
-addToggle("SPEED", SpeedEnabled, function(s) SpeedEnabled = s applySpeed() end)
-addToggle("STAMINA", StaminaEnabled, function(s) StaminaEnabled = s applyInfiniteStamina() end)
+addLabel("Infinite Sprint (Celeron Style)", Color3.fromRGB(0, 255, 120))
+addToggle("INFINITE SPRINT", InfiniteStaminaEnabled, function(s) InfiniteStaminaEnabled = s applyInfiniteStamina() end)
 addToggle("NOCLIP", NoClipEnabled, function(s) NoClipEnabled = s applyNoClip() end)
 addToggle("ESP Генераторы", ESP_Generators, function(s) ESP_Generators = s refreshESP() end)
 addToggle("ESP Убийца", ESP_Killer, function(s) ESP_Killer = s refreshESP() end)
@@ -457,7 +385,6 @@ addToggle("AUTO REPAIR", AutoRepairEnabled, function(s) AutoRepairEnabled = s ap
 LocalPlayer.CharacterAdded:Connect(function()
     task.wait(0.8)
     pcall(killAntiCheatScripts, LocalPlayer.Character)
-    applySpeed()
     applyInfiniteStamina()
     applyNoClip()
     applyAutoRepair()
@@ -467,18 +394,16 @@ end)
 task.spawn(function()
     task.wait(1)
     pcall(killAntiCheatScripts, LocalPlayer.PlayerScripts)
-    applySpeed()
     applyInfiniteStamina()
     applyNoClip()
     applyAutoRepair()
     refreshESP()
 end)
 
--- Обновление ESP каждую секунду
 task.spawn(function()
     while task.wait(1) do
         updateESP()
     end
 end)
 
-print("✅ BITE BY NIGHT v12.8 загружен | Скорость 24 + улучшенный ESP Генераторов из Celeron")
+print("✅ BITE BY NIGHT v12.8 загружен | Infinite Sprint (Celeron Style) + ESP Генераторы")
