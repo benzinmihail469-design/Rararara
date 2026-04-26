@@ -1,5 +1,5 @@
 -- ============================================
--- BITE BY NIGHT v12.9 — Ringta Style Stamina + Mobile-Friendly Speed Slider
+-- BITE BY NIGHT v12.9 — Ringta Stamina + Mobile Slider + Fixed ESP
 -- ============================================
 
 local Players = game:GetService("Players")
@@ -12,8 +12,8 @@ local LocalPlayer = Players.LocalPlayer
 
 -- Настройки
 local SpeedEnabled = true
-local SpeedValue = 24
-local MaxSpeed = 50          -- Максимум теперь 50
+local SpeedValue = 12          -- Стартовая скорость теперь 12
+local MaxSpeed = 50            -- Ползунок от 0 до 50
 local StaminaEnabled = true
 local NoClipEnabled = false
 local AutoRepairEnabled = false
@@ -30,7 +30,7 @@ local autoRepairConnection = nil
 local firingConnection = nil
 local lastFireTime = 0
 
--- ========== RINGTA STYLE INFINITE STAMINA (мягкая версия) ==========
+-- ========== RINGTA STYLE INFINITE STAMINA (мягкая) ==========
 local function applyInfiniteStamina()
     if staminaConnection then staminaConnection:Disconnect() end
     if not StaminaEnabled then return end
@@ -95,7 +95,7 @@ local function applySpeed()
     end)
 end
 
--- ========== Античит, NoClip, Auto Repair (без изменений) ==========
+-- ========== Античит ==========
 local function killAntiCheatScripts(container)
     if not container then return end
     for _, obj in ipairs(container:GetDescendants()) do
@@ -108,6 +108,7 @@ local function killAntiCheatScripts(container)
     end
 end
 
+-- ========== NoClip ==========
 local function applyNoClip()
     if noclipConnection then noclipConnection:Disconnect() end
     if NoClipEnabled then
@@ -133,6 +134,7 @@ local function applyNoClip()
     end
 end
 
+-- ========== AUTO REPAIR ==========
 local function applyAutoRepair()
     if autoRepairConnection then autoRepairConnection:Disconnect() end
     if firingConnection then firingConnection:Disconnect() end
@@ -168,7 +170,7 @@ local function applyAutoRepair()
     end)
 end
 
--- ========== ESP (без изменений) ==========
+-- ========== ESP ГЕНЕРАТОРОВ (возвращена стабильная версия) ==========
 local function createESP(obj, color, text)
     if espObjects[obj] then return end
     local root = obj:FindFirstChild("HumanoidRootPart") or obj:FindFirstChildWhichIsA("BasePart")
@@ -179,7 +181,6 @@ local function createESP(obj, color, text)
     bg.Size = UDim2.new(0, 200, 0, 50)
     bg.StudsOffset = Vector3.new(0, 3.5, 0)
     bg.AlwaysOnTop = true
-    bg.LightInfluence = 0
     bg.Parent = CoreGui
 
     local lbl = Instance.new("TextLabel")
@@ -243,15 +244,13 @@ local function updateESP()
 
     if ESP_Generators then
         for _, obj in ipairs(Workspace:GetDescendants()) do
-            if not obj.Parent then continue end
-            local lowerName = obj.Name:lower()
-            local isGen = lowerName:find("generator") or lowerName:find("%f[%a]gen%f[%A]") or 
-                         lowerName:find("powerbox") or lowerName:find("fusebox") or lowerName:find("battery")
-
-            if (obj:IsA("Model") or obj:IsA("Folder")) and isGen and not espObjects[obj] then
-                local hasParts = obj:FindFirstChild("Wires") or obj:FindFirstChild("Lever") or obj:FindFirstChild("Switch")
-                if hasParts and not lowerName:find("door") and not lowerName:find("gate") and 
-                   not lowerName:find("light") and not lowerName:find("lamp") then
+            local n = obj.Name:lower()
+            if (obj:IsA("Model") or obj:IsA("Folder")) and 
+               (n:find("generator") or n:find("gen") or n:find("battery") or n:find("powerbox") or n:find("fusebox")) 
+               and not espObjects[obj] then
+                
+                -- Фильтр, чтобы не подсвечивать двери и лампы
+                if not n:find("door") and not n:find("gate") and not n:find("light") and not n:find("lamp") then
                     createESP(obj, Color3.fromRGB(0, 255, 100), "⚡ GENERATOR")
                 end
             end
@@ -342,7 +341,7 @@ minButton.MouseButton1Click:Connect(function()
     updateMinimizedState()
 end)
 
--- Drag (работает на ПК и телефоне)
+-- Drag (ПК + Телефон)
 local dragging = false
 local dragStart, startPos
 mainFrame.InputBegan:Connect(function(input)
@@ -409,7 +408,7 @@ end
 
 local speedLabel = addLabel("⚡ Скорость: " .. SpeedValue, Color3.fromRGB(0, 255, 120))
 
--- ========== УЛУЧШЕННЫЙ ПОЛЗУНОК (работает на ПК и телефоне) ==========
+-- ========== ПОЛЗУНОК СКОРОСТИ (0 — 50, работает на телефоне и ПК) ==========
 local sliderBg = Instance.new("Frame")
 sliderBg.Size = UDim2.new(0.92, 0, 0, 14)
 sliderBg.Position = UDim2.new(0.04, 0, 0, yOffset)
@@ -419,21 +418,21 @@ Instance.new("UICorner", sliderBg).CornerRadius = UDim.new(1, 0)
 addCollapsible(sliderBg)
 
 local sliderFill = Instance.new("Frame")
-sliderFill.Size = UDim2.new((SpeedValue-16)/(MaxSpeed-16), 1, 1, 0)
+sliderFill.Size = UDim2.new((SpeedValue-0)/(MaxSpeed-0), 1, 1, 0)
 sliderFill.BackgroundColor3 = Color3.fromRGB(0, 255, 130)
 sliderFill.Parent = sliderBg
 Instance.new("UICorner", sliderFill).CornerRadius = UDim.new(1, 0)
 
 local sliderKnob = Instance.new("TextButton")
 sliderKnob.Size = UDim2.new(0, 24, 0, 24)
-sliderKnob.Position = UDim2.new((SpeedValue-16)/(MaxSpeed-16), -6, 0.5, -12)
+sliderKnob.Position = UDim2.new((SpeedValue-0)/(MaxSpeed-0), -6, 0.5, -12)
 sliderKnob.BackgroundColor3 = Color3.fromRGB(0, 255, 160)
 sliderKnob.Text = ""
 sliderKnob.Parent = sliderBg
 Instance.new("UICorner", sliderKnob).CornerRadius = UDim.new(1, 0)
 
 local function updateSlider()
-    local percent = (SpeedValue - 16) / (MaxSpeed - 16)
+    local percent = SpeedValue / MaxSpeed
     sliderFill.Size = UDim2.new(percent, 0, 1, 0)
     sliderKnob.Position = UDim2.new(percent, -6, 0.5, -12)
     if speedLabel then 
@@ -441,10 +440,10 @@ local function updateSlider()
     end
 end
 
--- Обработка движения ползунка (мышь + тач)
 local function handleSliderMove(input)
     local percent = math.clamp((input.Position.X - sliderBg.AbsolutePosition.X) / sliderBg.AbsoluteSize.X, 0, 1)
-    SpeedValue = 16 + math.floor(percent * (MaxSpeed - 16))
+    SpeedValue = math.floor(percent * MaxSpeed)
+    if SpeedValue < 0 then SpeedValue = 0 end
     updateSlider()
     if SpeedEnabled then 
         applySpeed() 
@@ -516,4 +515,4 @@ task.spawn(function()
     end
 end)
 
-print("✅ BITE BY NIGHT v12.9 загружен | Ползунок скорости работает на ПК и телефоне!")
+print("✅ BITE BY NIGHT v12.9 загружен | ESP Генераторы восстановлен | Скорость от 0 до 50")
