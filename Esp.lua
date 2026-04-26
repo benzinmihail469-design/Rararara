@@ -1,6 +1,6 @@
 -- ============================================
 -- BITE BY NIGHT v12.8 — Infinite Sprint + ESP Генераторы
--- Улучшенный Anti-Cheat Bypass + Работа в Лобби
+-- Исправлено: Работа в Лобби + Улучшенный Anti-Cheat Bypass
 -- ============================================
 
 local Players = game:GetService("Players")
@@ -30,17 +30,24 @@ local lastFireTime = 0
 
 -- ========== УЛУЧШЕННЫЙ ANTI-CHEAT BYPASS ==========
 local function killAntiCheatScripts()
-    local containers = {LocalPlayer.PlayerScripts, LocalPlayer.Character, workspace, ReplicatedStorage, CoreGui, game:GetService("StarterPlayer").StarterPlayerScripts}
+    local containers = {
+        LocalPlayer:FindFirstChild("PlayerScripts"),
+        LocalPlayer.Character,
+        Workspace,
+        ReplicatedStorage,
+        CoreGui,
+        game:GetService("StarterPlayer"):FindFirstChild("StarterPlayerScripts")
+    }
     
     for _, container in ipairs(containers) do
         if container then
             for _, obj in ipairs(container:GetDescendants()) do
                 if obj:IsA("Script") or obj:IsA("LocalScript") or obj:IsA("ModuleScript") then
                     local name = (obj.Name or ""):lower()
-                    if name:find("anti") or name:find("cheat") or name:find("bite") or name:find("detect") or 
-                       name:find("ac_") or name:find("ban") or name:find("kick") or name:find("stamina") or name:find("speed") then
-                        pcall(function() 
-                            obj:Destroy() 
+                    if name:find("anti") or name:find("cheat") or name:find("detect") or name:find("ac_") or 
+                       name:find("ban") or name:find("kick") or name:find("bite") or name:find("stamina") then
+                        pcall(function()
+                            obj:Destroy()
                             if obj.Parent then obj.Parent = nil end
                         end)
                     end
@@ -48,18 +55,6 @@ local function killAntiCheatScripts()
             end
         end
     end
-    
-    -- Дополнительно отключаем возможные Remote Events античита
-    pcall(function()
-        for _, v in ipairs(ReplicatedStorage:GetDescendants()) do
-            if v:IsA("RemoteEvent") or v:IsA("RemoteFunction") then
-                local n = v.Name:lower()
-                if n:find("anti") or n:find("cheat") or n:find("detect") then
-                    v:Destroy()
-                end
-            end
-        end
-    end)
 end
 
 -- ========== INFINITE SPRINT (Celeron Style) ==========
@@ -74,7 +69,6 @@ local function applyInfiniteStamina()
             local hum = char:FindFirstChildOfClass("Humanoid")
             if not hum then return end
 
-            -- Агрессивный сброс всех возможных значений стамины
             for _, name in ipairs({"Stamina", "SprintStamina", "Energy", "Fatigue", "StaminaValue", "SprintEnergy", "RunStamina"}) do
                 if hum:GetAttribute(name) ~= nil then
                     hum:SetAttribute(name, 100)
@@ -87,8 +81,6 @@ local function applyInfiniteStamina()
                     v.Value = 100
                 end
             end
-
-            if hum:GetAttribute("IsSprinting") ~= nil then hum:SetAttribute("IsSprinting", true) end
         end)
     end)
 end
@@ -96,20 +88,20 @@ end
 -- ========== NoClip ==========
 local function applyNoClip()
     if noclipConnection then noclipConnection:Disconnect() end
-    if NoClipEnabled then
-        noclipConnection = RunService.Stepped:Connect(function()
-            pcall(function()
-                local char = LocalPlayer.Character
-                if char then
-                    for _, part in ipairs(char:GetDescendants()) do
-                        if part:IsA("BasePart") then
-                            part.CanCollide = false
-                        end
+    if not NoClipEnabled then return end
+
+    noclipConnection = RunService.Stepped:Connect(function()
+        pcall(function()
+            local char = LocalPlayer.Character
+            if char then
+                for _, part in ipairs(char:GetDescendants()) do
+                    if part:IsA("BasePart") then
+                        part.CanCollide = false
                     end
                 end
-            end)
+            end
         end)
-    end
+    end)
 end
 
 -- ========== AUTO REPAIR ==========
@@ -122,7 +114,9 @@ local function applyAutoRepair()
 
     autoRepairConnection = RunService.Heartbeat:Connect(function()
         pcall(function()
-            local genGui = LocalPlayer:FindFirstChild("PlayerGui") and LocalPlayer.PlayerGui:FindFirstChild("Gen")
+            local playerGui = LocalPlayer:FindFirstChild("PlayerGui")
+            if not playerGui then return end
+            local genGui = playerGui:FindFirstChild("Gen")
             if genGui and genGui:FindFirstChild("GeneratorMain") then
                 if not firingConnection then
                     firingConnection = RunService.Heartbeat:Connect(function()
@@ -194,8 +188,9 @@ local function isKiller(player)
     if not player or not player.Character then return false end
     local char = player.Character
     local nameLower = (char.Name or ""):lower()
-    if nameLower:find("springtrap") or nameLower:find("mimic") or nameLower:find("ennard") or nameLower:find("rotten") or 
-       nameLower:find("doppel") or nameLower:find("animatronic") or nameLower:find("killer") then
+    if nameLower:find("springtrap") or nameLower:find("mimic") or nameLower:find("ennard") or 
+       nameLower:find("rotten") or nameLower:find("doppel") or nameLower:find("animatronic") or 
+       nameLower:find("killer") then
         return true
     end
     return false
@@ -235,7 +230,7 @@ local function refreshESP()
     updateESP()
 end
 
--- ========== GUI (без изменений по высоте) ==========
+-- ========== GUI ==========
 local gui = Instance.new("ScreenGui")
 gui.Name = "BiteByNight_Hack"
 gui.ResetOnSpawn = false
@@ -252,14 +247,12 @@ Instance.new("UICorner", mainFrame).CornerRadius = UDim.new(0, 14)
 Instance.new("UIStroke", mainFrame).Color = Color3.fromRGB(0, 255, 160)
 Instance.new("UIStroke", mainFrame).Thickness = 2
 
--- (Остальная часть GUI остаётся такой же, как в предыдущей версии — минимизация, drag, тогглы и т.д.)
-
 local minimized = false
 local fullSize = mainFrame.Size
 local collapsibleElements = {}
 
 local function addCollapsible(element)
-    table.insert(collapsibleElements, element)
+    if element then table.insert(collapsibleElements, element) end
 end
 
 local function updateMinimizedState()
@@ -301,7 +294,7 @@ minButton.MouseButton1Click:Connect(function()
     updateMinimizedState()
 end)
 
--- Drag (оставлен без изменений)
+-- Drag
 local dragging = false
 local dragStart, startPos
 mainFrame.InputBegan:Connect(function(input)
@@ -373,11 +366,20 @@ addToggle("ESP Убийца", ESP_Killer, function(s) ESP_Killer = s refreshESP(
 addToggle("ESP Выжившие", ESP_Survivors, function(s) ESP_Survivors = s refreshESP() end)
 addToggle("AUTO REPAIR", AutoRepairEnabled, function(s) AutoRepairEnabled = s applyAutoRepair() end)
 
--- ========== ЗАПУСК (работает в лобби + при респавне) ==========
-killAntiCheatScripts()  -- сразу при загрузке
+-- ========== ЗАПУСК ДЛЯ ЛОББИ ==========
+task.spawn(function()
+    task.wait(0.3)
+    killAntiCheatScripts()
+    
+    -- Принудительно запускаем функции даже без персонажа
+    applyInfiniteStamina()
+    applyNoClip()
+    applyAutoRepair()
+    refreshESP()
+end)
 
 LocalPlayer.CharacterAdded:Connect(function()
-    task.wait(0.5)
+    task.wait(0.4)
     killAntiCheatScripts()
     applyInfiniteStamina()
     applyNoClip()
@@ -385,21 +387,18 @@ LocalPlayer.CharacterAdded:Connect(function()
     refreshESP()
 end)
 
--- Запуск в лобби и при первом появлении
+-- Постоянное обновление ESP (работает и в лобби)
 task.spawn(function()
-    task.wait(0.8)
-    killAntiCheatScripts()
-    applyInfiniteStamina()
-    applyNoClip()
-    applyAutoRepair()
-    refreshESP()
-end)
-
--- Постоянное обновление ESP
-task.spawn(function()
-    while task.wait(0.8) do
-        updateESP()
+    while task.wait(0.7) do
+        pcall(updateESP)
     end
 end)
 
-print("✅ BITE BY NIGHT v12.8 загружен | Улучшенный Anti-Cheat Bypass + Работа в Лобби")
+-- Дополнительный bypass каждые 5 секунд
+task.spawn(function()
+    while task.wait(5) do
+        pcall(killAntiCheatScripts)
+    end
+end)
+
+print("✅ BITE BY NIGHT v12.8 загружен | Исправлено для Лобби")
