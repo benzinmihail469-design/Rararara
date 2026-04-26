@@ -1,5 +1,5 @@
 -- ============================================
--- BITE BY NIGHT v12.9 — Исправленный ESP + Стабильный Auto Sprint
+-- BITE BY NIGHT v12.9 — Speed + Auto Sprint вместе
 -- ============================================
 
 local Players = game:GetService("Players")
@@ -17,7 +17,6 @@ local MaxSpeed = 55
 local StaminaEnabled = true
 local NoClipEnabled = false
 local AutoRepairEnabled = false
-local AutoSprintEnabled = true
 
 local ESP_Generators = true
 local ESP_Killer = true
@@ -30,30 +29,47 @@ local staminaConnection = nil
 local autoRepairConnection = nil
 local firingConnection = nil
 local lastFireTime = 0
-local autoSprintConnection = nil
+local sprintConnection = nil
 
--- ========== УЛУЧШЕННЫЙ AUTO SPRINT (меньше блокировок античитом) ==========
-local function applyAutoSprint()
-    if autoSprintConnection then 
-        autoSprintConnection:Disconnect() 
-        autoSprintConnection = nil 
-    end
-    
-    if not (SpeedEnabled and AutoSprintEnabled) then 
+-- ========== SPEED + AUTO SPRINT (совмещённые) ==========
+local function applySpeedAndSprint()
+    -- Отключаем старые соединения
+    if speedConnection then speedConnection:Disconnect() speedConnection = nil end
+    if sprintConnection then sprintConnection:Disconnect() sprintConnection = nil end
+
+    if not SpeedEnabled then
         pcall(function()
             local hum = LocalPlayer.Character and LocalPlayer.Character:FindFirstChildOfClass("Humanoid")
-            if hum then hum.WalkSpeed = 16 end
+            if hum then 
+                hum.WalkSpeed = 16 
+            end
         end)
-        return 
+        return
     end
 
-    autoSprintConnection = RunService.Heartbeat:Connect(function()
+    -- Основная скорость + движение
+    speedConnection = RunService.Heartbeat:Connect(function(dt)
         pcall(function()
             local char = LocalPlayer.Character
             if not char then return end
             local hum = char:FindFirstChildOfClass("Humanoid")
+            local root = char:FindFirstChild("HumanoidRootPart")
+            if not hum or not root then return end
+
+            hum.WalkSpeed = SpeedValue
+
+            -- Плавное движение вперёд (как в оригинале)
+            if hum.MoveDirection.Magnitude > 0 then
+                root.CFrame += hum.MoveDirection * SpeedValue * dt * 0.95
+            end
+        end)
+    end)
+
+    -- Автоматический спринт (форсируем бег)
+    sprintConnection = RunService.Heartbeat:Connect(function()
+        pcall(function()
+            local hum = LocalPlayer.Character and LocalPlayer.Character:FindFirstChildOfClass("Humanoid")
             if hum then
-                hum.WalkSpeed = SpeedValue  -- используем значение из слайдера
                 hum:SetAttribute("Sprinting", true)
                 hum:SetAttribute("SprintStamina", 100)
             end
@@ -74,39 +90,7 @@ local function killAntiCheatScripts(container)
     end
 end
 
--- ========== WalkSpeed (оставил, но теперь работает вместе с Auto Sprint) ==========
-local function applySpeed()
-    if speedConnection then speedConnection:Disconnect() speedConnection = nil end
-    
-    if not SpeedEnabled then
-        pcall(function()
-            local hum = LocalPlayer.Character and LocalPlayer.Character:FindFirstChildOfClass("Humanoid")
-            if hum then hum.WalkSpeed = 16 end
-        end)
-        applyAutoSprint()
-        return
-    end
-
-    speedConnection = RunService.Heartbeat:Connect(function(dt)
-        pcall(function()
-            local char = LocalPlayer.Character
-            if not char then return end
-            local hum = char:FindFirstChildOfClass("Humanoid")
-            local root = char:FindFirstChild("HumanoidRootPart")
-            if not hum or not root then return end
-
-            hum.WalkSpeed = SpeedValue
-
-            if hum.MoveDirection.Magnitude > 0 then
-                root.CFrame += hum.MoveDirection * SpeedValue * dt * 0.95
-            end
-        end)
-    end)
-
-    applyAutoSprint()
-end
-
--- ========== Stamina (без изменений) ==========
+-- ========== Stamina ==========
 local function applyInfiniteStamina()
     if staminaConnection then staminaConnection:Disconnect() end
     if not StaminaEnabled then return end
@@ -130,7 +114,7 @@ local function applyInfiniteStamina()
     end)
 end
 
--- ========== NoClip (без изменений) ==========
+-- ========== NoClip ==========
 local function applyNoClip()
     if noclipConnection then noclipConnection:Disconnect() end
     if NoClipEnabled then
@@ -156,7 +140,7 @@ local function applyNoClip()
     end
 end
 
--- ========== AUTO REPAIR (без изменений) ==========
+-- ========== AUTO REPAIR ==========
 local function applyAutoRepair()
     if autoRepairConnection then autoRepairConnection:Disconnect() end
     if firingConnection then firingConnection:Disconnect() end
@@ -192,10 +176,9 @@ local function applyAutoRepair()
     end)
 end
 
--- ========== ESP (улучшенный из Celeron) ==========
+-- ========== ESP (исправленный поиск генераторов) ==========
 local function createESP(obj, color, text)
     if espObjects[obj] then return end
-
     local root = obj:FindFirstChild("HumanoidRootPart") or obj:FindFirstChildWhichIsA("BasePart")
     if not root then return end
 
@@ -261,7 +244,6 @@ local function isKiller(player)
     return false
 end
 
--- ========== ИСПРАВЛЕННЫЙ ПОИСК ГЕНЕРАТОРОВ ==========
 local function updateESP()
     for obj, _ in pairs(espObjects) do
         if not obj or not obj.Parent then removeESP(obj) end
@@ -272,18 +254,15 @@ local function updateESP()
             if not obj.Parent then continue end
             local lowerName = obj.Name:lower()
 
-            -- Строгий фильтр
             local isPotentialGen = lowerName:find("generator") or lowerName:find("gen") or 
                                   lowerName:find("battery") or lowerName:find("powerbox") or 
                                   lowerName:find("fusebox")
 
             if (obj:IsA("Model") or obj:IsA("Folder")) and isPotentialGen and not espObjects[obj] then
-                -- Дополнительная проверка на реальные части генератора
-                local hasGeneratorParts = obj:FindFirstChild("Wires") or obj:FindFirstChild("Wire") or 
-                                         obj:FindFirstChild("Lever") or obj:FindFirstChild("Switch") or 
-                                         obj:FindFirstChild("GeneratorPart") or lowerName:find("generator")
+                local hasGenParts = obj:FindFirstChild("Wires") or obj:FindFirstChild("Lever") or 
+                                   obj:FindFirstChild("Switch") or lowerName:find("generator")
 
-                if hasGeneratorParts and not lowerName:find("door") and not lowerName:find("gate") and 
+                if hasGenParts and not lowerName:find("door") and not lowerName:find("gate") and 
                    not lowerName:find("light") and not lowerName:find("lamp") then
                     createESP(obj, Color3.fromRGB(0, 255, 100), "⚡ GENERATOR")
                 end
@@ -291,7 +270,6 @@ local function updateESP()
         end
     end
 
-    -- ESP игроков
     for _, player in ipairs(Players:GetPlayers()) do
         if player == LocalPlayer then continue end
         if not player.Character then continue end
@@ -312,9 +290,7 @@ local function refreshESP()
     updateESP()
 end
 
--- ========== GUI (без изменений) ==========
--- (GUI полностью оставлен как в твоём скрипте — от speedLabel до тогглов)
-
+-- ========== GUI ==========
 local gui = Instance.new("ScreenGui")
 gui.Name = "BiteByNight_Hack"
 gui.Parent = CoreGui
@@ -443,7 +419,7 @@ end
 
 local speedLabel = addLabel("⚡ Скорость: " .. SpeedValue, Color3.fromRGB(0, 255, 120))
 
--- Slider скорости (оставлен)
+-- Slider скорости
 local sliderBg = Instance.new("Frame")
 sliderBg.Size = UDim2.new(0.92, 0, 0, 12)
 sliderBg.Position = UDim2.new(0.04, 0, 0, yOffset)
@@ -481,7 +457,7 @@ sliderBg.InputBegan:Connect(function(input)
                 local percent = math.clamp((move.Position.X - sliderBg.AbsolutePosition.X) / sliderBg.AbsoluteSize.X, 0, 1)
                 SpeedValue = 16 + math.floor(percent * (MaxSpeed - 16))
                 updateSlider()
-                if SpeedEnabled then applySpeed() end
+                if SpeedEnabled then applySpeedAndSprint() end
             end
         end)
         UserInputService.InputEnded:Connect(function() moving = false; moveConn:Disconnect() end)
@@ -493,8 +469,9 @@ yOffset += 48
 -- ========== ТОГГЛЫ ==========
 addToggle("SPEED + AUTO SPRINT", SpeedEnabled, function(s) 
     SpeedEnabled = s 
-    applySpeed() 
+    applySpeedAndSprint() 
 end)
+
 addToggle("STAMINA", StaminaEnabled, function(s) StaminaEnabled = s applyInfiniteStamina() end)
 addToggle("NOCLIP", NoClipEnabled, function(s) NoClipEnabled = s applyNoClip() end)
 addToggle("ESP Генераторы", ESP_Generators, function(s) ESP_Generators = s refreshESP() end)
@@ -506,7 +483,7 @@ addToggle("AUTO REPAIR", AutoRepairEnabled, function(s) AutoRepairEnabled = s ap
 LocalPlayer.CharacterAdded:Connect(function()
     task.wait(0.8)
     pcall(killAntiCheatScripts, LocalPlayer.Character)
-    applySpeed()
+    applySpeedAndSprint()
     applyInfiniteStamina()
     applyNoClip()
     applyAutoRepair()
@@ -516,7 +493,7 @@ end)
 task.spawn(function()
     task.wait(1)
     pcall(killAntiCheatScripts, LocalPlayer.PlayerScripts)
-    applySpeed()
+    applySpeedAndSprint()
     applyInfiniteStamina()
     applyNoClip()
     applyAutoRepair()
@@ -524,9 +501,9 @@ task.spawn(function()
 end)
 
 task.spawn(function()
-    while task.wait(1.2) do  -- чуть реже
+    while task.wait(1.2) do
         updateESP()
     end
 end)
 
-print("✅ BITE BY NIGHT v12.9 загружен | Исправленный ESP Генераторов + Стабильный Auto Sprint")
+print("✅ BITE BY NIGHT v12.9 загружен | Speed + Auto Sprint работают вместе")
