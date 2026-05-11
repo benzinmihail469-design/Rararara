@@ -11,10 +11,10 @@ ScreenGui.Parent = player:WaitForChild("PlayerGui")
 ScreenGui.ResetOnSpawn = false
 ScreenGui.ZIndexBehavior = Enum.ZIndexBehavior.Sibling
 
--- Основной фрейм (600x500)
+-- Основной фрейм (800x500)
 local Main = Instance.new("Frame")
 Main.Name = "MainFrame"
-Main.Size = UDim2.new(0, 600, 0, 500)
+Main.Size = UDim2.new(0, 800, 0, 500)
 Main.Position = UDim2.new(0.5, -300, 0.5, -250)
 Main.BackgroundColor3 = Color3.fromRGB(20, 20, 25)
 Main.BorderSizePixel = 0
