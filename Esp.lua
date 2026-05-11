@@ -96,7 +96,7 @@ MinimizeBtn.AutoButtonColor = false
 
 -- Кнопка закрытия
 local CloseBtn = Instance.new("TextButton", TitleBar)
-CloseBtn.Text = "✕"
+CloseBtn.Text = "+"
 CloseBtn.Size = UDim2.new(0, 22, 0, 22)
 CloseBtn.Position = UDim2.new(1, -24, 0, 4)
 CloseBtn.BackgroundColor3 = colors.close
