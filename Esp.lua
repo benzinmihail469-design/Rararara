@@ -12,11 +12,11 @@ ScreenGui.Parent = player:WaitForChild("PlayerGui")
 ScreenGui.ResetOnSpawn = false
 ScreenGui.ZIndexBehavior = Enum.ZIndexBehavior.Sibling
 
--- Основной фрейм (уменьшенный)
+-- Основной фрейм (шире и ниже)
 local Main = Instance.new("Frame")
 Main.Name = "MainFrame"
-Main.Size = UDim2.new(0, 320, 0, 420)
-Main.Position = UDim2.new(0.5, -160, 0.5, -210)
+Main.Size = UDim2.new(0, 340, 0, 380)
+Main.Position = UDim2.new(0.5, -170, 0.5, -190)
 Main.BackgroundColor3 = Color3.fromRGB(20, 20, 25)
 Main.BorderSizePixel = 0
 Main.ClipsDescendants = true
@@ -33,26 +33,51 @@ Stroke.Thickness = 1
 local Title = Instance.new("TextLabel", Main)
 Title.Name = "Title"
 Title.Text = "BBN"
-Title.Size = UDim2.new(1, 0, 0, 32)
+Title.Size = UDim2.new(1, 0, 0, 28)
 Title.BackgroundColor3 = Color3.fromRGB(25, 25, 30)
 Title.TextColor3 = Color3.fromRGB(255, 255, 255)
 Title.Font = Enum.Font.GothamBold
-Title.TextSize = 14
+Title.TextSize = 12
 Title.BorderSizePixel = 0
 
+-- Кнопка закрытия (мини)
+local CloseBtn = Instance.new("TextButton", Main)
+CloseBtn.Text = "×"
+CloseBtn.Size = UDim2.new(0, 24, 0, 24)
+CloseBtn.Position = UDim2.new(1, -28, 0, 2)
+CloseBtn.BackgroundColor3 = Color3.fromRGB(200, 50, 50)
+CloseBtn.TextColor3 = Color3.fromRGB(255, 255, 255)
+CloseBtn.Font = Enum.Font.GothamBold
+CloseBtn.TextSize = 14
+CloseBtn.BorderSizePixel = 0
+Instance.new("UICorner", CloseBtn).CornerRadius = UDim.new(0, 12)
+CloseBtn.AutoButtonColor = false
+
+CloseBtn.MouseButton1Click:Connect(function()
+    ScreenGui:Destroy()
+end)
+
 -- Контейнер для вкладок
-local TabContainer = Instance.new("Frame", Main)
+local TabContainer = Instance.new("ScrollFrame", Main)
 TabContainer.Name = "TabContainer"
-TabContainer.Size = UDim2.new(1, 0, 0, 28)
-TabContainer.Position = UDim2.new(0, 0, 0, 32)
+TabContainer.Size = UDim2.new(1, 0, 0, 26)
+TabContainer.Position = UDim2.new(0, 0, 0, 28)
 TabContainer.BackgroundColor3 = Color3.fromRGB(30, 30, 35)
 TabContainer.BorderSizePixel = 0
+TabContainer.ScrollBarThickness = 0
+TabContainer.CanvasSize = UDim2.new(0, 0, 0, 0)
+
+local TabButtonsFrame = Instance.new("Frame", TabContainer)
+TabButtonsFrame.Name = "TabButtons"
+TabButtonsFrame.Size = UDim2.new(0, 0, 1, 0)
+TabButtonsFrame.BackgroundColor3 = Color3.fromRGB(30, 30, 35)
+TabButtonsFrame.BorderSizePixel = 0
 
 -- Контейнер для контента вкладок
 local ContentContainer = Instance.new("Frame", Main)
 ContentContainer.Name = "ContentContainer"
-ContentContainer.Size = UDim2.new(1, -16, 1, -68)
-ContentContainer.Position = UDim2.new(0, 8, 0, 64)
+ContentContainer.Size = UDim2.new(1, -16, 1, -60)
+ContentContainer.Position = UDim2.new(0, 8, 0, 56)
 ContentContainer.BackgroundColor3 = Color3.fromRGB(20, 20, 25)
 ContentContainer.BorderSizePixel = 0
 
@@ -69,26 +94,25 @@ local function createTab(name)
     tabContent.BackgroundTransparency = 1
     tabContent.Visible = false
     
-    -- Пример контента для Info
     if name == "Info" then
         local serverInfo = Instance.new("TextLabel", tabContent)
-        serverInfo.Text = "North Holland, NL\nПинг: 407\nФПС: 29\n\nСервер антивидов\nВремя: 06:54:20\nВерсия: 14806\nDistant Night - 6386"
+        serverInfo.Text = "Сервер антивидов\nВремя работы: 08:12:35\nВерсия: 14806\nDistorted Report - 4638\n\nПинг: 407 | ФПС: 29\nNorth Holland, NL\n\nИгроков: 6,658"
         serverInfo.Size = UDim2.new(1, 0, 1, 0)
         serverInfo.BackgroundTransparency = 1
         serverInfo.TextColor3 = Color3.fromRGB(200, 200, 200)
         serverInfo.Font = Enum.Font.Gotham
-        serverInfo.TextSize = 12
+        serverInfo.TextSize = 11
         serverInfo.TextWrapped = true
         serverInfo.TextXAlignment = Enum.TextXAlignment.Left
         serverInfo.TextYAlignment = Enum.TextYAlignment.Top
     else
         local placeholder = Instance.new("TextLabel", tabContent)
-        placeholder.Text = name .. " Tab"
-        placeholder.Size = UDim2.new(1, 0, 0, 20)
+        placeholder.Text = name
+        placeholder.Size = UDim2.new(1, 0, 0, 18)
         placeholder.BackgroundTransparency = 1
         placeholder.TextColor3 = Color3.fromRGB(150, 150, 150)
         placeholder.Font = Enum.Font.Gotham
-        placeholder.TextSize = 12
+        placeholder.TextSize = 11
     end
     
     return tabContent
@@ -110,21 +134,22 @@ local function switchTab(tabName)
 end
 
 -- Создаём кнопки вкладок
-local buttonWidth = 1 / #tabNames
+local totalWidth = 0
 for i, name in ipairs(tabNames) do
-    local tabButton = Instance.new("TextButton", TabContainer)
+    local tabButton = Instance.new("TextButton", TabButtonsFrame)
     tabButton.Name = name
     tabButton.Text = name
-    tabButton.Size = UDim2.new(buttonWidth, -2, 1, 0)
-    tabButton.Position = UDim2.new((i-1) * buttonWidth, 1, 0, 0)
+    tabButton.Size = UDim2.new(0, 56, 1, 0)
+    tabButton.Position = UDim2.new(0, totalWidth, 0, 0)
     tabButton.BackgroundColor3 = Color3.fromRGB(30, 30, 35)
     tabButton.TextColor3 = Color3.fromRGB(180, 180, 180)
     tabButton.Font = Enum.Font.GothamBold
-    tabButton.TextSize = 11
+    tabButton.TextSize = 10
     tabButton.BorderSizePixel = 0
     tabButton.AutoButtonColor = false
     
-    -- Создаём контент вкладки
+    totalWidth = totalWidth + 56
+    
     tabs[name] = createTab(name)
     tabButtons[name] = tabButton
     
@@ -133,37 +158,23 @@ for i, name in ipairs(tabNames) do
     end)
 end
 
+-- Обновляем размер канваса для скролла
+TabButtonsFrame.Size = UDim2.new(0, totalWidth, 1, 0)
+TabContainer.CanvasSize = UDim2.new(0, totalWidth, 0, 0)
+
 -- Показываем первую вкладку
 switchTab("Info")
 
--- Возможность перетаскивать окно
+-- Перетаскивание
 local dragging = false
 local dragInput
 local dragStart
 local startPos
 
-local function startDrag(input)
-    dragging = true
-    dragStart = input.Position
-    startPos = Main.Position
-end
-
 Title.InputBegan:Connect(function(input)
     if input.UserInputType == Enum.UserInputType.MouseButton1 or input.UserInputType == Enum.UserInputType.Touch then
-        startDrag(input)
-    end
-end)
-
--- Для мобильных - свайп по заголовку
-Title.TouchPan:Connect(function(touchPositions, totalTranslation, velocity, state)
-    if state == Enum.TouchState.Moving then
-        Main.Position = UDim2.new(
-            startPos.X.Scale,
-            startPos.X.Offset + totalTranslation.X,
-            startPos.Y.Scale,
-            startPos.Y.Offset + totalTranslation.Y
-        )
-    elseif state == Enum.TouchState.Began then
+        dragging = true
+        dragStart = input.Position
         startPos = Main.Position
     end
 end)
@@ -193,9 +204,9 @@ UserInputService.InputEnded:Connect(function(input)
 end)
 
 -- Анимация появления
-Main.Position = UDim2.new(0.5, -160, 0.8, 0)
+Main.Position = UDim2.new(0.5, -170, 0.8, 0)
 TweenService:Create(Main, TweenInfo.new(0.4, Enum.EasingStyle.Quad), {
-    Position = UDim2.new(0.5, -160, 0.5, -210)
+    Position = UDim2.new(0.5, -170, 0.5, -190)
 }):Play()
 
-print("BBN Mobile GUI loaded!")
+print("BBN Compact Mobile GUI loaded!")
