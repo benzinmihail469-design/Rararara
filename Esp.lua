@@ -220,26 +220,29 @@ local function switchTab(tabName)
     end
 end
 
--- Функция сворачивания/разворачивания с анимацией для мобильных
+-- Функция сворачивания/разворачивания
 local function toggleMinimize()
     isMinimized = not isMinimized
     
     if isMinimized then
-        -- Анимация сворачивания
+        -- Анимация сворачивания до маленького заголовка
         TweenService:Create(Main, TweenInfo.new(0.3, Enum.EasingStyle.Quad), {
-            Size = UDim2.new(0, 200, 0, 32)
+            Size = UDim2.new(0, 180, 0, 30)
         }):Play()
         
-        -- Уменьшаем заголовок
+        -- Заголовок по центру
         Title.TextSize = 11
-        Title.Size = UDim2.new(0, 40, 1, 0)
-        Title.Position = UDim2.new(0, 8, 0, 0)
-        MinimizeBtn.Size = UDim2.new(0, 22, 0, 22)
-        MinimizeBtn.Position = UDim2.new(1, -50, 0, 5)
-        MinimizeBtn.TextSize = 11
-        CloseBtn.Size = UDim2.new(0, 22, 0, 22)
-        CloseBtn.Position = UDim2.new(1, -26, 0, 5)
-        CloseBtn.TextSize = 13
+        Title.Size = UDim2.new(1, -50, 1, 0)  -- На всю ширину минус кнопки
+        Title.Position = UDim2.new(0, 25, 0, 0)  -- Центрируем
+        Title.TextXAlignment = Enum.TextXAlignment.Center  -- Текст по центру
+        
+        -- Кнопки компактнее
+        MinimizeBtn.Size = UDim2.new(0, 20, 0, 20)
+        MinimizeBtn.Position = UDim2.new(1, -44, 0, 5)
+        MinimizeBtn.TextSize = 10
+        CloseBtn.Size = UDim2.new(0, 20, 0, 20)
+        CloseBtn.Position = UDim2.new(1, -22, 0, 5)
+        CloseBtn.TextSize = 12
         
         MinimizeBtn.Text = "+"
         MinimizeBtn.BackgroundColor3 = Color3.fromRGB(50, 150, 50)
@@ -254,6 +257,9 @@ local function toggleMinimize()
         Title.TextSize = 13
         Title.Size = UDim2.new(0, 50, 1, 0)
         Title.Position = UDim2.new(0, 10, 0, 0)
+        Title.TextXAlignment = Enum.TextXAlignment.Left  -- Текст слева
+        
+        -- Возвращаем кнопки
         MinimizeBtn.Size = UDim2.new(0, 24, 0, 24)
         MinimizeBtn.Position = UDim2.new(1, -54, 0, 2)
         MinimizeBtn.TextSize = 12
@@ -330,4 +336,4 @@ TweenService:Create(Main, TweenInfo.new(0.4, Enum.EasingStyle.Quad), {
     Position = UDim2.new(0.5, -325, 0.5, -190)
 }):Play()
 
-print("BBN GUI 650x380 loaded! Mobile minimize animation")
+print("BBN GUI 650x380 loaded! BBN centered when minimized")
