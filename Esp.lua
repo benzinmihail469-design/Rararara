@@ -22,7 +22,7 @@ local colors = {
     gold = Color3.fromRGB(255, 180, 50),
     text = Color3.fromRGB(220, 200, 230),
     textDark = Color3.fromRGB(150, 130, 160),
-    close = Color3.fromRGB(120, 20, 20),
+    close = Color3.fromRGB(180, 30, 30),
     stroke = Color3.fromRGB(100, 50, 130),
 }
 
@@ -69,7 +69,7 @@ TitleBar.BackgroundTransparency = 0.3
 TitleBar.BorderSizePixel = 0
 Instance.new("UICorner", TitleBar).CornerRadius = UDim.new(0, 12)
 
--- Заголовок текст "Темный Fantasy"
+-- Заголовок текст
 local Title = Instance.new("TextLabel", TitleBar)
 Title.Name = "Title"
 Title.Text = "Темный Fantasy"
@@ -82,28 +82,30 @@ Title.TextSize = 13
 Title.TextXAlignment = Enum.TextXAlignment.Left
 
 -- Кнопка сворачивания
-local MinimizeBtn = Instance.new("TextButton", TitleBar)
-MinimizeBtn.Text = "+"
-MinimizeBtn.Size = UDim2.new(0, 22, 0, 22)
-MinimizeBtn.Position = UDim2.new(1, -48, 0, 4)
+local MinimizeBtn = Instance.new("TextButton", Main)
+MinimizeBtn.Text = "—"
+MinimizeBtn.Size = UDim2.new(0, 24, 0, 24)
+MinimizeBtn.Position = UDim2.new(1, -52, 0, 5)
 MinimizeBtn.BackgroundColor3 = Color3.fromRGB(40, 15, 60)
 MinimizeBtn.TextColor3 = colors.gold
 MinimizeBtn.Font = Enum.Font.GothamBold
-MinimizeBtn.TextSize = 10
+MinimizeBtn.TextSize = 14
 MinimizeBtn.BorderSizePixel = 0
+MinimizeBtn.ZIndex = 10
 Instance.new("UICorner", MinimizeBtn).CornerRadius = UDim.new(0, 6)
 MinimizeBtn.AutoButtonColor = false
 
--- Кнопка закрытия
-local CloseBtn = Instance.new("TextButton", TitleBar)
-CloseBtn.Text = "+"
-CloseBtn.Size = UDim2.new(0, 22, 0, 22)
-CloseBtn.Position = UDim2.new(1, -24, 0, 4)
+-- Кнопка закрытия (обычный крестик)
+local CloseBtn = Instance.new("TextButton", Main)
+CloseBtn.Text = "×"
+CloseBtn.Size = UDim2.new(0, 24, 0, 24)
+CloseBtn.Position = UDim2.new(1, -26, 0, 5)
 CloseBtn.BackgroundColor3 = colors.close
-CloseBtn.TextColor3 = Color3.fromRGB(255, 200, 200)
+CloseBtn.TextColor3 = Color3.fromRGB(255, 255, 255)
 CloseBtn.Font = Enum.Font.GothamBold
-CloseBtn.TextSize = 11
+CloseBtn.TextSize = 16
 CloseBtn.BorderSizePixel = 0
+CloseBtn.ZIndex = 10
 Instance.new("UICorner", CloseBtn).CornerRadius = UDim.new(0, 6)
 CloseBtn.AutoButtonColor = false
 
@@ -141,7 +143,7 @@ ContentContainer.BackgroundTransparency = 0.5
 ContentContainer.BorderSizePixel = 0
 Instance.new("UICorner", ContentContainer).CornerRadius = UDim.new(0, 8)
 
--- Вкладки и контент (порядок как на скрине)
+-- Вкладки и контент
 local tabs = {}
 local tabButtons = {}
 local tabNames = {"Discord", "Esp", "Info", "Main", "Player", "Настройки"}
@@ -154,7 +156,6 @@ local function createTab(name)
     tabContent.BackgroundTransparency = 1
     tabContent.Visible = false
     
-    -- Заголовок вкладки
     local tabTitle = Instance.new("TextLabel", tabContent)
     tabTitle.Text = "✦ " .. name .. " ✦"
     tabTitle.Size = UDim2.new(1, 0, 0, 18)
@@ -174,7 +175,7 @@ local function createTab(name)
         scrollFrame.CanvasSize = UDim2.new(0, 0, 0, 200)
         
         local serverInfo = Instance.new("TextLabel", scrollFrame)
-        serverInfo.Text = "🌙 North Holland, NL\n⚔️ Пинг: 150 | ФПС: 31\n📜 Версия: 14806\n🏰 Темный Fantasy\n⏳ Время: 09:16:47\n👥 SilentVessel - 8108"
+        serverInfo.Text = "🌙 Île-de-France, FR\n⚔️ Пинг: 111 | ФПС: 25\n📜 Версия: 14806\n🏰 Темный Fantasy\n⏳ Время работы сервера\n👥 Watching Aftermath - 5777\n🔢 60,658"
         serverInfo.Size = UDim2.new(1, -8, 1, 0)
         serverInfo.Position = UDim2.new(0, 4, 0, 0)
         serverInfo.BackgroundTransparency = 1
@@ -272,54 +273,41 @@ local function switchTab(tabName)
     end
 end
 
--- Функция сворачивания/разворачивания (УВЕЛИЧЕННЫЙ ЗАГОЛОВОК)
+-- Функция сворачивания/разворачивания
 local function toggleMinimize()
     isMinimized = not isMinimized
     local currentPos = Main.Position
     
     if isMinimized then
-        -- Увеличенный размер свёрнутого окна чтобы надпись влезала
         Main.Size = UDim2.new(0, 220, 0, 32)
         Main.Position = currentPos
         
-        -- Заголовок по центру, достаточно места для текста
         Title.TextSize = 12
         Title.Size = UDim2.new(1, -56, 1, 0)
         Title.Position = UDim2.new(0, 28, 0, 0)
         Title.TextXAlignment = Enum.TextXAlignment.Center
         
-        -- Кнопки
-        MinimizeBtn.Size = UDim2.new(0, 22, 0, 22)
-        MinimizeBtn.Position = UDim2.new(1, -48, 0, 5)
-        MinimizeBtn.TextSize = 10
-        CloseBtn.Size = UDim2.new(0, 22, 0, 22)
-        CloseBtn.Position = UDim2.new(1, -24, 0, 5)
-        CloseBtn.TextSize = 11
-        
+        MinimizeBtn.Position = UDim2.new(1, -52, 0, 4)
         MinimizeBtn.Text = "+"
         MinimizeBtn.BackgroundColor3 = Color3.fromRGB(60, 20, 80)
+        CloseBtn.Position = UDim2.new(1, -26, 0, 4)
+        
         CollapsibleContent.Visible = false
         AccentLine.Visible = false
     else
         Main.Size = UDim2.new(0, 520, 0, 310)
         Main.Position = currentPos
         
-        -- Заголовок слева
         Title.TextSize = 13
         Title.Size = UDim2.new(0, 110, 1, 0)
         Title.Position = UDim2.new(0, 12, 0, 0)
         Title.TextXAlignment = Enum.TextXAlignment.Left
         
-        -- Кнопки
-        MinimizeBtn.Size = UDim2.new(0, 22, 0, 22)
-        MinimizeBtn.Position = UDim2.new(1, -48, 0, 4)
-        MinimizeBtn.TextSize = 10
-        CloseBtn.Size = UDim2.new(0, 22, 0, 22)
-        CloseBtn.Position = UDim2.new(1, -24, 0, 4)
-        CloseBtn.TextSize = 11
-        
-        MinimizeBtn.Text = "━"
+        MinimizeBtn.Position = UDim2.new(1, -52, 0, 5)
+        MinimizeBtn.Text = "—"
         MinimizeBtn.BackgroundColor3 = Color3.fromRGB(40, 15, 60)
+        CloseBtn.Position = UDim2.new(1, -26, 0, 5)
+        
         CollapsibleContent.Visible = true
         AccentLine.Visible = true
     end
