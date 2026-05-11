@@ -220,20 +220,50 @@ local function switchTab(tabName)
     end
 end
 
--- Функция сворачивания/разворачивания
+-- Функция сворачивания/разворачивания с анимацией для мобильных
 local function toggleMinimize()
     isMinimized = not isMinimized
     
     if isMinimized then
-        CollapsibleContent.Visible = false
-        Main.Size = UDim2.new(0, 650, 0, 28)
+        -- Анимация сворачивания
+        TweenService:Create(Main, TweenInfo.new(0.3, Enum.EasingStyle.Quad), {
+            Size = UDim2.new(0, 200, 0, 32)
+        }):Play()
+        
+        -- Уменьшаем заголовок
+        Title.TextSize = 11
+        Title.Size = UDim2.new(0, 40, 1, 0)
+        Title.Position = UDim2.new(0, 8, 0, 0)
+        MinimizeBtn.Size = UDim2.new(0, 22, 0, 22)
+        MinimizeBtn.Position = UDim2.new(1, -50, 0, 5)
+        MinimizeBtn.TextSize = 11
+        CloseBtn.Size = UDim2.new(0, 22, 0, 22)
+        CloseBtn.Position = UDim2.new(1, -26, 0, 5)
+        CloseBtn.TextSize = 13
+        
         MinimizeBtn.Text = "+"
         MinimizeBtn.BackgroundColor3 = Color3.fromRGB(50, 150, 50)
+        CollapsibleContent.Visible = false
     else
-        CollapsibleContent.Visible = true
-        Main.Size = UDim2.new(0, 650, 0, 380)
+        -- Анимация разворачивания
+        TweenService:Create(Main, TweenInfo.new(0.3, Enum.EasingStyle.Quad), {
+            Size = UDim2.new(0, 650, 0, 380)
+        }):Play()
+        
+        -- Возвращаем заголовок
+        Title.TextSize = 13
+        Title.Size = UDim2.new(0, 50, 1, 0)
+        Title.Position = UDim2.new(0, 10, 0, 0)
+        MinimizeBtn.Size = UDim2.new(0, 24, 0, 24)
+        MinimizeBtn.Position = UDim2.new(1, -54, 0, 2)
+        MinimizeBtn.TextSize = 12
+        CloseBtn.Size = UDim2.new(0, 24, 0, 24)
+        CloseBtn.Position = UDim2.new(1, -28, 0, 2)
+        CloseBtn.TextSize = 14
+        
         MinimizeBtn.Text = "—"
         MinimizeBtn.BackgroundColor3 = Color3.fromRGB(50, 50, 60)
+        CollapsibleContent.Visible = true
     end
 end
 
@@ -300,4 +330,4 @@ TweenService:Create(Main, TweenInfo.new(0.4, Enum.EasingStyle.Quad), {
     Position = UDim2.new(0.5, -325, 0.5, -190)
 }):Play()
 
-print("BBN GUI 650x380 loaded! Compact drag script")
+print("BBN GUI 650x380 loaded! Mobile minimize animation")
