@@ -296,7 +296,7 @@ local function toggleMinimize()
         CloseBtn.Position = UDim2.new(1, -24, 0, 5)
         CloseBtn.TextSize = 11
         
-        MinimizeBtn.Text = "✦"
+        MinimizeBtn.Text = "+"
         MinimizeBtn.BackgroundColor3 = Color3.fromRGB(60, 20, 80)
         CollapsibleContent.Visible = false
         AccentLine.Visible = false
