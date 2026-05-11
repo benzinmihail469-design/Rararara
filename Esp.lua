@@ -11,11 +11,11 @@ ScreenGui.Parent = player:WaitForChild("PlayerGui")
 ScreenGui.ResetOnSpawn = false
 ScreenGui.ZIndexBehavior = Enum.ZIndexBehavior.Sibling
 
--- Основной фрейм (650x420 - короче)
+-- Основной фрейм (650x380)
 local Main = Instance.new("Frame")
 Main.Name = "MainFrame"
-Main.Size = UDim2.new(0, 650, 0, 420)
-Main.Position = UDim2.new(0.5, -325, 0.5, -210)
+Main.Size = UDim2.new(0, 650, 0, 380)
+Main.Position = UDim2.new(0.5, -325, 0.5, -190)
 Main.BackgroundColor3 = Color3.fromRGB(20, 20, 25)
 Main.BorderSizePixel = 0
 Main.ClipsDescendants = true
@@ -31,7 +31,7 @@ Stroke.Thickness = 1
 -- Заголовок с кнопками управления
 local TitleBar = Instance.new("Frame", Main)
 TitleBar.Name = "TitleBar"
-TitleBar.Size = UDim2.new(1, 0, 0, 30)
+TitleBar.Size = UDim2.new(1, 0, 0, 28)
 TitleBar.BackgroundColor3 = Color3.fromRGB(25, 25, 30)
 TitleBar.BorderSizePixel = 0
 Instance.new("UICorner", TitleBar).CornerRadius = UDim.new(0, 8)
@@ -40,52 +40,52 @@ Instance.new("UICorner", TitleBar).CornerRadius = UDim.new(0, 8)
 local Title = Instance.new("TextLabel", TitleBar)
 Title.Name = "Title"
 Title.Text = "BBN"
-Title.Size = UDim2.new(0, 60, 1, 0)
+Title.Size = UDim2.new(0, 50, 1, 0)
 Title.Position = UDim2.new(0, 10, 0, 0)
 Title.BackgroundTransparency = 1
 Title.TextColor3 = Color3.fromRGB(255, 255, 255)
 Title.Font = Enum.Font.GothamBold
-Title.TextSize = 14
+Title.TextSize = 13
 Title.TextXAlignment = Enum.TextXAlignment.Left
 
 -- Кнопка сворачивания
 local MinimizeBtn = Instance.new("TextButton", TitleBar)
 MinimizeBtn.Text = "—"
-MinimizeBtn.Size = UDim2.new(0, 26, 0, 26)
-MinimizeBtn.Position = UDim2.new(1, -58, 0, 2)
+MinimizeBtn.Size = UDim2.new(0, 24, 0, 24)
+MinimizeBtn.Position = UDim2.new(1, -54, 0, 2)
 MinimizeBtn.BackgroundColor3 = Color3.fromRGB(50, 50, 60)
 MinimizeBtn.TextColor3 = Color3.fromRGB(255, 255, 255)
 MinimizeBtn.Font = Enum.Font.GothamBold
-MinimizeBtn.TextSize = 14
+MinimizeBtn.TextSize = 12
 MinimizeBtn.BorderSizePixel = 0
-Instance.new("UICorner", MinimizeBtn).CornerRadius = UDim.new(0, 13)
+Instance.new("UICorner", MinimizeBtn).CornerRadius = UDim.new(0, 12)
 MinimizeBtn.AutoButtonColor = false
 
 -- Кнопка закрытия
 local CloseBtn = Instance.new("TextButton", TitleBar)
 CloseBtn.Text = "×"
-CloseBtn.Size = UDim2.new(0, 26, 0, 26)
-CloseBtn.Position = UDim2.new(1, -30, 0, 2)
+CloseBtn.Size = UDim2.new(0, 24, 0, 24)
+CloseBtn.Position = UDim2.new(1, -28, 0, 2)
 CloseBtn.BackgroundColor3 = Color3.fromRGB(200, 50, 50)
 CloseBtn.TextColor3 = Color3.fromRGB(255, 255, 255)
 CloseBtn.Font = Enum.Font.GothamBold
-CloseBtn.TextSize = 16
+CloseBtn.TextSize = 14
 CloseBtn.BorderSizePixel = 0
-Instance.new("UICorner", CloseBtn).CornerRadius = UDim.new(0, 13)
+Instance.new("UICorner", CloseBtn).CornerRadius = UDim.new(0, 12)
 CloseBtn.AutoButtonColor = false
 
 -- Контейнер для всего кроме заголовка (сворачиваемая часть)
 local CollapsibleContent = Instance.new("Frame", Main)
 CollapsibleContent.Name = "CollapsibleContent"
-CollapsibleContent.Size = UDim2.new(1, 0, 1, -30)
-CollapsibleContent.Position = UDim2.new(0, 0, 0, 30)
+CollapsibleContent.Size = UDim2.new(1, 0, 1, -28)
+CollapsibleContent.Position = UDim2.new(0, 0, 0, 28)
 CollapsibleContent.BackgroundTransparency = 1
 CollapsibleContent.BorderSizePixel = 0
 
 -- Контейнер для вкладок
 local TabButtonsFrame = Instance.new("Frame", CollapsibleContent)
 TabButtonsFrame.Name = "TabButtons"
-TabButtonsFrame.Size = UDim2.new(1, 0, 0, 30)
+TabButtonsFrame.Size = UDim2.new(1, 0, 0, 28)
 TabButtonsFrame.Position = UDim2.new(0, 0, 0, 0)
 TabButtonsFrame.BackgroundColor3 = Color3.fromRGB(30, 30, 35)
 TabButtonsFrame.BorderSizePixel = 0
@@ -100,8 +100,8 @@ layout.Padding = UDim.new(0, 3)
 -- Контейнер для контента вкладок
 local ContentContainer = Instance.new("Frame", CollapsibleContent)
 ContentContainer.Name = "ContentContainer"
-ContentContainer.Size = UDim2.new(1, -20, 1, -38)
-ContentContainer.Position = UDim2.new(0, 10, 0, 34)
+ContentContainer.Size = UDim2.new(1, -16, 1, -34)
+ContentContainer.Position = UDim2.new(0, 8, 0, 32)
 ContentContainer.BackgroundColor3 = Color3.fromRGB(20, 20, 25)
 ContentContainer.BorderSizePixel = 0
 
@@ -124,12 +124,12 @@ local function createTab(name)
         scrollFrame.BackgroundTransparency = 1
         scrollFrame.ScrollBarThickness = 3
         scrollFrame.ScrollBarImageColor3 = Color3.fromRGB(60, 60, 70)
-        scrollFrame.CanvasSize = UDim2.new(0, 0, 0, 280)
+        scrollFrame.CanvasSize = UDim2.new(0, 0, 0, 250)
         
         local serverInfo = Instance.new("TextLabel", scrollFrame)
-        serverInfo.Text = "🌍 North Holland, NL\n\n📊 Server Info:\n• Пинг: 407 | ФПС: 29\n• Версия: 14806\n\n🎮 Сервер антивидов\n• Время: 08:12:35\n• Игроков: 6,658\n\n📌 Distorted Report - 4638"
-        serverInfo.Size = UDim2.new(1, -10, 1, 0)
-        serverInfo.Position = UDim2.new(0, 5, 0, 0)
+        serverInfo.Text = "🌍 North Holland, NL\n📊 Пинг: 407 | ФПС: 29\n📊 Версия: 14806\n🎮 Сервер антивидов\n⏱️ Время: 08:12:35\n👥 Игроков: 6,658\n📌 Distorted Report - 4638"
+        serverInfo.Size = UDim2.new(1, -8, 1, 0)
+        serverInfo.Position = UDim2.new(0, 4, 0, 0)
         serverInfo.BackgroundTransparency = 1
         serverInfo.TextColor3 = Color3.fromRGB(200, 200, 200)
         serverInfo.Font = Enum.Font.Gotham
@@ -138,9 +138,17 @@ local function createTab(name)
         serverInfo.TextXAlignment = Enum.TextXAlignment.Left
         serverInfo.TextYAlignment = Enum.TextYAlignment.Top
     elseif name == "Main" then
-        local placeholder = Instance.new("TextLabel", tabContent)
+        local scrollFrame = Instance.new("ScrollingFrame", tabContent)
+        scrollFrame.Size = UDim2.new(1, 0, 1, 0)
+        scrollFrame.BackgroundTransparency = 1
+        scrollFrame.ScrollBarThickness = 3
+        scrollFrame.ScrollBarImageColor3 = Color3.fromRGB(60, 60, 70)
+        scrollFrame.CanvasSize = UDim2.new(0, 0, 0, 220)
+        
+        local placeholder = Instance.new("TextLabel", scrollFrame)
         placeholder.Text = "⚡ Auto Farm\n🎯 Auto Parry\n🚪 Delete Doors\n🎬 Skip Cutscene\n🔧 Auto Generator\n📦 Auto Barricade\n👁️ Invisible Killer\n💥 Hitbox Expender\n⚡ Instant Prompt"
-        placeholder.Size = UDim2.new(1, 0, 1, 0)
+        placeholder.Size = UDim2.new(1, -8, 1, 0)
+        placeholder.Position = UDim2.new(0, 4, 0, 0)
         placeholder.BackgroundTransparency = 1
         placeholder.TextColor3 = Color3.fromRGB(200, 200, 200)
         placeholder.Font = Enum.Font.Gotham
@@ -218,12 +226,12 @@ local function toggleMinimize()
     
     if isMinimized then
         CollapsibleContent.Visible = false
-        Main.Size = UDim2.new(0, 650, 0, 30)
+        Main.Size = UDim2.new(0, 650, 0, 28)
         MinimizeBtn.Text = "+"
         MinimizeBtn.BackgroundColor3 = Color3.fromRGB(50, 150, 50)
     else
         CollapsibleContent.Visible = true
-        Main.Size = UDim2.new(0, 650, 0, 420)
+        Main.Size = UDim2.new(0, 650, 0, 380)
         MinimizeBtn.Text = "—"
         MinimizeBtn.BackgroundColor3 = Color3.fromRGB(50, 50, 60)
     end
@@ -244,7 +252,7 @@ for _, name in ipairs(tabNames) do
     tabButton.BackgroundColor3 = Color3.fromRGB(30, 30, 35)
     tabButton.TextColor3 = Color3.fromRGB(180, 180, 180)
     tabButton.Font = Enum.Font.GothamBold
-    tabButton.TextSize = 13
+    tabButton.TextSize = 12
     tabButton.BorderSizePixel = 0
     tabButton.AutoButtonColor = false
     
@@ -259,47 +267,37 @@ end
 -- Показываем вкладку Main первой
 switchTab("Main")
 
--- ===== ТВОЙ СКРИПТ ПЕРЕТАСКИВАНИЯ =====
+-- ===== ТВОЙ КОМПАКТНЫЙ СКРИПТ ПЕРЕТАСКИВАНИЯ =====
 local UIS = game:GetService("UserInputService")
-local frame = Main
-local dragging, dragInput, dragStart, startPos
+local frame = TitleBar
+local dragging, dragStart, startPos
 
-local function update(input)
-    local delta = input.Position - dragStart
-    frame.Position = UDim2.new(startPos.X.Scale, startPos.X.Offset + delta.X, startPos.Y.Scale, startPos.Y.Offset + delta.Y)
-end
-
-TitleBar.InputBegan:Connect(function(input)
+frame.InputBegan:Connect(function(input)
     if input.UserInputType == Enum.UserInputType.MouseButton1 or input.UserInputType == Enum.UserInputType.Touch then
         dragging = true
         dragStart = input.Position
-        startPos = frame.Position
-        
-        input.Changed:Connect(function()
-            if input.UserInputState == Enum.UserInputState.End then
-                dragging = false
-            end
-        end)
+        startPos = Main.Position
     end
 end)
 
-TitleBar.InputChanged:Connect(function(input)
-    if input.UserInputType == Enum.UserInputType.MouseMovement or input.UserInputType == Enum.UserInputType.Touch then
-        dragInput = input
+UIS.InputEnded:Connect(function(input)
+    if input.UserInputType == Enum.UserInputType.MouseButton1 or input.UserInputType == Enum.UserInputType.Touch then
+        dragging = false
     end
 end)
 
 UIS.InputChanged:Connect(function(input)
-    if input == dragInput and dragging then
-        update(input)
+    if dragging and (input.UserInputType == Enum.UserInputType.MouseMovement or input.UserInputType == Enum.UserInputType.Touch) then
+        local delta = input.Position - dragStart
+        Main.Position = UDim2.new(startPos.X.Scale, startPos.X.Offset + delta.X, startPos.Y.Scale, startPos.Y.Offset + delta.Y)
     end
 end)
--- =====================================
+-- =================================================
 
 -- Анимация появления
 Main.Position = UDim2.new(0.5, -325, 0.8, 0)
 TweenService:Create(Main, TweenInfo.new(0.4, Enum.EasingStyle.Quad), {
-    Position = UDim2.new(0.5, -325, 0.5, -210)
+    Position = UDim2.new(0.5, -325, 0.5, -190)
 }):Play()
 
-print("BBN GUI 650x420 loaded!")
+print("BBN GUI 650x380 loaded! Compact drag script")
