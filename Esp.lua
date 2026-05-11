@@ -11,11 +11,11 @@ ScreenGui.Parent = player:WaitForChild("PlayerGui")
 ScreenGui.ResetOnSpawn = false
 ScreenGui.ZIndexBehavior = Enum.ZIndexBehavior.Sibling
 
--- Основной фрейм (800x500)
+-- Основной фрейм (650x500 - шире)
 local Main = Instance.new("Frame")
 Main.Name = "MainFrame"
-Main.Size = UDim2.new(0, 900, 0, 400)
-Main.Position = UDim2.new(0.5, -300, 0.5, -250)
+Main.Size = UDim2.new(0, 650, 0, 500)
+Main.Position = UDim2.new(0.5, -325, 0.5, -250)
 Main.BackgroundColor3 = Color3.fromRGB(20, 20, 25)
 Main.BorderSizePixel = 0
 Main.ClipsDescendants = true
@@ -95,7 +95,7 @@ local layout = Instance.new("UIListLayout", TabButtonsFrame)
 layout.FillDirection = Enum.FillDirection.Horizontal
 layout.HorizontalAlignment = Enum.HorizontalAlignment.Center
 layout.VerticalAlignment = Enum.VerticalAlignment.Center
-layout.Padding = UDim.new(0, 2)
+layout.Padding = UDim.new(0, 3)
 
 -- Контейнер для контента вкладок
 local ContentContainer = Instance.new("Frame", CollapsibleContent)
@@ -218,12 +218,12 @@ local function toggleMinimize()
     
     if isMinimized then
         CollapsibleContent.Visible = false
-        Main.Size = UDim2.new(0, 600, 0, 35)
+        Main.Size = UDim2.new(0, 650, 0, 35)
         MinimizeBtn.Text = "+"
         MinimizeBtn.BackgroundColor3 = Color3.fromRGB(50, 150, 50)
     else
         CollapsibleContent.Visible = true
-        Main.Size = UDim2.new(0, 600, 0, 500)
+        Main.Size = UDim2.new(0, 650, 0, 500)
         MinimizeBtn.Text = "—"
         MinimizeBtn.BackgroundColor3 = Color3.fromRGB(50, 50, 60)
     end
@@ -240,7 +240,7 @@ for _, name in ipairs(tabNames) do
     local tabButton = Instance.new("TextButton", TabButtonsFrame)
     tabButton.Name = name
     tabButton.Text = name
-    tabButton.Size = UDim2.new(0, 95, 1, 0)
+    tabButton.Size = UDim2.new(0, 100, 1, 0)
     tabButton.BackgroundColor3 = Color3.fromRGB(30, 30, 35)
     tabButton.TextColor3 = Color3.fromRGB(180, 180, 180)
     tabButton.Font = Enum.Font.GothamBold
@@ -259,48 +259,47 @@ end
 -- Показываем вкладку Main первой
 switchTab("Main")
 
--- Перетаскивание за заголовок
-local dragging = false
-local dragInput
-local dragStart
-local startPos
+-- ===== ТВОЙ СКРИПТ ПЕРЕТАСКИВАНИЯ =====
+local UIS = game:GetService("UserInputService")
+local frame = Main
+local dragging, dragInput, dragStart, startPos
+
+local function update(input)
+    local delta = input.Position - dragStart
+    frame.Position = UDim2.new(startPos.X.Scale, startPos.X.Offset + delta.X, startPos.Y.Scale, startPos.Y.Offset + delta.Y)
+end
 
 TitleBar.InputBegan:Connect(function(input)
     if input.UserInputType == Enum.UserInputType.MouseButton1 or input.UserInputType == Enum.UserInputType.Touch then
         dragging = true
         dragStart = input.Position
-        startPos = Main.Position
+        startPos = frame.Position
+        
+        input.Changed:Connect(function()
+            if input.UserInputState == Enum.UserInputState.End then
+                dragging = false
+            end
+        end)
     end
 end)
 
 TitleBar.InputChanged:Connect(function(input)
-    if input.UserInputType == Enum.UserInputType.MouseMovement then
+    if input.UserInputType == Enum.UserInputType.MouseMovement or input.UserInputType == Enum.UserInputType.Touch then
         dragInput = input
     end
 end)
 
-UserInputService.InputChanged:Connect(function(input)
+UIS.InputChanged:Connect(function(input)
     if input == dragInput and dragging then
-        local delta = input.Position - dragStart
-        Main.Position = UDim2.new(
-            startPos.X.Scale,
-            startPos.X.Offset + delta.X,
-            startPos.Y.Scale,
-            startPos.Y.Offset + delta.Y
-        )
+        update(input)
     end
 end)
-
-UserInputService.InputEnded:Connect(function(input)
-    if input.UserInputType == Enum.UserInputType.MouseButton1 or input.UserInputType == Enum.UserInputType.Touch then
-        dragging = false
-    end
-end)
+-- =====================================
 
 -- Анимация появления
-Main.Position = UDim2.new(0.5, -300, 0.8, 0)
+Main.Position = UDim2.new(0.5, -325, 0.8, 0)
 TweenService:Create(Main, TweenInfo.new(0.4, Enum.EasingStyle.Quad), {
-    Position = UDim2.new(0.5, -300, 0.5, -250)
+    Position = UDim2.new(0.5, -325, 0.5, -250)
 }):Play()
 
-print("BBN GUI 600x500 loaded! Drag, Minimize, Close")
+print("BBN GUI 650x500 loaded! Your drag script, Minimize, Close")
