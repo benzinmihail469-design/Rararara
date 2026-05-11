@@ -83,7 +83,7 @@ Title.TextXAlignment = Enum.TextXAlignment.Left
 
 -- Кнопка сворачивания
 local MinimizeBtn = Instance.new("TextButton", TitleBar)
-MinimizeBtn.Text = "━"
+MinimizeBtn.Text = "+"
 MinimizeBtn.Size = UDim2.new(0, 22, 0, 22)
 MinimizeBtn.Position = UDim2.new(1, -48, 0, 4)
 MinimizeBtn.BackgroundColor3 = Color3.fromRGB(40, 15, 60)
