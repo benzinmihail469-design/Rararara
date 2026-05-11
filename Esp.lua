@@ -12,11 +12,11 @@ ScreenGui.Parent = player:WaitForChild("PlayerGui")
 ScreenGui.ResetOnSpawn = false
 ScreenGui.ZIndexBehavior = Enum.ZIndexBehavior.Sibling
 
--- Основной фрейм (шире и ниже)
+-- Основной фрейм (360x380)
 local Main = Instance.new("Frame")
 Main.Name = "MainFrame"
-Main.Size = UDim2.new(0, 340, 0, 380)
-Main.Position = UDim2.new(0.5, -170, 0.5, -190)
+Main.Size = UDim2.new(0, 360, 0, 380)
+Main.Position = UDim2.new(0.5, -180, 0.5, -190)
 Main.BackgroundColor3 = Color3.fromRGB(20, 20, 25)
 Main.BorderSizePixel = 0
 Main.ClipsDescendants = true
@@ -37,7 +37,7 @@ Title.Size = UDim2.new(1, 0, 0, 28)
 Title.BackgroundColor3 = Color3.fromRGB(25, 25, 30)
 Title.TextColor3 = Color3.fromRGB(255, 255, 255)
 Title.Font = Enum.Font.GothamBold
-Title.TextSize = 12
+Title.TextSize = 13
 Title.BorderSizePixel = 0
 
 -- Кнопка закрытия (мини)
@@ -58,20 +58,19 @@ CloseBtn.MouseButton1Click:Connect(function()
 end)
 
 -- Контейнер для вкладок
-local TabContainer = Instance.new("ScrollFrame", Main)
-TabContainer.Name = "TabContainer"
-TabContainer.Size = UDim2.new(1, 0, 0, 26)
-TabContainer.Position = UDim2.new(0, 0, 0, 28)
-TabContainer.BackgroundColor3 = Color3.fromRGB(30, 30, 35)
-TabContainer.BorderSizePixel = 0
-TabContainer.ScrollBarThickness = 0
-TabContainer.CanvasSize = UDim2.new(0, 0, 0, 0)
-
-local TabButtonsFrame = Instance.new("Frame", TabContainer)
+local TabButtonsFrame = Instance.new("Frame", Main)
 TabButtonsFrame.Name = "TabButtons"
-TabButtonsFrame.Size = UDim2.new(0, 0, 1, 0)
+TabButtonsFrame.Size = UDim2.new(1, 0, 0, 26)
+TabButtonsFrame.Position = UDim2.new(0, 0, 0, 28)
 TabButtonsFrame.BackgroundColor3 = Color3.fromRGB(30, 30, 35)
 TabButtonsFrame.BorderSizePixel = 0
+
+-- UIListLayout для автоматического расположения
+local layout = Instance.new("UIListLayout", TabButtonsFrame)
+layout.FillDirection = Enum.FillDirection.Horizontal
+layout.HorizontalAlignment = Enum.HorizontalAlignment.Center
+layout.VerticalAlignment = Enum.VerticalAlignment.Center
+layout.Padding = UDim.new(0, 1)
 
 -- Контейнер для контента вкладок
 local ContentContainer = Instance.new("Frame", Main)
@@ -85,7 +84,6 @@ ContentContainer.BorderSizePixel = 0
 local tabs = {}
 local tabButtons = {}
 local tabNames = {"Info", "Main", "Player", "Esp", "Discord", "Settings"}
-local currentTab = nil
 
 local function createTab(name)
     local tabContent = Instance.new("Frame", ContentContainer)
@@ -105,14 +103,61 @@ local function createTab(name)
         serverInfo.TextWrapped = true
         serverInfo.TextXAlignment = Enum.TextXAlignment.Left
         serverInfo.TextYAlignment = Enum.TextYAlignment.Top
-    else
+    elseif name == "Main" then
         local placeholder = Instance.new("TextLabel", tabContent)
-        placeholder.Text = name
-        placeholder.Size = UDim2.new(1, 0, 0, 18)
+        placeholder.Text = "⚡ Auto Farm\n🎯 Auto Parry\n🚪 Delete Doors\n🎬 Skip Cutscene\n🔧 Auto Generator\n📦 Auto Barricade"
+        placeholder.Size = UDim2.new(1, 0, 1, 0)
         placeholder.BackgroundTransparency = 1
-        placeholder.TextColor3 = Color3.fromRGB(150, 150, 150)
+        placeholder.TextColor3 = Color3.fromRGB(200, 200, 200)
         placeholder.Font = Enum.Font.Gotham
         placeholder.TextSize = 11
+        placeholder.TextWrapped = true
+        placeholder.TextXAlignment = Enum.TextXAlignment.Left
+        placeholder.TextYAlignment = Enum.TextYAlignment.Top
+    elseif name == "Player" then
+        local placeholder = Instance.new("TextLabel", tabContent)
+        placeholder.Text = "🏃 Run Speed\n🚶 Walk Speed\n🦘 Jump Power\n✈️ Fly\n🚫 Noclip\n⚡ Infinite Stamina"
+        placeholder.Size = UDim2.new(1, 0, 1, 0)
+        placeholder.BackgroundTransparency = 1
+        placeholder.TextColor3 = Color3.fromRGB(200, 200, 200)
+        placeholder.Font = Enum.Font.Gotham
+        placeholder.TextSize = 11
+        placeholder.TextWrapped = true
+        placeholder.TextXAlignment = Enum.TextXAlignment.Left
+        placeholder.TextYAlignment = Enum.TextYAlignment.Top
+    elseif name == "Esp" then
+        local placeholder = Instance.new("TextLabel", tabContent)
+        placeholder.Text = "👁️ ESP Survivors\n🔴 ESP Killers\n⚡ ESP Generators\n📦 ESP Fuse Boxes\n🔋 ESP Battery\n🪤 ESP Traps"
+        placeholder.Size = UDim2.new(1, 0, 1, 0)
+        placeholder.BackgroundTransparency = 1
+        placeholder.TextColor3 = Color3.fromRGB(200, 200, 200)
+        placeholder.Font = Enum.Font.Gotham
+        placeholder.TextSize = 11
+        placeholder.TextWrapped = true
+        placeholder.TextXAlignment = Enum.TextXAlignment.Left
+        placeholder.TextYAlignment = Enum.TextYAlignment.Top
+    elseif name == "Discord" then
+        local placeholder = Instance.new("TextLabel", tabContent)
+        placeholder.Text = "🎮 Discord Server\n📋 Copy Link\n\ndiscord.gg/E2TqYRsRP4"
+        placeholder.Size = UDim2.new(1, 0, 1, 0)
+        placeholder.BackgroundTransparency = 1
+        placeholder.TextColor3 = Color3.fromRGB(200, 200, 200)
+        placeholder.Font = Enum.Font.Gotham
+        placeholder.TextSize = 11
+        placeholder.TextWrapped = true
+        placeholder.TextXAlignment = Enum.TextXAlignment.Left
+        placeholder.TextYAlignment = Enum.TextYAlignment.Top
+    elseif name == "Settings" then
+        local placeholder = Instance.new("TextLabel", tabContent)
+        placeholder.Text = "🎨 Change Theme\n📏 ESP Distance\n📐 Line ESP\n🔄 Unload Cheat\n\nVersion: 0.52"
+        placeholder.Size = UDim2.new(1, 0, 1, 0)
+        placeholder.BackgroundTransparency = 1
+        placeholder.TextColor3 = Color3.fromRGB(200, 200, 200)
+        placeholder.Font = Enum.Font.Gotham
+        placeholder.TextSize = 11
+        placeholder.TextWrapped = true
+        placeholder.TextXAlignment = Enum.TextXAlignment.Left
+        placeholder.TextYAlignment = Enum.TextYAlignment.Top
     end
     
     return tabContent
@@ -134,21 +179,17 @@ local function switchTab(tabName)
 end
 
 -- Создаём кнопки вкладок
-local totalWidth = 0
-for i, name in ipairs(tabNames) do
+for _, name in ipairs(tabNames) do
     local tabButton = Instance.new("TextButton", TabButtonsFrame)
     tabButton.Name = name
     tabButton.Text = name
-    tabButton.Size = UDim2.new(0, 56, 1, 0)
-    tabButton.Position = UDim2.new(0, totalWidth, 0, 0)
+    tabButton.Size = UDim2.new(0, 58, 1, 0)
     tabButton.BackgroundColor3 = Color3.fromRGB(30, 30, 35)
     tabButton.TextColor3 = Color3.fromRGB(180, 180, 180)
     tabButton.Font = Enum.Font.GothamBold
     tabButton.TextSize = 10
     tabButton.BorderSizePixel = 0
     tabButton.AutoButtonColor = false
-    
-    totalWidth = totalWidth + 56
     
     tabs[name] = createTab(name)
     tabButtons[name] = tabButton
@@ -158,12 +199,8 @@ for i, name in ipairs(tabNames) do
     end)
 end
 
--- Обновляем размер канваса для скролла
-TabButtonsFrame.Size = UDim2.new(0, totalWidth, 1, 0)
-TabContainer.CanvasSize = UDim2.new(0, totalWidth, 0, 0)
-
--- Показываем первую вкладку
-switchTab("Info")
+-- Показываем вкладку Main первой
+switchTab("Main")
 
 -- Перетаскивание
 local dragging = false
@@ -204,9 +241,9 @@ UserInputService.InputEnded:Connect(function(input)
 end)
 
 -- Анимация появления
-Main.Position = UDim2.new(0.5, -170, 0.8, 0)
+Main.Position = UDim2.new(0.5, -180, 0.8, 0)
 TweenService:Create(Main, TweenInfo.new(0.4, Enum.EasingStyle.Quad), {
-    Position = UDim2.new(0.5, -170, 0.5, -190)
+    Position = UDim2.new(0.5, -180, 0.5, -190)
 }):Play()
 
-print("BBN Compact Mobile GUI loaded!")
+print("BBN Compact GUI loaded!")
