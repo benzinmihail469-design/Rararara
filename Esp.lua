@@ -24,17 +24,16 @@ local colors = {
     textDark = Color3.fromRGB(150, 130, 160),
     close = Color3.fromRGB(180, 30, 30),
     stroke = Color3.fromRGB(100, 50, 130),
-    sliderBg = Color3.fromRGB(40, 15, 60),
-    sliderFill = Color3.fromRGB(120, 40, 180),
-    buttonBg = Color3.fromRGB(50, 20, 80),
-    buttonHover = Color3.fromRGB(80, 30, 120),
+    toggleOn = Color3.fromRGB(100, 30, 160),
+    toggleOff = Color3.fromRGB(35, 15, 55),
+    toggleCircle = Color3.fromRGB(220, 180, 255),
 }
 
--- Основной фрейм (520x340 - чуть выше для слайдеров)
+-- Основной фрейм (520x360)
 local Main = Instance.new("Frame")
 Main.Name = "MainFrame"
-Main.Size = UDim2.new(0, 520, 0, 340)
-Main.Position = UDim2.new(0.5, -260, 0.5, -170)
+Main.Size = UDim2.new(0, 520, 0, 360)
+Main.Position = UDim2.new(0.5, -260, 0.5, -180)
 Main.BackgroundColor3 = colors.bg
 Main.BorderSizePixel = 0
 Main.ClipsDescendants = true
@@ -113,7 +112,7 @@ CloseBtn.ZIndex = 10
 Instance.new("UICorner", CloseBtn).CornerRadius = UDim.new(0, 6)
 CloseBtn.AutoButtonColor = false
 
--- Контейнер для всего кроме заголовка
+-- Контейнер для контента
 local CollapsibleContent = Instance.new("Frame", Main)
 CollapsibleContent.Name = "CollapsibleContent"
 CollapsibleContent.Size = UDim2.new(1, 0, 1, -32)
@@ -146,124 +145,98 @@ ContentContainer.BackgroundTransparency = 0.5
 ContentContainer.BorderSizePixel = 0
 Instance.new("UICorner", ContentContainer).CornerRadius = UDim.new(0, 8)
 
--- Функция создания кнопки+слайдера
-local function createButtonWithSlider(parent, name, min, max, default, callback)
+-- Функция создания Toggle кнопки
+local function createToggle(parent, name, default, callback)
     local container = Instance.new("Frame", parent)
-    container.Size = UDim2.new(1, 0, 0, 28)
+    container.Size = UDim2.new(1, 0, 0, 30)
     container.BackgroundTransparency = 1
     container.BorderSizePixel = 0
     
-    -- Кнопка-лейбл
+    -- Кнопка с названием
     local button = Instance.new("TextButton", container)
     button.Text = name
-    button.Size = UDim2.new(0, 100, 0, 22)
+    button.Size = UDim2.new(1, -50, 0, 24)
     button.Position = UDim2.new(0, 0, 0, 3)
-    button.BackgroundColor3 = colors.buttonBg
+    button.BackgroundColor3 = Color3.fromRGB(30, 12, 45)
     button.TextColor3 = colors.text
     button.Font = Enum.Font.GothamBold
-    button.TextSize = 9
+    button.TextSize = 10
+    button.TextXAlignment = Enum.TextXAlignment.Left
     button.BorderSizePixel = 0
     button.AutoButtonColor = false
-    Instance.new("UICorner", button).CornerRadius = UDim.new(0, 4)
+    button.Position = UDim2.new(0, 8, 0, 3)
+    Instance.new("UICorner", button).CornerRadius = UDim.new(0, 5)
     
-    -- Значение
-    local valueLabel = Instance.new("TextLabel", container)
-    valueLabel.Text = tostring(default)
-    valueLabel.Size = UDim2.new(0, 35, 0, 22)
-    valueLabel.Position = UDim2.new(1, -35, 0, 3)
-    valueLabel.BackgroundColor3 = Color3.fromRGB(30, 12, 45)
-    valueLabel.TextColor3 = colors.gold
-    valueLabel.Font = Enum.Font.GothamBold
-    valueLabel.TextSize = 9
-    valueLabel.BorderSizePixel = 0
-    Instance.new("UICorner", valueLabel).CornerRadius = UDim.new(0, 4)
+    -- Сам переключатель
+    local toggleFrame = Instance.new("Frame", container)
+    toggleFrame.Size = UDim2.new(0, 36, 0, 18)
+    toggleFrame.Position = UDim2.new(1, -42, 0, 6)
+    toggleFrame.BorderSizePixel = 0
+    Instance.new("UICorner", toggleFrame).CornerRadius = UDim.new(0, 9)
     
-    -- Слайдер
-    local sliderFrame = Instance.new("Frame", container)
-    sliderFrame.Size = UDim2.new(1, -145, 0, 14)
-    sliderFrame.Position = UDim2.new(0, 105, 0, 7)
-    sliderFrame.BackgroundColor3 = colors.sliderBg
-    sliderFrame.BorderSizePixel = 0
-    Instance.new("UICorner", sliderFrame).CornerRadius = UDim.new(0, 7)
+    local toggleCircle = Instance.new("Frame", toggleFrame)
+    toggleCircle.Size = UDim2.new(0, 14, 0, 14)
+    toggleCircle.Position = UDim2.new(0, 2, 0, 2)
+    toggleCircle.BorderSizePixel = 0
+    Instance.new("UICorner", toggleCircle).CornerRadius = UDim.new(0, 7)
     
-    local fill = Instance.new("Frame", sliderFrame)
-    fill.Name = "Fill"
-    fill.Size = UDim2.new((default - min) / (max - min), 0, 1, 0)
-    fill.BackgroundColor3 = colors.sliderFill
-    fill.BorderSizePixel = 0
-    Instance.new("UICorner", fill).CornerRadius = UDim.new(0, 7)
+    local isOn = default
     
-    local knob = Instance.new("TextButton", sliderFrame)
-    knob.Name = "Knob"
-    knob.Size = UDim2.new(0, 18, 0, 18)
-    knob.Position = UDim2.new((default - min) / (max - min), -9, 0, -2)
-    knob.BackgroundColor3 = colors.accent
-    knob.Text = ""
-    knob.BorderSizePixel = 0
-    knob.AutoButtonColor = false
-    Instance.new("UICorner", knob).CornerRadius = UDim.new(0, 9)
+    local function updateToggle()
+        if isOn then
+            toggleFrame.BackgroundColor3 = colors.toggleOn
+            toggleCircle.BackgroundColor3 = colors.toggleCircle
+            toggleCircle.Position = UDim2.new(1, -16, 0, 2)
+        else
+            toggleFrame.BackgroundColor3 = colors.toggleOff
+            toggleCircle.BackgroundColor3 = Color3.fromRGB(100, 80, 120)
+            toggleCircle.Position = UDim2.new(0, 2, 0, 2)
+        end
+    end
     
-    -- Логика слайдера
-    local dragging = false
+    updateToggle()
     
-    knob.MouseButton1Down:Connect(function()
-        dragging = true
-    end)
+    -- Клик по кнопке или переключателю
+    local function toggle()
+        isOn = not isOn
+        updateToggle()
+        if callback then callback(isOn) end
+    end
     
-    UserInputService.InputEnded:Connect(function(input)
+    button.MouseButton1Click:Connect(toggle)
+    
+    toggleFrame.InputBegan:Connect(function(input)
         if input.UserInputType == Enum.UserInputType.MouseButton1 then
-            dragging = false
+            toggle()
         end
-    end)
-    
-    sliderFrame.InputBegan:Connect(function(input)
-        if input.UserInputType == Enum.UserInputType.MouseButton1 or input.UserInputType == Enum.UserInputType.Touch then
-            dragging = true
-            local mousePos = UserInputService:GetMouseLocation()
-            local sliderPos = sliderFrame.AbsolutePosition.X
-            local sliderWidth = sliderFrame.AbsoluteSize.X
-            local percent = math.clamp((mousePos.X - sliderPos) / sliderWidth, 0, 1)
-            local value = min + (max - min) * percent
-            value = math.floor(value / 1) * 1 -- шаг 1
-            knob.Position = UDim2.new(percent, -9, 0, -2)
-            fill.Size = UDim2.new(percent, 0, 1, 0)
-            valueLabel.Text = tostring(value)
-            if callback then callback(value) end
-        end
-    end)
-    
-    UserInputService.InputChanged:Connect(function(input)
-        if dragging and (input.UserInputType == Enum.UserInputType.MouseMovement or input.UserInputType == Enum.UserInputType.Touch) then
-            local mousePos = UserInputService:GetMouseLocation()
-            local sliderPos = sliderFrame.AbsolutePosition.X
-            local sliderWidth = sliderFrame.AbsoluteSize.X
-            local percent = math.clamp((mousePos.X - sliderPos) / sliderWidth, 0, 1)
-            local value = min + (max - min) * percent
-            value = math.floor(value / 1) * 1
-            knob.Position = UDim2.new(percent, -9, 0, -2)
-            fill.Size = UDim2.new(percent, 0, 1, 0)
-            valueLabel.Text = tostring(value)
-            if callback then callback(value) end
-        end
-    end)
-    
-    -- Кнопка быстрого сброса
-    button.MouseButton1Click:Connect(function()
-        local midValue = math.floor((min + max) / 2)
-        local percent = (midValue - min) / (max - min)
-        knob.Position = UDim2.new(percent, -9, 0, -2)
-        fill.Size = UDim2.new(percent, 0, 1, 0)
-        valueLabel.Text = tostring(midValue)
-        if callback then callback(midValue) end
     end)
     
     return container
 end
 
+-- Функция создания обычной кнопки
+local function createButton(parent, name, callback)
+    local button = Instance.new("TextButton", parent)
+    button.Text = name
+    button.Size = UDim2.new(1, -16, 0, 28)
+    button.Position = UDim2.new(0, 8, 0, 0)
+    button.BackgroundColor3 = Color3.fromRGB(50, 20, 80)
+    button.TextColor3 = colors.text
+    button.Font = Enum.Font.GothamBold
+    button.TextSize = 10
+    button.BorderSizePixel = 0
+    button.AutoButtonColor = false
+    Instance.new("UICorner", button).CornerRadius = UDim.new(0, 5)
+    
+    button.MouseButton1Click:Connect(callback)
+    
+    return button
+end
+
 -- Вкладки
 local tabs = {}
 local tabButtons = {}
-local tabNames = {"Discord", "Esp", "Info", "Main", "Player", "Настройки"}
+local tabNames = {"Main", "Player", "Esp", "Info", "Discord", "Настройки"}
 local isMinimized = false
 
 local function createTab(name)
@@ -273,7 +246,48 @@ local function createTab(name)
     tabContent.BackgroundTransparency = 1
     tabContent.Visible = false
     
-    if name == "Player" then
+    if name == "Main" then
+        local scrollFrame = Instance.new("ScrollingFrame", tabContent)
+        scrollFrame.Size = UDim2.new(1, 0, 1, 0)
+        scrollFrame.BackgroundTransparency = 1
+        scrollFrame.ScrollBarThickness = 2
+        scrollFrame.ScrollBarImageColor3 = colors.accent
+        scrollFrame.CanvasSize = UDim2.new(0, 0, 0, 350)
+        
+        local yPos = 5
+        
+        -- Toggles
+        createToggle(scrollFrame, "⚡ Auto Farm", false, function(val) print("Auto Farm:", val) end)
+        
+        local toggle2 = createToggle(scrollFrame, "🎯 Auto Parry", false, function(val) print("Auto Parry:", val) end)
+        toggle2.Position = UDim2.new(0, 0, 0, yPos + 32)
+        
+        local toggle3 = createToggle(scrollFrame, "🔧 Auto Generator", false, function(val) print("Auto Gen:", val) end)
+        toggle3.Position = UDim2.new(0, 0, 0, yPos + 64)
+        
+        local toggle4 = createToggle(scrollFrame, "🚪 Auto Escape", false, function(val) print("Auto Escape:", val) end)
+        toggle4.Position = UDim2.new(0, 0, 0, yPos + 96)
+        
+        local toggle5 = createToggle(scrollFrame, "📦 Auto Barricade", false, function(val) print("Auto Barricade:", val) end)
+        toggle5.Position = UDim2.new(0, 0, 0, yPos + 128)
+        
+        local toggle6 = createToggle(scrollFrame, "👁️ Invisible Killer", false, function(val) print("Invisible:", val) end)
+        toggle6.Position = UDim2.new(0, 0, 0, yPos + 160)
+        
+        local toggle7 = createToggle(scrollFrame, "💥 Hitbox Expender", false, function(val) print("Hitbox:", val) end)
+        toggle7.Position = UDim2.new(0, 0, 0, yPos + 192)
+        
+        -- Кнопки
+        local btn1 = createButton(scrollFrame, "🚪 Delete Doors", function() print("Delete Doors") end)
+        btn1.Position = UDim2.new(0, 8, 0, yPos + 230)
+        
+        local btn2 = createButton(scrollFrame, "🎬 Skip Cutscene", function() print("Skip Cutscene") end)
+        btn2.Position = UDim2.new(0, 8, 0, yPos + 265)
+        
+        local btn3 = createButton(scrollFrame, "⚡ Instant Win", function() print("Instant Win") end)
+        btn3.Position = UDim2.new(0, 8, 0, yPos + 300)
+        
+    elseif name == "Player" then
         local scrollFrame = Instance.new("ScrollingFrame", tabContent)
         scrollFrame.Size = UDim2.new(1, 0, 1, 0)
         scrollFrame.BackgroundTransparency = 1
@@ -281,38 +295,21 @@ local function createTab(name)
         scrollFrame.ScrollBarImageColor3 = colors.accent
         scrollFrame.CanvasSize = UDim2.new(0, 0, 0, 250)
         
-        local yPos = 5
+        createToggle(scrollFrame, "🚫 Noclip", false, function(val) print("Noclip:", val) end)
         
-        -- Run Speed
-        createButtonWithSlider(scrollFrame, "🏃 Run Speed", 0, 50, 24, function(val)
-            print("Run Speed:", val)
-        end)
+        local t2 = createToggle(scrollFrame, "✈️ Fly", false, function(val) print("Fly:", val) end)
+        t2.Position = UDim2.new(0, 0, 0, 35)
         
-        -- Walk Speed
-        local walkSlider = createButtonWithSlider(scrollFrame, "🚶 Walk Speed", 0, 30, 15, function(val)
-            print("Walk Speed:", val)
-        end)
-        walkSlider.Position = UDim2.new(0, 0, 0, 35)
+        local t3 = createToggle(scrollFrame, "🦘 Infinity Jump", false, function(val) print("Inf Jump:", val) end)
+        t3.Position = UDim2.new(0, 0, 0, 67)
         
-        -- Jump Power
-        local jumpSlider = createButtonWithSlider(scrollFrame, "🦘 Jump Power", 0, 100, 50, function(val)
-            print("Jump Power:", val)
-        end)
-        jumpSlider.Position = UDim2.new(0, 0, 0, 65)
+        local t4 = createToggle(scrollFrame, "⚡ Infinite Stamina", false, function(val) print("Inf Stamina:", val) end)
+        t4.Position = UDim2.new(0, 0, 0, 99)
         
-        -- Fly Speed
-        local flySlider = createButtonWithSlider(scrollFrame, "✈️ Fly Speed", 0, 10, 1, function(val)
-            print("Fly Speed:", val)
-        end)
-        flySlider.Position = UDim2.new(0, 0, 0, 95)
+        local t5 = createToggle(scrollFrame, "🏃 Speed Boost", false, function(val) print("Speed:", val) end)
+        t5.Position = UDim2.new(0, 0, 0, 131)
         
-        -- FOV
-        local fovSlider = createButtonWithSlider(scrollFrame, "🔭 FOV", 30, 120, 70, function(val)
-            print("FOV:", val)
-        end)
-        fovSlider.Position = UDim2.new(0, 0, 0, 125)
-        
-    elseif name == "Main" then
+    elseif name == "Esp" then
         local scrollFrame = Instance.new("ScrollingFrame", tabContent)
         scrollFrame.Size = UDim2.new(1, 0, 1, 0)
         scrollFrame.BackgroundTransparency = 1
@@ -320,28 +317,25 @@ local function createTab(name)
         scrollFrame.ScrollBarImageColor3 = colors.accent
         scrollFrame.CanvasSize = UDim2.new(0, 0, 0, 280)
         
-        -- Hitbox Size
-        createButtonWithSlider(scrollFrame, "💥 Hitbox Size", 0, 30, 15, function(val)
-            print("Hitbox:", val)
-        end)
+        createToggle(scrollFrame, "👁️ ESP Survivors", false, function(val) print("ESP Surv:", val) end)
         
-        -- Speed Boost
-        local speedSlider = createButtonWithSlider(scrollFrame, "⚡ Speed Boost", 0, 100, 50, function(val)
-            print("Speed Boost:", val)
-        end)
-        speedSlider.Position = UDim2.new(0, 0, 0, 35)
+        local e2 = createToggle(scrollFrame, "🔴 ESP Killers", false, function(val) print("ESP Killers:", val) end)
+        e2.Position = UDim2.new(0, 0, 0, 35)
         
-        -- Auto Farm Speed
-        local farmSlider = createButtonWithSlider(scrollFrame, "🚜 Farm Speed", 1, 10, 5, function(val)
-            print("Farm Speed:", val)
-        end)
-        farmSlider.Position = UDim2.new(0, 0, 0, 65)
+        local e3 = createToggle(scrollFrame, "⚡ ESP Generators", false, function(val) print("ESP Gen:", val) end)
+        e3.Position = UDim2.new(0, 0, 0, 67)
         
-        -- ESP Distance
-        local espSlider = createButtonWithSlider(scrollFrame, "📏 ESP Distance", 50, 1000, 100, function(val)
-            print("ESP Range:", val)
-        end)
-        espSlider.Position = UDim2.new(0, 0, 0, 95)
+        local e4 = createToggle(scrollFrame, "📦 ESP Fuse Boxes", false, function(val) print("ESP Fuse:", val) end)
+        e4.Position = UDim2.new(0, 0, 0, 99)
+        
+        local e5 = createToggle(scrollFrame, "🔋 ESP Battery", false, function(val) print("ESP Batt:", val) end)
+        e5.Position = UDim2.new(0, 0, 0, 131)
+        
+        local e6 = createToggle(scrollFrame, "🪤 ESP Traps", false, function(val) print("ESP Traps:", val) end)
+        e6.Position = UDim2.new(0, 0, 0, 163)
+        
+        local e7 = createToggle(scrollFrame, "👁️ ESP Wire Eyes", false, function(val) print("ESP Wire:", val) end)
+        e7.Position = UDim2.new(0, 0, 0, 195)
         
     elseif name == "Info" then
         local serverInfo = Instance.new("TextLabel", tabContent)
@@ -351,23 +345,10 @@ local function createTab(name)
         serverInfo.BackgroundTransparency = 1
         serverInfo.TextColor3 = colors.text
         serverInfo.Font = Enum.Font.Gotham
-        serverInfo.TextSize = 10
+        serverInfo.TextSize = 11
         serverInfo.TextWrapped = true
         serverInfo.TextXAlignment = Enum.TextXAlignment.Left
         serverInfo.TextYAlignment = Enum.TextYAlignment.Top
-        
-    elseif name == "Esp" then
-        local features = Instance.new("TextLabel", tabContent)
-        features.Text = "👁️ ESP Survivors\n🔴 ESP Killers\n⚡ ESP Generators\n📦 ESP Fuse Boxes\n🔋 ESP Battery\n🪤 ESP Traps\n👁️ ESP Wire Eyes"
-        features.Size = UDim2.new(1, 0, 1, 0)
-        features.Position = UDim2.new(0, 4, 0, 10)
-        features.BackgroundTransparency = 1
-        features.TextColor3 = colors.text
-        features.Font = Enum.Font.Gotham
-        features.TextSize = 10
-        features.TextWrapped = true
-        features.TextXAlignment = Enum.TextXAlignment.Left
-        features.TextYAlignment = Enum.TextYAlignment.Top
         
     elseif name == "Discord" then
         local content = Instance.new("TextLabel", tabContent)
@@ -377,23 +358,32 @@ local function createTab(name)
         content.BackgroundTransparency = 1
         content.TextColor3 = colors.text
         content.Font = Enum.Font.Gotham
-        content.TextSize = 10
+        content.TextSize = 11
         content.TextWrapped = true
         content.TextXAlignment = Enum.TextXAlignment.Left
         content.TextYAlignment = Enum.TextYAlignment.Top
         
     elseif name == "Настройки" then
-        local features = Instance.new("TextLabel", tabContent)
-        features.Text = "🎨 Change Theme\n📏 ESP Distance\n📐 Line ESP\n🔄 Unload Cheat\n\n⚜️ Version: 0.52"
-        features.Size = UDim2.new(1, 0, 1, 0)
-        features.Position = UDim2.new(0, 4, 0, 10)
-        features.BackgroundTransparency = 1
-        features.TextColor3 = colors.text
-        features.Font = Enum.Font.Gotham
-        features.TextSize = 10
-        features.TextWrapped = true
-        features.TextXAlignment = Enum.TextXAlignment.Left
-        features.TextYAlignment = Enum.TextYAlignment.Top
+        local scrollFrame = Instance.new("ScrollingFrame", tabContent)
+        scrollFrame.Size = UDim2.new(1, 0, 1, 0)
+        scrollFrame.BackgroundTransparency = 1
+        scrollFrame.ScrollBarThickness = 2
+        scrollFrame.ScrollBarImageColor3 = colors.accent
+        scrollFrame.CanvasSize = UDim2.new(0, 0, 0, 200)
+        
+        createButton(scrollFrame, "🎨 Change Theme", function() print("Change Theme") end)
+        
+        local s2 = createButton(scrollFrame, "🔄 Unload Script", function() ScreenGui:Destroy() end)
+        s2.Position = UDim2.new(0, 8, 0, 35)
+        
+        local version = Instance.new("TextLabel", scrollFrame)
+        version.Text = "⚜️ Version: 0.52"
+        version.Size = UDim2.new(1, 0, 0, 20)
+        version.Position = UDim2.new(0, 0, 0, 75)
+        version.BackgroundTransparency = 1
+        version.TextColor3 = colors.gold
+        version.Font = Enum.Font.GothamBlack
+        version.TextSize = 10
     end
     
     return tabContent
@@ -433,7 +423,7 @@ local function toggleMinimize()
         CollapsibleContent.Visible = false
         AccentLine.Visible = false
     else
-        Main.Size = UDim2.new(0, 520, 0, 340)
+        Main.Size = UDim2.new(0, 520, 0, 360)
         Main.Position = currentPos
         Title.TextSize = 13
         Title.Size = UDim2.new(0, 110, 1, 0)
@@ -502,7 +492,7 @@ end)
 -- Анимация появления
 Main.Position = UDim2.new(0.5, -260, 0.8, 0)
 TweenService:Create(Main, TweenInfo.new(0.4, Enum.EasingStyle.Quad), {
-    Position = UDim2.new(0.5, -260, 0.5, -170)
+    Position = UDim2.new(0.5, -260, 0.5, -180)
 }):Play()
 
-print("Темный Fantasy GUI с кнопками+слайдерами загружен!")
+print("Темный Fantasy GUI с Toggle кнопками загружен!")
