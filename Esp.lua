@@ -27,6 +27,8 @@ local colors = {
     toggleOn = Color3.fromRGB(100, 30, 160),
     toggleOff = Color3.fromRGB(35, 15, 55),
     toggleCircle = Color3.fromRGB(220, 180, 255),
+    buttonBg = Color3.fromRGB(50, 20, 80),
+    buttonHover = Color3.fromRGB(70, 30, 110),
 }
 
 -- Основной фрейм (520x360)
@@ -145,7 +147,7 @@ ContentContainer.BackgroundTransparency = 0.5
 ContentContainer.BorderSizePixel = 0
 Instance.new("UICorner", ContentContainer).CornerRadius = UDim.new(0, 8)
 
--- Функция создания Toggle кнопки
+-- Функция создания Toggle кнопки (рабочая)
 local function createToggle(parent, name, default, callback)
     local container = Instance.new("Frame", parent)
     container.Size = UDim2.new(1, 0, 0, 30)
@@ -156,7 +158,7 @@ local function createToggle(parent, name, default, callback)
     local button = Instance.new("TextButton", container)
     button.Text = name
     button.Size = UDim2.new(1, -50, 0, 24)
-    button.Position = UDim2.new(0, 0, 0, 3)
+    button.Position = UDim2.new(0, 8, 0, 3)
     button.BackgroundColor3 = Color3.fromRGB(30, 12, 45)
     button.TextColor3 = colors.text
     button.Font = Enum.Font.GothamBold
@@ -164,20 +166,24 @@ local function createToggle(parent, name, default, callback)
     button.TextXAlignment = Enum.TextXAlignment.Left
     button.BorderSizePixel = 0
     button.AutoButtonColor = false
-    button.Position = UDim2.new(0, 8, 0, 3)
+    button.ZIndex = 5
     Instance.new("UICorner", button).CornerRadius = UDim.new(0, 5)
     
     -- Сам переключатель
     local toggleFrame = Instance.new("Frame", container)
     toggleFrame.Size = UDim2.new(0, 36, 0, 18)
     toggleFrame.Position = UDim2.new(1, -42, 0, 6)
+    toggleFrame.BackgroundColor3 = colors.toggleOff
     toggleFrame.BorderSizePixel = 0
+    toggleFrame.ZIndex = 6
     Instance.new("UICorner", toggleFrame).CornerRadius = UDim.new(0, 9)
     
     local toggleCircle = Instance.new("Frame", toggleFrame)
     toggleCircle.Size = UDim2.new(0, 14, 0, 14)
     toggleCircle.Position = UDim2.new(0, 2, 0, 2)
+    toggleCircle.BackgroundColor3 = Color3.fromRGB(100, 80, 120)
     toggleCircle.BorderSizePixel = 0
+    toggleCircle.ZIndex = 7
     Instance.new("UICorner", toggleCircle).CornerRadius = UDim.new(0, 7)
     
     local isOn = default
@@ -186,51 +192,82 @@ local function createToggle(parent, name, default, callback)
         if isOn then
             toggleFrame.BackgroundColor3 = colors.toggleOn
             toggleCircle.BackgroundColor3 = colors.toggleCircle
-            toggleCircle.Position = UDim2.new(1, -16, 0, 2)
+            TweenService:Create(toggleCircle, TweenInfo.new(0.15), {
+                Position = UDim2.new(1, -16, 0, 2)
+            }):Play()
         else
             toggleFrame.BackgroundColor3 = colors.toggleOff
             toggleCircle.BackgroundColor3 = Color3.fromRGB(100, 80, 120)
-            toggleCircle.Position = UDim2.new(0, 2, 0, 2)
+            TweenService:Create(toggleCircle, TweenInfo.new(0.15), {
+                Position = UDim2.new(0, 2, 0, 2)
+            }):Play()
         end
     end
     
     updateToggle()
     
-    -- Клик по кнопке или переключателю
-    local function toggle()
+    -- Клик по кнопке
+    button.MouseButton1Click:Connect(function()
         isOn = not isOn
         updateToggle()
         if callback then callback(isOn) end
-    end
+    end)
     
-    button.MouseButton1Click:Connect(toggle)
+    -- Клик по переключателю
+    local toggleButton = Instance.new("TextButton", toggleFrame)
+    toggleButton.Size = UDim2.new(1, 0, 1, 0)
+    toggleButton.BackgroundTransparency = 1
+    toggleButton.Text = ""
+    toggleButton.BorderSizePixel = 0
+    toggleButton.ZIndex = 8
     
-    toggleFrame.InputBegan:Connect(function(input)
-        if input.UserInputType == Enum.UserInputType.MouseButton1 then
-            toggle()
-        end
+    toggleButton.MouseButton1Click:Connect(function()
+        isOn = not isOn
+        updateToggle()
+        if callback then callback(isOn) end
     end)
     
     return container
 end
 
--- Функция создания обычной кнопки
+-- Функция создания обычной кнопки (рабочая)
 local function createButton(parent, name, callback)
-    local button = Instance.new("TextButton", parent)
+    local container = Instance.new("Frame", parent)
+    container.Size = UDim2.new(1, 0, 0, 32)
+    container.BackgroundTransparency = 1
+    container.BorderSizePixel = 0
+    
+    local button = Instance.new("TextButton", container)
     button.Text = name
     button.Size = UDim2.new(1, -16, 0, 28)
-    button.Position = UDim2.new(0, 8, 0, 0)
-    button.BackgroundColor3 = Color3.fromRGB(50, 20, 80)
+    button.Position = UDim2.new(0, 8, 0, 2)
+    button.BackgroundColor3 = colors.buttonBg
     button.TextColor3 = colors.text
     button.Font = Enum.Font.GothamBold
     button.TextSize = 10
     button.BorderSizePixel = 0
     button.AutoButtonColor = false
+    button.ZIndex = 5
     Instance.new("UICorner", button).CornerRadius = UDim.new(0, 5)
     
-    button.MouseButton1Click:Connect(callback)
+    -- Эффект при наведении
+    button.MouseEnter:Connect(function()
+        TweenService:Create(button, TweenInfo.new(0.2), {
+            BackgroundColor3 = colors.buttonHover
+        }):Play()
+    end)
     
-    return button
+    button.MouseLeave:Connect(function()
+        TweenService:Create(button, TweenInfo.new(0.2), {
+            BackgroundColor3 = colors.buttonBg
+        }):Play()
+    end)
+    
+    button.MouseButton1Click:Connect(function()
+        if callback then callback() end
+    end)
+    
+    return container
 end
 
 -- Вкладки
@@ -252,40 +289,42 @@ local function createTab(name)
         scrollFrame.BackgroundTransparency = 1
         scrollFrame.ScrollBarThickness = 2
         scrollFrame.ScrollBarImageColor3 = colors.accent
-        scrollFrame.CanvasSize = UDim2.new(0, 0, 0, 350)
+        scrollFrame.CanvasSize = UDim2.new(0, 0, 0, 380)
         
-        local yPos = 5
+        -- Все функции как кнопки
+        local y = 5
+        local spacing = 33
         
-        -- Toggles
+        -- Toggle кнопки
         createToggle(scrollFrame, "⚡ Auto Farm", false, function(val) print("Auto Farm:", val) end)
         
-        local toggle2 = createToggle(scrollFrame, "🎯 Auto Parry", false, function(val) print("Auto Parry:", val) end)
-        toggle2.Position = UDim2.new(0, 0, 0, yPos + 32)
+        local t2 = createToggle(scrollFrame, "🎯 Auto Parry", false, function(val) print("Auto Parry:", val) end)
+        t2.Position = UDim2.new(0, 0, 0, y + spacing)
         
-        local toggle3 = createToggle(scrollFrame, "🔧 Auto Generator", false, function(val) print("Auto Gen:", val) end)
-        toggle3.Position = UDim2.new(0, 0, 0, yPos + 64)
+        local t3 = createToggle(scrollFrame, "🔧 Auto Generator", false, function(val) print("Auto Generator:", val) end)
+        t3.Position = UDim2.new(0, 0, 0, y + spacing*2)
         
-        local toggle4 = createToggle(scrollFrame, "🚪 Auto Escape", false, function(val) print("Auto Escape:", val) end)
-        toggle4.Position = UDim2.new(0, 0, 0, yPos + 96)
+        local t4 = createToggle(scrollFrame, "🚪 Auto Escape", false, function(val) print("Auto Escape:", val) end)
+        t4.Position = UDim2.new(0, 0, 0, y + spacing*3)
         
-        local toggle5 = createToggle(scrollFrame, "📦 Auto Barricade", false, function(val) print("Auto Barricade:", val) end)
-        toggle5.Position = UDim2.new(0, 0, 0, yPos + 128)
+        local t5 = createToggle(scrollFrame, "📦 Auto Barricade", false, function(val) print("Auto Barricade:", val) end)
+        t5.Position = UDim2.new(0, 0, 0, y + spacing*4)
         
-        local toggle6 = createToggle(scrollFrame, "👁️ Invisible Killer", false, function(val) print("Invisible:", val) end)
-        toggle6.Position = UDim2.new(0, 0, 0, yPos + 160)
+        local t6 = createToggle(scrollFrame, "👁️ Invisible Killer", false, function(val) print("Invisible Killer:", val) end)
+        t6.Position = UDim2.new(0, 0, 0, y + spacing*5)
         
-        local toggle7 = createToggle(scrollFrame, "💥 Hitbox Expender", false, function(val) print("Hitbox:", val) end)
-        toggle7.Position = UDim2.new(0, 0, 0, yPos + 192)
+        local t7 = createToggle(scrollFrame, "💥 Hitbox Expender", false, function(val) print("Hitbox Expender:", val) end)
+        t7.Position = UDim2.new(0, 0, 0, y + spacing*6)
         
-        -- Кнопки
-        local btn1 = createButton(scrollFrame, "🚪 Delete Doors", function() print("Delete Doors") end)
-        btn1.Position = UDim2.new(0, 8, 0, yPos + 230)
+        -- Обычные кнопки
+        local b1 = createButton(scrollFrame, "🚪 Delete Doors", function() print("Delete Doors clicked!") end)
+        b1.Position = UDim2.new(0, 0, 0, y + spacing*7 + 10)
         
-        local btn2 = createButton(scrollFrame, "🎬 Skip Cutscene", function() print("Skip Cutscene") end)
-        btn2.Position = UDim2.new(0, 8, 0, yPos + 265)
+        local b2 = createButton(scrollFrame, "🎬 Skip Cutscene", function() print("Skip Cutscene clicked!") end)
+        b2.Position = UDim2.new(0, 0, 0, y + spacing*8 + 10)
         
-        local btn3 = createButton(scrollFrame, "⚡ Instant Win", function() print("Instant Win") end)
-        btn3.Position = UDim2.new(0, 8, 0, yPos + 300)
+        local b3 = createButton(scrollFrame, "⚡ Instant Win", function() print("Instant Win clicked!") end)
+        b3.Position = UDim2.new(0, 0, 0, y + spacing*9 + 10)
         
     elseif name == "Player" then
         local scrollFrame = Instance.new("ScrollingFrame", tabContent)
@@ -293,21 +332,24 @@ local function createTab(name)
         scrollFrame.BackgroundTransparency = 1
         scrollFrame.ScrollBarThickness = 2
         scrollFrame.ScrollBarImageColor3 = colors.accent
-        scrollFrame.CanvasSize = UDim2.new(0, 0, 0, 250)
+        scrollFrame.CanvasSize = UDim2.new(0, 0, 0, 200)
+        
+        local y = 5
+        local spacing = 33
         
         createToggle(scrollFrame, "🚫 Noclip", false, function(val) print("Noclip:", val) end)
         
-        local t2 = createToggle(scrollFrame, "✈️ Fly", false, function(val) print("Fly:", val) end)
-        t2.Position = UDim2.new(0, 0, 0, 35)
+        local p2 = createToggle(scrollFrame, "✈️ Fly", false, function(val) print("Fly:", val) end)
+        p2.Position = UDim2.new(0, 0, 0, y + spacing)
         
-        local t3 = createToggle(scrollFrame, "🦘 Infinity Jump", false, function(val) print("Inf Jump:", val) end)
-        t3.Position = UDim2.new(0, 0, 0, 67)
+        local p3 = createToggle(scrollFrame, "🦘 Infinity Jump", false, function(val) print("Infinity Jump:", val) end)
+        p3.Position = UDim2.new(0, 0, 0, y + spacing*2)
         
-        local t4 = createToggle(scrollFrame, "⚡ Infinite Stamina", false, function(val) print("Inf Stamina:", val) end)
-        t4.Position = UDim2.new(0, 0, 0, 99)
+        local p4 = createToggle(scrollFrame, "⚡ Infinite Stamina", false, function(val) print("Infinite Stamina:", val) end)
+        p4.Position = UDim2.new(0, 0, 0, y + spacing*3)
         
-        local t5 = createToggle(scrollFrame, "🏃 Speed Boost", false, function(val) print("Speed:", val) end)
-        t5.Position = UDim2.new(0, 0, 0, 131)
+        local p5 = createToggle(scrollFrame, "🏃 Speed Boost", false, function(val) print("Speed Boost:", val) end)
+        p5.Position = UDim2.new(0, 0, 0, y + spacing*4)
         
     elseif name == "Esp" then
         local scrollFrame = Instance.new("ScrollingFrame", tabContent)
@@ -315,31 +357,34 @@ local function createTab(name)
         scrollFrame.BackgroundTransparency = 1
         scrollFrame.ScrollBarThickness = 2
         scrollFrame.ScrollBarImageColor3 = colors.accent
-        scrollFrame.CanvasSize = UDim2.new(0, 0, 0, 280)
+        scrollFrame.CanvasSize = UDim2.new(0, 0, 0, 270)
         
-        createToggle(scrollFrame, "👁️ ESP Survivors", false, function(val) print("ESP Surv:", val) end)
+        local y = 5
+        local spacing = 33
+        
+        createToggle(scrollFrame, "👁️ ESP Survivors", false, function(val) print("ESP Survivors:", val) end)
         
         local e2 = createToggle(scrollFrame, "🔴 ESP Killers", false, function(val) print("ESP Killers:", val) end)
-        e2.Position = UDim2.new(0, 0, 0, 35)
+        e2.Position = UDim2.new(0, 0, 0, y + spacing)
         
-        local e3 = createToggle(scrollFrame, "⚡ ESP Generators", false, function(val) print("ESP Gen:", val) end)
-        e3.Position = UDim2.new(0, 0, 0, 67)
+        local e3 = createToggle(scrollFrame, "⚡ ESP Generators", false, function(val) print("ESP Generators:", val) end)
+        e3.Position = UDim2.new(0, 0, 0, y + spacing*2)
         
-        local e4 = createToggle(scrollFrame, "📦 ESP Fuse Boxes", false, function(val) print("ESP Fuse:", val) end)
-        e4.Position = UDim2.new(0, 0, 0, 99)
+        local e4 = createToggle(scrollFrame, "📦 ESP Fuse Boxes", false, function(val) print("ESP Fuse Boxes:", val) end)
+        e4.Position = UDim2.new(0, 0, 0, y + spacing*3)
         
-        local e5 = createToggle(scrollFrame, "🔋 ESP Battery", false, function(val) print("ESP Batt:", val) end)
-        e5.Position = UDim2.new(0, 0, 0, 131)
+        local e5 = createToggle(scrollFrame, "🔋 ESP Battery", false, function(val) print("ESP Battery:", val) end)
+        e5.Position = UDim2.new(0, 0, 0, y + spacing*4)
         
         local e6 = createToggle(scrollFrame, "🪤 ESP Traps", false, function(val) print("ESP Traps:", val) end)
-        e6.Position = UDim2.new(0, 0, 0, 163)
+        e6.Position = UDim2.new(0, 0, 0, y + spacing*5)
         
-        local e7 = createToggle(scrollFrame, "👁️ ESP Wire Eyes", false, function(val) print("ESP Wire:", val) end)
-        e7.Position = UDim2.new(0, 0, 0, 195)
+        local e7 = createToggle(scrollFrame, "👁️ ESP Wire Eyes", false, function(val) print("ESP Wire Eyes:", val) end)
+        e7.Position = UDim2.new(0, 0, 0, y + spacing*6)
         
     elseif name == "Info" then
         local serverInfo = Instance.new("TextLabel", tabContent)
-        serverInfo.Text = "🌙 Île-de-France, FR\n⚔️ Пинг: 111 | ФПС: 25\n📜 Версия: 14806\n🏰 Темный Fantasy\n⏳ Время работы сервера\n👥 Watching Aftermath - 5777\n🔢 60,658"
+        serverInfo.Text = "🌙 Texac, США\n⚔️ Пинг: 415 | ФПС: 17\n📜 Версия: 14808\n🏰 Сервер античного\n⏳ Время: 12:33:03\n👥 Plutonium Dancer - 7894\n🔢 6,658"
         serverInfo.Size = UDim2.new(1, -8, 1, 0)
         serverInfo.Position = UDim2.new(0, 4, 0, 10)
         serverInfo.BackgroundTransparency = 1
@@ -369,17 +414,18 @@ local function createTab(name)
         scrollFrame.BackgroundTransparency = 1
         scrollFrame.ScrollBarThickness = 2
         scrollFrame.ScrollBarImageColor3 = colors.accent
-        scrollFrame.CanvasSize = UDim2.new(0, 0, 0, 200)
+        scrollFrame.CanvasSize = UDim2.new(0, 0, 0, 150)
         
-        createButton(scrollFrame, "🎨 Change Theme", function() print("Change Theme") end)
+        local s1 = createButton(scrollFrame, "🎨 Change Theme", function() print("Change Theme clicked!") end)
+        s1.Position = UDim2.new(0, 0, 0, 5)
         
         local s2 = createButton(scrollFrame, "🔄 Unload Script", function() ScreenGui:Destroy() end)
-        s2.Position = UDim2.new(0, 8, 0, 35)
+        s2.Position = UDim2.new(0, 0, 0, 40)
         
         local version = Instance.new("TextLabel", scrollFrame)
         version.Text = "⚜️ Version: 0.52"
         version.Size = UDim2.new(1, 0, 0, 20)
-        version.Position = UDim2.new(0, 0, 0, 75)
+        version.Position = UDim2.new(0, 0, 0, 80)
         version.BackgroundTransparency = 1
         version.TextColor3 = colors.gold
         version.Font = Enum.Font.GothamBlack
@@ -495,4 +541,4 @@ TweenService:Create(Main, TweenInfo.new(0.4, Enum.EasingStyle.Quad), {
     Position = UDim2.new(0.5, -260, 0.5, -180)
 }):Play()
 
-print("Темный Fantasy GUI с Toggle кнопками загружен!")
+print("Темный Fantasy GUI загружен! Все кнопки рабочие.")
