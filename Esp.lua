@@ -1,111 +1,80 @@
-local Players = game:GetService("Players")
-local player = Players.LocalPlayer
-local playerGui = player:WaitForChild("PlayerGui")
+local Fluent = loadstring(game:HttpGet("https://github.com/dawid-scripts/Fluent/releases/latest/download/main.lua"))()
+local SaveManager = loadstring(game:HttpGet("https://raw.githubusercontent.com/dawid-scripts/Fluent/master/Addons/SaveManager.lua"))()
+local InterfaceManager = loadstring(game:HttpGet("https://raw.githubusercontent.com/dawid-scripts/Fluent/master/Addons/InterfaceManager.lua"))()
 
--- GUI
-local screenGui = Instance.new("ScreenGui")
-screenGui.Name = "SlimeRNGGui"
-screenGui.ResetOnSpawn = false
-screenGui.Parent = playerGui
+local Window = Fluent:CreateWindow({
+    Title = "Slime RNG | Mobile",
+    SubTitle = "by User",
+    TabWidth = 160,
+    Size = UDim2.fromOffset(580, 460),
+    Acrylic = true,
+    Theme = "Dark",
+    MinimizeKey = Enum.KeyCode.LeftControl
+})
 
-local mainFrame = Instance.new("Frame")
-mainFrame.Size = UDim2.new(0, 320, 0, 220)
-mainFrame.Position = UDim2.new(0.5, -160, 0.5, -110)
-mainFrame.BackgroundColor3 = Color3.fromRGB(25, 25, 35)
-mainFrame.BorderSizePixel = 0
-mainFrame.Parent = screenGui
-
-local corner = Instance.new("UICorner")
-corner.CornerRadius = UDim.new(0, 12)
-corner.Parent = mainFrame
-
-local title = Instance.new("TextLabel")
-title.Size = UDim2.new(1, 0, 0, 40)
-title.BackgroundTransparency = 1
-title.Text = "🟢 Slime RNG"
-title.Font = Enum.Font.GothamBold
-title.TextSize = 26
-title.TextColor3 = Color3.fromRGB(0, 255, 120)
-title.Parent = mainFrame
-
-local resultLabel = Instance.new("TextLabel")
-resultLabel.Size = UDim2.new(1, -20, 0, 70)
-resultLabel.Position = UDim2.new(0, 10, 0, 55)
-resultLabel.BackgroundColor3 = Color3.fromRGB(35, 35, 45)
-resultLabel.Text = "Нажми Roll"
-resultLabel.Font = Enum.Font.GothamBold
-resultLabel.TextScaled = true
-resultLabel.TextColor3 = Color3.new(1,1,1)
-resultLabel.Parent = mainFrame
-
-local resultCorner = Instance.new("UICorner")
-resultCorner.CornerRadius = UDim.new(0, 10)
-resultCorner.Parent = resultLabel
-
-local rollButton = Instance.new("TextButton")
-rollButton.Size = UDim2.new(0.8, 0, 0, 45)
-rollButton.Position = UDim2.new(0.1, 0, 0, 145)
-rollButton.BackgroundColor3 = Color3.fromRGB(0, 170, 255)
-rollButton.Text = "ROLL"
-rollButton.Font = Enum.Font.GothamBold
-rollButton.TextSize = 24
-rollButton.TextColor3 = Color3.new(1,1,1)
-rollButton.Parent = mainFrame
-
-local rollCorner = Instance.new("UICorner")
-rollCorner.CornerRadius = UDim.new(0, 10)
-rollCorner.Parent = rollButton
-
--- RNG таблица
-local slimes = {
-    {name = "Common Slime", chance = 50, color = Color3.fromRGB(120,255,120)},
-    {name = "Blue Slime", chance = 25, color = Color3.fromRGB(80,170,255)},
-    {name = "Golden Slime", chance = 15, color = Color3.fromRGB(255,220,0)},
-    {name = "Shadow Slime", chance = 8, color = Color3.fromRGB(120,0,120)},
-    {name = "Galaxy Slime", chance = 2, color = Color3.fromRGB(255,0,255)}
+local Tabs = {
+    Main = Window:AddTab({ Title = "Main", Icon = "home" }),
+    Auto = Window:AddTab({ Title = "Auto Farm", Icon = "play" }),
+    Misc = Window:AddTab({ Title = "Misc", Icon = "settings" })
 }
 
-local function rollSlime()
-    local rng = math.random(1,100)
-    local count = 0
+-- Авто-крутка
+local autoRoll = false
+Tabs.Auto:AddToggle("AutoRoll", { Title = "Auto Roll", Default = false }):OnChanged(function(v)
+    autoRoll = v
+end)
 
-    for _, slime in ipairs(slimes) do
-        count += slime.chance
-
-        if rng <= count then
-            return slime
+spawn(function()
+    while task.wait(0.5) do
+        if autoRoll then
+            local args = { [1] = "Roll" }
+            for _, v in pairs(game:GetService("ReplicatedStorage"):GetDescendants()) do
+                if v:IsA("RemoteEvent") and v.Name == "Roll" then
+                    v:FireServer(unpack(args))
+                end
+            end
         end
     end
-end
-
-rollButton.MouseButton1Click:Connect(function()
-    rollButton.Text = "ROLLING..."
-
-    for i = 1, 10 do
-        resultLabel.Text = slimes[math.random(1,#slimes)].name
-        task.wait(0.05)
-    end
-
-    local slime = rollSlime()
-
-    resultLabel.Text = slime.name
-    resultLabel.TextColor3 = slime.color
-
-    rollButton.Text = "ROLL"
 end)
-```
 
-## Что делает скрипт
+-- Телепорты
+Tabs.Auto:AddButton({ Title = "Teleport to Best Zone" }):OnClick(function()
+    local player = game.Players.LocalPlayer
+    if player.Character and player.Character:FindFirstChild("HumanoidRootPart") then
+        local zones = workspace:FindFirstChild("Zones") or workspace:FindFirstChild("Map")
+        if zones then
+            for _, zone in pairs(zones:GetChildren()) do
+                if zone:IsA("BasePart") and zone.Name:lower():find("best") then
+                    player.Character.HumanoidRootPart.CFrame = zone.CFrame + Vector3.new(0, 3, 0)
+                    break
+                end
+            end
+        end
+    end
+end)
 
-* Создаёт GUI окно.
-* Есть кнопка Roll.
-* Выпадает случайный слайм.
-* У каждого слайма свой шанс.
-* Цвет текста меняется под редкость.
+-- Увеличение скорости
+Tabs.Misc:AddSlider("Speed", {
+    Title = "Walk Speed",
+    Default = 16,
+    Min = 16,
+    Max = 200,
+    Rounding = 0
+}):OnChanged(function(v)
+    local player = game.Players.LocalPlayer
+    if player.Character and player.Character:FindFirstChild("Humanoid") then
+        player.Character.Humanoid.WalkSpeed = v
+    end
+end)
 
-## Куда вставлять
+-- Автосохранение GUI
+SaveManager:SetLibrary(Fluent)
+InterfaceManager:SetLibrary(Fluent)
+SaveManager:IgnoreThemeSettings()
+SaveManager:SetFolder("SlimeRNG_Mobile")
+InterfaceManager:SetFolder("SlimeRNG_Mobile")
+SaveManager:BuildConfigSection(Tabs.Misc)
+InterfaceManager:BuildInterfaceSection(Tabs.Misc)
 
-1. Открой Roblox Studio.
-2. StarterGui → Insert Object → LocalScript.
-3. Вставь код.
-4. Запусти игру.
+Window:SelectTab(1)
+Fluent:Notify({ Title = "Loaded", Content = "Mobile GUI ready" })
