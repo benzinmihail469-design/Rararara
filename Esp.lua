@@ -1,48 +1,63 @@
--- Автоматический телепорт к луту при появлении модели в папке
-local Players = game:GetService("Players")
-local RunService = game:GetService("RunService")
-
+local Players = game:GetService("Services")
 local player = Players.LocalPlayer
+
+-- Ждём персонажа
 local character = player.Character or player.CharacterAdded:Wait()
 local humanoidRootPart = character:WaitForChild("HumanoidRootPart")
 
--- 🔧 НАСТРОЙКИ (измени под себя)
-local LOOT_FOLDER_PATH = workspace:WaitForChild("Loot")  -- папка где появляются модели лута
-local CHECK_INTERVAL = 0.5  -- секунд между проверками
-local TELEPORT_OFFSET = Vector3.new(0, 2, 0)  -- смещение при телепортации (чтобы не застревать)
-local DISTANCE_THRESHOLD = 3  -- если уже ближе этого расстояния, не телепортироваться снова
+-- Ищем папку с лутом (проверяем несколько вариантов)
+local LOOT_FOLDER = workspace:FindFirstChild("Loot")
+if not LOOT_FOLDER then
+    LOOT_FOLDER = workspace:FindFirstChild("loot")
+end
+if not LOOT_FOLDER then
+    LOOT_FOLDER = workspace:FindFirstChild("Gameplay128")
+    if LOOT_FOLDER then
+        LOOT_FOLDER = LOOT_FOLDER:FindFirstChild("Loot")
+    end
+end
 
--- Следим за появлением новых моделей в папке
-local function onChildAdded(newLoot)
-    if not newLoot:IsA("Model") then return end  -- только модели
+if not LOOT_FOLDER then
+    warn("Не найдена папка с лутом! Доступные папки в workspace:")
+    for _, v in pairs(workspace:GetChildren()) do
+        print(" -", v.Name)
+    end
+    return
+end
+
+print("Папка найдена:", LOOT_FOLDER.Name)
+
+-- Функция телепортации к объекту
+local function teleportToLoot(lootModel)
+    task.wait(0.05)
     
-    task.wait(0.1)  -- даём игре прогрузиться
+    -- Ищем часть, к которой телепортироваться
+    local targetPart = lootModel.PrimaryPart
+    if not targetPart then
+        targetPart = lootModel:FindFirstChildWhichIsA("BasePart")
+    end
+    if not targetPart then
+        targetPart = lootModel:FindFirstChild("HumanoidRootPart")
+    end
     
-    -- Телепортируемся к луту
-    if humanoidRootPart and newLoot.PrimaryPart then
-        local lootPos = newLoot.PrimaryPart.Position
+    if targetPart and humanoidRootPart then
+        local targetPos = targetPart.Position
         local currentPos = humanoidRootPart.Position
-        local distance = (currentPos - lootPos).Magnitude
+        local distance = (currentPos - targetPos).Magnitude
         
-        if distance > DISTANCE_THRESHOLD then
-            humanoidRootPart.CFrame = CFrame.new(lootPos + TELEPORT_OFFSET)
-            print("Телепорт к луту:", newLoot.Name)
+        if distance > 3 then  -- телепортируемся, если не стоим уже вплотную
+            humanoidRootPart.CFrame = CFrame.new(targetPos + Vector3.new(0, 2, 0))
+            print("Телепорт к:", lootModel.Name)
         end
     end
 end
 
--- Также обрабатываем лут, который уже есть в папке при запуске
-local function teleportToExistingLoot()
-    for _, loot in pairs(LOOT_FOLDER_PATH:GetChildren()) do
-        if loot:IsA("Model") and loot.PrimaryPart then
-            humanoidRootPart.CFrame = CFrame.new(loot.PrimaryPart.Position + TELEPORT_OFFSET)
-            task.wait(0.2)
-        end
-    end
+-- Следим за новым лутом
+LOOT_FOLDER.ChildAdded:Connect(teleportToLoot)
+
+-- Телепортируемся к уже существующему луту
+for _, loot in pairs(LOOT_FOLDER:GetChildren()) do
+    task.spawn(function() teleportToLoot(loot) end)
 end
 
--- Запуск
-LOOT_FOLDER_PATH.ChildAdded:Connect(onChildAdded)
-teleportToExistingLoot()
-
-print("Скрипт запущен. Ожидание лута в папке:", LOOT_FOLDER_PATH.Name)
+print("Скрипт работает. Ждём появления лута в папке", LOOT_FOLDER.Name)
