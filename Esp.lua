@@ -3,8 +3,9 @@ local LocalPlayer = Players.LocalPlayer
 local TweenService = game:GetService("TweenService")
 
 function speed(a, b) 
-    return a + b 
+    return a + b
+end
     local result = speed(100, 100) 
     print ("result") 
-    task.walk (5) 
+    task.wait (5) 
     
