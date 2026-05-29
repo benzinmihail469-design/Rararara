@@ -1,592 +1,554 @@
--- ⚔️ DARK FANTASY GUI для Slime RNG (без ESP) ⚔️
+--[[
+    Современный UI фреймворк
+    Полностью рабочий скрипт с кнопками, слайдерами, чекбоксами и другими элементами
+--]]
+
+--// Сервисы
 local Players = game:GetService("Players")
-local UserInputService = game:GetService("UserInputService")
+local RunService = game:GetService("RunService")
 local TweenService = game:GetService("TweenService")
-local player = Players.LocalPlayer
-local mouse = player:GetMouse()
-local playerGui = player:WaitForChild("PlayerGui")
+local UserInputService = game:GetService("UserInputService")
+local LocalPlayer = Players.LocalPlayer
+local Mouse = LocalPlayer:GetMouse()
 
--- === НАСТРОЙКИ ТЕЛЕПОРТА ===
-local TELEPORT_OFFSET = Vector3.new(0, 2, 0)
-local DISTANCE_THRESHOLD = 3
-local PLAY_SOUND = true
-local SOUND_ID = "rbxassetid://9120384036"
-
--- === ИГНОР-ЛИСТ ЛУТА ===
-local IGNORED_LOOT = {
-    -- "Trash",   -- раскомментируй если нужно
+--// Константы
+local UI_THEME = {
+    Primary = Color3.fromRGB(134, 142, 255),
+    Secondary = Color3.fromRGB(83, 87, 158),
+    Background = Color3.fromRGB(25, 25, 25),
+    BackgroundDark = Color3.fromRGB(18, 18, 18),
+    Text = Color3.fromRGB(200, 200, 200),
+    TextDark = Color3.fromRGB(100, 100, 100),
+    Success = Color3.fromRGB(60, 150, 107),
+    Danger = Color3.fromRGB(170, 89, 91)
 }
 
--- === ПОИСК ПАПКИ С ЛУТОМ ===
-local LOOT_FOLDER = workspace:FindFirstChild("Loot")
-if not LOOT_FOLDER then
-    LOOT_FOLDER = workspace:FindFirstChild("loot")
+local ANIMATION_SPEED = 0.3
+local TI = TweenInfo.new(ANIMATION_SPEED, Enum.EasingStyle.Exponential, Enum.EasingDirection.Out)
+
+--// ============ ГЕНЕРАТОР ОБЪЕКТОВ ============
+
+local function createStyledFrame(parent, size, position, color, transparency)
+    local frame = Instance.new("Frame")
+    frame.Size = size
+    frame.Position = position
+    frame.BackgroundColor3 = color or UI_THEME.Background
+    frame.BackgroundTransparency = transparency or 0
+    frame.BorderSizePixel = 0
+    frame.Parent = parent
+    
+    local corner = Instance.new("UICorner")
+    corner.CornerRadius = UDim.new(0, 8)
+    corner.Parent = frame
+    
+    return frame
 end
-if not LOOT_FOLDER then
-    for _, child in pairs(workspace:GetChildren()) do
-        if child:FindFirstChild("Loot") then
-            LOOT_FOLDER = child.Loot
-            break
+
+local function createTextLabel(parent, text, size, position, color, font, textSize)
+    local label = Instance.new("TextLabel")
+    label.Text = text
+    label.Size = size
+    label.Position = position
+    label.BackgroundTransparency = 1
+    label.TextColor3 = color or UI_THEME.Text
+    label.Font = font or Enum.Font.GothamSemibold
+    label.TextSize = textSize or 14
+    label.Parent = parent
+    return label
+end
+
+--// ============ КОМПОНЕНТ КНОПКИ ============
+
+local function createButton(parent, title, callback, yOffset)
+    local button = createStyledFrame(parent, UDim2.new(0.9, 0, 0, 45), 
+        UDim2.new(0.05, 0, yOffset or 0, 0), UI_THEME.BackgroundDark, 0.8)
+    
+    local hoverFrame = Instance.new("Frame")
+    hoverFrame.Size = UDim2.new(1, 0, 1, 0)
+    hoverFrame.BackgroundColor3 = UI_THEME.Primary
+    hoverFrame.BackgroundTransparency = 1
+    hoverFrame.BorderSizePixel = 0
+    hoverFrame.Parent = button
+    
+    local cornerHover = Instance.new("UICorner")
+    cornerHover.CornerRadius = UDim.new(0, 8)
+    cornerHover.Parent = hoverFrame
+    
+    local text = createTextLabel(button, title, UDim2.new(1, 0, 1, 0), 
+        UDim2.new(0, 0, 0, 0), UI_THEME.Text, Enum.Font.GothamSemibold, 16)
+    
+    local shadow = Instance.new("Frame")
+    shadow.Size = UDim2.new(1, 0, 1, 0)
+    shadow.Position = UDim2.new(0, 0, 0, 3)
+    shadow.BackgroundColor3 = Color3.fromRGB(0, 0, 0)
+    shadow.BackgroundTransparency = 0.5
+    shadow.BorderSizePixel = 0
+    shadow.Parent = button
+    shadow.ZIndex = -1
+    
+    local shadowCorner = Instance.new("UICorner")
+    shadowCorner.CornerRadius = UDim.new(0, 8)
+    shadowCorner.Parent = shadow
+    
+    -- Эффекты
+    local isHovering = false
+    
+    button.InputBegan:Connect(function(input)
+        if input.UserInputType == Enum.UserInputType.MouseMovement then
+            isHovering = true
+            TweenService:Create(hoverFrame, TI, {BackgroundTransparency = 0.85}):Play()
+            TweenService:Create(text, TI, {TextColor3 = UI_THEME.Primary}):Play()
+        elseif input.UserInputType == Enum.UserInputType.MouseButton1 then
+            TweenService:Create(button, TI, {BackgroundColor3 = UI_THEME.Primary}):Play()
+            TweenService:Create(text, TI, {TextColor3 = Color3.fromRGB(255, 255, 255)}):Play()
+            
+            -- Ripple эффект
+            local ripple = Instance.new("Frame")
+            ripple.Size = UDim2.new(0, 0, 0, 0)
+            ripple.Position = UDim2.new(0, Mouse.X - button.AbsolutePosition.X, 0, Mouse.Y - button.AbsolutePosition.Y)
+            ripple.BackgroundColor3 = Color3.fromRGB(255, 255, 255)
+            ripple.BackgroundTransparency = 0.5
+            ripple.BorderSizePixel = 0
+            ripple.Parent = button
+            
+            local rippleCorner = Instance.new("UICorner")
+            rippleCorner.CornerRadius = UDim.new(1, 0)
+            rippleCorner.Parent = ripple
+            
+            TweenService:Create(ripple, TI, {
+                Size = UDim2.new(2, 0, 2, 0),
+                Position = UDim2.new(0, Mouse.X - button.AbsolutePosition.X - 100, 0, Mouse.Y - button.AbsolutePosition.Y - 100),
+                BackgroundTransparency = 1
+            }):Play()
+            
+            task.delay(ANIMATION_SPEED, function()
+                ripple:Destroy()
+            end)
+        end
+    end)
+    
+    button.InputEnded:Connect(function(input)
+        if input.UserInputType == Enum.UserInputType.MouseMovement then
+            isHovering = false
+            TweenService:Create(hoverFrame, TI, {BackgroundTransparency = 1}):Play()
+            TweenService:Create(text, TI, {TextColor3 = UI_THEME.Text}):Play()
+        elseif input.UserInputType == Enum.UserInputType.MouseButton1 then
+            TweenService:Create(button, TI, {BackgroundColor3 = UI_THEME.BackgroundDark}):Play()
+            TweenService:Create(text, TI, {TextColor3 = UI_THEME.Text}):Play()
+            task.delay(0.05, callback)
+        end
+    end)
+    
+    return button
+end
+
+--// ============ КОМПОНЕНТ СЛАЙДЕРА ============
+
+local function createSlider(parent, title, minValue, maxValue, defaultValue, callback, yOffset)
+    local container = createStyledFrame(parent, UDim2.new(0.9, 0, 0, 70), 
+        UDim2.new(0.05, 0, yOffset or 0, 0), UI_THEME.BackgroundDark, 0.8)
+    
+    local titleLabel = createTextLabel(container, title, UDim2.new(1, 0, 0.35, 0), 
+        UDim2.new(0.02, 0, 0, 0), UI_THEME.Text, Enum.Font.Gotham, 12)
+    
+    local valueLabel = createTextLabel(container, tostring(defaultValue), UDim2.new(0.3, 0, 0.35, 0), 
+        UDim2.new(0.68, 0, 0, 0), UI_THEME.Primary, Enum.Font.GothamBold, 14)
+    valueLabel.TextXAlignment = Enum.TextXAlignment.Right
+    
+    local sliderBg = createStyledFrame(container, UDim2.new(0.96, 0, 0.15, 0), 
+        UDim2.new(0.02, 0, 0.55, 0), UI_THEME.Background, 0.5)
+    sliderBg.BackgroundColor3 = Color3.fromRGB(40, 40, 40)
+    
+    local sliderFill = createStyledFrame(sliderBg, UDim2.new(0, 0, 1, 0), 
+        UDim2.new(0, 0, 0, 0), UI_THEME.Primary, 1)
+    
+    local knob = Instance.new("ImageButton")
+    knob.Size = UDim2.new(0, 18, 0, 18)
+    knob.Position = UDim2.new(0, -9, 0.5, -9)
+    knob.BackgroundColor3 = UI_THEME.Primary
+    knob.BackgroundTransparency = 1
+    knob.Image = "rbxassetid://6020299385"
+    knob.Parent = sliderBg
+    
+    local knobShadow = Instance.new("Frame")
+    knobShadow.Size = UDim2.new(0, 22, 0, 22)
+    knobShadow.Position = UDim2.new(0, -11, 0.5, -11)
+    knobShadow.BackgroundColor3 = Color3.fromRGB(0, 0, 0)
+    knobShadow.BackgroundTransparency = 0.5
+    knobShadow.BorderSizePixel = 0
+    knobShadow.Parent = sliderBg
+    knobShadow.ZIndex = -1
+    
+    local knobCorner = Instance.new("UICorner")
+    knobCorner.CornerRadius = UDim.new(1, 0)
+    knobCorner.Parent = knobShadow
+    
+    local currentValue = defaultValue or minValue
+    local isDragging = false
+    
+    local function updateValue(value)
+        currentValue = math.floor(math.clamp(value, minValue, maxValue))
+        local percent = (currentValue - minValue) / (maxValue - minValue)
+        
+        sliderFill.Size = UDim2.new(percent, 0, 1, 0)
+        knob.Position = UDim2.new(percent, -9, 0.5, -9)
+        knobShadow.Position = UDim2.new(percent, -11, 0.5, -11)
+        valueLabel.Text = tostring(currentValue)
+        
+        callback(currentValue)
+    end
+    
+    updateValue(defaultValue or minValue)
+    
+    local function onDrag(input)
+        if input.UserInputType == Enum.UserInputType.MouseButton1 then
+            local percent = math.clamp((input.Position.X - sliderBg.AbsolutePosition.X) / sliderBg.AbsoluteSize.X, 0, 1)
+            local newValue = minValue + (maxValue - minValue) * percent
+            updateValue(newValue)
         end
     end
-end
-
-if not LOOT_FOLDER then
-    warn("Папка Loot не найдена!")
-end
-
--- === СОЗДАНИЕ ЗВУКА ===
-local teleportSound = nil
-if PLAY_SOUND then
-    teleportSound = Instance.new("Sound")
-    teleportSound.SoundId = SOUND_ID
-    teleportSound.Volume = 0.4
-end
-
--- === ЦВЕТА ===
-local C = {
-    BG = Color3.fromRGB(18, 16, 22),
-    Header = Color3.fromRGB(28, 24, 38),
-    Accent = Color3.fromRGB(138, 92, 200),
-    AccentDark = Color3.fromRGB(100, 60, 155),
-    Text = Color3.fromRGB(240, 235, 255),
-    TextDim = Color3.fromRGB(170, 160, 190),
-    Button = Color3.fromRGB(38, 34, 48),
-    ButtonHover = Color3.fromRGB(55, 48, 70),
-    Red = Color3.fromRGB(180, 60, 80),
-    Green = Color3.fromRGB(70, 140, 100),
-}
-
--- === СОЗДАНИЕ ГЛАВНОГО GUI ===
-local screenGui = Instance.new("ScreenGui")
-screenGui.Name = "DarkFantasyGUI"
-screenGui.ResetOnSpawn = false
-screenGui.Parent = playerGui
-
--- Задний фон (затемнение)
-local overlay = Instance.new("Frame")
-overlay.Size = UDim2.new(1, 0, 1, 0)
-overlay.BackgroundColor3 = Color3.fromRGB(0, 0, 0)
-overlay.BackgroundTransparency = 0.6
-overlay.Visible = false
-overlay.Parent = screenGui
-
--- Главное окно
-local mainFrame = Instance.new("Frame")
-mainFrame.Size = UDim2.new(0, 500, 0, 550)
-mainFrame.Position = UDim2.new(0.5, -250, 0.5, -275)
-mainFrame.BackgroundColor3 = C.BG
-mainFrame.BorderSizePixel = 1
-mainFrame.BorderColor3 = C.Accent
-mainFrame.ClipsDescendants = true
-mainFrame.Visible = false
-mainFrame.Parent = screenGui
-
--- Заголовок с драгом
-local titleBar = Instance.new("Frame")
-titleBar.Size = UDim2.new(1, 0, 0, 45)
-titleBar.BackgroundColor3 = C.Header
-titleBar.BorderSizePixel = 0
-titleBar.Parent = mainFrame
-
-local title = Instance.new("TextLabel")
-title.Size = UDim2.new(1, -50, 1, 0)
-title.Position = UDim2.new(0, 15, 0, 0)
-title.BackgroundTransparency = 1
-title.Text = "⚔️ SLIME RNG | ТЁМНЫЙ ФАНТАЗИ ⚔️"
-title.TextColor3 = C.Text
-title.TextSize = 18
-title.Font = Enum.Font.GothamBold
-title.TextXAlignment = Enum.TextXAlignment.Left
-title.Parent = titleBar
-
--- Кнопка закрытия
-local closeBtn = Instance.new("TextButton")
-closeBtn.Size = UDim2.new(0, 40, 1, 0)
-closeBtn.Position = UDim2.new(1, -40, 0, 0)
-closeBtn.BackgroundColor3 = C.Red
-closeBtn.Text = "✕"
-closeBtn.TextColor3 = C.Text
-closeBtn.TextSize = 20
-closeBtn.Font = Enum.Font.GothamBold
-closeBtn.BorderSizePixel = 0
-closeBtn.Parent = titleBar
-
--- Кнопка сворачивания
-local minimizeBtn = Instance.new("TextButton")
-minimizeBtn.Size = UDim2.new(0, 40, 1, 0)
-minimizeBtn.Position = UDim2.new(1, -80, 0, 0)
-minimizeBtn.BackgroundColor3 = C.AccentDark
-minimizeBtn.Text = "─"
-minimizeBtn.TextColor3 = C.Text
-minimizeBtn.TextSize = 20
-minimizeBtn.Font = Enum.Font.GothamBold
-minimizeBtn.BorderSizePixel = 0
-minimizeBtn.Parent = titleBar
-
--- Кнопка открытия (когда свернуто)
-local openButton = Instance.new("TextButton")
-openButton.Size = UDim2.new(0, 60, 0, 60)
-openButton.Position = UDim2.new(0, 20, 1, -80)
-openButton.BackgroundColor3 = C.Accent
-openButton.Text = "⚔️"
-openButton.TextColor3 = C.Text
-openButton.TextSize = 30
-openButton.Font = Enum.Font.GothamBold
-openButton.BorderSizePixel = 1
-openButton.BorderColor3 = C.AccentDark
-openButton.Visible = true
-openButton.Parent = screenGui
-
--- === ВКЛАДКИ ===
-local tabButtonsFrame = Instance.new("Frame")
-tabButtonsFrame.Size = UDim2.new(1, 0, 0, 45)
-tabButtonsFrame.Position = UDim2.new(0, 0, 0, 45)
-tabButtonsFrame.BackgroundColor3 = C.Button
-tabButtonsFrame.BorderSizePixel = 0
-tabButtonsFrame.Parent = mainFrame
-
-local tabContainer = Instance.new("Frame")
-tabContainer.Size = UDim2.new(1, 0, 1, -90)
-tabContainer.Position = UDim2.new(0, 0, 0, 90)
-tabContainer.BackgroundColor3 = C.BG
-tabContainer.BorderSizePixel = 0
-tabContainer.Parent = mainFrame
-
--- Список вкладок
-local tabs = {"MAIN", "PLAYER", "INFO", "DISCORD", "НАСТРОЙКИ"}
-local currentTab = nil
-local tabContents = {}
-
--- Функция создания вкладки
-local function createTab(tabName)
-    local container = Instance.new("ScrollingFrame")
-    container.Size = UDim2.new(1, -20, 1, -20)
-    container.Position = UDim2.new(0, 10, 0, 10)
-    container.BackgroundTransparency = 1
-    container.BorderSizePixel = 0
-    container.ScrollBarThickness = 6
-    container.ScrollBarImageColor3 = C.Accent
-    container.Visible = false
-    container.Parent = tabContainer
     
-    local layout = Instance.new("UIListLayout")
-    layout.Padding = UDim.new(0, 12)
-    layout.HorizontalAlignment = Enum.HorizontalAlignment.Center
-    layout.Parent = container
+    knob.MouseButton1Down:Connect(function()
+        isDragging = true
+        local connection
+        connection = RunService.RenderStepped:Connect(function()
+            if isDragging then
+                onDrag({Position = UserInputService:GetMouseLocation()})
+            end
+        end)
+        
+        local releaseConn
+        releaseConn = UserInputService.InputEnded:Connect(function(input)
+            if input.UserInputType == Enum.UserInputType.MouseButton1 then
+                isDragging = false
+                connection:Disconnect()
+                releaseConn:Disconnect()
+            end
+        end)
+    end)
     
     return container
 end
 
--- Создаём все вкладки
-for _, tab in pairs(tabs) do
-    tabContents[tab] = createTab(tab)
-end
+--// ============ КОМПОНЕНТ ЧЕКБОКСА ============
 
--- Функция переключения вкладки
-local function switchTab(tabName)
-    if currentTab then
-        tabContents[currentTab].Visible = false
-    end
-    currentTab = tabName
-    tabContents[tabName].Visible = true
-end
-
--- Создаём кнопки вкладок
-local tabButtons = {}
-for i, tab in pairs(tabs) do
-    local btn = Instance.new("TextButton")
-    btn.Size = UDim2.new(0, 100, 1, -10)
-    btn.Position = UDim2.new(0, 10 + (i-1)*105, 0, 5)
-    btn.BackgroundColor3 = C.Button
-    btn.Text = tab
-    btn.TextColor3 = C.TextDim
-    btn.TextSize = 14
-    btn.Font = Enum.Font.GothamBold
-    btn.BorderSizePixel = 1
-    btn.BorderColor3 = C.AccentDark
-    btn.Parent = tabButtonsFrame
+local function createCheckbox(parent, title, defaultValue, callback, yOffset)
+    local container = createStyledFrame(parent, UDim2.new(0.9, 0, 0, 40), 
+        UDim2.new(0.05, 0, yOffset or 0, 0), UI_THEME.BackgroundDark, 0.8)
     
-    btn.MouseEnter:Connect(function()
-        if tabContents[tab].Visible then return end
-        btn.BackgroundColor3 = C.ButtonHover
+    local checkBox = createStyledFrame(container, UDim2.new(0, 20, 0, 20), 
+        UDim2.new(0.03, 0, 0.5, -10), UI_THEME.Background, 0)
+    
+    local checkMark = Instance.new("ImageLabel")
+    checkMark.Size = UDim2.new(0.7, 0, 0.7, 0)
+    checkMark.Position = UDim2.new(0.15, 0, 0.15, 0)
+    checkMark.BackgroundTransparency = 1
+    checkMark.Image = "rbxassetid://7072706620"
+    checkMark.ImageColor3 = UI_THEME.Primary
+    checkMark.ImageTransparency = 1
+    checkMark.Parent = checkBox
+    
+    local titleLabel = createTextLabel(container, title, UDim2.new(0.7, 0, 1, 0), 
+        UDim2.new(0.12, 0, 0, 0), UI_THEME.Text, Enum.Font.Gotham, 13)
+    titleLabel.TextXAlignment = Enum.TextXAlignment.Left
+    
+    local isChecked = defaultValue or false
+    
+    local function setChecked(checked)
+        isChecked = checked
+        if checked then
+            TweenService:Create(checkBox, TI, {BackgroundColor3 = UI_THEME.Primary}):Play()
+            TweenService:Create(checkMark, TI, {ImageTransparency = 0}):Play()
+        else
+            TweenService:Create(checkBox, TI, {BackgroundColor3 = UI_THEME.Background}):Play()
+            TweenService:Create(checkMark, TI, {ImageTransparency = 1}):Play()
+        end
+        callback(isChecked)
+    end
+    
+    setChecked(isChecked)
+    
+    local hoverFrame = Instance.new("Frame")
+    hoverFrame.Size = UDim2.new(1, 0, 1, 0)
+    hoverFrame.BackgroundColor3 = UI_THEME.Primary
+    hoverFrame.BackgroundTransparency = 1
+    hoverFrame.BorderSizePixel = 0
+    hoverFrame.Parent = container
+    
+    local hoverCorner = Instance.new("UICorner")
+    hoverCorner.CornerRadius = UDim.new(0, 8)
+    hoverCorner.Parent = hoverFrame
+    
+    container.InputBegan:Connect(function(input)
+        if input.UserInputType == Enum.UserInputType.MouseMovement then
+            TweenService:Create(hoverFrame, TI, {BackgroundTransparency = 0.95}):Play()
+        elseif input.UserInputType == Enum.UserInputType.MouseButton1 then
+            setChecked(not isChecked)
+        end
     end)
-    btn.MouseLeave:Connect(function()
-        if tabContents[tab].Visible then return end
-        btn.BackgroundColor3 = C.Button
+    
+    container.InputEnded:Connect(function(input)
+        if input.UserInputType == Enum.UserInputType.MouseMovement then
+            TweenService:Create(hoverFrame, TI, {BackgroundTransparency = 1}):Play()
+        end
     end)
     
-    btn.MouseButton1Click:Connect(function()
-        switchTab(tab)
-        for _, b in pairs(tabButtons) do
-            b.BackgroundColor3 = C.Button
-            b.TextColor3 = C.TextDim
-        end
-        btn.BackgroundColor3 = C.AccentDark
-        btn.TextColor3 = C.Text
+    return container
+end
+
+--// ============ КОМПОНЕНТ ТЕКСТОВОГО ПОЛЯ ============
+
+local function createTextbox(parent, placeholder, callback, yOffset)
+    local container = createStyledFrame(parent, UDim2.new(0.9, 0, 0, 50), 
+        UDim2.new(0.05, 0, yOffset or 0, 0), UI_THEME.BackgroundDark, 0.8)
+    
+    local textBox = Instance.new("TextBox")
+    textBox.Size = UDim2.new(0.96, 0, 0.6, 0)
+    textBox.Position = UDim2.new(0.02, 0, 0.2, 0)
+    textBox.BackgroundColor3 = UI_THEME.Background
+    textBox.BackgroundTransparency = 0
+    textBox.BorderSizePixel = 0
+    textBox.PlaceholderText = placeholder
+    textBox.PlaceholderColor3 = UI_THEME.TextDark
+    textBox.Text = ""
+    textBox.TextColor3 = UI_THEME.Text
+    textBox.Font = Enum.Font.Gotham
+    textBox.TextSize = 14
+    textBox.ClearTextOnFocus = false
+    textBox.Parent = container
+    
+    local corner = Instance.new("UICorner")
+    corner.CornerRadius = UDim.new(0, 6)
+    corner.Parent = textBox
+    
+    local icon = Instance.new("ImageLabel")
+    icon.Size = UDim2.new(0, 20, 0, 20)
+    icon.Position = UDim2.new(0.02, 0, 0.5, -10)
+    icon.BackgroundTransparency = 1
+    icon.Image = "rbxassetid://7072706663"
+    icon.ImageColor3 = UI_THEME.TextDark
+    icon.Parent = container
+    
+    textBox.Focused:Connect(function()
+        TweenService:Create(textBox, TI, {BackgroundColor3 = UI_THEME.Primary}):Play()
+        TweenService:Create(icon, TI, {ImageColor3 = UI_THEME.Primary}):Play()
     end)
     
-    tabButtons[tab] = btn
-end
-
--- === НАПОЛНЕНИЕ ВКЛАДКИ MAIN ===
-local mainTab = tabContents["MAIN"]
-
--- Статус авто-лута
-local autoLootEnabled = true
-local lootStatusLabel = Instance.new("TextLabel")
-lootStatusLabel.Size = UDim2.new(0, 300, 0, 40)
-lootStatusLabel.BackgroundColor3 = C.Button
-lootStatusLabel.Text = "🔘 АВТО-ЛУТ: ВКЛЮЧЁН"
-lootStatusLabel.TextColor3 = C.Green
-lootStatusLabel.TextSize = 16
-lootStatusLabel.Font = Enum.Font.GothamBold
-lootStatusLabel.Parent = mainTab
-
-local lootToggleBtn = Instance.new("TextButton")
-lootToggleBtn.Size = UDim2.new(0, 200, 0, 35)
-lootToggleBtn.BackgroundColor3 = C.Accent
-lootToggleBtn.Text = "ВЫКЛЮЧИТЬ"
-lootToggleBtn.TextColor3 = C.Text
-lootToggleBtn.TextSize = 14
-lootToggleBtn.Font = Enum.Font.GothamBold
-lootToggleBtn.Parent = mainTab
-
--- Телепорт к ближайшему луту
-local teleportBtn = Instance.new("TextButton")
-teleportBtn.Size = UDim2.new(0, 250, 0, 45)
-teleportBtn.BackgroundColor3 = C.Accent
-teleportBtn.Text = "📦 ТЕЛЕПОРТ К БЛИЖАЙШЕМУ ЛУТУ"
-teleportBtn.TextColor3 = C.Text
-teleportBtn.TextSize = 16
-teleportBtn.Font = Enum.Font.GothamBold
-teleportBtn.Parent = mainTab
-
--- Радиус поиска
-local radiusLabel = Instance.new("TextLabel")
-radiusLabel.Size = UDim2.new(0, 250, 0, 25)
-radiusLabel.BackgroundTransparency = 1
-radiusLabel.Text = "Радиус поиска: " .. DISTANCE_THRESHOLD
-radiusLabel.TextColor3 = C.TextDim
-radiusLabel.TextSize = 14
-radiusLabel.Parent = mainTab
-
-local radiusSlider = Instance.new("TextButton")
-radiusSlider.Size = UDim2.new(0, 200, 0, 30)
-radiusSlider.BackgroundColor3 = C.Button
-radiusSlider.Text = "▲ УВЕЛИЧИТЬ ▼"
-radiusSlider.TextColor3 = C.TextDim
-radiusSlider.TextSize = 12
-radiusSlider.Parent = mainTab
-
--- === НАПОЛНЕНИЕ ВКЛАДКИ PLAYER ===
-local playerTab = tabContents["PLAYER"]
-
-local playerStats = Instance.new("TextLabel")
-playerStats.Size = UDim2.new(0, 350, 0, 100)
-playerStats.BackgroundColor3 = C.Button
-playerStats.Text = "Загрузка..."
-playerStats.TextColor3 = C.Text
-playerStats.TextSize = 14
-playerStats.TextWrapped = true
-playerStats.Parent = playerTab
-
-local refreshBtn = Instance.new("TextButton")
-refreshBtn.Size = UDim2.new(0, 150, 0, 35)
-refreshBtn.BackgroundColor3 = C.Accent
-refreshBtn.Text = "🔄 ОБНОВИТЬ"
-refreshBtn.TextColor3 = C.Text
-refreshBtn.TextSize = 14
-refreshBtn.Parent = playerTab
-
--- === НАПОЛНЕНИЕ ВКЛАДКИ INFO ===
-local infoTab = tabContents["INFO"]
-
-local infoText = Instance.new("TextLabel")
-infoText.Size = UDim2.new(0, 400, 0, 200)
-infoText.BackgroundColor3 = C.Button
-infoText.Text = "⚔️ SLIME RNG - Тёмный Фантези\n\n📦 Авто-телепорт к луту\n🔊 Звук при телепорте\n🚫 Игнор-лист лута\n\n🎮 Создано специально для Slime RNG"
-infoText.TextColor3 = C.TextDim
-infoText.TextSize = 14
-infoText.TextWrapped = true
-infoText.Parent = infoTab
-
--- === НАПОЛНЕНИЕ ВКЛАДКИ DISCORD ===
-local discordTab = tabContents["DISCORD"]
-
-local discordBtn = Instance.new("TextButton")
-discordBtn.Size = UDim2.new(0, 300, 0, 50)
-discordBtn.BackgroundColor3 = Color3.fromRGB(88, 101, 242)
-discordBtn.Text = "💬 ПРИСОЕДИНИТЬСЯ К DISCORD"
-discordBtn.TextColor3 = C.Text
-discordBtn.TextSize = 16
-discordBtn.Font = Enum.Font.GothamBold
-discordBtn.Parent = discordTab
-
-local discordLink = Instance.new("TextLabel")
-discordLink.Size = UDim2.new(0, 300, 0, 30)
-discordLink.BackgroundTransparency = 1
-discordLink.Text = "discord.gg/slime_rng"
-discordLink.TextColor3 = C.Accent
-discordLink.TextSize = 14
-discordLink.Parent = discordTab
-
--- === НАПОЛНЕНИЕ ВКЛАДКИ НАСТРОЙКИ ===
-local settingsTab = tabContents["НАСТРОЙКИ"]
-
-local themeBtn = Instance.new("TextButton")
-themeBtn.Size = UDim2.new(0, 250, 0, 40)
-themeBtn.BackgroundColor3 = C.Button
-themeBtn.Text = "🎨 СМЕНИТЬ ТЕМУ (в разработке)"
-themeBtn.TextColor3 = C.TextDim
-themeBtn.TextSize = 14
-themeBtn.Parent = settingsTab
-
-local soundToggleBtn = Instance.new("TextButton")
-soundToggleBtn.Size = UDim2.new(0, 250, 0, 40)
-soundToggleBtn.BackgroundColor3 = C.Button
-soundToggleBtn.Text = "🔊 ЗВУК: ВКЛЮЧЁН"
-soundToggleBtn.TextColor3 = C.TextDim
-soundToggleBtn.TextSize = 14
-soundToggleBtn.Parent = settingsTab
-
-local unloadBtn = Instance.new("TextButton")
-unloadBtn.Size = UDim2.new(0, 200, 0, 45)
-unloadBtn.BackgroundColor3 = C.Red
-unloadBtn.Text = "❌ ВЫГРУЗИТЬ ЧИТ"
-unloadBtn.TextColor3 = C.Text
-unloadBtn.TextSize = 16
-unloadBtn.Font = Enum.Font.GothamBold
-unloadBtn.Parent = settingsTab
-
-local versionLabel = Instance.new("TextLabel")
-versionLabel.Size = UDim2.new(0, 200, 0, 30)
-versionLabel.BackgroundTransparency = 1
-versionLabel.Text = "Version: 1.0"
-versionLabel.TextColor3 = C.TextDim
-versionLabel.TextSize = 12
-versionLabel.Parent = settingsTab
-
--- === ЛОГИКА АВТО-ЛУТА ===
-local childAddedConnection = nil
-
-local function shouldIgnore(lootName)
-    for _, name in pairs(IGNORED_LOOT) do
-        if lootName:find(name) then
-            return true
+    textBox.FocusLost:Connect(function(enterPressed)
+        TweenService:Create(textBox, TI, {BackgroundColor3 = UI_THEME.Background}):Play()
+        TweenService:Create(icon, TI, {ImageColor3 = UI_THEME.TextDark}):Play()
+        if enterPressed and textBox.Text ~= "" then
+            callback(textBox.Text)
         end
-    end
-    return false
-end
-
-local function playTeleportSound()
-    if not PLAY_SOUND then return end
-    if teleportSound then
-        teleportSound.Parent = player.Character or player.CharacterAdded:Wait()
-        teleportSound:Play()
-    end
-end
-
-local function teleportToPart(targetPart)
-    local character = player.Character
-    local humanoidRootPart = character and character:FindFirstChild("HumanoidRootPart")
-    if humanoidRootPart and targetPart and targetPart.Parent then
-        local distance = (humanoidRootPart.Position - targetPart.Position).Magnitude
-        if distance > DISTANCE_THRESHOLD then
-            humanoidRootPart.CFrame = CFrame.new(targetPart.Position + TELEPORT_OFFSET)
-            playTeleportSound()
-        end
-    end
-end
-
-local function teleportToNearestLoot()
-    if not LOOT_FOLDER then return end
-    local nearest = nil
-    local nearestDist = math.huge
-    local character = player.Character
-    local hrp = character and character:FindFirstChild("HumanoidRootPart")
-    if not hrp then return end
+    end)
     
-    for _, loot in pairs(LOOT_FOLDER:GetChildren()) do
-        if loot:IsA("Model") and not shouldIgnore(loot.Name) then
-            local part = loot.PrimaryPart or loot:FindFirstChildWhichIsA("BasePart")
-            if part then
-                local dist = (hrp.Position - part.Position).Magnitude
-                if dist < nearestDist then
-                    nearestDist = dist
-                    nearest = part
-                end
-            end
-        end
-    end
+    return container
+end
+
+--// ============ ОСНОВНОЕ ОКНО ============
+
+local function createMainWindow()
+    -- Создаем ScreenGui
+    local screenGui = Instance.new("ScreenGui")
+    screenGui.Name = "ModernUI"
+    screenGui.Parent = game:GetService("CoreGui")
+    screenGui.ZIndexBehavior = Enum.ZIndexBehavior.Global
+    screenGui.ResetOnSpawn = false
     
-    if nearest then
-        teleportToPart(nearest)
-    end
-end
-
-local function processLoot(lootModel)
-    if not autoLootEnabled then return end
-    if shouldIgnore(lootModel.Name) then return end
-    task.wait(0.05)
-    local targetPart = lootModel.PrimaryPart or lootModel:FindFirstChildWhichIsA("BasePart")
-    if targetPart then
-        teleportToPart(targetPart)
-    end
-end
-
-local function onLootAdded(loot)
-    if loot:IsA("Model") then
-        processLoot(loot)
-    end
-end
-
-local function enableAutoLoot()
-    if autoLootEnabled then return end
-    autoLootEnabled = true
-    lootStatusLabel.Text = "🔘 АВТО-ЛУТ: ВКЛЮЧЁН"
-    lootStatusLabel.TextColor3 = C.Green
-    lootToggleBtn.Text = "ВЫКЛЮЧИТЬ"
-    if LOOT_FOLDER then
-        childAddedConnection = LOOT_FOLDER.ChildAdded:Connect(onLootAdded)
-        for _, loot in pairs(LOOT_FOLDER:GetChildren()) do
-            task.spawn(function() processLoot(loot) end)
-        end
-    end
-end
-
-local function disableAutoLoot()
-    if not autoLootEnabled then return end
-    autoLootEnabled = false
-    lootStatusLabel.Text = "⭕ АВТО-ЛУТ: ВЫКЛЮЧЕН"
-    lootStatusLabel.TextColor3 = C.Red
-    lootToggleBtn.Text = "ВКЛЮЧИТЬ"
-    if childAddedConnection then
-        childAddedConnection:Disconnect()
-        childAddedConnection = nil
-    end
-end
-
--- Кнопки MAIN
-lootToggleBtn.MouseButton1Click:Connect(function()
-    if autoLootEnabled then disableAutoLoot() else enableAutoLoot() end
-end)
-
-teleportBtn.MouseButton1Click:Connect(function()
-    teleportToNearestLoot()
-end)
-
-radiusSlider.MouseButton1Click:Connect(function()
-    DISTANCE_THRESHOLD = (DISTANCE_THRESHOLD % 20) + 3
-    radiusLabel.Text = "Радиус поиска: " .. DISTANCE_THRESHOLD
-end)
-
--- Кнопки PLAYER
-local function updatePlayerStats()
-    local character = player.Character
-    if not character then
-        playerStats.Text = "Персонаж не загружен"
-        return
-    end
-    local hrp = character:FindFirstChild("HumanoidRootPart")
-    local pos = hrp and hrp.Position or Vector3.zero
-    playerStats.Text = string.format(
-        "📊 СТАТИСТИКА ИГРОКА\n\n👤 Имя: %s\n📍 Позиция: %.1f, %.1f, %.1f\n❤️ Здоровье: N/A\n💰 Монеты: N/A",
-        player.Name, pos.X, pos.Y, pos.Z
-    )
-end
-
-refreshBtn.MouseButton1Click:Connect(function()
-    updatePlayerStats()
-end)
-
--- Кнопки НАСТРОЙКИ
-local soundEnabled = PLAY_SOUND
-soundToggleBtn.MouseButton1Click:Connect(function()
-    soundEnabled = not soundEnabled
-    PLAY_SOUND = soundEnabled
-    soundToggleBtn.Text = soundEnabled and "🔊 ЗВУК: ВКЛЮЧЁН" or "🔇 ЗВУК: ВЫКЛЮЧЕН"
-end)
-
-unloadBtn.MouseButton1Click:Connect(function()
-    screenGui:Destroy()
-end)
-
--- Discord кнопка
-discordBtn.MouseButton1Click:Connect(function()
-    setclipboard or toclipboard and (setclipboard or toclipboard)("discord.gg/slime_rng")
-    discordBtn.Text = "✅ СКОПИРОВАНО!"
-    task.wait(1)
-    discordBtn.Text = "💬 ПРИСОЕДИНИТЬСЯ К DISCORD"
-end)
-
--- === ДРАГ И ОКНО ===
-local dragging = false
-local dragStart, frameStart
-
-titleBar.InputBegan:Connect(function(input)
-    if input.UserInputType == Enum.UserInputType.MouseButton1 then
-        dragging = true
-        dragStart = input.Position
-        frameStart = mainFrame.Position
-        input.Changed:Connect(function()
-            if input.UserInputState == Enum.UserInputState.End then
-                dragging = false
-            end
+    -- Затемнение фона
+    local overlay = Instance.new("ImageButton")
+    overlay.Size = UDim2.new(1, 0, 1, 0)
+    overlay.BackgroundTransparency = 1
+    overlay.Image = "rbxassetid://7880418493"
+    overlay.ImageColor3 = Color3.fromRGB(0, 0, 0)
+    overlay.ImageTransparency = 0.3
+    overlay.AutoButtonColor = false
+    overlay.Parent = screenGui
+    overlay.ZIndex = 0
+    
+    -- Главное окно
+    local mainFrame = createStyledFrame(screenGui, UDim2.new(0, 400, 0, 550), 
+        UDim2.new(0.5, -200, 0.5, -275), UI_THEME.BackgroundDark, 0.95)
+    mainFrame.ZIndex = 10
+    
+    -- Тень
+    local shadow = Instance.new("Frame")
+    shadow.Size = UDim2.new(1, 20, 1, 20)
+    shadow.Position = UDim2.new(0.5, -10, 0.5, -10)
+    shadow.BackgroundColor3 = Color3.fromRGB(0, 0, 0)
+    shadow.BackgroundTransparency = 0.7
+    shadow.BorderSizePixel = 0
+    shadow.Parent = mainFrame
+    shadow.ZIndex = -1
+    
+    local shadowCorner = Instance.new("UICorner")
+    shadowCorner.CornerRadius = UDim.new(0, 12)
+    shadowCorner.Parent = shadow
+    
+    -- Заголовок
+    local titleBar = createStyledFrame(mainFrame, UDim2.new(1, 0, 0, 50), 
+        UDim2.new(0, 0, 0, 0), UI_THEME.Primary, 1)
+    
+    local titleText = createTextLabel(titleBar, "MODERN UI", UDim2.new(1, 0, 1, 0), 
+        UDim2.new(0.02, 0, 0, 0), Color3.fromRGB(255, 255, 255), Enum.Font.GothamBold, 18)
+    titleText.TextXAlignment = Enum.TextXAlignment.Left
+    
+    -- Кнопка закрытия
+    local closeBtn = Instance.new("ImageButton")
+    closeBtn.Size = UDim2.new(0, 30, 0, 30)
+    closeBtn.Position = UDim2.new(1, -40, 0.5, -15)
+    closeBtn.BackgroundTransparency = 1
+    closeBtn.Image = "rbxassetid://7072725342"
+    closeBtn.ImageColor3 = Color3.fromRGB(255, 255, 255)
+    closeBtn.Parent = titleBar
+    
+    closeBtn.MouseButton1Click:Connect(function()
+        TweenService:Create(mainFrame, TI, {Size = UDim2.new(0, 0, 0, 0)}):Play()
+        TweenService:Create(overlay, TI, {ImageTransparency = 1}):Play()
+        task.delay(ANIMATION_SPEED, function()
+            screenGui:Destroy()
         end)
+    end)
+    
+    -- Контейнер для контента (скроллинг)
+    local scrollContainer = Instance.new("ScrollingFrame")
+    scrollContainer.Size = UDim2.new(1, 0, 1, -50)
+    scrollContainer.Position = UDim2.new(0, 0, 0, 50)
+    scrollContainer.BackgroundTransparency = 1
+    scrollContainer.BorderSizePixel = 0
+    scrollContainer.CanvasSize = UDim2.new(0, 0, 0, 0)
+    scrollContainer.ScrollBarThickness = 4
+    scrollContainer.ScrollBarImageColor3 = UI_THEME.Primary
+    scrollContainer.Parent = mainFrame
+    
+    local layout = Instance.new("UIListLayout")
+    layout.Padding = UDim.new(0, 10)
+    layout.SortOrder = Enum.SortOrder.LayoutOrder
+    layout.Parent = scrollContainer
+    
+    -- Функция обновления CanvasSize
+    local function updateCanvasSize()
+        task.wait()
+        scrollContainer.CanvasSize = UDim2.new(0, 0, 0, layout.AbsoluteContentSize.Y + 20)
     end
-end)
+    
+    layout:GetPropertyChangedSignal("AbsoluteContentSize"):Connect(updateCanvasSize)
+    updateCanvasSize()
+    
+    -- Делаем окно перетаскиваемым
+    local dragging = false
+    local dragStart
+    local startPos
+    
+    titleBar.InputBegan:Connect(function(input)
+        if input.UserInputType == Enum.UserInputType.MouseButton1 then
+            dragging = true
+            dragStart = Vector2.new(input.Position.X, input.Position.Y)
+            startPos = mainFrame.Position
+        end
+    end)
+    
+    UserInputService.InputChanged:Connect(function(input)
+        if dragging and input.UserInputType == Enum.UserInputType.MouseMovement then
+            local delta = Vector2.new(input.Position.X, input.Position.Y) - dragStart
+            mainFrame.Position = UDim2.new(startPos.X.Scale, startPos.X.Offset + delta.X, 
+                                           startPos.Y.Scale, startPos.Y.Offset + delta.Y)
+        end
+    end)
+    
+    UserInputService.InputEnded:Connect(function(input)
+        if input.UserInputType == Enum.UserInputType.MouseButton1 then
+            dragging = false
+        end
+    end)
+    
+    return scrollContainer, layout
+end
 
-UserInputService.InputChanged:Connect(function(input)
-    if dragging and input.UserInputType == Enum.UserInputType.MouseMovement then
-        local delta = input.Position - dragStart
-        mainFrame.Position = UDim2.new(
-            frameStart.X.Scale,
-            frameStart.X.Offset + delta.X,
-            frameStart.Y.Scale,
-            frameStart.Y.Offset + delta.Y
-        )
+--// ============ ДЕМОНСТРАЦИЯ ============
+
+-- Создаем UI
+local container, layout = createMainWindow()
+
+-- Переменная для хранения текущей громкости
+local currentVolume = 50
+
+-- Кнопка "Приветствие"
+createButton(container, "👋 Показать приветствие", function()
+    print("Привет! Кнопка работает!")
+    
+    -- Временное уведомление
+    local notif = createStyledFrame(container, UDim2.new(0.9, 0, 0, 40), 
+        UDim2.new(0.05, 0, 0, 0), UI_THEME.Success, 0.9)
+    notif.ZIndex = 1000
+    
+    local notifText = createTextLabel(notif, "✅ Кнопка нажата!", UDim2.new(1, 0, 1, 0), 
+        UDim2.new(0, 0, 0, 0), Color3.fromRGB(255, 255, 255), Enum.Font.Gotham, 14)
+    
+    notif.Position = UDim2.new(0.05, 0, -0.1, 0)
+    TweenService:Create(notif, TI, {Position = UDim2.new(0.05, 0, 0, 0)}):Play()
+    
+    task.delay(2, function()
+        TweenService:Create(notif, TI, {Position = UDim2.new(0.05, 0, -0.1, 0)}):Play()
+        task.delay(ANIMATION_SPEED, function()
+            notif:Destroy()
+        end)
+    end)
+end, 0)
+
+-- Слайдер громкости
+createSlider(container, "🔊 Громкость", 0, 100, 50, function(value)
+    currentVolume = value
+    print("Громкость изменена на:", value, "%")
+end, 60)
+
+-- Чекбокс "Эффекты"
+createCheckbox(container, "✨ Включить спецэффекты", true, function(checked)
+    if checked then
+        print("Спецэффекты включены ✨")
+    else
+        print("Спецэффекты выключены ⚡")
     end
-end)
+end, 140)
 
--- Управление окном
-local minimized = false
-minimizeBtn.MouseButton1Click:Connect(function()
-    minimized = not minimized
-    tabContainer.Visible = not minimized
-    tabButtonsFrame.Visible = not minimized
-    mainFrame.Size = minimized and UDim2.new(0, 500, 0, 45) or UDim2.new(0, 500, 0, 550)
-end)
+-- Чекбокс "Уведомления"
+createCheckbox(container, "🔔 Показывать уведомления", true, function(checked)
+    print("Уведомления:", checked and "включены" or "выключены")
+end, 190)
 
-closeBtn.MouseButton1Click:Connect(function()
-    mainFrame.Visible = false
-    overlay.Visible = false
-    openButton.Visible = true
-end)
+-- Текстовое поле для ввода имени
+local nameValue = ""
+createTextbox(container, "Введите ваше имя", function(text)
+    nameValue = text
+    print("Имя сохранено:", text)
+end, 250)
 
-openButton.MouseButton1Click:Connect(function()
-    mainFrame.Visible = true
-    overlay.Visible = true
-    openButton.Visible = false
-    if minimized then
-        minimized = false
-        tabContainer.Visible = true
-        tabButtonsFrame.Visible = true
-        mainFrame.Size = UDim2.new(0, 500, 0, 550)
-    end
-end)
+-- Кнопка "Сохранить настройки"
+createButton(container, "💾 Сохранить все настройки", function()
+    print("=== НАСТРОЙКИ СОХРАНЕНЫ ===")
+    print("Громкость:", currentVolume, "%")
+    print("Имя:", nameValue ~= "" and nameValue or "не указано")
+    print("==========================")
+end, 320)
 
--- Анимация появления
-mainFrame.BackgroundTransparency = 1
-overlay.BackgroundTransparency = 1
-TweenService:Create(mainFrame, TweenInfo.new(0.3), {BackgroundTransparency = 0}):Play()
-TweenService:Create(overlay, TweenInfo.new(0.3), {BackgroundTransparency = 0.6}):Play()
+-- Кнопка "О программе"
+createButton(container, "ℹ️ О программе", function()
+    print("=== Modern UI Framework ===")
+    print("Версия: 1.0.0")
+    print("Разработчик: YourName")
+    print("Компоненты: Кнопки, Слайдеры, Чекбоксы, Текстовые поля")
+    print("==========================")
+end, 380)
 
--- Запуск
-switchTab("MAIN")
-tabButtons["MAIN"].BackgroundColor3 = C.AccentDark
-tabButtons["MAIN"].TextColor3 = C.Text
-enableAutoLoot()
-updatePlayerStats()
+-- Анимация появления окна
+local screenGui = container.Parent.Parent
+local mainFrame = screenGui:FindFirstChildWhichIsA("Frame")
+local overlay = screenGui:FindFirstChild("ImageButton")
 
-print("✅ Dark Fantasy GUI загружен! Нажми кнопку ⚔️ в левом нижнем углу")
+mainFrame.Size = UDim2.new(0, 0, 0, 0)
+overlay.ImageTransparency = 1
+
+TweenService:Create(mainFrame, TI, {Size = UDim2.new(0, 400, 0, 550)}):Play()
+TweenService:Create(overlay, TI, {ImageTransparency = 0.3}):Play()
+
+print("✅ UI Framework загружен! Нажмите на кнопки для тестирования.")
