@@ -8,7 +8,7 @@ screenGui.Parent = player.PlayerGui
 
 -- Главное окно
 local mainFrame = Instance.new("Frame")
-mainFrame.Size = UDim2.new(0, 450, 0, 550)
+mainFrame.Size = UDim2.new(0, 500, 0, 300)
 mainFrame.Position = UDim2.new(0.5, -225, 0.5, -275)
 mainFrame.BackgroundColor3 = Color3.fromRGB(20, 20, 25)
 mainFrame.BorderSizePixel = 0
