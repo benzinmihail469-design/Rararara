@@ -7,8 +7,8 @@ function speed(a, b)
 end   
     
 
-white true do 
+while true do 
     local result = speed(100, 100) 
-    print ("result") 
+    print (result) 
     task.wait (5) 
     
