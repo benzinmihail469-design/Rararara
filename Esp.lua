@@ -10,5 +10,5 @@ end
 white true do 
     local result = speed(100, 100) 
     print ("result") 
-    task.wait (0.5) 
+    task.wait (5) 
     
