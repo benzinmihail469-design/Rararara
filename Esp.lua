@@ -7,5 +7,5 @@ function speed(a, b)
 end
     local result = speed(100, 100) 
     print ("result") 
-    task.wait (5) 
+    task.wait (0.5) 
     
