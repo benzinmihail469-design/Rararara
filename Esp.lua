@@ -11,4 +11,5 @@ while true do
     local result = speed(100, 100) 
     print (result) 
     task.wait (5) 
+end
     
