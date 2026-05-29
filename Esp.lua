@@ -1,4 +1,3 @@
--- Survive Zombie Arena - FoxName Hub
 local player = game.Players.LocalPlayer
 
 local screenGui = Instance.new("ScreenGui")
