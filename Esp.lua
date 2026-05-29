@@ -1,108 +1,49 @@
+-- Kill Aura для зомби - 1000 урона в радиусе 200
+
 local Players = game:GetService("Players")
 local LocalPlayer = Players.LocalPlayer
 local Workspace = game:GetService("Workspace")
 
--- Настройки
-local FOLDER_NAME = "Zombes_Local"  -- Название папки
-local RADIUS = 200                   -- Радиус атаки
-local DAMAGE = 1000                  -- Урон
+-- Ищем папку с зомби
+local zombieFolder = Workspace:FindFirstChild("Zombes_Local")
 
--- Функция поиска папки с зомби
-local function findZombieFolder()
-    -- Ищем папку в Workspace
-    local folder = Workspace:FindFirstChild(FOLDER_NAME)
-    
-    if folder then
-        print("✅ Папка найдена: " .. folder.Name)
-        return folder
-    else
-        print("❌ Папка " .. FOLDER_NAME .. " не найдена в Workspace!")
-        return nil
-    end
+if not zombieFolder then
+    print("❌ Папка Zombes_Local не найдена, ищу везде...")
+    zombieFolder = Workspace  -- Если папки нет, ищем во всём Workspace
 end
 
--- Функция получения всех зомби из папки
-local function getAllZombies()
-    local zombieFolder = findZombieFolder()
-    if not zombieFolder then return {} end
-    
-    local zombies = {}
-    
-    -- Проходим по всем детям папки
-    for _, child in pairs(zombieFolder:GetChildren()) do
-        -- Проверяем, является ли объект моделью (имеет Humanoid)
-        local humanoid = child:FindFirstChild("Humanoid")
-        if humanoid and humanoid.Health > 0 then
-            table.insert(zombies, child)
-        end
-    end
-    
-    return zombies
-end
+print("✅ Kill Aura активирована! Радиус 200, урон 1000")
 
--- Функция нанесения урона по зомби в радиусе
-local function damageZombiesInRadius(damage, radius)
+while true do
     local character = LocalPlayer.Character
-    if not character then
-        print("❌ Персонаж не найден!")
-        return
-    end
-    
-    local humanoidRootPart = character:FindFirstChild("HumanoidRootPart")
-    if not humanoidRootPart then
-        print("❌ HumanoidRootPart не найден!")
-        return
-    end
-    
-    local playerPosition = humanoidRootPart.Position
-    local zombies = getAllZombies()
-    local zombiesHit = 0
-    
-    for _, zombie in pairs(zombies) do
-        -- Ищем часть тела зомби для расчёта расстояния
-        local zombieRoot = zombie:FindFirstChild("HumanoidRootPart")
-        if not zombieRoot then
-            zombieRoot = zombie:FindFirstChild("Head")
-        end
-        
-        if zombieRoot then
-            local distance = (zombieRoot.Position - playerPosition).Magnitude
+    if character then
+        local rootPart = character:FindFirstChild("HumanoidRootPart")
+        if rootPart then
+            local playerPos = rootPart.Position
             
-            if distance <= radius then
-                local humanoid = zombie:FindFirstChild("Humanoid")
+            -- Ищем всех с Humanoid (зомби/врагов)
+            local enemies = Workspace:GetDescendants()
+            
+            for _, enemy in pairs(enemies) do
+                local humanoid = enemy:FindFirstChild("Humanoid")
                 if humanoid and humanoid.Health > 0 then
-                    humanoid.Health = humanoid.Health - damage
-                    zombiesHit = zombiesHit + 1
-                    print("⚔️ Урон " .. damage .. " по зомби! | Осталось здоровья: " .. humanoid.Health)
+                    -- Проверяем, не является ли враг самим игроком
+                    if enemy ~= character and not enemy:IsDescendantOf(character) then
+                        local enemyPart = enemy:FindFirstChild("HumanoidRootPart") or enemy:FindFirstChild("Head")
+                        
+                        if enemyPart then
+                            local distance = (enemyPart.Position - playerPos).Magnitude
+                            
+                            if distance <= 200 then
+                                humanoid.Health = humanoid.Health - 1000
+                                print("💀 Урон 1000! | Расстояние: " .. math.floor(distance))
+                            end
+                        end
+                    end
                 end
             end
         end
     end
     
-    if zombiesHit > 0 then
-        print("🔥 Уничтожено зомби в радиусе " .. radius .. ": " .. zombiesHit)
-    end
-    
-    return zombiesHit
+    task.wait(0.005)
 end
-
--- Основной цикл (проверяет каждые 0.5 секунды)
-local function startAutoKill()
-    print("━━━━━━━━━━━━━━━━━━━━━━━━━━━━")
-    print("⚔️ АВТОУБИЙСТВО ЗОМБИ АКТИВИРОВАНО!")
-    print("📁 Папка: " .. FOLDER_NAME)
-    print("📡 Радиус: " .. RADIUS)
-    print("💥 Урон: " .. DAMAGE)
-    print("━━━━━━━━━━━━━━━━━━━━━━━━━━━━")
-    
-    while true do
-        -- Ждём появления персонажа
-        if LocalPlayer.Character then
-            damageZombiesInRadius(DAMAGE, RADIUS)
-        end
-        task.wait(0.5) -- Проверяем каждые 0.5 секунды
-    end
-end
-
--- Запускаем
-startAutoKill()
