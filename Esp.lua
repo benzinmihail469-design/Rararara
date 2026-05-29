@@ -1,62 +1,103 @@
-local screenGui = Instance.new("ScreenGui")
-local mainFrame = Instance.new("Frame")
+-- Исправленный скрипт - GUI не пропадает после смерти
 
--- 👑 МАКСИМАЛЬНЫЙ ПРИОРИТЕТ
-screenGui.DisplayOrder = 9999  -- Максимальное значение
-screenGui.ZIndexBehavior = Enum.ZIndexBehavior.Global  -- Глобальные слои
+local screenGui = Instance.new("ScreenGui")
+screenGui.Name = "MyPersistentGUI"
+screenGui.DisplayOrder = 9999              -- Максимальный приоритет (поверх всех)
+screenGui.ZIndexBehavior = Enum.ZIndexBehavior.Global
+screenGui.ResetOnSpawn = false             -- НЕ сбрасывать при смерти (ВАЖНО!)
 screenGui.Parent = game.Players.LocalPlayer.PlayerGui
 
-mainFrame.Parent = screenGui
-
--- Размер и позиция
+-- Главное окно
+local mainFrame = Instance.new("Frame")
 mainFrame.Size = UDim2.new(0, 500, 0, 300)
 mainFrame.Position = UDim2.new(0.5, -250, 0.5, -150)
 mainFrame.BackgroundColor3 = Color3.fromRGB(30, 30, 30)
+mainFrame.BackgroundTransparency = 0
+mainFrame.ZIndex = 9999                    -- Максимальный слой
+mainFrame.Parent = screenGui
 
--- 🛡️ Защита от перекрытия (максимальный слой)
-mainFrame.ZIndex = 9999
-mainFrame.BackgroundTransparency = 0  -- Непрозрачный
-
--- Скругли углы
+-- Скругление углов (ИСПРАВЛЕНО: UICorner, а не UITCorner)
 local corner = Instance.new("UICorner")
 corner.CornerRadius = UDim.new(0, 12)
 corner.Parent = mainFrame
 
--- Добавим тень для красоты
+-- Тень для красоты
 local shadow = Instance.new("UIStroke")
 shadow.Thickness = 2
 shadow.Color = Color3.fromRGB(0, 0, 0)
 shadow.Transparency = 0.5
 shadow.Parent = mainFrame
 
-print("✅ Моё окно теперь поверх ВСЕХ других GUI!")
+-- Текст для проверки
+local text = Instance.new("TextLabel")
+text.Size = UDim2.new(1, 0, 1, 0)
+text.BackgroundTransparency = 1
+text.Text = "✅ GUI РАБОТАЕТ!\nНе пропадает после смерти!"
+text.TextColor3 = Color3.fromRGB(255, 255, 255)
+text.TextSize = 18
+text.TextWrapped = true
+text.Parent = mainFrame
 
-local screenGui = Instance.new("ScreenGui")
-screenGui.Name = "MyPersistentGUI"
-screenGui.ResetOnSpawn = false
-screenGui.Parent = game.Players.LocalPlayer.PlayerGui
+print("✅ Моё окно теперь поверх ВСЕХ других GUI и не пропадает после смерти!")
 
--- Защита от случайного удаления
-screenGui.Parent = game.Players.LocalPlayer.PlayerGui
+-- ============ ЗАЩИТА ОТ ПРОПАДАНИЯ ============
 
--- Автоматическое восстановление, если GUI вдруг пропал
 local function protectGUI()
+    -- Проверяем, существует ли GUI
     if not screenGui or not screenGui.Parent then
+        print("🔄 GUI пропал! Восстанавливаем...")
+        
+        -- Восстанавливаем ScreenGui
         screenGui = Instance.new("ScreenGui")
         screenGui.Name = "MyPersistentGUI"
+        screenGui.DisplayOrder = 9999
+        screenGui.ZIndexBehavior = Enum.ZIndexBehavior.Global
         screenGui.ResetOnSpawn = false
         screenGui.Parent = game.Players.LocalPlayer.PlayerGui
-        print("🛡️ GUI был восстановлен!")
+        
+        -- Восстанавливаем mainFrame
+        mainFrame = Instance.new("Frame")
+        mainFrame.Size = UDim2.new(0, 500, 0, 300)
+        mainFrame.Position = UDim2.new(0.5, -250, 0.5, -150)
+        mainFrame.BackgroundColor3 = Color3.fromRGB(30, 30, 30)
+        mainFrame.BackgroundTransparency = 0
+        mainFrame.ZIndex = 9999
+        mainFrame.Parent = screenGui
+        
+        -- Восстанавливаем скругление
+        local newCorner = Instance.new("UICorner")
+        newCorner.CornerRadius = UDim.new(0, 12)
+        newCorner.Parent = mainFrame
+        
+        -- Восстанавливаем текст
+        local newText = Instance.new("TextLabel")
+        newText.Size = UDim2.new(1, 0, 1, 0)
+        newText.BackgroundTransparency = 1
+        newText.Text = "✅ GUI ВОССТАНОВЛЕН!\nНе пропадает после смерти!"
+        newText.TextColor3 = Color3.fromRGB(255, 255, 255)
+        newText.TextSize = 18
+        newText.TextWrapped = true
+        newText.Parent = mainFrame
+        
+        print("✅ GUI восстановлен!")
     end
 end
 
--- Проверяем каждую секунду
-game:GetService("RunService").Stepped:Connect(protectGUI)
+-- Проверяем каждые 2 секунды
+spawn(function()
+    while true do
+        task.wait(2)
+        protectGUI()
+    end
+end)
 
-local mainFrame = Instance.new("Frame")
-mainFrame.Size = UDim2.new(0, 400, 0, 300)
-mainFrame.Position = UDim2.new(0.5, -200, 0.5, -150)
-mainFrame.BackgroundColor3 = Color3.fromRGB(30, 30, 30)
-mainFrame.Parent = screenGui
+-- При возрождении персонажа тоже проверяем
+game.Players.LocalPlayer.CharacterAdded:Connect(function()
+    task.wait(0.5)
+    protectGUI()
+end)
 
-print("✅ Защищённый GUI работает!")
+print("=" .. string.rep("=", 50))
+print("🔒 ЗАЩИТА АКТИВИРОВАНА!")
+print("✅ GUI НЕ ИСЧЕЗАЕТ ПОСЛЕ СМЕРТИ")
+print("=" .. string.rep("=", 50))
