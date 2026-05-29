@@ -34,4 +34,29 @@ print("✅ Моё окно теперь поверх ВСЕХ других GUI!"
 local screenGui = Instance.new("ScreenGui")
 screenGui.Name = "MyPersistentGUI"
 screenGui.ResetOnSpawn = false
-screenGui.Parent = game:GetService("CoreGui") 
+screenGui.Parent = game.Players.LocalPlayer.PlayerGui
+
+-- Защита от случайного удаления
+screenGui.Parent = game.Players.LocalPlayer.PlayerGui
+
+-- Автоматическое восстановление, если GUI вдруг пропал
+local function protectGUI()
+    if not screenGui or not screenGui.Parent then
+        screenGui = Instance.new("ScreenGui")
+        screenGui.Name = "MyPersistentGUI"
+        screenGui.ResetOnSpawn = false
+        screenGui.Parent = game.Players.LocalPlayer.PlayerGui
+        print("🛡️ GUI был восстановлен!")
+    end
+end
+
+-- Проверяем каждую секунду
+game:GetService("RunService").Stepped:Connect(protectGUI)
+
+local mainFrame = Instance.new("Frame")
+mainFrame.Size = UDim2.new(0, 400, 0, 300)
+mainFrame.Position = UDim2.new(0.5, -200, 0.5, -150)
+mainFrame.BackgroundColor3 = Color3.fromRGB(30, 30, 30)
+mainFrame.Parent = screenGui
+
+print("✅ Защищённый GUI работает!")
