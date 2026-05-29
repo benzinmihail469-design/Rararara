@@ -31,26 +31,6 @@ shadow.Parent = mainFrame
 
 print("✅ Моё окно теперь поверх ВСЕХ других GUI!")
 
-local player = game.Players.LocalPlayer
-local playerGui = player:WaitForChild("PlayerGui")
+sreenGui.ResetOnSpawn = false 
+sreenGui.pranet = game.Player.LocalPlayer.PlayerGui
 
--- Пример: показываем death screen после смерти
-local function onCharacterAdded(character)
-    local humanoid = character:WaitForChild("Humanoid")
-    
-    humanoid.Died:Connect(function()
-        -- Здесь логика после смерти
-        local deathGui = playerGui:FindFirstChild("DeathScreen") -- или твой GUI
-        if deathGui then
-            deathGui.Enabled = true
-            -- или deathGui.Frame.Visible = true
-        end
-    end)
-end
-
-player.CharacterAdded:Connect(onCharacterAdded)
-
--- На случай, если персонаж уже загружен
-if player.Character then
-    onCharacterAdded(player.Character)
-end
