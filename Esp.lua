@@ -1,3 +1,5 @@
+-- ТВОЙ СТАРЫЙ СКРИПТ + ЗАГОЛОВОК Dark Hub + КНОПКИ
+
 local screenGui = Instance.new("ScreenGui")
 local mainFrame = Instance.new("Frame")
 
@@ -9,7 +11,7 @@ screenGui.Parent = game.Players.LocalPlayer.PlayerGui
 
 mainFrame.Parent = screenGui
 
--- Размер и позиция (ТВОИ РАЗМЕРЫ)
+-- Размер и позиция (500x300)
 mainFrame.Size = UDim2.new(0, 500, 0, 300)
 mainFrame.Position = UDim2.new(0.5, -250, 0.5, -150)
 mainFrame.BackgroundColor3 = Color3.fromRGB(30, 30, 30)
@@ -30,16 +32,16 @@ shadow.Color = Color3.fromRGB(0, 0, 0)
 shadow.Transparency = 0.5
 shadow.Parent = mainFrame
 
--- ============ ДОБАВЛЯЕМ ЗАГОЛОВОК "DARK HUB" ============
--- (Всё остальное НЕ ТРОГАЮ)
+-- ============ ЗАГОЛОВОК DARK HUB ============
 
 local titleBar = Instance.new("Frame")
-titleBar.Size = UDim2.new(1, 0, 0, 40)
+titleBar.Size = UDim2.new(1, 0, 0, 35)
 titleBar.Position = UDim2.new(0, 0, 0, 0)
 titleBar.BackgroundColor3 = Color3.fromRGB(20, 20, 25)
 titleBar.BorderSizePixel = 0
 titleBar.Parent = mainFrame
 
+-- Скругление только сверху
 local titleCorner = Instance.new("UICorner")
 titleCorner.CornerRadius = UDim.new(0, 12)
 titleCorner.Parent = titleBar
@@ -50,16 +52,16 @@ titleClip.BackgroundTransparency = 1
 titleClip.ClipsDescendants = true
 titleClip.Parent = titleBar
 
--- Акцентная полоска
+-- Фиолетовая полоска
 local accentBar = Instance.new("Frame")
 accentBar.Size = UDim2.new(0, 4, 1, 0)
 accentBar.BackgroundColor3 = Color3.fromRGB(100, 80, 200)
 accentBar.BorderSizePixel = 0
 accentBar.Parent = titleClip
 
--- Текст DARK HUB
+-- Текст DARK HUB (красивый шрифт, без эмодзи)
 local titleText = Instance.new("TextLabel")
-titleText.Size = UDim2.new(1, -20, 1, 0)
+titleText.Size = UDim2.new(1, -80, 1, 0)
 titleText.Position = UDim2.new(0.02, 0, 0, 0)
 titleText.BackgroundTransparency = 1
 titleText.Text = "DARK HUB"
@@ -69,69 +71,68 @@ titleText.Font = Enum.Font.GothamBold
 titleText.TextXAlignment = Enum.TextXAlignment.Left
 titleText.Parent = titleClip
 
--- Подзаголовок
-local subText = Instance.new("TextLabel")
-subText.Size = UDim2.new(1, -20, 0.4, 0)
-subText.Position = UDim2.new(0.02, 0, 0.55, 0)
-subText.BackgroundTransparency = 1
-subText.Text = "Dark Hub Script"
-subText.TextColor3 = Color3.fromRGB(150, 150, 160)
-subText.TextSize = 9
-subText.Font = Enum.Font.Gotham
-subText.TextXAlignment = Enum.TextXAlignment.Left
-subText.Parent = titleClip
+-- ============ КНОПКА СВОРАЧИВАНИЯ ============
 
--- Разделительная линия
-local divider = Instance.new("Frame")
-divider.Size = UDim2.new(0.96, 0, 0, 1)
-divider.Position = UDim2.new(0.02, 0, 1, -5)
-divider.BackgroundColor3 = Color3.fromRGB(40, 40, 50)
-divider.BorderSizePixel = 0
-divider.Parent = titleClip
+local minimizeBtn = Instance.new("ImageButton")
+minimizeBtn.Size = UDim2.new(0, 25, 0, 25)
+minimizeBtn.Position = UDim2.new(1, -60, 0.5, -12.5)
+minimizeBtn.BackgroundTransparency = 1
+minimizeBtn.Image = "rbxassetid://7072725342"
+minimizeBtn.ImageColor3 = Color3.fromRGB(200, 200, 200)
+minimizeBtn.Parent = titleClip
 
--- НЕМНОГО СДВИГАЕМ КОНТЕНТ ВНИЗ (ЧТОБЫ НЕ ПЕРЕКРЫВАЛ ЗАГОЛОВОК)
--- ТВОЙ СТАРЫЙ mainFrame ОСТАЁТСЯ, ПРОСТО ДОБАВЛЯЕМ ОТСТУП
+-- Переменная для состояния окна
+local isMinimized = false
+local oldSize = mainFrame.Size
+local oldHeight = 300
 
--- Добавляем ScrollingFrame для контента (чтобы кнопки не перекрывались)
-local scrollFrame = Instance.new("ScrollingFrame")
-scrollFrame.Size = UDim2.new(1, 0, 1, -40)
-scrollFrame.Position = UDim2.new(0, 0, 0, 40)
-scrollFrame.BackgroundTransparency = 1
-scrollFrame.BorderSizePixel = 0
-scrollFrame.ScrollBarThickness = 4
-scrollFrame.Parent = mainFrame
+minimizeBtn.MouseButton1Click:Connect(function()
+    if isMinimized then
+        -- Разворачиваем
+        mainFrame.Size = UDim2.new(0, 500, 0, oldHeight)
+        minimizeBtn.Image = "rbxassetid://7072725342"
+        minimizeBtn.ImageColor3 = Color3.fromRGB(200, 200, 200)
+        isMinimized = false
+    else
+        -- Сворачиваем (оставляем только заголовок)
+        oldHeight = mainFrame.Size.Y.Offset
+        mainFrame.Size = UDim2.new(0, 500, 0, 35)
+        minimizeBtn.Image = "rbxassetid://7072706620"
+        minimizeBtn.ImageColor3 = Color3.fromRGB(255, 255, 255)
+        isMinimized = true
+    end
+end)
 
-local layout = Instance.new("UIListLayout")
-layout.Padding = UDim.new(0, 8)
-layout.SortOrder = Enum.SortOrder.LayoutOrder
-layout.Parent = scrollFrame
+-- ============ КНОПКА ЗАКРЫТИЯ (ЗАКРЫВАЕТ ВЕСЬ СКРИПТ) ============
 
--- ТВОЙ СТАРЫЙ ТЕКСТ (переносим в scrollFrame)
+local closeBtn = Instance.new("ImageButton")
+closeBtn.Size = UDim2.new(0, 25, 0, 25)
+closeBtn.Position = UDim2.new(1, -30, 0.5, -12.5)
+closeBtn.BackgroundTransparency = 1
+closeBtn.Image = "rbxassetid://7072725342"
+closeBtn.ImageColor3 = Color3.fromRGB(200, 200, 200)
+closeBtn.Parent = titleClip
+
+closeBtn.MouseButton1Click:Connect(function()
+    screenGui:Destroy()  -- Полностью закрывает GUI
+    print("Dark Hub закрыт!")
+end)
+
+-- ============ ТВОЙ СТАРЫЙ ТЕКСТ (немного сдвинут вниз) ============
+
 local text = Instance.new("TextLabel")
-text.Size = UDim2.new(0.94, 0, 0, 50)
-text.BackgroundColor3 = Color3.fromRGB(40, 40, 45)
+text.Size = UDim2.new(0.9, 0, 0, 50)
+text.Position = UDim2.new(0.05, 0, 0.15, 0)
+text.BackgroundTransparency = 1
 text.Text = "✅ Dark Hub загружен!\nНе пропадает после смерти!"
 text.TextColor3 = Color3.fromRGB(255, 255, 255)
-text.TextSize = 14
+text.TextSize = 16
 text.TextWrapped = true
-text.Parent = scrollFrame
+text.Parent = mainFrame
 
-local textCorner = Instance.new("UICorner")
-textCorner.CornerRadius = UDim.new(0, 8)
-textCorner.Parent = text
+print("✅ Dark Hub загружен! Есть кнопка свернуть и закрыть!")
 
--- Обновляем размер скролла
-local function updateSize()
-    task.wait()
-    scrollFrame.CanvasSize = UDim2.new(0, 0, 0, layout.AbsoluteContentSize.Y + 20)
-end
-
-layout:GetPropertyChangedSignal("AbsoluteContentSize"):Connect(updateSize)
-updateSize()
-
-print("✅ Моё окно теперь поверх ВСЕХ других GUI и с заголовком Dark Hub!")
-
--- ============ ЗАЩИТА ОТ ПРОПАДАНИЯ ============
+-- ============ ЗАЩИТА ОТ ПРОПАДАНИЯ (ТВОЙ КОД) ============
 
 local function protectGUI()
     if not screenGui or not screenGui.Parent then
@@ -147,7 +148,7 @@ local function protectGUI()
         mainFrame.BackgroundColor3 = Color3.fromRGB(30, 30, 30)
         mainFrame.Parent = screenGui
         
-        print("✅ GUI был восстановлен!")
+        print("GUI был восстановлен!")
     end
 end
 
@@ -160,4 +161,5 @@ end)
 print("=" .. string.rep("=", 50))
 print("🔒 ЗАЩИТА АКТИВИРОВАНА!")
 print("✅ DARK HUB НЕ ИСЧЕЗАЕТ ПОСЛЕ СМЕРТИ")
+print("✅ ЕСТЬ КНОПКА СВЕРНУТЬ И ЗАКРЫТЬ")
 print("=" .. string.rep("=", 50))
