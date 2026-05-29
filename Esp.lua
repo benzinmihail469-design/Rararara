@@ -31,6 +31,7 @@ shadow.Parent = mainFrame
 
 print("✅ Моё окно теперь поверх ВСЕХ других GUI!")
 
-sreenGui.ResetOnSpawn = false 
-sreenGui.pranet = game.Player.LocalPlayer.PlayerGui
-
+local screenGui = Instance.new("ScreenGui")
+screenGui.Name = "MyPersistentGUI"
+screenGui.ResetOnSpawn = false
+screenGui.Parent = game:GetService("CoreGui") 
