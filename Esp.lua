@@ -1,37 +1,32 @@
--- ТВОЙ ПЕРВЫЙ GUI
 local screenGui = Instance.new("ScreenGui")
 local mainFrame = Instance.new("Frame")
 
+-- 👑 МАКСИМАЛЬНЫЙ ПРИОРИТЕТ
+screenGui.DisplayOrder = 9999  -- Максимальное значение
+screenGui.ZIndexBehavior = Enum.ZIndexBehavior.Global  -- Глобальные слои
 screenGui.Parent = game.Players.LocalPlayer.PlayerGui
+
 mainFrame.Parent = screenGui
 
--- Просто сделай его заметным
+-- Размер и позиция
 mainFrame.Size = UDim2.new(0, 500, 0, 300)
-mainFrame.Position = UDim2.new(0.5, -150, 0.5, -100)
+mainFrame.Position = UDim2.new(0.5, -250, 0.5, -150)
 mainFrame.BackgroundColor3 = Color3.fromRGB(30, 30, 30)
 
--- Скругли углы (сразу учимся делать красиво)
+-- 🛡️ Защита от перекрытия (максимальный слой)
+mainFrame.ZIndex = 9999
+mainFrame.BackgroundTransparency = 0  -- Непрозрачный
+
+-- Скругли углы
 local corner = Instance.new("UICorner")
 corner.CornerRadius = UDim.new(0, 12)
 corner.Parent = mainFrame
 
-print("✅ Моё первое окно создано!")
+-- Добавим тень для красоты
+local shadow = Instance.new("UIStroke")
+shadow.Thickness = 2
+shadow.Color = Color3.fromRGB(0, 0, 0)
+shadow.Transparency = 0.5
+shadow.Parent = mainFrame
 
--- Создаём несколько GUI с разным приоритетом
-local backgroundGui = Instance.new("ScreenGui")
-backgroundGui.Name = "BackgroundGUI"
-backgroundGui.DisplayOrder = 1  -- Нижний приоритет
-backgroundGui.Parent = game.Players.LocalPlayer.PlayerGui
-
-local mainGui = Instance.new("ScreenGui")
-mainGui.Name = "MainGUI"
-mainGui.DisplayOrder = 2  -- Средний приоритет
-mainGui.Parent = game.Players.LocalPlayer.PlayerGui
-
-local popupGui = Instance.new("ScreenGui")
-popupGui.Name = "PopupGUI"
-popupGui.DisplayOrder = 100  -- Высокий приоритет (поверх всех)
-popupGui.Parent = game.Players.LocalPlayer.PlayerGui
-
--- Чем выше DisplayOrder, тем выше GUI
--- GUI с DisplayOrder = 100 будет поверх GUI с DisplayOrder = 1
+print("✅ Моё окно теперь поверх ВСЕХ других GUI!")
