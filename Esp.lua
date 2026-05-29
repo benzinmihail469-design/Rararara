@@ -6,7 +6,7 @@ screenGui.Parent = game.Players.LocalPlayer.PlayerGui
 mainFrame.Parent = screenGui
 
 -- Просто сделай его заметным
-mainFrame.Size = UDim2.new(0, 300, 0, 200)
+mainFrame.Size = UDim2.new(0, 500, 0, 300)
 mainFrame.Position = UDim2.new(0.5, -150, 0.5, -100)
 mainFrame.BackgroundColor3 = Color3.fromRGB(30, 30, 30)
 
