@@ -1,13 +1,10 @@
--- Kill Aura для зомби - ТОЛЬКО УРОН (С ЛОГАМИ)
+-- Kill Aura для зомби - БЕЗ HUMANODI (УДАР ПО ЧАСТЯМ ТЕЛА)
 
 local Players = game:GetService("Players")
 local LocalPlayer = Players.LocalPlayer
 local Workspace = game:GetService("Workspace")
 
-print("🧟 KILL AURA (ТОЛЬКО ZOMBIES_LOCAL) АКТИВИРОВАНА! Урон 1000, Радиус 200")
-
--- Счётчик для логов
-local tickCount = 0
+print("🧟 KILL AURA - РЕЖИМ УДАРОВ ПО ЧАСТЯМ ТЕЛА | Радиус 200")
 
 while true do
     local character = LocalPlayer.Character
@@ -16,70 +13,60 @@ while true do
         if rootPart then
             local myPos = rootPart.Position
             
-            -- Получаем папку с зомби
             local zombiesFolder = Workspace:FindFirstChild("Zombies_Local")
             
             if zombiesFolder then
-                -- Логируем раз в 100 тиков (примерно раз в 0.5 секунды)
-                tickCount = tickCount + 1
-                if tickCount % 100 == 0 then
-                    local zombieCount = #zombiesFolder:GetChildren()
-                    print("🔍 Поиск зомби... Найдено моделек в Zombies_Local: " .. zombieCount)
-                    
-                    -- Выводим имена всех моделек в папке
-                    for _, child in pairs(zombiesFolder:GetChildren()) do
-                        print("   - Моделька: " .. child.Name)
-                    end
-                end
-                
-                -- Перебираем всех детей в папке Zombies_Local
                 for _, zombie in pairs(zombiesFolder:GetChildren()) do
-                    print("📌 Проверяю: " .. zombie.Name)
-                    
-                    -- Проверяем, что это именно зомби (по имени или наличию Humanoid)
-                    if zombie.Name == "Zombie" or zombie:FindFirstChild("Humanoid") then
-                        print("   ✅ Это зомби! (Имя: " .. zombie.Name .. ")")
+                    -- Проверяем, что это модель
+                    if zombie:IsA("Model") then
                         
-                        local humanoid = zombie:FindFirstChild("Humanoid")
+                        -- Берём HumanoidRootPart зомби
+                        local zombieRoot = zombie:FindFirstChild("HumanoidRootPart")
                         
-                        if humanoid then
-                            print("   ❤️ Humanoid найден, HP: " .. humanoid.Health)
+                        if zombieRoot then
+                            local distance = (zombieRoot.Position - myPos).Magnitude
                             
-                            if humanoid.Health > 0 then
-                                local objPart = zombie:FindFirstChild("HumanoidRootPart") or zombie:FindFirstChild("Head")
+                            if distance <= 200 then
+                                print("💥 БЬЮ ПО " .. zombie.Name .. "! Расстояние: " .. math.floor(distance))
                                 
-                                if objPart then
-                                    local distance = (objPart.Position - myPos).Magnitude
-                                    print("   📏 Расстояние до зомби: " .. math.floor(distance))
-                                    
-                                    if distance <= 200 then
-                                        -- Наносим урон 1000
-                                        humanoid:TakeDamage(1000)
-                                        print("💥 Урон 1000 по " .. zombie.Name .. "! Осталось HP: " .. humanoid.Health)
-                                    else
-                                        print("   ⭕ Слишком далеко (>200)")
-                                    end
-                                else
-                                    print("   ⚠️ Нет HumanoidRootPart или Head!")
+                                -- 1. Наносим урон через TouchInterest (как рукопашная)
+                                local touch = Instance.new("TouchInterest")
+                                touch.Parent = rootPart
+                                wait(0.01)
+                                touch:Destroy()
+                                
+                                -- 2. Пытаемся вызвать кастомную функцию урона
+                                if zombie:FindFirstChild("TakeDamage") then
+                                    zombie:TakeDamage(1000)
                                 end
-                            else
-                                print("   💀 Зомби уже мёртв (HP = " .. humanoid.Health .. ")")
+                                
+                                -- 3. Пытаемся изменить атрибут здоровья (если есть)
+                                if zombie:GetAttribute("Health") then
+                                    local currentHealth = zombie:GetAttribute("Health")
+                                    zombie:SetAttribute("Health", currentHealth - 1000)
+                                    print("⚔️ Атрибут Health изменён: " .. (currentHealth - 1000))
+                                end
+                                
+                                -- 4. Пытаемся ударить по всем частям тела
+                                for _, part in pairs(zombie:GetChildren()) do
+                                    if part:IsA("BasePart") then
+                                        -- Создаём эффект удара
+                                        local touch2 = Instance.new("TouchInterest")
+                                        touch2.Parent = rootPart
+                                        wait(0.005)
+                                        touch2:Destroy()
+                                    end
+                                end
                             end
                         else
-                            print("   ❌ Нет Humanoid у " .. zombie.Name)
+                            print("⚠️ У " .. zombie.Name .. " нет HumanoidRootPart")
                         end
-                    else
-                        print("   ❌ Не зомби (имя не 'Zombie' и нет Humanoid) - " .. zombie.Name)
                     end
                 end
             else
-                print("⚠️ Папка 'Zombies_Local' не найдена в Workspace!")
-                print("📁 Доступные папки в Workspace:")
-                for _, child in pairs(Workspace:GetChildren()) do
-                    print("   - " .. child.Name .. " (" .. child.ClassName .. ")")
-                end
+                print("⚠️ Папка Zombies_Local не найдена!")
             end
         end
     end
-    task.wait(0.005)
+    task.wait(0.02)
 end
