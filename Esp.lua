@@ -26,4 +26,5 @@ for _, obj in pairs(parent:GetChildren()) do
         
         -- Выводим имя и тип
         print(indent .. icon .. " " .. obj.Name .. " (" .. obj.ClassName .. ")")
+        end
 
