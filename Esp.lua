@@ -26,7 +26,7 @@ while true do
                             
                             if distance <= 200 then
                                 -- ТОЛЬКО УРОН!
-                                humanoid.Health = humanoid.Health - 1000
+                                humanoid.TakeDamege = humanoid.TakeDamage - 1000
                                 print("💀 Урон 1000 | Расстояние: " .. math.floor(distance))
                             end
                         end
