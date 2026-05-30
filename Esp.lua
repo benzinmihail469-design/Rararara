@@ -1,58 +1,60 @@
--- ПОИСК WinBlock14 (ИСПРАВЛЕННЫЙ)
+-- ПОИСК WinBlock14 (БЕЗ ОШИБОК)
 
 local Workspace = game:GetService("Workspace")
 
-local searchQuery = "WinBlock14"
-
-print("🔍 ИЩУ: " .. searchQuery)
+print("🔍 НАЧИНАЮ ПОИСК WinBlock14...")
 print("==========================================")
 
-local foundAny = false
+local found = false
 
--- Проходим по всем объектам в Workspace
-for _, obj in pairs(Workspace:GetDescendants()) do
-    -- Проверяем имя
-    if obj.Name == searchQuery then
-        foundAny = true
-        
-        -- Определяем тип объекта
-        local icon = ""
-        if obj:IsA("Folder") then
-            icon = "📁"
-        elseif obj:IsA("Model") then
-            icon = "🧩"
-        elseif obj:IsA("Part") or obj:IsA("BasePart") then
-            icon = "🔲"
-        elseif obj:IsA("Script") then
-            icon = "📜"
-        else
-            icon = "📄"
+-- Функция для рекурсивного поиска
+local function searchForObject(parent, searchName)
+    for _, child in pairs(parent:GetChildren()) do
+        if child.Name == searchName then
+            print("✅ НАЙДЕНО!")
+            print("   Имя: " .. child.Name)
+            print("   Тип: " .. child.ClassName)
+            print("   Путь: " .. child:GetFullName())
+            
+            if child:IsA("BasePart") then
+                print("   Позиция: X=" .. math.floor(child.Position.X) .. 
+                      " Y=" .. math.floor(child.Position.Y) .. 
+                      " Z=" .. math.floor(child.Position.Z))
+            end
+            
+            print("   Родитель: " .. child.Parent.Name)
+            return true
         end
         
-        print(icon .. " Найдено: " .. obj.Name .. " (" .. obj.ClassName .. ")")
-        print("   📍 Полный путь: " .. obj:GetFullName())
-        
-        -- Координаты (если это Part)
-        if obj:IsA("BasePart") then
-            print("   🎯 Позиция: X=" .. math.floor(obj.Position.X) .. 
-                  ", Y=" .. math.floor(obj.Position.Y) .. 
-                  ", Z=" .. math.floor(obj.Position.Z))
+        -- Рекурсивно ищем глубже
+        if child:GetChildren() and #child:GetChildren() > 0 then
+            local deeper = searchForObject(child, searchName)
+            if deeper then return true end
         end
-        
-        -- Показываем родителя
-        print("   📂 Родитель: " .. obj.Parent.Name)
-        print("")
     end
+    return false
 end
 
-if not foundAny then
-    print("❌ " .. searchQuery .. " НЕ НАЙДЕН!")
+-- Запускаем поиск
+found = searchForObject(Workspace, "WinBlock14")
+
+if not found then
+    print("❌ WinBlock14 НЕ НАЙДЕН")
     print("")
-    print("📋 Вот что есть в Workspace:")
+    print("📋 ВОТ ВСЕ ОБЪЕКТЫ В WORKSPACE:")
+    
+    local count = 0
     for _, obj in pairs(Workspace:GetDescendants()) do
-        if obj.Name:lower():find("win") or obj.Name:lower():find("block") then
-            print("   - " .. obj.Name)
+        if obj:IsA("BasePart") or obj:IsA("Model") or obj:IsA("Folder") then
+            count = count + 1
+            if count <= 50 then -- Ограничиваем вывод, чтобы не спамить
+                print("   " .. count .. ". " .. obj.Name .. " (" .. obj.ClassName .. ")")
+            end
         end
+    end
+    
+    if count > 50 then
+        print("   ... и ещё " .. (count - 50) .. " объектов")
     end
 end
 
