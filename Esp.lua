@@ -25,8 +25,8 @@ while true do
                             local distance = (objPart.Position - myPos).Magnitude
                             
                             if distance <= 200 then
-                                -- ТОЛЬКО УРОН!
-                                humanoid.TakeDamege = humanoid.TakeDamage - 1000
+                                -- ИСПРАВЛЕНО: метод TakeDamage, а не свойство
+                                humanoid:TakeDamage(1000)
                                 print("💀 Урон 1000 | Расстояние: " .. math.floor(distance))
                             end
                         end
