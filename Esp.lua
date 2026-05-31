@@ -1,57 +1,54 @@
 -- Загружаем библиотеку
-local DrRay = loadstring(game:HttpGet("https://raw.githubusercontent.com/AZYsGithub/DrRay-UI-Library/main/DrRay.lua"))()
+local Library = loadstring(game:HttpGet("https://raw.githubusercontent.com/laderite/siernlib/main/library.lua"))()
 
--- Создаём окно
-local Window = DrRay:Load("Super Script v1.0", "rbxassetid://14133403065")
+-- 1. Создаём окно
+local Window = Library:Create({ Name = "Super Tool v2.0" })
 
--- Создаём вкладки
-local Main = Window:newTab("Главная")
-local Visual = Window:newTab("Визуал")
-local Player = Window:newTab("Игрок")
+-- 2. Создаём вкладки
+local PlayerTab = Window:Tab("Игрок")
+local VisualTab = Window:Tab("Визуал")
 
--- Переменные
-local flyEnabled = false
-local espEnabled = false
+-- 3. Создаём секции
+local MovementSection = PlayerTab:Section("Движение")
+local PlayerInfoSection = PlayerTab:Section("Информация")
+local ESPsection = VisualTab:Section("ESP")
 
--- Главная вкладка
-Main:Button("Телепорт в центр", "Телепортироваться на координаты 0, 100, 0", function()
+-- 4. Добавляем элементы
+local speedSlider = MovementSection:Slider("Скорость бега", 16, 250, 16, 1, function(val)
+    game.Players.LocalPlayer.Character.Humanoid.WalkSpeed = val
+end)
+
+local flyToggle = MovementSection:Toggle("Режим полёта", function(state)
+    -- Здесь нужна более сложная логика полёта, но для примера сойдёт
     local char = game.Players.LocalPlayer.Character
-    if char then
-        char.HumanoidRootPart.CFrame = CFrame.new(0, 100, 0)
-        print("Телепортирован!")
-    end
-end)
-
-Main:Slider("Скорость бега", "Изменить скорость ходьбы", 16, 250, function(value)
-    game.Players.LocalPlayer.Character.Humanoid.WalkSpeed = value
-end)
-
--- Визуал вкладка
-Visual:Toggle("ESP игроков", "Показывать игроков через стены", function(state)
-    espEnabled = state
     if state then
-        print("ESP включён")
-        -- Ваш код ESP
+        -- Включить полёт
+        char.Humanoid:ChangeState(Enum.HumanoidStateType.FallingDown)
+        -- ... код полёта
     else
-        print("ESP выключен")
+        -- Выключить полёт
     end
 end)
 
-Visual:Toggle("Режим полёта", "Включить полёт (Нажмите F для подъёма)", function(state)
-    flyEnabled = state
-    -- Ваш код полёта
-end)
+local coordLabel = PlayerInfoSection:Label("Координаты: ...")
 
--- Игрок вкладка
-Player:Textbox("Имя игрока", "Введите имя для телепортации", function(name)
-    local target = game.Players:FindFirstChild(name)
-    if target then
-        game.Players.LocalPlayer.Character.HumanoidRootPart.CFrame = target.Character.HumanoidRootPart.CFrame
-        print("Телепортирован к " .. name)
-    else
-        print("Игрок не найден!")
+-- Простое обновление информации
+task.spawn(function()
+    while true do
+        task.wait(0.5)
+        local char = game.Players.LocalPlayer.Character
+        if char and char.HumanoidRootPart then
+            local pos = char.HumanoidRootPart.Position
+            coordLabel:Set(string.format("Координаты: X: %.1f, Y: %.1f, Z: %.1f", pos.X, pos.Y, pos.Z))
+        end
     end
 end)
 
-Player:Label("Настройки игрока")
-Player:Label("Полёт: F")
+local espToggle = ESPsection:Toggle("ESP Игроков", function(state)
+    if state then
+        print("Включён ESP")
+        -- Код для включения ESP
+    else
+        print("Выключен ESP")
+    end
+end)
