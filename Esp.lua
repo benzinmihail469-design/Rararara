@@ -20,4 +20,5 @@ frame.Parent = screenGui
 local corners = Instance.new("UICorner")
 corners.CornerRadius = UDim.new(0, 12)
 corners.Parent = frame
+end
 
