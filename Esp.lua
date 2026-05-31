@@ -1,7 +1,7 @@
-local Players = game:GetServirs("Players") 
-local localplayer = players:localplayer
-local character = localplayer:character
-local humanoid = character:waitforchild("humanoid")
+local Players = game:GetService("Players") 
+local localplayer = Players:localplayer
+local character = localplayer:Character
+local humanoid = Character:Waitforchild("humanoid")
 
 local speed = 1000000
 while true do 
