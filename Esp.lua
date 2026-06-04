@@ -1,7 +1,8 @@
--- МАКСИМАЛЬНО ЗАЩИЩЕННАЯ ВЕРСИЯ: ИМПУЛЬСНЫЙ ПРЫЖОК С РАНДОМИЗАЦИЕЙ ТАЙМИНГОВ
+-- МАКСИМАЛЬНО ЗАЩИЩЕННАЯ ВЕРСИЯ: ИМПУЛЬСНЫЙ ПРЫЖОК С РАНДОМИЗАЦИЕЙ ТАЙМИНГОВ + БЕСКОНЕЧНАЯ СТАМИНА
 local Players = game:GetService("Players")
 local UIS = game:GetService("UserInputService")
 local TweenService = game:GetService("TweenService")
+local RunService = game:GetService("RunService")
 
 local player = Players.LocalPlayer or Players.PlayerAdded:Wait()
 local playerGui = player:WaitForChild("PlayerGui")
@@ -19,11 +20,11 @@ screenGui.ResetOnSpawn = false
 screenGui.ZIndexBehavior = Enum.ZIndexBehavior.Sibling
 screenGui.DisplayOrder = 10
 
--- Главная панель (500x300)
+-- Главная панель (500x380) - Высота увеличена для размещения второй кнопки
 local frame = Instance.new("Frame")
 frame.Name = "MainFrame"
-frame.Size = UDim2.new(0, 500, 0, 300)
-frame.Position = UDim2.new(0.5, -250, 0.5, -150)
+frame.Size = UDim2.new(0, 500, 0, 380)
+frame.Position = UDim2.new(0.5, -250, 0.5, -190)
 frame.BackgroundColor3 = Color3.fromRGB(51, 51, 51)
 frame.BorderSizePixel = 0
 frame.Active = true
@@ -88,10 +89,12 @@ local closeCorner = Instance.new("UICorner")
 closeCorner.CornerRadius = UDim.new(0, 8)
 closeCorner.Parent = closeBtn
 
--- Кнопка-переключатель
+-- ============================================================================
+-- КНОПКА 1: БЕСКОНЕЧНЫЙ ПРЫЖОК
+-- ============================================================================
 local jumpBtn = Instance.new("TextButton")
 jumpBtn.Size = UDim2.new(0, 440, 0, 60)
-jumpBtn.Position = UDim2.new(0, 30, 0, 120)
+jumpBtn.Position = UDim2.new(0, 30, 0, 100)
 jumpBtn.BackgroundColor3 = Color3.new(0.3, 0.3, 0.3)
 jumpBtn.BorderSizePixel = 0
 jumpBtn.Text = "Бесконечный прыжок: ВЫКЛ"
@@ -104,15 +107,34 @@ local jumpCorner = Instance.new("UICorner")
 jumpCorner.CornerRadius = UDim.new(0, 8)
 jumpCorner.Parent = jumpBtn
 
--- Переменные состояния защиты
+-- ============================================================================
+-- КНОПКА 2: БЕСКОНЕЧНАЯ СТАМИНА
+-- ============================================================================
+local staminaBtn = Instance.new("TextButton")
+staminaBtn.Size = UDim2.new(0, 440, 0, 60)
+staminaBtn.Position = UDim2.new(0, 30, 0, 180) -- Позиция смещена вниз, чтобы не перекрывать прыжок
+staminaBtn.BackgroundColor3 = Color3.new(0.3, 0.3, 0.3)
+staminaBtn.BorderSizePixel = 0
+staminaBtn.Text = "Бесконечная стамина: ВЫКЛ"
+staminaBtn.TextSize = 20
+staminaBtn.TextColor3 = Color3.new(1, 1, 1)
+staminaBtn.Font = Enum.Font.SourceSansBold
+staminaBtn.Parent = frame
+
+local staminaCorner = Instance.new("UICorner")
+staminaCorner.CornerRadius = UDim.new(0, 8)
+staminaCorner.Parent = staminaBtn
+
+-- Переменные состояния
 local jumpState = false
+local staminaState = false
 local jumpButtonGui = nil
 local mobileJumpButton = nil
 local lastJump = 0
+local staminaConnection = nil
 
 -- УМНАЯ ФУНКЦИЯ ПРЫЖКА С РАНДОМИЗАЦИЕЙ ДЛЯ СНИЖЕНИЯ РИСКА КИКА
 local function doSafeBypassJump()
-    -- Генерируем случайную задержку между прыжками от 0.18 до 0.25 секунд, чтобы сбить логику серверного античита
     local randomCooldown = math.random(18, 25) / 100
     if tick() - lastJump < randomCooldown then return end
     
@@ -124,18 +146,57 @@ local function doSafeBypassJump()
         if rootPart and humanoid and humanoid.Health > 0 then
             lastJump = tick()
             
-            -- Сглаживаем старую скорость, предотвращая резкие скачки в логах сервера
             local currentVelocity = rootPart.AssemblyLinearVelocity
             rootPart.AssemblyLinearVelocity = Vector3.new(currentVelocity.X, 0, currentVelocity.Z)
             
-            -- Даем легитимный физический импульс
             local jumpPower = humanoid.JumpPower > 0 and humanoid.JumpPower or 52
             rootPart.AssemblyLinearVelocity = Vector3.new(rootPart.AssemblyLinearVelocity.X, jumpPower, rootPart.AssemblyLinearVelocity.Z)
             
-            -- Маскируем состояние под обычное падение
             humanoid:ChangeState(Enum.HumanoidStateType.Freefall)
         end
     end)
+end
+
+-- ЛОГИКА БЕСКОНЕЧНОЙ СТАМИНЫ (Защита от сброса античитом)
+local function toggleInfiniteStamina(enable)
+    if enable then
+        if staminaConnection then return end
+        
+        -- Фиксация значений каждую прорисовку кадра (предотвращает откат сервером)
+        staminaConnection = RunService.Heartbeat:Connect(function()
+            pcall(function()
+                local character = player.Character
+                if character then
+                    -- 1. Обновление через Атрибуты персонажа / игрока
+                    if character:GetAttribute("Stamina") then
+                        local maxStam = character:GetAttribute("MaxStamina") or 100
+                        character:SetAttribute("Stamina", maxStam)
+                    end
+                    if player:GetAttribute("Stamina") then
+                        local maxStam = player:GetAttribute("MaxStamina") or 100
+                        player:SetAttribute("Stamina", maxStam)
+                    end
+                    
+                    -- 2. Обновление через Value-объекты внутри персонажа или папки игрока
+                    local sourceList = {character, player, character:FindFirstChild("Stats"), player:FindFirstChild("leaderstats")}
+                    for _, source in ipairs(sourceList) do
+                        if source then
+                            local stamObj = source:FindFirstChild("Stamina") or source:FindFirstChild("Energy")
+                            if stamObj and (stamObj:IsA("NumberValue") or stamObj:IsA("IntValue")) then
+                                local maxStamObj = source:FindFirstChild("MaxStamina") or source:FindFirstChild("MaxEnergy")
+                                stamObj.Value = maxStamObj and maxStamObj.Value or 100
+                            end
+                        end
+                    end
+                end
+            end)
+        end)
+    else
+        if staminaConnection then
+            staminaConnection:Disconnect()
+            staminaConnection = nil
+        end
+    end
 end
 
 -- Функция создания перетаскиваемой кнопки прыжка поверх всех
@@ -165,7 +226,6 @@ local function toggleMobileJumpButton(enable)
         circleCorner.CornerRadius = UDim.new(1, 0)
         circleCorner.Parent = mobileJumpButton
         
-        -- Перетаскивание мобильной кнопки
         local bDragToggle = false
         local bDragStart = nil
         local bStartPos = nil
@@ -207,7 +267,7 @@ local function toggleMobileJumpButton(enable)
     end
 end
 
--- Обновление кнопки в меню
+-- Обновление кнопки прыжка в меню
 local function updateJumpButton()
     if jumpState then
         jumpBtn.Text = "Бесконечный прыжок: ВКЛ"
@@ -222,10 +282,31 @@ local function updateJumpButton()
     end
 end
 
+-- Обновление кнопки стамины в меню
+local function updateStaminaButton()
+    if staminaState then
+        staminaBtn.Text = "Бесконечная стамина: ВКЛ"
+        staminaBtn.BackgroundColor3 = Color3.new(0.2, 0.6, 0.2)
+        toggleInfiniteStamina(true)
+    else
+        staminaBtn.Text = "Бесконечная стамина: ВЫКЛ"
+        staminaBtn.BackgroundColor3 = Color3.new(0.3, 0.3, 0.3)
+        toggleInfiniteStamina(false)
+    end
+end
+
+-- Обработчики нажатий на кнопки меню
 jumpBtn.MouseButton1Click:Connect(function()
     pcall(function()
         jumpState = not jumpState
         updateJumpButton()
+    end)
+end)
+
+staminaBtn.MouseButton1Click:Connect(function()
+    pcall(function()
+        staminaState = not staminaState
+        updateStaminaButton()
     end)
 end)
 
@@ -240,6 +321,7 @@ end)
 -- Плавное закрытие основного меню
 closeBtn.MouseButton1Click:Connect(function()
     toggleMobileJumpButton(false)
+    toggleInfiniteStamina(false)
     
     local tweenInfo = TweenInfo.new(0.3, Enum.EasingStyle.Quad, Enum.EasingDirection.Out)
     local goal = {BackgroundTransparency = 1, TextTransparency = 1}
@@ -258,4 +340,6 @@ closeBtn.MouseButton1Click:Connect(function()
     end
 end)
 
+-- Инициализация начальных состояний кнопок при запуске
 updateJumpButton()
+updateStaminaButton()
