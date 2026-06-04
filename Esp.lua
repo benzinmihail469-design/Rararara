@@ -1,3 +1,4 @@
+-- МАКСИМАЛЬНО ЗАЩИЩЕННАЯ ВЕРСИЯ: ИМПУЛЬСНЫЙ ПРЫЖОК С РАНДОМИЗАЦИЕЙ ТАЙМИНГОВ + СЕТЕВОЙ ОБХОД СТАМИНЫ
 local Players = game:GetService("Players")
 local UIS = game:GetService("UserInputService")
 local TweenService = game:GetService("TweenService")
@@ -385,5 +386,3 @@ end)
 
 updateJumpButton()
 updateStaminaButton()
-
-```
