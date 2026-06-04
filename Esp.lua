@@ -1,157 +1,132 @@
--- ПОЛНОСТЬЮ ПЕРЕПИСАННЫЙ МОБИЛЬНЫЙ GUI (ФИКС ОТОБРАЖЕНИЯ КНОПОК)
-local player = game:GetService("Players").LocalPlayer
+-- ПОЛНОЦЕННЫЙ МОБИЛЬНЫЙ ХАК С ПЛАВНЫМ ЗАКРЫТИЕМ ПОДАННЫМ ВАМИ КОДОМ
+local Players = game:GetService("Players")
+local player = Players.LocalPlayer
 local playerGui = player:WaitForChild("PlayerGui")
 
--- Удаляем старые копии, если они зависли
-if playerGui:FindFirstChild("ProMobileHubUltimate") then
-    playerGui["ProMobileHubUltimate"]:Destroy()
+-- Очистка старых версий, чтобы не наслаивались
+if playerGui:FindFirstChild("MyUltimateGui") then
+    playerGui["MyUltimateGui"]:Destroy()
 end
- 
--- Создаем основу интерфейса
-local ScreenGui = Instance.new("ScreenGui")
-ScreenGui.Name = "ProMobileHubUltimate"
-ScreenGui.Parent = playerGui
-ScreenGui.ResetOnSpawn = false
-ScreenGui.ZIndexBehavior = Enum.ZIndexBehavior.Sibling
 
--- Главное черное окно (как на скриншоте)
-local MainFrame = Instance.new("Frame")
-MainFrame.Name = "MainFrame"
-MainFrame.Parent = ScreenGui
-MainFrame.BackgroundColor3 = Color3.fromRGB(20, 20, 20)
-MainFrame.BorderSizePixel = 0
-MainFrame.Size = UDim2.new(0, 280, 0, 300)
-MainFrame.Position = UDim2.new(0.5, -140, 0.5, -150)
-MainFrame.Active = true
-MainFrame.ZIndex = 1
+-- Создаём GUI (По вашей структуре)
+local screenGui = Instance.new("ScreenGui")
+screenGui.Name = "MyUltimateGui"
+screenGui.Parent = playerGui
+screenGui.ResetOnSpawn = false
+screenGui.ZIndexBehavior = Enum.ZIndexBehavior.Sibling
 
--- Скрипт перетаскивания панели пальцем
+-- Главная панель (Размеры из вашего шаблона: 400x300)
+local frame = Instance.new("Frame")
+frame.Name = "MainFrame"
+frame.Size = UDim2.new(0, 400, 0, 300)
+frame.Position = UDim2.new(0.5, -200, 0.5, -150)
+frame.BackgroundColor3 = Color3.new(0.2, 0.2, 0.2)
+frame.BorderSizePixel = 0
+frame.Active = true
+frame.Parent = screenGui
+
+-- Скрипт перетаскивания панели пальцем для мобилок
 local UIS = game:GetService("UserInputService")
 local dragToggle, dragStart, startPos
-MainFrame.InputBegan:Connect(function(input)
+frame.InputBegan:Connect(function(input)
     if input.UserInputType == Enum.UserInputType.MouseButton1 or input.UserInputType == Enum.UserInputType.Touch then
         dragToggle = true
         dragStart = input.Position
-        startPos = MainFrame.Position
+        startPos = frame.Position
         input.Changed:Connect(function()
             if input.UserInputState == Enum.UserInputState.End then dragToggle = false end
         end)
     end
 end)
-MainFrame.InputChanged:Connect(function(input)
+frame.InputChanged:Connect(function(input)
     if input.UserInputType == Enum.UserInputType.MouseMovement or input.UserInputType == Enum.UserInputType.Touch then
         if dragToggle then
             local delta = input.Position - dragStart
-            MainFrame.Position = UDim2.new(startPos.X.Scale, startPos.X.Offset + delta.X, startPos.Y.Scale, startPos.Y.Offset + delta.Y)
+            frame.Position = UDim2.new(startPos.X.Scale, startPos.X.Offset + delta.X, startPos.Y.Scale, startPos.Y.Offset + delta.Y)
         end
     end
 end)
 
--- Верхняя панель заголовка (Серая полоса)
-local HeaderFrame = Instance.new("Frame")
-HeaderFrame.Name = "HeaderFrame"
-HeaderFrame.Parent = MainFrame
-HeaderFrame.BackgroundColor3 = Color3.fromRGB(40, 40, 40)
-HeaderFrame.BorderSizePixel = 0
-HeaderFrame.Size = UDim2.new(1, 0, 0, 40)
-HeaderFrame.Position = UDim2.new(0, 0, 0, 0)
-HeaderFrame.ZIndex = 2
+-- Заголовок меню (Добавлен внутрь фрейма для стиля)
+local titleLabel = Instance.new("TextLabel")
+titleLabel.Size = UDim2.new(0, 200, 0, 40)
+titleLabel.Position = UDim2.new(0, 15, 0, 5)
+titleLabel.Text = "PRO HUB MOBILE"
+titleLabel.TextSize = 20
+titleLabel.TextColor3 = Color3.new(1, 1, 1)
+titleLabel.Font = Enum.Font.SourceSansBold
+titleLabel.BackgroundTransparency = 1
+titleLabel.TextXAlignment = Enum.TextXAlignment.Left
+titleLabel.Parent = frame
 
--- Текст заголовка PRO HUB
-local Title = Instance.new("TextLabel")
-Title.Name = "Title"
-Title.Parent = HeaderFrame
-Title.BackgroundTransparency = 1
-Title.Size = UDim2.new(0.7, 0, 1, 0)
-Title.Position = UDim2.new(0, 15, 0, 0)
-Title.Text = "PRO HUB"
-Title.TextColor3 = Color3.fromRGB(255, 255, 255)
-Title.Font = Enum.Font.CodeBold
-Title.TextSize = 18
-Title.TextXAlignment = Enum.TextXAlignment.Left
-Title.ZIndex = 3
+-- Кнопка закрытия из вашего кода (✕, 40x40, позиция 1, -45, 0, 5)
+local closeBtn = Instance.new("TextButton")
+closeBtn.Size = UDim2.new(0, 40, 0, 40)
+closeBtn.Position = UDim2.new(1, -45, 0, 5)
+closeBtn.Text = "✕"
+closeBtn.TextSize = 24
+closeBtn.TextColor3 = Color3.new(1, 1, 1)
+closeBtn.BackgroundColor3 = Color3.new(0.9, 0.2, 0.2)
+closeBtn.BorderSizePixel = 0
+closeBtn.Parent = frame
 
--- ЯРКО-КРАСНАЯ КНОПКА ЗАКРЫТИЯ 'X' (Жесткое позиционирование в верхнем правом углу)
-local CloseBtn = Instance.new("TextButton")
-CloseBtn.Name = "CloseBtn"
-CloseBtn.Parent = HeaderFrame
-CloseBtn.BackgroundColor3 = Color3.fromRGB(220, 53, 69) -- Красный цвет
-CloseBtn.BorderSizePixel = 0
-CloseBtn.Size = UDim2.new(0, 50, 0, 40) -- Фиксированный размер кнопки
-CloseBtn.Position = UDim2.new(1, -50, 0, 0) -- В самом углу серой полосы
-CloseBtn.Text = "X"
-CloseBtn.TextColor3 = Color3.fromRGB(255, 255, 255)
-CloseBtn.Font = Enum.Font.SourceSansBold
-CloseBtn.TextSize = 22
-CloseBtn.ZIndex = 10 -- Поверх абсолютно всего
-CloseBtn.Visible = true
+-- Функция создания кнопок функций внутри панели
+local function CreateHackButton(name, posY, callback)
+    local btn = Instance.new("TextButton")
+    btn.Size = UDim2.new(0, 360, 0, 45)
+    btn.Position = UDim2.new(0, 20, 0, posY)
+    btn.BackgroundColor3 = Color3.new(0.3, 0.3, 0.3)
+    btn.BorderSizePixel = 0
+    btn.Text = name
+    btn.TextSize = 18
+    btn.TextColor3 = Color3.new(1, 1, 1)
+    btn.Font = Enum.Font.SourceSansBold
+    btn.Parent = frame
+    
+    local state = false
+    btn.MouseButton1Click:Connect(function()
+        state = not state
+        btn.BackgroundColor3 = state and Color3.new(0.2, 0.6, 0.2) or Color3.new(0.3, 0.3, 0.3)
+        callback(state)
+    end)
+end
 
-CloseBtn.MouseButton1Click:Connect(function() 
-    ScreenGui:Destroy() 
-end)
-
--- КНОПКА 1: Полет (Fly)
-local FlyBtn = Instance.new("TextButton")
-FlyBtn.Name = "FlyBtn"
-FlyBtn.Parent = MainFrame
-FlyBtn.BackgroundColor3 = Color3.fromRGB(60, 60, 60)
-FlyBtn.Size = UDim2.new(0, 240, 0, 40)
-FlyBtn.Position = UDim2.new(0, 20, 0, 60)
-FlyBtn.Text = "Fly (Полет)"
-FlyBtn.TextColor3 = Color3.fromRGB(255, 255, 255)
-FlyBtn.Font = Enum.Font.SourceSansBold
-FlyBtn.TextSize = 16
-FlyBtn.ZIndex = 4
-
-local flyState = false
-FlyBtn.MouseButton1Click:Connect(function()
+-- Добавление рабочих чит-функций в панель
+CreateHackButton("Fly (Полет)", 65, function(s) 
     if player.Character and player.Character:FindFirstChild("Humanoid") then
-        flyState = not flyState
-        FlyBtn.BackgroundColor3 = flyState and Color3.fromRGB(40, 167, 69) or Color3.fromRGB(60, 60, 60)
-        player.Character.Humanoid.PlatformStand = flyState
+        player.Character.Humanoid.PlatformStand = s
     end
 end)
 
--- КНОПКА 2: Бесконечный прыжок (Inf Jump)
-local JumpBtn = Instance.new("TextButton")
-JumpBtn.Name = "JumpBtn"
-JumpBtn.Parent = MainFrame
-JumpBtn.BackgroundColor3 = Color3.fromRGB(60, 60, 60)
-JumpBtn.Size = UDim2.new(0, 240, 0, 40)
-JumpBtn.Position = UDim2.new(0, 20, 0, 115)
-JumpBtn.Text = "Infinite Jump"
-JumpBtn.TextColor3 = Color3.fromRGB(255, 255, 255)
-JumpBtn.Font = Enum.Font.SourceSansBold
-JumpBtn.TextSize = 16
-JumpBtn.ZIndex = 4
-
-local jumpState = false
-JumpBtn.MouseButton1Click:Connect(function()
-    jumpState = not jumpState
-    JumpBtn.BackgroundColor3 = jumpState and Color3.fromRGB(40, 167, 69) or Color3.fromRGB(60, 60, 60)
+CreateHackButton("Infinite Jump (Бесконечный прыжок)", 125, function(s)
+    getgenv().InfJump = s
+    UIS.JumpRequest:Connect(function()
+        if getgenv().InfJump and player.Character and player.Character:FindFirstChildOfClass("Humanoid") then 
+            player.Character:FindFirstChildOfClass("Humanoid"):ChangeState("Jumping") 
+        end
+    end)
 end)
 
-UIS.JumpRequest:Connect(function()
-    if jumpState and player.Character and player.Character:FindFirstChildOfClass("Humanoid") then 
-        player.Character:FindFirstChildOfClass("Humanoid"):ChangeState("Jumping") 
+CreateHackButton("Auto-Farm (Тестовый режим)", 185, function(s)
+    getgenv().farming = s
+end)
+
+-- Ваша логика закрытия с Твин-анимацией плавного исчезновения
+closeBtn.MouseButton1Click:Connect(function()
+    local tweenService = game:GetService("TweenService")
+    local tweenInfo = TweenInfo.new(0.3, Enum.EasingStyle.Quad, Enum.EasingDirection.Out)
+    local goal = {BackgroundTransparency = 1, TextTransparency = 1}
+    
+    -- Анимируем исчезновение всех дочерних элементов (кнопок и текста)
+    for _, child in ipairs(frame:GetChildren()) do
+        if child:IsA("TextButton") or child:IsA("TextLabel") or child:IsA("ImageLabel") then
+            tweenService:Create(child, tweenInfo, goal):Play()
+        end
     end
-end)
-
--- КНОПКА 3: Тестовый Автофарм (Auto-Farm)
-local FarmBtn = Instance.new("TextButton")
-FarmBtn.Name = "FarmBtn"
-FarmBtn.Parent = MainFrame
-FarmBtn.BackgroundColor3 = Color3.fromRGB(60, 60, 60)
-FarmBtn.Size = UDim2.new(0, 240, 0, 40)
-FarmBtn.Position = UDim2.new(0, 20, 0, 170)
-FarmBtn.Text = "Auto-Farm (Тест)"
-FarmBtn.TextColor3 = Color3.fromRGB(255, 255, 255)
-FarmBtn.Font = Enum.Font.SourceSansBold
-FarmBtn.TextSize = 16
-FarmBtn.ZIndex = 4
-
-local farmState = false
-FarmBtn.MouseButton1Click:Connect(function()
-    farmState = not farmState
-    FarmBtn.BackgroundColor3 = farmState and Color3.fromRGB(40, 167, 69) or Color3.fromRGB(60, 60, 60)
+    
+    -- Анимируем растворение самой панели
+    tweenService:Create(frame, tweenInfo, {BackgroundTransparency = 1}):Play()
+    
+    task.wait(0.3)
+    screenGui:Destroy() -- Полное удаление структуры из игры
 end)
