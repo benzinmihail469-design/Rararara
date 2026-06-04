@@ -6,7 +6,7 @@ local playerGui = player:WaitForChild("PlayerGui")
 if playerGui:FindFirstChild("ProMobileHubUltimate") then
     playerGui["ProMobileHubUltimate"]:Destroy()
 end
-
+ 
 -- Создаем основу интерфейса
 local ScreenGui = Instance.new("ScreenGui")
 ScreenGui.Name = "ProMobileHubUltimate"
