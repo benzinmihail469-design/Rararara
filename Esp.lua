@@ -1,4 +1,4 @@
--- МАКСИМАЛЬНО ЗАЩИЩЕННАЯ ВЕРСИЯ: ИМПУЛЬСНЫЙ ПРЫЖОК С РАНДОМИЗАЦИЕЙ ТАЙМИНГОВ + БЕСКОНЕЧНАЯ СТАМИНА
+-- МАКСИМАЛЬНО ЗАЩИЩЕННАЯ ВЕРСИЯ: ИМПУЛЬСНЫЙ ПРЫЖОК С РАНДОМИЗАЦИЕЙ ТАЙМИНГОВ + АНТИ-ОТКАТ СТАМИНЫ
 local Players = game:GetService("Players")
 local UIS = game:GetService("UserInputService")
 local TweenService = game:GetService("TweenService")
@@ -20,7 +20,7 @@ screenGui.ResetOnSpawn = false
 screenGui.ZIndexBehavior = Enum.ZIndexBehavior.Sibling
 screenGui.DisplayOrder = 10
 
--- Главная панель (500x380) - Высота увеличена для размещения второй кнопки
+-- Главная панель (500x380)
 local frame = Instance.new("Frame")
 frame.Name = "MainFrame"
 frame.Size = UDim2.new(0, 500, 0, 380)
@@ -112,7 +112,7 @@ jumpCorner.Parent = jumpBtn
 -- ============================================================================
 local staminaBtn = Instance.new("TextButton")
 staminaBtn.Size = UDim2.new(0, 440, 0, 60)
-staminaBtn.Position = UDim2.new(0, 30, 0, 180) -- Позиция смещена вниз, чтобы не перекрывать прыжок
+staminaBtn.Position = UDim2.new(0, 30, 0, 180)
 staminaBtn.BackgroundColor3 = Color3.new(0.3, 0.3, 0.3)
 staminaBtn.BorderSizePixel = 0
 staminaBtn.Text = "Бесконечная стамина: ВЫКЛ"
@@ -132,8 +132,9 @@ local jumpButtonGui = nil
 local mobileJumpButton = nil
 local lastJump = 0
 local staminaConnection = nil
+local oldIndex = nil
 
--- УМНАЯ ФУНКЦИЯ ПРЫЖКА С РАНДОМИЗАЦИЕЙ ДЛЯ СНИЖЕНИЯ РИСКА КИКА
+-- УМНАЯ ФУНКЦИЯ ПРЫЖКА
 local function doSafeBypassJump()
     local randomCooldown = math.random(18, 25) / 100
     if tick() - lastJump < randomCooldown then return end
@@ -157,35 +158,64 @@ local function doSafeBypassJump()
     end)
 end
 
--- ЛОГИКА БЕСКОНЕЧНОЙ СТАМИНЫ (Защита от сброса античитом)
+-- ЛОГИКА БЕСКОНЕЧНОЙ СТАМИНЫ ДЛЯ FORSAKEN
 local function toggleInfiniteStamina(enable)
+    staminaState = enable
+    
+    -- Блок 1: Хукинг метатаблицы (Обход локальных проверок замедления)
+    if hookmetamethod and setreadonly then
+        if enable and not oldIndex then
+            local mt = getrawmetatable(game)
+            setreadonly(mt, false)
+            
+            oldIndex = hookmetamethod(game, "__index", function(self, key)
+                if staminaState and not checkcaller() then
+                    -- Если локальный скрипт пытается снизить скорость из-за "усталости"
+                    if key == "WalkSpeed" and self:IsA("Humanoid") then
+                        return 16 
+                    end
+                    -- Подменяем значение для UI игры, чтобы полоса стамины визуально казалась полной
+                    if (key == "Value" or key == "value") and (self.Name == "Stamina" or self.Name == "Energy" or self.Name == "StaminaValue") then
+                        local maxObj = self.Parent:FindFirstChild("Max" .. self.Name) or self.Parent:FindFirstChild("MaxStamina")
+                        return maxObj and maxObj.Value or 100
+                    end
+                end
+                return oldIndex(self, key)
+            end)
+            setreadonly(mt, true)
+        end
+    end
+
+    -- Блок 2: Динамический инжект регенерации (Обход серверного отката)
     if enable then
         if staminaConnection then return end
         
-        -- Фиксация значений каждую прорисовку кадра (предотвращает откат сервером)
         staminaConnection = RunService.Heartbeat:Connect(function()
             pcall(function()
                 local character = player.Character
                 if character then
-                    -- 1. Обновление через Атрибуты персонажа / игрока
-                    if character:GetAttribute("Stamina") then
-                        local maxStam = character:GetAttribute("MaxStamina") or 100
-                        character:SetAttribute("Stamina", maxStam)
-                    end
-                    if player:GetAttribute("Stamina") then
-                        local maxStam = player:GetAttribute("MaxStamina") or 100
-                        player:SetAttribute("Stamina", maxStam)
-                    end
-                    
-                    -- 2. Обновление через Value-объекты внутри персонажа или папки игрока
-                    local sourceList = {character, player, character:FindFirstChild("Stats"), player:FindFirstChild("leaderstats")}
+                    -- Проверяем все возможные места хранения стамины в Forsaken
+                    local sourceList = {character, player, character:FindFirstChild("Stats"), player:FindFirstChild("leaderstats"), character:FindFirstChild("Attributes")}
                     for _, source in ipairs(sourceList) do
                         if source then
-                            local stamObj = source:FindFirstChild("Stamina") or source:FindFirstChild("Energy")
+                            local stamObj = source:FindFirstChild("Stamina") or source:FindFirstChild("Energy") or source:FindFirstChild("StaminaValue")
                             if stamObj and (stamObj:IsA("NumberValue") or stamObj:IsA("IntValue")) then
-                                local maxStamObj = source:FindFirstChild("MaxStamina") or source:FindFirstChild("MaxEnergy")
-                                stamObj.Value = maxStamObj and maxStamObj.Value or 100
+                                local maxStamObj = source:FindFirstChild("MaxStamina") or source:FindFirstChild("MaxEnergy") or source:FindFirstChild("MaxStaminaValue")
+                                local maxVal = maxStamObj and maxStamObj.Value or 100
+                                
+                                -- Вместо мгновенной установки "100" плавно подливаем порциями, обходя триггер античита
+                                if stamObj.Value < maxVal then
+                                    stamObj.Value = math.min(stamObj.Value + 4, maxVal)
+                                end
                             end
+                        end
+                    end
+                    
+                    -- Обновление через Атрибуты движка
+                    if character:GetAttribute("Stamina") then
+                        local max = character:GetAttribute("MaxStamina") or 100
+                        if character:GetAttribute("Stamina") < max then
+                            character:SetAttribute("Stamina", math.min(character:GetAttribute("Stamina") + 4, max))
                         end
                     end
                 end
@@ -199,7 +229,7 @@ local function toggleInfiniteStamina(enable)
     end
 end
 
--- Функция создания перетаскиваемой кнопки прыжка поверх всех
+-- Функция создания перетаскиваемой кнопки прыжка
 local function toggleMobileJumpButton(enable)
     if enable then
         if jumpButtonGui then return end
@@ -267,7 +297,7 @@ local function toggleMobileJumpButton(enable)
     end
 end
 
--- Обновление кнопки прыжка в меню
+-- Обновление состояний кнопок в меню
 local function updateJumpButton()
     if jumpState then
         jumpBtn.Text = "Бесконечный прыжок: ВКЛ"
@@ -282,7 +312,6 @@ local function updateJumpButton()
     end
 end
 
--- Обновление кнопки стамины в меню
 local function updateStaminaButton()
     if staminaState then
         staminaBtn.Text = "Бесконечная стамина: ВКЛ"
@@ -295,7 +324,6 @@ local function updateStaminaButton()
     end
 end
 
--- Обработчики нажатий на кнопки меню
 jumpBtn.MouseButton1Click:Connect(function()
     pcall(function()
         jumpState = not jumpState
@@ -310,7 +338,7 @@ staminaBtn.MouseButton1Click:Connect(function()
     end)
 end)
 
--- Прыжок для ПК (Пробел)
+-- Управление ПК
 UIS.InputBegan:Connect(function(input, gameProcessed)
     if gameProcessed then return end
     if input.KeyCode == Enum.KeyCode.Space and jumpState then
@@ -318,7 +346,7 @@ UIS.InputBegan:Connect(function(input, gameProcessed)
     end
 end)
 
--- Плавное закрытие основного меню
+-- Плавное закрытие
 closeBtn.MouseButton1Click:Connect(function()
     toggleMobileJumpButton(false)
     toggleInfiniteStamina(false)
@@ -340,6 +368,5 @@ closeBtn.MouseButton1Click:Connect(function()
     end
 end)
 
--- Инициализация начальных состояний кнопок при запуске
 updateJumpButton()
 updateStaminaButton()
