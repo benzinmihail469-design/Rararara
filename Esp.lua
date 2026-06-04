@@ -1,4 +1,4 @@
--- ФИНАЛЬНЫЙ СКРИПТ: РАЗМЕР 500х300, СКРУГЛЕНИЕ, ПЕРЕТАСКИВАЕМАЯ КНОПКА ПРЫЖКА ПОВЕРХ ВСЕГО
+-- ФИНАЛЬНЫЙ СКРИПТ: ОБХОД АНТИ-ЧИТА FORSAKEN + ПЕРЕТАСКИВАЕМАЯ КНОПКА ПРЫЖКА
 local Players = game:GetService("Players")
 local UIS = game:GetService("UserInputService")
 local TweenService = game:GetService("TweenService")
@@ -17,7 +17,7 @@ screenGui.Name = "MyUltimateGui"
 screenGui.Parent = playerGui
 screenGui.ResetOnSpawn = false
 screenGui.ZIndexBehavior = Enum.ZIndexBehavior.Sibling
-screenGui.DisplayOrder = 10 -- Высокий приоритет отображения меню
+screenGui.DisplayOrder = 10
 
 -- Главная панель (500x300)
 local frame = Instance.new("Frame")
@@ -29,7 +29,6 @@ frame.BorderSizePixel = 0
 frame.Active = true
 frame.Parent = screenGui
 
--- ЗАКРУГЛЕНИЕ УГЛОВ ДЛЯ ГЛАВНОЙ ПАНЕЛИ
 local frameCorner = Instance.new("UICorner")
 frameCorner.CornerRadius = UDim.new(0, 12)
 frameCorner.Parent = frame
@@ -105,17 +104,35 @@ local jumpCorner = Instance.new("UICorner")
 jumpCorner.CornerRadius = UDim.new(0, 8)
 jumpCorner.Parent = jumpBtn
 
--- Переменные состояния и отдельного ScreenGui для кнопки прыжка
+-- Переменные состояния
 local jumpState = false
 local jumpButtonGui = nil
 local mobileJumpButton = nil
+local lastJump = 0
+local jumpCooldown = 0.15 -- Защитная задержка между прыжками для обхода проверок пакетов
 
--- Функция прыжка
-local function doInfiniteJump()
+-- СКРИПТ ОБХОДА АНТИ-ЧИТА FORSAKEN (Физический импульс вместо спама стейтов)
+local function doBypassJump()
+    if tick() - lastJump < jumpCooldown then return end -- Защита от слишком быстрого спама
+    
     local character = player.Character
+    local rootPart = character and character:FindFirstChild("HumanoidRootPart")
     local humanoid = character and character:FindFirstChildOfClass("Humanoid")
-    if humanoid and humanoid.Health > 0 then
-        humanoid:ChangeState(Enum.HumanoidStateType.Jumping)
+    
+    if rootPart and humanoid and humanoid.Health > 0 then
+        lastJump = tick()
+        
+        -- Сбрасываем старую вертикальную скорость падения, чтобы анти-чит не залагал от резкого изменения
+        local currentVelocity = rootPart.AssemblyLinearVelocity
+        rootPart.AssemblyLinearVelocity = Vector3.new(currentVelocity.X, 0, currentVelocity.Z)
+        
+        -- Даем плавный физический импульс вверх (имитируем силу прыжка игры)
+        -- Используем стандартную силу прыжка персонажа или фиксированное значение 50
+        local jumpPower = humanoid.JumpPower > 0 and humanoid.JumpPower or 50
+        rootPart.AssemblyLinearVelocity = Vector3.new(rootPart.AssemblyLinearVelocity.X, jumpPower, rootPart.AssemblyLinearVelocity.Z)
+        
+        -- Локально меняем стейт на Freefall, чтобы анимация выглядела плавно, а анти-чит на сервере думал, что мы просто падаем/летим
+        humanoid:ChangeState(Enum.HumanoidStateType.Freefall)
     end
 end
 
@@ -124,19 +141,17 @@ local function toggleMobileJumpButton(enable)
     if enable then
         if jumpButtonGui then return end
         
-        -- Создаем ОТДЕЛЬНЫЙ ScreenGui с максимальным DisplayOrder, чтобы кнопка была ПОВЕРХ ВСЕХ других GUI в игре
         jumpButtonGui = Instance.new("ScreenGui")
         jumpButtonGui.Name = "InfJumpButtonGui"
         jumpButtonGui.Parent = playerGui
         jumpButtonGui.ResetOnSpawn = false
-        jumpButtonGui.DisplayOrder = 999999 -- Абсолютный приоритет поверх всего интерфейса игры
+        jumpButtonGui.DisplayOrder = 999999
         
-        -- Создаем круглую кнопку прыжка
         mobileJumpButton = Instance.new("TextButton")
         mobileJumpButton.Name = "MobileInfJumpButton"
         mobileJumpButton.Parent = jumpButtonGui
         mobileJumpButton.Size = UDim2.new(0, 70, 0, 70)
-        mobileJumpButton.Position = UDim2.new(0.85, -35, 0.7, -35) -- Стартовая позиция справа внизу
+        mobileJumpButton.Position = UDim2.new(0.85, -35, 0.7, -35)
         mobileJumpButton.BackgroundColor3 = Color3.fromRGB(0, 122, 255)
         mobileJumpButton.Text = "JUMP"
         mobileJumpButton.TextSize = 18
@@ -148,7 +163,7 @@ local function toggleMobileJumpButton(enable)
         circleCorner.CornerRadius = UDim.new(1, 0)
         circleCorner.Parent = mobileJumpButton
         
-        -- СКРИПТ ПЕРЕТАСКИВАНИЯ (DRAG) ДЛЯ МОБИЛЬНОЙ КНОПКИ ПРЫЖКА
+        -- Перетаскивание (Drag) мобильной кнопки
         local bDragToggle = false
         local bDragStart = nil
         local bStartPos = nil
@@ -176,14 +191,13 @@ local function toggleMobileJumpButton(enable)
             end
         end)
         
-        -- Обработка нажатия на кнопку (выполняет прыжок)
+        -- Активация обхода при нажатии на мобильную кнопку
         mobileJumpButton.MouseButton1Click:Connect(function()
             if jumpState then
-                doInfiniteJump()
+                doBypassJump()
             end
         end)
     else
-        -- Удаляем GUI с кнопкой при выключении
         if jumpButtonGui then
             jumpButtonGui:Destroy()
             jumpButtonGui = nil
@@ -197,7 +211,6 @@ local function updateJumpButton()
     if jumpState then
         jumpBtn.Text = "Бесконечный прыжок: ВКЛ"
         jumpBtn.BackgroundColor3 = Color3.new(0.2, 0.6, 0.2)
-        -- Включаем кнопку для мобильных
         if UIS.TouchEnabled then
             toggleMobileJumpButton(true)
         end
@@ -213,17 +226,17 @@ jumpBtn.MouseButton1Click:Connect(function()
     updateJumpButton()
 end)
 
--- Прыжок для ПК (Пробел)
+-- Прыжок для ПК (Пробел) с обходом анти-чита
 UIS.InputBegan:Connect(function(input, gameProcessed)
     if gameProcessed then return end
     if input.KeyCode == Enum.KeyCode.Space and jumpState then
-        doInfiniteJump()
+        doBypassJump()
     end
 end)
 
 -- Плавное закрытие основного меню
 closeBtn.MouseButton1Click:Connect(function()
-    toggleMobileJumpButton(false) -- Сразу сносим мобильную кнопку прыжка
+    toggleMobileJumpButton(false)
     
     local tweenInfo = TweenInfo.new(0.3, Enum.EasingStyle.Quad, Enum.EasingDirection.Out)
     local goal = {BackgroundTransparency = 1, TextTransparency = 1}
