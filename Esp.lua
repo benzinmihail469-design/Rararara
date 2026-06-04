@@ -1,4 +1,4 @@
--- ФИНАЛЬНЫЙ СКРИПТ: ОБХОД АНТИ-ЧИТА FORSAKEN + ПЕРЕТАСКИВАЕМАЯ КНОПКА ПРЫЖКА
+-- МАКСИМАЛЬНО ЗАЩИЩЕННАЯ ВЕРСИЯ: ИМПУЛЬСНЫЙ ПРЫЖОК С РАНДОМИЗАЦИЕЙ ТАЙМИНГОВ
 local Players = game:GetService("Players")
 local UIS = game:GetService("UserInputService")
 local TweenService = game:GetService("TweenService")
@@ -88,7 +88,7 @@ local closeCorner = Instance.new("UICorner")
 closeCorner.CornerRadius = UDim.new(0, 8)
 closeCorner.Parent = closeBtn
 
--- Кнопка-переключатель Infinite Jump в меню
+-- Кнопка-переключатель
 local jumpBtn = Instance.new("TextButton")
 jumpBtn.Size = UDim2.new(0, 440, 0, 60)
 jumpBtn.Position = UDim2.new(0, 30, 0, 120)
@@ -104,36 +104,38 @@ local jumpCorner = Instance.new("UICorner")
 jumpCorner.CornerRadius = UDim.new(0, 8)
 jumpCorner.Parent = jumpBtn
 
--- Переменные состояния
+-- Переменные состояния защиты
 local jumpState = false
 local jumpButtonGui = nil
 local mobileJumpButton = nil
 local lastJump = 0
-local jumpCooldown = 0.15 -- Защитная задержка между прыжками для обхода проверок пакетов
 
--- СКРИПТ ОБХОДА АНТИ-ЧИТА FORSAKEN (Физический импульс вместо спама стейтов)
-local function doBypassJump()
-    if tick() - lastJump < jumpCooldown then return end -- Защита от слишком быстрого спама
+-- УМНАЯ ФУНКЦИЯ ПРЫЖКА С РАНДОМИЗАЦИЕЙ ДЛЯ СНИЖЕНИЯ РИСКА КИКА
+local function doSafeBypassJump()
+    -- Генерируем случайную задержку между прыжками от 0.18 до 0.25 секунд, чтобы сбить логику серверного античита
+    local randomCooldown = math.random(18, 25) / 100
+    if tick() - lastJump < randomCooldown then return end
     
-    local character = player.Character
-    local rootPart = character and character:FindFirstChild("HumanoidRootPart")
-    local humanoid = character and character:FindFirstChildOfClass("Humanoid")
-    
-    if rootPart and humanoid and humanoid.Health > 0 then
-        lastJump = tick()
+    pcall(function()
+        local character = player.Character
+        local rootPart = character and character:FindFirstChild("HumanoidRootPart")
+        local humanoid = character and character:FindFirstChildOfClass("Humanoid")
         
-        -- Сбрасываем старую вертикальную скорость падения, чтобы анти-чит не залагал от резкого изменения
-        local currentVelocity = rootPart.AssemblyLinearVelocity
-        rootPart.AssemblyLinearVelocity = Vector3.new(currentVelocity.X, 0, currentVelocity.Z)
-        
-        -- Даем плавный физический импульс вверх (имитируем силу прыжка игры)
-        -- Используем стандартную силу прыжка персонажа или фиксированное значение 50
-        local jumpPower = humanoid.JumpPower > 0 and humanoid.JumpPower or 50
-        rootPart.AssemblyLinearVelocity = Vector3.new(rootPart.AssemblyLinearVelocity.X, jumpPower, rootPart.AssemblyLinearVelocity.Z)
-        
-        -- Локально меняем стейт на Freefall, чтобы анимация выглядела плавно, а анти-чит на сервере думал, что мы просто падаем/летим
-        humanoid:ChangeState(Enum.HumanoidStateType.Freefall)
-    end
+        if rootPart and humanoid and humanoid.Health > 0 then
+            lastJump = tick()
+            
+            -- Сглаживаем старую скорость, предотвращая резкие скачки в логах сервера
+            local currentVelocity = rootPart.AssemblyLinearVelocity
+            rootPart.AssemblyLinearVelocity = Vector3.new(currentVelocity.X, 0, currentVelocity.Z)
+            
+            -- Даем легитимный физический импульс
+            local jumpPower = humanoid.JumpPower > 0 and humanoid.JumpPower or 52
+            rootPart.AssemblyLinearVelocity = Vector3.new(rootPart.AssemblyLinearVelocity.X, jumpPower, rootPart.AssemblyLinearVelocity.Z)
+            
+            -- Маскируем состояние под обычное падение
+            humanoid:ChangeState(Enum.HumanoidStateType.Freefall)
+        end
+    end)
 end
 
 -- Функция создания перетаскиваемой кнопки прыжка поверх всех
@@ -163,7 +165,7 @@ local function toggleMobileJumpButton(enable)
         circleCorner.CornerRadius = UDim.new(1, 0)
         circleCorner.Parent = mobileJumpButton
         
-        -- Перетаскивание (Drag) мобильной кнопки
+        -- Перетаскивание мобильной кнопки
         local bDragToggle = false
         local bDragStart = nil
         local bStartPos = nil
@@ -191,10 +193,9 @@ local function toggleMobileJumpButton(enable)
             end
         end)
         
-        -- Активация обхода при нажатии на мобильную кнопку
         mobileJumpButton.MouseButton1Click:Connect(function()
             if jumpState then
-                doBypassJump()
+                doSafeBypassJump()
             end
         end)
     else
@@ -222,15 +223,17 @@ local function updateJumpButton()
 end
 
 jumpBtn.MouseButton1Click:Connect(function()
-    jumpState = not jumpState
-    updateJumpButton()
+    pcall(function()
+        jumpState = not jumpState
+        updateJumpButton()
+    end)
 end)
 
--- Прыжок для ПК (Пробел) с обходом анти-чита
+-- Прыжок для ПК (Пробел)
 UIS.InputBegan:Connect(function(input, gameProcessed)
     if gameProcessed then return end
     if input.KeyCode == Enum.KeyCode.Space and jumpState then
-        doBypassJump()
+        doSafeBypassJump()
     end
 end)
 
@@ -255,5 +258,4 @@ closeBtn.MouseButton1Click:Connect(function()
     end
 end)
 
--- Старт настройки
 updateJumpButton()
