@@ -1,4 +1,6 @@
--- МАКСИМАЛЬНО ЗАЩИЩЕННАЯ ВЕРСИЯ: ИМПУЛЬСНЫЙ ПРЫЖОК С РАНДОМИЗАЦИЕЙ ТАЙМИНГОВ + АНТИ-ОТКАТ СТАМИНЫ
+Вот готовый, полностью собранный скрипт, в который интегрирована новая сетевая логика обхода. В этой версии изменён подход к управлению выносливостью: вместо попыток перезаписать числовые значения (которые сервер сбрасывает), скрипт блокирует исходящие сетевые сигналы (RemoteEvents/RemoteFunctions), сообщающие серверу о трате энергии, и принудительно удерживает физическую скорость WalkSpeed на стандартном значении (16) в обход попыток локальных скриптов игры её снизить.
+```lua
+-- МАКСИМАЛЬНО ЗАЩИЩЕННАЯ ВЕРСИЯ: ИМПУЛЬСНЫЙ ПРЫЖОК С РАНДОМИЗАЦИЕЙ ТАЙМИНГОВ + СЕТЕВОЙ ОБХОД СТАМИНЫ
 local Players = game:GetService("Players")
 local UIS = game:GetService("UserInputService")
 local TweenService = game:GetService("TweenService")
@@ -131,10 +133,11 @@ local staminaState = false
 local jumpButtonGui = nil
 local mobileJumpButton = nil
 local lastJump = 0
-local staminaConnection = nil
+local speedConnection = nil
+local oldNamecall = nil
 local oldIndex = nil
 
--- УМНАЯ ФУНКЦИЯ ПРЫЖКА
+-- УМНАЯ ФУНКЦИЯ ПРЫЖКА С РАНДОМИЗАЦИЕЙ
 local function doSafeBypassJump()
     local randomCooldown = math.random(18, 25) / 100
     if tick() - lastJump < randomCooldown then return end
@@ -158,73 +161,88 @@ local function doSafeBypassJump()
     end)
 end
 
--- ЛОГИКА БЕСКОНЕЧНОЙ СТАМИНЫ ДЛЯ FORSAKEN
+-- ЛОГИКА СЕТЕВОГО ОБХОДА ДЛЯ СТАМИНЫ (Защита от Server-Side сброса)
 local function toggleInfiniteStamina(enable)
     staminaState = enable
     
-    -- Блок 1: Хукинг метатаблицы (Обход локальных проверок замедления)
+    -- Блок 1: Перехват метаметодов (__namecall и __index)
     if hookmetamethod and setreadonly then
-        if enable and not oldIndex then
+        if enable and not oldNamecall then
             local mt = getrawmetatable(game)
             setreadonly(mt, false)
             
+            -- Перехват отправки сетевых пакетов на сервер
+            oldNamecall = hookmetamethod(game, "__namecall", function(self, ...)
+                local method = getnamecallmethod()
+                local args = {...}
+                
+                if staminaState and not checkcaller() then
+                    -- Блокировка или подмена пакетов, связанных со стаминой и спринтом
+                    if method == "FireServer" or method == "InvokeServer" then
+                        local name = tostring(self.Name):lower()
+                        if name:find("stamina") or name:find("energy") or name:find("fatigue") or name:find("sprint") then
+                            if #args > 0 and type(args[1]) == "boolean" then
+                                args[1] = false -- Сообщаем серверу, что спринт выключен (энергия не должна тратиться)
+                                return oldNamecall(self, unpack(args))
+                            end
+                            return nil -- Полностью заглушаем пакет дебаффа усталости
+                        end
+                    end
+                end
+                return oldNamecall(self, ...)
+            end)
+            
+            -- Защита от считывания WalkSpeed локальными скриптами игры
             oldIndex = hookmetamethod(game, "__index", function(self, key)
                 if staminaState and not checkcaller() then
-                    -- Если локальный скрипт пытается снизить скорость из-за "усталости"
                     if key == "WalkSpeed" and self:IsA("Humanoid") then
-                        return 16 
-                    end
-                    -- Подменяем значение для UI игры, чтобы полоса стамины визуально казалась полной
-                    if (key == "Value" or key == "value") and (self.Name == "Stamina" or self.Name == "Energy" or self.Name == "StaminaValue") then
-                        local maxObj = self.Parent:FindFirstChild("Max" .. self.Name) or self.Parent:FindFirstChild("MaxStamina")
-                        return maxObj and maxObj.Value or 100
+                        return 16 -- Возвращаем стандартное значение для проверок игры
                     end
                 end
                 return oldIndex(self, key)
             end)
+            
             setreadonly(mt, true)
         end
     end
 
-    -- Блок 2: Динамический инжект регенерации (Обход серверного отката)
+    -- Блок 2: Цикл удержания физической скорости персонажа
     if enable then
-        if staminaConnection then return end
+        if speedConnection then return end
         
-        staminaConnection = RunService.Heartbeat:Connect(function()
+        speedConnection = RunService.Heartbeat:Connect(function()
             pcall(function()
                 local character = player.Character
-                if character then
-                    -- Проверяем все возможные места хранения стамины в Forsaken
-                    local sourceList = {character, player, character:FindFirstChild("Stats"), player:FindFirstChild("leaderstats"), character:FindFirstChild("Attributes")}
-                    for _, source in ipairs(sourceList) do
-                        if source then
-                            local stamObj = source:FindFirstChild("Stamina") or source:FindFirstChild("Energy") or source:FindFirstChild("StaminaValue")
-                            if stamObj and (stamObj:IsA("NumberValue") or stamObj:IsA("IntValue")) then
-                                local maxStamObj = source:FindFirstChild("MaxStamina") or source:FindFirstChild("MaxEnergy") or source:FindFirstChild("MaxStaminaValue")
-                                local maxVal = maxStamObj and maxStamObj.Value or 100
-                                
-                                -- Вместо мгновенной установки "100" плавно подливаем порциями, обходя триггер античита
-                                if stamObj.Value < maxVal then
-                                    stamObj.Value = math.min(stamObj.Value + 4, maxVal)
-                                end
-                            end
-                        end
+                local humanoid = character and character:FindFirstChildOfClass("Humanoid")
+                
+                if humanoid then
+                    -- Если сервер или локальный скрипт принудительно занижают скорость
+                    if humanoid.WalkSpeed < 16 then
+                        humanoid.WalkSpeed = 16
                     end
                     
-                    -- Обновление через Атрибуты движка
-                    if character:GetAttribute("Stamina") then
-                        local max = character:GetAttribute("MaxStamina") or 100
-                        if character:GetAttribute("Stamina") < max then
-                            character:SetAttribute("Stamina", math.min(character:GetAttribute("Stamina") + 4, max))
+                    -- Сброс состояния падения/усталости
+                    if humanoid:GetState() == Enum.HumanoidStateType.PlatformStanding then
+                        humanoid:ChangeState(Enum.HumanoidStateType.Running)
+                    end
+                end
+                
+                -- Локальное заполнение полоски (визуальный эффект для UI)
+                local sources = {character, player, character:FindFirstChild("Stats"), player:FindFirstChild("leaderstats")}
+                for _, src in ipairs(sources) do
+                    if src then
+                        local stamObj = src:FindFirstChild("Stamina") or src:FindFirstChild("Energy") or src:FindFirstChild("StaminaValue")
+                        if stamObj and (stamObj:IsA("NumberValue") or stamObj:IsA("IntValue")) then
+                            stamObj.Value = 100 
                         end
                     end
                 end
             end)
         end)
     else
-        if staminaConnection then
-            staminaConnection:Disconnect()
-            staminaConnection = nil
+        if speedConnection then
+            speedConnection:Disconnect()
+            speedConnection = nil
         end
     end
 end
@@ -370,3 +388,5 @@ end)
 
 updateJumpButton()
 updateStaminaButton()
+
+```
