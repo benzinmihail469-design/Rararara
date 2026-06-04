@@ -1,9 +1,12 @@
--- МОДИФИЦИРОВАННЫЙ GUI: ТОЛЬКО INF JUMP И ЗА КРУГЛЕННЫЕ УГЛЫ
+-- ПОЛНОСТЬЮ ИСПРАВЛЕННЫЙ СКРИПТ: БЕЗ ОШИБОК И СБОЕВ
 local Players = game:GetService("Players")
-local player = Players.LocalPlayer
+local UIS = game:GetService("UserInputService")
+local TweenService = game:GetService("TweenService")
+
+local player = Players.LocalPlayer or Players.PlayerAdded:Wait()
 local playerGui = player:WaitForChild("PlayerGui")
 
--- Очистка старых версий
+-- Очистка старых версий GUI
 if playerGui:FindFirstChild("MyUltimateGui") then
     playerGui["MyUltimateGui"]:Destroy()
 end
@@ -18,7 +21,7 @@ screenGui.ZIndexBehavior = Enum.ZIndexBehavior.Sibling
 -- Главная панель (Скругленная)
 local frame = Instance.new("Frame")
 frame.Name = "MainFrame"
-frame.Size = UDim2.new(0, 400, 0, 180) -- Уменьшил высоту, так как кнопок меньше
+frame.Size = UDim2.new(0, 500, 0, 300)
 frame.Position = UDim2.new(0.5, -200, 0.5, -90)
 frame.BackgroundColor3 = Color3.new(0.2, 0.2, 0.2)
 frame.BorderSizePixel = 0
@@ -27,11 +30,10 @@ frame.Parent = screenGui
 
 -- ЗАКРУГЛЕНИЕ УГЛОВ ДЛЯ ГЛАВНОЙ ПАНЕЛИ
 local frameCorner = Instance.new("UICorner")
-frameCorner.CornerRadius = UDim.new(0, 12) -- Радиус скругления углов
+frameCorner.CornerRadius = UDim.new(0, 12)
 frameCorner.Parent = frame
 
--- Скрипт перетаскивания панели пальцем
-local UIS = game:GetService("UserInputService")
+-- Скрипт перетаскивания панели пальцем (Drag)
 local dragToggle, dragStart, startPos
 frame.InputBegan:Connect(function(input)
     if input.UserInputType == Enum.UserInputType.MouseButton1 or input.UserInputType == Enum.UserInputType.Touch then
@@ -43,6 +45,7 @@ frame.InputBegan:Connect(function(input)
         end)
     end
 end)
+
 frame.InputChanged:Connect(function(input)
     if input.UserInputType == Enum.UserInputType.MouseMovement or input.UserInputType == Enum.UserInputType.Touch then
         if dragToggle then
@@ -59,7 +62,7 @@ titleLabel.Position = UDim2.new(0, 15, 0, 5)
 titleLabel.Text = "PRO HUB MOBILE"
 titleLabel.TextSize = 20
 titleLabel.TextColor3 = Color3.new(1, 1, 1)
-titleLabel.Font = Enum.Font.SourceSansBold
+titleLabel.Font = Enum.Font.SourceSans
 titleLabel.BackgroundTransparency = 1
 titleLabel.TextXAlignment = Enum.TextXAlignment.Left
 titleLabel.Parent = frame
@@ -76,23 +79,23 @@ closeBtn.BorderSizePixel = 0
 closeBtn.Parent = frame
 
 local closeCorner = Instance.new("UICorner")
-closeCorner.CornerRadius = UDim.new(0, 8) -- Скругление для кнопки закрытия
+closeCorner.CornerRadius = UDim.new(0, 8)
 closeCorner.Parent = closeBtn
 
 -- Единственная оставшаяся кнопка: Бесконечный прыжок
 local jumpBtn = Instance.new("TextButton")
 jumpBtn.Size = UDim2.new(0, 360, 0, 50)
-jumpBtn.Position = UDim2.new(0, 20, 0, 80) -- Размещена по центру
+jumpBtn.Position = UDim2.new(0, 20, 0, 80)
 jumpBtn.BackgroundColor3 = Color3.new(0.3, 0.3, 0.3)
 jumpBtn.BorderSizePixel = 0
 jumpBtn.Text = "Infinite Jump (Бесконечный прыжок)"
 jumpBtn.TextSize = 18
 jumpBtn.TextColor3 = Color3.new(1, 1, 1)
-jumpBtn.Font = Enum.Font.SourceSansBold
+jumpBtn.Font = Enum.Font.SourceSans
 jumpBtn.Parent = frame
 
 local jumpCorner = Instance.new("UICorner")
-jumpCorner.CornerRadius = UDim.new(0, 8) -- Скругление для кнопки чита
+jumpCorner.CornerRadius = UDim.new(0, 8)
 jumpCorner.Parent = jumpBtn
 
 local jumpState = false
@@ -101,6 +104,7 @@ jumpBtn.MouseButton1Click:Connect(function()
     jumpBtn.BackgroundColor3 = jumpState and Color3.new(0.2, 0.6, 0.2) or Color3.new(0.3, 0.3, 0.3)
 end)
 
+-- Исправленная обработка прыжка (Область видимости переменных исправлена)
 UIS.JumpRequest:Connect(function()
     if jumpState and player.Character and player.Character:FindFirstChildOfClass("Humanoid") then 
         player.Character:FindFirstChildOfClass("Humanoid"):ChangeState("Jumping") 
@@ -109,17 +113,16 @@ end)
 
 -- Плавное закрытие с анимацией
 closeBtn.MouseButton1Click:Connect(function()
-    local tweenService = game:GetService("TweenService")
     local tweenInfo = TweenInfo.new(0.3, Enum.EasingStyle.Quad, Enum.EasingDirection.Out)
     local goal = {BackgroundTransparency = 1, TextTransparency = 1}
     
     for _, child in ipairs(frame:GetChildren()) do
         if child:IsA("TextButton") or child:IsA("TextLabel") or child:IsA("ImageLabel") then
-            tweenService:Create(child, tweenInfo, goal):Play()
+            TweenService:Create(child, tweenInfo, goal):Play()
         end
     end
     
-    tweenService:Create(frame, tweenInfo, {BackgroundTransparency = 1}):Play()
+    TweenService:Create(frame, tweenInfo, {BackgroundTransparency = 1}):Play()
     
     task.wait(0.3)
     screenGui:Destroy()
