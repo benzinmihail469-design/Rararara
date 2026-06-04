@@ -1,8 +1,8 @@
--- Полностью исправленный мобильный GUI хак для Roblox
+-- Исправленный GUI хак с гарантированным отображением кнопки закрытия
 local ScreenGui = Instance.new("ScreenGui")
 local MainFrame = Instance.new("Frame")
 
-ScreenGui.Name = "ProMobileHubFixed"
+ScreenGui.Name = "ProMobileHubFixedFinal"
 ScreenGui.Parent = game.CoreGui
 
 MainFrame.Name = "MainFrame"
@@ -12,7 +12,7 @@ MainFrame.Size = UDim2.new(0, 300, 0, 350)
 MainFrame.Position = UDim2.new(0.5, -150, 0.5, -175)
 MainFrame.Active = true
 
--- Исправление ошибки линии -1 (Современный перетаскиваемый интерфейс для телефона)
+-- Скрипт перетаскивания для сенсорных экранов
 local UIS = game:GetService("UserInputService")
 local dragToggle, dragStart, startPos
 MainFrame.InputBegan:Connect(function(input)
@@ -34,16 +34,30 @@ MainFrame.InputChanged:Connect(function(input)
     end
 end)
 
--- Заголовок
+-- Заголовок панели
 local Title = Instance.new("TextLabel", MainFrame)
-Title.Size = UDim2.new(1, 0, 0, 40)
+Title.Size = UDim2.new(0.75, 0, 0, 40)
 Title.BackgroundColor3 = Color3.fromRGB(40, 40, 40)
-Title.Text = "PRO MOBILE HUB (FIXED)"
+Title.Text = "  PRO HUB"
 Title.TextColor3 = Color3.new(1, 1, 1)
 Title.Font = Enum.Font.CodeBold
-Title.TextSize = 20
+Title.TextSize = 18
+Title.TextXAlignment = Enum.TextXAlignment.Left
 
--- Исправление ошибки линии -24 (Фиксированные позиции вместо динамического подсчета)
+-- КНОПКА ЗАКРЫТИЯ (Теперь прямо в верхнем правом углу, всегда на виду)
+local Close = Instance.new("TextButton", MainFrame)
+Close.Size = UDim2.new(0.25, 0, 0, 40)
+Close.Position = UDim2.new(0.75, 0, 0, 0)
+Close.BackgroundColor3 = Color3.fromRGB(200, 50, 50)
+Close.Text = "X"
+Close.TextColor3 = Color3.new(1, 1, 1)
+Close.Font = Enum.Font.SourceSansBold
+Close.TextSize = 20
+Close.MouseButton1Click:Connect(function() 
+    ScreenGui:Destroy() 
+end)
+
+-- Функция создания переключателей
 local function CreateToggle(name, posY, callback)
     local btn = Instance.new("TextButton", MainFrame)
     btn.Size = UDim2.new(0.9, 0, 0, 40)
@@ -62,7 +76,7 @@ local function CreateToggle(name, posY, callback)
     end)
 end
 
--- Безопасное добавление кнопок с фиксированным отступом по оси Y
+-- Кнопки функций (размещены с безопасным отступом сверху)
 CreateToggle("Fly (Полет)", 60, function(s) 
     if game.Players.LocalPlayer.Character and game.Players.LocalPlayer.Character:FindFirstChild("Humanoid") then
         game.Players.LocalPlayer.Character.Humanoid.PlatformStand = s
@@ -83,16 +97,6 @@ CreateToggle("Auto-Farm (Тест)", 160, function(s)
     task.spawn(function()
         while getgenv().farming do
             task.wait(0.5)
-            -- Сюда вставляется код автоматизации
         end
     end)
 end)
-
--- Кнопка закрытия
-local Close = Instance.new("TextButton", MainFrame)
-Close.Size = UDim2.new(0.9, 0, 0, 30)
-Close.Position = UDim2.new(0.05, 0, 0.85, 0)
-Close.BackgroundColor3 = Color3.fromRGB(150, 0, 0)
-Close.Text = "Удалить GUI"
-Close.TextColor3 = Color3.new(1, 1, 1)
-Close.MouseButton1Click:Connect(function() ScreenGui:Destroy() end)
