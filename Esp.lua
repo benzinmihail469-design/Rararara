@@ -1,4 +1,4 @@
--- МАКСИМАЛЬНО ЗАЩИЩЕННАЯ ВЕРСИЯ: ИМПУЛЬСНЫЙ ПРЫЖОК С РАНДОМИЗАЦИЕЙ ТАЙМИНГОВ + СЕТЕВОЙ ОБХОД СТАМИНЫ
+-- ПОЛНОСТЬЮ ПЕРЕРАБОТАННАЯ ВЕРСИЯ: ИМПУЛЬСНЫЙ ПРЫЖОК + ИНЕРЦИОННЫЙ НАКАТ (ОБХОД СЕРВЕРНОЙ СТАТИСТИКИ)
 local Players = game:GetService("Players")
 local UIS = game:GetService("UserInputService")
 local TweenService = game:GetService("TweenService")
@@ -7,12 +7,10 @@ local RunService = game:GetService("RunService")
 local player = Players.LocalPlayer or Players.PlayerAdded:Wait()
 local playerGui = player:WaitForChild("PlayerGui")
 
--- Очистка старых версий GUI
 if playerGui:FindFirstChild("MyUltimateGui") then
     playerGui["MyUltimateGui"]:Destroy()
 end
 
--- Создаём основной ScreenGui для меню
 local screenGui = Instance.new("ScreenGui")
 screenGui.Name = "MyUltimateGui"
 screenGui.Parent = playerGui
@@ -20,7 +18,6 @@ screenGui.ResetOnSpawn = false
 screenGui.ZIndexBehavior = Enum.ZIndexBehavior.Sibling
 screenGui.DisplayOrder = 10
 
--- Главная панель (500x380)
 local frame = Instance.new("Frame")
 frame.Name = "MainFrame"
 frame.Size = UDim2.new(0, 500, 0, 380)
@@ -34,7 +31,7 @@ local frameCorner = Instance.new("UICorner")
 frameCorner.CornerRadius = UDim.new(0, 12)
 frameCorner.Parent = frame
 
--- Скрипт перетаскивания ГЛАВНОЙ панели
+-- Скрипт перетаскивания меню
 local dragToggle = false
 local dragStart = nil
 local startPos = nil
@@ -62,11 +59,10 @@ frame.InputChanged:Connect(function(input)
     end
 end)
 
--- Заголовок меню
 local titleLabel = Instance.new("TextLabel")
 titleLabel.Size = UDim2.new(0, 250, 0, 40)
 titleLabel.Position = UDim2.new(0, 15, 0, 10)
-titleLabel.Text = "PRO HUB MOBILE"
+titleLabel.Text = "PRO HUB MOBILE v2"
 titleLabel.TextSize = 22
 titleLabel.TextColor3 = Color3.new(1, 1, 1)
 titleLabel.Font = Enum.Font.SourceSansBold
@@ -74,7 +70,6 @@ titleLabel.BackgroundTransparency = 1
 titleLabel.TextXAlignment = Enum.TextXAlignment.Left
 titleLabel.Parent = frame
 
--- Кнопка закрытия (X)
 local closeBtn = Instance.new("TextButton")
 closeBtn.Size = UDim2.new(0, 40, 0, 40)
 closeBtn.Position = UDim2.new(1, -55, 0, 10)
@@ -89,9 +84,7 @@ local closeCorner = Instance.new("UICorner")
 closeCorner.CornerRadius = UDim.new(0, 8)
 closeCorner.Parent = closeBtn
 
--- ============================================================================
 -- КНОПКА 1: БЕСКОНЕЧНЫЙ ПРЫЖОК
--- ============================================================================
 local jumpBtn = Instance.new("TextButton")
 jumpBtn.Size = UDim2.new(0, 440, 0, 60)
 jumpBtn.Position = UDim2.new(0, 30, 0, 100)
@@ -107,37 +100,32 @@ local jumpCorner = Instance.new("UICorner")
 jumpCorner.CornerRadius = UDim.new(0, 8)
 jumpCorner.Parent = jumpBtn
 
--- ============================================================================
--- КНОПКА 2: БЕСКОНЕЧНАЯ СТАМИНА
--- ============================================================================
-local staminaBtn = Instance.new("TextButton")
-staminaBtn.Size = UDim2.new(0, 440, 0, 60)
-staminaBtn.Position = UDim2.new(0, 30, 0, 180)
-staminaBtn.BackgroundColor3 = Color3.new(0.3, 0.3, 0.3)
-staminaBtn.BorderSizePixel = 0
-staminaBtn.Text = "Бесконечная стамина: ВЫКЛ"
-staminaBtn.TextSize = 20
-staminaBtn.TextColor3 = Color3.new(1, 1, 1)
-staminaBtn.Font = Enum.Font.SourceSansBold
-staminaBtn.Parent = frame
+-- КНОПКА 2: ИНЕРЦИОННЫЙ НАКАТ (ВМЕСТО СТАМИНЫ)
+local glideBtn = Instance.new("TextButton")
+glideBtn.Size = UDim2.new(0, 440, 0, 60)
+glideBtn.Position = UDim2.new(0, 30, 0, 180)
+glideBtn.BackgroundColor3 = Color3.new(0.3, 0.3, 0.3)
+glideBtn.BorderSizePixel = 0
+glideBtn.Text = "Инерционный накат: ВЫКЛ"
+glideBtn.TextSize = 20
+glideBtn.TextColor3 = Color3.new(1, 1, 1)
+glideBtn.Font = Enum.Font.SourceSansBold
+glideBtn.Parent = frame
 
-local staminaCorner = Instance.new("UICorner")
-staminaCorner.CornerRadius = UDim.new(0, 8)
-staminaCorner.Parent = staminaBtn
+local glideCorner = Instance.new("UICorner")
+glideCorner.CornerRadius = UDim.new(0, 8)
+glideCorner.Parent = glideBtn
 
--- Переменные состояния
 local jumpState = false
-local staminaState = false
+local glideState = false
 local jumpButtonGui = nil
 local mobileJumpButton = nil
 local lastJump = 0
-local speedConnection = nil
-local oldNamecall = nil
-local oldIndex = nil
+local glideConnection = nil
 
--- УМНАЯ ФУНКЦИЯ ПРЫЖКА С РАНДОМИЗАЦИЕЙ
+-- Функция безопасного прыжка
 local function doSafeBypassJump()
-    local randomCooldown = math.random(18, 25) / 100
+    local randomCooldown = math.random(22, 28) / 100
     if tick() - lastJump < randomCooldown then return end
     
     pcall(function()
@@ -147,105 +135,60 @@ local function doSafeBypassJump()
         
         if rootPart and humanoid and humanoid.Health > 0 then
             lastJump = tick()
-            
             local currentVelocity = rootPart.AssemblyLinearVelocity
             rootPart.AssemblyLinearVelocity = Vector3.new(currentVelocity.X, 0, currentVelocity.Z)
             
-            local jumpPower = humanoid.JumpPower > 0 and humanoid.JumpPower or 52
+            local jumpPower = humanoid.JumpPower > 0 and humanoid.JumpPower or 50
             rootPart.AssemblyLinearVelocity = Vector3.new(rootPart.AssemblyLinearVelocity.X, jumpPower, rootPart.AssemblyLinearVelocity.Z)
-            
             humanoid:ChangeState(Enum.HumanoidStateType.Freefall)
         end
     end)
 end
 
--- ЛОГИКА СЕТЕВОГО ОБХОДА ДЛЯ СТАМИНЫ (Защита от Server-Side сброса)
-local function toggleInfiniteStamina(enable)
-    staminaState = enable
+-- АЛЬТЕРНАТИВНАЯ МЕХАНИКА: Физический накат во избежание дебаффа стамины
+local function toggleGlideBypass(enable)
+    glideState = enable
     
-    -- Блок 1: Перехват метаметодов (__namecall и __index)
-    if hookmetamethod and setreadonly then
-        if enable and not oldNamecall then
-            local mt = getrawmetatable(game)
-            setreadonly(mt, false)
-            
-            -- Перехват отправки сетевых пакетов на сервер
-            oldNamecall = hookmetamethod(game, "__namecall", function(self, ...)
-                local method = getnamecallmethod()
-                local args = {...}
-                
-                if staminaState and not checkcaller() then
-                    -- Блокировка или подмена пакетов, связанных со стаминой и спринтом
-                    if method == "FireServer" or method == "InvokeServer" then
-                        local name = tostring(self.Name):lower()
-                        if name:find("stamina") or name:find("energy") or name:find("fatigue") or name:find("sprint") then
-                            if #args > 0 and type(args[1]) == "boolean" then
-                                args[1] = false -- Сообщаем серверу, что спринт выключен (энергия не должна тратиться)
-                                return oldNamecall(self, unpack(args))
-                            end
-                            return nil -- Полностью заглушаем пакет дебаффа усталости
-                        end
-                    end
-                end
-                return oldNamecall(self, ...)
-            end)
-            
-            -- Защита от считывания WalkSpeed локальными скриптами игры
-            oldIndex = hookmetamethod(game, "__index", function(self, key)
-                if staminaState and not checkcaller() then
-                    if key == "WalkSpeed" and self:IsA("Humanoid") then
-                        return 16 -- Возвращаем стандартное значение для проверок игры
-                    end
-                end
-                return oldIndex(self, key)
-            end)
-            
-            setreadonly(mt, true)
-        end
-    end
-
-    -- Блок 2: Цикл удержания физической скорости персонажа
     if enable then
-        if speedConnection then return end
+        if glideConnection then return end
         
-        speedConnection = RunService.Heartbeat:Connect(function()
+        glideConnection = RunService.Heartbeat:Connect(function()
             pcall(function()
                 local character = player.Character
+                local rootPart = character and character:FindFirstChild("HumanoidRootPart")
                 local humanoid = character and character:FindFirstChildOfClass("Humanoid")
                 
-                if humanoid then
-                    -- Если сервер или локальный скрипт принудительно занижают скорость
-                    if humanoid.WalkSpeed < 16 then
-                        humanoid.WalkSpeed = 16
-                    end
+                if rootPart and humanoid and humanoid.MoveDirection.Magnitude > 0 then
+                    -- Если персонаж идет, но сервер занижает скорость (из-за 0 стамины)
+                    -- Мы не меняем WalkSpeed, мы добавляем микро-импульс к вектору движения
+                    local direction = humanoid.MoveDirection
+                    local currentVelocity = rootPart.AssemblyLinearVelocity
                     
-                    -- Сброс состояния падения/усталости
-                    if humanoid:GetState() == Enum.HumanoidStateType.PlatformStanding then
-                        humanoid:ChangeState(Enum.HumanoidStateType.Running)
-                    end
-                end
-                
-                -- Локальное заполнение полоски (визуальный эффект для UI)
-                local sources = {character, player, character:FindFirstChild("Stats"), player:FindFirstChild("leaderstats")}
-                for _, src in ipairs(sources) do
-                    if src then
-                        local stamObj = src:FindFirstChild("Stamina") or src:FindFirstChild("Energy") or src:FindFirstChild("StaminaValue")
-                        if stamObj and (stamObj:IsA("NumberValue") or stamObj:IsA("IntValue")) then
-                            stamObj.Value = 100 
-                        end
+                    -- Проверяем текущую горизонтальную скорость
+                    local horizontalVelocity = Vector3.new(currentVelocity.X, 0, currentVelocity.Z)
+                    
+                    -- Если скорость ниже нормального бега (меньше 14)
+                    if horizontalVelocity.Magnitude < 15 then
+                        -- Добавляем легитимное ускорение по вектору направления движения
+                        local pushForce = direction * 2.5
+                        rootPart.AssemblyLinearVelocity = Vector3.new(
+                            currentVelocity.X + pushForce.X,
+                            currentVelocity.Y,
+                            currentVelocity.Z + pushForce.Z
+                        )
                     end
                 end
             end)
         end)
     else
-        if speedConnection then
-            speedConnection:Disconnect()
-            speedConnection = nil
+        if glideConnection then
+            glideConnection:Disconnect()
+            glideConnection = nil
         end
     end
 end
 
--- Функция создания перетаскиваемой кнопки прыжка
+-- Кнопка прыжка для мобильных устройств
 local function toggleMobileJumpButton(enable)
     if enable then
         if jumpButtonGui then return end
@@ -313,7 +256,6 @@ local function toggleMobileJumpButton(enable)
     end
 end
 
--- Обновление состояний кнопок в меню
 local function updateJumpButton()
     if jumpState then
         jumpBtn.Text = "Бесконечный прыжок: ВКЛ"
@@ -328,15 +270,15 @@ local function updateJumpButton()
     end
 end
 
-local function updateStaminaButton()
-    if staminaState then
-        staminaBtn.Text = "Бесконечная стамина: ВКЛ"
-        staminaBtn.BackgroundColor3 = Color3.new(0.2, 0.6, 0.2)
-        toggleInfiniteStamina(true)
+local function updateGlideButton()
+    if glideState then
+        glideBtn.Text = "Инерционный накат: ВКЛ"
+        glideBtn.BackgroundColor3 = Color3.new(0.2, 0.6, 0.2)
+        toggleGlideBypass(true)
     else
-        staminaBtn.Text = "Бесконечная стамина: ВЫКЛ"
-        staminaBtn.BackgroundColor3 = Color3.new(0.3, 0.3, 0.3)
-        toggleInfiniteStamina(false)
+        glideBtn.Text = "Инерционный накат: ВЫКЛ"
+        glideBtn.BackgroundColor3 = Color3.new(0.3, 0.3, 0.3)
+        toggleGlideBypass(false)
     end
 end
 
@@ -347,14 +289,13 @@ jumpBtn.MouseButton1Click:Connect(function()
     end)
 end)
 
-staminaBtn.MouseButton1Click:Connect(function()
+glideBtn.MouseButton1Click:Connect(function()
     pcall(function()
-        staminaState = not staminaState
-        updateStaminaButton()
+        glideState = not glideState
+        updateGlideButton()
     end)
 end)
 
--- Управление ПК
 UIS.InputBegan:Connect(function(input, gameProcessed)
     if gameProcessed then return end
     if input.KeyCode == Enum.KeyCode.Space and jumpState then
@@ -362,10 +303,9 @@ UIS.InputBegan:Connect(function(input, gameProcessed)
     end
 end)
 
--- Плавное закрытие
 closeBtn.MouseButton1Click:Connect(function()
     toggleMobileJumpButton(false)
-    toggleInfiniteStamina(false)
+    toggleGlideBypass(false)
     
     local tweenInfo = TweenInfo.new(0.3, Enum.EasingStyle.Quad, Enum.EasingDirection.Out)
     local goal = {BackgroundTransparency = 1, TextTransparency = 1}
@@ -385,4 +325,4 @@ closeBtn.MouseButton1Click:Connect(function()
 end)
 
 updateJumpButton()
-updateStaminaButton()
+updateGlideButton()
