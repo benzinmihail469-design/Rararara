@@ -2,6 +2,7 @@
 local Players = game:GetService("Players")
 local UIS = game:GetService("UserInputService")
 local TweenService = game:GetService("TweenService")
+local Workspace = game:GetService("Workspace")
 
 -- Ожидание полной загрузки игрока
 local player = Players.LocalPlayer
@@ -150,13 +151,13 @@ UIS.JumpRequest:Connect(function()
     end
 end)
 
--- Метод 2: для мобильных устройств (отслеживание кнопки прыжка)
+-- Метод 2: для мобильных устройств (ИСПРАВЛЕНО - убран ViewSizeY)
 local function onInputBegan(input, gameProcessed)
     if gameProcessed then return end
     
-    -- Проверка нажатия на кнопку прыжка (обычно Action-2 или Action-3)
-    if input.KeyCode == Enum.KeyCode.Space or 
-       input.UserInputType == Enum.UserInputType.Touch and input.Position.Y > UIS.ViewSizeY.Offset * 0.7 then
+    -- ПРОВЕРКА НАЖАТИЯ ПРЫЖКА ДЛЯ МОБИЛЬНЫХ УСТРОЙСТВ
+    -- Просто проверяем клавишу Space или любой тач (упрощённая версия без ошибок)
+    if input.KeyCode == Enum.KeyCode.Space then
         if jumpState then
             local character = player.Character
             local humanoid = character and character:FindFirstChildOfClass("Humanoid")
@@ -164,6 +165,27 @@ local function onInputBegan(input, gameProcessed)
                 task.spawn(function()
                     humanoid:ChangeState(Enum.HumanoidStateType.Jumping)
                 end)
+            end
+        end
+    end
+    
+    -- Для мобильных: определяем нажатие на экран в нижней части (примерно там кнопка прыжка)
+    -- НЕ ИСПОЛЬЗУЕМ ViewSizeY, используем ViewportSize из camera
+    if input.UserInputType == Enum.UserInputType.Touch then
+        local camera = Workspace.CurrentCamera
+        if camera then
+            local screenHeight = camera.ViewportSize.Y
+            -- Если нажали в нижней трети экрана (вероятно кнопка прыжка)
+            if input.Position.Y > screenHeight * 0.7 then
+                if jumpState then
+                    local character = player.Character
+                    local humanoid = character and character:FindFirstChildOfClass("Humanoid")
+                    if humanoid and humanoid.Health > 0 then
+                        task.spawn(function()
+                            humanoid:ChangeState(Enum.HumanoidStateType.Jumping)
+                        end)
+                    end
+                end
             end
         end
     end
