@@ -3,12 +3,19 @@ local Players = game:GetService("Players")
 local UIS = game:GetService("UserInputService")
 local TweenService = game:GetService("TweenService")
 
-local player = Players.LocalPlayer or Players.PlayerAdded:Wait()
+-- Ожидание полной загрузки игрока
+local player = Players.LocalPlayer
+if not player then
+    Players.PlayerAdded:Wait()
+    player = Players.LocalPlayer
+end
+
 local playerGui = player:WaitForChild("PlayerGui")
 
 -- Очистка старых версий GUI
-if playerGui:FindFirstChild("MyUltimateGui") then
-    playerGui["MyUltimateGui"]:Destroy()
+local existingGui = playerGui:FindFirstChild("MyUltimateGui")
+if existingGui then
+    existingGui:Destroy()
 end
 
 -- Создаём GUI
@@ -21,9 +28,10 @@ screenGui.ZIndexBehavior = Enum.ZIndexBehavior.Sibling
 -- Главная панель (Скругленная)
 local frame = Instance.new("Frame")
 frame.Name = "MainFrame"
-frame.Size = UDim2.new(0, 500, 0, 300)
+frame.Size = UDim2.new(0, 400, 0, 180)
 frame.Position = UDim2.new(0.5, -200, 0.5, -90)
 frame.BackgroundColor3 = Color3.new(0.2, 0.2, 0.2)
+frame.BackgroundTransparency = 0
 frame.BorderSizePixel = 0
 frame.Active = true
 frame.Parent = screenGui
@@ -33,25 +41,37 @@ local frameCorner = Instance.new("UICorner")
 frameCorner.CornerRadius = UDim.new(0, 12)
 frameCorner.Parent = frame
 
--- Скрипт перетаскивания панели пальцем (Drag)
-local dragToggle, dragStart, startPos
+-- Скрипт перетаскивания панели (исправлен для мобильных устройств)
+local dragToggle = false
+local dragStart = nil
+local startPos = nil
+
 frame.InputBegan:Connect(function(input)
     if input.UserInputType == Enum.UserInputType.MouseButton1 or input.UserInputType == Enum.UserInputType.Touch then
         dragToggle = true
         dragStart = input.Position
         startPos = frame.Position
-        input.Changed:Connect(function()
-            if input.UserInputState == Enum.UserInputState.End then dragToggle = false end
+        
+        -- Отслеживание окончания перетаскивания
+        local conn
+        conn = input.Changed:Connect(function()
+            if input.UserInputState == Enum.UserInputState.End then
+                dragToggle = false
+                conn:Disconnect()
+            end
         end)
     end
 end)
 
 frame.InputChanged:Connect(function(input)
-    if input.UserInputType == Enum.UserInputType.MouseMovement or input.UserInputType == Enum.UserInputType.Touch then
-        if dragToggle then
-            local delta = input.Position - dragStart
-            frame.Position = UDim2.new(startPos.X.Scale, startPos.X.Offset + delta.X, startPos.Y.Scale, startPos.Y.Offset + delta.Y)
-        end
+    if (input.UserInputType == Enum.UserInputType.MouseMovement or input.UserInputType == Enum.UserInputType.Touch) and dragToggle and dragStart and startPos then
+        local delta = input.Position - dragStart
+        frame.Position = UDim2.new(
+            startPos.X.Scale, 
+            startPos.X.Offset + delta.X, 
+            startPos.Y.Scale, 
+            startPos.Y.Offset + delta.Y
+        )
     end
 end)
 
@@ -62,7 +82,7 @@ titleLabel.Position = UDim2.new(0, 15, 0, 5)
 titleLabel.Text = "PRO HUB MOBILE"
 titleLabel.TextSize = 20
 titleLabel.TextColor3 = Color3.new(1, 1, 1)
-titleLabel.Font = Enum.Font.SourceSans
+titleLabel.Font = Enum.Font.SourceSansBold
 titleLabel.BackgroundTransparency = 1
 titleLabel.TextXAlignment = Enum.TextXAlignment.Left
 titleLabel.Parent = frame
@@ -82,13 +102,14 @@ local closeCorner = Instance.new("UICorner")
 closeCorner.CornerRadius = UDim.new(0, 8)
 closeCorner.Parent = closeBtn
 
--- Единственная оставшаяся кнопка: Бесконечный прыжок
+-- Кнопка: Бесконечный прыжок
 local jumpBtn = Instance.new("TextButton")
 jumpBtn.Size = UDim2.new(0, 360, 0, 50)
 jumpBtn.Position = UDim2.new(0, 20, 0, 80)
 jumpBtn.BackgroundColor3 = Color3.new(0.3, 0.3, 0.3)
+jumpBtn.BackgroundTransparency = 0
 jumpBtn.BorderSizePixel = 0
-jumpBtn.Text = "Infinite Jump (Бесконечный прыжок)"
+jumpBtn.Text = "Бесконечный прыжок: ВЫКЛ"
 jumpBtn.TextSize = 18
 jumpBtn.TextColor3 = Color3.new(1, 1, 1)
 jumpBtn.Font = Enum.Font.SourceSans
@@ -98,32 +119,86 @@ local jumpCorner = Instance.new("UICorner")
 jumpCorner.CornerRadius = UDim.new(0, 8)
 jumpCorner.Parent = jumpBtn
 
+-- Состояние бесконечного прыжка
 local jumpState = false
+
+-- Обновление текста и цвета кнопки
+local function updateJumpButton()
+    if jumpState then
+        jumpBtn.Text = "Бесконечный прыжок: ВКЛ"
+        jumpBtn.BackgroundColor3 = Color3.new(0.2, 0.6, 0.2)
+    else
+        jumpBtn.Text = "Бесконечный прыжок: ВЫКЛ"
+        jumpBtn.BackgroundColor3 = Color3.new(0.3, 0.3, 0.3)
+    end
+end
+
 jumpBtn.MouseButton1Click:Connect(function()
     jumpState = not jumpState
-    jumpBtn.BackgroundColor3 = jumpState and Color3.new(0.2, 0.6, 0.2) or Color3.new(0.3, 0.3, 0.3)
+    updateJumpButton()
 end)
 
--- Исправленная обработка прыжка (Область видимости переменных исправлена)
+-- ИСПРАВЛЕННАЯ обработка прыжка (работает на всех устройствах)
+-- Метод 1: через JumpRequest (ПК)
 UIS.JumpRequest:Connect(function()
-    if jumpState and player.Character and player.Character:FindFirstChildOfClass("Humanoid") then 
-        player.Character:FindFirstChildOfClass("Humanoid"):ChangeState("Jumping") 
+    if jumpState then
+        local character = player.Character
+        local humanoid = character and character:FindFirstChildOfClass("Humanoid")
+        if humanoid and humanoid.Health > 0 then
+            humanoid:ChangeState(Enum.HumanoidStateType.Jumping)
+        end
     end
+end)
+
+-- Метод 2: для мобильных устройств (отслеживание кнопки прыжка)
+local function onInputBegan(input, gameProcessed)
+    if gameProcessed then return end
+    
+    -- Проверка нажатия на кнопку прыжка (обычно Action-2 или Action-3)
+    if input.KeyCode == Enum.KeyCode.Space or 
+       input.UserInputType == Enum.UserInputType.Touch and input.Position.Y > UIS.ViewSizeY.Offset * 0.7 then
+        if jumpState then
+            local character = player.Character
+            local humanoid = character and character:FindFirstChildOfClass("Humanoid")
+            if humanoid and humanoid.Health > 0 then
+                task.spawn(function()
+                    humanoid:ChangeState(Enum.HumanoidStateType.Jumping)
+                end)
+            end
+        end
+    end
+end
+
+UIS.InputBegan:Connect(onInputBegan)
+
+-- Слежение за сменой персонажа (чтобы избежать ошибок при смерти)
+player.CharacterAdded:Connect(function(character)
+    -- Персонаж обновлён, ничего дополнительно не требуется
+    -- Humanoid будет найден при следующем прыжке
 end)
 
 -- Плавное закрытие с анимацией
 closeBtn.MouseButton1Click:Connect(function()
     local tweenInfo = TweenInfo.new(0.3, Enum.EasingStyle.Quad, Enum.EasingDirection.Out)
-    local goal = {BackgroundTransparency = 1, TextTransparency = 1}
     
+    -- Анимация для всех дочерних элементов
     for _, child in ipairs(frame:GetChildren()) do
-        if child:IsA("TextButton") or child:IsA("TextLabel") or child:IsA("ImageLabel") then
+        if child:IsA("TextButton") or child:IsA("TextLabel") then
+            local goal = {BackgroundTransparency = 1, TextTransparency = 1}
             TweenService:Create(child, tweenInfo, goal):Play()
         end
     end
     
-    TweenService:Create(frame, tweenInfo, {BackgroundTransparency = 1}):Play()
+    -- Анимация для главного фрейма
+    local frameGoal = {BackgroundTransparency = 1}
+    TweenService:Create(frame, tweenInfo, frameGoal):Play()
     
-    task.wait(0.3)
-    screenGui:Destroy()
+    -- Ожидание завершения анимации и удаление GUI
+    task.wait(0.35)
+    if screenGui and screenGui.Parent then
+        screenGui:Destroy()
+    end
 end)
+
+-- Инициализация внешнего вида кнопки
+updateJumpButton()
