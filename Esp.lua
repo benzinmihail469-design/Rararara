@@ -1,4 +1,4 @@
--- ОБНОВЛЕННЫЙ GUI: РАЗМЕР 500х300, СКРУГЛЕНИЕ И МОБИЛЬНАЯ КНОПКА ПРЫЖКА
+-- ФИНАЛЬНЫЙ СКРИПТ: РАЗМЕР 500х300, СКРУГЛЕНИЕ, ПЕРЕТАСКИВАЕМАЯ КНОПКА ПРЫЖКА ПОВЕРХ ВСЕГО
 local Players = game:GetService("Players")
 local UIS = game:GetService("UserInputService")
 local TweenService = game:GetService("TweenService")
@@ -11,14 +11,15 @@ if playerGui:FindFirstChild("MyUltimateGui") then
     playerGui["MyUltimateGui"]:Destroy()
 end
 
--- Создаём основной ScreenGui
+-- Создаём основной ScreenGui для меню
 local screenGui = Instance.new("ScreenGui")
 screenGui.Name = "MyUltimateGui"
 screenGui.Parent = playerGui
 screenGui.ResetOnSpawn = false
 screenGui.ZIndexBehavior = Enum.ZIndexBehavior.Sibling
+screenGui.DisplayOrder = 10 -- Высокий приоритет отображения меню
 
--- Главная панель (Размер изменен на 500x300)
+-- Главная панель (500x300)
 local frame = Instance.new("Frame")
 frame.Name = "MainFrame"
 frame.Size = UDim2.new(0, 500, 0, 300)
@@ -33,7 +34,7 @@ local frameCorner = Instance.new("UICorner")
 frameCorner.CornerRadius = UDim.new(0, 12)
 frameCorner.Parent = frame
 
--- Скрипт перетаскивания панели пальцем/мышкой
+-- Скрипт перетаскивания ГЛАВНОЙ панели
 local dragToggle = false
 local dragStart = nil
 local startPos = nil
@@ -73,7 +74,7 @@ titleLabel.BackgroundTransparency = 1
 titleLabel.TextXAlignment = Enum.TextXAlignment.Left
 titleLabel.Parent = frame
 
--- Кнопка закрытия (X) со скруглением
+-- Кнопка закрытия (X)
 local closeBtn = Instance.new("TextButton")
 closeBtn.Size = UDim2.new(0, 40, 0, 40)
 closeBtn.Position = UDim2.new(1, -55, 0, 10)
@@ -88,10 +89,10 @@ local closeCorner = Instance.new("UICorner")
 closeCorner.CornerRadius = UDim.new(0, 8)
 closeCorner.Parent = closeBtn
 
--- Кнопка-переключатель функции Infinite Jump в меню
+-- Кнопка-переключатель Infinite Jump в меню
 local jumpBtn = Instance.new("TextButton")
 jumpBtn.Size = UDim2.new(0, 440, 0, 60)
-jumpBtn.Position = UDim2.new(0, 30, 0, 120) -- Размещена красиво по центру экрана 500x300
+jumpBtn.Position = UDim2.new(0, 30, 0, 120)
 jumpBtn.BackgroundColor3 = Color3.new(0.3, 0.3, 0.3)
 jumpBtn.BorderSizePixel = 0
 jumpBtn.Text = "Бесконечный прыжок: ВЫКЛ"
@@ -104,11 +105,12 @@ local jumpCorner = Instance.new("UICorner")
 jumpCorner.CornerRadius = UDim.new(0, 8)
 jumpCorner.Parent = jumpBtn
 
--- Глобальные переменные состояния и кнопки прыжка
+-- Переменные состояния и отдельного ScreenGui для кнопки прыжка
 local jumpState = false
+local jumpButtonGui = nil
 local mobileJumpButton = nil
 
--- Функция самого прыжка (Инфинити логика)
+-- Функция прыжка
 local function doInfiniteJump()
     local character = player.Character
     local humanoid = character and character:FindFirstChildOfClass("Humanoid")
@@ -117,59 +119,92 @@ local function doInfiniteJump()
     end
 end
 
--- Функция создания/удаления мобильной GUI-кнопки прыжка
+-- Функция создания перетаскиваемой кнопки прыжка поверх всех
 local function toggleMobileJumpButton(enable)
     if enable then
-        -- Если кнопка уже создана, не дублируем
-        if mobileJumpButton then return end
+        if jumpButtonGui then return end
         
-        -- Создаем круглую кнопку прыжка для телефона
+        -- Создаем ОТДЕЛЬНЫЙ ScreenGui с максимальным DisplayOrder, чтобы кнопка была ПОВЕРХ ВСЕХ других GUI в игре
+        jumpButtonGui = Instance.new("ScreenGui")
+        jumpButtonGui.Name = "InfJumpButtonGui"
+        jumpButtonGui.Parent = playerGui
+        jumpButtonGui.ResetOnSpawn = false
+        jumpButtonGui.DisplayOrder = 999999 -- Абсолютный приоритет поверх всего интерфейса игры
+        
+        -- Создаем круглую кнопку прыжка
         mobileJumpButton = Instance.new("TextButton")
         mobileJumpButton.Name = "MobileInfJumpButton"
-        mobileJumpButton.Parent = screenGui
-        -- Позиционируем в правой нижней части экрана, чуть выше стандартного прыжка
+        mobileJumpButton.Parent = jumpButtonGui
         mobileJumpButton.Size = UDim2.new(0, 70, 0, 70)
-        mobileJumpButton.Position = UDim2.new(0.85, -35, 0.7, -35)
-        mobileJumpButton.BackgroundColor3 = Color3.fromRGB(0, 122, 255) -- Синяя, заметная кнопка
+        mobileJumpButton.Position = UDim2.new(0.85, -35, 0.7, -35) -- Стартовая позиция справа внизу
+        mobileJumpButton.BackgroundColor3 = Color3.fromRGB(0, 122, 255)
         mobileJumpButton.Text = "JUMP"
         mobileJumpButton.TextSize = 18
         mobileJumpButton.TextColor3 = Color3.new(1, 1, 1)
         mobileJumpButton.Font = Enum.Font.SourceSansBold
         mobileJumpButton.ZIndex = 10
         
-        -- Закругляем полностью (делаем круг)
         local circleCorner = Instance.new("UICorner")
         circleCorner.CornerRadius = UDim.new(1, 0)
         circleCorner.Parent = mobileJumpButton
         
-        -- Обработка нажатия на мобильную кнопку
+        -- СКРИПТ ПЕРЕТАСКИВАНИЯ (DRAG) ДЛЯ МОБИЛЬНОЙ КНОПКИ ПРЫЖКА
+        local bDragToggle = false
+        local bDragStart = nil
+        local bStartPos = nil
+        
+        mobileJumpButton.InputBegan:Connect(function(input)
+            if input.UserInputType == Enum.UserInputType.MouseButton1 or input.UserInputType == Enum.UserInputType.Touch then
+                bDragToggle = true
+                bDragStart = input.Position
+                bStartPos = mobileJumpButton.Position
+                
+                local conn
+                conn = input.Changed:Connect(function()
+                    if input.UserInputState == Enum.UserInputState.End then
+                        bDragToggle = false
+                        conn:Disconnect()
+                    end
+                end)
+            end
+        end)
+        
+        mobileJumpButton.InputChanged:Connect(function(input)
+            if (input.UserInputType == Enum.UserInputType.MouseMovement or input.UserInputType == Enum.UserInputType.Touch) and bDragToggle and bDragStart and bStartPos then
+                local delta = input.Position - bDragStart
+                mobileJumpButton.Position = UDim2.new(bStartPos.X.Scale, bStartPos.X.Offset + delta.X, bStartPos.Y.Scale, bStartPos.Y.Offset + delta.Y)
+            end
+        end)
+        
+        -- Обработка нажатия на кнопку (выполняет прыжок)
         mobileJumpButton.MouseButton1Click:Connect(function()
             if jumpState then
                 doInfiniteJump()
             end
         end)
     else
-        -- Удаляем кнопку, если функцию выключили
-        if mobileJumpButton then
-            mobileJumpButton:Destroy()
+        -- Удаляем GUI с кнопкой при выключении
+        if jumpButtonGui then
+            jumpButtonGui:Destroy()
+            jumpButtonGui = nil
             mobileJumpButton = nil
         end
     end
 end
 
--- Обновление интерфейса при переключении
+-- Обновление кнопки в меню
 local function updateJumpButton()
     if jumpState then
         jumpBtn.Text = "Бесконечный прыжок: ВКЛ"
         jumpBtn.BackgroundColor3 = Color3.new(0.2, 0.6, 0.2)
-        -- Если это мобильное устройство или включен Touch, создаем кнопку
+        -- Включаем кнопку для мобильных
         if UIS.TouchEnabled then
             toggleMobileJumpButton(true)
         end
     else
         jumpBtn.Text = "Бесконечный прыжок: ВЫКЛ"
         jumpBtn.BackgroundColor3 = Color3.new(0.3, 0.3, 0.3)
-        toggleMobileJumpButton(false) -- Удаляем кнопку
+        toggleMobileJumpButton(false)
     end
 end
 
@@ -178,7 +213,7 @@ jumpBtn.MouseButton1Click:Connect(function()
     updateJumpButton()
 end)
 
--- Обработка прыжка для ПК (Кнопка Space/Пробел)
+-- Прыжок для ПК (Пробел)
 UIS.InputBegan:Connect(function(input, gameProcessed)
     if gameProcessed then return end
     if input.KeyCode == Enum.KeyCode.Space and jumpState then
@@ -186,9 +221,9 @@ UIS.InputBegan:Connect(function(input, gameProcessed)
     end
 end)
 
--- Плавное закрытие всего GUI с анимацией растворения
+-- Плавное закрытие основного меню
 closeBtn.MouseButton1Click:Connect(function()
-    toggleMobileJumpButton(false) -- Сразу убираем мобильную кнопку прыжка, если она была
+    toggleMobileJumpButton(false) -- Сразу сносим мобильную кнопку прыжка
     
     local tweenInfo = TweenInfo.new(0.3, Enum.EasingStyle.Quad, Enum.EasingDirection.Out)
     local goal = {BackgroundTransparency = 1, TextTransparency = 1}
@@ -207,5 +242,5 @@ closeBtn.MouseButton1Click:Connect(function()
     end
 end)
 
--- Первоначальная настройка
+-- Старт настройки
 updateJumpButton()
