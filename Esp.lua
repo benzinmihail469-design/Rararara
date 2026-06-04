@@ -1,18 +1,25 @@
--- Исправленный GUI хак с гарантированным отображением кнопки закрытия
+-- Полностью рабочий мобильный GUI с исправлением отображения элементов
+local player = game:GetService("Players").LocalPlayer
+local playerGui = player:WaitForChild("PlayerGui")
+
+-- Создаем ScreenGui в доступном для мобилок PlayerGui
 local ScreenGui = Instance.new("ScreenGui")
+ScreenGui.Name = "ProMobileHubUltimate"
+ScreenGui.Parent = playerGui
+ScreenGui.ResetOnSpawn = false
+ScreenGui.ZIndexBehavior = Enum.ZIndexBehavior.Sibling
+
+-- Главная панель
 local MainFrame = Instance.new("Frame")
-
-ScreenGui.Name = "ProMobileHubFixedFinal"
-ScreenGui.Parent = game.CoreGui
-
 MainFrame.Name = "MainFrame"
 MainFrame.Parent = ScreenGui
 MainFrame.BackgroundColor3 = Color3.fromRGB(20, 20, 20)
-MainFrame.Size = UDim2.new(0, 300, 0, 350)
-MainFrame.Position = UDim2.new(0.5, -150, 0.5, -175)
+MainFrame.Size = UDim2.new(0, 280, 0, 300)
+MainFrame.Position = UDim2.new(0.5, -140, 0.5, -150)
 MainFrame.Active = true
+MainFrame.ZIndex = 1
 
--- Скрипт перетаскивания для сенсорных экранов
+-- Скрипт перетаскивания (Drag) для мобильного экрана
 local UIS = game:GetService("UserInputService")
 local dragToggle, dragStart, startPos
 MainFrame.InputBegan:Connect(function(input)
@@ -34,7 +41,7 @@ MainFrame.InputChanged:Connect(function(input)
     end
 end)
 
--- Заголовок панели
+-- Черный заголовок панели
 local Title = Instance.new("TextLabel", MainFrame)
 Title.Size = UDim2.new(0.75, 0, 0, 40)
 Title.BackgroundColor3 = Color3.fromRGB(40, 40, 40)
@@ -43,21 +50,26 @@ Title.TextColor3 = Color3.new(1, 1, 1)
 Title.Font = Enum.Font.CodeBold
 Title.TextSize = 18
 Title.TextXAlignment = Enum.TextXAlignment.Left
+Title.ZIndex = 2
 
--- КНОПКА ЗАКРЫТИЯ (Теперь прямо в верхнем правом углу, всегда на виду)
+-- КНОПКА ЗАКРЫТИЯ (Принудительный ZIndex = 5, чтобы была поверх всего)
 local Close = Instance.new("TextButton", MainFrame)
+Close.Name = "CloseButton"
 Close.Size = UDim2.new(0.25, 0, 0, 40)
 Close.Position = UDim2.new(0.75, 0, 0, 0)
 Close.BackgroundColor3 = Color3.fromRGB(200, 50, 50)
 Close.Text = "X"
 Close.TextColor3 = Color3.new(1, 1, 1)
 Close.Font = Enum.Font.SourceSansBold
-Close.TextSize = 20
+Close.TextSize = 22
+Close.ZIndex = 5
+Close.Visible = true
+
 Close.MouseButton1Click:Connect(function() 
     ScreenGui:Destroy() 
 end)
 
--- Функция создания переключателей
+-- Функция создания кнопок читов (С высоким приоритетом отображения)
 local function CreateToggle(name, posY, callback)
     local btn = Instance.new("TextButton", MainFrame)
     btn.Size = UDim2.new(0.9, 0, 0, 40)
@@ -65,8 +77,9 @@ local function CreateToggle(name, posY, callback)
     btn.BackgroundColor3 = Color3.fromRGB(60, 60, 60)
     btn.Text = name
     btn.TextColor3 = Color3.new(1, 1, 1)
-    btn.Font = Enum.Font.SourceSans
+    btn.Font = Enum.Font.SourceSansBold
     btn.TextSize = 16
+    btn.ZIndex = 3
     
     local state = false
     btn.MouseButton1Click:Connect(function()
@@ -76,23 +89,23 @@ local function CreateToggle(name, posY, callback)
     end)
 end
 
--- Кнопки функций (размещены с безопасным отступом сверху)
+-- Отрисовка кнопок функций поверх фона
 CreateToggle("Fly (Полет)", 60, function(s) 
-    if game.Players.LocalPlayer.Character and game.Players.LocalPlayer.Character:FindFirstChild("Humanoid") then
-        game.Players.LocalPlayer.Character.Humanoid.PlatformStand = s
+    if player.Character and player.Character:FindFirstChild("Humanoid") then
+        player.Character.Humanoid.PlatformStand = s
     end
 end)
 
-CreateToggle("Infinite Jump", 110, function(s)
+CreateToggle("Infinite Jump", 115, function(s)
     getgenv().InfJump = s
-    game:GetService("UserInputService").JumpRequest:Connect(function()
-        if getgenv().InfJump and game.Players.LocalPlayer.Character and game.Players.LocalPlayer.Character:FindFirstChildOfClass("Humanoid") then 
-            game.Players.LocalPlayer.Character:FindFirstChildOfClass("Humanoid"):ChangeState("Jumping") 
+    UIS.JumpRequest:Connect(function()
+        if getgenv().InfJump and player.Character and player.Character:FindFirstChildOfClass("Humanoid") then 
+            player.Character:FindFirstChildOfClass("Humanoid"):ChangeState("Jumping") 
         end
     end)
 end)
 
-CreateToggle("Auto-Farm (Тест)", 160, function(s)
+CreateToggle("Auto-Farm", 170, function(s)
     getgenv().farming = s
     task.spawn(function()
         while getgenv().farming do
