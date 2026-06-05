@@ -1,45 +1,50 @@
--- Скопируйте этот код и вставьте его в ваш эксплойт для Roblox
+-- [[ Kick A Lucky Block: Auto Perfect + Smooth Tween Magnet ]] --
+local Players = game:GetService("Players")
+local Workspace = game:GetService("Workspace")
+local TweenService = game:GetService("TweenService")
+local LocalPlayer = Players.LocalPlayer
 
-local Library = loadstring(game:HttpGet("https://githubusercontent.com"))()
+getgenv().AutoFarm = true
+getgenv().Magnet = true
 
-local Window = Library.CreateLib("Kick a Lucky Block | Hub", "Sentinel")
+-- 1. АВТО-УДАР (Perfect)
+task.spawn(function()
+    while getgenv().AutoFarm do
+        task.wait(0.1)
+        local remote = game:GetService("ReplicatedStorage"):FindFirstChild("KickEvent") or 
+                       game:GetService("ReplicatedStorage"):FindFirstChild("HitRemote")
+        if remote then
+            remote:FireServer("Kick", "Perfect") -- Попытка идеального удара
+        end
+    end
+end)
 
-local Tab = Window:NewTab("Автофарм")
-
-Tab:NewToggle("Авто-сбор (Auto Claim)", "Автоматически собирает награды", function(state)
-    getgenv().autoClaim = state
-    while getgenv().autoClaim do
-        -- Основной цикл сбора блоков и наград
-        for _, v in pairs(game:GetService("Workspace").LuckyBlocks:GetDescendants()) do
-            if v:IsA("ClickDetector") and getgenv().autoClaim then
-                fireclickdetector(v)
+-- 2. ПЛАВНЫЙ МАГНИТ (Скорость 150)
+task.spawn(function()
+    while getgenv().Magnet do
+        task.wait(0.2) -- Интервал сканирования предметов
+        local character = LocalPlayer.Character
+        if character and character:FindFirstChild("HumanoidRootPart") then
+            local hrp = character.HumanoidRootPart
+            
+            for _, obj in ipairs(Workspace:GetChildren()) do
+                -- Условие: ищем предмет (замени "Brainrot" на точное имя из игры, если другое)
+                if obj:IsA("BasePart") and (obj.Name:lower():find("brainrot") or obj.Name:lower():find("drop")) then
+                    
+                    -- Вычисляем время пути: Distance / Speed
+                    local distance = (hrp.Position - obj.Position).Magnitude
+                    local speed = 150
+                    local timeToTravel = distance / speed
+                    
+                    -- Создаем плавную анимацию (Tween)
+                    local tweenInfo = TweenInfo.new(timeToTravel, Enum.EasingStyle.Linear)
+                    local tween = TweenService:Create(obj, tweenInfo, {CFrame = hrp.CFrame})
+                    
+                    tween:Play()
+                end
             end
         end
-        task.wait(0.5)
     end
 end)
 
-Tab:NewToggle("Идеальный удар (Perfect Kick)", "Автоматически бьет с максимальной силой", function(state)
-    getgenv().perfectKick = state
-    while getgenv().perfectKick do
-        -- Логика идеального тайминга для шкалы удара
-        local args = {
-            [1] = "Perfect"
-        }
-        game:GetService("ReplicatedStorage").Remotes.KickBlock:FireServer(unpack(args))
-        task.wait(0.1)
-    end
-end)
-
-local MiscTab = Window:NewTab("Дополнительно")
-
-MiscTab:NewToggle("Режим Бога (Godmode)", "Защита от урона", function(state)
-    local player = game.Players.LocalPlayer
-    if state then
-        player.Character.Humanoid.MaxHealth = math.huge
-        player.Character.Humanoid.Health = math.huge
-    else
-        player.Character.Humanoid.MaxHealth = 100
-        player.Character.Humanoid.Health = 100
-    end
-end)
+print("[Script]: Плавный магнит (150 speed) и Perfect Kick активированы!")
