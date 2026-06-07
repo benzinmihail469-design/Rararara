@@ -1,13 +1,24 @@
-local TweenService = game:GetService("TweenService")
-local Players = game:GetService("Players")
-local UserInputService = game:GetService("UserInputService")
-local LocalPlayer = Players.LocalPlayer
-local PlayerGui = LocalPlayer:WaitForChild("PlayerGui")
+-- Защита от раннего запуска: ждем, пока игра полностью прогрузится
+if not game:IsLoaded() then 
+    game.Loaded:Wait() 
+end
 
+-- Безопасное получение сервисов
+local TweenService = game:GetService("TweenService")
+local UserInputService = game:GetService("UserInputService")
+local Players = game:GetService("Players")
+
+local LocalPlayer = Players.LocalPlayer or Players.PlayerAdded:Wait()
+local PlayerGui = LocalPlayer:WaitForChild("PlayerGui", 10)
+
+if not PlayerGui then return end
+
+-- Удаление старой копии GUI
 if PlayerGui:FindFirstChild("ModernMenuGui") then
     PlayerGui.ModernMenuGui:Destroy()
 end
 
+-- СОЗДАНИЕ ИНТЕРФЕЙСА
 local ScreenGui = Instance.new("ScreenGui")
 ScreenGui.Name = "ModernMenuGui"
 ScreenGui.ResetOnSpawn = false
@@ -19,7 +30,7 @@ local MainFrame = Instance.new("Frame")
 MainFrame.Name = "MainFrame"
 MainFrame.AnchorPoint = Vector2.new(0.5, 0.5)
 MainFrame.Position = UDim2.new(0.5, 0, 0.5, 0)
-MainFrame.Size = UDim2.new(0, 500, 0, 300) -- Твой размер 500 на 300
+MainFrame.Size = UDim2.new(0, 500, 0, 300)
 MainFrame.BackgroundColor3 = Color3.fromRGB(25, 25, 30)
 MainFrame.BorderSizePixel = 0
 MainFrame.ClipsDescendants = true
@@ -84,9 +95,7 @@ UIListLayout.Padding = UDim.new(0, 8)
 UIListLayout.SortOrder = Enum.SortOrder.LayoutOrder
 UIListLayout.Parent = Container
 
--- ==========================================
 -- СКРИПТ ПЕРЕТАСКИВАНИЯ (ДЛЯ ПК И ТЕЛЕФОНОВ)
--- ==========================================
 local dragging, dragInput, dragStart, startPos
 
 local function update(input)
@@ -121,11 +130,7 @@ UserInputService.InputChanged:Connect(function(input)
     end
 end)
 
--- ==========================================
--- ЭЛЕМЕНТЫ ИНТЕРФЕЙСА (TOGGLE & SLIDER)
--- ==========================================
-
--- 1. КНОПКА-ПЕРЕКЛЮЧАТЕЛЬ (Toggle)
+-- ФУНКЦИЯ ДЛЯ СОЗДАНИЯ ПЕРЕКЛЮЧАТЕЛЕЙ (Toggle)
 local function CreateToggle(text, default, callback)
     local TglFrame = Instance.new("Frame")
     TglFrame.Size = UDim2.new(1, -6, 0, 40)
@@ -171,7 +176,7 @@ local function CreateToggle(text, default, callback)
     end)
 end
 
--- 2. ПОЛЗУНОК (Slider)
+-- ФУНКЦИЯ ДЛЯ СОЗДАНИЯ ПОЛЗУНКОВ (Slider)
 local function CreateSlider(text, min, max, default, callback)
     local SldFrame = Instance.new("Frame")
     SldFrame.Size = UDim2.new(1, -6, 0, 50)
@@ -249,14 +254,14 @@ local function CreateSlider(text, min, max, default, callback)
 end
 
 -- ==========================================
--- НАСТРОЙКА КНОПОК И ФУНКЦИЙ СЮДА
+-- ЗДЕСЬ НАСТРАИВАЮТСЯ КНОПКИ И ФУНКЦИИ
 -- ==========================================
 
 CreateToggle("Включить Бесконечный Прыжок", false, function(state)
     _G.InfJump = state
     if state then
-        game:GetService("UserInputService").JumpRequest:Connect(function()
-            if _G.InfJump then
+        UserInputService.JumpRequest:Connect(function()
+            if _G.InfJump and LocalPlayer.Character and LocalPlayer.Character:FindFirstChildOfClass("Humanoid") then
                 LocalPlayer.Character:FindFirstChildOfClass("Humanoid"):ChangeState("Jumping")
             end
         end)
@@ -275,13 +280,13 @@ CreateSlider("Сила прыжка (JumpPower)", 50, 250, 50, function(value)
     end
 end)
 
--- Авто-настройка прокрутки
+-- Корректировка скролла
 Container.CanvasSize = UDim2.new(0, 0, 0, UIListLayout.AbsoluteContentSize.Y + 10)
 UIListLayout:GetPropertyChangedSignal("AbsoluteContentSize"):Connect(function()
     Container.CanvasSize = UDim2.new(0, 0, 0, UIListLayout.AbsoluteContentSize.Y + 10)
 end)
 
--- Закрытие
+-- Закрытие меню
 CloseBtn.MouseButton1Click:Connect(function()
     ScreenGui:Destroy()
 end)
