@@ -86,7 +86,7 @@ Title.Size = UDim2.new(1, -90, 1, 0)
 Title.Position = UDim2.new(0, 15, 0, 0)
 Title.BackgroundTransparency = 1
 Title.Font = Enum.Font.GothamBold
-Title.Text = "MM2 CAMERA FOLLOW FLY (500x300)"
+Title.Text = "MM2 CAMERA FOLLOW FLY (Tabs)"
 Title.TextColor3 = Color3.fromRGB(255, 255, 255)
 Title.TextSize = 14
 Title.TextXAlignment = Enum.TextXAlignment.Left
@@ -104,33 +104,40 @@ MinBtn.TextSize = 14
 MinBtn.Parent = Header
 Instance.new("UICorner", MinBtn).CornerRadius = UDim.new(0, 6)
 
--- Кнопка Закрыть
+-- Кнопка Закрыть (ИСПРАВЛЕНО: Теперь тут буква X вместо некорректного символа)
 local CloseBtn = Instance.new("TextButton")
 CloseBtn.Size = UDim2.new(0, 30, 0, 30)
 CloseBtn.Position = UDim2.new(1, -38, 0.5, -15)
 CloseBtn.BackgroundColor3 = Color3.fromRGB(255, 60, 60)
 CloseBtn.Font = Enum.Font.GothamBold
-CloseBtn.Text = "✕"
+CloseBtn.Text = "X"
 CloseBtn.TextColor3 = Color3.fromRGB(255, 255, 255)
 CloseBtn.TextSize = 14
 CloseBtn.Parent = Header
 Instance.new("UICorner", CloseBtn).CornerRadius = UDim.new(0, 6)
 
--- Контент зона
-local Container = Instance.new("ScrollingFrame")
-Container.Name = "Container"
-Container.Size = UDim2.new(1, -20, 1, -55)
-Container.Position = UDim2.new(0, 10, 0, 50)
-Container.BackgroundTransparency = 1
-Container.BorderSizePixel = 0
-Container.ScrollBarThickness = 3
-Container.ScrollBarImageColor3 = Color3.fromRGB(0, 255, 140)
-Container.Parent = MainFrame
+-- Панель для вкладок (Слева)
+local TabPanel = Instance.new("Frame")
+TabPanel.Name = "TabPanel"
+TabPanel.Size = UDim2.new(0, 130, 1, -45)
+TabPanel.Position = UDim2.new(0, 10, 0, 50)
+TabPanel.BackgroundColor3 = Color3.fromRGB(25, 25, 32)
+TabPanel.Parent = MainFrame
+Instance.new("UICorner", TabPanel).CornerRadius = UDim.new(0, 8)
 
-local UIListLayout = Instance.new("UIListLayout")
-UIListLayout.Padding = UDim.new(0, 8)
-UIListLayout.SortOrder = Enum.SortOrder.LayoutOrder
-UIListLayout.Parent = Container
+local TabListLayout = Instance.new("UIListLayout")
+TabListLayout.Padding = UDim.new(0, 5)
+TabListLayout.SortOrder = Enum.SortOrder.LayoutOrder
+TabListLayout.Parent = TabPanel
+Instance.new("UIPadding", TabPanel).PaddingTop = UDim.new(0, 5)
+
+-- Контейнер для страниц (Справа)
+local PagesContainer = Instance.new("Frame")
+PagesContainer.Name = "PagesContainer"
+PagesContainer.Size = UDim2.new(1, -160, 1, -45)
+PagesContainer.Position = UDim2.new(0, 150, 0, 50)
+PagesContainer.BackgroundTransparency = 1
+PagesContainer.Parent = MainFrame
 
 -- Скрипт перетаскивания (Драг)
 local dragging, dragInput, dragStart, startPos
@@ -168,12 +175,70 @@ MinBtn.MouseButton1Click:Connect(function()
     TweenService:Create(MainFrame, TweenInfo.new(0.3, Enum.EasingStyle.Quad, Enum.EasingDirection.Out), {Size = targetSize}):Play()
 end)
 
--- ФУНКЦИЯ ДЛЯ СОЗДАНИЯ TOGGLE
-local function CreateToggle(text, default, callback)
+-- СИСТЕМА ВКЛАДОК И СТРАНИЦ
+local tabs = {}
+local pages = {}
+local activeTab = nil
+
+local function CreateTab(name, order)
+    -- Холст страницы (ScrollingFrame)
+    local Page = Instance.new("ScrollingFrame")
+    Page.Name = name .. "Page"
+    Page.Size = UDim2.new(1, 0, 1, 0)
+    Page.BackgroundTransparency = 1
+    Page.BorderSizePixel = 0
+    Page.ScrollBarThickness = 3
+    Page.ScrollBarImageColor3 = Color3.fromRGB(0, 255, 140)
+    Page.Visible = false
+    Page.Parent = PagesContainer
+
+    local ListLayout = Instance.new("UIListLayout")
+    ListLayout.Padding = UDim.new(0, 8)
+    ListLayout.SortOrder = Enum.SortOrder.LayoutOrder
+    ListLayout.Parent = Page
+
+    ListLayout:GetPropertyChangedSignal("AbsoluteContentSize"):Connect(function()
+        Page.CanvasSize = UDim2.new(0, 0, 0, ListLayout.AbsoluteContentSize.Y + 10)
+    end)
+
+    -- Кнопка вкладки
+    local TabBtn = Instance.new("TextButton")
+    TabBtn.Name = name .. "Tab"
+    TabBtn.Size = UDim2.new(1, -10, 0, 35)
+    TabBtn.Position = UDim2.new(0, 5, 0, 0)
+    TabBtn.BackgroundColor3 = Color3.fromRGB(18, 18, 22)
+    TabBtn.Font = Enum.Font.GothamSemibold
+    TabBtn.Text = name
+    TabBtn.TextColor3 = Color3.fromRGB(150, 150, 150)
+    TabBtn.TextSize = 13
+    TabBtn.LayoutOrder = order
+    TabBtn.Parent = TabPanel
+    Instance.new("UICorner", TabBtn).CornerRadius = UDim.new(0, 6)
+
+    local function select()
+        if activeTab then
+            activeTab.TabBtn.TextColor3 = Color3.fromRGB(150, 150, 150)
+            activeTab.TabBtn.BackgroundColor3 = Color3.fromRGB(18, 18, 22)
+            activeTab.Page.Visible = false
+        end
+        TabBtn.TextColor3 = Color3.fromRGB(0, 255, 140)
+        TabBtn.BackgroundColor3 = Color3.fromRGB(32, 32, 40)
+        Page.Visible = true
+        activeTab = {TabBtn = TabBtn, Page = Page}
+    end
+
+    TabBtn.MouseButton1Click:Connect(select)
+
+    tabs[name] = {TabBtn = TabBtn, Page = Page, Select = select}
+    return Page
+end
+
+-- КОНСТРУКТОРЫ ЭЛЕМЕНТОВ ВНУТРИ ВКЛАДОК
+local function CreateToggle(parentPage, text, default, callback)
     local TglFrame = Instance.new("Frame")
     TglFrame.Size = UDim2.new(1, -6, 0, 40)
     TglFrame.BackgroundColor3 = Color3.fromRGB(25, 25, 32)
-    TglFrame.Parent = Container
+    TglFrame.Parent = parentPage
     Instance.new("UICorner", TglFrame).CornerRadius = UDim.new(0, 6)
 
     local TglLabel = Instance.new("TextLabel")
@@ -183,7 +248,7 @@ local function CreateToggle(text, default, callback)
     TglLabel.Font = Enum.Font.GothamSemibold
     TglLabel.Text = text
     TglLabel.TextColor3 = Color3.fromRGB(230, 230, 230)
-    TglLabel.TextSize = 14
+    TglLabel.TextSize = 13
     TglLabel.TextXAlignment = Enum.TextXAlignment.Left
     TglLabel.Parent = TglFrame
 
@@ -213,12 +278,11 @@ local function CreateToggle(text, default, callback)
     end)
 end
 
--- ФУНКЦИЯ ДЛЯ СОЗДАНИЯ SLIDER
-local function CreateSlider(text, min, max, default, callback)
+local function CreateSlider(parentPage, text, min, max, default, callback)
     local SldFrame = Instance.new("Frame")
     SldFrame.Size = UDim2.new(1, -6, 0, 50)
     SldFrame.BackgroundColor3 = Color3.fromRGB(25, 25, 32)
-    SldFrame.Parent = Container
+    SldFrame.Parent = parentPage
     Instance.new("UICorner", SldFrame).CornerRadius = UDim.new(0, 6)
 
     local SldLabel = Instance.new("TextLabel")
@@ -286,7 +350,7 @@ local function CreateSlider(text, min, max, default, callback)
 end
 
 -- ==========================================
--- ИСПРАВЛЕННЫЙ РАБОЧИЙ ФЛАЙ (БЕЗ УЛЕТА ВВЕРХ)
+-- ЛОГИКА ФЛАЯ (СТАБИЛЬНАЯ ВЕРСИЯ С BODYGYRO)
 -- ==========================================
 
 local function StopFlying()
@@ -312,17 +376,15 @@ local function StartFlying()
     
     hum.PlatformStand = true
 
-    -- Физическая скорость перемещения
     BVelocity = Instance.new("BodyVelocity")
     BVelocity.MaxForce = Vector3.new(1e5, 1e5, 1e5)
     BVelocity.Velocity = Vector3.new(0, 0, 0)
     BVelocity.Parent = root
 
-    -- Настоящее удержание направления без багов CFrame
     BGyro = Instance.new("BodyGyro")
     BGyro.MaxTorque = Vector3.new(1e5, 1e5, 1e5)
-    BGyro.P = 15000 -- Мощная сила поворота за камерой
-    BGyro.D = 100   -- Гасим лишнюю тряску
+    BGyro.P = 15000 
+    BGyro.D = 100   
     BGyro.CFrame = root.CFrame
     BGyro.Parent = root
 
@@ -334,21 +396,17 @@ local function StartFlying()
             return 
         end
 
-        -- Заставляем тело смотреть ТОЧНО по направлению камеры во все 360 градусов
         BGyro.CFrame = cam.CFrame
 
         local moveDir = Vector3.new(0, 0, 0)
 
-        -- 1. Сбор сигналов с джойстика (для мобилок)
         if MasterControl and MasterControl.GetMoveVector then
             local moveVector = MasterControl:GetMoveVector()
             if moveVector.Magnitude > 0 then
-                -- Полет по 3D вектору взгляда камеры
                 moveDir = (cam.CFrame.LookVector * -moveVector.Z) + (cam.CFrame.RightVector * moveVector.X)
             end
         end
 
-        -- 2. Сбор сигналов с клавиатуры (для ПК)
         if moveDir.Magnitude == 0 and UserInputService.KeyboardEnabled then
             if UserInputService:IsKeyDown(Enum.KeyCode.W) then moveDir = moveDir + cam.CFrame.LookVector end
             if UserInputService:IsKeyDown(Enum.KeyCode.S) then moveDir = moveDir - cam.CFrame.LookVector end
@@ -356,19 +414,20 @@ local function StartFlying()
             if UserInputService:IsKeyDown(Enum.KeyCode.D) then moveDir = moveDir + cam.CFrame.RightVector end
         end
 
-        -- Применение скорости полета
         if moveDir.Magnitude > 0 then
             BVelocity.Velocity = moveDir.Unit * FlySpeed
         else
-            BVelocity.Velocity = Vector3.new(0, 0, 0) -- Мертвая фиксация в воздухе
+            BVelocity.Velocity = Vector3.new(0, 0, 0)
         end
     end)
 end
 
--- КНОПКИ МЕНЮ
+-- СОЗДАНИЕ СТРАНИЦ ЧЕРЕЗ ВКЛАДКИ
+local MainTab = CreateTab("Главная", 1)
+local PlayerTab = CreateTab("Игрок", 2)
 
--- 1. Тумблер Полета
-CreateToggle("Bypass Fly (Следование за камерой)", false, function(state)
+-- ЭЛЕМЕНТЫ ВКЛАДКИ "ГЛАВНАЯ"
+CreateToggle(MainTab, "Bypass Fly (Следование за камерой)", false, function(state)
     Flying = state
     if state then
         StartFlying()
@@ -377,13 +436,12 @@ CreateToggle("Bypass Fly (Следование за камерой)", false, fun
     end
 end)
 
--- 2. Ползунок Скорости
-CreateSlider("Скорость полета", 15, 90, 35, function(value)
+CreateSlider(MainTab, "Скорость полета", 15, 90, 35, function(value)
     FlySpeed = value
 end)
 
--- 3. Тумблер Сквозь Стены (Noclip)
-CreateToggle("Noclip (Сквозь стены)", false, function(state)
+-- ЭЛЕМЕНТЫ ВКЛАДКИ "ИГРОК"
+CreateToggle(PlayerTab, "Noclip (Сквозь стены)", false, function(state)
     if state then
         NoclipConnection = RunService.Stepped:Connect(function()
             if LocalPlayer.Character then
@@ -402,8 +460,7 @@ CreateToggle("Noclip (Сквозь стены)", false, function(state)
     end
 end)
 
--- 4. Бесконечный Прыжок
-CreateToggle("Inf Jump (Бесконечный прыжок)", false, function(state)
+CreateToggle(PlayerTab, "Inf Jump (Бесконечный прыжок)", false, function(state)
     _G.InfJump = state
     if state then
         UserInputService.JumpRequest:Connect(function()
@@ -414,13 +471,10 @@ CreateToggle("Inf Jump (Бесконечный прыжок)", false, function(s
     end
 end)
 
--- Авторазмер холста
-Container.CanvasSize = UDim2.new(0, 0, 0, UIListLayout.AbsoluteContentSize.Y + 10)
-UIListLayout:GetPropertyChangedSignal("AbsoluteContentSize"):Connect(function()
-    Container.CanvasSize = UDim2.new(0, 0, 0, UIListLayout.AbsoluteContentSize.Y + 10)
-end)
+-- Активация первой вкладки по умолчанию
+tabs["Главная"].Select()
 
--- Закрытие
+-- Закрытие меню
 CloseBtn.MouseButton1Click:Connect(function()
     Flying = false
     StopFlying()
