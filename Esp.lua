@@ -21,7 +21,7 @@ end
 
 -- ГЛОБАЛЬНЫЕ НАСТРОЙКИ ФУНКЦИЙ
 local Flying = false
-local FlySpeed = 30 
+local FlySpeed = 40 -- Оптимальная скорость для плавной работы
 local FlyConnection = nil
 local NoclipConnection = nil
 local FlyPlatform = nil 
@@ -71,7 +71,7 @@ Title.Size = UDim2.new(1, -90, 1, 0)
 Title.Position = UDim2.new(0, 15, 0, 0)
 Title.BackgroundTransparency = 1
 Title.Font = Enum.Font.GothamBold
-Title.Text = "MM2 3D CAMERA FLY HUB (500x300)"
+Title.Text = "MM2 PERFECT FLY HUB (500x300)"
 Title.TextColor3 = Color3.fromRGB(255, 255, 255)
 Title.TextSize = 14
 Title.TextXAlignment = Enum.TextXAlignment.Left
@@ -230,7 +230,6 @@ local function CreateSlider(text, min, max, default, callback)
     SldLabel.TextColor3 = Color3.fromRGB(230, 230, 230)
     SldLabel.TextSize = 13
     SldLabel.TextXAlignment = Enum.TextXAlignment.Left
-    SldFrame.Parent = Container -- Исправлена привязка к Container напрямую
     SldLabel.Parent = SldFrame
 
     local ValLabel = Instance.new("TextLabel")
@@ -292,7 +291,7 @@ local function CreateSlider(text, min, max, default, callback)
 end
 
 -- ==========================================
--- ИСТИННЫЙ 3D ПОЛЕТ (ВЕРТИКАЛЬНЫЙ НАКЛОН ТЕЛА)
+-- ИСПРАВЛЕННЫЙ ВЕКТОРНЫЙ ПОЛЕТ (БЕЗ КОНФЛИКТОВ)
 -- ==========================================
 
 local function StartPlatformFly()
@@ -300,10 +299,10 @@ local function StartPlatformFly()
     local root = char and char:FindFirstChild("HumanoidRootPart")
     if not root then return end
 
-    -- Создаем невидимый блок под ногами персонажа
+    -- Создаем опорный блок под ногами персонажа
     FlyPlatform = Instance.new("Part")
     FlyPlatform.Size = Vector3.new(4, 1, 4)
-    FlyPlatform.CFrame = root.CFrame - Vector3.new(0, 3.5, 0)
+    FlyPlatform.CFrame = CFrame.new(root.Position - Vector3.new(0, 3.5, 0))
     FlyPlatform.Transparency = 1 
     FlyPlatform.Anchored = true
     FlyPlatform.Parent = workspace
@@ -319,42 +318,38 @@ local function StartPlatformFly()
         if curRoot and curHum then
             local moveDir = Vector3.new(0, 0, 0)
             
-            -- Чтение ввода на ПК (WASD)
+            -- Чтение ввода на ПК (Классические WASD)
             if UserInputService.KeyboardEnabled then
                 if UserInputService:IsKeyDown(Enum.KeyCode.W) then moveDir = moveDir + cam.CFrame.LookVector end
                 if UserInputService:IsKeyDown(Enum.KeyCode.S) then moveDir = moveDir - cam.CFrame.LookVector end
                 if UserInputService:IsKeyDown(Enum.KeyCode.A) then moveDir = moveDir - cam.CFrame.RightVector end
                 if UserInputService:IsKeyDown(Enum.KeyCode.D) then moveDir = moveDir + cam.CFrame.RightVector end
-                -- Ручной подъем/спуск кнопками на ПК (если нужно лететь строго вертикально)
+                -- Кнопки высоты на ПК
                 if UserInputService:IsKeyDown(Enum.KeyCode.Space) then moveDir = moveDir + Vector3.new(0, 1, 0) end
                 if UserInputService:IsKeyDown(Enum.KeyCode.LeftShift) then moveDir = moveDir - Vector3.new(0, 1, 0) end
             end
             
-            -- Чтение ввода на ТЕЛЕФОНЕ (джойстик автоматически направляет по 3D-вектору взгляда)
+            -- Чтение ввода на ТЕЛЕФОНЕ (Идеальный перевод вектора джойстика в камеру)
             if moveDir.Magnitude == 0 and curHum.MoveDirection.Magnitude > 0 then
-                -- Умножаем направление джойстика на полный CFrame камеры, включая оси вверх и вниз
-                local forwardVector = cam.CFrame.LookVector
-                local rightVector = cam.CFrame.RightVector
-                
-                -- Рассчитываем итоговый 3D вектор движения для мобилки
                 local joystickDir = curHum.MoveDirection
-                -- Проекция джойстика на камеру
-                moveDir = (forwardVector * -joystickDir.Z) + (rightVector * joystickDir.X)
+                -- Накладываем направление джойстика на оси камеры в 3D пространстве
+                moveDir = (cam.CFrame.LookVector * -joystickDir.Z) + (cam.CFrame.RightVector * joystickDir.X)
             end
             
-            -- Рассчитываем новую позицию платформы
+            -- Вычисляем новую позицию платформы
             local newPosition = FlyPlatform.Position
             if moveDir.Magnitude > 0 then
                 newPosition = FlyPlatform.Position + (moveDir.Unit * (FlySpeed * deltaTime))
             end
             
-            -- ПОЛНЫЙ ПОДТВЕРЖДЕННЫЙ 3D НАКЛОН ТЕЛА:
-            -- Направляем саму платформу и персонажа точно по полному вектору LookVector камеры (включая наклон Y)
-            local targetCFrame = CFrame.new(newPosition, newPosition + cam.CFrame.LookVector)
-            FlyPlatform.CFrame = targetCFrame
+            -- Угол взгляда по горизонтали (чтобы персонаж не заваливался на бок и не застревал)
+            local camLookXZ = Vector3.new(cam.CFrame.LookVector.X, 0, cam.CFrame.LookVector.Z).Unit
             
-            -- Телепортируем тело и фиксируем наклон вверх/вниз относительно платформы
-            curRoot.CFrame = targetCFrame * CFrame.new(0, 3.5, 0)
+            -- Обновляем платформу
+            FlyPlatform.CFrame = CFrame.new(newPosition, newPosition + camLookXZ)
+            
+            -- Переносим игрока на платформу, заставляя его смотреть ровно туда же, куда и камера
+            curRoot.CFrame = CFrame.new(FlyPlatform.Position + Vector3.new(0, 3.5, 0), FlyPlatform.Position + Vector3.new(cam.CFrame.LookVector.X, 3.5, cam.CFrame.LookVector.Z))
             curRoot.Velocity = Vector3.new(0, 0, 0) 
         end
     end)
@@ -372,11 +367,11 @@ CreateToggle("Bypass Fly (Полет MM2)", false, function(state)
 end)
 
 -- 2. СЛАЙДЕР СКОРОСТИ ПОЛЕТА
-CreateSlider("Скорость полета", 10, 70, 30, function(value)
+CreateSlider("Скорость полета", 10, 80, 35, function(value)
     FlySpeed = value
 end)
 
--- 3. ТУМБЛЕР ПРОХОДА СКВОЗЬ СТЕНЫ (Обязательно включи вместе с флаем)
+-- 3. ТУМБЛЕР ПРОХОДА СКВОЗЬ СТЕНЫ
 CreateToggle("Noclip (Сквозь стены)", false, function(state)
     if state then
         NoclipConnection = RunService.Stepped:Connect(function()
