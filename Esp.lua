@@ -389,14 +389,24 @@ local function StartFlying()
 end
 
 -- ==========================================
--- ПЛАВНЫЙ АВТОФАРМ (БЕЗОПАСНЫЙ TWEEN)
+-- ПЛАВНЫЙ АВТОФАРМ БЕЗ ПАДЕНИЙ
 -- ==========================================
 local function GetTargetCoinGlobal()
+    local bestCoin = nil
+    local shortestDist = 999999
     for _, child in pairs(workspace:GetDescendants()) do
         if child:IsA("BasePart") and (string.find(child.Name:lower(), "coin") or child.Name == "Coin_Server") and child.Transparency < 1 then
-            return child
+            -- Защита от пустоты: проверяем, чтобы Y был выше -50
+            if child.Position.Y > -50 then 
+                local dist = (LocalPlayer.Character.HumanoidRootPart.Position - child.Position).Magnitude
+                if dist < shortestDist then
+                    shortestDist = dist
+                    bestCoin = child
+                end
+            end
         end
     end
+    return bestCoin
 end
 
 local function StartAutoFarm()
@@ -404,17 +414,18 @@ local function StartAutoFarm()
         if not AutoFarmEnabled then return end
         local root = LocalPlayer.Character and LocalPlayer.Character:FindFirstChild("HumanoidRootPart")
         local coin = GetTargetCoinGlobal()
+        
         if root and coin then
             local dist = (root.Position - coin.Position).Magnitude
-            -- Плавное движение с проверкой: если слишком быстро — кикает, поэтому задаем скорость
-            local tweenInfo = TweenInfo.new(dist / 50, Enum.EasingStyle.Linear) 
-            local tween = TweenService:Create(root, tweenInfo, {CFrame = coin.CFrame})
+            -- Плавное движение (Tween)
+            local timeToMove = math.clamp(dist / 50, 0.2, 1) -- Ограничиваем время, чтобы античит не кикал
+            local tween = TweenService:Create(root, TweenInfo.new(timeToMove, Enum.EasingStyle.Linear), {CFrame = coin.CFrame})
             tween:Play()
         end
     end)
 end
 
--- СОЗДАНИЕ СТРАНИЦ
+-- СТРАНИЦЫ
 local MainTab = CreateTab("Главная", 1)
 local PlayerTab = CreateTab("Игрок", 2)
 
@@ -429,11 +440,6 @@ CreateToggle(PlayerTab, "Bypass Fly", false, function(state)
 end)
 
 CreateSlider(PlayerTab, "Скорость полета", 15, 90, 35, function(value) FlySpeed = value end)
-
-CreateToggle(PlayerTab, "Toggle WalkSpeed", false, function(state) WalkSpeedEnabled = state end)
-
-CreateSlider(PlayerTab, "Скорость ходьбы", 16, 120, 16, function(value) NormalWalkSpeed = value end)
-
 CreateToggle(PlayerTab, "Noclip", false, function(state)
     if state then
         NoclipConnection = RunService.Stepped:Connect(function()
