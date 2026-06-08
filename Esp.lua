@@ -428,7 +428,7 @@ local function StartFlying()
 end
 
 -- ==========================================
--- ИСПРАВЛЕННЫЙ БЕЗОПАСНЫЙ АВТО-ФАРМ (ИЗМЕНЕН НА MOVETO)
+-- ПЛАВНЫЙ И БЕЗОПАСНЫЙ АВТО-ТЕЛЕПОРТ
 -- ==========================================
 
 local function GetTargetCoinGlobal()
@@ -470,7 +470,6 @@ end
 
 local function StartAutoFarm()
     StopAutoFarm()
-    print("[AutoFarm]: Скрипт запущен (MoveTo - безопасно).")
     
     AutoFarmConnection = RunService.Heartbeat:Connect(function()
         if not AutoFarmEnabled then 
@@ -479,16 +478,23 @@ local function StartAutoFarm()
         end
         
         local char = LocalPlayer.Character
-        local hum = char and char:FindFirstChildOfClass("Humanoid")
-        if not hum then return end
+        local root = char and char:FindFirstChild("HumanoidRootPart")
+        if not root then return end
         
         local coin = GetTargetCoinGlobal()
         if coin then
-            -- ИСПОЛЬЗУЕМ MOVETO ВМЕСТО TWEEN, ЧТОБЫ НЕ КИКАЛО
-            hum:MoveTo(coin.Position)
+            local distance = (root.Position - coin.Position).Magnitude
+            
+            -- Плавное движение с проверкой дистанции
+            if distance > 2 then
+                -- Увеличено время для Tween, чтобы движение выглядело естественнее и не кикало
+                local speed = 60 
+                local timeToMove = math.max(0.3, distance / speed)
+                local tween = TweenService:Create(root, TweenInfo.new(timeToMove, Enum.EasingStyle.Linear), {CFrame = coin.CFrame})
+                tween:Play()
+            end
             
             if tick() - LastLogTime > 2.5 then
-                print("[AutoFarm]: Иду к: " .. coin.Name)
                 LastLogTime = tick()
             end
         end
