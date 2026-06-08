@@ -21,10 +21,10 @@ end
 
 -- ГЛОБАЛЬНЫЕ НАСТРОЙКИ ФУНКЦИЙ
 local Flying = false
-local FlySpeed = 30 -- Теперь это скорость в нормальных единицах Roblox
+local FlySpeed = 30 
 local FlyConnection = nil
 local NoclipConnection = nil
-local FlyPlatform = nil -- Невидимая платформа для обхода античита
+local FlyPlatform = nil 
 
 -- СОЗДАНИЕ ИНТЕРФЕЙСА
 local ScreenGui = Instance.new("ScreenGui")
@@ -71,7 +71,7 @@ Title.Size = UDim2.new(1, -90, 1, 0)
 Title.Position = UDim2.new(0, 15, 0, 0)
 Title.BackgroundTransparency = 1
 Title.Font = Enum.Font.GothamBold
-Title.Text = "MM2 PLATFORM FLY HUB (500x300)"
+Title.Text = "MM2 CAMERA FLY HUB (500x300)"
 Title.TextColor3 = Color3.fromRGB(255, 255, 255)
 Title.TextSize = 14
 Title.TextXAlignment = Enum.TextXAlignment.Left
@@ -291,7 +291,7 @@ local function CreateSlider(text, min, max, default, callback)
 end
 
 -- ==========================================
--- МЕТОД ОБХОДА ЧЕРЕЗ СОЗДАНИЕ ПЛАТФОРМЫ
+-- ЛОГИКА ПОЛЕТА С ПОВОРОТОМ ЗА КАМЕРОЙ
 -- ==========================================
 
 local function StartPlatformFly()
@@ -301,9 +301,10 @@ local function StartPlatformFly()
 
     -- Создаем невидимый блок под ногами персонажа
     FlyPlatform = Instance.new("Part")
-    FlyPlatform.Size = Vector3.new(6, 1, 6)
+    FlyPlatform.Size = Vector3.new(5, 1, 5)
+    -- Инициализируем позицию платформы строго под игроком
     FlyPlatform.CFrame = root.CFrame - Vector3.new(0, 3.5, 0)
-    FlyPlatform.Transparency = 1 -- Полностью невидимый (сделай 0.5 для теста, если хочешь видеть его)
+    FlyPlatform.Transparency = 1 
     FlyPlatform.Anchored = true
     FlyPlatform.Parent = workspace
 
@@ -329,19 +330,26 @@ local function StartPlatformFly()
                 if UserInputService:IsKeyDown(Enum.KeyCode.LeftShift) then moveDir = moveDir - Vector3.new(0, 1, 0) end
             end
             
-            -- Чтение джойстика на ТЕЛЕФОНЕ + наклон камеры
+            -- Чтение джойстика на ТЕЛЕФОНЕ
             if moveDir.Magnitude == 0 and curHum.MoveDirection.Magnitude > 0 then
-                moveDir = curHum.MoveDirection + Vector3.new(0, cam.CFrame.LookVector.Y * 1.2, 0)
+                moveDir = curHum.MoveDirection + Vector3.new(0, cam.CFrame.LookVector.Y * 1.3, 0)
             end
             
-            -- Двигаем платформу, если есть ввод
+            -- Рассчитываем новую позицию платформы
+            local newPosition = FlyPlatform.Position
             if moveDir.Magnitude > 0 then
-                FlyPlatform.CFrame = FlyPlatform.CFrame + (moveDir.Unit * (FlySpeed * deltaTime))
+                newPosition = FlyPlatform.Position + (moveDir.Unit * (FlySpeed * deltaTime))
             end
             
-            -- Жёстко телепортируем персонажа на платформу, чтобы он не упал
+            -- ОБНОВЛЕНИЕ ПОВОРОТА ЗА КАМЕРОЙ:
+            -- Берем направление взгляда камеры (LookVector), но игнорируем наклон по вертикали для самой платформы,
+            -- чтобы она оставалась строго горизонтальной, но персонаж крутился лицом туда же, куда смотрит камера.
+            local camLookXZ = Vector3.new(cam.CFrame.LookVector.X, 0, cam.CFrame.LookVector.Z).Unit
+            FlyPlatform.CFrame = CFrame.new(newPosition, newPosition + camLookXZ)
+            
+            -- Жёстко удерживаем персонажа на платформе и заставляем его смотреть ТОЧНО туда же, куда и камера
             curRoot.CFrame = CFrame.new(FlyPlatform.Position + Vector3.new(0, 3.5, 0), FlyPlatform.Position + Vector3.new(cam.CFrame.LookVector.X, 3.5, cam.CFrame.LookVector.Z))
-            curRoot.Velocity = Vector3.new(0, 0, 0) -- гасим падение
+            curRoot.Velocity = Vector3.new(0, 0, 0) 
         end
     end)
 end
