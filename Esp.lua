@@ -6,6 +6,7 @@ end
 -- Безопасное получение сервисов
 local TweenService = game:GetService("TweenService")
 local UserInputService = game:GetService("UserInputService")
+local RunService = game:GetService("RunService")
 local Players = game:GetService("Players")
 
 local LocalPlayer = Players.LocalPlayer or Players.PlayerAdded:Wait()
@@ -46,7 +47,7 @@ Stroke.Color = Color3.fromRGB(0, 162, 255)
 Stroke.Transparency = 0.2
 Stroke.Parent = MainFrame
 
--- ШАПКА (Зона для перетаскивания)
+-- ШАПКА (Зона для перетаскивания и кнопок управления)
 local Header = Instance.new("Frame")
 Header.Name = "Header"
 Header.Size = UDim2.new(1, 0, 0, 40)
@@ -59,7 +60,7 @@ HeaderCorner.CornerRadius = UDim.new(0, 10)
 HeaderCorner.Parent = Header
 
 local Title = Instance.new("TextLabel")
-Title.Size = UDim2.new(1, -50, 1, 0)
+Title.Size = UDim2.new(1, -90, 1, 0)
 Title.Position = UDim2.new(0, 15, 0, 0)
 Title.BackgroundTransparency = 1
 Title.Font = Enum.Font.GothamBold
@@ -69,15 +70,35 @@ Title.TextSize = 14
 Title.TextXAlignment = Enum.TextXAlignment.Left
 Title.Parent = Header
 
+-- КНОПКА СВОРАЧИВАНИЯ (Minimize)
+local MinBtn = Instance.new("TextButton")
+MinBtn.Size = UDim2.new(0, 30, 0, 30)
+MinBtn.Position = UDim2.new(1, -75, 0.5, -15)
+MinBtn.BackgroundColor3 = Color3.fromRGB(45, 45, 52)
+MinBtn.Font = Enum.Font.GothamBold
+MinBtn.Text = "—"
+MinBtn.TextColor3 = Color3.fromRGB(200, 200, 200)
+MinBtn.TextSize = 14
+MinBtn.Parent = Header
+
+local MinCorner = Instance.new("UICorner")
+MinCorner.CornerRadius = UDim.new(0, 6)
+MinCorner.Parent = MinBtn
+
+-- КНОПКА ЗАКРЫТИЯ (Close)
 local CloseBtn = Instance.new("TextButton")
-CloseBtn.Size = UDim2.new(0, 40, 0, 40)
-CloseBtn.Position = UDim2.new(1, -40, 0, 0)
-CloseBtn.BackgroundTransparency = 1
+CloseBtn.Size = UDim2.new(0, 30, 0, 30)
+CloseBtn.Position = UDim2.new(1, -38, 0.5, -15)
+CloseBtn.BackgroundColor3 = Color3.fromRGB(200, 50, 50)
 CloseBtn.Font = Enum.Font.GothamBold
 CloseBtn.Text = "✕"
-CloseBtn.TextColor3 = Color3.fromRGB(150, 150, 150)
-CloseBtn.TextSize = 16
+CloseBtn.TextColor3 = Color3.fromRGB(255, 255, 255)
+CloseBtn.TextSize = 14
 CloseBtn.Parent = Header
+
+local CloseCorner = Instance.new("UICorner")
+CloseCorner.CornerRadius = UDim.new(0, 6)
+CloseCorner.Parent = CloseBtn
 
 -- КОНТЕНТ (Скролл-зона)
 local Container = Instance.new("ScrollingFrame")
@@ -128,6 +149,15 @@ UserInputService.InputChanged:Connect(function(input)
     if input == dragInput and dragging then
         update(input)
     end
+end)
+
+-- ЛОГИКА СВОРАЧИВАНИЯ / РАЗВОРАЧИВАНИЯ Меню
+local isMinimized = false
+MinBtn.MouseButton1Click:Connect(function()
+    isMinimized = not isMinimized
+    local targetSize = isMinimized and UDim2.new(0, 500, 0, 40) or UDim2.new(0, 500, 0, 300)
+    MinBtn.Text = isMinimized and "+" or "—"
+    TweenService:Create(MainFrame, TweenInfo.new(0.3, Enum.EasingStyle.Quad, Enum.EasingDirection.Out), {Size = targetSize}):Play()
 end)
 
 -- ФУНКЦИЯ ДЛЯ СОЗДАНИЯ ПЕРЕКЛЮЧАТЕЛЕЙ (Toggle)
@@ -257,6 +287,7 @@ end
 -- ЗДЕСЬ НАСТРАИВАЮТСЯ КНОПКИ И ФУНКЦИИ
 -- ==========================================
 
+-- 1. СТАНДАРТНЫЙ INF JUMP
 CreateToggle("Включить Бесконечный Прыжок", false, function(state)
     _G.InfJump = state
     if state then
@@ -268,6 +299,71 @@ CreateToggle("Включить Бесконечный Прыжок", false, func
     end
 end)
 
+-- 2. СТАНДАРТНЫЙ NOCLIP
+local NoclipConnection
+CreateToggle("Noclip (Сквозь стены)", false, function(state)
+    if state then
+        NoclipConnection = RunService.Stepped:Connect(function()
+            if LocalPlayer.Character then
+                for _, part in pairs(LocalPlayer.Character:GetDescendants()) do
+                    if part:IsA("BasePart") then part.CanCollide = false end
+                end
+            end
+        end)
+    else
+        if NoclipConnection then NoclipConnection:Disconnect() end
+        if LocalPlayer.Character then
+            for _, part in pairs(LocalPlayer.Character:GetDescendants()) do
+                if part:IsA("BasePart") then part.CanCollide = true end
+            end
+        end
+    end
+end)
+
+-- 3. СТАНДАРТНЫЙ FLY
+local Flying = false
+local FlyConnection
+local bv, bg
+
+local function StartFly()
+    local char = LocalPlayer.Character
+    if not char or not char:FindFirstChild("HumanoidRootPart") then return end
+    
+    bv = Instance.new("BodyVelocity", char.HumanoidRootPart)
+    bv.Velocity = Vector3.new(0, 0, 0)
+    bv.MaxForce = Vector3.new(9e9, 9e9, 9e9)
+    
+    bg = Instance.new("BodyGyro", char.HumanoidRootPart)
+    bg.MaxTorque = Vector3.new(9e9, 9e9, 9e9)
+    bg.CFrame = char.HumanoidRootPart.CFrame
+    
+    FlyConnection = RunService.RenderStepped:Connect(function()
+        if not Flying then return end
+        local cam = workspace.CurrentCamera
+        local moveDir = Vector3.new(0,0,0)
+        
+        if UserInputService:IsKeyDown(Enum.KeyCode.W) then moveDir = moveDir + cam.CFrame.LookVector end
+        if UserInputService:IsKeyDown(Enum.KeyCode.S) then moveDir = moveDir - cam.CFrame.LookVector end
+        if UserInputService:IsKeyDown(Enum.KeyCode.A) then moveDir = moveDir - cam.CFrame.RightVector end
+        if UserInputService:IsKeyDown(Enum.KeyCode.D) then moveDir = moveDir + cam.CFrame.RightVector end
+        
+        bv.Velocity = moveDir * 50
+        bg.CFrame = cam.CFrame
+    end)
+end
+
+CreateToggle("Fly (Полет)", false, function(state)
+    Flying = state
+    if state then
+        StartFly()
+    else
+        if FlyConnection then FlyConnection:Disconnect() end
+        if bv then bv:Destroy() end
+        if bg then bg:Destroy() end
+    end
+end)
+
+-- 4. СЛАЙДЕРЫ СКОРОСТИ И ПРЫЖКА
 CreateSlider("Скорость бега (WalkSpeed)", 16, 150, 16, function(value)
     if LocalPlayer.Character and LocalPlayer.Character:FindFirstChild("Humanoid") then
         LocalPlayer.Character.Humanoid.WalkSpeed = value
