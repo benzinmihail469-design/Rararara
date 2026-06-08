@@ -21,7 +21,7 @@ end
 
 -- ГЛОБАЛЬНЫЕ НАСТРОЙКИ ФУНКЦИЙ
 local Flying = false
-local FlySpeed = 40 -- Оптимальная скорость для плавной работы
+local FlySpeed = 40 
 local FlyConnection = nil
 local NoclipConnection = nil
 local FlyPlatform = nil 
@@ -71,7 +71,7 @@ Title.Size = UDim2.new(1, -90, 1, 0)
 Title.Position = UDim2.new(0, 15, 0, 0)
 Title.BackgroundTransparency = 1
 Title.Font = Enum.Font.GothamBold
-Title.Text = "MM2 PERFECT FLY HUB (500x300)"
+Title.Text = "MM2 FIXED DIRECTION HUB"
 Title.TextColor3 = Color3.fromRGB(255, 255, 255)
 Title.TextSize = 14
 Title.TextXAlignment = Enum.TextXAlignment.Left
@@ -291,7 +291,7 @@ local function CreateSlider(text, min, max, default, callback)
 end
 
 -- ==========================================
--- ИСПРАВЛЕННЫЙ ВЕКТОРНЫЙ ПОЛЕТ (БЕЗ КОНФЛИКТОВ)
+-- ИСПРАВЛЕННОЕ НАПРАВЛЕНИЕ ДВИЖЕНИЯ (МАТЕМАТИКА)
 -- ==========================================
 
 local function StartPlatformFly()
@@ -318,22 +318,31 @@ local function StartPlatformFly()
         if curRoot and curHum then
             local moveDir = Vector3.new(0, 0, 0)
             
-            -- Чтение ввода на ПК (Классические WASD)
+            -- Чтение ввода на ПК (WASD)
             if UserInputService.KeyboardEnabled then
                 if UserInputService:IsKeyDown(Enum.KeyCode.W) then moveDir = moveDir + cam.CFrame.LookVector end
                 if UserInputService:IsKeyDown(Enum.KeyCode.S) then moveDir = moveDir - cam.CFrame.LookVector end
                 if UserInputService:IsKeyDown(Enum.KeyCode.A) then moveDir = moveDir - cam.CFrame.RightVector end
                 if UserInputService:IsKeyDown(Enum.KeyCode.D) then moveDir = moveDir + cam.CFrame.RightVector end
-                -- Кнопки высоты на ПК
+                -- Высота кнопками на ПК
                 if UserInputService:IsKeyDown(Enum.KeyCode.Space) then moveDir = moveDir + Vector3.new(0, 1, 0) end
                 if UserInputService:IsKeyDown(Enum.KeyCode.LeftShift) then moveDir = moveDir - Vector3.new(0, 1, 0) end
             end
             
-            -- Чтение ввода на ТЕЛЕФОНЕ (Идеальный перевод вектора джойстика в камеру)
+            -- Чтение ввода на ТЕЛЕФОНЕ (ИСПРАВЛЕНО!)
             if moveDir.Magnitude == 0 and curHum.MoveDirection.Magnitude > 0 then
-                local joystickDir = curHum.MoveDirection
-                -- Накладываем направление джойстика на оси камеры в 3D пространстве
-                moveDir = (cam.CFrame.LookVector * -joystickDir.Z) + (cam.CFrame.RightVector * joystickDir.X)
+                -- Мы берем направление джойстика и «разворачиваем» его относительно угла поворота камеры
+                local rawMove = curHum.MoveDirection
+                
+                -- Берем только горизонтальный угол камеры, чтобы джойстик не путался
+                local _, camY, _ = cam.CFrame:ToEulerAnglesYXZ()
+                local directionCFrame = CFrame.Angles(0, camY, 0)
+                
+                -- Переводим мировое движение джойстика в локальный вектор взгляда камеры
+                local relativeMove = directionCFrame:VectorToWorldSpace(rawMove)
+                
+                -- Теперь добавляем наклон камеры вверх/вниз к итоговому направлению полета
+                moveDir = relativeMove + Vector3.new(0, cam.CFrame.LookVector.Y * 1.5, 0)
             end
             
             -- Вычисляем новую позицию платформы
@@ -342,13 +351,11 @@ local function StartPlatformFly()
                 newPosition = FlyPlatform.Position + (moveDir.Unit * (FlySpeed * deltaTime))
             end
             
-            -- Угол взгляда по горизонтали (чтобы персонаж не заваливался на бок и не застревал)
+            -- Угол взгляда по горизонтали (чтобы персонаж смотрел вперед)
             local camLookXZ = Vector3.new(cam.CFrame.LookVector.X, 0, cam.CFrame.LookVector.Z).Unit
             
-            -- Обновляем платформу
+            -- Обновляем платформу и плавно переносим персонажа
             FlyPlatform.CFrame = CFrame.new(newPosition, newPosition + camLookXZ)
-            
-            -- Переносим игрока на платформу, заставляя его смотреть ровно туда же, куда и камера
             curRoot.CFrame = CFrame.new(FlyPlatform.Position + Vector3.new(0, 3.5, 0), FlyPlatform.Position + Vector3.new(cam.CFrame.LookVector.X, 3.5, cam.CFrame.LookVector.Z))
             curRoot.Velocity = Vector3.new(0, 0, 0) 
         end
