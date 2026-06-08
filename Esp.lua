@@ -40,6 +40,7 @@ local NoclipConnection = nil
 
 -- Физические объекты для полета
 local BVelocity = nil
+local BGyro = nil
 
 -- СОЗДАНИЕ ИНТЕРФЕЙСА (500x300)
 local ScreenGui = Instance.new("ScreenGui")
@@ -285,12 +286,13 @@ local function CreateSlider(text, min, max, default, callback)
 end
 
 -- ==========================================
--- ИСПРАВЛЕННАЯ ЛОГИКА (БЕЗ БАГА С УЛЕТОМ ВВЕРХ)
+-- ИСПРАВЛЕННЫЙ РАБОЧИЙ ФЛАЙ (БЕЗ УЛЕТА ВВЕРХ)
 -- ==========================================
 
 local function StopFlying()
     if FlyConnection then FlyConnection:Disconnect(); FlyConnection = nil end
     if BVelocity then BVelocity:Destroy(); BVelocity = nil end
+    if BGyro then BGyro:Destroy(); BGyro = nil end
     
     local char = LocalPlayer.Character
     local hum = char and char:FindFirstChildOfClass("Humanoid")
@@ -310,10 +312,19 @@ local function StartFlying()
     
     hum.PlatformStand = true
 
+    -- Физическая скорость перемещения
     BVelocity = Instance.new("BodyVelocity")
     BVelocity.MaxForce = Vector3.new(1e5, 1e5, 1e5)
     BVelocity.Velocity = Vector3.new(0, 0, 0)
     BVelocity.Parent = root
+
+    -- Настоящее удержание направления без багов CFrame
+    BGyro = Instance.new("BodyGyro")
+    BGyro.MaxTorque = Vector3.new(1e5, 1e5, 1e5)
+    BGyro.P = 15000 -- Мощная сила поворота за камерой
+    BGyro.D = 100   -- Гасим лишнюю тряску
+    BGyro.CFrame = root.CFrame
+    BGyro.Parent = root
 
     local cam = workspace.CurrentCamera
 
@@ -323,22 +334,21 @@ local function StartFlying()
             return 
         end
 
-        -- РЕШЕНИЕ: Оставляем позицию персонажа (root.Position), 
-        -- но полностью копируем углы наклона камеры (cam.CFrame.Rotation)
-        root.CFrame = CFrame.new(root.Position) * cam.CFrame.Rotation
-        root.Velocity = Vector3.new(0, 0, 0)
+        -- Заставляем тело смотреть ТОЧНО по направлению камеры во все 360 градусов
+        BGyro.CFrame = cam.CFrame
 
         local moveDir = Vector3.new(0, 0, 0)
 
-        -- 1. Сбор сигналов с джойстика
+        -- 1. Сбор сигналов с джойстика (для мобилок)
         if MasterControl and MasterControl.GetMoveVector then
             local moveVector = MasterControl:GetMoveVector()
             if moveVector.Magnitude > 0 then
+                -- Полет по 3D вектору взгляда камеры
                 moveDir = (cam.CFrame.LookVector * -moveVector.Z) + (cam.CFrame.RightVector * moveVector.X)
             end
         end
 
-        -- 2. Сбор сигналов с клавиатуры
+        -- 2. Сбор сигналов с клавиатуры (для ПК)
         if moveDir.Magnitude == 0 and UserInputService.KeyboardEnabled then
             if UserInputService:IsKeyDown(Enum.KeyCode.W) then moveDir = moveDir + cam.CFrame.LookVector end
             if UserInputService:IsKeyDown(Enum.KeyCode.S) then moveDir = moveDir - cam.CFrame.LookVector end
@@ -346,11 +356,11 @@ local function StartFlying()
             if UserInputService:IsKeyDown(Enum.KeyCode.D) then moveDir = moveDir + cam.CFrame.RightVector end
         end
 
-        -- Применение скорости
+        -- Применение скорости полета
         if moveDir.Magnitude > 0 then
             BVelocity.Velocity = moveDir.Unit * FlySpeed
         else
-            BVelocity.Velocity = Vector3.new(0, 0, 0)
+            BVelocity.Velocity = Vector3.new(0, 0, 0) -- Мертвая фиксация в воздухе
         end
     end)
 end
