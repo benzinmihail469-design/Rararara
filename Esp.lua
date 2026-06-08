@@ -466,4 +466,19 @@ CreateToggle(PlayerTab, "Inf Jump (Бесконечный прыжок)", false,
             if _G.InfJump and LocalPlayer.Character and LocalPlayer.Character:FindFirstChildOfClass("Humanoid") then
                 LocalPlayer.Character:FindFirstChildOfClass("Humanoid"):ChangeState("Jumping")
             end
-        end
+        end)
+    end
+end)
+
+-- Авто-активация первой вкладки при старте
+if tabs["Главная"] then
+    tabs["Главная"].Select()
+end
+
+-- Закрытие меню
+CloseBtn.MouseButton1Click:Connect(function()
+    Flying = false
+    StopFlying()
+    if NoclipConnection then NoclipConnection:Disconnect() end
+    ScreenGui:Destroy()
+end)
