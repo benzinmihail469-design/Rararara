@@ -19,9 +19,22 @@ if PlayerGui:FindFirstChild("ModernMenuGui") then
     PlayerGui.ModernMenuGui:Destroy()
 end
 
+-- Подключение к официальному модулю управления джойстиком Roblox
+local MasterControl = nil
+local CharacterScripts = LocalPlayer:WaitForChild("PlayerScripts", 10)
+if CharacterScripts then
+    local PlayerModule = CharacterScripts:FindFirstChild("PlayerModule")
+    if PlayerModule then
+        local requireModule = require(PlayerModule)
+        if requireModule and requireModule.GetControls then
+            MasterControl = requireModule:GetControls()
+        end
+    end
+end
+
 -- ГЛОБАЛЬНЫЕ НАСТРОЙКИ ФУНКЦИЙ
 local Flying = false
-local FlySpeed = 40 
+local FlySpeed = 35 
 local FlyConnection = nil
 local NoclipConnection = nil
 local FlyPlatform = nil 
@@ -71,13 +84,13 @@ Title.Size = UDim2.new(1, -90, 1, 0)
 Title.Position = UDim2.new(0, 15, 0, 0)
 Title.BackgroundTransparency = 1
 Title.Font = Enum.Font.GothamBold
-Title.Text = "MM2 FIXED DIRECTION HUB"
+Title.Text = "MM2 FIXED JOYSTICK FLY (500x300)"
 Title.TextColor3 = Color3.fromRGB(255, 255, 255)
 Title.TextSize = 14
 Title.TextXAlignment = Enum.TextXAlignment.Left
 Title.Parent = Header
 
--- КНОПКА СВОРАЧИВАНИЯ (Minimize)
+-- КНОПКА СВОРАЧИВАНИЯ
 local MinBtn = Instance.new("TextButton")
 MinBtn.Size = UDim2.new(0, 30, 0, 30)
 MinBtn.Position = UDim2.new(1, -75, 0.5, -15)
@@ -92,7 +105,7 @@ local MinCorner = Instance.new("UICorner")
 MinCorner.CornerRadius = UDim.new(0, 6)
 MinCorner.Parent = MinBtn
 
--- КНОПКА ЗАКРЫТИЯ (Close)
+-- КНОПКА ЗАКРЫТИЯ
 local CloseBtn = Instance.new("TextButton")
 CloseBtn.Size = UDim2.new(0, 30, 0, 30)
 CloseBtn.Position = UDim2.new(1, -38, 0.5, -15)
@@ -248,6 +261,7 @@ local function CreateSlider(text, min, max, default, callback)
     SliderBar.Position = UDim2.new(0, 10, 0, 34)
     SliderBar.BackgroundColor3 = Color3.fromRGB(50, 50, 55)
     SliderBar.Text = ""
+    SliderBar.Parent = SliderBar.Parent
     SliderBar.Parent = SldFrame
     Instance.new("UICorner", SliderBar).CornerRadius = UDim.new(0, 3)
 
@@ -291,7 +305,7 @@ local function CreateSlider(text, min, max, default, callback)
 end
 
 -- ==========================================
--- ИСПРАВЛЕННОЕ НАПРАВЛЕНИЕ ДВИЖЕНИЯ (МАТЕМАТИКА)
+-- ИСПРАВЛЕННЫЙ ФЛАЙ ЧЕРЕЗ СБОР НАЖАТИЙ (ОБХОД БАГОВ)
 -- ==========================================
 
 local function StartPlatformFly()
@@ -299,7 +313,7 @@ local function StartPlatformFly()
     local root = char and char:FindFirstChild("HumanoidRootPart")
     if not root then return end
 
-    -- Создаем опорный блок под ногами персонажа
+    -- Создаем блок под ногами персонажа
     FlyPlatform = Instance.new("Part")
     FlyPlatform.Size = Vector3.new(4, 1, 4)
     FlyPlatform.CFrame = CFrame.new(root.Position - Vector3.new(0, 3.5, 0))
@@ -313,49 +327,40 @@ local function StartPlatformFly()
         if not Flying or not FlyPlatform or not LocalPlayer.Character then return end
         local curChar = LocalPlayer.Character
         local curRoot = curChar:FindFirstChild("HumanoidRootPart")
-        local curHum = curChar:FindFirstChildOfClass("Humanoid")
         
-        if curRoot and curHum then
+        if curRoot then
             local moveDir = Vector3.new(0, 0, 0)
             
-            -- Чтение ввода на ПК (WASD)
-            if UserInputService.KeyboardEnabled then
+            -- СБОР СИГНАЛОВ ДЖОЙСТИКА НАПРЯМУЮ ИЗ МОДУЛЯ ROBLOX (ДЛЯ МОБИЛОК)
+            if MasterControl and MasterControl.GetMoveVector then
+                local moveVector = MasterControl:GetMoveVector()
+                -- Если джойстик двигают, переводим локальные координаты экрана в 3D направление взгляда камеры
+                if moveVector.Magnitude > 0 then
+                    moveDir = (cam.CFrame.LookVector * -moveVector.Z) + (cam.CFrame.RightVector * moveVector.X)
+                end
+            end
+            
+            -- ДОПОЛНИТЕЛЬНЫЙ СБОР ДЛЯ ПК (КЛАВИАТУРА)
+            if moveDir.Magnitude == 0 and UserInputService.KeyboardEnabled then
                 if UserInputService:IsKeyDown(Enum.KeyCode.W) then moveDir = moveDir + cam.CFrame.LookVector end
                 if UserInputService:IsKeyDown(Enum.KeyCode.S) then moveDir = moveDir - cam.CFrame.LookVector end
                 if UserInputService:IsKeyDown(Enum.KeyCode.A) then moveDir = moveDir - cam.CFrame.RightVector end
                 if UserInputService:IsKeyDown(Enum.KeyCode.D) then moveDir = moveDir + cam.CFrame.RightVector end
-                -- Высота кнопками на ПК
                 if UserInputService:IsKeyDown(Enum.KeyCode.Space) then moveDir = moveDir + Vector3.new(0, 1, 0) end
                 if UserInputService:IsKeyDown(Enum.KeyCode.LeftShift) then moveDir = moveDir - Vector3.new(0, 1, 0) end
             end
             
-            -- Чтение ввода на ТЕЛЕФОНЕ (ИСПРАВЛЕНО!)
-            if moveDir.Magnitude == 0 and curHum.MoveDirection.Magnitude > 0 then
-                -- Мы берем направление джойстика и «разворачиваем» его относительно угла поворота камеры
-                local rawMove = curHum.MoveDirection
-                
-                -- Берем только горизонтальный угол камеры, чтобы джойстик не путался
-                local _, camY, _ = cam.CFrame:ToEulerAnglesYXZ()
-                local directionCFrame = CFrame.Angles(0, camY, 0)
-                
-                -- Переводим мировое движение джойстика в локальный вектор взгляда камеры
-                local relativeMove = directionCFrame:VectorToWorldSpace(rawMove)
-                
-                -- Теперь добавляем наклон камеры вверх/вниз к итоговому направлению полета
-                moveDir = relativeMove + Vector3.new(0, cam.CFrame.LookVector.Y * 1.5, 0)
-            end
-            
-            -- Вычисляем новую позицию платформы
+            -- Вычисляем итоговое перемещение платформы
             local newPosition = FlyPlatform.Position
             if moveDir.Magnitude > 0 then
                 newPosition = FlyPlatform.Position + (moveDir.Unit * (FlySpeed * deltaTime))
             end
             
-            -- Угол взгляда по горизонтали (чтобы персонаж смотрел вперед)
+            -- Персонаж всегда стоит ровно по вертикали, но развернут лицом в точку взгляда камеры
             local camLookXZ = Vector3.new(cam.CFrame.LookVector.X, 0, cam.CFrame.LookVector.Z).Unit
-            
-            -- Обновляем платформу и плавно переносим персонажа
             FlyPlatform.CFrame = CFrame.new(newPosition, newPosition + camLookXZ)
+            
+            -- Телепортируем RootPart на летающий блок, предотвращая улет персонажа боком
             curRoot.CFrame = CFrame.new(FlyPlatform.Position + Vector3.new(0, 3.5, 0), FlyPlatform.Position + Vector3.new(cam.CFrame.LookVector.X, 3.5, cam.CFrame.LookVector.Z))
             curRoot.Velocity = Vector3.new(0, 0, 0) 
         end
@@ -378,7 +383,7 @@ CreateSlider("Скорость полета", 10, 80, 35, function(value)
     FlySpeed = value
 end)
 
--- 3. ТУМБЛЕР ПРОХОДА СКВОЗЬ СТЕНЫ
+-- 3. ТУМБЛЕР ПРОХОДА СКВОЗЬ СТЕНЫ (Обязательно включи)
 CreateToggle("Noclip (Сквозь стены)", false, function(state)
     if state then
         NoclipConnection = RunService.Stepped:Connect(function()
