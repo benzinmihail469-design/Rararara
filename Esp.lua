@@ -64,7 +64,7 @@ Title.Size = UDim2.new(1, -90, 1, 0)
 Title.Position = UDim2.new(0, 15, 0, 0)
 Title.BackgroundTransparency = 1
 Title.Font = Enum.Font.GothamBold
-Title.Text = "PREMIER HUB (500x300)"
+Title.Text = "MM2 BYPASS HUB (500x300)"
 Title.TextColor3 = Color3.fromRGB(255, 255, 255)
 Title.TextSize = 14
 Title.TextXAlignment = Enum.TextXAlignment.Left
@@ -151,7 +151,7 @@ UserInputService.InputChanged:Connect(function(input)
     end
 end)
 
--- ЛОГИКА СВОРАЧИВАНИЯ / РАЗВОРАЧИВАНИЯ Меню
+-- ЛОГИКА СВОРАЧИВАНИЯ / РАЗВОРАЧИВАНИЯ
 local isMinimized = false
 MinBtn.MouseButton1Click:Connect(function()
     isMinimized = not isMinimized
@@ -284,23 +284,70 @@ local function CreateSlider(text, min, max, default, callback)
 end
 
 -- ==========================================
--- ЗДЕСЬ НАСТРАИВАЮТСЯ КНОПКИ И ФУНКЦИИ
+-- НАСТРОЙКА КНОПОК ДЛЯ MM2
 -- ==========================================
 
--- 1. СТАНДАРТНЫЙ INF JUMP
-CreateToggle("Включить Бесконечный Прыжок", false, function(state)
-    _G.InfJump = state
-    if state then
-        UserInputService.JumpRequest:Connect(function()
-            if _G.InfJump and LocalPlayer.Character and LocalPlayer.Character:FindFirstChildOfClass("Humanoid") then
-                LocalPlayer.Character:FindFirstChildOfClass("Humanoid"):ChangeState("Jumping")
+-- ПЕРЕМЕННЫЕ ДЛЯ ОБХОДА FLY И NOCLIP
+local Flying = false
+local FlySpeed = 2 -- Мягкая базовая скорость для обхода
+local FlyConnection
+local NoclipConnection
+
+-- 1. СФРЕЙМ-ПОЛЕТ (CFrame Fly Bypass)
+local function StartCFrameFly()
+    local cam = workspace.CurrentCamera
+    FlyConnection = RunService.Heartbeat:Connect(function()
+        if not Flying then return end
+        local char = LocalPlayer.Character
+        local root = char and char:FindFirstChild("HumanoidRootPart")
+        local hum = char and char:FindFirstChildOfClass("Humanoid")
+        
+        if root and hum then
+            -- Чтобы античит не сходил с ума, временно гасим скорость падения/анимации
+            hum.PlatformStand = true
+            root.Velocity = Vector3.new(0, 0.1, 0) 
+            
+            local moveDir = Vector3.new(0, 0, 0)
+            
+            -- Проверка нажатий (ПК)
+            if UserInputService:IsKeyDown(Enum.KeyCode.W) then moveDir = moveDir + cam.CFrame.LookVector end
+            if UserInputService:IsKeyDown(Enum.KeyCode.S) then moveDir = moveDir - cam.CFrame.LookVector end
+            if UserInputService:IsKeyDown(Enum.KeyCode.A) then moveDir = moveDir - cam.CFrame.RightVector end
+            if UserInputService:IsKeyDown(Enum.KeyCode.D) then moveDir = moveDir + cam.CFrame.RightVector end
+            
+            -- Если это мобилка и зажат джойстик, берем вектор движения гуманоида
+            if moveDir.Magnitude == 0 and hum.MoveDirection.Magnitude > 0 then
+                moveDir = hum.MoveDirection
             end
-        end)
+            
+            -- Перемещение
+            if moveDir.Magnitude > 0 then
+                root.CFrame = root.CFrame + (moveDir.Unit * FlySpeed)
+            else
+                -- Если стоим на месте, держим высоту (не даем падать)
+                root.CFrame = CFrame.new(root.Position, root.Position + cam.CFrame.LookVector)
+            end
+        end
+    end)
+end
+
+CreateToggle("Bypass Fly (Полет MM2)", false, function(state)
+    Flying = state
+    if state then
+        StartCFrameFly()
+    else
+        if FlyConnection then FlyConnection:Disconnect() end
+        local char = LocalPlayer.Character
+        local hum = char and char:FindFirstChildOfClass("Humanoid")
+        if hum then hum.PlatformStand = false end -- возвращаем обычный режим ходьбы
     end
 end)
 
--- 2. СТАНДАРТНЫЙ NOCLIP
-local NoclipConnection
+CreateSlider("Скорость полета", 1, 5, 2, function(value)
+    FlySpeed = value
+end)
+
+-- 2. NOCLIP ДЛЯ МАРДЕР МИСТЕРИ
 CreateToggle("Noclip (Сквозь стены)", false, function(state)
     if state then
         NoclipConnection = RunService.Stepped:Connect(function()
@@ -320,59 +367,21 @@ CreateToggle("Noclip (Сквозь стены)", false, function(state)
     end
 end)
 
--- 3. СТАНДАРТНЫЙ FLY
-local Flying = false
-local FlyConnection
-local bv, bg
-
-local function StartFly()
-    local char = LocalPlayer.Character
-    if not char or not char:FindFirstChild("HumanoidRootPart") then return end
-    
-    bv = Instance.new("BodyVelocity", char.HumanoidRootPart)
-    bv.Velocity = Vector3.new(0, 0, 0)
-    bv.MaxForce = Vector3.new(9e9, 9e9, 9e9)
-    
-    bg = Instance.new("BodyGyro", char.HumanoidRootPart)
-    bg.MaxTorque = Vector3.new(9e9, 9e9, 9e9)
-    bg.CFrame = char.HumanoidRootPart.CFrame
-    
-    FlyConnection = RunService.RenderStepped:Connect(function()
-        if not Flying then return end
-        local cam = workspace.CurrentCamera
-        local moveDir = Vector3.new(0,0,0)
-        
-        if UserInputService:IsKeyDown(Enum.KeyCode.W) then moveDir = moveDir + cam.CFrame.LookVector end
-        if UserInputService:IsKeyDown(Enum.KeyCode.S) then moveDir = moveDir - cam.CFrame.LookVector end
-        if UserInputService:IsKeyDown(Enum.KeyCode.A) then moveDir = moveDir - cam.CFrame.RightVector end
-        if UserInputService:IsKeyDown(Enum.KeyCode.D) then moveDir = moveDir + cam.CFrame.RightVector end
-        
-        bv.Velocity = moveDir * 50
-        bg.CFrame = cam.CFrame
-    end)
-end
-
-CreateToggle("Fly (Полет)", false, function(state)
-    Flying = state
+-- 3. ДОПОЛНИТЕЛЬНЫЕ ФУНКЦИИ
+CreateToggle("Inf Jump (Бесконечный прыжок)", false, function(state)
+    _G.InfJump = state
     if state then
-        StartFly()
-    else
-        if FlyConnection then FlyConnection:Disconnect() end
-        if bv then bv:Destroy() end
-        if bg then bg:Destroy() end
+        UserInputService.JumpRequest:Connect(function()
+            if _G.InfJump and LocalPlayer.Character and LocalPlayer.Character:FindFirstChildOfClass("Humanoid") then
+                LocalPlayer.Character:FindFirstChildOfClass("Humanoid"):ChangeState("Jumping")
+            end
+        end)
     end
 end)
 
--- 4. СЛАЙДЕРЫ СКОРОСТИ И ПРЫЖКА
-CreateSlider("Скорость бега (WalkSpeed)", 16, 150, 16, function(value)
+CreateSlider("Скорость бега (WalkSpeed)", 16, 60, 16, function(value)
     if LocalPlayer.Character and LocalPlayer.Character:FindFirstChild("Humanoid") then
         LocalPlayer.Character.Humanoid.WalkSpeed = value
-    end
-end)
-
-CreateSlider("Сила прыжка (JumpPower)", 50, 250, 50, function(value)
-    if LocalPlayer.Character and LocalPlayer.Character:FindFirstChild("Humanoid") then
-        LocalPlayer.Character.Humanoid.JumpPower = value
     end
 end)
 
