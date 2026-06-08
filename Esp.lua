@@ -428,7 +428,7 @@ local function StartFlying()
 end
 
 -- ==========================================
--- ИНТЕГРИРОВАННЫЙ АВТО-ФАРМ (С ПОЛЕТОМ И NOCLIP)
+-- ИНТЕГРИРОВАННЫЙ АВТО-ФАРМ (С FLY И NOCLIP)
 -- ==========================================
 
 local function GetTargetCoinGlobal()
@@ -450,17 +450,17 @@ local function StartAutoFarm()
         local coin = GetTargetCoinGlobal()
         
         if root and coin then
-            -- Noclip активация
+            -- Noclip: отключаем коллизию всех частей персонажа
             for _, p in pairs(LocalPlayer.Character:GetDescendants()) do if p:IsA("BasePart") then p.CanCollide = false end end
             
-            -- Включаем полет при фарме, чтобы не падать
+            -- Включаем полет при фарме
             if not Flying then 
                 Flying = true
                 StartFlying()
             end
             
-            local tween = TweenService:Create(root, TweenInfo.new(0.4, Enum.EasingStyle.Linear), {CFrame = coin.CFrame})
-            tween:Play()
+            -- Телепорт/движение к монете
+            root.CFrame = coin.CFrame
         end
     end)
 end
