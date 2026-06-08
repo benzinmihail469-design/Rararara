@@ -104,7 +104,7 @@ MinBtn.TextSize = 14
 MinBtn.Parent = Header
 Instance.new("UICorner", MinBtn).CornerRadius = UDim.new(0, 6)
 
--- Кнопка Закрыть (ИСПРАВЛЕНО: Теперь тут буква X вместо некорректного символа)
+-- Кнопка Закрыть (ИСПРАВЛЕНО: Безопасный символ "X", без квадратов)
 local CloseBtn = Instance.new("TextButton")
 CloseBtn.Size = UDim2.new(0, 30, 0, 30)
 CloseBtn.Position = UDim2.new(1, -38, 0.5, -15)
@@ -119,8 +119,8 @@ Instance.new("UICorner", CloseBtn).CornerRadius = UDim.new(0, 6)
 -- Панель для вкладок (Слева)
 local TabPanel = Instance.new("Frame")
 TabPanel.Name = "TabPanel"
-TabPanel.Size = UDim2.new(0, 130, 1, -45)
-TabPanel.Position = UDim2.new(0, 10, 0, 50)
+TabPanel.Size = UDim2.new(0, 130, 1, -50)
+TabPanel.Position = UDim2.new(0, 10, 0, 45)
 TabPanel.BackgroundColor3 = Color3.fromRGB(25, 25, 32)
 TabPanel.Parent = MainFrame
 Instance.new("UICorner", TabPanel).CornerRadius = UDim.new(0, 8)
@@ -134,8 +134,8 @@ Instance.new("UIPadding", TabPanel).PaddingTop = UDim.new(0, 5)
 -- Контейнер для страниц (Справа)
 local PagesContainer = Instance.new("Frame")
 PagesContainer.Name = "PagesContainer"
-PagesContainer.Size = UDim2.new(1, -160, 1, -45)
-PagesContainer.Position = UDim2.new(0, 150, 0, 50)
+PagesContainer.Size = UDim2.new(1, -160, 1, -50)
+PagesContainer.Position = UDim2.new(0, 150, 0, 45)
 PagesContainer.BackgroundTransparency = 1
 PagesContainer.Parent = MainFrame
 
@@ -175,9 +175,8 @@ MinBtn.MouseButton1Click:Connect(function()
     TweenService:Create(MainFrame, TweenInfo.new(0.3, Enum.EasingStyle.Quad, Enum.EasingDirection.Out), {Size = targetSize}):Play()
 end)
 
--- СИСТЕМА ВКЛАДОК И СТРАНИЦ
+-- СИСТЕМА ВКЛАДОК И СТРАНИЦ (ИСПРАВЛЕНО: Объявлено строго ДО вызовов)
 local tabs = {}
-local pages = {}
 local activeTab = nil
 
 local function CreateTab(name, order)
@@ -422,7 +421,7 @@ local function StartFlying()
     end)
 end
 
--- СОЗДАНИЕ СТРАНИЦ ЧЕРЕЗ ВКЛАДКИ
+-- СОЗДАНИЕ СТРАНИЦ ЧЕРЕЗ ВКЛАДКИ (ИСПРАВЛЕНО: Функции вызываются строго после инициализации)
 local MainTab = CreateTab("Главная", 1)
 local PlayerTab = CreateTab("Игрок", 2)
 
@@ -467,17 +466,4 @@ CreateToggle(PlayerTab, "Inf Jump (Бесконечный прыжок)", false,
             if _G.InfJump and LocalPlayer.Character and LocalPlayer.Character:FindFirstChildOfClass("Humanoid") then
                 LocalPlayer.Character:FindFirstChildOfClass("Humanoid"):ChangeState("Jumping")
             end
-        end)
-    end
-end)
-
--- Активация первой вкладки по умолчанию
-tabs["Главная"].Select()
-
--- Закрытие меню
-CloseBtn.MouseButton1Click:Connect(function()
-    Flying = false
-    StopFlying()
-    if NoclipConnection then NoclipConnection:Disconnect() end
-    ScreenGui:Destroy()
-end)
+        end
