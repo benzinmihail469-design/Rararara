@@ -355,70 +355,107 @@ local function CreateSlider(parentPage, text, min, max, default, callback)
 end
 
 -- ==========================================
--- ЛОГИКА ФЛАЯ
+-- ЛОГИКА ФЛАЯ (СТАБИЛЬНАЯ ВЕРСИЯ С BODYGYRO)
 -- ==========================================
+
 local function StopFlying()
     if FlyConnection then FlyConnection:Disconnect(); FlyConnection = nil end
     if BVelocity then BVelocity:Destroy(); BVelocity = nil end
     if BGyro then BGyro:Destroy(); BGyro = nil end
-    local hum = LocalPlayer.Character and LocalPlayer.Character:FindFirstChildOfClass("Humanoid")
-    if hum then hum.PlatformStand = false end
+    
+    local char = LocalPlayer.Character
+    local hum = char and char:FindFirstChildOfClass("Humanoid")
+    if hum then
+        hum.PlatformStand = false
+    end
 end
 
 local function StartFlying()
     StopFlying()
+
     local char = LocalPlayer.Character
     local root = char and char:FindFirstChild("HumanoidRootPart")
     local hum = char and char:FindFirstChildOfClass("Humanoid")
+    
     if not root or not hum then return end
+    
     hum.PlatformStand = true
-    BVelocity = Instance.new("BodyVelocity", root)
+
+    BVelocity = Instance.new("BodyVelocity")
     BVelocity.MaxForce = Vector3.new(1e5, 1e5, 1e5)
-    BGyro = Instance.new("BodyGyro", root)
+    BVelocity.Velocity = Vector3.new(0, 0, 0)
+    BVelocity.Parent = root
+
+    BGyro = Instance.new("BodyGyro")
     BGyro.MaxTorque = Vector3.new(1e5, 1e5, 1e5)
     BGyro.P = 15000 
+    BGyro.D = 100   
+    BGyro.CFrame = root.CFrame
+    BGyro.Parent = root
+
     local cam = workspace.CurrentCamera
+
     FlyConnection = RunService.RenderStepped:Connect(function()
-        if not Flying then return end
+        if not Flying or not root or not LocalPlayer.Character then 
+            StopFlying()
+            return 
+        end
+
         BGyro.CFrame = cam.CFrame
-        local dir = Vector3.new(0,0,0)
-        if UserInputService:IsKeyDown(Enum.KeyCode.W) then dir = dir + cam.CFrame.LookVector end
-        if UserInputService:IsKeyDown(Enum.KeyCode.S) then dir = dir - cam.CFrame.LookVector end
-        BVelocity.Velocity = dir * FlySpeed
+
+        local moveDir = Vector3.new(0, 0, 0)
+
+        if MasterControl and MasterControl.GetMoveVector then
+            local moveVector = MasterControl:GetMoveVector()
+            if moveVector.Magnitude > 0 then
+                moveDir = (cam.CFrame.LookVector * -moveVector.Z) + (cam.CFrame.RightVector * moveVector.X)
+            end
+        end
+
+        if moveDir.Magnitude == 0 and UserInputService.KeyboardEnabled then
+            if UserInputService:IsKeyDown(Enum.KeyCode.W) then moveDir = moveDir + cam.CFrame.LookVector end
+            if UserInputService:IsKeyDown(Enum.KeyCode.S) then moveDir = moveDir - cam.CFrame.LookVector end
+            if UserInputService:IsKeyDown(Enum.KeyCode.A) then moveDir = moveDir - cam.CFrame.RightVector end
+            if UserInputService:IsKeyDown(Enum.KeyCode.D) then moveDir = moveDir + cam.CFrame.RightVector end
+        end
+
+        if moveDir.Magnitude > 0 then
+            BVelocity.Velocity = moveDir.Unit * FlySpeed
+        else
+            BVelocity.Velocity = Vector3.new(0, 0, 0)
+        end
     end)
 end
 
 -- ==========================================
--- ПЛАВНЫЙ АВТОФАРМ БЕЗ ПАДЕНИЙ
+-- ИНТЕГРИРОВАННЫЙ АВТО-ФАРМ (С ПОЛЕТОМ)
 -- ==========================================
+
 local function GetTargetCoinGlobal()
-    local bestCoin = nil
-    local shortestDist = 999999
     for _, child in pairs(workspace:GetDescendants()) do
         if child:IsA("BasePart") and (string.find(child.Name:lower(), "coin") or child.Name == "Coin_Server") and child.Transparency < 1 then
-            -- Защита от пустоты: проверяем, чтобы Y был выше -50
-            if child.Position.Y > -50 then 
-                local dist = (LocalPlayer.Character.HumanoidRootPart.Position - child.Position).Magnitude
-                if dist < shortestDist then
-                    shortestDist = dist
-                    bestCoin = child
-                end
-            end
+            if child.Position.Y > -50 then return child end
         end
     end
-    return bestCoin
+    return nil
 end
 
 local function StartAutoFarm()
     AutoFarmConnection = RunService.Heartbeat:Connect(function()
         if not AutoFarmEnabled then return end
+        
         local root = LocalPlayer.Character and LocalPlayer.Character:FindFirstChild("HumanoidRootPart")
         local coin = GetTargetCoinGlobal()
         
         if root and coin then
+            -- Включаем полет при фарме, чтобы не падать и летать к монетам
+            if not Flying then 
+                Flying = true
+                StartFlying()
+            end
+            
             local dist = (root.Position - coin.Position).Magnitude
-            -- Плавное движение (Tween)
-            local timeToMove = math.clamp(dist / 50, 0.2, 1) -- Ограничиваем время, чтобы античит не кикал
+            local timeToMove = math.clamp(dist / 50, 0.2, 0.8)
             local tween = TweenService:Create(root, TweenInfo.new(timeToMove, Enum.EasingStyle.Linear), {CFrame = coin.CFrame})
             tween:Play()
         end
@@ -429,9 +466,15 @@ end
 local MainTab = CreateTab("Главная", 1)
 local PlayerTab = CreateTab("Игрок", 2)
 
-CreateToggle(MainTab, "Авто-Фарм (Безопасный)", false, function(state)
+CreateToggle(MainTab, "Авто-Фарм (Fly Enabled)", false, function(state)
     AutoFarmEnabled = state
-    if state then StartAutoFarm() else if AutoFarmConnection then AutoFarmConnection:Disconnect() end end
+    if not state then 
+        Flying = false
+        StopFlying()
+        if AutoFarmConnection then AutoFarmConnection:Disconnect() end
+    else
+        StartAutoFarm()
+    end
 end)
 
 CreateToggle(PlayerTab, "Bypass Fly", false, function(state)
