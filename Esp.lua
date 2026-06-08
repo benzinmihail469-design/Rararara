@@ -19,7 +19,7 @@ if PlayerGui:FindFirstChild("ModernMenuGui") then
     PlayerGui.ModernMenuGui:Destroy()
 end
 
--- ГЛОБАЛЬНЫЕ НАСТРОЙКИ ФУНКЦИЙ (Область видимости исправлена)
+-- ГЛОБАЛЬНЫЕ НАСТРОЙКИ ФУНКЦИЙ
 local Flying = false
 local FlySpeed = 2 
 local FlyConnection = nil
@@ -70,7 +70,7 @@ Title.Size = UDim2.new(1, -90, 1, 0)
 Title.Position = UDim2.new(0, 15, 0, 0)
 Title.BackgroundTransparency = 1
 Title.Font = Enum.Font.GothamBold
-Title.Text = "MM2 BYPASS HUB (500x300)"
+Title.Text = "MM2 FLY FIX HUB (500x300)"
 Title.TextColor3 = Color3.fromRGB(255, 255, 255)
 Title.TextSize = 14
 Title.TextXAlignment = Enum.TextXAlignment.Left
@@ -122,7 +122,7 @@ UIListLayout.Padding = UDim.new(0, 8)
 UIListLayout.SortOrder = Enum.SortOrder.LayoutOrder
 UIListLayout.Parent = Container
 
--- СКРИПТ ПЕРЕТАСКИВАНИЯ
+-- СКРИПТ ПЕРЕТАСКИВАНИЯ Меню
 local dragging, dragInput, dragStart, startPos
 
 local function update(input)
@@ -290,10 +290,9 @@ local function CreateSlider(text, min, max, default, callback)
 end
 
 -- ==========================================
--- ИСПРАВЛЕННЫЙ БЛОК НАСТРОЕК ФУНКЦИЙ СЮДА
+-- ИСПРАВЛЕННЫЙ И НАДЕЖНЫЙ ОБХОД ПОЛЕТА ДЛЯ MM2
 -- ==========================================
 
--- Безопасная функция старта полета (без ошибок клавиатуры на мобилках)
 local function StartCFrameFly()
     local cam = workspace.CurrentCamera
     FlyConnection = RunService.Heartbeat:Connect(function()
@@ -303,28 +302,34 @@ local function StartCFrameFly()
         local hum = char and char:FindFirstChildOfClass("Humanoid")
         
         if root and hum then
-            hum.PlatformStand = true
-            root.Velocity = Vector3.new(0, 0.1, 0) 
+            -- Полностью обнуляем гравитационную скорость, чтобы не падать вниз!
+            root.Velocity = Vector3.new(0, 0, 0) 
             
             local moveDir = Vector3.new(0, 0, 0)
             
-            -- Безопасная проверка клавиатуры (только если она подключена/активна)
+            -- Логика движения для ПК (WASD + Высота)
             if UserInputService.KeyboardEnabled then
                 if UserInputService:IsKeyDown(Enum.KeyCode.W) then moveDir = moveDir + cam.CFrame.LookVector end
                 if UserInputService:IsKeyDown(Enum.KeyCode.S) then moveDir = moveDir - cam.CFrame.LookVector end
                 if UserInputService:IsKeyDown(Enum.KeyCode.A) then moveDir = moveDir - cam.CFrame.RightVector end
                 if UserInputService:IsKeyDown(Enum.KeyCode.D) then moveDir = moveDir + cam.CFrame.RightVector end
+                -- Подъем и спуск на ПК через кнопки
+                if UserInputService:IsKeyDown(Enum.KeyCode.Space) then moveDir = moveDir + Vector3.new(0, 1, 0) end
+                if UserInputService:IsKeyDown(Enum.KeyCode.LeftShift) or UserInputService:IsKeyDown(Enum.KeyCode.LeftControl) then moveDir = moveDir - Vector3.new(0, 1, 0) end
             end
             
-            -- Универсальный метод движения для мобилок (через джойстик)
+            -- Логика для мобилок (Учитывает и джойстик, и наклон пальцем вверх/вниз)
             if moveDir.Magnitude == 0 and hum.MoveDirection.Magnitude > 0 then
-                moveDir = hum.MoveDirection
+                -- Направление джойстика умножаем на направление взгляда камеры, чтобы лететь вверх, если камера поднята
+                moveDir = hum.MoveDirection + Vector3.new(0, cam.CFrame.LookVector.Y * 1.5, 0)
             end
             
+            -- Применяем позицию CFrame
             if moveDir.Magnitude > 0 then
-                root.CFrame = root.CFrame + (moveDir.Unit * FlySpeed)
+                root.CFrame = root.CFrame + (moveDir.Unit * (FlySpeed * 0.3))
             else
-                root.CFrame = CFrame.new(root.Position, root.Position + cam.CFrame.LookVector)
+                -- Если стоим на месте - фиксируем координаты в воздухе, чтобы плавать
+                root.CFrame = CFrame.new(root.Position, root.Position + Vector3.new(cam.CFrame.LookVector.X, 0, cam.CFrame.LookVector.Z))
             end
         end
     end)
@@ -337,14 +342,11 @@ CreateToggle("Bypass Fly (Полет MM2)", false, function(state)
         StartCFrameFly()
     else
         if FlyConnection then FlyConnection:Disconnect() end
-        local char = LocalPlayer.Character
-        local hum = char and char:FindFirstChildOfClass("Humanoid")
-        if hum then hum.PlatformStand = false end
     end
 end)
 
--- 2. СЛАЙДЕР СКОРОСТИ
-CreateSlider("Скорость полета", 1, 5, 2, function(value)
+-- 2. СЛАЙДЕР СКОРОСТИ ПОЛЕТА
+CreateSlider("Скорость полета", 1, 10, 3, function(value)
     FlySpeed = value
 end)
 
