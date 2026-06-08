@@ -1,3 +1,4 @@
+
 -- Ожидание загрузки игры
 if not game:IsLoaded() then 
     game.Loaded:Wait() 
@@ -426,7 +427,7 @@ local function StartFlying()
 end
 
 -- ==========================================
--- ЛОГИКА АВТО-ФАРМА МОНЕТ (СКОРОСТЬ 30)
+-- СТАТИЧЕСКАЯ ИСПРАВЛЕННАЯ ЛОГИКА АВТО-ФАРМА
 -- ==========================================
 
 local function GetTargetCoin()
@@ -434,7 +435,6 @@ local function GetTargetCoin()
     if Bank2 then
         local CoinContainer = Bank2:FindFirstChild("CoinContainer")
         if CoinContainer then
-            -- Ищем первую попавшуюся монетку Coin_server
             for _, child in pairs(CoinContainer:GetChildren()) do
                 if child.Name == "Coin_server" and child:IsA("BasePart") then
                     return child
@@ -448,10 +448,22 @@ end
 local function StopAutoFarm()
     if AutoFarmConnection then AutoFarmConnection:Disconnect(); AutoFarmConnection = nil end
     if CurrentTween then CurrentTween:Cancel(); CurrentTween = nil end
+    
+    local char = LocalPlayer.Character
+    local hum = char and char:FindFirstChildOfClass("Humanoid")
+    if hum then
+        hum.PlatformStand = false
+    end
 end
 
 local function StartAutoFarm()
     StopAutoFarm()
+    
+    local char = LocalPlayer.Character
+    local hum = char and char:FindFirstChildOfClass("Humanoid")
+    if hum then
+        hum.PlatformStand = true -- Переводим в PlatformStand, чтобы отключить базовую физику ходьбы
+    end
     
     AutoFarmConnection = RunService.Heartbeat:Connect(function()
         if not AutoFarmEnabled then 
@@ -459,36 +471,42 @@ local function StartAutoFarm()
             return 
         end
         
-        local char = LocalPlayer.Character
-        local root = char and char:FindFirstChild("HumanoidRootPart")
+        local currentCharacter = LocalPlayer.Character
+        local root = currentCharacter and currentCharacter:FindFirstChild("HumanoidRootPart")
         if not root then return end
         
-        -- Если мы уже летим куда-то, ждем окончания полета
+        -- Если твин уже выполняется, не перебиваем его до завершения шага
         if CurrentTween and CurrentTween.PlaybackState == Enum.PlaybackState.Playing then 
             return 
         end
         
         local coin = GetTargetCoin()
         if coin then
-            -- Рассчитываем время полета на основе расстояния, чтобы скорость была ровно 30
             local distance = (root.Position - coin.Position).Magnitude
-            local duration = distance / 30
             
+            -- Если монетка близко, мгновенно берем и ищем следующую
+            if distance < 2 then 
+                root.CFrame = coin.CFrame
+                task.wait(0.05)
+                return 
+            end
+            
+            -- Рассчитываем время полета на основе расстояния со скоростью ровно 30
+            local duration = distance / 30
             local tweenInfo = TweenInfo.new(duration, Enum.EasingStyle.Linear)
+            
             CurrentTween = TweenService:Create(root, tweenInfo, {CFrame = coin.CFrame})
             CurrentTween:Play()
         end
     end)
 end
 
-
 -- АВТО-ОБНОВЛЕНИЕ СКОРОСТИ ХОДЬБЫ ПРИ РЕСПАВНЕ И БЕГЕ
 if WalkSpeedConnection then WalkSpeedConnection:Disconnect() end
 WalkSpeedConnection = RunService.Stepped:Connect(function()
     local char = LocalPlayer.Character
     local hum = char and char:FindFirstChildOfClass("Humanoid")
-    if hum and not Flying then
-        -- Скорость меняется только если кнопка WalkSpeed активна
+    if hum and not Flying and not AutoFarmEnabled then
         hum.WalkSpeed = WalkSpeedEnabled and NormalWalkSpeed or 16
     end
 end)
@@ -501,7 +519,6 @@ local PlayerTab = CreateTab("Игрок", 2)
 CreateToggle(MainTab, "Auto Farm Coins (Банк)", false, function(state)
     AutoFarmEnabled = state
     if state then
-        -- Отключаем флай, чтобы они не конфликтовали
         Flying = false
         StopFlying()
         StartAutoFarm()
@@ -514,10 +531,8 @@ end)
 CreateToggle(PlayerTab, "Bypass Fly (Следование за камерой)", false, function(state)
     Flying = state
     if state then
-        -- Отключаем фарм при ручном полете
         AutoFarmEnabled = false
         StopAutoFarm()
-        StartAutoFarm() -- Запустит логику выключения внутри себя
         StartFlying()
     else
         StopFlying()
@@ -528,22 +543,20 @@ CreateSlider(PlayerTab, "Скорость полета", 15, 90, 35, function(va
     FlySpeed = value
 end)
 
--- Включатель/выключатель скорости ходьбы
 CreateToggle(PlayerTab, "Toggle WalkSpeed (Вкл/Выкл скорость)", false, function(state)
     WalkSpeedEnabled = state
     local char = LocalPlayer.Character
     local hum = char and char:FindFirstChildOfClass("Humanoid")
-    if hum and not Flying then 
+    if hum and not Flying and not AutoFarmEnabled then 
         hum.WalkSpeed = state and NormalWalkSpeed or 16 
     end
 end)
 
--- Ползунок настройки скорости
 CreateSlider(PlayerTab, "Cкорость ходьбы (WalkSpeed)", 16, 120, 16, function(value)
     NormalWalkSpeed = value
     local char = LocalPlayer.Character
     local hum = char and char:FindFirstChildOfClass("Humanoid")
-    if hum and WalkSpeedEnabled and not Flying then 
+    if hum and WalkSpeedEnabled and not Flying and not AutoFarmEnabled then 
         hum.WalkSpeed = value 
     end
 end)
@@ -592,7 +605,6 @@ CloseBtn.MouseButton1Click:Connect(function()
     if NoclipConnection then NoclipConnection:Disconnect() end
     if WalkSpeedConnection then WalkSpeedConnection:Disconnect() end
     
-    -- Возвращаем стандартную скорость игроку перед удалением скрипта
     local char = LocalPlayer.Character
     local hum = char and char:FindFirstChildOfClass("Humanoid")
     if hum then hum.WalkSpeed = 16 end
