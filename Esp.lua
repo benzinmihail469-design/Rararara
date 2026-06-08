@@ -422,7 +422,7 @@ local function StartFlying()
     end)
 end
 
--- АВТО-ОБНОВЛЕНИЕ СКОРОСТИ ХОДЬБЫ ПРИ РЕСПАВНЕ
+-- АВТО-ОБНОВЛЕНИЕ СКОРОСТИ ХОДЬБЫ ПРИ РЕСПАВНЕ И БЕГЕ
 if WalkSpeedConnection then WalkSpeedConnection:Disconnect() end
 WalkSpeedConnection = RunService.Stepped:Connect(function()
     local char = LocalPlayer.Character
