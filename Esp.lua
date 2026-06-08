@@ -40,7 +40,6 @@ local NoclipConnection = nil
 
 -- Физические объекты для полета
 local BVelocity = nil
-local BGyro = nil
 
 -- СОЗДАНИЕ ИНТЕРФЕЙСА (500x300)
 local ScreenGui = Instance.new("ScreenGui")
@@ -286,13 +285,12 @@ local function CreateSlider(text, min, max, default, callback)
 end
 
 -- ==========================================
--- ЛОГИКА ФЛАЯ С СИНХРОНИЗАЦИЕЙ КАНАЛОВ КАМЕРЫ
+-- ОБНОВЛЕННАЯ ЛОГИКА ФЛАЯ С ПОЛНЫМ СЛЕДОВАНИЕМ
 -- ==========================================
 
 local function StopFlying()
     if FlyConnection then FlyConnection:Disconnect(); FlyConnection = nil end
     if BVelocity then BVelocity:Destroy(); BVelocity = nil end
-    if BGyro then BGyro:Destroy(); BGyro = nil end
     
     local char = LocalPlayer.Character
     local hum = char and char:FindFirstChildOfClass("Humanoid")
@@ -310,20 +308,13 @@ local function StartFlying()
     
     if not root or not hum then return end
     
-    hum.PlatformStand = true -- Отключаем анимацию падения/ходьбы
+    hum.PlatformStand = true -- Отключаем физику падения
 
-    -- Инициализируем физические силы полета
+    -- Инициализируем силу полета
     BVelocity = Instance.new("BodyVelocity")
     BVelocity.MaxForce = Vector3.new(1e5, 1e5, 1e5)
     BVelocity.Velocity = Vector3.new(0, 0, 0)
     BVelocity.Parent = root
-
-    -- Увеличиваем скорость вращения Gyro, чтобы персонаж поворачивался мгновенно за камерой
-    BGyro = Instance.new("BodyGyro")
-    BGyro.MaxTorque = Vector3.new(1e5, 1e5, 1e5)
-    BGyro.P = 5000 -- Мощность поворота (быстрый отклик)
-    BGyro.CFrame = root.CFrame
-    BGyro.Parent = root
 
     local cam = workspace.CurrentCamera
 
@@ -333,9 +324,9 @@ local function StartFlying()
             return 
         end
 
-        -- ХАК: Каждую долю секунды синхронизируем взгляд персонажа с камерой
-        -- Персонаж смотрит ровно туда, куда направлена камера (включая наклон вверх и вниз!)
-        BGyro.CFrame = cam.CFrame
+        -- ПОЛНАЯ СИНХРОНИЗАЦИЯ С КАМЕРОЙ (Вверх, вниз, влево, вправо)
+        root.CFrame = cam.CFrame
+        root.Velocity = Vector3.new(0, 0, 0) -- Гасим стороннюю гравитацию
 
         local moveDir = Vector3.new(0, 0, 0)
 
@@ -343,7 +334,7 @@ local function StartFlying()
         if MasterControl and MasterControl.GetMoveVector then
             local moveVector = MasterControl:GetMoveVector()
             if moveVector.Magnitude > 0 then
-                -- Векторы теперь берут полный наклон CFrame камеры (полет сквозь пространство)
+                -- Полет строго сквозь 3D-пространство взгляда камеры
                 moveDir = (cam.CFrame.LookVector * -moveVector.Z) + (cam.CFrame.RightVector * moveVector.X)
             end
         end
@@ -354,15 +345,13 @@ local function StartFlying()
             if UserInputService:IsKeyDown(Enum.KeyCode.S) then moveDir = moveDir - cam.CFrame.LookVector end
             if UserInputService:IsKeyDown(Enum.KeyCode.A) then moveDir = moveDir - cam.CFrame.RightVector end
             if UserInputService:IsKeyDown(Enum.KeyCode.D) then moveDir = moveDir + cam.CFrame.RightVector end
-            if UserInputService:IsKeyDown(Enum.KeyCode.Space) then moveDir = moveDir + Vector3.new(0, 1, 0) end
-            if UserInputService:IsKeyDown(Enum.KeyCode.LeftShift) then moveDir = moveDir - Vector3.new(0, 1, 0) end
         end
 
         -- Движение
         if moveDir.Magnitude > 0 then
             BVelocity.Velocity = moveDir.Unit * FlySpeed
         else
-            BVelocity.Velocity = Vector3.new(0, 0, 0) -- Зависание на месте
+            BVelocity.Velocity = Vector3.new(0, 0, 0) -- Зависание в воздухе
         end
     end)
 end
