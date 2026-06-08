@@ -36,6 +36,7 @@ end
 local Flying = false
 local FlySpeed = 35 
 local NormalWalkSpeed = 16
+local WalkSpeedEnabled = false -- Статус кнопки включения скорости
 local FlyConnection = nil
 local NoclipConnection = nil
 local WalkSpeedConnection = nil
@@ -427,7 +428,8 @@ WalkSpeedConnection = RunService.Stepped:Connect(function()
     local char = LocalPlayer.Character
     local hum = char and char:FindFirstChildOfClass("Humanoid")
     if hum and not Flying then
-        hum.WalkSpeed = NormalWalkSpeed
+        -- Скорость меняется только если кнопка WalkSpeed активна
+        hum.WalkSpeed = WalkSpeedEnabled and NormalWalkSpeed or 16
     end
 end)
 
@@ -435,7 +437,7 @@ end)
 local MainTab = CreateTab("Главная", 1)
 local PlayerTab = CreateTab("Игрок", 2)
 
--- ЭЛЕМЕНТЫ ВКЛАДКИ "ИГРОК" (Флай переехал сюда + добавлен WalkSpeed)
+-- ЭЛЕМЕНТЫ ВКЛАДКИ "ИГРОК"
 CreateToggle(PlayerTab, "Bypass Fly (Следование за камерой)", false, function(state)
     Flying = state
     if state then
@@ -449,11 +451,24 @@ CreateSlider(PlayerTab, "Скорость полета", 15, 90, 35, function(va
     FlySpeed = value
 end)
 
+-- Включатель/выключатель скорости ходьбы
+CreateToggle(PlayerTab, "Toggle WalkSpeed (Вкл/Выкл скорость)", false, function(state)
+    WalkSpeedEnabled = state
+    local char = LocalPlayer.Character
+    local hum = char and char:FindFirstChildOfClass("Humanoid")
+    if hum and not Flying then 
+        hum.WalkSpeed = state and NormalWalkSpeed or 16 
+    end
+end)
+
+-- Ползунок настройки скорости
 CreateSlider(PlayerTab, "Cкорость ходьбы (WalkSpeed)", 16, 120, 16, function(value)
     NormalWalkSpeed = value
     local char = LocalPlayer.Character
     local hum = char and char:FindFirstChildOfClass("Humanoid")
-    if hum then hum.WalkSpeed = value end
+    if hum and WalkSpeedEnabled and not Flying then 
+        hum.WalkSpeed = value 
+    end
 end)
 
 CreateToggle(PlayerTab, "Noclip (Сквозь стены)", false, function(state)
