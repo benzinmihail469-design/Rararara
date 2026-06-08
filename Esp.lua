@@ -35,8 +35,10 @@ end
 -- ГЛОБАЛЬНЫЕ НАСТРОЙКИ
 local Flying = false
 local FlySpeed = 35 
+local NormalWalkSpeed = 16
 local FlyConnection = nil
 local NoclipConnection = nil
+local WalkSpeedConnection = nil
 
 -- Физические объекты для полета
 local BVelocity = nil
@@ -104,7 +106,7 @@ MinBtn.TextSize = 14
 MinBtn.Parent = Header
 Instance.new("UICorner", MinBtn).CornerRadius = UDim.new(0, 6)
 
--- Кнопка Закрыть (ИСПРАВЛЕНО: Безопасный символ "X", без квадратов)
+-- Кнопка Закрыть
 local CloseBtn = Instance.new("TextButton")
 CloseBtn.Size = UDim2.new(0, 30, 0, 30)
 CloseBtn.Position = UDim2.new(1, -38, 0.5, -15)
@@ -175,12 +177,11 @@ MinBtn.MouseButton1Click:Connect(function()
     TweenService:Create(MainFrame, TweenInfo.new(0.3, Enum.EasingStyle.Quad, Enum.EasingDirection.Out), {Size = targetSize}):Play()
 end)
 
--- СИСТЕМА ВКЛАДОК И СТРАНИЦ (ИСПРАВЛЕНО: Объявлено строго ДО вызовов)
+-- СИСТЕМА ВКЛАДОК И СТРАНИЦ
 local tabs = {}
 local activeTab = nil
 
 local function CreateTab(name, order)
-    -- Холст страницы (ScrollingFrame)
     local Page = Instance.new("ScrollingFrame")
     Page.Name = name .. "Page"
     Page.Size = UDim2.new(1, 0, 1, 0)
@@ -200,7 +201,6 @@ local function CreateTab(name, order)
         Page.CanvasSize = UDim2.new(0, 0, 0, ListLayout.AbsoluteContentSize.Y + 10)
     end)
 
-    -- Кнопка вкладки
     local TabBtn = Instance.new("TextButton")
     TabBtn.Name = name .. "Tab"
     TabBtn.Size = UDim2.new(1, -10, 0, 35)
@@ -232,7 +232,7 @@ local function CreateTab(name, order)
     return Page
 end
 
--- КОНСТРУКТОРЫ ЭЛЕМЕНТОВ ВНУТРИ ВКЛАДОК
+-- КОНСТРУКТОРЫ ЭЛЕМЕНТОВ
 local function CreateToggle(parentPage, text, default, callback)
     local TglFrame = Instance.new("Frame")
     TglFrame.Size = UDim2.new(1, -6, 0, 40)
@@ -421,12 +421,22 @@ local function StartFlying()
     end)
 end
 
--- СОЗДАНИЕ СТРАНИЦ ЧЕРЕЗ ВКЛАДКИ (ИСПРАВЛЕНО: Функции вызываются строго после инициализации)
+-- АВТО-ОБНОВЛЕНИЕ СКОРОСТИ ХОДЬБЫ ПРИ РЕСПАВНЕ
+if WalkSpeedConnection then WalkSpeedConnection:Disconnect() end
+WalkSpeedConnection = RunService.Stepped:Connect(function()
+    local char = LocalPlayer.Character
+    local hum = char and char:FindFirstChildOfClass("Humanoid")
+    if hum and not Flying then
+        hum.WalkSpeed = NormalWalkSpeed
+    end
+end)
+
+-- СОЗДАНИЕ СТРАНИЦ ЧЕРЕЗ ВКЛАДКИ
 local MainTab = CreateTab("Главная", 1)
 local PlayerTab = CreateTab("Игрок", 2)
 
--- ЭЛЕМЕНТЫ ВКЛАДКИ "ГЛАВНАЯ"
-CreateToggle(MainTab, "Bypass Fly (Следование за камерой)", false, function(state)
+-- ЭЛЕМЕНТЫ ВКЛАДКИ "ИГРОК" (Флай переехал сюда + добавлен WalkSpeed)
+CreateToggle(PlayerTab, "Bypass Fly (Следование за камерой)", false, function(state)
     Flying = state
     if state then
         StartFlying()
@@ -435,11 +445,17 @@ CreateToggle(MainTab, "Bypass Fly (Следование за камерой)", f
     end
 end)
 
-CreateSlider(MainTab, "Скорость полета", 15, 90, 35, function(value)
+CreateSlider(PlayerTab, "Скорость полета", 15, 90, 35, function(value)
     FlySpeed = value
 end)
 
--- ЭЛЕМЕНТЫ ВКЛАДКИ "ИГРОК"
+CreateSlider(PlayerTab, "Cкорость ходьбы (WalkSpeed)", 16, 120, 16, function(value)
+    NormalWalkSpeed = value
+    local char = LocalPlayer.Character
+    local hum = char and char:FindFirstChildOfClass("Humanoid")
+    if hum then hum.WalkSpeed = value end
+end)
+
 CreateToggle(PlayerTab, "Noclip (Сквозь стены)", false, function(state)
     if state then
         NoclipConnection = RunService.Stepped:Connect(function()
@@ -475,10 +491,17 @@ if tabs["Главная"] then
     tabs["Главная"].Select()
 end
 
--- Закрытие меню
+-- Сброс настроек и закрытие меню
 CloseBtn.MouseButton1Click:Connect(function()
     Flying = false
     StopFlying()
     if NoclipConnection then NoclipConnection:Disconnect() end
+    if WalkSpeedConnection then WalkSpeedConnection:Disconnect() end
+    
+    -- Возвращаем стандартную скорость игроку перед удалением скрипта
+    local char = LocalPlayer.Character
+    local hum = char and char:FindFirstChildOfClass("Humanoid")
+    if hum then hum.WalkSpeed = 16 end
+    
     ScreenGui:Destroy()
 end)
