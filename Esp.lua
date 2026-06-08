@@ -14,9 +14,9 @@ local PlayerGui = LocalPlayer:WaitForChild("PlayerGui", 10)
 
 if not PlayerGui then return end
 
--- Удаление старой копии меню, если она была
-if PlayerGui:FindFirstChild("MM2FlyHubGui") then
-    PlayerGui.MM2FlyHubGui:Destroy()
+-- Удаление старой копии меню
+if PlayerGui:FindFirstChild("MM2FlyFollowGui") then
+    PlayerGui.MM2FlyFollowGui:Destroy()
 end
 
 -- Подключение к официальному управлению Roblox (для мобильного джойстика)
@@ -38,13 +38,13 @@ local FlySpeed = 35
 local FlyConnection = nil
 local NoclipConnection = nil
 
--- Физические объекты для плавного полета (без багов античита)
+-- Физические объекты для полета
 local BVelocity = nil
 local BGyro = nil
 
--- СОЗДАНИЕ ИНТЕРФЕЙСА (Строго 500x300)
+-- СОЗДАНИЕ ИНТЕРФЕЙСА (500x300)
 local ScreenGui = Instance.new("ScreenGui")
-ScreenGui.Name = "MM2FlyHubGui"
+ScreenGui.Name = "MM2FlyFollowGui"
 ScreenGui.ResetOnSpawn = false
 ScreenGui.ZIndexBehavior = Enum.ZIndexBehavior.Sibling
 ScreenGui.Parent = PlayerGui
@@ -54,7 +54,7 @@ MainFrame.Name = "MainFrame"
 MainFrame.AnchorPoint = Vector2.new(0.5, 0.5)
 MainFrame.Position = UDim2.new(0.5, 0, 0.5, 0)
 MainFrame.Size = UDim2.new(0, 500, 0, 300)
-MainFrame.BackgroundColor3 = Color3.fromRGB(20, 20, 25)
+MainFrame.BackgroundColor3 = Color3.fromRGB(18, 18, 22)
 MainFrame.BorderSizePixel = 0
 MainFrame.ClipsDescendants = true
 MainFrame.Parent = ScreenGui
@@ -65,7 +65,7 @@ MainCorner.Parent = MainFrame
 
 local Stroke = Instance.new("UIStroke")
 Stroke.Thickness = 1.5
-Stroke.Color = Color3.fromRGB(255, 30, 70) -- Стильный красный неоновый контур
+Stroke.Color = Color3.fromRGB(0, 255, 140) -- Мятный неоновый цвет
 Stroke.Transparency = 0.2
 Stroke.Parent = MainFrame
 
@@ -73,7 +73,7 @@ Stroke.Parent = MainFrame
 local Header = Instance.new("Frame")
 Header.Name = "Header"
 Header.Size = UDim2.new(1, 0, 0, 40)
-Header.BackgroundColor3 = Color3.fromRGB(28, 28, 35)
+Header.BackgroundColor3 = Color3.fromRGB(25, 25, 32)
 Header.BorderSizePixel = 0
 Header.Parent = MainFrame
 
@@ -86,7 +86,7 @@ Title.Size = UDim2.new(1, -90, 1, 0)
 Title.Position = UDim2.new(0, 15, 0, 0)
 Title.BackgroundTransparency = 1
 Title.Font = Enum.Font.GothamBold
-Title.Text = "MM2 BYPASS FLY HUB (500x300)"
+Title.Text = "MM2 CAMERA FOLLOW FLY (500x300)"
 Title.TextColor3 = Color3.fromRGB(255, 255, 255)
 Title.TextSize = 14
 Title.TextXAlignment = Enum.TextXAlignment.Left
@@ -96,7 +96,7 @@ Title.Parent = Header
 local MinBtn = Instance.new("TextButton")
 MinBtn.Size = UDim2.new(0, 30, 0, 30)
 MinBtn.Position = UDim2.new(1, -75, 0.5, -15)
-MinBtn.BackgroundColor3 = Color3.fromRGB(40, 40, 48)
+MinBtn.BackgroundColor3 = Color3.fromRGB(35, 35, 42)
 MinBtn.Font = Enum.Font.GothamBold
 MinBtn.Text = "—"
 MinBtn.TextColor3 = Color3.fromRGB(200, 200, 200)
@@ -108,7 +108,7 @@ Instance.new("UICorner", MinBtn).CornerRadius = UDim.new(0, 6)
 local CloseBtn = Instance.new("TextButton")
 CloseBtn.Size = UDim2.new(0, 30, 0, 30)
 CloseBtn.Position = UDim2.new(1, -38, 0.5, -15)
-CloseBtn.BackgroundColor3 = Color3.fromRGB(255, 50, 50)
+CloseBtn.BackgroundColor3 = Color3.fromRGB(255, 60, 60)
 CloseBtn.Font = Enum.Font.GothamBold
 CloseBtn.Text = "✕"
 CloseBtn.TextColor3 = Color3.fromRGB(255, 255, 255)
@@ -124,7 +124,7 @@ Container.Position = UDim2.new(0, 10, 0, 50)
 Container.BackgroundTransparency = 1
 Container.BorderSizePixel = 0
 Container.ScrollBarThickness = 3
-Container.ScrollBarImageColor3 = Color3.fromRGB(255, 30, 70)
+Container.ScrollBarImageColor3 = Color3.fromRGB(0, 255, 140)
 Container.Parent = MainFrame
 
 local UIListLayout = Instance.new("UIListLayout")
@@ -172,7 +172,7 @@ end)
 local function CreateToggle(text, default, callback)
     local TglFrame = Instance.new("Frame")
     TglFrame.Size = UDim2.new(1, -6, 0, 40)
-    TglFrame.BackgroundColor3 = Color3.fromRGB(28, 28, 35)
+    TglFrame.BackgroundColor3 = Color3.fromRGB(25, 25, 32)
     TglFrame.Parent = Container
     Instance.new("UICorner", TglFrame).CornerRadius = UDim.new(0, 6)
 
@@ -190,7 +190,7 @@ local function CreateToggle(text, default, callback)
     local TglBtn = Instance.new("TextButton")
     TglBtn.Size = UDim2.new(0, 45, 0, 22)
     TglBtn.Position = UDim2.new(1, -55, 0.5, -11)
-    TglBtn.BackgroundColor3 = default and Color3.fromRGB(255, 30, 70) or Color3.fromRGB(50, 50, 55)
+    TglBtn.BackgroundColor3 = default and Color3.fromRGB(0, 255, 140) or Color3.fromRGB(50, 50, 55)
     TglBtn.Text = ""
     TglBtn.Parent = TglFrame
     Instance.new("UICorner", TglBtn).CornerRadius = UDim.new(0, 11)
@@ -205,7 +205,7 @@ local function CreateToggle(text, default, callback)
     local state = default
     TglBtn.MouseButton1Click:Connect(function()
         state = not state
-        local targetColor = state and Color3.fromRGB(255, 30, 70) or Color3.fromRGB(50, 50, 55)
+        local targetColor = state and Color3.fromRGB(0, 255, 140) or Color3.fromRGB(50, 50, 55)
         local targetPos = state and UDim2.new(1, -20, 0.5, -8) or UDim2.new(0, 4, 0.5, -8)
         TweenService:Create(TglBtn, TweenInfo.new(0.2), {BackgroundColor3 = targetColor}):Play()
         TweenService:Create(Switch, TweenInfo.new(0.2), {Position = targetPos}):Play()
@@ -217,7 +217,7 @@ end
 local function CreateSlider(text, min, max, default, callback)
     local SldFrame = Instance.new("Frame")
     SldFrame.Size = UDim2.new(1, -6, 0, 50)
-    SldFrame.BackgroundColor3 = Color3.fromRGB(28, 28, 35)
+    SldFrame.BackgroundColor3 = Color3.fromRGB(25, 25, 32)
     SldFrame.Parent = Container
     Instance.new("UICorner", SldFrame).CornerRadius = UDim.new(0, 6)
 
@@ -238,7 +238,7 @@ local function CreateSlider(text, min, max, default, callback)
     ValLabel.BackgroundTransparency = 1
     ValLabel.Font = Enum.Font.GothamBold
     ValLabel.Text = tostring(default)
-    ValLabel.TextColor3 = Color3.fromRGB(255, 30, 70)
+    ValLabel.TextColor3 = Color3.fromRGB(0, 255, 140)
     ValLabel.TextSize = 13
     ValLabel.TextXAlignment = Enum.TextXAlignment.Right
     ValLabel.Parent = SldFrame
@@ -253,7 +253,7 @@ local function CreateSlider(text, min, max, default, callback)
 
     local SliderFill = Instance.new("Frame")
     SliderFill.Size = UDim2.new((default - min) / (max - min), 0, 1, 0)
-    SliderFill.BackgroundColor3 = Color3.fromRGB(255, 30, 70)
+    SliderFill.BackgroundColor3 = Color3.fromRGB(0, 255, 140)
     SliderFill.BorderSizePixel = 0
     SliderFill.Parent = SliderBar
     Instance.new("UICorner", SliderFill).CornerRadius = UDim.new(0, 3)
@@ -286,7 +286,7 @@ local function CreateSlider(text, min, max, default, callback)
 end
 
 -- ==========================================
--- ЛОГИКА СТАБИЛЬНОГО ФЛАЯ ПОД МАРДЕР МИСТЕРИ 2
+-- ЛОГИКА ФЛАЯ С СИНХРОНИЗАЦИЕЙ КАНАЛОВ КАМЕРЫ
 -- ==========================================
 
 local function StopFlying()
@@ -302,7 +302,7 @@ local function StopFlying()
 end
 
 local function StartFlying()
-    StopFlying() -- Сброс прошлых сил
+    StopFlying()
 
     local char = LocalPlayer.Character
     local root = char and char:FindFirstChild("HumanoidRootPart")
@@ -310,17 +310,18 @@ local function StartFlying()
     
     if not root or not hum then return end
     
-    hum.PlatformStand = true -- Отключаем стандартную физику ходьбы, чтобы не дергало
+    hum.PlatformStand = true -- Отключаем анимацию падения/ходьбы
 
-    -- Создаем физический толкатель скорости
+    -- Инициализируем физические силы полета
     BVelocity = Instance.new("BodyVelocity")
     BVelocity.MaxForce = Vector3.new(1e5, 1e5, 1e5)
     BVelocity.Velocity = Vector3.new(0, 0, 0)
     BVelocity.Parent = root
 
-    -- Создаем физический фиксатор гироскопа (чтобы тело стояло ровно)
+    -- Увеличиваем скорость вращения Gyro, чтобы персонаж поворачивался мгновенно за камерой
     BGyro = Instance.new("BodyGyro")
     BGyro.MaxTorque = Vector3.new(1e5, 1e5, 1e5)
+    BGyro.P = 5000 -- Мощность поворота (быстрый отклик)
     BGyro.CFrame = root.CFrame
     BGyro.Parent = root
 
@@ -332,18 +333,22 @@ local function StartFlying()
             return 
         end
 
+        -- ХАК: Каждую долю секунды синхронизируем взгляд персонажа с камерой
+        -- Персонаж смотрит ровно туда, куда направлена камера (включая наклон вверх и вниз!)
+        BGyro.CFrame = cam.CFrame
+
         local moveDir = Vector3.new(0, 0, 0)
 
-        -- 1. Считывание с сенсорного мобильного джойстика
+        -- 1. Сбор сигналов с джойстика
         if MasterControl and MasterControl.GetMoveVector then
             local moveVector = MasterControl:GetMoveVector()
             if moveVector.Magnitude > 0 then
-                -- Превращаем плоские координаты пальца в полноценный 3D-вектор относительно камеры
+                -- Векторы теперь берут полный наклон CFrame камеры (полет сквозь пространство)
                 moveDir = (cam.CFrame.LookVector * -moveVector.Z) + (cam.CFrame.RightVector * moveVector.X)
             end
         end
 
-        -- 2. Считывание с клавиатуры ПК (если подключена)
+        -- 2. Сбор сигналов с клавиатуры
         if moveDir.Magnitude == 0 and UserInputService.KeyboardEnabled then
             if UserInputService:IsKeyDown(Enum.KeyCode.W) then moveDir = moveDir + cam.CFrame.LookVector end
             if UserInputService:IsKeyDown(Enum.KeyCode.S) then moveDir = moveDir - cam.CFrame.LookVector end
@@ -353,23 +358,19 @@ local function StartFlying()
             if UserInputService:IsKeyDown(Enum.KeyCode.LeftShift) then moveDir = moveDir - Vector3.new(0, 1, 0) end
         end
 
-        -- Применяем скорость движения к физическому объекту персонажа
+        -- Движение
         if moveDir.Magnitude > 0 then
             BVelocity.Velocity = moveDir.Unit * FlySpeed
         else
-            BVelocity.Velocity = Vector3.new(0, 0, 0) -- Мягкая остановка на месте
+            BVelocity.Velocity = Vector3.new(0, 0, 0) -- Зависание на месте
         end
-
-        -- Удерживаем взгляд персонажа параллельно камере, но не даем ему переворачиваться вверх ногами
-        local camLookXZ = Vector3.new(cam.CFrame.LookVector.X, 0, cam.CFrame.LookVector.Z).Unit
-        BGyro.CFrame = CFrame.new(root.Position, root.Position + camLookXZ)
     end)
 end
 
 -- КНОПКИ МЕНЮ
 
--- 1. Тумблер Безопасного Полета
-CreateToggle("Bypass Fly (Обход Полета MM2)", false, function(state)
+-- 1. Тумблер Полета
+CreateToggle("Bypass Fly (Следование за камерой)", false, function(state)
     Flying = state
     if state then
         StartFlying()
@@ -378,12 +379,12 @@ CreateToggle("Bypass Fly (Обход Полета MM2)", false, function(state)
     end
 end)
 
--- 2. Ползунок Скорости Полета
+-- 2. Ползунок Скорости
 CreateSlider("Скорость полета", 15, 90, 35, function(value)
     FlySpeed = value
 end)
 
--- 3. Тумблер Прохода Сквозь Стены (Noclip)
+-- 3. Тумблер Сквозь Стены (Noclip)
 CreateToggle("Noclip (Сквозь стены)", false, function(state)
     if state then
         NoclipConnection = RunService.Stepped:Connect(function()
@@ -415,13 +416,13 @@ CreateToggle("Inf Jump (Бесконечный прыжок)", false, function(s
     end
 end)
 
--- Автоматический размер прокрутки
+-- Авторазмер холста
 Container.CanvasSize = UDim2.new(0, 0, 0, UIListLayout.AbsoluteContentSize.Y + 10)
 UIListLayout:GetPropertyChangedSignal("AbsoluteContentSize"):Connect(function()
     Container.CanvasSize = UDim2.new(0, 0, 0, UIListLayout.AbsoluteContentSize.Y + 10)
 end)
 
--- Закрытие и очистка при нажатии на крестик
+-- Закрытие
 CloseBtn.MouseButton1Click:Connect(function()
     Flying = false
     StopFlying()
