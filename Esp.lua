@@ -285,7 +285,7 @@ local function CreateSlider(text, min, max, default, callback)
 end
 
 -- ==========================================
--- ОБНОВЛЕННАЯ ЛОГИКА ФЛАЯ С ПОЛНЫМ СЛЕДОВАНИЕМ
+-- ИСПРАВЛЕННАЯ ЛОГИКА (БЕЗ БАГА С УЛЕТОМ ВВЕРХ)
 -- ==========================================
 
 local function StopFlying()
@@ -308,9 +308,8 @@ local function StartFlying()
     
     if not root or not hum then return end
     
-    hum.PlatformStand = true -- Отключаем физику падения
+    hum.PlatformStand = true
 
-    -- Инициализируем силу полета
     BVelocity = Instance.new("BodyVelocity")
     BVelocity.MaxForce = Vector3.new(1e5, 1e5, 1e5)
     BVelocity.Velocity = Vector3.new(0, 0, 0)
@@ -324,9 +323,10 @@ local function StartFlying()
             return 
         end
 
-        -- ПОЛНАЯ СИНХРОНИЗАЦИЯ С КАМЕРОЙ (Вверх, вниз, влево, вправо)
-        root.CFrame = cam.CFrame
-        root.Velocity = Vector3.new(0, 0, 0) -- Гасим стороннюю гравитацию
+        -- РЕШЕНИЕ: Оставляем позицию персонажа (root.Position), 
+        -- но полностью копируем углы наклона камеры (cam.CFrame.Rotation)
+        root.CFrame = CFrame.new(root.Position) * cam.CFrame.Rotation
+        root.Velocity = Vector3.new(0, 0, 0)
 
         local moveDir = Vector3.new(0, 0, 0)
 
@@ -334,7 +334,6 @@ local function StartFlying()
         if MasterControl and MasterControl.GetMoveVector then
             local moveVector = MasterControl:GetMoveVector()
             if moveVector.Magnitude > 0 then
-                -- Полет строго сквозь 3D-пространство взгляда камеры
                 moveDir = (cam.CFrame.LookVector * -moveVector.Z) + (cam.CFrame.RightVector * moveVector.X)
             end
         end
@@ -347,11 +346,11 @@ local function StartFlying()
             if UserInputService:IsKeyDown(Enum.KeyCode.D) then moveDir = moveDir + cam.CFrame.RightVector end
         end
 
-        -- Движение
+        -- Применение скорости
         if moveDir.Magnitude > 0 then
             BVelocity.Velocity = moveDir.Unit * FlySpeed
         else
-            BVelocity.Velocity = Vector3.new(0, 0, 0) -- Зависание в воздухе
+            BVelocity.Velocity = Vector3.new(0, 0, 0)
         end
     end)
 end
