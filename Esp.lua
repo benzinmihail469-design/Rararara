@@ -84,7 +84,7 @@ Title.Size = UDim2.new(1, -90, 1, 0)
 Title.Position = UDim2.new(0, 15, 0, 0)
 Title.BackgroundTransparency = 1
 Title.Font = Enum.Font.GothamBold
-Title.Text = "MM2 FIXED JOYSTICK FLY (500x300)"
+Title.Text = "MM2 INVERSION FIXED FLY (500x300)"
 Title.TextColor3 = Color3.fromRGB(255, 255, 255)
 Title.TextSize = 14
 Title.TextXAlignment = Enum.TextXAlignment.Left
@@ -261,7 +261,6 @@ local function CreateSlider(text, min, max, default, callback)
     SliderBar.Position = UDim2.new(0, 10, 0, 34)
     SliderBar.BackgroundColor3 = Color3.fromRGB(50, 50, 55)
     SliderBar.Text = ""
-    SliderBar.Parent = SliderBar.Parent
     SliderBar.Parent = SldFrame
     Instance.new("UICorner", SliderBar).CornerRadius = UDim.new(0, 3)
 
@@ -305,7 +304,7 @@ local function CreateSlider(text, min, max, default, callback)
 end
 
 -- ==========================================
--- ИСПРАВЛЕННЫЙ ФЛАЙ ЧЕРЕЗ СБОР НАЖАТИЙ (ОБХОД БАГОВ)
+-- ИСПРАВЛЕННАЯ ЛОГИКА НАПРАВЛЕНИЙ (БЕЗ ИНВЕРСИИ)
 -- ==========================================
 
 local function StartPlatformFly()
@@ -313,7 +312,7 @@ local function StartPlatformFly()
     local root = char and char:FindFirstChild("HumanoidRootPart")
     if not root then return end
 
-    -- Создаем блок под ногами персонажа
+    -- Опорная платформа под ногами
     FlyPlatform = Instance.new("Part")
     FlyPlatform.Size = Vector3.new(4, 1, 4)
     FlyPlatform.CFrame = CFrame.new(root.Position - Vector3.new(0, 3.5, 0))
@@ -331,16 +330,16 @@ local function StartPlatformFly()
         if curRoot then
             local moveDir = Vector3.new(0, 0, 0)
             
-            -- СБОР СИГНАЛОВ ДЖОЙСТИКА НАПРЯМУЮ ИЗ МОДУЛЯ ROBLOX (ДЛЯ МОБИЛОК)
+            -- ЧТЕНИЕ НАПРАВЛЕНИЙ С МОБИЛЬНОГО ДЖОЙСТИКА (Знаки инверсии исправлены)
             if MasterControl and MasterControl.GetMoveVector then
                 local moveVector = MasterControl:GetMoveVector()
-                -- Если джойстик двигают, переводим локальные координаты экрана в 3D направление взгляда камеры
                 if moveVector.Magnitude > 0 then
+                    -- Вектор Z инвертирован (в Roblox -Z означает движение вперед), Vector X — право/лево
                     moveDir = (cam.CFrame.LookVector * -moveVector.Z) + (cam.CFrame.RightVector * moveVector.X)
                 end
             end
             
-            -- ДОПОЛНИТЕЛЬНЫЙ СБОР ДЛЯ ПК (КЛАВИАТУРА)
+            -- ЧТЕНИЕ НАПРАВЛЕНИЙ С ПК (КЛАВИАТУРА)
             if moveDir.Magnitude == 0 and UserInputService.KeyboardEnabled then
                 if UserInputService:IsKeyDown(Enum.KeyCode.W) then moveDir = moveDir + cam.CFrame.LookVector end
                 if UserInputService:IsKeyDown(Enum.KeyCode.S) then moveDir = moveDir - cam.CFrame.LookVector end
@@ -350,17 +349,17 @@ local function StartPlatformFly()
                 if UserInputService:IsKeyDown(Enum.KeyCode.LeftShift) then moveDir = moveDir - Vector3.new(0, 1, 0) end
             end
             
-            -- Вычисляем итоговое перемещение платформы
+            -- Рассчитываем новую позицию летающего блока
             local newPosition = FlyPlatform.Position
             if moveDir.Magnitude > 0 then
                 newPosition = FlyPlatform.Position + (moveDir.Unit * (FlySpeed * deltaTime))
             end
             
-            -- Персонаж всегда стоит ровно по вертикали, но развернут лицом в точку взгляда камеры
+            -- Ракурс взгляда персонажа строго по горизонтали (чтобы его не тошнило)
             local camLookXZ = Vector3.new(cam.CFrame.LookVector.X, 0, cam.CFrame.LookVector.Z).Unit
             FlyPlatform.CFrame = CFrame.new(newPosition, newPosition + camLookXZ)
             
-            -- Телепортируем RootPart на летающий блок, предотвращая улет персонажа боком
+            -- Удерживаем персонажа ровно над платформой и плавно поворачиваем за камерой
             curRoot.CFrame = CFrame.new(FlyPlatform.Position + Vector3.new(0, 3.5, 0), FlyPlatform.Position + Vector3.new(cam.CFrame.LookVector.X, 3.5, cam.CFrame.LookVector.Z))
             curRoot.Velocity = Vector3.new(0, 0, 0) 
         end
@@ -383,7 +382,7 @@ CreateSlider("Скорость полета", 10, 80, 35, function(value)
     FlySpeed = value
 end)
 
--- 3. ТУМБЛЕР ПРОХОДА СКВОЗЬ СТЕНЫ (Обязательно включи)
+-- 3. ТУМБЛЕР ПРОХОДА СКВОЗЬ СТЕНЫ
 CreateToggle("Noclip (Сквозь стены)", false, function(state)
     if state then
         NoclipConnection = RunService.Stepped:Connect(function()
