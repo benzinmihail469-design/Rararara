@@ -19,6 +19,12 @@ if PlayerGui:FindFirstChild("ModernMenuGui") then
     PlayerGui.ModernMenuGui:Destroy()
 end
 
+-- ГЛОБАЛЬНЫЕ НАСТРОЙКИ ФУНКЦИЙ (Область видимости исправлена)
+local Flying = false
+local FlySpeed = 2 
+local FlyConnection = nil
+local NoclipConnection = nil
+
 -- СОЗДАНИЕ ИНТЕРФЕЙСА
 local ScreenGui = Instance.new("ScreenGui")
 ScreenGui.Name = "ModernMenuGui"
@@ -47,7 +53,7 @@ Stroke.Color = Color3.fromRGB(0, 162, 255)
 Stroke.Transparency = 0.2
 Stroke.Parent = MainFrame
 
--- ШАПКА (Зона для перетаскивания и кнопок управления)
+-- ШАПКА
 local Header = Instance.new("Frame")
 Header.Name = "Header"
 Header.Size = UDim2.new(1, 0, 0, 40)
@@ -116,7 +122,7 @@ UIListLayout.Padding = UDim.new(0, 8)
 UIListLayout.SortOrder = Enum.SortOrder.LayoutOrder
 UIListLayout.Parent = Container
 
--- СКРИПТ ПЕРЕТАСКИВАНИЯ (ДЛЯ ПК И ТЕЛЕФОНОВ)
+-- СКРИПТ ПЕРЕТАСКИВАНИЯ
 local dragging, dragInput, dragStart, startPos
 
 local function update(input)
@@ -151,7 +157,7 @@ UserInputService.InputChanged:Connect(function(input)
     end
 end)
 
--- ЛОГИКА СВОРАЧИВАНИЯ / РАЗВОРАЧИВАНИЯ
+-- ЛОГИКА СВОРАЧИВАНИЯ
 local isMinimized = false
 MinBtn.MouseButton1Click:Connect(function()
     isMinimized = not isMinimized
@@ -284,16 +290,10 @@ local function CreateSlider(text, min, max, default, callback)
 end
 
 -- ==========================================
--- НАСТРОЙКА КНОПОК ДЛЯ MM2
+-- ИСПРАВЛЕННЫЙ БЛОК НАСТРОЕК ФУНКЦИЙ СЮДА
 -- ==========================================
 
--- ПЕРЕМЕННЫЕ ДЛЯ ОБХОДА FLY И NOCLIP
-local Flying = false
-local FlySpeed = 2 -- Мягкая базовая скорость для обхода
-local FlyConnection
-local NoclipConnection
-
--- 1. СФРЕЙМ-ПОЛЕТ (CFrame Fly Bypass)
+-- Безопасная функция старта полета (без ошибок клавиатуры на мобилках)
 local function StartCFrameFly()
     local cam = workspace.CurrentCamera
     FlyConnection = RunService.Heartbeat:Connect(function()
@@ -303,34 +303,34 @@ local function StartCFrameFly()
         local hum = char and char:FindFirstChildOfClass("Humanoid")
         
         if root and hum then
-            -- Чтобы античит не сходил с ума, временно гасим скорость падения/анимации
             hum.PlatformStand = true
             root.Velocity = Vector3.new(0, 0.1, 0) 
             
             local moveDir = Vector3.new(0, 0, 0)
             
-            -- Проверка нажатий (ПК)
-            if UserInputService:IsKeyDown(Enum.KeyCode.W) then moveDir = moveDir + cam.CFrame.LookVector end
-            if UserInputService:IsKeyDown(Enum.KeyCode.S) then moveDir = moveDir - cam.CFrame.LookVector end
-            if UserInputService:IsKeyDown(Enum.KeyCode.A) then moveDir = moveDir - cam.CFrame.RightVector end
-            if UserInputService:IsKeyDown(Enum.KeyCode.D) then moveDir = moveDir + cam.CFrame.RightVector end
+            -- Безопасная проверка клавиатуры (только если она подключена/активна)
+            if UserInputService.KeyboardEnabled then
+                if UserInputService:IsKeyDown(Enum.KeyCode.W) then moveDir = moveDir + cam.CFrame.LookVector end
+                if UserInputService:IsKeyDown(Enum.KeyCode.S) then moveDir = moveDir - cam.CFrame.LookVector end
+                if UserInputService:IsKeyDown(Enum.KeyCode.A) then moveDir = moveDir - cam.CFrame.RightVector end
+                if UserInputService:IsKeyDown(Enum.KeyCode.D) then moveDir = moveDir + cam.CFrame.RightVector end
+            end
             
-            -- Если это мобилка и зажат джойстик, берем вектор движения гуманоида
+            -- Универсальный метод движения для мобилок (через джойстик)
             if moveDir.Magnitude == 0 and hum.MoveDirection.Magnitude > 0 then
                 moveDir = hum.MoveDirection
             end
             
-            -- Перемещение
             if moveDir.Magnitude > 0 then
                 root.CFrame = root.CFrame + (moveDir.Unit * FlySpeed)
             else
-                -- Если стоим на месте, держим высоту (не даем падать)
                 root.CFrame = CFrame.new(root.Position, root.Position + cam.CFrame.LookVector)
             end
         end
     end)
 end
 
+-- 1. ТУМБЛЕР ПОЛЕТА
 CreateToggle("Bypass Fly (Полет MM2)", false, function(state)
     Flying = state
     if state then
@@ -339,15 +339,16 @@ CreateToggle("Bypass Fly (Полет MM2)", false, function(state)
         if FlyConnection then FlyConnection:Disconnect() end
         local char = LocalPlayer.Character
         local hum = char and char:FindFirstChildOfClass("Humanoid")
-        if hum then hum.PlatformStand = false end -- возвращаем обычный режим ходьбы
+        if hum then hum.PlatformStand = false end
     end
 end)
 
+-- 2. СЛАЙДЕР СКОРОСТИ
 CreateSlider("Скорость полета", 1, 5, 2, function(value)
     FlySpeed = value
 end)
 
--- 2. NOCLIP ДЛЯ МАРДЕР МИСТЕРИ
+-- 3. ТУМБЛЕР ПРОХОДА СКВОЗЬ СТЕНЫ
 CreateToggle("Noclip (Сквозь стены)", false, function(state)
     if state then
         NoclipConnection = RunService.Stepped:Connect(function()
@@ -367,7 +368,7 @@ CreateToggle("Noclip (Сквозь стены)", false, function(state)
     end
 end)
 
--- 3. ДОПОЛНИТЕЛЬНЫЕ ФУНКЦИИ
+-- 4. БЕСКОНЕЧНЫЙ ПРЫЖОК
 CreateToggle("Inf Jump (Бесконечный прыжок)", false, function(state)
     _G.InfJump = state
     if state then
@@ -379,13 +380,14 @@ CreateToggle("Inf Jump (Бесконечный прыжок)", false, function(s
     end
 end)
 
+-- 5. СЛАЙДЕР СКОРОСТИ ХОДЬБЫ
 CreateSlider("Скорость бега (WalkSpeed)", 16, 60, 16, function(value)
     if LocalPlayer.Character and LocalPlayer.Character:FindFirstChild("Humanoid") then
         LocalPlayer.Character.Humanoid.WalkSpeed = value
     end
 end)
 
--- Корректировка скролла
+-- Автоматическая подгонка CanvasSize
 Container.CanvasSize = UDim2.new(0, 0, 0, UIListLayout.AbsoluteContentSize.Y + 10)
 UIListLayout:GetPropertyChangedSignal("AbsoluteContentSize"):Connect(function()
     Container.CanvasSize = UDim2.new(0, 0, 0, UIListLayout.AbsoluteContentSize.Y + 10)
@@ -393,5 +395,7 @@ end)
 
 -- Закрытие меню
 CloseBtn.MouseButton1Click:Connect(function()
+    if FlyConnection then FlyConnection:Disconnect() end
+    if NoclipConnection then NoclipConnection:Disconnect() end
     ScreenGui:Destroy()
 end)
