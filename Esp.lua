@@ -36,14 +36,15 @@ end
 local Flying = false
 local FlySpeed = 35 
 local NormalWalkSpeed = 16
-local WalkSpeedEnabled = false -- Статус кнопки включения скорости
-local AutoFarmEnabled = false  -- Статус авто-фарма
+local WalkSpeedEnabled = false 
+local AutoFarmEnabled = false  
 local FlyConnection = nil
 local NoclipConnection = nil
 local WalkSpeedConnection = nil
 local AutoFarmConnection = nil
-local CurrentTween = nil
-local LastLogTime = 0          -- Таймер для консоли
+local LastLogTime = 0          
+local NextScanTime = 0
+local CachedCoin = nil
 
 -- Физические объекты для полета
 local BVelocity = nil
@@ -72,7 +73,7 @@ MainCorner.Parent = MainFrame
 
 local Stroke = Instance.new("UIStroke")
 Stroke.Thickness = 1.5
-Stroke.Color = Color3.fromRGB(0, 255, 140) -- Мятный неоновый цвет
+Stroke.Color = Color3.fromRGB(0, 255, 140) 
 Stroke.Transparency = 0.2
 Stroke.Parent = MainFrame
 
@@ -93,7 +94,7 @@ Title.Size = UDim2.new(1, -90, 1, 0)
 Title.Position = UDim2.new(0, 15, 0, 0)
 Title.BackgroundTransparency = 1
 Title.Font = Enum.Font.GothamBold
-Title.Text = "MM2 CAMERA FOLLOW FLY (Tabs)"
+Title.Text = "MM2 AUTOFARM & FLY"
 Title.TextColor3 = Color3.fromRGB(255, 255, 255)
 Title.TextSize = 14
 Title.TextXAlignment = Enum.TextXAlignment.Left
@@ -427,36 +428,59 @@ local function StartFlying()
 end
 
 -- ==========================================
--- СВЕРХБЫСТРЫЙ АВТО-ТЕЛЕПОРТ (ФАРМ МОНЕТ)
+-- ГЛОБАЛЬНЫЙ АВТОНОМНЫЙ АВТО-ТЕЛЕПОРТ С ОТЛАДКОЙ
 -- ==========================================
 
-local function GetTargetCoin()
-    local Bank2 = workspace:FindFirstChild("Bank2")
-    if not Bank2 then return nil end
-    
-    -- Прочёсываем абсолютно всё дерево объектов внутри папки локации
-    for _, child in pairs(Bank2:GetDescendants()) do
-        if child:IsA("BasePart") and string.find(child.Name, "Coin") then
-            -- Проверка, чтобы монетка существовала и не была прозрачной
-            if child.Transparency < 1 and child.Parent ~= nil then
-                return child
+local function GetTargetCoinGlobal()
+    -- Если кэшированная монетка ещё валидна и не собрана, используем её
+    if CachedCoin and CachedCoin.Parent and CachedCoin:IsA("BasePart") and CachedCoin.Transparency < 1 then
+        return CachedCoin
+    end
+
+    -- Кэш пуст или устарел, сканируем заново (не чаще раза в 0.3 сек для оптимизации)
+    if tick() < NextScanTime then return nil end
+    NextScanTime = tick() + 0.3
+
+    -- Вариант 1: Ищем контейнер монет по названию, используемому в MM2
+    local coinContainer = workspace:FindFirstChild("Normal") or workspace:FindFirstChild("Map") or workspace:FindFirstChild("CoinContainer")
+    if coinContainer then
+        for _, child in pairs(coinContainer:GetDescendants()) do
+            if child:IsA("BasePart") and (string.find(child.Name:lower(), "coin") or child.Name == "Coin_Server") then
+                if child.Transparency < 1 then
+                    CachedCoin = child
+                    return child
+                end
             end
         end
     end
+
+    -- Вариант 2: Полный тотальный скан всего Workspace (если папки переименованы)
+    for _, child in pairs(workspace:GetDescendants()) do
+        -- Отсекаем персонажей игроков, чтобы не сканировать лишнее
+        if child:IsA("BasePart") and not child:IsDescendantOf(Players) then
+            if string.find(child.Name:lower(), "coin") or child.Name == "Coin_Server" or child:FindFirstChild("CoinVisual") then
+                if child.Transparency < 1 and child.Parent ~= nil then
+                    CachedCoin = child
+                    return child
+                end
+            end
+        end
+    end
+
     return nil
 end
 
 local function StopAutoFarm()
     if AutoFarmConnection then AutoFarmConnection:Disconnect(); AutoFarmConnection = nil end
-    if CurrentTween then CurrentTween:Cancel(); CurrentTween = nil end
     
     local char = LocalPlayer.Character
     local root = char and char:FindFirstChild("HumanoidRootPart")
-    if root then root.Anchored = false end
+    if root then root.Velocity = Vector3.new(0,0,0) end
 end
 
 local function StartAutoFarm()
     StopAutoFarm()
+    print("[AutoFarm]: Скрипт запущен. Ожидание монет на карте...")
     
     AutoFarmConnection = RunService.Heartbeat:Connect(function()
         if not AutoFarmEnabled then 
@@ -468,19 +492,23 @@ local function StartAutoFarm()
         local root = char and char:FindFirstChild("HumanoidRootPart")
         if not root then return end
         
-        local coin = GetTargetCoin()
+        local coin = GetTargetCoinGlobal()
         if coin then
-            -- Вывод в консоль (без спама, с ограничением раз в 2.5 сек)
+            -- Вывод логов без флуда
             if tick() - LastLogTime > 2.5 then
-                print("[AutoFarm]: Обнаружена активная монетка! Координаты: " .. tostring(coin.Position))
+                print("[AutoFarm]: Монетка Успешно Найдена! Имя: " .. coin.Name .. " | Путь: " .. coin:GetFullName())
                 LastLogTime = tick()
             end
             
-            -- Моментальный прыжок прямо на позицию монетки (+0.5 по высоте, чтобы не провалиться под карту)
-            root.CFrame = coin.CFrame * CFrame.new(0, 0.5, 0)
-            
-            -- Небольшая микро-задержка для стабильного пинга и прогрузки сбора сервером
-            task.wait(0.15)
+            -- Телепортируем Хитбокс игрока прямо в монетку
+            root.CFrame = coin.CFrame
+            root.Velocity = Vector3.new(0,0,0) -- Гасим инерцию, чтобы античит не кикал
+        else
+            -- Лог, если монет вообще нет в рабочей области
+            if tick() - LastLogTime > 5 then
+                print("[AutoFarm]: Активных монет на карте пока не обнаружено. Жду спавна...")
+                LastLogTime = tick()
+            end
         end
     end)
 end
@@ -500,7 +528,7 @@ local MainTab = CreateTab("Главная", 1)
 local PlayerTab = CreateTab("Игрок", 2)
 
 -- ЭЛЕМЕНТЫ ВКЛАДКИ "ГЛАВНАЯ"
-CreateToggle(MainTab, "Auto Farm Coins (Банк)", false, function(state)
+CreateToggle(MainTab, "Универсальный Авто-Фарм Монет", false, function(state)
     AutoFarmEnabled = state
     if state then
         Flying = false
