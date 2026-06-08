@@ -43,6 +43,7 @@ local NoclipConnection = nil
 local WalkSpeedConnection = nil
 local AutoFarmConnection = nil
 local CurrentTween = nil
+local LastLogTime = 0          -- Таймер для консоли
 
 -- Физические объекты для полета
 local BVelocity = nil
@@ -426,19 +427,17 @@ local function StartFlying()
 end
 
 -- ==========================================
--- ИСПРАВЛЕННАЯ РЕКУРСИВНАЯ ЛОГИКА АВТО-ФАРМА
+-- СВЕРХБЫСТРЫЙ АВТО-ТЕЛЕПОРТ (ФАРМ МОНЕТ)
 -- ==========================================
 
--- Глубокий поиск монеток по всему Bank2 (независимо от структуры папок)
 local function GetTargetCoin()
     local Bank2 = workspace:FindFirstChild("Bank2")
     if not Bank2 then return nil end
     
-    -- Проходим по абсолютно ВСЕМ объектам внутри карты рекурсивно
+    -- Прочёсываем абсолютно всё дерево объектов внутри папки локации
     for _, child in pairs(Bank2:GetDescendants()) do
-        -- Ищем по ключевому слову Coin в имени и проверяем, что это физическая деталь
         if child:IsA("BasePart") and string.find(child.Name, "Coin") then
-            -- Проверяем, что монетка не прозрачная (чтобы не лететь на уже собранные спавнеры)
+            -- Проверка, чтобы монетка существовала и не была прозрачной
             if child.Transparency < 1 and child.Parent ~= nil then
                 return child
             end
@@ -452,20 +451,12 @@ local function StopAutoFarm()
     if CurrentTween then CurrentTween:Cancel(); CurrentTween = nil end
     
     local char = LocalPlayer.Character
-    local hum = char and char:FindFirstChildOfClass("Humanoid")
-    if hum then
-        hum.PlatformStand = false
-    end
+    local root = char and char:FindFirstChild("HumanoidRootPart")
+    if root then root.Anchored = false end
 end
 
 local function StartAutoFarm()
     StopAutoFarm()
-    
-    local char = LocalPlayer.Character
-    local hum = char and char:FindFirstChildOfClass("Humanoid")
-    if hum then
-        hum.PlatformStand = true -- Отключаем стандартную анимацию бега, чтобы плавно лететь
-    end
     
     AutoFarmConnection = RunService.Heartbeat:Connect(function()
         if not AutoFarmEnabled then 
@@ -473,32 +464,23 @@ local function StartAutoFarm()
             return 
         end
         
-        local currentCharacter = LocalPlayer.Character
-        local root = currentCharacter and currentCharacter:FindFirstChild("HumanoidRootPart")
+        local char = LocalPlayer.Character
+        local root = char and char:FindFirstChild("HumanoidRootPart")
         if not root then return end
-        
-        -- Если мы уже в полете — не прерываем текущий твин до окончания шага
-        if CurrentTween and CurrentTween.PlaybackState == Enum.PlaybackState.Playing then 
-            return 
-        end
         
         local coin = GetTargetCoin()
         if coin then
-            local distance = (root.Position - coin.Position).Magnitude
-            
-            -- Если до монетки пара шагов, ТП-шимся прямо в неё для мгновенного сбора
-            if distance < 3 then 
-                root.CFrame = coin.CFrame
-                task.wait(0.05) -- Небольшая задержка, чтобы игра успела засчитать монетку
-                return 
+            -- Вывод в консоль (без спама, с ограничением раз в 2.5 сек)
+            if tick() - LastLogTime > 2.5 then
+                print("[AutoFarm]: Обнаружена активная монетка! Координаты: " .. tostring(coin.Position))
+                LastLogTime = tick()
             end
             
-            -- Рассчитываем время полета на основе дистанции, чтобы скорость была ровно 30
-            local duration = distance / 30
-            local tweenInfo = TweenInfo.new(duration, Enum.EasingStyle.Linear)
+            -- Моментальный прыжок прямо на позицию монетки (+0.5 по высоте, чтобы не провалиться под карту)
+            root.CFrame = coin.CFrame * CFrame.new(0, 0.5, 0)
             
-            CurrentTween = TweenService:Create(root, tweenInfo, {CFrame = coin.CFrame})
-            CurrentTween:Play()
+            -- Небольшая микро-задержка для стабильного пинга и прогрузки сбора сервером
+            task.wait(0.15)
         end
     end)
 end
