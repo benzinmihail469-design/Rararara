@@ -1,4 +1,3 @@
-
 -- Ожидание загрузки игры
 if not game:IsLoaded() then 
     game.Loaded:Wait() 
@@ -427,18 +426,21 @@ local function StartFlying()
 end
 
 -- ==========================================
--- СТАТИЧЕСКАЯ ИСПРАВЛЕННАЯ ЛОГИКА АВТО-ФАРМА
+-- ИСПРАВЛЕННАЯ РЕКУРСИВНАЯ ЛОГИКА АВТО-ФАРМА
 -- ==========================================
 
+-- Глубокий поиск монеток по всему Bank2 (независимо от структуры папок)
 local function GetTargetCoin()
     local Bank2 = workspace:FindFirstChild("Bank2")
-    if Bank2 then
-        local CoinContainer = Bank2:FindFirstChild("CoinContainer")
-        if CoinContainer then
-            for _, child in pairs(CoinContainer:GetChildren()) do
-                if child.Name == "Coin_server" and child:IsA("BasePart") then
-                    return child
-                end
+    if not Bank2 then return nil end
+    
+    -- Проходим по абсолютно ВСЕМ объектам внутри карты рекурсивно
+    for _, child in pairs(Bank2:GetDescendants()) do
+        -- Ищем по ключевому слову Coin в имени и проверяем, что это физическая деталь
+        if child:IsA("BasePart") and string.find(child.Name, "Coin") then
+            -- Проверяем, что монетка не прозрачная (чтобы не лететь на уже собранные спавнеры)
+            if child.Transparency < 1 and child.Parent ~= nil then
+                return child
             end
         end
     end
@@ -462,7 +464,7 @@ local function StartAutoFarm()
     local char = LocalPlayer.Character
     local hum = char and char:FindFirstChildOfClass("Humanoid")
     if hum then
-        hum.PlatformStand = true -- Переводим в PlatformStand, чтобы отключить базовую физику ходьбы
+        hum.PlatformStand = true -- Отключаем стандартную анимацию бега, чтобы плавно лететь
     end
     
     AutoFarmConnection = RunService.Heartbeat:Connect(function()
@@ -475,7 +477,7 @@ local function StartAutoFarm()
         local root = currentCharacter and currentCharacter:FindFirstChild("HumanoidRootPart")
         if not root then return end
         
-        -- Если твин уже выполняется, не перебиваем его до завершения шага
+        -- Если мы уже в полете — не прерываем текущий твин до окончания шага
         if CurrentTween and CurrentTween.PlaybackState == Enum.PlaybackState.Playing then 
             return 
         end
@@ -484,14 +486,14 @@ local function StartAutoFarm()
         if coin then
             local distance = (root.Position - coin.Position).Magnitude
             
-            -- Если монетка близко, мгновенно берем и ищем следующую
-            if distance < 2 then 
+            -- Если до монетки пара шагов, ТП-шимся прямо в неё для мгновенного сбора
+            if distance < 3 then 
                 root.CFrame = coin.CFrame
-                task.wait(0.05)
+                task.wait(0.05) -- Небольшая задержка, чтобы игра успела засчитать монетку
                 return 
             end
             
-            -- Рассчитываем время полета на основе расстояния со скоростью ровно 30
+            -- Рассчитываем время полета на основе дистанции, чтобы скорость была ровно 30
             local duration = distance / 30
             local tweenInfo = TweenInfo.new(duration, Enum.EasingStyle.Linear)
             
