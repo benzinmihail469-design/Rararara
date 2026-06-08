@@ -21,9 +21,10 @@ end
 
 -- ГЛОБАЛЬНЫЕ НАСТРОЙКИ ФУНКЦИЙ
 local Flying = false
-local FlySpeed = 2 
+local FlySpeed = 30 -- Теперь это скорость в нормальных единицах Roblox
 local FlyConnection = nil
 local NoclipConnection = nil
+local FlyPlatform = nil -- Невидимая платформа для обхода античита
 
 -- СОЗДАНИЕ ИНТЕРФЕЙСА
 local ScreenGui = Instance.new("ScreenGui")
@@ -70,7 +71,7 @@ Title.Size = UDim2.new(1, -90, 1, 0)
 Title.Position = UDim2.new(0, 15, 0, 0)
 Title.BackgroundTransparency = 1
 Title.Font = Enum.Font.GothamBold
-Title.Text = "MM2 FLY FIX HUB (500x300)"
+Title.Text = "MM2 PLATFORM FLY HUB (500x300)"
 Title.TextColor3 = Color3.fromRGB(255, 255, 255)
 Title.TextSize = 14
 Title.TextXAlignment = Enum.TextXAlignment.Left
@@ -290,47 +291,57 @@ local function CreateSlider(text, min, max, default, callback)
 end
 
 -- ==========================================
--- ИСПРАВЛЕННЫЙ И НАДЕЖНЫЙ ОБХОД ПОЛЕТА ДЛЯ MM2
+-- МЕТОД ОБХОДА ЧЕРЕЗ СОЗДАНИЕ ПЛАТФОРМЫ
 -- ==========================================
 
-local function StartCFrameFly()
+local function StartPlatformFly()
+    local char = LocalPlayer.Character
+    local root = char and char:FindFirstChild("HumanoidRootPart")
+    if not root then return end
+
+    -- Создаем невидимый блок под ногами персонажа
+    FlyPlatform = Instance.new("Part")
+    FlyPlatform.Size = Vector3.new(6, 1, 6)
+    FlyPlatform.CFrame = root.CFrame - Vector3.new(0, 3.5, 0)
+    FlyPlatform.Transparency = 1 -- Полностью невидимый (сделай 0.5 для теста, если хочешь видеть его)
+    FlyPlatform.Anchored = true
+    FlyPlatform.Parent = workspace
+
     local cam = workspace.CurrentCamera
-    FlyConnection = RunService.Heartbeat:Connect(function()
-        if not Flying then return end
-        local char = LocalPlayer.Character
-        local root = char and char:FindFirstChild("HumanoidRootPart")
-        local hum = char and char:FindFirstChildOfClass("Humanoid")
+
+    FlyConnection = RunService.RenderStepped:Connect(function(deltaTime)
+        if not Flying or not FlyPlatform or not LocalPlayer.Character then return end
+        local curChar = LocalPlayer.Character
+        local curRoot = curChar:FindFirstChild("HumanoidRootPart")
+        local curHum = curChar:FindFirstChildOfClass("Humanoid")
         
-        if root and hum then
-            -- Полностью обнуляем гравитационную скорость, чтобы не падать вниз!
-            root.Velocity = Vector3.new(0, 0, 0) 
-            
+        if curRoot and curHum then
             local moveDir = Vector3.new(0, 0, 0)
             
-            -- Логика движения для ПК (WASD + Высота)
+            -- Чтение кнопок на ПК
             if UserInputService.KeyboardEnabled then
                 if UserInputService:IsKeyDown(Enum.KeyCode.W) then moveDir = moveDir + cam.CFrame.LookVector end
                 if UserInputService:IsKeyDown(Enum.KeyCode.S) then moveDir = moveDir - cam.CFrame.LookVector end
                 if UserInputService:IsKeyDown(Enum.KeyCode.A) then moveDir = moveDir - cam.CFrame.RightVector end
                 if UserInputService:IsKeyDown(Enum.KeyCode.D) then moveDir = moveDir + cam.CFrame.RightVector end
-                -- Подъем и спуск на ПК через кнопки
+                -- Высота на ПК
                 if UserInputService:IsKeyDown(Enum.KeyCode.Space) then moveDir = moveDir + Vector3.new(0, 1, 0) end
-                if UserInputService:IsKeyDown(Enum.KeyCode.LeftShift) or UserInputService:IsKeyDown(Enum.KeyCode.LeftControl) then moveDir = moveDir - Vector3.new(0, 1, 0) end
+                if UserInputService:IsKeyDown(Enum.KeyCode.LeftShift) then moveDir = moveDir - Vector3.new(0, 1, 0) end
             end
             
-            -- Логика для мобилок (Учитывает и джойстик, и наклон пальцем вверх/вниз)
-            if moveDir.Magnitude == 0 and hum.MoveDirection.Magnitude > 0 then
-                -- Направление джойстика умножаем на направление взгляда камеры, чтобы лететь вверх, если камера поднята
-                moveDir = hum.MoveDirection + Vector3.new(0, cam.CFrame.LookVector.Y * 1.5, 0)
+            -- Чтение джойстика на ТЕЛЕФОНЕ + наклон камеры
+            if moveDir.Magnitude == 0 and curHum.MoveDirection.Magnitude > 0 then
+                moveDir = curHum.MoveDirection + Vector3.new(0, cam.CFrame.LookVector.Y * 1.2, 0)
             end
             
-            -- Применяем позицию CFrame
+            -- Двигаем платформу, если есть ввод
             if moveDir.Magnitude > 0 then
-                root.CFrame = root.CFrame + (moveDir.Unit * (FlySpeed * 0.3))
-            else
-                -- Если стоим на месте - фиксируем координаты в воздухе, чтобы плавать
-                root.CFrame = CFrame.new(root.Position, root.Position + Vector3.new(cam.CFrame.LookVector.X, 0, cam.CFrame.LookVector.Z))
+                FlyPlatform.CFrame = FlyPlatform.CFrame + (moveDir.Unit * (FlySpeed * deltaTime))
             end
+            
+            -- Жёстко телепортируем персонажа на платформу, чтобы он не упал
+            curRoot.CFrame = CFrame.new(FlyPlatform.Position + Vector3.new(0, 3.5, 0), FlyPlatform.Position + Vector3.new(cam.CFrame.LookVector.X, 3.5, cam.CFrame.LookVector.Z))
+            curRoot.Velocity = Vector3.new(0, 0, 0) -- гасим падение
         end
     end)
 end
@@ -339,18 +350,19 @@ end
 CreateToggle("Bypass Fly (Полет MM2)", false, function(state)
     Flying = state
     if state then
-        StartCFrameFly()
+        StartPlatformFly()
     else
         if FlyConnection then FlyConnection:Disconnect() end
+        if FlyPlatform then FlyPlatform:Destroy(); FlyPlatform = nil end
     end
 end)
 
 -- 2. СЛАЙДЕР СКОРОСТИ ПОЛЕТА
-CreateSlider("Скорость полета", 1, 10, 3, function(value)
+CreateSlider("Скорость полета", 10, 70, 30, function(value)
     FlySpeed = value
 end)
 
--- 3. ТУМБЛЕР ПРОХОДА СКВОЗЬ СТЕНЫ
+-- 3. ТУМБЛЕР ПРОХОДА СКВОЗЬ СТЕНЫ (Обязательно включи вместе с флаем)
 CreateToggle("Noclip (Сквозь стены)", false, function(state)
     if state then
         NoclipConnection = RunService.Stepped:Connect(function()
@@ -399,5 +411,6 @@ end)
 CloseBtn.MouseButton1Click:Connect(function()
     if FlyConnection then FlyConnection:Disconnect() end
     if NoclipConnection then NoclipConnection:Disconnect() end
+    if FlyPlatform then FlyPlatform:Destroy() end
     ScreenGui:Destroy()
 end)
