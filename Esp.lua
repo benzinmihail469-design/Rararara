@@ -9,7 +9,6 @@ local UserInputService = game:GetService("UserInputService")
 local RunService = game:GetService("RunService")
 local Players = game:GetService("Players")
 local VirtualInput = game:GetService("VirtualInputManager")
-local ReplicatedStorage = game:GetService("ReplicatedStorage")
 
 local LocalPlayer = Players.LocalPlayer or Players.PlayerAdded:Wait()
 local PlayerGui = LocalPlayer:WaitForChild("PlayerGui", 10)
@@ -617,7 +616,7 @@ task.spawn(function()
 end)
 
 -- ==========================================
--- ЛОГИКА ДЛЯ ШЕРИФА (ИСПРАВЛЕННАЯ - РАБОТАЕТ!)
+-- ЛОГИКА ДЛЯ ШЕРИФА (ИСПРАВЛЕННАЯ - БЕЗ goto)
 -- ==========================================
 
 -- Функция принудительного выстрела на мобильных устройствах
@@ -642,93 +641,75 @@ local function ForceMobileShoot(gun)
     return true
 end
 
--- Функция для телепортации к убийце
-local function TeleportToMurderer(targetRoot)
-    local myRoot = LocalPlayer.Character and LocalPlayer.Character:FindFirstChild("HumanoidRootPart")
-    if not myRoot or not targetRoot then return false end
-    
-    -- Телепортируемся на расстояние удара (2 студа)
-    local newCFrame = targetRoot.CFrame * CFrame.new(0, 0, 2)
-    myRoot.CFrame = newCFrame
-    return true
-end
-
--- АВТО-УБИЙСТВО МАНЬЯКА (ДЛЯ ШЕРИФА - ПОЛНОСТЬЮ ИСПРАВЛЕНО)
+-- АВТО-УБИЙСТВО МАНЬЯКА (ДЛЯ ШЕРИФА - ИСПРАВЛЕНО)
 task.spawn(function()
     while task.wait(0.15) do
         if AutoShootMurdererEnabled then
             -- Проверяем, живы ли мы
             if not LocalPlayer.Character or not LocalPlayer.Character:FindFirstChild("HumanoidRootPart") then
                 task.wait(0.5)
-                goto continue
-            end
-            
-            local myHum = LocalPlayer.Character:FindFirstChild("Humanoid")
-            if not myHum or myHum.Health <= 0 then
-                task.wait(0.5)
-                goto continue
-            end
-            
-            -- Получаем роль и оружие
-            local _, isSheriff, gun = GetPlayerRoleAndTool(LocalPlayer)
-            
-            if isSheriff and gun then
-                local myRoot = LocalPlayer.Character:FindFirstChild("HumanoidRootPart")
-                
-                -- Экипируем пистолет
-                if gun.Parent ~= LocalPlayer.Character then
-                    myHum:EquipTool(gun)
-                    task.wait(0.2)
-                end
-                
-                -- Ищем убийцу
-                local murderer = nil
-                local murdererRoot = nil
-                
-                for _, target in pairs(Players:GetPlayers()) do
-                    if target ~= LocalPlayer then
-                        local targetMurd, _, _ = GetPlayerRoleAndTool(target)
-                        if targetMurd and target.Character then
-                            local targetHum = target.Character:FindFirstChild("Humanoid")
-                            local targetRoot = target.Character:FindFirstChild("HumanoidRootPart")
-                            
-                            if targetHum and targetHum.Health > 0 and targetRoot then
-                                murderer = target
-                                murdererRoot = targetRoot
-                                break
+            else
+                local myHum = LocalPlayer.Character:FindFirstChild("Humanoid")
+                if not myHum or myHum.Health <= 0 then
+                    task.wait(0.5)
+                else
+                    -- Получаем роль и оружие
+                    local _, isSheriff, gun = GetPlayerRoleAndTool(LocalPlayer)
+                    
+                    if isSheriff and gun then
+                        local myRoot = LocalPlayer.Character:FindFirstChild("HumanoidRootPart")
+                        
+                        -- Экипируем пистолет
+                        if gun.Parent ~= LocalPlayer.Character then
+                            myHum:EquipTool(gun)
+                            task.wait(0.2)
+                        end
+                        
+                        -- Ищем убийцу
+                        local murdererRoot = nil
+                        
+                        for _, target in pairs(Players:GetPlayers()) do
+                            if target ~= LocalPlayer then
+                                local targetMurd, _, _ = GetPlayerRoleAndTool(target)
+                                if targetMurd and target.Character then
+                                    local targetHum = target.Character:FindFirstChild("Humanoid")
+                                    local targetRoot = target.Character:FindFirstChild("HumanoidRootPart")
+                                    
+                                    if targetHum and targetHum.Health > 0 and targetRoot then
+                                        murdererRoot = targetRoot
+                                        break
+                                    end
+                                end
                             end
+                        end
+                        
+                        -- Если нашли убийцу
+                        if murdererRoot then
+                            -- 1. Телепортируемся к убийце
+                            myRoot.CFrame = murdererRoot.CFrame * CFrame.new(0, 0, 2)
+                            task.wait(0.1)
+                            
+                            -- 2. Направляем камеру и персонажа на убийцу
+                            local cam = workspace.CurrentCamera
+                            local lookAtCFrame = CFrame.lookAt(myRoot.Position, murdererRoot.Position)
+                            
+                            myRoot.CFrame = lookAtCFrame
+                            cam.CFrame = lookAtCFrame
+                            
+                            task.wait(0.1)
+                            
+                            -- 3. Стреляем 5 раз для гарантии
+                            for i = 1, 5 do
+                                ForceMobileShoot(gun)
+                                task.wait(0.1)
+                            end
+                            
+                            task.wait(0.5)
                         end
                     end
                 end
-                
-                -- Если нашли убийцу
-                if murderer and murdererRoot then
-                    -- 1. Телепортируемся к убийце
-                    TeleportToMurderer(murdererRoot)
-                    task.wait(0.1)
-                    
-                    -- 2. Направляем камеру и персонажа на убийцу
-                    local cam = workspace.CurrentCamera
-                    local lookAtCFrame = CFrame.lookAt(myRoot.Position, murdererRoot.Position)
-                    
-                    myRoot.CFrame = lookAtCFrame
-                    cam.CFrame = lookAtCFrame
-                    
-                    task.wait(0.1)
-                    
-                    -- 3. Стреляем 5 раз для гарантии
-                    for i = 1, 5 do
-                        ForceMobileShoot(gun)
-                        task.wait(0.1)
-                    end
-                    
-                    -- Небольшая пауза перед следующим циклом
-                    task.wait(0.5)
-                end
             end
         end
-        
-        ::continue::
     end
 end)
 
