@@ -38,6 +38,7 @@ local FlySpeed = 35
 local NormalWalkSpeed = 16
 local WalkSpeedEnabled = false 
 local AutoFarmEnabled = false  
+local AutoFarmSpeed = 16 -- Наша регулируемая скорость фарма
 local FlyConnection = nil
 local NoclipConnection = nil
 local WalkSpeedConnection = nil
@@ -401,7 +402,6 @@ local function StartFlying()
             return 
         end
 
-        -- Если включен автофарм, ручной полет уступает ему управление физикой
         if AutoFarmEnabled then return end
 
         BGyro.CFrame = cam.CFrame
@@ -431,7 +431,7 @@ local function StartFlying()
 end
 
 -- ==========================================
--- ГЛОБАЛЬНЫЙ АВТОНОМНЫЙ АВТО-ТЕЛЕПОРТ С ОТЛАДКОЙ
+-- ГЛОБАЛЬНЫЙ АВТОНОМНЫЙ АВТО-ТЕЛЕПОРТ
 -- ==========================================
 
 local function GetTargetCoinGlobal()
@@ -483,7 +483,6 @@ local function StartAutoFarm()
     
     hum.PlatformStand = true
 
-    -- Инициализируем физику полета для плавного перемещения, если её нет
     if not BVelocity or not BVelocity.Parent then
         BVelocity = Instance.new("BodyVelocity", root)
         BVelocity.MaxForce = Vector3.new(1e5, 1e5, 1e5)
@@ -504,19 +503,19 @@ local function StartAutoFarm()
         local root = char and char:FindFirstChild("HumanoidRootPart")
         if not root then return end
         
-        -- Постоянный Noclip во время автофарма
         for _, part in pairs(char:GetDescendants()) do
             if part:IsA("BasePart") then part.CanCollide = false end
         end
         
         local coin = GetTargetCoinGlobal()
         if coin and coin.Parent then
-            BGyro.CFrame = workspace.CurrentCamera.CFrame
+            -- ФИКС ПОВОРОТА: Игрок смотрит ровно в сторону монетки, игнорируя камеру
+            BGyro.CFrame = CFrame.lookAt(root.Position, Vector3.new(coin.Position.X, root.Position.Y, coin.Position.Z))
             
             local dir = (coin.Position - root.Position)
-            -- Плавный легитный полёт на заданной скорости 16
+            -- Плавный легитный полёт на заданной через слайдер скорости
             if dir.Magnitude > 1.5 then
-                BVelocity.Velocity = dir.Unit * 16
+                BVelocity.Velocity = dir.Unit * AutoFarmSpeed
             else
                 root.CFrame = coin.CFrame
                 BVelocity.Velocity = Vector3.new(0, 0, 0)
@@ -527,7 +526,7 @@ local function StartAutoFarm()
     end)
 end
 
--- АВТО-ОБНОВЛЕНИЕ СКОРОСТИ ХОДЬБЫ (ФИКС СБРОСА ИГРОЙ)
+-- АВТО-ОБНОВЛЕНИЕ СКОРОСТИ ХОДЬБЫ
 if WalkSpeedConnection then WalkSpeedConnection:Disconnect() end
 WalkSpeedConnection = RunService.Stepped:Connect(function()
     local char = LocalPlayer.Character
@@ -553,6 +552,11 @@ CreateToggle(MainTab, "Универсальный Авто-Фарм Монет",
     else
         StopAutoFarm()
     end
+end)
+
+-- Добавленный слайдер для регулировки скорости фарма
+CreateSlider(MainTab, "Скорость авто-фарма", 10, 60, 16, function(value)
+    AutoFarmSpeed = value
 end)
 
 -- ЭЛЕМЕНТЫ ВКЛАДКИ "ИГРОК"
@@ -607,12 +611,10 @@ CreateToggle(PlayerTab, "Inf Jump (Бесконечный прыжок)", false,
     end
 end)
 
--- Авто-активация первой вкладки при старте
 if tabs["Главная"] then
     tabs["Главная"].Select()
 end
 
--- Сброс настроек и закрытие меню
 CloseBtn.MouseButton1Click:Connect(function()
     Flying = false
     AutoFarmEnabled = false
