@@ -588,20 +588,20 @@ task.spawn(function()
     end
 end)
 
--- ИСПРАВЛЕННЫЙ Auto Kill - убивает ТОЛЬКО маньяка (если вы шериф)
+-- Auto Kill для МАНЬЯКА (убивает всех активных игроков, кроме других маньяков)
 task.spawn(function()
     while task.wait(0.25) do
         if AutoKillEnabled then
-            local _, isSheriff, gun = GetPlayerRoleAndTool(LocalPlayer)
+            local isMurderer, _, knife = GetPlayerRoleAndTool(LocalPlayer)
             
-            if not isSheriff then
-                -- Ничего не делаем, только если мы не шериф
-            elseif gun and LocalPlayer.Character and LocalPlayer.Character:FindFirstChild("HumanoidRootPart") then
+            if not isMurderer then
+                -- Если мы не маньяк - ничего не делаем
+            elseif knife and LocalPlayer.Character and LocalPlayer.Character:FindFirstChild("HumanoidRootPart") then
                 local myHum = LocalPlayer.Character:FindFirstChild("Humanoid")
                 local myRoot = LocalPlayer.Character:FindFirstChild("HumanoidRootPart")
                 
-                if myHum and gun.Parent ~= LocalPlayer.Character then
-                    myHum:EquipTool(gun)
+                if myHum and knife.Parent ~= LocalPlayer.Character then
+                    myHum:EquipTool(knife)
                     task.wait(0.1)
                 end
 
@@ -611,9 +611,68 @@ task.spawn(function()
                         local targetHum = target.Character:FindFirstChild("Humanoid")
                         local targetRoot = target.Character:FindFirstChild("HumanoidRootPart")
                         
-                        if targetIsMurderer and targetHum and targetHum.Health > 0 and not targetHum.PlatformStand then
+                        -- Проверяем что цель жива и НЕ маньяк (маньяк убивает всех, кроме маньяков)
+                        if not targetIsMurderer and targetHum and targetHum.Health > 0 and not targetHum.PlatformStand then
                             myRoot.Velocity = Vector3.new(0, 0, 0)
-                            myRoot.CFrame = targetRoot.CFrame * CFrame.new(0, 0, 2.5)
+                            myRoot.CFrame = targetRoot.CFrame * CFrame.new(0, 0, 1.5)
+                            task.wait(0.1)
+                            knife:Activate()
+                            task.wait(0.5)
+                            break
+                        end
+                    end
+                end
+            end
+        end
+    end
+end)
+
+-- Auto Shoot Murderer для ШЕРИФА (убивает ТОЛЬКО маньяка)
+task.spawn(function()
+    while task.wait(0.2) do
+        if AutoShootMurdererEnabled then
+            if not LocalPlayer.Character or not LocalPlayer.Character:FindFirstChild("HumanoidRootPart") then
+                task.wait(0.5)
+            else
+                local myHum = LocalPlayer.Character:FindFirstChild("Humanoid")
+                local myRoot = LocalPlayer.Character:FindFirstChild("HumanoidRootPart")
+                
+                if myHum and myHum.Health > 0 then
+                    local _, isSheriff, gun = GetPlayerRoleAndTool(LocalPlayer)
+                    
+                    if isSheriff and gun then
+                        if gun.Parent ~= LocalPlayer.Character then
+                            myHum:EquipTool(gun)
+                            task.wait(0.2)
+                        end
+                        
+                        local murdererRoot = nil
+                        
+                        for _, target in pairs(Players:GetPlayers()) do
+                            if target ~= LocalPlayer then
+                                local targetIsMurderer, _, _ = GetPlayerRoleAndTool(target)
+                                if targetIsMurderer and target.Character then
+                                    local targetHum = target.Character:FindFirstChild("Humanoid")
+                                    local targetRoot = target.Character:FindFirstChild("HumanoidRootPart")
+                                    
+                                    if targetHum and targetHum.Health > 0 and targetRoot then
+                                        murdererRoot = targetRoot
+                                        break
+                                    end
+                                end
+                            end
+                        end
+                        
+                        if murdererRoot then
+                            local cam = workspace.CurrentCamera
+                            cam.CameraType = Enum.CameraType.Scriptable
+                            
+                            myRoot.Velocity = Vector3.new(0,0,0)
+                            myRoot.CFrame = murdererRoot.CFrame * CFrame.new(0, 0, 5)
+                            
+                            local aimCFrame = CFrame.lookAt(cam.CFrame.Position, murdererRoot.Position)
+                            cam.CFrame = aimCFrame
+                            
                             task.wait(0.1)
                             
                             for i = 1, 3 do
@@ -621,8 +680,8 @@ task.spawn(function()
                                 task.wait(0.1)
                             end
                             
-                            task.wait(0.8)
-                            break
+                            cam.CameraType = Enum.CameraType.Custom
+                            task.wait(1.5)
                         end
                     end
                 end
@@ -657,68 +716,6 @@ local function ForceMobileShoot(gun, targetPos)
     
     return true
 end
-
-task.spawn(function()
-    while task.wait(0.15) do
-        if AutoShootMurdererEnabled then
-            if not LocalPlayer.Character or not LocalPlayer.Character:FindFirstChild("HumanoidRootPart") then
-                task.wait(0.5)
-            else
-                local myHum = LocalPlayer.Character:FindFirstChild("Humanoid")
-                local myRoot = LocalPlayer.Character:FindFirstChild("HumanoidRootPart")
-                
-                if myHum and myHum.Health > 0 then
-                    local _, isSheriff, gun = GetPlayerRoleAndTool(LocalPlayer)
-                    
-                    if isSheriff and gun then
-                        if gun.Parent ~= LocalPlayer.Character then
-                            myHum:EquipTool(gun)
-                            task.wait(0.2)
-                        end
-                        
-                        local murdererRoot = nil
-                        
-                        for _, target in pairs(Players:GetPlayers()) do
-                            if target ~= LocalPlayer then
-                                local targetMurd, _, _ = GetPlayerRoleAndTool(target)
-                                if targetMurd and target.Character then
-                                    local targetHum = target.Character:FindFirstChild("Humanoid")
-                                    local targetRoot = target.Character:FindFirstChild("HumanoidRootPart")
-                                    
-                                    if targetHum and targetHum.Health > 0 and targetRoot then
-                                        murdererRoot = targetRoot
-                                        break
-                                    end
-                                end
-                            end
-                        end
-                        
-                        if murdererRoot then
-                            local cam = workspace.CurrentCamera
-                            cam.CameraType = Enum.CameraType.Scriptable
-                            
-                            myRoot.Velocity = Vector3.new(0,0,0)
-                            myRoot.CFrame = murdererRoot.CFrame * CFrame.new(0, 0, 5)
-                            
-                            local aimCFrame = CFrame.lookAt(cam.CFrame.Position, murdererRoot.Position)
-                            cam.CFrame = aimCFrame
-                            
-                            task.wait(0.1)
-                            
-                            for i = 1, 3 do
-                                ForceMobileShoot(gun, murdererRoot.Position)
-                                task.wait(0.1)
-                            end
-                            
-                            cam.CameraType = Enum.CameraType.Custom
-                            task.wait(1.5)
-                        end
-                    end
-                end
-            end
-        end
-    end
-end)
 
 task.spawn(function()
     while task.wait(0.3) do
