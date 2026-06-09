@@ -509,11 +509,9 @@ local function StartAutoFarm()
         
         local coin = GetTargetCoinGlobal()
         if coin and coin.Parent then
-            -- ФИКС ПОВОРОТА: Игрок смотрит ровно в сторону монетки, игнорируя камеру
             BGyro.CFrame = CFrame.lookAt(root.Position, Vector3.new(coin.Position.X, root.Position.Y, coin.Position.Z))
             
             local dir = (coin.Position - root.Position)
-            -- Плавный легитный полёт на заданной через слайдер скорости
             if dir.Magnitude > 1.5 then
                 BVelocity.Velocity = dir.Unit * AutoFarmSpeed
             else
@@ -525,6 +523,23 @@ local function StartAutoFarm()
         end
     end)
 end
+
+-- ==========================================
+-- ЛОГИКА АВТО-ВОССТАНОВЛЕНИЯ ПОСЛЕ СМЕРТИ
+-- ==========================================
+LocalPlayer.CharacterAdded:Connect(function(newChar)
+    local root = newChar:WaitForChild("HumanoidRootPart", 5)
+    local hum = newChar:WaitForChild("Humanoid", 5)
+    
+    if root and hum then
+        task.wait(0.5) -- Небольшая задержка, чтобы игра успела всё прогрузить после спавна
+        if AutoFarmEnabled then
+            StartAutoFarm()
+        elseif Flying then
+            StartFlying()
+        end
+    end
+end)
 
 -- АВТО-ОБНОВЛЕНИЕ СКОРОСТИ ХОДЬБЫ
 if WalkSpeedConnection then WalkSpeedConnection:Disconnect() end
@@ -554,8 +569,8 @@ CreateToggle(MainTab, "Универсальный Авто-Фарм Монет",
     end
 end)
 
--- Добавленный слайдер для регулировки скорости фарма
-CreateSlider(MainTab, "Скорость авто-фарма", 10, 60, 16, function(value)
+-- Обновленный слайдер с максимальной скоростью 25
+CreateSlider(MainTab, "Скорость авто-фарма", 10, 25, 16, function(value)
     AutoFarmSpeed = value
 end)
 
