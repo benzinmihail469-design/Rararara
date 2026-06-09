@@ -38,7 +38,7 @@ local FlySpeed = 35
 local NormalWalkSpeed = 16
 local WalkSpeedEnabled = false 
 local AutoFarmEnabled = false  
-local AutoFarmSpeed = 16 -- Наша регулируемая скорость фарма
+local AutoFarmSpeed = 16 
 local FlyConnection = nil
 local NoclipConnection = nil
 local WalkSpeedConnection = nil
@@ -148,7 +148,9 @@ PagesContainer.Position = UDim2.new(0, 150, 0, 45)
 PagesContainer.BackgroundTransparency = 1
 PagesContainer.Parent = MainFrame
 
--- Скрипт перетаскивания (Драг)
+-- ==========================================
+-- СКРИПТ ПЕРЕТАСКИВАНИЯ (ОБНОВЛЕН ДЛЯ ВСЕГО МЕНЮ)
+-- ==========================================
 local dragging, dragInput, dragStart, startPos
 local function update(input)
     local delta = input.Position - dragStart
@@ -156,7 +158,8 @@ local function update(input)
     TweenService:Create(MainFrame, TweenInfo.new(0.1, Enum.EasingStyle.Quad, Enum.EasingDirection.Out), {Position = targetPos}):Play()
 end
 
-Header.InputBegan:Connect(function(input)
+-- Привязка ко всему MainFrame, а не только к Header
+MainFrame.InputBegan:Connect(function(input)
     if input.UserInputType == Enum.UserInputType.MouseButton1 or input.UserInputType == Enum.UserInputType.Touch then
         dragging = true
         dragStart = input.Position
@@ -167,7 +170,7 @@ Header.InputBegan:Connect(function(input)
     end
 end)
 
-Header.InputChanged:Connect(function(input)
+MainFrame.InputChanged:Connect(function(input)
     if input.UserInputType == Enum.UserInputType.MouseMovement or input.UserInputType == Enum.UserInputType.Touch then dragInput = input end
 end)
 
@@ -532,7 +535,7 @@ LocalPlayer.CharacterAdded:Connect(function(newChar)
     local hum = newChar:WaitForChild("Humanoid", 5)
     
     if root and hum then
-        task.wait(0.5) -- Небольшая задержка, чтобы игра успела всё прогрузить после спавна
+        task.wait(0.5)
         if AutoFarmEnabled then
             StartAutoFarm()
         elseif Flying then
@@ -569,7 +572,6 @@ CreateToggle(MainTab, "Универсальный Авто-Фарм Монет",
     end
 end)
 
--- Обновленный слайдер с максимальной скоростью 25
 CreateSlider(MainTab, "Скорость авто-фарма", 10, 25, 16, function(value)
     AutoFarmSpeed = value
 end)
