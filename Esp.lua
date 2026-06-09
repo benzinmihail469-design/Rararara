@@ -401,6 +401,9 @@ local function StartFlying()
             return 
         end
 
+        -- Если включен автофарм, ручной полет уступает ему управление физикой
+        if AutoFarmEnabled then return end
+
         BGyro.CFrame = cam.CFrame
 
         local moveDir = Vector3.new(0, 0, 0)
@@ -428,81 +431,153 @@ local function StartFlying()
 end
 
 -- ==========================================
--- ИНТЕГРИРОВАННЫЙ АВТО-ФАРМ (С FLY И NOCLIP)
+-- ГЛОБАЛЬНЫЙ АВТОНОМНЫЙ АВТО-ТЕЛЕПОРТ С ОТЛАДКОЙ
 -- ==========================================
 
 local function GetTargetCoinGlobal()
+    if CachedCoin and CachedCoin.Parent and CachedCoin:IsA("BasePart") and CachedCoin.Transparency < 1 then
+        return CachedCoin
+    end
+
     if tick() < NextScanTime then return nil end
     NextScanTime = tick() + 0.3
-    for _, child in pairs(workspace:GetDescendants()) do
-        if child:IsA("BasePart") and (string.find(child.Name:lower(), "coin") or child.Name == "Coin_Server") and child.Transparency < 1 then
-            if child.Position.Y > -50 then return child end
+
+    local coinContainer = workspace:FindFirstChild("Normal") or workspace:FindFirstChild("Map") or workspace:FindFirstChild("CoinContainer")
+    if coinContainer then
+        for _, child in pairs(coinContainer:GetDescendants()) do
+            if child:IsA("BasePart") and (string.find(child.Name:lower(), "coin") or child.Name == "Coin_Server") then
+                if child.Transparency < 1 then
+                    CachedCoin = child
+                    return child
+                end
+            end
         end
     end
+
+    for _, child in pairs(workspace:GetDescendants()) do
+        if child:IsA("BasePart") and not child:IsDescendantOf(Players) then
+            if string.find(child.Name:lower(), "coin") or child.Name == "Coin_Server" or child:FindFirstChild("CoinVisual") then
+                if child.Transparency < 1 and child.Parent ~= nil then
+                    CachedCoin = child
+                    return child
+                end
+            end
+        end
+    end
+
     return nil
 end
 
+local function StopAutoFarm()
+    if AutoFarmConnection then AutoFarmConnection:Disconnect(); AutoFarmConnection = nil end
+    if not Flying then StopFlying() end
+end
+
 local function StartAutoFarm()
+    StopAutoFarm()
+    
+    local char = LocalPlayer.Character
+    local root = char and char:FindFirstChild("HumanoidRootPart")
+    local hum = char and char:FindFirstChildOfClass("Humanoid")
+    if not root or not hum then return end
+    
+    hum.PlatformStand = true
+
+    -- Инициализируем физику полета для плавного перемещения, если её нет
+    if not BVelocity or not BVelocity.Parent then
+        BVelocity = Instance.new("BodyVelocity", root)
+        BVelocity.MaxForce = Vector3.new(1e5, 1e5, 1e5)
+    end
+    if not BGyro or not BGyro.Parent then
+        BGyro = Instance.new("BodyGyro", root)
+        BGyro.MaxTorque = Vector3.new(1e5, 1e5, 1e5)
+        BGyro.CFrame = root.CFrame
+    end
+
     AutoFarmConnection = RunService.Heartbeat:Connect(function()
-        if not AutoFarmEnabled then return end
+        if not AutoFarmEnabled then 
+            StopAutoFarm()
+            return 
+        end
         
-        local root = LocalPlayer.Character and LocalPlayer.Character:FindFirstChild("HumanoidRootPart")
+        local char = LocalPlayer.Character
+        local root = char and char:FindFirstChild("HumanoidRootPart")
+        if not root then return end
+        
+        -- Постоянный Noclip во время автофарма
+        for _, part in pairs(char:GetDescendants()) do
+            if part:IsA("BasePart") then part.CanCollide = false end
+        end
+        
         local coin = GetTargetCoinGlobal()
-        
-        if root and coin then
-            -- Noclip: отключаем коллизию всех частей персонажа
-            for _, p in pairs(LocalPlayer.Character:GetDescendants()) do if p:IsA("BasePart") then p.CanCollide = false end end
+        if coin and coin.Parent then
+            BGyro.CFrame = workspace.CurrentCamera.CFrame
             
-            -- Включаем полет при фарме
-            if not Flying then 
-                Flying = true
-                StartFlying()
+            local dir = (coin.Position - root.Position)
+            -- Плавный легитный полёт на заданной скорости 16
+            if dir.Magnitude > 1.5 then
+                BVelocity.Velocity = dir.Unit * 16
+            else
+                root.CFrame = coin.CFrame
+                BVelocity.Velocity = Vector3.new(0, 0, 0)
             end
-            
-            -- Телепорт/движение к монете
-            root.CFrame = coin.CFrame
+        else
+            BVelocity.Velocity = Vector3.new(0, 0, 0)
         end
     end)
 end
 
--- СТРАНИЦЫ
+-- АВТО-ОБНОВЛЕНИЕ СКОРОСТИ ХОДЬБЫ (ФИКС СБРОСА ИГРОЙ)
+if WalkSpeedConnection then WalkSpeedConnection:Disconnect() end
+WalkSpeedConnection = RunService.Stepped:Connect(function()
+    local char = LocalPlayer.Character
+    local hum = char and char:FindFirstChildOfClass("Humanoid")
+    if hum and not Flying and not AutoFarmEnabled then
+        if WalkSpeedEnabled then
+            hum.WalkSpeed = NormalWalkSpeed
+        else
+            hum.WalkSpeed = 16
+        end
+    end
+end)
+
+-- СОЗДАНИЕ СТРАНИЦ ЧЕРЕЗ ВКЛАДКИ
 local MainTab = CreateTab("Главная", 1)
 local PlayerTab = CreateTab("Игрок", 2)
 
-CreateToggle(MainTab, "Авто-Фарм (Noclip+Fly)", false, function(state)
+-- ЭЛЕМЕНТЫ ВКЛАДКИ "ГЛАВНАЯ"
+CreateToggle(MainTab, "Универсальный Авто-Фарм Монет", false, function(state)
     AutoFarmEnabled = state
-    if not state then 
-        Flying = false
-        StopFlying()
-        if AutoFarmConnection then AutoFarmConnection:Disconnect() end
-    else
+    if state then
         StartAutoFarm()
+    else
+        StopAutoFarm()
     end
 end)
 
-CreateToggle(PlayerTab, "Bypass Fly", false, function(state)
+-- ЭЛЕМЕНТЫ ВКЛАДКИ "ИГРОК"
+CreateToggle(PlayerTab, "Bypass Fly (Следование за камерой)", false, function(state)
     Flying = state
-    if state then StartFlying() else StopFlying() end
-end)
-
-CreateSlider(PlayerTab, "Скорость полета", 15, 90, 35, function(value) FlySpeed = value end)
-
-CreateToggle(PlayerTab, "Inf Jump", false, function(state)
-    _G.InfJump = state
-    if state then 
-        UserInputService.JumpRequest:Connect(function() 
-            if _G.InfJump then LocalPlayer.Character.Humanoid:ChangeState("Jumping") end 
-        end) 
+    if state then
+        StartFlying()
+    else
+        StopFlying()
     end
 end)
 
-CreateToggle(PlayerTab, "Toggle WalkSpeed", false, function(state) WalkSpeedEnabled = state end)
-CreateSlider(PlayerTab, "WalkSpeed", 16, 120, 16, function(value) 
-    NormalWalkSpeed = value 
-    if WalkSpeedEnabled then LocalPlayer.Character.Humanoid.WalkSpeed = value end
+CreateSlider(PlayerTab, "Скорость полета", 15, 90, 35, function(value)
+    FlySpeed = value
 end)
 
-CreateToggle(PlayerTab, "Noclip", false, function(state)
+CreateToggle(PlayerTab, "Toggle WalkSpeed (Вкл/Выкл скорость)", false, function(state)
+    WalkSpeedEnabled = state
+end)
+
+CreateSlider(PlayerTab, "Cкорость ходьбы (WalkSpeed)", 16, 120, 16, function(value)
+    NormalWalkSpeed = value
+end)
+
+CreateToggle(PlayerTab, "Noclip (Сквозь стены)", false, function(state)
     if state then
         NoclipConnection = RunService.Stepped:Connect(function()
             if LocalPlayer.Character then
@@ -513,13 +588,43 @@ CreateToggle(PlayerTab, "Noclip", false, function(state)
         end)
     else
         if NoclipConnection then NoclipConnection:Disconnect(); NoclipConnection = nil end
+        if LocalPlayer.Character then
+            for _, part in pairs(LocalPlayer.Character:GetDescendants()) do
+                if part:IsA("BasePart") then part.CanCollide = true end
+            end
+        end
     end
 end)
 
-if tabs["Главная"] then tabs["Главная"].Select() end
+CreateToggle(PlayerTab, "Inf Jump (Бесконечный прыжок)", false, function(state)
+    _G.InfJump = state
+    if state then
+        UserInputService.JumpRequest:Connect(function()
+            if _G.InfJump and LocalPlayer.Character and LocalPlayer.Character:FindFirstChildOfClass("Humanoid") then
+                LocalPlayer.Character:FindFirstChildOfClass("Humanoid"):ChangeState("Jumping")
+            end
+        end)
+    end
+end)
 
+-- Авто-активация первой вкладки при старте
+if tabs["Главная"] then
+    tabs["Главная"].Select()
+end
+
+-- Сброс настроек и закрытие меню
 CloseBtn.MouseButton1Click:Connect(function()
+    Flying = false
+    AutoFarmEnabled = false
+    WalkSpeedEnabled = false
     StopFlying()
-    if AutoFarmConnection then AutoFarmConnection:Disconnect() end
+    StopAutoFarm()
+    if NoclipConnection then NoclipConnection:Disconnect() end
+    if WalkSpeedConnection then WalkSpeedConnection:Disconnect() end
+    
+    local char = LocalPlayer.Character
+    local hum = char and char:FindFirstChildOfClass("Humanoid")
+    if hum then hum.WalkSpeed = 16 end
+    
     ScreenGui:Destroy()
 end)
