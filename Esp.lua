@@ -623,21 +623,17 @@ end)
 local function ForceMobileShoot(gun)
     if not gun then return false end
     
-    -- Способ 1: Стандартная активация
     gun:Activate()
     task.wait(0.03)
     
-    -- Способ 2: Эмуляция нажатия на экран (для мобилок)
     local viewportSize = workspace.CurrentCamera.ViewportSize
     local centerX = viewportSize.X / 2
     local centerY = viewportSize.Y / 2
     
-    -- Эмулируем касание в центр экрана
     VirtualInput:SendMouseButtonEvent(centerX, centerY, 0, true, game, 0)
     task.wait(0.03)
     VirtualInput:SendMouseButtonEvent(centerX, centerY, 0, false, game, 0)
     
-    -- Способ 3: Еще одна попытка через UserInputService
     local clickEvent = {
         UserInputType = Enum.UserInputType.MouseButton1,
         Position = Vector2.new(centerX, centerY)
@@ -649,7 +645,7 @@ local function ForceMobileShoot(gun)
     return true
 end
 
--- АВТО-УБИЙСТВО МАНЬЯКА (ДЛЯ ШЕРИФА - МОБИЛЬНАЯ ВЕРСИЯ)
+-- АВТО-УБИЙСТВО МАНЬЯКА (ДЛЯ ШЕРИФА)
 task.spawn(function()
     while task.wait(0.1) do
         if AutoShootMurdererEnabled then
@@ -659,13 +655,11 @@ task.spawn(function()
                 local myHum = LocalPlayer.Character:FindFirstChild("Humanoid")
                 local myRoot = LocalPlayer.Character:FindFirstChild("HumanoidRootPart")
                 
-                -- Экипируем пистолет
                 if myHum and gun.Parent ~= LocalPlayer.Character then
                     myHum:EquipTool(gun)
                     task.wait(0.15)
                 end
 
-                -- Ищем убийцу
                 for _, target in pairs(Players:GetPlayers()) do
                     if target ~= LocalPlayer and target.Character and target.Character:FindFirstChild("HumanoidRootPart") then
                         local targetMurd, _, _ = GetPlayerRoleAndTool(target)
@@ -673,11 +667,9 @@ task.spawn(function()
                         local targetRoot = target.Character:FindFirstChild("HumanoidRootPart")
                         
                         if targetMurd and targetHum and targetHum.Health > 0 then
-                            -- 1. Телепортируемся к убийце
                             myRoot.CFrame = targetRoot.CFrame * CFrame.new(0, 0, 3)
                             task.wait(0.05)
                             
-                            -- 2. Направляем персонажа и камеру на убийцу
                             local cam = workspace.CurrentCamera
                             local lookAtCFrame = CFrame.lookAt(myRoot.Position, targetRoot.Position)
                             
@@ -686,7 +678,6 @@ task.spawn(function()
                             
                             task.wait(0.1)
                             
-                            -- 3. МНОГОКРАТНЫЙ ВЫСТРЕЛ (3 раза подряд для надёжности)
                             for i = 1, 3 do
                                 ForceMobileShoot(gun)
                                 task.wait(0.07)
@@ -702,34 +693,42 @@ task.spawn(function()
     end
 end)
 
--- АВТО-ПОДБОР ПИСТОЛЕТА (ДЛЯ НЕВИНОВНЫХ - УЛУЧШЕННЫЙ)
+-- ==========================================
+-- АВТО-ПОДБОР ПИСТОЛЕТА (ИСПРАВЛЕННЫЙ - НЕ ТЕЛЕПОРТИМ К ИГРОКАМ!)
+-- ==========================================
 task.spawn(function()
-    while task.wait(0.25) do
+    while task.wait(0.3) do
         if AutoGetGunEnabled then
+            -- Проверяем, что мы не шериф и живы
             local _, isSheriff, _ = GetPlayerRoleAndTool(LocalPlayer)
             
             if not isSheriff and LocalPlayer.Character and LocalPlayer.Character:FindFirstChild("HumanoidRootPart") then
                 local myHum = LocalPlayer.Character:FindFirstChild("Humanoid")
                 if myHum and myHum.Health > 0 then
                     
-                    -- Улучшенный поиск пистолета
+                    -- Ищем ТОЛЬКО упавшие пистолеты (НЕ игроков!)
                     local gunDrop = nil
-                    local possibleContainers = {
+                    
+                    -- Проверяем только контейнеры с предметами, не трогаем игроков
+                    local dropContainers = {
                         workspace:FindFirstChild("Normal"),
                         workspace:FindFirstChild("Map"),
                         workspace:FindFirstChild("Drops"),
                         workspace:FindFirstChild("Items"),
-                        workspace:FindFirstChild("Weapons"),
-                        workspace
+                        workspace:FindFirstChild("Weapons")
                     }
                     
-                    for _, container in pairs(possibleContainers) do
+                    for _, container in pairs(dropContainers) do
                         if container then
                             for _, obj in pairs(container:GetDescendants()) do
-                                if obj:IsA("BasePart") and obj.Parent ~= LocalPlayer.Character then
+                                -- Ключевое условие: объект НЕ должен быть частью игрока
+                                if obj:IsA("BasePart") and obj.Parent and not obj:IsDescendantOf(Players) then
                                     local objName = obj.Name:lower()
-                                    if objName:find("gun") or objName:find("pistol") or objName:find("revolver") or 
-                                       objName:find("gundrop") or objName:find("gun_drop") or
+                                    -- Точное определение пистолета
+                                    if objName == "gundrop" or 
+                                       objName == "gun_drop" or 
+                                       objName == "gun" or
+                                       (objName:find("gun") and obj:FindFirstChild("GunScript")) or
                                        (obj:FindFirstChild("GunScript") and obj:FindFirstChild("Handle")) then
                                         gunDrop = obj
                                         break
@@ -740,23 +739,27 @@ task.spawn(function()
                         if gunDrop then break end
                     end
                     
-                    if gunDrop and gunDrop:IsA("BasePart") and gunDrop.Parent then
-                        local myRoot = LocalPlayer.Character:FindFirstChild("HumanoidRootPart")
-                        if myRoot then
-                            myRoot.CFrame = gunDrop.CFrame * CFrame.new(0, 0, 1)
-                            task.wait(0.2)
-                            
-                            -- Автоматический подбор
-                            local backpack = LocalPlayer:FindFirstChild("Backpack")
-                            if backpack then
-                                for _, item in pairs(backpack:GetChildren()) do
-                                    if item:IsA("Tool") and (item.Name:lower():find("gun") or item.Name:lower():find("pistol")) then
-                                        local hum = LocalPlayer.Character:FindFirstChild("Humanoid")
-                                        if hum then hum:EquipTool(item) end
-                                        break
-                                    end
+                    -- Дополнительный поиск по всему workspace, но исключая игроков
+                    if not gunDrop then
+                        for _, obj in pairs(workspace:GetDescendants()) do
+                            if obj:IsA("BasePart") and obj.Parent and not obj:IsDescendantOf(Players) then
+                                local objName = obj.Name:lower()
+                                if objName == "gundrop" or objName == "gun_drop" or 
+                                   (objName:find("gun") and obj:FindFirstChild("GunScript")) then
+                                    gunDrop = obj
+                                    break
                                 end
                             end
+                        end
+                    end
+                    
+                    -- Только если нашли настоящий пистолет (не игрока!)
+                    if gunDrop and gunDrop:IsA("BasePart") and gunDrop.Parent and not gunDrop:IsDescendantOf(Players) then
+                        local myRoot = LocalPlayer.Character:FindFirstChild("HumanoidRootPart")
+                        if myRoot then
+                            -- Телепортируемся к пистолету
+                            myRoot.CFrame = gunDrop.CFrame * CFrame.new(0, 0, 1)
+                            task.wait(0.2)
                         end
                     end
                 end
