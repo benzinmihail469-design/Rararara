@@ -578,39 +578,33 @@ task.spawn(function()
 end)
 
 -- ==========================================
--- ЛОГИКА AUTO KILL (ОБНОВЛЕНО: АТАКУЕТ ВСЕХ, ВКЛЮЧАЯ ШЕРИФА)
+-- ЛОГИКА AUTO KILL (ОБНОВЛЕНО: ТОЛЬКО ИГРОКИ В РАУНДЕ)
 -- ==========================================
 task.spawn(function()
-    while task.wait(0.2) do -- Уменьшили задержку для большей агрессивности
+    while task.wait(0.2) do
         if AutoKillEnabled then
-            local isMurderer, _, knife = GetPlayerRoleAndTool(LocalPlayer)
+            local _, _, knife = GetPlayerRoleAndTool(LocalPlayer)
             
-            -- Если у нас есть нож (даже если мы не убийца, но если скрипт запущен)
             if knife and LocalPlayer.Character and LocalPlayer.Character:FindFirstChild("HumanoidRootPart") then
                 local myHum = LocalPlayer.Character:FindFirstChild("Humanoid")
                 local myRoot = LocalPlayer.Character:FindFirstChild("HumanoidRootPart")
                 
-                -- Автоматически берем нож в руки
                 if myHum and knife.Parent ~= LocalPlayer.Character then
                     myHum:EquipTool(knife)
                     task.wait(0.1)
                 end
 
-                -- Ищем ВСЕХ живых игроков (роль больше не важна)
                 for _, target in pairs(Players:GetPlayers()) do
                     if target ~= LocalPlayer and target.Character and target.Character:FindFirstChild("HumanoidRootPart") then
                         local targetHum = target.Character:FindFirstChild("Humanoid")
                         local targetRoot = target.Character:FindFirstChild("HumanoidRootPart")
                         
-                        -- Атакуем всех, у кого здоровье больше 0
-                        if targetHum and targetHum.Health > 0 then
-                            -- Телепортируемся за спину (чтобы было сложнее попасть шерифу)
-                            myRoot.CFrame = targetRoot.CFrame * CFrame.new(0, 0, 1.5)
+                        -- ПРОВЕРКА: Игрок жив, не в состоянии "PlatformStand" (обычно так помечаются игроки в лобби/спектраторы)
+                        if targetHum and targetHum.Health > 0 and not targetHum.PlatformStand then
                             
-                            -- Активируем удар
+                            myRoot.CFrame = targetRoot.CFrame * CFrame.new(0, 0, 1.5)
                             knife:Activate()
                             
-                            -- Ждем немного, чтобы сервер зарегистрировал удар
                             task.wait(0.3) 
                             break 
                         end
