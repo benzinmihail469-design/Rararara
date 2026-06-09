@@ -41,7 +41,8 @@ local AutoFarmEnabled = false
 local AutoFarmSpeed = 16 
 local ESPEnabled = false
 local AutoKillEnabled = false 
-local AutoShootMurdererEnabled = false -- НОВАЯ ПЕРЕМЕННАЯ ДЛЯ ШЕРИФА
+local AutoShootMurdererEnabled = false 
+local AutoGetGunEnabled = false -- НОВАЯ ПЕРЕМЕННАЯ ДЛЯ ПОДБОРА ПИСТОЛЕТА
 local FlyConnection = nil
 local NoclipConnection = nil
 local WalkSpeedConnection = nil
@@ -616,44 +617,71 @@ task.spawn(function()
 end)
 
 -- ==========================================
--- ЛОГИКА AUTO KILL (ДЛЯ ШЕРИФА - НОВОЕ)
+-- ЛОГИКА AUTO KILL (ДЛЯ ШЕРИФА - ОБНОВЛЕНО)
 -- ==========================================
 task.spawn(function()
     while task.wait(0.1) do
         if AutoShootMurdererEnabled then
             local _, isSheriff, gun = GetPlayerRoleAndTool(LocalPlayer)
             
-            -- Проверяем, есть ли у нас пистолет
             if isSheriff and gun and LocalPlayer.Character and LocalPlayer.Character:FindFirstChild("HumanoidRootPart") then
                 local myHum = LocalPlayer.Character:FindFirstChild("Humanoid")
                 local myRoot = LocalPlayer.Character:FindFirstChild("HumanoidRootPart")
                 
-                -- Берем пистолет в руки
                 if myHum and gun.Parent ~= LocalPlayer.Character then
                     myHum:EquipTool(gun)
                     task.wait(0.1)
                 end
 
-                -- Ищем маньяка
                 for _, target in pairs(Players:GetPlayers()) do
                     if target ~= LocalPlayer and target.Character and target.Character:FindFirstChild("HumanoidRootPart") then
                         local targetMurd, _, _ = GetPlayerRoleAndTool(target)
                         local targetHum = target.Character:FindFirstChild("Humanoid")
                         local targetRoot = target.Character:FindFirstChild("HumanoidRootPart")
                         
-                        -- Если цель жива, не в лобби и является маньяком
                         if targetMurd and targetHum and targetHum.Health > 0 and not targetHum.PlatformStand then
-                            -- Телепортируемся к маньяку и поворачиваемся к нему лицом для точного выстрела
-                            -- CFrame.lookAt(Позиция_Куда_Тепаемся, Куда_Смотрим)
-                            -- Мы тепаемся на 3 стада перед ним или сзади, чтобы выстрел точно прошел
-                            myRoot.CFrame = CFrame.lookAt(targetRoot.Position + (targetRoot.CFrame.LookVector * -3), targetRoot.Position)
+                            -- 1. Телепортируемся ВПЛОТНУЮ (почти внутрь убийцы), чтобы пуля точно задела хитбокс
+                            myRoot.CFrame = targetRoot.CFrame * CFrame.new(0, 0, 1)
                             
-                            -- Автоматически нажимаем выстрел
+                            -- 2. Направляем КАМЕРУ ровно на убийцу, так как выстрел в роблоксе идет по камере/мышке
+                            local cam = workspace.CurrentCamera
+                            cam.CFrame = CFrame.lookAt(cam.CFrame.Position, targetRoot.Position)
+                            
+                            task.wait(0.05) -- Микро-задержка для синхронизации
+                            
+                            -- 3. Выстрел
                             gun:Activate()
                             
-                            task.wait(0.5) -- Небольшая задержка после выстрела
+                            task.wait(0.5) 
                             break 
                         end
+                    end
+                end
+            end
+        end
+    end
+end)
+
+-- ==========================================
+-- ЛОГИКА АВТО-ПОДБОРА ПИСТОЛЕТА (ДЛЯ МИРНЫХ)
+-- ==========================================
+task.spawn(function()
+    while task.wait(0.2) do
+        if AutoGetGunEnabled then
+            local _, isSheriff, _ = GetPlayerRoleAndTool(LocalPlayer)
+            
+            -- Если мы НЕ шериф и живы
+            if not isSheriff and LocalPlayer.Character and LocalPlayer.Character:FindFirstChild("HumanoidRootPart") then
+                local myHum = LocalPlayer.Character:FindFirstChild("Humanoid")
+                if myHum and myHum.Health > 0 then
+                    
+                    -- Ищем упавший пистолет в Workspace
+                    local gunDrop = workspace:FindFirstChild("GunDrop") or (workspace:FindFirstChild("Normal") and workspace.Normal:FindFirstChild("GunDrop"))
+                    
+                    if gunDrop and gunDrop:IsA("BasePart") then
+                        -- Телепортируемся к пистолету
+                        LocalPlayer.Character.HumanoidRootPart.CFrame = gunDrop.CFrame
+                        task.wait(0.5) -- Задержка, чтобы не спамить телепорт каждую долю секунды
                     end
                 end
             end
@@ -668,7 +696,7 @@ local MainTab = CreateTab("Главная", 1)
 local PlayerTab = CreateTab("Игрок", 2)
 local VisualTab = CreateTab("Визуал", 3)
 local KillerTab = CreateTab("Киллер", 4)
-local SheriffTab = CreateTab("Шериф", 5) -- НОВАЯ ВКЛАДКА
+local SheriffTab = CreateTab("Шериф", 5) 
 
 -- Главная
 CreateToggle(MainTab, "Универсальный Авто-Фарм Монет", false, function(state)
@@ -738,9 +766,13 @@ CreateToggle(KillerTab, "Auto Kill (Всех)", false, function(state)
     AutoKillEnabled = state
 end)
 
--- Шериф (Новая вкладка)
+-- Шериф
 CreateToggle(SheriffTab, "Авто-Убийство маньяка", false, function(state)
     AutoShootMurdererEnabled = state
+end)
+
+CreateToggle(SheriffTab, "Авто-подбор пистолета (Невиновным)", false, function(state)
+    AutoGetGunEnabled = state
 end)
 
 if tabs["Главная"] then
@@ -754,7 +786,8 @@ CloseBtn.MouseButton1Click:Connect(function()
     WalkSpeedEnabled = false
     ESPEnabled = false 
     AutoKillEnabled = false
-    AutoShootMurdererEnabled = false -- Отключаем функцию шерифа при закрытии
+    AutoShootMurdererEnabled = false 
+    AutoGetGunEnabled = false
     StopFlying()
     StopAutoFarm()
     
@@ -767,3 +800,4 @@ CloseBtn.MouseButton1Click:Connect(function()
     
     ScreenGui:Destroy()
 end)
+
