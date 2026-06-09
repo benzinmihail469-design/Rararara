@@ -546,27 +546,26 @@ local function GetPlayerRoleAndTool(player)
     return isMurderer, isSheriff, specialTool
 end
 
+-- ИСПРАВЛЕННАЯ ФУНКЦИЯ ПРОВЕРКИ ИГРОКА НА КАРТЕ
 local function IsPlayerInGame(player)
     if not player or not player.Character then return false end
     
-    -- Проверка на наличие важных частей тела
     local root = player.Character:FindFirstChild("HumanoidRootPart")
     local hum = player.Character:FindFirstChild("Humanoid")
     if not root or not hum or hum.Health <= 0 then return false end
     
-    -- Проверяем, находится ли игрок на спавне лобби по высоте (в ММ2 лобби обычно находится сильно выше или ниже карты)
-    -- Дополнительный жесткий чек: если у игрока включен PlatformStand и он не нами контролируется, возможно он на спавне/афк.
-    -- Но главный критерий - наличие раунд-контейнеров на карте.
+    -- В MM2 карта всегда загружается в папку workspace.Normal или workspace.Map
     local map = workspace:FindFirstChild("Normal") or workspace:FindFirstChild("Map")
-    if map then
-        -- Если игрок находится слишком далеко от карты (в лобби), игнорируем его
-        local mapSpawn = map:FindFirstChildWithClass("SpawnLocation") or map:FindFirstChildOfClass("BasePart")
-        if mapSpawn then
-            local distance = (root.Position - mapSpawn.Position).Magnitude
-            if distance > 400 then -- Если дальше 400 единиц от карты — он 100% в лобби
-                return false
-            end
-        end
+    if not map then return false end -- Если папки нет, раунд не идет (все в лобби)
+    
+    -- Ищем любую деталь карты для расчета дистанции
+    local mapPart = map:FindFirstChildWhichIsA("BasePart", true)
+    if not mapPart then return false end -- Карта не прогрузилась
+    
+    -- Дистанция от игрока до карты (лобби в MM2 всегда очень далеко, обычно > 1000 стадов)
+    local distance = (root.Position - mapPart.Position).Magnitude
+    if distance > 600 then 
+        return false -- Игрок слишком далеко, значит он в лобби
     end
     
     return true
@@ -614,7 +613,7 @@ task.spawn(function()
     end
 end)
 
--- ИСПРАВЛЕННЫЙ Auto Kill для МАНЬЯКА (НЕ тепает в лобби)
+-- Auto Kill для МАНЬЯКА (Теперь 100% не тепает в лобби)
 task.spawn(function()
     while task.wait(0.25) do
         if AutoKillEnabled then
@@ -635,7 +634,6 @@ task.spawn(function()
                         local targetHum = target.Character:FindFirstChild("Humanoid")
                         local targetRoot = target.Character:FindFirstChild("HumanoidRootPart")
                         
-                        -- Убиваем только если цель ЖИВА, НЕ маньяк и строго В ИГРЕ (не лобби)
                         if not targetIsMurderer and targetHum and targetHum.Health > 0 and not targetHum.PlatformStand then
                             myRoot.Velocity = Vector3.new(0, 0, 0)
                             myRoot.CFrame = targetRoot.CFrame * CFrame.new(0, 0, 1.5)
@@ -651,7 +649,7 @@ task.spawn(function()
     end
 end)
 
--- ИСПРАВЛЕННЫЙ Auto Shoot Murderer для ШЕРИФА (Тепает ТОЛЬКО к маньяку в игре, лобби не трогает)
+-- Auto Shoot Murderer для ШЕРИФА (Тепает ТОЛЬКО к маньяку в игре, лобби не трогает)
 task.spawn(function()
     while task.wait(0.2) do
         if AutoShootMurdererEnabled then
@@ -673,7 +671,6 @@ task.spawn(function()
                         for _, target in pairs(Players:GetPlayers()) do
                             if target ~= LocalPlayer and IsPlayerInGame(target) then
                                 local targetIsMurderer, _, _ = GetPlayerRoleAndTool(target)
-                                -- Находим маньяка, который активен на игровой карте
                                 if targetIsMurderer and target.Character then
                                     local targetHum = target.Character:FindFirstChild("Humanoid")
                                     local targetRoot = target.Character:FindFirstChild("HumanoidRootPart")
@@ -686,7 +683,6 @@ task.spawn(function()
                             end
                         end
                         
-                        -- Телепортирует и стреляет ТОЛЬКО если маньяк найден в игре
                         if murdererRoot then
                             local cam = workspace.CurrentCamera
                             cam.CameraType = Enum.CameraType.Scriptable
