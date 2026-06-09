@@ -39,6 +39,7 @@ local NormalWalkSpeed = 16
 local WalkSpeedEnabled = false 
 local AutoFarmEnabled = false  
 local AutoFarmSpeed = 16 
+local ESPEnabled = false -- Настройка для визуала
 local FlyConnection = nil
 local NoclipConnection = nil
 local WalkSpeedConnection = nil
@@ -149,7 +150,7 @@ PagesContainer.BackgroundTransparency = 1
 PagesContainer.Parent = MainFrame
 
 -- ==========================================
--- СКРИПТ ПЕРЕТАСКИВАНИЯ (ОБНОВЛЕН ДЛЯ ВСЕГО МЕНЮ)
+-- СКРИПТ ПЕРЕТАСКИВАНИЯ (ДЛЯ ВСЕГО МЕНЮ)
 -- ==========================================
 local dragging, dragInput, dragStart, startPos
 local function update(input)
@@ -158,7 +159,6 @@ local function update(input)
     TweenService:Create(MainFrame, TweenInfo.new(0.1, Enum.EasingStyle.Quad, Enum.EasingDirection.Out), {Position = targetPos}):Play()
 end
 
--- Привязка ко всему MainFrame, а не только к Header
 MainFrame.InputBegan:Connect(function(input)
     if input.UserInputType == Enum.UserInputType.MouseButton1 or input.UserInputType == Enum.UserInputType.Touch then
         dragging = true
@@ -178,7 +178,6 @@ UserInputService.InputChanged:Connect(function(input)
     if input == dragInput and dragging then update(input) end
 end)
 
--- Логика сворачивания
 local isMinimized = false
 MinBtn.MouseButton1Click:Connect(function()
     isMinimized = not isMinimized
@@ -359,56 +358,43 @@ local function CreateSlider(parentPage, text, min, max, default, callback)
 end
 
 -- ==========================================
--- ЛОГИКА ФЛАЯ (СТАБИЛЬНАЯ ВЕРСИЯ С BODYGYRO)
+-- ЛОГИКА ФЛАЯ И АВТОФАРМА (БЕЗ ИЗМЕНЕНИЙ)
 -- ==========================================
-
 local function StopFlying()
     if FlyConnection then FlyConnection:Disconnect(); FlyConnection = nil end
     if BVelocity then BVelocity:Destroy(); BVelocity = nil end
     if BGyro then BGyro:Destroy(); BGyro = nil end
-    
     local char = LocalPlayer.Character
     local hum = char and char:FindFirstChildOfClass("Humanoid")
-    if hum then
-        hum.PlatformStand = false
-    end
+    if hum then hum.PlatformStand = false end
 end
 
 local function StartFlying()
     StopFlying()
-
     local char = LocalPlayer.Character
     local root = char and char:FindFirstChild("HumanoidRootPart")
     local hum = char and char:FindFirstChildOfClass("Humanoid")
-    
     if not root or not hum then return end
     
     hum.PlatformStand = true
 
-    BVelocity = Instance.new("BodyVelocity")
+    BVelocity = Instance.new("BodyVelocity", root)
     BVelocity.MaxForce = Vector3.new(1e5, 1e5, 1e5)
     BVelocity.Velocity = Vector3.new(0, 0, 0)
-    BVelocity.Parent = root
 
-    BGyro = Instance.new("BodyGyro")
+    BGyro = Instance.new("BodyGyro", root)
     BGyro.MaxTorque = Vector3.new(1e5, 1e5, 1e5)
     BGyro.P = 15000 
     BGyro.D = 100   
     BGyro.CFrame = root.CFrame
-    BGyro.Parent = root
 
     local cam = workspace.CurrentCamera
 
     FlyConnection = RunService.RenderStepped:Connect(function()
-        if not Flying or not root or not LocalPlayer.Character then 
-            StopFlying()
-            return 
-        end
-
+        if not Flying or not root or not LocalPlayer.Character then StopFlying() return end
         if AutoFarmEnabled then return end
 
         BGyro.CFrame = cam.CFrame
-
         local moveDir = Vector3.new(0, 0, 0)
 
         if MasterControl and MasterControl.GetMoveVector then
@@ -433,41 +419,24 @@ local function StartFlying()
     end)
 end
 
--- ==========================================
--- ГЛОБАЛЬНЫЙ АВТОНОМНЫЙ АВТО-ТЕЛЕПОРТ
--- ==========================================
-
 local function GetTargetCoinGlobal()
-    if CachedCoin and CachedCoin.Parent and CachedCoin:IsA("BasePart") and CachedCoin.Transparency < 1 then
-        return CachedCoin
-    end
-
+    if CachedCoin and CachedCoin.Parent and CachedCoin:IsA("BasePart") and CachedCoin.Transparency < 1 then return CachedCoin end
     if tick() < NextScanTime then return nil end
     NextScanTime = tick() + 0.3
 
     local coinContainer = workspace:FindFirstChild("Normal") or workspace:FindFirstChild("Map") or workspace:FindFirstChild("CoinContainer")
     if coinContainer then
         for _, child in pairs(coinContainer:GetDescendants()) do
-            if child:IsA("BasePart") and (string.find(child.Name:lower(), "coin") or child.Name == "Coin_Server") then
-                if child.Transparency < 1 then
-                    CachedCoin = child
-                    return child
-                end
+            if child:IsA("BasePart") and (string.find(child.Name:lower(), "coin") or child.Name == "Coin_Server") and child.Transparency < 1 then
+                CachedCoin = child return child
             end
         end
     end
-
     for _, child in pairs(workspace:GetDescendants()) do
-        if child:IsA("BasePart") and not child:IsDescendantOf(Players) then
-            if string.find(child.Name:lower(), "coin") or child.Name == "Coin_Server" or child:FindFirstChild("CoinVisual") then
-                if child.Transparency < 1 and child.Parent ~= nil then
-                    CachedCoin = child
-                    return child
-                end
-            end
+        if child:IsA("BasePart") and not child:IsDescendantOf(Players) and (string.find(child.Name:lower(), "coin") or child.Name == "Coin_Server" or child:FindFirstChild("CoinVisual")) and child.Transparency < 1 and child.Parent ~= nil then
+            CachedCoin = child return child
         end
     end
-
     return nil
 end
 
@@ -478,14 +447,12 @@ end
 
 local function StartAutoFarm()
     StopAutoFarm()
-    
     local char = LocalPlayer.Character
     local root = char and char:FindFirstChild("HumanoidRootPart")
     local hum = char and char:FindFirstChildOfClass("Humanoid")
     if not root or not hum then return end
     
     hum.PlatformStand = true
-
     if not BVelocity or not BVelocity.Parent then
         BVelocity = Instance.new("BodyVelocity", root)
         BVelocity.MaxForce = Vector3.new(1e5, 1e5, 1e5)
@@ -497,23 +464,16 @@ local function StartAutoFarm()
     end
 
     AutoFarmConnection = RunService.Heartbeat:Connect(function()
-        if not AutoFarmEnabled then 
-            StopAutoFarm()
-            return 
-        end
-        
+        if not AutoFarmEnabled then StopAutoFarm() return end
         local char = LocalPlayer.Character
         local root = char and char:FindFirstChild("HumanoidRootPart")
         if not root then return end
         
-        for _, part in pairs(char:GetDescendants()) do
-            if part:IsA("BasePart") then part.CanCollide = false end
-        end
+        for _, part in pairs(char:GetDescendants()) do if part:IsA("BasePart") then part.CanCollide = false end end
         
         local coin = GetTargetCoinGlobal()
         if coin and coin.Parent then
             BGyro.CFrame = CFrame.lookAt(root.Position, Vector3.new(coin.Position.X, root.Position.Y, coin.Position.Z))
-            
             local dir = (coin.Position - root.Position)
             if dir.Magnitude > 1.5 then
                 BVelocity.Velocity = dir.Unit * AutoFarmSpeed
@@ -527,74 +487,132 @@ local function StartAutoFarm()
     end)
 end
 
--- ==========================================
--- ЛОГИКА АВТО-ВОССТАНОВЛЕНИЯ ПОСЛЕ СМЕРТИ
--- ==========================================
 LocalPlayer.CharacterAdded:Connect(function(newChar)
     local root = newChar:WaitForChild("HumanoidRootPart", 5)
     local hum = newChar:WaitForChild("Humanoid", 5)
-    
     if root and hum then
         task.wait(0.5)
-        if AutoFarmEnabled then
-            StartAutoFarm()
-        elseif Flying then
-            StartFlying()
-        end
+        if AutoFarmEnabled then StartAutoFarm() elseif Flying then StartFlying() end
     end
 end)
 
--- АВТО-ОБНОВЛЕНИЕ СКОРОСТИ ХОДЬБЫ
 if WalkSpeedConnection then WalkSpeedConnection:Disconnect() end
 WalkSpeedConnection = RunService.Stepped:Connect(function()
     local char = LocalPlayer.Character
     local hum = char and char:FindFirstChildOfClass("Humanoid")
     if hum and not Flying and not AutoFarmEnabled then
-        if WalkSpeedEnabled then
-            hum.WalkSpeed = NormalWalkSpeed
+        hum.WalkSpeed = WalkSpeedEnabled and NormalWalkSpeed or 16
+    end
+end)
+
+-- ==========================================
+-- ЛОГИКА ESP ДЛЯ MM2
+-- ==========================================
+local function GetRoleColor(player)
+    local isMurderer = false
+    local isSheriff = false
+
+    local function check(container)
+        if not container then return end
+        for _, item in pairs(container:GetChildren()) do
+            if item:IsA("Tool") then
+                local name = item.Name:lower()
+                -- Проверка на наличие ножа (по названию или внутренним скриптам)
+                if name:find("knife") or item:FindFirstChild("KnifeServer") or item:FindFirstChild("Slash") then
+                    isMurderer = true
+                -- Проверка на наличие пистолета
+                elseif name:find("gun") or name:find("revolver") or item:FindFirstChild("GunScript") then
+                    isSheriff = true
+                end
+            end
+        end
+    end
+
+    check(player:FindFirstChild("Backpack"))
+    if player.Character then check(player.Character) end
+
+    if isMurderer then
+        return Color3.fromRGB(255, 30, 30) -- Красный (Убийца)
+    elseif isSheriff then
+        return Color3.fromRGB(30, 144, 255) -- Синий (Шериф)
+    else
+        return Color3.fromRGB(50, 255, 100) -- Зеленый (Невиновный)
+    end
+end
+
+-- Асинхронный цикл обновления ESP, чтобы не нагружать телефон
+task.spawn(function()
+    while task.wait(0.5) do
+        if ESPEnabled then
+            for _, player in pairs(Players:GetPlayers()) do
+                if player ~= LocalPlayer and player.Character and player.Character:FindFirstChild("HumanoidRootPart") then
+                    local char = player.Character
+                    local hum = char:FindFirstChild("Humanoid")
+                    
+                    if hum and hum.Health > 0 then
+                        local color = GetRoleColor(player)
+                        
+                        local hl = char:FindFirstChild("MM2_RoleESP")
+                        if not hl then
+                            hl = Instance.new("Highlight")
+                            hl.Name = "MM2_RoleESP"
+                            hl.FillTransparency = 0.65
+                            hl.OutlineTransparency = 0.1
+                            hl.Parent = char
+                        end
+                        hl.FillColor = color
+                        hl.OutlineColor = color
+                    else
+                        local hl = char:FindFirstChild("MM2_RoleESP")
+                        if hl then hl:Destroy() end
+                    end
+                end
+            end
         else
-            hum.WalkSpeed = 16
+            -- Очистка при выключении
+            for _, player in pairs(Players:GetPlayers()) do
+                if player.Character then
+                    local hl = player.Character:FindFirstChild("MM2_RoleESP")
+                    if hl then hl:Destroy() end
+                end
+            end
         end
     end
 end)
 
--- СОЗДАНИЕ СТРАНИЦ ЧЕРЕЗ ВКЛАДКИ
+
+-- ==========================================
+-- СОЗДАНИЕ СТРАНИЦ И ЭЛЕМЕНТОВ
+-- ==========================================
 local MainTab = CreateTab("Главная", 1)
 local PlayerTab = CreateTab("Игрок", 2)
+local VisualTab = CreateTab("Визуал", 3) -- Новая вкладка!
 
--- ЭЛЕМЕНТЫ ВКЛАДКИ "ГЛАВНАЯ"
+-- Главная
 CreateToggle(MainTab, "Универсальный Авто-Фарм Монет", false, function(state)
     AutoFarmEnabled = state
-    if state then
-        StartAutoFarm()
-    else
-        StopAutoFarm()
-    end
+    if state then StartAutoFarm() else StopAutoFarm() end
 end)
 
 CreateSlider(MainTab, "Скорость авто-фарма", 10, 25, 16, function(value)
     AutoFarmSpeed = value
 end)
 
--- ЭЛЕМЕНТЫ ВКЛАДКИ "ИГРОК"
-CreateToggle(PlayerTab, "Bypass Fly (Следование за камерой)", false, function(state)
+-- Игрок
+CreateToggle(PlayerTab, "Bypass Fly", false, function(state)
     Flying = state
-    if state then
-        StartFlying()
-    else
-        StopFlying()
-    end
+    if state then StartFlying() else StopFlying() end
 end)
 
 CreateSlider(PlayerTab, "Скорость полета", 15, 90, 35, function(value)
     FlySpeed = value
 end)
 
-CreateToggle(PlayerTab, "Toggle WalkSpeed (Вкл/Выкл скорость)", false, function(state)
+CreateToggle(PlayerTab, "Toggle WalkSpeed", false, function(state)
     WalkSpeedEnabled = state
 end)
 
-CreateSlider(PlayerTab, "Cкорость ходьбы (WalkSpeed)", 16, 120, 16, function(value)
+CreateSlider(PlayerTab, "WalkSpeed", 16, 120, 16, function(value)
     NormalWalkSpeed = value
 end)
 
@@ -617,7 +635,7 @@ CreateToggle(PlayerTab, "Noclip (Сквозь стены)", false, function(stat
     end
 end)
 
-CreateToggle(PlayerTab, "Inf Jump (Бесконечный прыжок)", false, function(state)
+CreateToggle(PlayerTab, "Inf Jump", false, function(state)
     _G.InfJump = state
     if state then
         UserInputService.JumpRequest:Connect(function()
@@ -628,16 +646,24 @@ CreateToggle(PlayerTab, "Inf Jump (Бесконечный прыжок)", false,
     end
 end)
 
+-- Визуал
+CreateToggle(VisualTab, "MM2 ESP (Роли)", false, function(state)
+    ESPEnabled = state
+end)
+
 if tabs["Главная"] then
     tabs["Главная"].Select()
 end
 
+-- Обработка закрытия меню
 CloseBtn.MouseButton1Click:Connect(function()
     Flying = false
     AutoFarmEnabled = false
     WalkSpeedEnabled = false
+    ESPEnabled = false -- Отключаем визуал, цикл сам всё почистит
     StopFlying()
     StopAutoFarm()
+    
     if NoclipConnection then NoclipConnection:Disconnect() end
     if WalkSpeedConnection then WalkSpeedConnection:Disconnect() end
     
