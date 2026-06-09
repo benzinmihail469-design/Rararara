@@ -546,6 +546,7 @@ local function GetPlayerRoleAndTool(player)
     return isMurderer, isSheriff, specialTool
 end
 
+-- ИСПРАВЛЕННЫЙ ESP - ПОКАЗЫВАЕТ СКВОЗЬ СТЕНЫ
 task.spawn(function()
     while task.wait(0.2) do
         if ESPEnabled then
@@ -564,9 +565,9 @@ task.spawn(function()
                         if not hl then
                             hl = Instance.new("Highlight")
                             hl.Name = "MM2_RoleESP"
-                            hl.FillTransparency = 0.65
-                            hl.OutlineTransparency = 0.1
-                            hl.DepthMode = Enum.HighlightDepthMode.Occluded
+                            hl.FillTransparency = 0.5
+                            hl.OutlineTransparency = 0.2
+                            -- БЕЗ DepthMode - светится сквозь стены
                             hl.Parent = char
                         end
                         hl.FillColor = color
