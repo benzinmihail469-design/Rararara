@@ -576,51 +576,94 @@ local function GetPlayerRoleAndTool(player)
     return isMurderer, isSheriff, specialTool
 end
 
+-- ========== ИСПРАВЛЕННЫЙ ESP (БЕЗ СВЕЧЕНИЯ СКВОЗЬ СТЕНЫ) ==========
+local ESPObjects = {}
+
+local function ClearESP()
+    for _, obj in pairs(ESPObjects) do
+        if obj and obj.Parent then
+            obj:Destroy()
+        end
+    end
+    ESPObjects = {}
+end
+
+local function UpdateESP()
+    if not ESPEnabled then
+        ClearESP()
+        return
+    end
+    
+    ClearESP()
+    
+    for _, player in pairs(Players:GetPlayers()) do
+        if player ~= LocalPlayer and player.Character then
+            local char = player.Character
+            local root = char:FindFirstChild("HumanoidRootPart")
+            local hum = char:FindFirstChild("Humanoid")
+            
+            if root and hum and hum.Health > 0 then
+                local isMurd, isSher = GetPlayerRoleAndTool(player)
+                local color = Color3.fromRGB(100, 255, 100)
+                
+                if isMurd then
+                    color = Color3.fromRGB(255, 30, 30)  -- маньяк
+                elseif isSher then
+                    color = Color3.fromRGB(30, 144, 255) -- шериф
+                end
+                
+                -- Бокс вокруг персонажа (НЕ светится сквозь стены!)
+                local box = Instance.new("BoxHandleAdornment")
+                box.Name = "MM2_ESP_Box"
+                box.Size = Vector3.new(4, 6, 2.5)
+                box.Adornee = root
+                box.Color3 = color
+                box.Transparency = 0.5
+                box.ZIndex = 0
+                box.AlwaysOnTop = false  -- КЛЮЧЕВАЯ СТРОКА! Не светится сквозь стены
+                box.Parent = root
+                table.insert(ESPObjects, box)
+                
+                -- Имя с ролью над головой
+                local billboard = Instance.new("BillboardGui")
+                billboard.Name = "MM2_ESP_Name"
+                billboard.Size = UDim2.new(0, 200, 0, 30)
+                billboard.StudsOffset = Vector3.new(0, 2.5, 0)
+                billboard.AlwaysOnTop = true
+                billboard.Parent = root
+                
+                local roleText = ""
+                if isMurd then
+                    roleText = " 🔪 МАНЬЯК"
+                elseif isSher then
+                    roleText = " 🔫 ШЕРИФ"
+                end
+                
+                local nameLabel = Instance.new("TextLabel")
+                nameLabel.Size = UDim2.new(1, 0, 1, 0)
+                nameLabel.BackgroundTransparency = 1
+                nameLabel.Font = Enum.Font.GothamBold
+                nameLabel.Text = player.Name .. roleText
+                nameLabel.TextColor3 = color
+                nameLabel.TextSize = 14
+                nameLabel.TextStrokeTransparency = 0.3
+                nameLabel.TextStrokeColor3 = Color3.fromRGB(0, 0, 0)
+                nameLabel.Parent = billboard
+                
+                table.insert(ESPObjects, billboard)
+                table.insert(ESPObjects, nameLabel)
+            end
+        end
+    end
+end
+
+-- Цикл обновления ESP
 task.spawn(function()
-    while task.wait(0.5) do
+    while task.wait(0.25) do
         if ESPEnabled then
-            for _, player in pairs(Players:GetPlayers()) do
-                if player ~= LocalPlayer and player.Character and player.Character:FindFirstChild("HumanoidRootPart") then
-                    local char = player.Character
-                    local hum = char:FindFirstChild("Humanoid")
-                    
-                    if hum and hum.Health > 0 then
-                        local isMurd, isSher = GetPlayerRoleAndTool(player)
-                        local color = Color3.fromRGB(50, 255, 100)
-                        if isMurd then
-                            color = Color3.fromRGB(255, 30, 30)
-                        end
-                        if isSher then
-                            color = Color3.fromRGB(30, 144, 255)
-                        end
-                        
-                        local hl = char:FindFirstChild("MM2_RoleESP")
-                        if not hl then
-                            hl = Instance.new("Highlight")
-                            hl.Name = "MM2_RoleESP"
-                            hl.FillTransparency = 0.65
-                            hl.OutlineTransparency = 0.1
-                            hl.Parent = char
-                        end
-                        hl.FillColor = color
-                        hl.OutlineColor = color
-                    else
-                        local hl = char:FindFirstChild("MM2_RoleESP")
-                        if hl then
-                            hl:Destroy()
-                        end
-                    end
-                end
-            end
+            UpdateESP()
         else
-            for _, player in pairs(Players:GetPlayers()) do
-                if player.Character then
-                    local hl = player.Character:FindFirstChild("MM2_RoleESP")
-                    if hl then
-                        hl:Destroy()
-                    end
-                end
-            end
+            ClearESP()
         end
     end
 end)
