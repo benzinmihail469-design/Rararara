@@ -40,7 +40,7 @@ local WalkSpeedEnabled = false
 local AutoFarmEnabled = false  
 local AutoFarmSpeed = 16 
 local ESPEnabled = false
-local AutoKillEnabled = false -- Настройка для Авто-Килла
+local AutoKillEnabled = false 
 local FlyConnection = nil
 local NoclipConnection = nil
 local WalkSpeedConnection = nil
@@ -359,7 +359,7 @@ local function CreateSlider(parentPage, text, min, max, default, callback)
 end
 
 -- ==========================================
--- ЛОГИКА ФЛАЯ И АВТОФАРМА (БЕЗ ИЗМЕНЕНИЙ)
+-- ЛОГИКА ФЛАЯ И АВТОФАРМА
 -- ==========================================
 local function StopFlying()
     if FlyConnection then FlyConnection:Disconnect(); FlyConnection = nil end
@@ -578,38 +578,40 @@ task.spawn(function()
 end)
 
 -- ==========================================
--- ЛОГИКА AUTO KILL (ДЛЯ УБИЙЦЫ)
+-- ЛОГИКА AUTO KILL (ОБНОВЛЕНО: АТАКУЕТ ВСЕХ, ВКЛЮЧАЯ ШЕРИФА)
 -- ==========================================
 task.spawn(function()
-    while task.wait(0.1) do
+    while task.wait(0.2) do -- Уменьшили задержку для большей агрессивности
         if AutoKillEnabled then
             local isMurderer, _, knife = GetPlayerRoleAndTool(LocalPlayer)
             
-            if isMurderer and knife and LocalPlayer.Character and LocalPlayer.Character:FindFirstChild("HumanoidRootPart") then
+            -- Если у нас есть нож (даже если мы не убийца, но если скрипт запущен)
+            if knife and LocalPlayer.Character and LocalPlayer.Character:FindFirstChild("HumanoidRootPart") then
                 local myHum = LocalPlayer.Character:FindFirstChild("Humanoid")
                 local myRoot = LocalPlayer.Character:FindFirstChild("HumanoidRootPart")
                 
                 -- Автоматически берем нож в руки
                 if myHum and knife.Parent ~= LocalPlayer.Character then
                     myHum:EquipTool(knife)
-                    task.wait(0.2)
+                    task.wait(0.1)
                 end
 
-                -- Ищем живую жертву
+                -- Ищем ВСЕХ живых игроков (роль больше не важна)
                 for _, target in pairs(Players:GetPlayers()) do
                     if target ~= LocalPlayer and target.Character and target.Character:FindFirstChild("HumanoidRootPart") then
                         local targetHum = target.Character:FindFirstChild("Humanoid")
                         local targetRoot = target.Character:FindFirstChild("HumanoidRootPart")
                         
+                        -- Атакуем всех, у кого здоровье больше 0
                         if targetHum and targetHum.Health > 0 then
-                            -- Телепортируемся вплотную к игроку
+                            -- Телепортируемся за спину (чтобы было сложнее попасть шерифу)
                             myRoot.CFrame = targetRoot.CFrame * CFrame.new(0, 0, 1.5)
                             
                             -- Активируем удар
                             knife:Activate()
                             
-                            -- Ждем секунду, чтобы сервер зарегистрировал удар и переходим к следующему
-                            task.wait(0.5) 
+                            -- Ждем немного, чтобы сервер зарегистрировал удар
+                            task.wait(0.3) 
                             break 
                         end
                     end
@@ -626,7 +628,7 @@ end)
 local MainTab = CreateTab("Главная", 1)
 local PlayerTab = CreateTab("Игрок", 2)
 local VisualTab = CreateTab("Визуал", 3)
-local KillerTab = CreateTab("Киллер", 4) -- Новая вкладка!
+local KillerTab = CreateTab("Киллер", 4)
 
 -- Главная
 CreateToggle(MainTab, "Универсальный Авто-Фарм Монет", false, function(state)
@@ -692,7 +694,7 @@ CreateToggle(VisualTab, "MM2 ESP (Роли)", false, function(state)
 end)
 
 -- Киллер
-CreateToggle(KillerTab, "Auto Kill (Только Убийца)", false, function(state)
+CreateToggle(KillerTab, "Auto Kill (Всех)", false, function(state)
     AutoKillEnabled = state
 end)
 
@@ -706,7 +708,7 @@ CloseBtn.MouseButton1Click:Connect(function()
     AutoFarmEnabled = false
     WalkSpeedEnabled = false
     ESPEnabled = false 
-    AutoKillEnabled = false -- Отключаем Auto Kill при закрытии
+    AutoKillEnabled = false
     StopFlying()
     StopAutoFarm()
     
