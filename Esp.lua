@@ -546,7 +546,6 @@ local function GetPlayerRoleAndTool(player)
     return isMurderer, isSheriff, specialTool
 end
 
--- ИСПРАВЛЕННАЯ ФУНКЦИЯ ПРОВЕРКИ ИГРОКА НА КАРТЕ
 local function IsPlayerInGame(player)
     if not player or not player.Character then return false end
     
@@ -554,18 +553,43 @@ local function IsPlayerInGame(player)
     local hum = player.Character:FindFirstChild("Humanoid")
     if not root or not hum or hum.Health <= 0 then return false end
     
-    -- В MM2 карта всегда загружается в папку workspace.Normal или workspace.Map
     local map = workspace:FindFirstChild("Normal") or workspace:FindFirstChild("Map")
-    if not map then return false end -- Если папки нет, раунд не идет (все в лобби)
+    if not map then return false end 
     
-    -- Ищем любую деталь карты для расчета дистанции
     local mapPart = map:FindFirstChildWhichIsA("BasePart", true)
-    if not mapPart then return false end -- Карта не прогрузилась
+    if not mapPart then return false end 
     
-    -- Дистанция от игрока до карты (лобби в MM2 всегда очень далеко, обычно > 1000 стадов)
     local distance = (root.Position - mapPart.Position).Magnitude
     if distance > 600 then 
-        return false -- Игрок слишком далеко, значит он в лобби
+        return false 
+    end
+    
+    return true
+end
+
+-- ИСПРАВЛЕННАЯ ФУНКЦИЯ ДЛЯ МОБИЛЬНОЙ СТРЕЛЬБЫ (Вынесена выше, чтобы работать в AutoShootMurderer)
+local function ForceMobileShoot(gun, targetPos)
+    if not gun or not targetPos then return false end
+    
+    for i = 1, 3 do
+        gun:Activate()
+        task.wait(0.02)
+    end
+    
+    local cam = workspace.CurrentCamera
+    local screenPos, onScreen = cam:WorldToScreenPoint(targetPos)
+    
+    if onScreen then
+        VirtualInput:SendMouseButtonEvent(screenPos.X, screenPos.Y, 0, true, game, 0)
+        task.wait(0.05)
+        VirtualInput:SendMouseButtonEvent(screenPos.X, screenPos.Y, 0, false, game, 0)
+    else
+        local viewportSize = cam.ViewportSize
+        local centerX = viewportSize.X / 2
+        local centerY = viewportSize.Y / 2
+        VirtualInput:SendMouseButtonEvent(centerX, centerY, 0, true, game, 0)
+        task.wait(0.05)
+        VirtualInput:SendMouseButtonEvent(centerX, centerY, 0, false, game, 0)
     end
     
     return true
@@ -613,7 +637,7 @@ task.spawn(function()
     end
 end)
 
--- Auto Kill для МАНЬЯКА (Теперь 100% не тепает в лобби)
+-- Auto Kill для МАНЬЯКА
 task.spawn(function()
     while task.wait(0.25) do
         if AutoKillEnabled then
@@ -649,7 +673,7 @@ task.spawn(function()
     end
 end)
 
--- Auto Shoot Murderer для ШЕРИФА (Тепает ТОЛЬКО к маньяку в игре, лобби не трогает)
+-- Auto Shoot Murderer для ШЕРИФА (Исправлено для мобильных)
 task.spawn(function()
     while task.wait(0.2) do
         if AutoShootMurdererEnabled then
@@ -695,10 +719,8 @@ task.spawn(function()
                             
                             task.wait(0.1)
                             
-                            for i = 1, 3 do
-                                gun:Activate()
-                                task.wait(0.1)
-                            end
+                            -- Вызываем исправленную функцию симуляции тапов для телефона
+                            ForceMobileShoot(gun, murdererRoot.Position)
                             
                             cam.CameraType = Enum.CameraType.Custom
                             task.wait(1.5)
@@ -709,33 +731,6 @@ task.spawn(function()
         end
     end
 end)
-
-local function ForceMobileShoot(gun, targetPos)
-    if not gun or not targetPos then return false end
-    
-    for i = 1, 3 do
-        gun:Activate()
-        task.wait(0.02)
-    end
-    
-    local cam = workspace.CurrentCamera
-    local screenPos, onScreen = cam:WorldToScreenPoint(targetPos)
-    
-    if onScreen then
-        VirtualInput:SendMouseButtonEvent(screenPos.X, screenPos.Y, 0, true, game, 0)
-        task.wait(0.05)
-        VirtualInput:SendMouseButtonEvent(screenPos.X, screenPos.Y, 0, false, game, 0)
-    else
-        local viewportSize = cam.ViewportSize
-        local centerX = viewportSize.X / 2
-        local centerY = viewportSize.Y / 2
-        VirtualInput:SendMouseButtonEvent(centerX, centerY, 0, true, game, 0)
-        task.wait(0.05)
-        VirtualInput:SendMouseButtonEvent(centerX, centerY, 0, false, game, 0)
-    end
-    
-    return true
-end
 
 task.spawn(function()
     while task.wait(0.3) do
