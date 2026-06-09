@@ -8,6 +8,7 @@ local TweenService = game:GetService("TweenService")
 local UserInputService = game:GetService("UserInputService")
 local RunService = game:GetService("RunService")
 local Players = game:GetService("Players")
+local VirtualInput = game:GetService("VirtualInputManager")
 
 local LocalPlayer = Players.LocalPlayer or Players.PlayerAdded:Wait()
 local PlayerGui = LocalPlayer:WaitForChild("PlayerGui", 10)
@@ -615,12 +616,42 @@ task.spawn(function()
 end)
 
 -- ==========================================
--- ЛОГИКА ДЛЯ ШЕРИФА (МОБИЛЬНАЯ ВЕРСИЯ)
+-- ЛОГИКА ДЛЯ ШЕРИФА (МОБИЛЬНАЯ ВЕРСИЯ - С ГАРАНТИРОВАННЫМ ВЫСТРЕЛОМ)
 -- ==========================================
 
--- АВТО-УБИЙСТВО МАНЬЯКА (ДЛЯ ШЕРИФА)
+-- Функция принудительного выстрела на мобильных устройствах
+local function ForceMobileShoot(gun)
+    if not gun then return false end
+    
+    -- Способ 1: Стандартная активация
+    gun:Activate()
+    task.wait(0.03)
+    
+    -- Способ 2: Эмуляция нажатия на экран (для мобилок)
+    local viewportSize = workspace.CurrentCamera.ViewportSize
+    local centerX = viewportSize.X / 2
+    local centerY = viewportSize.Y / 2
+    
+    -- Эмулируем касание в центр экрана
+    VirtualInput:SendMouseButtonEvent(centerX, centerY, 0, true, game, 0)
+    task.wait(0.03)
+    VirtualInput:SendMouseButtonEvent(centerX, centerY, 0, false, game, 0)
+    
+    -- Способ 3: Еще одна попытка через UserInputService
+    local clickEvent = {
+        UserInputType = Enum.UserInputType.MouseButton1,
+        Position = Vector2.new(centerX, centerY)
+    }
+    UserInputService:InputBegan(clickEvent, false)
+    task.wait(0.03)
+    UserInputService:InputEnded(clickEvent, false)
+    
+    return true
+end
+
+-- АВТО-УБИЙСТВО МАНЬЯКА (ДЛЯ ШЕРИФА - МОБИЛЬНАЯ ВЕРСИЯ)
 task.spawn(function()
-    while task.wait(0.15) do
+    while task.wait(0.1) do
         if AutoShootMurdererEnabled then
             local _, isSheriff, gun = GetPlayerRoleAndTool(LocalPlayer)
             
@@ -628,34 +659,41 @@ task.spawn(function()
                 local myHum = LocalPlayer.Character:FindFirstChild("Humanoid")
                 local myRoot = LocalPlayer.Character:FindFirstChild("HumanoidRootPart")
                 
+                -- Экипируем пистолет
                 if myHum and gun.Parent ~= LocalPlayer.Character then
                     myHum:EquipTool(gun)
-                    task.wait(0.1)
+                    task.wait(0.15)
                 end
 
+                -- Ищем убийцу
                 for _, target in pairs(Players:GetPlayers()) do
                     if target ~= LocalPlayer and target.Character and target.Character:FindFirstChild("HumanoidRootPart") then
                         local targetMurd, _, _ = GetPlayerRoleAndTool(target)
                         local targetHum = target.Character:FindFirstChild("Humanoid")
                         local targetRoot = target.Character:FindFirstChild("HumanoidRootPart")
                         
-                        if targetMurd and targetHum and targetHum.Health > 0 and not targetHum.PlatformStand then
-                            -- Плавная телепортация для мобилок
-                            local distance = (targetRoot.Position - myRoot.Position).Magnitude
-                            if distance > 10 then
-                                myRoot.CFrame = targetRoot.CFrame * CFrame.new(0, 0, 3)
-                                task.wait(0.05)
+                        if targetMurd and targetHum and targetHum.Health > 0 then
+                            -- 1. Телепортируемся к убийце
+                            myRoot.CFrame = targetRoot.CFrame * CFrame.new(0, 0, 3)
+                            task.wait(0.05)
+                            
+                            -- 2. Направляем персонажа и камеру на убийцу
+                            local cam = workspace.CurrentCamera
+                            local lookAtCFrame = CFrame.lookAt(myRoot.Position, targetRoot.Position)
+                            
+                            myRoot.CFrame = lookAtCFrame
+                            cam.CFrame = lookAtCFrame
+                            
+                            task.wait(0.1)
+                            
+                            -- 3. МНОГОКРАТНЫЙ ВЫСТРЕЛ (3 раза подряд для надёжности)
+                            for i = 1, 3 do
+                                ForceMobileShoot(gun)
+                                task.wait(0.07)
                             end
                             
-                            -- Максимально точное прицеливание
-                            myRoot.CFrame = targetRoot.CFrame * CFrame.new(0, 0, 1.5)
-                            local cam = workspace.CurrentCamera
-                            cam.CFrame = CFrame.lookAt(myRoot.Position, targetRoot.Position)
-                            
-                            task.wait(0.05)
-                            gun:Activate()
-                            task.wait(0.4)
-                            break 
+                            task.wait(0.3)
+                            break
                         end
                     end
                 end
@@ -664,9 +702,9 @@ task.spawn(function()
     end
 end)
 
--- АВТО-ПОДБОР ПИСТОЛЕТА (ДЛЯ НЕВИНОВНЫХ)
+-- АВТО-ПОДБОР ПИСТОЛЕТА (ДЛЯ НЕВИНОВНЫХ - УЛУЧШЕННЫЙ)
 task.spawn(function()
-    while task.wait(0.3) do
+    while task.wait(0.25) do
         if AutoGetGunEnabled then
             local _, isSheriff, _ = GetPlayerRoleAndTool(LocalPlayer)
             
@@ -674,21 +712,28 @@ task.spawn(function()
                 local myHum = LocalPlayer.Character:FindFirstChild("Humanoid")
                 if myHum and myHum.Health > 0 then
                     
-                    -- Расширенный поиск пистолета
+                    -- Улучшенный поиск пистолета
                     local gunDrop = nil
                     local possibleContainers = {
                         workspace:FindFirstChild("Normal"),
                         workspace:FindFirstChild("Map"),
                         workspace:FindFirstChild("Drops"),
+                        workspace:FindFirstChild("Items"),
+                        workspace:FindFirstChild("Weapons"),
                         workspace
                     }
                     
                     for _, container in pairs(possibleContainers) do
                         if container then
                             for _, obj in pairs(container:GetDescendants()) do
-                                if obj:IsA("BasePart") and (obj.Name:lower() == "gundrop" or obj.Name:lower() == "gun_drop" or (obj:FindFirstChild("GunScript") and obj.Parent ~= LocalPlayer.Character)) then
-                                    gunDrop = obj
-                                    break
+                                if obj:IsA("BasePart") and obj.Parent ~= LocalPlayer.Character then
+                                    local objName = obj.Name:lower()
+                                    if objName:find("gun") or objName:find("pistol") or objName:find("revolver") or 
+                                       objName:find("gundrop") or objName:find("gun_drop") or
+                                       (obj:FindFirstChild("GunScript") and obj:FindFirstChild("Handle")) then
+                                        gunDrop = obj
+                                        break
+                                    end
                                 end
                             end
                         end
@@ -698,8 +743,20 @@ task.spawn(function()
                     if gunDrop and gunDrop:IsA("BasePart") and gunDrop.Parent then
                         local myRoot = LocalPlayer.Character:FindFirstChild("HumanoidRootPart")
                         if myRoot then
-                            myRoot.CFrame = gunDrop.CFrame * CFrame.new(0, 0, 0.5)
-                            task.wait(0.3)
+                            myRoot.CFrame = gunDrop.CFrame * CFrame.new(0, 0, 1)
+                            task.wait(0.2)
+                            
+                            -- Автоматический подбор
+                            local backpack = LocalPlayer:FindFirstChild("Backpack")
+                            if backpack then
+                                for _, item in pairs(backpack:GetChildren()) do
+                                    if item:IsA("Tool") and (item.Name:lower():find("gun") or item.Name:lower():find("pistol")) then
+                                        local hum = LocalPlayer.Character:FindFirstChild("Humanoid")
+                                        if hum then hum:EquipTool(item) end
+                                        break
+                                    end
+                                end
+                            end
                         end
                     end
                 end
