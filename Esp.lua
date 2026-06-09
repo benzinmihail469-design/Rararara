@@ -374,9 +374,7 @@ local function StartFlying()
     local char = LocalPlayer.Character
     local root = char and char:FindFirstChild("HumanoidRootPart")
     local hum = char and char:FindFirstChildOfClass("Humanoid")
-    if not root or not hum then
-        return
-    end
+    if not root or not hum then return end
     
     hum.PlatformStand = true
 
@@ -397,9 +395,7 @@ local function StartFlying()
             StopFlying()
             return
         end
-        if AutoFarmEnabled then
-            return
-        end
+        if AutoFarmEnabled then return end
 
         BGyro.CFrame = cam.CFrame
         local moveDir = Vector3.new(0, 0, 0)
@@ -412,18 +408,10 @@ local function StartFlying()
         end
 
         if moveDir.Magnitude == 0 and UserInputService.KeyboardEnabled then
-            if UserInputService:IsKeyDown(Enum.KeyCode.W) then
-                moveDir = moveDir + cam.CFrame.LookVector
-            end
-            if UserInputService:IsKeyDown(Enum.KeyCode.S) then
-                moveDir = moveDir - cam.CFrame.LookVector
-            end
-            if UserInputService:IsKeyDown(Enum.KeyCode.A) then
-                moveDir = moveDir - cam.CFrame.RightVector
-            end
-            if UserInputService:IsKeyDown(Enum.KeyCode.D) then
-                moveDir = moveDir + cam.CFrame.RightVector
-            end
+            if UserInputService:IsKeyDown(Enum.KeyCode.W) then moveDir = moveDir + cam.CFrame.LookVector end
+            if UserInputService:IsKeyDown(Enum.KeyCode.S) then moveDir = moveDir - cam.CFrame.LookVector end
+            if UserInputService:IsKeyDown(Enum.KeyCode.A) then moveDir = moveDir - cam.CFrame.RightVector end
+            if UserInputService:IsKeyDown(Enum.KeyCode.D) then moveDir = moveDir + cam.CFrame.RightVector end
         end
 
         if moveDir.Magnitude > 0 then
@@ -438,9 +426,7 @@ local function GetTargetCoinGlobal()
     if CachedCoin and CachedCoin.Parent and CachedCoin:IsA("BasePart") and CachedCoin.Transparency < 1 then
         return CachedCoin
     end
-    if tick() < NextScanTime then
-        return nil
-    end
+    if tick() < NextScanTime then return nil end
     NextScanTime = tick() + 0.3
 
     local coinContainer = workspace:FindFirstChild("Normal") or workspace:FindFirstChild("Map") or workspace:FindFirstChild("CoinContainer")
@@ -466,9 +452,7 @@ local function StopAutoFarm()
         AutoFarmConnection:Disconnect()
         AutoFarmConnection = nil
     end
-    if not Flying then
-        StopFlying()
-    end
+    if not Flying then StopFlying() end
 end
 
 local function StartAutoFarm()
@@ -476,9 +460,7 @@ local function StartAutoFarm()
     local char = LocalPlayer.Character
     local root = char and char:FindFirstChild("HumanoidRootPart")
     local hum = char and char:FindFirstChildOfClass("Humanoid")
-    if not root or not hum then
-        return
-    end
+    if not root or not hum then return end
     
     hum.PlatformStand = true
     if not BVelocity or not BVelocity.Parent then
@@ -498,14 +480,10 @@ local function StartAutoFarm()
         end
         local char = LocalPlayer.Character
         local root = char and char:FindFirstChild("HumanoidRootPart")
-        if not root then
-            return
-        end
+        if not root then return end
         
         for _, part in pairs(char:GetDescendants()) do
-            if part:IsA("BasePart") then
-                part.CanCollide = false
-            end
+            if part:IsA("BasePart") then part.CanCollide = false end
         end
         
         local coin = GetTargetCoinGlobal()
@@ -529,11 +507,8 @@ LocalPlayer.CharacterAdded:Connect(function(newChar)
     local hum = newChar:WaitForChild("Humanoid", 5)
     if root and hum then
         task.wait(0.5)
-        if AutoFarmEnabled then
-            StartAutoFarm()
-        elseif Flying then
-            StartFlying()
-        end
+        if AutoFarmEnabled then StartAutoFarm()
+        elseif Flying then StartFlying() end
     end
 end)
 
@@ -545,22 +520,22 @@ WalkSpeedConnection = RunService.Stepped:Connect(function()
     end
 end)
 
+-- ИСПРАВЛЕНИЕ 1: Строгая проверка ролей. Никаких случайных срабатываний на игрушки.
 local function GetPlayerRoleAndTool(player)
     local isMurderer = false
     local isSheriff = false
     local specialTool = nil
 
     local function check(container)
-        if not container then
-            return
-        end
+        if not container then return end
         for _, item in pairs(container:GetChildren()) do
             if item:IsA("Tool") then
-                local name = item.Name:lower()
-                if name:find("knife") or item:FindFirstChild("KnifeServer") or item:FindFirstChild("Slash") then
+                -- В MM2 у маньяка нож всегда имеет внутри скрипт KnifeServer или KnifeClient
+                if item:FindFirstChild("KnifeServer") or item:FindFirstChild("KnifeClient") then
                     isMurderer = true
                     specialTool = item
-                elseif name:find("gun") or name:find("revolver") or item:FindFirstChild("GunScript") then
+                -- У шерифа всегда есть GunScript или GunClient
+                elseif item:FindFirstChild("GunScript") or item:FindFirstChild("GunClient") then
                     isSheriff = true
                     specialTool = item
                 end
@@ -569,14 +544,11 @@ local function GetPlayerRoleAndTool(player)
     end
 
     check(player:FindFirstChild("Backpack"))
-    if player.Character then
-        check(player.Character)
-    end
+    if player.Character then check(player.Character) end
 
     return isMurderer, isSheriff, specialTool
 end
 
--- ИСПРАВЛЕНИЕ: Стабильный ESP без мерцания
 task.spawn(function()
     while task.wait(0.2) do
         if ESPEnabled then
@@ -618,6 +590,7 @@ task.spawn(function()
     end
 end)
 
+-- ИСПРАВЛЕНИЕ 2: Сделал авто-килл за маньяка более плавным, чтобы не так сильно дергался
 task.spawn(function()
     while task.wait(0.2) do
         if AutoKillEnabled then
@@ -638,9 +611,10 @@ task.spawn(function()
                         local targetRoot = target.Character:FindFirstChild("HumanoidRootPart")
                         
                         if targetHum and targetHum.Health > 0 and not targetHum.PlatformStand then
+                            myRoot.Velocity = Vector3.new(0, 0, 0) -- Гасим скорость, чтобы не колбасило
                             myRoot.CFrame = targetRoot.CFrame * CFrame.new(0, 0, 1.5)
                             knife:Activate()
-                            task.wait(0.3)
+                            task.wait(0.4) -- Ждем, чтобы удар засчитался и мы не телепортировались 10 раз в секунду
                             break
                         end
                     end
@@ -650,11 +624,8 @@ task.spawn(function()
     end
 end)
 
--- ИСПРАВЛЕНИЕ: Функция выстрела с конвертацией 3D позиции в 2D координаты экрана
 local function ForceMobileShoot(gun, targetPos)
-    if not gun or not targetPos then
-        return false
-    end
+    if not gun or not targetPos then return false end
     
     for i = 1, 3 do
         gun:Activate()
@@ -665,12 +636,10 @@ local function ForceMobileShoot(gun, targetPos)
     local screenPos, onScreen = cam:WorldToScreenPoint(targetPos)
     
     if onScreen then
-        -- Эмулируем "Тап" по экрану прямо в координаты, где сейчас убийца
         VirtualInput:SendMouseButtonEvent(screenPos.X, screenPos.Y, 0, true, game, 0)
         task.wait(0.05)
         VirtualInput:SendMouseButtonEvent(screenPos.X, screenPos.Y, 0, false, game, 0)
     else
-        -- Запасной вариант на случай, если убийца вылетел за пределы экрана
         local viewportSize = cam.ViewportSize
         local centerX = viewportSize.X / 2
         local centerY = viewportSize.Y / 2
@@ -682,7 +651,7 @@ local function ForceMobileShoot(gun, targetPos)
     return true
 end
 
--- ИСПРАВЛЕНИЕ: Логика AutoShootMurdererEnabled с передачей позиции
+-- ИСПРАВЛЕНИЕ 3: Полностью переработана логика стрельбы. Ищет только убийцу и наводится плавно, без дерганий.
 task.spawn(function()
     while task.wait(0.15) do
         if AutoShootMurdererEnabled then
@@ -691,9 +660,8 @@ task.spawn(function()
             else
                 local myHum = LocalPlayer.Character:FindFirstChild("Humanoid")
                 local myRoot = LocalPlayer.Character:FindFirstChild("HumanoidRootPart")
-                if not myHum or myHum.Health <= 0 then
-                    task.wait(0.5)
-                else
+                
+                if myHum and myHum.Health > 0 then
                     local _, isSheriff, gun = GetPlayerRoleAndTool(LocalPlayer)
                     
                     if isSheriff and gun then
@@ -704,6 +672,7 @@ task.spawn(function()
                         
                         local murdererRoot = nil
                         
+                        -- Ищем ТОЛЬКО маньяка (теперь функция GetPlayerRoleAndTool строго это проверяет)
                         for _, target in pairs(Players:GetPlayers()) do
                             if target ~= LocalPlayer then
                                 local targetMurd, _, _ = GetPlayerRoleAndTool(target)
@@ -720,25 +689,31 @@ task.spawn(function()
                         end
                         
                         if murdererRoot then
-                            -- Телепортируемся на дистанцию для идеального обзора
-                            myRoot.CFrame = murdererRoot.CFrame * CFrame.new(0, 0, 4)
-                            task.wait(0.1)
-                            
+                            -- Фиксируем скриптовую камеру, чтобы экран не пытался выровняться сам и не трясся
                             local cam = workspace.CurrentCamera
-                            local lookAtCFrame = CFrame.lookAt(myRoot.Position, murdererRoot.Position)
+                            cam.CameraType = Enum.CameraType.Scriptable
                             
-                            myRoot.CFrame = lookAtCFrame
-                            cam.CFrame = lookAtCFrame
+                            -- Телепортируемся на безопасную дистанцию, гасим ускорение
+                            myRoot.Velocity = Vector3.new(0,0,0)
+                            myRoot.CFrame = murdererRoot.CFrame * CFrame.new(0, 0, 5)
+                            
+                            -- Плавно нацеливаем камеру
+                            local aimCFrame = CFrame.lookAt(cam.CFrame.Position, murdererRoot.Position)
+                            cam.CFrame = aimCFrame
                             
                             task.wait(0.1)
                             
-                            -- Вызываем нашу новую функцию выстрела с наводкой (aimbot)
-                            for i = 1, 4 do
+                            -- Делаем 3 уверенных выстрела
+                            for i = 1, 3 do
                                 ForceMobileShoot(gun, murdererRoot.Position)
                                 task.wait(0.1)
                             end
                             
-                            task.wait(0.5)
+                            -- Возвращаем камеру игроку
+                            cam.CameraType = Enum.CameraType.Custom
+                            
+                            -- Кулдаун, чтобы нас не телепортировало постоянно и не дергало
+                            task.wait(1.5)
                         end
                     end
                 end
@@ -780,9 +755,7 @@ task.spawn(function()
                                 end
                             end
                         end
-                        if gunDrop then
-                            break
-                        end
+                        if gunDrop then break end
                     end
                     
                     if not gunDrop then
@@ -819,11 +792,7 @@ local SheriffTab = CreateTab("Шериф", 5)
 
 CreateToggle(MainTab, "Универсальный Авто-Фарм Монет", false, function(state)
     AutoFarmEnabled = state
-    if state then
-        StartAutoFarm()
-    else
-        StopAutoFarm()
-    end
+    if state then StartAutoFarm() else StopAutoFarm() end
 end)
 
 CreateSlider(MainTab, "Скорость авто-фарма", 10, 25, 16, function(value)
@@ -832,11 +801,7 @@ end)
 
 CreateToggle(PlayerTab, "Bypass Fly", false, function(state)
     Flying = state
-    if state then
-        StartFlying()
-    else
-        StopFlying()
-    end
+    if state then StartFlying() else StopFlying() end
 end)
 
 CreateSlider(PlayerTab, "Скорость полета", 15, 90, 35, function(value)
@@ -856,9 +821,7 @@ CreateToggle(PlayerTab, "Noclip (Сквозь стены)", false, function(stat
         NoclipConnection = RunService.Stepped:Connect(function()
             if LocalPlayer.Character then
                 for _, part in pairs(LocalPlayer.Character:GetDescendants()) do
-                    if part:IsA("BasePart") then
-                        part.CanCollide = false
-                    end
+                    if part:IsA("BasePart") then part.CanCollide = false end
                 end
             end
         end)
@@ -869,9 +832,7 @@ CreateToggle(PlayerTab, "Noclip (Сквозь стены)", false, function(stat
         end
         if LocalPlayer.Character then
             for _, part in pairs(LocalPlayer.Character:GetDescendants()) do
-                if part:IsA("BasePart") then
-                    part.CanCollide = true
-                end
+                if part:IsA("BasePart") then part.CanCollide = true end
             end
         end
     end
@@ -919,18 +880,12 @@ CloseBtn.MouseButton1Click:Connect(function()
     StopFlying()
     StopAutoFarm()
     
-    if NoclipConnection then
-        NoclipConnection:Disconnect()
-    end
-    if WalkSpeedConnection then
-        WalkSpeedConnection:Disconnect()
-    end
+    if NoclipConnection then NoclipConnection:Disconnect() end
+    if WalkSpeedConnection then WalkSpeedConnection:Disconnect() end
     
     local char = LocalPlayer.Character
     local hum = char and char:FindFirstChildOfClass("Humanoid")
-    if hum then
-        hum.WalkSpeed = 16
-    end
+    if hum then hum.WalkSpeed = 16 end
     
     ScreenGui:Destroy()
 end) 
