@@ -39,7 +39,8 @@ local NormalWalkSpeed = 16
 local WalkSpeedEnabled = false 
 local AutoFarmEnabled = false  
 local AutoFarmSpeed = 16 
-local ESPEnabled = false -- Настройка для визуала
+local ESPEnabled = false
+local AutoKillEnabled = false -- Настройка для Авто-Килла
 local FlyConnection = nil
 local NoclipConnection = nil
 local WalkSpeedConnection = nil
@@ -506,23 +507,24 @@ WalkSpeedConnection = RunService.Stepped:Connect(function()
 end)
 
 -- ==========================================
--- ЛОГИКА ESP ДЛЯ MM2
+-- ЛОГИКА ESP И РОЛЕЙ ДЛЯ MM2
 -- ==========================================
-local function GetRoleColor(player)
+local function GetPlayerRoleAndTool(player)
     local isMurderer = false
     local isSheriff = false
+    local specialTool = nil
 
     local function check(container)
         if not container then return end
         for _, item in pairs(container:GetChildren()) do
             if item:IsA("Tool") then
                 local name = item.Name:lower()
-                -- Проверка на наличие ножа (по названию или внутренним скриптам)
                 if name:find("knife") or item:FindFirstChild("KnifeServer") or item:FindFirstChild("Slash") then
                     isMurderer = true
-                -- Проверка на наличие пистолета
+                    specialTool = item
                 elseif name:find("gun") or name:find("revolver") or item:FindFirstChild("GunScript") then
                     isSheriff = true
+                    specialTool = item
                 end
             end
         end
@@ -531,16 +533,9 @@ local function GetRoleColor(player)
     check(player:FindFirstChild("Backpack"))
     if player.Character then check(player.Character) end
 
-    if isMurderer then
-        return Color3.fromRGB(255, 30, 30) -- Красный (Убийца)
-    elseif isSheriff then
-        return Color3.fromRGB(30, 144, 255) -- Синий (Шериф)
-    else
-        return Color3.fromRGB(50, 255, 100) -- Зеленый (Невиновный)
-    end
+    return isMurderer, isSheriff, specialTool
 end
 
--- Асинхронный цикл обновления ESP, чтобы не нагружать телефон
 task.spawn(function()
     while task.wait(0.5) do
         if ESPEnabled then
@@ -550,7 +545,10 @@ task.spawn(function()
                     local hum = char:FindFirstChild("Humanoid")
                     
                     if hum and hum.Health > 0 then
-                        local color = GetRoleColor(player)
+                        local isMurd, isSher, _ = GetPlayerRoleAndTool(player)
+                        local color = Color3.fromRGB(50, 255, 100) -- Зеленый (Невиновный)
+                        if isMurd then color = Color3.fromRGB(255, 30, 30) end -- Красный
+                        if isSher then color = Color3.fromRGB(30, 144, 255) end -- Синий
                         
                         local hl = char:FindFirstChild("MM2_RoleESP")
                         if not hl then
@@ -569,11 +567,52 @@ task.spawn(function()
                 end
             end
         else
-            -- Очистка при выключении
             for _, player in pairs(Players:GetPlayers()) do
                 if player.Character then
                     local hl = player.Character:FindFirstChild("MM2_RoleESP")
                     if hl then hl:Destroy() end
+                end
+            end
+        end
+    end
+end)
+
+-- ==========================================
+-- ЛОГИКА AUTO KILL (ДЛЯ УБИЙЦЫ)
+-- ==========================================
+task.spawn(function()
+    while task.wait(0.1) do
+        if AutoKillEnabled then
+            local isMurderer, _, knife = GetPlayerRoleAndTool(LocalPlayer)
+            
+            if isMurderer and knife and LocalPlayer.Character and LocalPlayer.Character:FindFirstChild("HumanoidRootPart") then
+                local myHum = LocalPlayer.Character:FindFirstChild("Humanoid")
+                local myRoot = LocalPlayer.Character:FindFirstChild("HumanoidRootPart")
+                
+                -- Автоматически берем нож в руки
+                if myHum and knife.Parent ~= LocalPlayer.Character then
+                    myHum:EquipTool(knife)
+                    task.wait(0.2)
+                end
+
+                -- Ищем живую жертву
+                for _, target in pairs(Players:GetPlayers()) do
+                    if target ~= LocalPlayer and target.Character and target.Character:FindFirstChild("HumanoidRootPart") then
+                        local targetHum = target.Character:FindFirstChild("Humanoid")
+                        local targetRoot = target.Character:FindFirstChild("HumanoidRootPart")
+                        
+                        if targetHum and targetHum.Health > 0 then
+                            -- Телепортируемся вплотную к игроку
+                            myRoot.CFrame = targetRoot.CFrame * CFrame.new(0, 0, 1.5)
+                            
+                            -- Активируем удар
+                            knife:Activate()
+                            
+                            -- Ждем секунду, чтобы сервер зарегистрировал удар и переходим к следующему
+                            task.wait(0.5) 
+                            break 
+                        end
+                    end
                 end
             end
         end
@@ -586,7 +625,8 @@ end)
 -- ==========================================
 local MainTab = CreateTab("Главная", 1)
 local PlayerTab = CreateTab("Игрок", 2)
-local VisualTab = CreateTab("Визуал", 3) -- Новая вкладка!
+local VisualTab = CreateTab("Визуал", 3)
+local KillerTab = CreateTab("Киллер", 4) -- Новая вкладка!
 
 -- Главная
 CreateToggle(MainTab, "Универсальный Авто-Фарм Монет", false, function(state)
@@ -651,6 +691,11 @@ CreateToggle(VisualTab, "MM2 ESP (Роли)", false, function(state)
     ESPEnabled = state
 end)
 
+-- Киллер
+CreateToggle(KillerTab, "Auto Kill (Только Убийца)", false, function(state)
+    AutoKillEnabled = state
+end)
+
 if tabs["Главная"] then
     tabs["Главная"].Select()
 end
@@ -660,7 +705,8 @@ CloseBtn.MouseButton1Click:Connect(function()
     Flying = false
     AutoFarmEnabled = false
     WalkSpeedEnabled = false
-    ESPEnabled = false -- Отключаем визуал, цикл сам всё почистит
+    ESPEnabled = false 
+    AutoKillEnabled = false -- Отключаем Auto Kill при закрытии
     StopFlying()
     StopAutoFarm()
     
