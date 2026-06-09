@@ -546,25 +546,33 @@ local function GetPlayerRoleAndTool(player)
     return isMurderer, isSheriff, specialTool
 end
 
--- Функция проверки - в игре ли игрок (есть ли у него оружие/инструменты)
 local function IsPlayerInGame(player)
-    if not player.Character then return false end
-    local hasTool = false
+    if not player or not player.Character then return false end
     
-    -- Проверяем есть ли у игрока оружие (в руке или в рюкзаке)
-    if player.Character:FindFirstChildOfClass("Tool") then
-        hasTool = true
-    end
-    local backpack = player:FindFirstChild("Backpack")
-    if backpack and #backpack:GetChildren() > 0 then
-        hasTool = true
+    -- Проверка на наличие важных частей тела
+    local root = player.Character:FindFirstChild("HumanoidRootPart")
+    local hum = player.Character:FindFirstChild("Humanoid")
+    if not root or not hum or hum.Health <= 0 then return false end
+    
+    -- Проверяем, находится ли игрок на спавне лобби по высоте (в ММ2 лобби обычно находится сильно выше или ниже карты)
+    -- Дополнительный жесткий чек: если у игрока включен PlatformStand и он не нами контролируется, возможно он на спавне/афк.
+    -- Но главный критерий - наличие раунд-контейнеров на карте.
+    local map = workspace:FindFirstChild("Normal") or workspace:FindFirstChild("Map")
+    if map then
+        -- Если игрок находится слишком далеко от карты (в лобби), игнорируем его
+        local mapSpawn = map:FindFirstChildWithClass("SpawnLocation") or map:FindFirstChildOfClass("BasePart")
+        if mapSpawn then
+            local distance = (root.Position - mapSpawn.Position).Magnitude
+            if distance > 400 then -- Если дальше 400 единиц от карты — он 100% в лобби
+                return false
+            end
+        end
     end
     
-    -- Если у игрока нет оружия - скорее всего он в лобби/спектаторе
-    return hasTool
+    return true
 end
 
--- ИСПРАВЛЕННЫЙ ESP - ПОКАЗЫВАЕТ СКВОЗЬ СТЕНЫ
+-- ESP ПОКАЗЫВАЕТ СКВОЗЬ СТЕНЫ
 task.spawn(function()
     while task.wait(0.2) do
         if ESPEnabled then
@@ -606,15 +614,13 @@ task.spawn(function()
     end
 end)
 
--- Auto Kill для МАНЬЯКА (убивает ТОЛЬКО активных игроков в игре, не трогает лобби)
+-- ИСПРАВЛЕННЫЙ Auto Kill для МАНЬЯКА (НЕ тепает в лобби)
 task.spawn(function()
     while task.wait(0.25) do
         if AutoKillEnabled then
             local isMurderer, _, knife = GetPlayerRoleAndTool(LocalPlayer)
             
-            if not isMurderer then
-                -- Если мы не маньяк - ничего не делаем
-            elseif knife and LocalPlayer.Character and LocalPlayer.Character:FindFirstChild("HumanoidRootPart") then
+            if isMurderer and knife and LocalPlayer.Character and LocalPlayer.Character:FindFirstChild("HumanoidRootPart") then
                 local myHum = LocalPlayer.Character:FindFirstChild("Humanoid")
                 local myRoot = LocalPlayer.Character:FindFirstChild("HumanoidRootPart")
                 
@@ -624,18 +630,18 @@ task.spawn(function()
                 end
 
                 for _, target in pairs(Players:GetPlayers()) do
-                    if target ~= LocalPlayer and target.Character and target.Character:FindFirstChild("HumanoidRootPart") then
+                    if target ~= LocalPlayer and IsPlayerInGame(target) then
                         local targetIsMurderer, _, _ = GetPlayerRoleAndTool(target)
                         local targetHum = target.Character:FindFirstChild("Humanoid")
                         local targetRoot = target.Character:FindFirstChild("HumanoidRootPart")
                         
-                        -- Проверяем: цель жива, НЕ маньяк, И в игре (есть оружие)
-                        if not targetIsMurderer and targetHum and targetHum.Health > 0 and not targetHum.PlatformStand and IsPlayerInGame(target) then
+                        -- Убиваем только если цель ЖИВА, НЕ маньяк и строго В ИГРЕ (не лобби)
+                        if not targetIsMurderer and targetHum and targetHum.Health > 0 and not targetHum.PlatformStand then
                             myRoot.Velocity = Vector3.new(0, 0, 0)
                             myRoot.CFrame = targetRoot.CFrame * CFrame.new(0, 0, 1.5)
                             task.wait(0.1)
                             knife:Activate()
-                            task.wait(0.5)
+                            task.wait(0.3)
                             break
                         end
                     end
@@ -645,13 +651,11 @@ task.spawn(function()
     end
 end)
 
--- Auto Shoot Murderer для ШЕРИФА (убивает ТОЛЬКО маньяка, который в игре)
+-- ИСПРАВЛЕННЫЙ Auto Shoot Murderer для ШЕРИФА (Тепает ТОЛЬКО к маньяку в игре, лобби не трогает)
 task.spawn(function()
     while task.wait(0.2) do
         if AutoShootMurdererEnabled then
-            if not LocalPlayer.Character or not LocalPlayer.Character:FindFirstChild("HumanoidRootPart") then
-                task.wait(0.5)
-            else
+            if LocalPlayer.Character and LocalPlayer.Character:FindFirstChild("HumanoidRootPart") then
                 local myHum = LocalPlayer.Character:FindFirstChild("Humanoid")
                 local myRoot = LocalPlayer.Character:FindFirstChild("HumanoidRootPart")
                 
@@ -667,14 +671,14 @@ task.spawn(function()
                         local murdererRoot = nil
                         
                         for _, target in pairs(Players:GetPlayers()) do
-                            if target ~= LocalPlayer then
+                            if target ~= LocalPlayer and IsPlayerInGame(target) then
                                 local targetIsMurderer, _, _ = GetPlayerRoleAndTool(target)
+                                -- Находим маньяка, который активен на игровой карте
                                 if targetIsMurderer and target.Character then
                                     local targetHum = target.Character:FindFirstChild("Humanoid")
                                     local targetRoot = target.Character:FindFirstChild("HumanoidRootPart")
                                     
-                                    -- Проверяем: маньяк жив и в игре
-                                    if targetHum and targetHum.Health > 0 and targetRoot and IsPlayerInGame(target) then
+                                    if targetHum and targetHum.Health > 0 and targetRoot then
                                         murdererRoot = targetRoot
                                         break
                                     end
@@ -682,6 +686,7 @@ task.spawn(function()
                             end
                         end
                         
+                        -- Телепортирует и стреляет ТОЛЬКО если маньяк найден в игре
                         if murdererRoot then
                             local cam = workspace.CurrentCamera
                             cam.CameraType = Enum.CameraType.Scriptable
