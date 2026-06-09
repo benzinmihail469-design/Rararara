@@ -520,7 +520,6 @@ WalkSpeedConnection = RunService.Stepped:Connect(function()
     end
 end)
 
--- ИСПРАВЛЕНИЕ 1: Строгая проверка ролей. Никаких случайных срабатываний на игрушки.
 local function GetPlayerRoleAndTool(player)
     local isMurderer = false
     local isSheriff = false
@@ -530,11 +529,9 @@ local function GetPlayerRoleAndTool(player)
         if not container then return end
         for _, item in pairs(container:GetChildren()) do
             if item:IsA("Tool") then
-                -- В MM2 у маньяка нож всегда имеет внутри скрипт KnifeServer или KnifeClient
                 if item:FindFirstChild("KnifeServer") or item:FindFirstChild("KnifeClient") then
                     isMurderer = true
                     specialTool = item
-                -- У шерифа всегда есть GunScript или GunClient
                 elseif item:FindFirstChild("GunScript") or item:FindFirstChild("GunClient") then
                     isSheriff = true
                     specialTool = item
@@ -559,9 +556,9 @@ task.spawn(function()
                     
                     if hum and hum.Health > 0 then
                         local isMurd, isSher = GetPlayerRoleAndTool(player)
-                        local color = Color3.fromRGB(50, 255, 100) -- Innocent
-                        if isMurd then color = Color3.fromRGB(255, 30, 30) end -- Murderer
-                        if isSher then color = Color3.fromRGB(30, 144, 255) end -- Sheriff
+                        local color = Color3.fromRGB(50, 255, 100)
+                        if isMurd then color = Color3.fromRGB(255, 30, 30) end
+                        if isSher then color = Color3.fromRGB(30, 144, 255) end
                         
                         local hl = char:FindFirstChild("MM2_RoleESP")
                         if not hl then
@@ -569,6 +566,7 @@ task.spawn(function()
                             hl.Name = "MM2_RoleESP"
                             hl.FillTransparency = 0.65
                             hl.OutlineTransparency = 0.1
+                            hl.DepthMode = Enum.HighlightDepthMode.Occluded
                             hl.Parent = char
                         end
                         hl.FillColor = color
@@ -590,31 +588,40 @@ task.spawn(function()
     end
 end)
 
--- ИСПРАВЛЕНИЕ 2: Сделал авто-килл за маньяка более плавным, чтобы не так сильно дергался
+-- ИСПРАВЛЕННЫЙ Auto Kill - убивает ТОЛЬКО маньяка (если вы шериф)
 task.spawn(function()
-    while task.wait(0.2) do
+    while task.wait(0.25) do
         if AutoKillEnabled then
-            local _, _, knife = GetPlayerRoleAndTool(LocalPlayer)
+            local _, isSheriff, gun = GetPlayerRoleAndTool(LocalPlayer)
             
-            if knife and LocalPlayer.Character and LocalPlayer.Character:FindFirstChild("HumanoidRootPart") then
+            if not isSheriff then
+                -- Ничего не делаем, только если мы не шериф
+            elseif gun and LocalPlayer.Character and LocalPlayer.Character:FindFirstChild("HumanoidRootPart") then
                 local myHum = LocalPlayer.Character:FindFirstChild("Humanoid")
                 local myRoot = LocalPlayer.Character:FindFirstChild("HumanoidRootPart")
                 
-                if myHum and knife.Parent ~= LocalPlayer.Character then
-                    myHum:EquipTool(knife)
+                if myHum and gun.Parent ~= LocalPlayer.Character then
+                    myHum:EquipTool(gun)
                     task.wait(0.1)
                 end
 
                 for _, target in pairs(Players:GetPlayers()) do
                     if target ~= LocalPlayer and target.Character and target.Character:FindFirstChild("HumanoidRootPart") then
+                        local targetIsMurderer, _, _ = GetPlayerRoleAndTool(target)
                         local targetHum = target.Character:FindFirstChild("Humanoid")
                         local targetRoot = target.Character:FindFirstChild("HumanoidRootPart")
                         
-                        if targetHum and targetHum.Health > 0 and not targetHum.PlatformStand then
-                            myRoot.Velocity = Vector3.new(0, 0, 0) -- Гасим скорость, чтобы не колбасило
-                            myRoot.CFrame = targetRoot.CFrame * CFrame.new(0, 0, 1.5)
-                            knife:Activate()
-                            task.wait(0.4) -- Ждем, чтобы удар засчитался и мы не телепортировались 10 раз в секунду
+                        if targetIsMurderer and targetHum and targetHum.Health > 0 and not targetHum.PlatformStand then
+                            myRoot.Velocity = Vector3.new(0, 0, 0)
+                            myRoot.CFrame = targetRoot.CFrame * CFrame.new(0, 0, 2.5)
+                            task.wait(0.1)
+                            
+                            for i = 1, 3 do
+                                gun:Activate()
+                                task.wait(0.1)
+                            end
+                            
+                            task.wait(0.8)
                             break
                         end
                     end
@@ -651,7 +658,6 @@ local function ForceMobileShoot(gun, targetPos)
     return true
 end
 
--- ИСПРАВЛЕНИЕ 3: Полностью переработана логика стрельбы. Ищет только убийцу и наводится плавно, без дерганий.
 task.spawn(function()
     while task.wait(0.15) do
         if AutoShootMurdererEnabled then
@@ -672,7 +678,6 @@ task.spawn(function()
                         
                         local murdererRoot = nil
                         
-                        -- Ищем ТОЛЬКО маньяка (теперь функция GetPlayerRoleAndTool строго это проверяет)
                         for _, target in pairs(Players:GetPlayers()) do
                             if target ~= LocalPlayer then
                                 local targetMurd, _, _ = GetPlayerRoleAndTool(target)
@@ -689,30 +694,23 @@ task.spawn(function()
                         end
                         
                         if murdererRoot then
-                            -- Фиксируем скриптовую камеру, чтобы экран не пытался выровняться сам и не трясся
                             local cam = workspace.CurrentCamera
                             cam.CameraType = Enum.CameraType.Scriptable
                             
-                            -- Телепортируемся на безопасную дистанцию, гасим ускорение
                             myRoot.Velocity = Vector3.new(0,0,0)
                             myRoot.CFrame = murdererRoot.CFrame * CFrame.new(0, 0, 5)
                             
-                            -- Плавно нацеливаем камеру
                             local aimCFrame = CFrame.lookAt(cam.CFrame.Position, murdererRoot.Position)
                             cam.CFrame = aimCFrame
                             
                             task.wait(0.1)
                             
-                            -- Делаем 3 уверенных выстрела
                             for i = 1, 3 do
                                 ForceMobileShoot(gun, murdererRoot.Position)
                                 task.wait(0.1)
                             end
                             
-                            -- Возвращаем камеру игроку
                             cam.CameraType = Enum.CameraType.Custom
-                            
-                            -- Кулдаун, чтобы нас не телепортировало постоянно и не дергало
                             task.wait(1.5)
                         end
                     end
@@ -888,4 +886,4 @@ CloseBtn.MouseButton1Click:Connect(function()
     if hum then hum.WalkSpeed = 16 end
     
     ScreenGui:Destroy()
-end) 
+end)
