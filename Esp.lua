@@ -1,28 +1,18 @@
--- Ожидание загрузки игры
-if not game:IsLoaded() then 
-    game.Loaded:Wait() 
-end
-
--- Получение сервисов
 local TweenService = game:GetService("TweenService")
 local UserInputService = game:GetService("UserInputService")
 local RunService = game:GetService("RunService")
 local Players = game:GetService("Players")
 local VirtualInput = game:GetService("VirtualInputManager")
 
-local LocalPlayer = Players.LocalPlayer or Players.PlayerAdded:Wait()
-local PlayerGui = LocalPlayer:WaitForChild("PlayerGui", 10)
+local LocalPlayer = Players.LocalPlayer
+local PlayerGui = LocalPlayer:WaitForChild("PlayerGui")
 
-if not PlayerGui then return end
-
--- Удаление старой копии меню
 if PlayerGui:FindFirstChild("MM2FlyFollowGui") then
     PlayerGui.MM2FlyFollowGui:Destroy()
 end
 
--- Подключение к официальному управлению Roblox (для мобильного джойстика)
 local MasterControl = nil
-local CharacterScripts = LocalPlayer:WaitForChild("PlayerScripts", 10)
+local CharacterScripts = LocalPlayer:FindFirstChild("PlayerScripts")
 if CharacterScripts then
     local PlayerModule = CharacterScripts:FindFirstChild("PlayerModule")
     if PlayerModule then
@@ -33,7 +23,6 @@ if CharacterScripts then
     end
 end
 
--- ГЛОБАЛЬНЫЕ НАСТРОЙКИ
 local Flying = false
 local FlySpeed = 35 
 local NormalWalkSpeed = 16
@@ -48,19 +37,15 @@ local FlyConnection = nil
 local NoclipConnection = nil
 local WalkSpeedConnection = nil
 local AutoFarmConnection = nil
-local LastLogTime = 0          
 local NextScanTime = 0
 local CachedCoin = nil
 
--- Физические объекты для полета
 local BVelocity = nil
 local BGyro = nil
 
--- СОЗДАНИЕ ИНТЕРФЕЙСА (500x300)
 local ScreenGui = Instance.new("ScreenGui")
 ScreenGui.Name = "MM2FlyFollowGui"
 ScreenGui.ResetOnSpawn = false
-ScreenGui.ZIndexBehavior = Enum.ZIndexBehavior.Sibling
 ScreenGui.Parent = PlayerGui
 
 local MainFrame = Instance.new("Frame")
@@ -83,7 +68,6 @@ Stroke.Color = Color3.fromRGB(0, 255, 140)
 Stroke.Transparency = 0.2
 Stroke.Parent = MainFrame
 
--- Шапка меню
 local Header = Instance.new("Frame")
 Header.Name = "Header"
 Header.Size = UDim2.new(1, 0, 0, 40)
@@ -106,19 +90,17 @@ Title.TextSize = 14
 Title.TextXAlignment = Enum.TextXAlignment.Left
 Title.Parent = Header
 
--- Кнопка Свернуть
 local MinBtn = Instance.new("TextButton")
 MinBtn.Size = UDim2.new(0, 30, 0, 30)
 MinBtn.Position = UDim2.new(1, -75, 0.5, -15)
 MinBtn.BackgroundColor3 = Color3.fromRGB(35, 35, 42)
 MinBtn.Font = Enum.Font.GothamBold
-MinBtn.Text = "—"
+MinBtn.Text = "-"
 MinBtn.TextColor3 = Color3.fromRGB(200, 200, 200)
 MinBtn.TextSize = 14
 MinBtn.Parent = Header
 Instance.new("UICorner", MinBtn).CornerRadius = UDim.new(0, 6)
 
--- Кнопка Закрыть
 local CloseBtn = Instance.new("TextButton")
 CloseBtn.Size = UDim2.new(0, 30, 0, 30)
 CloseBtn.Position = UDim2.new(1, -38, 0.5, -15)
@@ -130,7 +112,6 @@ CloseBtn.TextSize = 14
 CloseBtn.Parent = Header
 Instance.new("UICorner", CloseBtn).CornerRadius = UDim.new(0, 6)
 
--- Панель для вкладок (Слева)
 local TabPanel = Instance.new("Frame")
 TabPanel.Name = "TabPanel"
 TabPanel.Size = UDim2.new(0, 130, 1, -50)
@@ -143,9 +124,7 @@ local TabListLayout = Instance.new("UIListLayout")
 TabListLayout.Padding = UDim.new(0, 5)
 TabListLayout.SortOrder = Enum.SortOrder.LayoutOrder
 TabListLayout.Parent = TabPanel
-Instance.new("UIPadding", TabPanel).PaddingTop = UDim.new(0, 5)
 
--- Контейнер для страниц (Справа)
 local PagesContainer = Instance.new("Frame")
 PagesContainer.Name = "PagesContainer"
 PagesContainer.Size = UDim2.new(1, -160, 1, -50)
@@ -153,14 +132,15 @@ PagesContainer.Position = UDim2.new(0, 150, 0, 45)
 PagesContainer.BackgroundTransparency = 1
 PagesContainer.Parent = MainFrame
 
--- ==========================================
--- СКРИПТ ПЕРЕТАСКИВАНИЯ (ДЛЯ ВСЕГО МЕНЮ)
--- ==========================================
-local dragging, dragInput, dragStart, startPos
+local dragging = false
+local dragInput = nil
+local dragStart = nil
+local startPos = nil
+
 local function update(input)
     local delta = input.Position - dragStart
     local targetPos = UDim2.new(startPos.X.Scale, startPos.X.Offset + delta.X, startPos.Y.Scale, startPos.Y.Offset + delta.Y)
-    TweenService:Create(MainFrame, TweenInfo.new(0.1, Enum.EasingStyle.Quad, Enum.EasingDirection.Out), {Position = targetPos}):Play()
+    TweenService:Create(MainFrame, TweenInfo.new(0.1), {Position = targetPos}):Play()
 end
 
 MainFrame.InputBegan:Connect(function(input)
@@ -169,28 +149,33 @@ MainFrame.InputBegan:Connect(function(input)
         dragStart = input.Position
         startPos = MainFrame.Position
         input.Changed:Connect(function()
-            if input.UserInputState == Enum.UserInputState.End then dragging = false end
+            if input.UserInputState == Enum.UserInputState.End then
+                dragging = false
+            end
         end)
     end
 end)
 
 MainFrame.InputChanged:Connect(function(input)
-    if input.UserInputType == Enum.UserInputType.MouseMovement or input.UserInputType == Enum.UserInputType.Touch then dragInput = input end
+    if input.UserInputType == Enum.UserInputType.MouseMovement or input.UserInputType == Enum.UserInputType.Touch then
+        dragInput = input
+    end
 end)
 
 UserInputService.InputChanged:Connect(function(input)
-    if input == dragInput and dragging then update(input) end
+    if input == dragInput and dragging then
+        update(input)
+    end
 end)
 
 local isMinimized = false
 MinBtn.MouseButton1Click:Connect(function()
     isMinimized = not isMinimized
     local targetSize = isMinimized and UDim2.new(0, 500, 0, 40) or UDim2.new(0, 500, 0, 300)
-    MinBtn.Text = isMinimized and "+" or "—"
-    TweenService:Create(MainFrame, TweenInfo.new(0.3, Enum.EasingStyle.Quad, Enum.EasingDirection.Out), {Size = targetSize}):Play()
+    MinBtn.Text = isMinimized and "+" or "-"
+    TweenService:Create(MainFrame, TweenInfo.new(0.3), {Size = targetSize}):Play()
 end)
 
--- СИСТЕМА ВКЛАДОК И СТРАНИЦ
 local tabs = {}
 local activeTab = nil
 
@@ -245,7 +230,6 @@ local function CreateTab(name, order)
     return Page
 end
 
--- КОНСТРУКТОРЫ ЭЛЕМЕНТОВ
 local function CreateToggle(parentPage, text, default, callback)
     local TglFrame = Instance.new("Frame")
     TglFrame.Size = UDim2.new(1, -6, 0, 40)
@@ -353,24 +337,36 @@ local function CreateSlider(parentPage, text, min, max, default, callback)
     end)
 
     UserInputService.InputChanged:Connect(function(input)
-        if sliding and (input.UserInputType == Enum.UserInputType.MouseMovement or input.UserInputType == Enum.UserInputType.Touch) then MoveSlider(input) end
+        if sliding and (input.UserInputType == Enum.UserInputType.MouseMovement or input.UserInputType == Enum.UserInputType.Touch) then
+            MoveSlider(input)
+        end
     end)
 
     UserInputService.InputEnded:Connect(function(input)
-        if input.UserInputType == Enum.UserInputType.MouseButton1 or input.UserInputType == Enum.UserInputType.Touch then sliding = false end
+        if input.UserInputType == Enum.UserInputType.MouseButton1 or input.UserInputType == Enum.UserInputType.Touch then
+            sliding = false
+        end
     end)
 end
 
--- ==========================================
--- ЛОГИКА ФЛАЯ И АВТОФАРМА
--- ==========================================
 local function StopFlying()
-    if FlyConnection then FlyConnection:Disconnect(); FlyConnection = nil end
-    if BVelocity then BVelocity:Destroy(); BVelocity = nil end
-    if BGyro then BGyro:Destroy(); BGyro = nil end
+    if FlyConnection then
+        FlyConnection:Disconnect()
+        FlyConnection = nil
+    end
+    if BVelocity then
+        BVelocity:Destroy()
+        BVelocity = nil
+    end
+    if BGyro then
+        BGyro:Destroy()
+        BGyro = nil
+    end
     local char = LocalPlayer.Character
     local hum = char and char:FindFirstChildOfClass("Humanoid")
-    if hum then hum.PlatformStand = false end
+    if hum then
+        hum.PlatformStand = false
+    end
 end
 
 local function StartFlying()
@@ -378,7 +374,9 @@ local function StartFlying()
     local char = LocalPlayer.Character
     local root = char and char:FindFirstChild("HumanoidRootPart")
     local hum = char and char:FindFirstChildOfClass("Humanoid")
-    if not root or not hum then return end
+    if not root or not hum then
+        return
+    end
     
     hum.PlatformStand = true
 
@@ -388,15 +386,20 @@ local function StartFlying()
 
     BGyro = Instance.new("BodyGyro", root)
     BGyro.MaxTorque = Vector3.new(1e5, 1e5, 1e5)
-    BGyro.P = 15000 
-    BGyro.D = 100   
+    BGyro.P = 15000
+    BGyro.D = 100
     BGyro.CFrame = root.CFrame
 
     local cam = workspace.CurrentCamera
 
     FlyConnection = RunService.RenderStepped:Connect(function()
-        if not Flying or not root or not LocalPlayer.Character then StopFlying() return end
-        if AutoFarmEnabled then return end
+        if not Flying or not root or not LocalPlayer.Character then
+            StopFlying()
+            return
+        end
+        if AutoFarmEnabled then
+            return
+        end
 
         BGyro.CFrame = cam.CFrame
         local moveDir = Vector3.new(0, 0, 0)
@@ -409,10 +412,18 @@ local function StartFlying()
         end
 
         if moveDir.Magnitude == 0 and UserInputService.KeyboardEnabled then
-            if UserInputService:IsKeyDown(Enum.KeyCode.W) then moveDir = moveDir + cam.CFrame.LookVector end
-            if UserInputService:IsKeyDown(Enum.KeyCode.S) then moveDir = moveDir - cam.CFrame.LookVector end
-            if UserInputService:IsKeyDown(Enum.KeyCode.A) then moveDir = moveDir - cam.CFrame.RightVector end
-            if UserInputService:IsKeyDown(Enum.KeyCode.D) then moveDir = moveDir + cam.CFrame.RightVector end
+            if UserInputService:IsKeyDown(Enum.KeyCode.W) then
+                moveDir = moveDir + cam.CFrame.LookVector
+            end
+            if UserInputService:IsKeyDown(Enum.KeyCode.S) then
+                moveDir = moveDir - cam.CFrame.LookVector
+            end
+            if UserInputService:IsKeyDown(Enum.KeyCode.A) then
+                moveDir = moveDir - cam.CFrame.RightVector
+            end
+            if UserInputService:IsKeyDown(Enum.KeyCode.D) then
+                moveDir = moveDir + cam.CFrame.RightVector
+            end
         end
 
         if moveDir.Magnitude > 0 then
@@ -424,29 +435,40 @@ local function StartFlying()
 end
 
 local function GetTargetCoinGlobal()
-    if CachedCoin and CachedCoin.Parent and CachedCoin:IsA("BasePart") and CachedCoin.Transparency < 1 then return CachedCoin end
-    if tick() < NextScanTime then return nil end
+    if CachedCoin and CachedCoin.Parent and CachedCoin:IsA("BasePart") and CachedCoin.Transparency < 1 then
+        return CachedCoin
+    end
+    if tick() < NextScanTime then
+        return nil
+    end
     NextScanTime = tick() + 0.3
 
     local coinContainer = workspace:FindFirstChild("Normal") or workspace:FindFirstChild("Map") or workspace:FindFirstChild("CoinContainer")
     if coinContainer then
         for _, child in pairs(coinContainer:GetDescendants()) do
             if child:IsA("BasePart") and (string.find(child.Name:lower(), "coin") or child.Name == "Coin_Server") and child.Transparency < 1 then
-                CachedCoin = child return child
+                CachedCoin = child
+                return child
             end
         end
     end
     for _, child in pairs(workspace:GetDescendants()) do
         if child:IsA("BasePart") and not child:IsDescendantOf(Players) and (string.find(child.Name:lower(), "coin") or child.Name == "Coin_Server" or child:FindFirstChild("CoinVisual")) and child.Transparency < 1 and child.Parent ~= nil then
-            CachedCoin = child return child
+            CachedCoin = child
+            return child
         end
     end
     return nil
 end
 
 local function StopAutoFarm()
-    if AutoFarmConnection then AutoFarmConnection:Disconnect(); AutoFarmConnection = nil end
-    if not Flying then StopFlying() end
+    if AutoFarmConnection then
+        AutoFarmConnection:Disconnect()
+        AutoFarmConnection = nil
+    end
+    if not Flying then
+        StopFlying()
+    end
 end
 
 local function StartAutoFarm()
@@ -454,7 +476,9 @@ local function StartAutoFarm()
     local char = LocalPlayer.Character
     local root = char and char:FindFirstChild("HumanoidRootPart")
     local hum = char and char:FindFirstChildOfClass("Humanoid")
-    if not root or not hum then return end
+    if not root or not hum then
+        return
+    end
     
     hum.PlatformStand = true
     if not BVelocity or not BVelocity.Parent then
@@ -468,12 +492,21 @@ local function StartAutoFarm()
     end
 
     AutoFarmConnection = RunService.Heartbeat:Connect(function()
-        if not AutoFarmEnabled then StopAutoFarm() return end
+        if not AutoFarmEnabled then
+            StopAutoFarm()
+            return
+        end
         local char = LocalPlayer.Character
         local root = char and char:FindFirstChild("HumanoidRootPart")
-        if not root then return end
+        if not root then
+            return
+        end
         
-        for _, part in pairs(char:GetDescendants()) do if part:IsA("BasePart") then part.CanCollide = false end end
+        for _, part in pairs(char:GetDescendants()) do
+            if part:IsA("BasePart") then
+                part.CanCollide = false
+            end
+        end
         
         local coin = GetTargetCoinGlobal()
         if coin and coin.Parent then
@@ -496,11 +529,14 @@ LocalPlayer.CharacterAdded:Connect(function(newChar)
     local hum = newChar:WaitForChild("Humanoid", 5)
     if root and hum then
         task.wait(0.5)
-        if AutoFarmEnabled then StartAutoFarm() elseif Flying then StartFlying() end
+        if AutoFarmEnabled then
+            StartAutoFarm()
+        elseif Flying then
+            StartFlying()
+        end
     end
 end)
 
-if WalkSpeedConnection then WalkSpeedConnection:Disconnect() end
 WalkSpeedConnection = RunService.Stepped:Connect(function()
     local char = LocalPlayer.Character
     local hum = char and char:FindFirstChildOfClass("Humanoid")
@@ -509,16 +545,15 @@ WalkSpeedConnection = RunService.Stepped:Connect(function()
     end
 end)
 
--- ==========================================
--- ЛОГИКА ESP И РОЛЕЙ ДЛЯ MM2
--- ==========================================
 local function GetPlayerRoleAndTool(player)
     local isMurderer = false
     local isSheriff = false
     local specialTool = nil
 
     local function check(container)
-        if not container then return end
+        if not container then
+            return
+        end
         for _, item in pairs(container:GetChildren()) do
             if item:IsA("Tool") then
                 local name = item.Name:lower()
@@ -534,7 +569,9 @@ local function GetPlayerRoleAndTool(player)
     end
 
     check(player:FindFirstChild("Backpack"))
-    if player.Character then check(player.Character) end
+    if player.Character then
+        check(player.Character)
+    end
 
     return isMurderer, isSheriff, specialTool
 end
@@ -548,10 +585,14 @@ task.spawn(function()
                     local hum = char:FindFirstChild("Humanoid")
                     
                     if hum and hum.Health > 0 then
-                        local isMurd, isSher, _ = GetPlayerRoleAndTool(player)
+                        local isMurd, isSher = GetPlayerRoleAndTool(player)
                         local color = Color3.fromRGB(50, 255, 100)
-                        if isMurd then color = Color3.fromRGB(255, 30, 30) end
-                        if isSher then color = Color3.fromRGB(30, 144, 255) end
+                        if isMurd then
+                            color = Color3.fromRGB(255, 30, 30)
+                        end
+                        if isSher then
+                            color = Color3.fromRGB(30, 144, 255)
+                        end
                         
                         local hl = char:FindFirstChild("MM2_RoleESP")
                         if not hl then
@@ -565,7 +606,9 @@ task.spawn(function()
                         hl.OutlineColor = color
                     else
                         local hl = char:FindFirstChild("MM2_RoleESP")
-                        if hl then hl:Destroy() end
+                        if hl then
+                            hl:Destroy()
+                        end
                     end
                 end
             end
@@ -573,16 +616,15 @@ task.spawn(function()
             for _, player in pairs(Players:GetPlayers()) do
                 if player.Character then
                     local hl = player.Character:FindFirstChild("MM2_RoleESP")
-                    if hl then hl:Destroy() end
+                    if hl then
+                        hl:Destroy()
+                    end
                 end
             end
         end
     end
 end)
 
--- ==========================================
--- ЛОГИКА AUTO KILL (ДЛЯ МАНЬЯКА)
--- ==========================================
 task.spawn(function()
     while task.wait(0.2) do
         if AutoKillEnabled then
@@ -605,8 +647,8 @@ task.spawn(function()
                         if targetHum and targetHum.Health > 0 and not targetHum.PlatformStand then
                             myRoot.CFrame = targetRoot.CFrame * CFrame.new(0, 0, 1.5)
                             knife:Activate()
-                            task.wait(0.3) 
-                            break 
+                            task.wait(0.3)
+                            break
                         end
                     end
                 end
@@ -615,21 +657,16 @@ task.spawn(function()
     end
 end)
 
--- ==========================================
--- ЛОГИКА ДЛЯ ШЕРИФА (ИСПРАВЛЕННАЯ - БЕЗ goto)
--- ==========================================
-
--- Функция принудительного выстрела на мобильных устройствах
 local function ForceMobileShoot(gun)
-    if not gun then return false end
+    if not gun then
+        return false
+    end
     
-    -- Многократная активация для надежности
     for i = 1, 3 do
         gun:Activate()
         task.wait(0.02)
     end
     
-    -- Эмуляция нажатия на экран
     local viewportSize = workspace.CurrentCamera.ViewportSize
     local centerX = viewportSize.X / 2
     local centerY = viewportSize.Y / 2
@@ -641,11 +678,9 @@ local function ForceMobileShoot(gun)
     return true
 end
 
--- АВТО-УБИЙСТВО МАНЬЯКА (ДЛЯ ШЕРИФА - ИСПРАВЛЕНО)
 task.spawn(function()
     while task.wait(0.15) do
         if AutoShootMurdererEnabled then
-            -- Проверяем, живы ли мы
             if not LocalPlayer.Character or not LocalPlayer.Character:FindFirstChild("HumanoidRootPart") then
                 task.wait(0.5)
             else
@@ -653,19 +688,16 @@ task.spawn(function()
                 if not myHum or myHum.Health <= 0 then
                     task.wait(0.5)
                 else
-                    -- Получаем роль и оружие
                     local _, isSheriff, gun = GetPlayerRoleAndTool(LocalPlayer)
                     
                     if isSheriff and gun then
                         local myRoot = LocalPlayer.Character:FindFirstChild("HumanoidRootPart")
                         
-                        -- Экипируем пистолет
                         if gun.Parent ~= LocalPlayer.Character then
                             myHum:EquipTool(gun)
                             task.wait(0.2)
                         end
                         
-                        -- Ищем убийцу
                         local murdererRoot = nil
                         
                         for _, target in pairs(Players:GetPlayers()) do
@@ -683,13 +715,10 @@ task.spawn(function()
                             end
                         end
                         
-                        -- Если нашли убийцу
                         if murdererRoot then
-                            -- 1. Телепортируемся к убийце
                             myRoot.CFrame = murdererRoot.CFrame * CFrame.new(0, 0, 2)
                             task.wait(0.1)
                             
-                            -- 2. Направляем камеру и персонажа на убийцу
                             local cam = workspace.CurrentCamera
                             local lookAtCFrame = CFrame.lookAt(myRoot.Position, murdererRoot.Position)
                             
@@ -698,7 +727,6 @@ task.spawn(function()
                             
                             task.wait(0.1)
                             
-                            -- 3. Стреляем 5 раз для гарантии
                             for i = 1, 5 do
                                 ForceMobileShoot(gun)
                                 task.wait(0.1)
@@ -713,9 +741,6 @@ task.spawn(function()
     end
 end)
 
--- ==========================================
--- АВТО-ПОДБОР ПИСТОЛЕТА (ИСПРАВЛЕННЫЙ)
--- ==========================================
 task.spawn(function()
     while task.wait(0.3) do
         if AutoGetGunEnabled then
@@ -724,7 +749,6 @@ task.spawn(function()
             if not isSheriff and LocalPlayer.Character and LocalPlayer.Character:FindFirstChild("HumanoidRootPart") then
                 local myHum = LocalPlayer.Character:FindFirstChild("Humanoid")
                 if myHum and myHum.Health > 0 then
-                    
                     local gunDrop = nil
                     local dropContainers = {
                         workspace:FindFirstChild("Normal"),
@@ -750,7 +774,9 @@ task.spawn(function()
                                 end
                             end
                         end
-                        if gunDrop then break end
+                        if gunDrop then
+                            break
+                        end
                     end
                     
                     if not gunDrop then
@@ -779,29 +805,32 @@ task.spawn(function()
     end
 end)
 
--- ==========================================
--- СОЗДАНИЕ СТРАНИЦ И ЭЛЕМЕНТОВ
--- ==========================================
 local MainTab = CreateTab("Главная", 1)
 local PlayerTab = CreateTab("Игрок", 2)
 local VisualTab = CreateTab("Визуал", 3)
 local KillerTab = CreateTab("Киллер", 4)
 local SheriffTab = CreateTab("Шериф", 5) 
 
--- Главная
 CreateToggle(MainTab, "Универсальный Авто-Фарм Монет", false, function(state)
     AutoFarmEnabled = state
-    if state then StartAutoFarm() else StopAutoFarm() end
+    if state then
+        StartAutoFarm()
+    else
+        StopAutoFarm()
+    end
 end)
 
 CreateSlider(MainTab, "Скорость авто-фарма", 10, 25, 16, function(value)
     AutoFarmSpeed = value
 end)
 
--- Игрок
 CreateToggle(PlayerTab, "Bypass Fly", false, function(state)
     Flying = state
-    if state then StartFlying() else StopFlying() end
+    if state then
+        StartFlying()
+    else
+        StopFlying()
+    end
 end)
 
 CreateSlider(PlayerTab, "Скорость полета", 15, 90, 35, function(value)
@@ -821,15 +850,22 @@ CreateToggle(PlayerTab, "Noclip (Сквозь стены)", false, function(stat
         NoclipConnection = RunService.Stepped:Connect(function()
             if LocalPlayer.Character then
                 for _, part in pairs(LocalPlayer.Character:GetDescendants()) do
-                    if part:IsA("BasePart") then part.CanCollide = false end
+                    if part:IsA("BasePart") then
+                        part.CanCollide = false
+                    end
                 end
             end
         end)
     else
-        if NoclipConnection then NoclipConnection:Disconnect(); NoclipConnection = nil end
+        if NoclipConnection then
+            NoclipConnection:Disconnect()
+            NoclipConnection = nil
+        end
         if LocalPlayer.Character then
             for _, part in pairs(LocalPlayer.Character:GetDescendants()) do
-                if part:IsA("BasePart") then part.CanCollide = true end
+                if part:IsA("BasePart") then
+                    part.CanCollide = true
+                end
             end
         end
     end
@@ -846,17 +882,14 @@ CreateToggle(PlayerTab, "Inf Jump", false, function(state)
     end
 end)
 
--- Визуал
 CreateToggle(VisualTab, "MM2 ESP (Роли)", false, function(state)
     ESPEnabled = state
 end)
 
--- Киллер
 CreateToggle(KillerTab, "Auto Kill (Всех)", false, function(state)
     AutoKillEnabled = state
 end)
 
--- Шериф
 CreateToggle(SheriffTab, "Авто-Убийство маньяка", false, function(state)
     AutoShootMurdererEnabled = state
 end)
@@ -869,7 +902,6 @@ if tabs["Главная"] then
     tabs["Главная"].Select()
 end
 
--- Обработка закрытия меню
 CloseBtn.MouseButton1Click:Connect(function()
     Flying = false
     AutoFarmEnabled = false
@@ -881,12 +913,18 @@ CloseBtn.MouseButton1Click:Connect(function()
     StopFlying()
     StopAutoFarm()
     
-    if NoclipConnection then NoclipConnection:Disconnect() end
-    if WalkSpeedConnection then WalkSpeedConnection:Disconnect() end
+    if NoclipConnection then
+        NoclipConnection:Disconnect()
+    end
+    if WalkSpeedConnection then
+        WalkSpeedConnection:Disconnect()
+    end
     
     local char = LocalPlayer.Character
     local hum = char and char:FindFirstChildOfClass("Humanoid")
-    if hum then hum.WalkSpeed = 16 end
+    if hum then
+        hum.WalkSpeed = 16
+    end
     
     ScreenGui:Destroy()
 end)
