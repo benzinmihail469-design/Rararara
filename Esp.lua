@@ -28,9 +28,10 @@ local Flying, FlySpeed, NormalWalkSpeed, WalkSpeedEnabled, AutoFarmEnabled, Auto
 local FlyConnection, NoclipConnection, WalkSpeedConnection, AutoFarmConnection, ESPConnection = nil, nil, nil, nil, nil
 local NextScanTime, CachedCoin, BVelocity, BGyro = 0, nil, nil, nil
 
--- Новые переменные для God Mode
+-- Переменные для God Mode
 local GodModePlatform = nil
 local CloneChar = nil
+local RealCharCFrame = nil
 
 -- Вспомогательные функции
 local function StopFlying()
@@ -447,8 +448,8 @@ AddToggle(MainPage, "Авто-Фарм Монет", function(state)
 end)
 AddSlider(MainPage, "Скорость авто-фарма", 10, 25, 16, function(value) AutoFarmSpeed = value end)
 
--- ВКЛАДКА ИГРОК: God Mode (Платформа и Клон)
-AddToggle(PlayerPage, "God Mode (Платформа и Клон)", function(state)
+-- God Mode (Улучшенный вариант)
+AddToggle(PlayerPage, "God Mode (Платформа)", function(state)
     GodModeEnabled = state
     local char = LocalPlayer.Character
     local root = char and char:FindFirstChild("HumanoidRootPart")
@@ -456,69 +457,42 @@ AddToggle(PlayerPage, "God Mode (Платформа и Клон)", function(stat
 
     if state then
         if not char or not root or not hum then return end
+        RealCharCFrame = root.CFrame
         
-        -- 1. Создаем защитную платформу далеко под картой
         if not GodModePlatform then
             GodModePlatform = Instance.new("Part")
             GodModePlatform.Name = "Hoshi_SafePlatform"
             GodModePlatform.Size = Vector3.new(50, 5, 50)
-            GodModePlatform.Position = Vector3.new(0, -5000, 0) -- Смещение глубоко вниз
+            GodModePlatform.Position = Vector3.new(0, 50000, 0)
             GodModePlatform.Anchored = true
             GodModePlatform.Transparency = 1
             GodModePlatform.Parent = workspace
         end
 
-        -- 2. Создаем визуального клона на текущем месте игрока
         char.Archivable = true
         CloneChar = char:Clone()
         CloneChar.Name = LocalPlayer.Name .. "_Fake"
         CloneChar.Parent = workspace
-        
-        -- Замораживаем клона и отключаем коллизию, чтобы он работал просто как манекен
+        if CloneChar:FindFirstChild("HumanoidRootPart") then
+            CloneChar:SetPrimaryPartCFrame(RealCharCFrame)
+        end
         for _, part in pairs(CloneChar:GetDescendants()) do
-            if part:IsA("BasePart") then
-                part.Anchored = true
-                part.CanCollide = false
-            end
+            if part:IsA("BasePart") then part.Anchored = true part.CanCollide = false end
         end
 
-        -- 3. Телепортируем настоящего игрока (хитбокс) на созданную платформу
         root.CFrame = GodModePlatform.CFrame * CFrame.new(0, 5, 0)
-        
-        -- Фиксируем (вексируем) настоящего игрока, чтобы он не упал
         for _, part in pairs(char:GetDescendants()) do
-            if part:IsA("BasePart") then
-                part.Anchored = true
-            end
+            if part:IsA("BasePart") then part.Anchored = true end
         end
-
-        -- 4. Переключаем камеру на клона, чтобы ты продолжал видеть старое место
         workspace.CurrentCamera.CameraSubject = CloneChar:FindFirstChildOfClass("Humanoid")
-
     else
-        -- ВЫКЛЮЧЕНИЕ God Mode
-        if CloneChar and CloneChar:FindFirstChild("HumanoidRootPart") and root then
-            -- Возвращаем настоящего игрока на место, где стоял клон
-            root.CFrame = CloneChar.HumanoidRootPart.CFrame
-        end
-
-        -- Размораживаем настоящего игрока, возвращая ему возможность двигаться
         if char then
-            for _, part in pairs(char:GetDescendants()) do
-                if part:IsA("BasePart") then
-                    part.Anchored = false
-                end
-            end
+            for _, part in pairs(char:GetDescendants()) do if part:IsA("BasePart") then part.Anchored = false end end
         end
-
-        -- Очистка мусора (удаляем платформу и клона)
+        if root and RealCharCFrame then root.CFrame = RealCharCFrame end
         if GodModePlatform then GodModePlatform:Destroy() GodModePlatform = nil end
         if CloneChar then CloneChar:Destroy() CloneChar = nil end
-        
-        -- Возвращаем камеру на настоящего персонажа
-        if hum then
-            workspace.CurrentCamera.CameraSubject = hum
-        end
+        if hum then workspace.CurrentCamera.CameraSubject = hum end
     end
 end)
 
@@ -548,7 +522,6 @@ AddToggle(PlayerPage, "Inf Jump (Бесконечные прыжки)", function
     end
 end)
 
--- ПЛАВНОЕ ЕСП (БЕЗ МЕРЦАНИЯ И МОРГАНИЙ)
 AddToggle(VisualPage, "ESP (Подсветка Мафии/Шерифа)", function(state) 
     ESPEnabled = state 
     if state then
@@ -559,24 +532,13 @@ AddToggle(VisualPage, "ESP (Подсветка Мафии/Шерифа)", functi
                 if player ~= LocalPlayer and player.Character then
                     local char = player.Character
                     local hum = char:FindFirstChildOfClass("Humanoid")
-                    
                     if hum and hum.Health > 0 and char:FindFirstChild("HumanoidRootPart") then
                         local isMurd, isSher = GetPlayerRoleAndTool(player)
-                        local color = Color3.fromRGB(50, 255, 100) -- Мирный (Зеленый)
-                        if isMurd then color = Color3.fromRGB(255, 30, 30) end -- Убийца (Красный)
-                        if isSher then color = Color3.fromRGB(30, 144, 255) end -- Шериф (Синий)
-                        
+                        local color = Color3.fromRGB(50, 255, 100)
+                        if isMurd then color = Color3.fromRGB(255, 30, 30) elseif isSher then color = Color3.fromRGB(30, 144, 255) end
                         local hl = char:FindFirstChild("MM2_RoleESP")
-                        if not hl then
-                            hl = Instance.new("Highlight")
-                            hl.Name = "MM2_RoleESP"
-                            hl.FillTransparency = 0.5
-                            hl.OutlineTransparency = 0.2
-                            hl.Parent = char
-                        end
-                        -- Просто обновляем цвета, не пересоздавая объект каждый раз
-                        hl.FillColor = color 
-                        hl.OutlineColor = color
+                        if not hl then hl = Instance.new("Highlight") hl.Name = "MM2_RoleESP" hl.FillTransparency = 0.5 hl.OutlineTransparency = 0.2 hl.Parent = char end
+                        hl.FillColor = color hl.OutlineColor = color
                     else
                         local hl = char:FindFirstChild("MM2_RoleESP")
                         if hl then hl:Destroy() end
@@ -587,10 +549,7 @@ AddToggle(VisualPage, "ESP (Подсветка Мафии/Шерифа)", functi
     else
         if ESPConnection then ESPConnection:Disconnect() ESPConnection = nil end
         for _, player in pairs(Players:GetPlayers()) do
-            if player.Character then 
-                local hl = player.Character:FindFirstChild("MM2_RoleESP") 
-                if hl then hl:Destroy() end 
-            end
+            if player.Character then local hl = player.Character:FindFirstChild("MM2_RoleESP") if hl then hl:Destroy() end end
         end
     end
 end)
@@ -598,7 +557,6 @@ end)
 AddToggle(KillerPage, "Auto Kill (Убивать сервер)", function(state) AutoKillEnabled = state end)
 AddToggle(SheriffPage, "Авто-подбор пистолета", function(state) AutoGetGunEnabled = state end)
 
--- Потоки обновлений (AutoKill, Gun)
 task.spawn(function()
     while task.wait(0.25) do
         if AutoKillEnabled then
@@ -607,7 +565,6 @@ task.spawn(function()
                 local myHum = LocalPlayer.Character:FindFirstChild("Humanoid")
                 local myRoot = LocalPlayer.Character:FindFirstChild("HumanoidRootPart")
                 if myHum and knife.Parent ~= LocalPlayer.Character then myHum:EquipTool(knife) task.wait(0.1) end
-
                 for _, target in pairs(Players:GetPlayers()) do
                     if target ~= LocalPlayer and IsPlayerInGame(target) then
                         local targetIsMurderer = GetPlayerRoleAndTool(target)
@@ -669,12 +626,10 @@ WalkSpeedConnection = RunService.Stepped:Connect(function()
     end
 end)
 
--- Перетаскивание (Drag)
 local dragging, dragInput, dragStart, startPos
 MainFrame.InputBegan:Connect(function(input)
     if input.UserInputType == Enum.UserInputType.MouseButton1 or input.UserInputType == Enum.UserInputType.Touch then
         dragging = true dragStart = input.Position startPos = MainFrame.Position
-        input.Changed:Connect(function() if input.UserInputState == Enum.UserInputState.End then dragging = false end end)
     end
 end)
 MainFrame.InputChanged:Connect(function(input)
@@ -683,36 +638,20 @@ end)
 UserInputService.InputChanged:Connect(function(input)
     if input == dragInput and dragging then
         local delta = input.Position - dragStart
-        TweenService:Create(MainFrame, TweenInfo.new(0.08, Enum.EasingStyle.Quad, Enum.EasingDirection.Out), {
-            Position = UDim2.new(startPos.X.Scale, startPos.X.Offset + delta.X, startPos.Y.Scale, startPos.Y.Offset + delta.Y)
-        }):Play()
+        MainFrame.Position = UDim2.new(startPos.X.Scale, startPos.X.Offset + delta.X, startPos.Y.Scale, startPos.Y.Offset + delta.Y)
     end
 end)
+UserInputService.InputEnded:Connect(function(input)
+    if input.UserInputType == Enum.UserInputType.MouseButton1 or input.UserInputType == Enum.UserInputType.Touch then dragging = false end
+end)
 
--- Закрытие
 CloseBtn.MouseButton1Click:Connect(function()
     Flying, AutoFarmEnabled, WalkSpeedEnabled, ESPEnabled, AutoKillEnabled, AutoGetGunEnabled, GodModeEnabled = false, false, false, false, false, false, false
     StopFlying() StopAutoFarm()
     if NoclipConnection then NoclipConnection:Disconnect() end
     if WalkSpeedConnection then WalkSpeedConnection:Disconnect() end
     if ESPConnection then ESPConnection:Disconnect() end
-    
-    if GodModePlatform then GodModePlatform:Destroy() GodModePlatform = nil end
-    if CloneChar then CloneChar:Destroy() CloneChar = nil end
-    
-    local char = LocalPlayer.Character
-    local hum = char and char:FindFirstChildOfClass("Humanoid")
-    if hum then 
-        hum.WalkSpeed = 16 
-        workspace.CurrentCamera.CameraSubject = hum
-    end
-    if char then 
-        for _, part in pairs(char:GetDescendants()) do 
-            if part:IsA("BasePart") then 
-                part.CanTouch = true 
-                part.Anchored = false
-            end 
-        end 
-    end
+    if GodModePlatform then GodModePlatform:Destroy() end
+    if CloneChar then CloneChar:Destroy() end
     ScreenGui:Destroy()
 end)
