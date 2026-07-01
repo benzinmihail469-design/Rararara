@@ -25,7 +25,7 @@ if CharacterScripts then
 end
 
 local Flying, FlySpeed, NormalWalkSpeed, WalkSpeedEnabled, AutoFarmEnabled, AutoFarmSpeed, ESPEnabled, AutoKillEnabled, AutoGetGunEnabled, GodModeEnabled = false, 35, 16, false, false, 16, false, false, false, false
-local FlyConnection, NoclipConnection, WalkSpeedConnection, AutoFarmConnection = nil, nil, nil, nil
+local FlyConnection, NoclipConnection, WalkSpeedConnection, AutoFarmConnection, ESPConnection = nil, nil, nil, nil, nil
 local NextScanTime, CachedCoin, BVelocity, BGyro = 0, nil, nil, nil
 local GodModeConnection = nil
 local GodModePart = nil
@@ -516,45 +516,57 @@ AddToggle(PlayerPage, "Inf Jump (Бесконечные прыжки)", function
     end
 end)
 
-AddToggle(VisualPage, "ESP (Подсветка Мафии/Шерифа)", function(state) ESPEnabled = state end)
-AddToggle(KillerPage, "Auto Kill (Убивать сервер)", function(state) AutoKillEnabled = state end)
-AddToggle(SheriffPage, "Авто-подбор пистолета", function(state) AutoGetGunEnabled = state end)
-
--- Потоки обновлений (ESP, AutoKill, Gun)
-task.spawn(function()
-    while task.wait(0.25) do
-        if ESPEnabled then
+-- ПЛАВНОЕ ЕСП (БЕЗ МЕРЦАНИЯ И МОРГАНИЙ)
+AddToggle(VisualPage, "ESP (Подсветка Мафии/Шерифа)", function(state) 
+    ESPEnabled = state 
+    if state then
+        if ESPConnection then ESPConnection:Disconnect() end
+        ESPConnection = RunService.Heartbeat:Connect(function()
+            if not ESPEnabled then return end
             for _, player in pairs(Players:GetPlayers()) do
-                if player ~= LocalPlayer and player.Character and player.Character:FindFirstChild("HumanoidRootPart") then
+                if player ~= LocalPlayer and player.Character then
                     local char = player.Character
-                    local hum = char:FindFirstChild("Humanoid")
-                    if hum and hum.Health > 0 then
+                    local hum = char:FindFirstChildOfClass("Humanoid")
+                    
+                    if hum and hum.Health > 0 and char:FindFirstChild("HumanoidRootPart") then
                         local isMurd, isSher = GetPlayerRoleAndTool(player)
-                        local color = Color3.fromRGB(50, 255, 100)
-                        if isMurd then color = Color3.fromRGB(255, 30, 30) end
-                        if isSher then color = Color3.fromRGB(30, 144, 255) end
+                        local color = Color3.fromRGB(50, 255, 100) -- Мирный (Зеленый)
+                        if isMurd then color = Color3.fromRGB(255, 30, 30) end -- Убийца (Красный)
+                        if isSher then color = Color3.fromRGB(30, 144, 255) end -- Шериф (Синий)
                         
                         local hl = char:FindFirstChild("MM2_RoleESP")
                         if not hl then
-                            hl = Instance.new("Highlight", char)
+                            hl = Instance.new("Highlight")
                             hl.Name = "MM2_RoleESP"
                             hl.FillTransparency = 0.5
                             hl.OutlineTransparency = 0.2
+                            hl.Parent = char
                         end
-                        hl.FillColor = color hl.OutlineColor = color
+                        -- Просто обновляем цвета, не пересоздавая объект каждый раз
+                        hl.FillColor = color 
+                        hl.OutlineColor = color
                     else
-                        local hl = char:FindFirstChild("MM2_RoleESP") if hl then hl:Destroy() end
+                        local hl = char:FindFirstChild("MM2_RoleESP")
+                        if hl then hl:Destroy() end
                     end
                 end
             end
-        else
-            for _, player in pairs(Players:GetPlayers()) do
-                if player.Character then local hl = player.Character:FindFirstChild("MM2_RoleESP") if hl then hl:Destroy() end end
+        end)
+    else
+        if ESPConnection then ESPConnection:Disconnect() ESPConnection = nil end
+        for _, player in pairs(Players:GetPlayers()) do
+            if player.Character then 
+                local hl = player.Character:FindFirstChild("MM2_RoleESP") 
+                if hl then hl:Destroy() end 
             end
         end
     end
 end)
 
+AddToggle(KillerPage, "Auto Kill (Убивать сервер)", function(state) AutoKillEnabled = state end)
+AddToggle(SheriffPage, "Авто-подбор пистолета", function(state) AutoGetGunEnabled = state end)
+
+-- Потоки обновлений (AutoKill, Gun)
 task.spawn(function()
     while task.wait(0.25) do
         if AutoKillEnabled then
@@ -652,6 +664,7 @@ CloseBtn.MouseButton1Click:Connect(function()
     if NoclipConnection then NoclipConnection:Disconnect() end
     if WalkSpeedConnection then WalkSpeedConnection:Disconnect() end
     if GodModeConnection then GodModeConnection:Disconnect() end
+    if ESPConnection then ESPConnection:Disconnect() end
     if GodModePart then GodModePart:Destroy() end
     local char = LocalPlayer.Character
     local hum = char and char:FindFirstChildOfClass("Humanoid")
