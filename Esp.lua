@@ -35,8 +35,8 @@ local AutoFarmEnabled = false
 local AutoFarmSpeed = 16 
 local ESPEnabled = false
 local AutoKillEnabled = false 
-local AutoShootMurdererEnabled = false 
 local AutoGetGunEnabled = false
+local GodModeEnabled = false
 
 local FlyConnection = nil
 local NoclipConnection = nil
@@ -48,7 +48,7 @@ local BVelocity = nil
 local BGyro = nil
 
 -- ==========================================
--- ОСНОВНЫЕ ФУНКЦИИ (ПОЛНАЯ ОРИГИНАЛЬНАЯ ЛОГИКА)
+-- ОСНОВНЫЕ ФУНКЦИИ
 -- ==========================================
 local function StopFlying()
     if FlyConnection then FlyConnection:Disconnect() FlyConnection = nil end
@@ -189,24 +189,8 @@ local function IsPlayerInGame(player)
     return (root.Position - mapPart.Position).Magnitude <= 600
 end
 
-local function ForceMobileShoot(gun, targetPos)
-    if not gun or not targetPos then return false end
-    for i = 1, 3 do gun:Activate() task.wait(0.02) end
-    local cam = workspace.CurrentCamera
-    local screenPos, onScreen = cam:WorldToScreenPoint(targetPos)
-    if onScreen then
-        VirtualInput:SendMouseButtonEvent(screenPos.X, screenPos.Y, 0, true, game, 0) task.wait(0.05)
-        VirtualInput:SendMouseButtonEvent(screenPos.X, screenPos.Y, 0, false, game, 0)
-    else
-        local viewportSize = cam.ViewportSize
-        VirtualInput:SendMouseButtonEvent(viewportSize.X / 2, viewportSize.Y / 2, 0, true, game, 0) task.wait(0.05)
-        VirtualInput:SendMouseButtonEvent(viewportSize.X / 2, viewportSize.Y / 2, 0, false, game, 0)
-    end
-    return true
-end
-
 -- ==========================================
--- СОЗДАНИЕ ИНТЕРФЕЙСА (ПРЯМАЯ ОТРИСОВКА)
+-- СОЗДАНИЕ ИНТЕРФЕЙСА
 -- ==========================================
 local ScreenGui = Instance.new("ScreenGui")
 ScreenGui.Name = "HoshiMM2Gui"
@@ -246,14 +230,25 @@ Title.TextColor3 = Color3.fromRGB(255, 255, 255)
 Title.TextSize = 16
 Title.TextXAlignment = Enum.TextXAlignment.Left
 
+-- Кнопка Закрытия (Квадрат)
 local CloseBtn = Instance.new("TextButton", Header)
 CloseBtn.Size = UDim2.new(0, 32, 0, 32)
 CloseBtn.Position = UDim2.new(1, -38, 0.5, -16)
 CloseBtn.BackgroundTransparency = 1
 CloseBtn.Font = Enum.Font.GothamMedium
-CloseBtn.Text = "✕"
+CloseBtn.Text = "+"
 CloseBtn.TextColor3 = Color3.fromRGB(120, 125, 140)
-CloseBtn.TextSize = 14
+CloseBtn.TextSize = 12
+
+-- Кнопка Сворачивания
+local MinizeBtn = Instance.new("TextButton", Header)
+MinizeBtn.Size = UDim2.new(0, 32, 0, 32)
+MinizeBtn.Position = UDim2.new(1, -74, 0.5, -16)
+MinizeBtn.BackgroundTransparency = 1
+MinizeBtn.Font = Enum.Font.GothamMedium
+MinizeBtn.Text = "—"
+MinizeBtn.TextColor3 = Color3.fromRGB(120, 125, 140)
+MinizeBtn.TextSize = 14
 
 -- Боковая Панель Навигации
 local Sidebar = Instance.new("Frame", MainFrame)
@@ -277,7 +272,6 @@ PagesContainer.Size = UDim2.new(1, -140, 1, -42)
 PagesContainer.Position = UDim2.new(0, 140, 0, 42)
 PagesContainer.BackgroundTransparency = 1
 
--- Специфическая функция создания кнопки переключения дизайна кнопок
 local function StyleElement(frame)
     Instance.new("UICorner", frame).CornerRadius = UDim.new(0, 6)
     local s = Instance.new("UIStroke", frame)
@@ -285,8 +279,30 @@ local function StyleElement(frame)
     s.Color = Color3.fromRGB(30, 33, 43)
 end
 
+-- Логика сворачивания (Minimize)
+local GuiMinimized = false
+MinizeBtn.MouseButton1Click:Connect(function()
+    GuiMinimized = not GuiMinimized
+    if GuiMinimized then
+        Sidebar.Visible = false
+        PagesContainer.Visible = false
+        TweenService:Create(MainFrame, TweenInfo.new(0.2, Enum.EasingStyle.Quad, Enum.EasingDirection.Out), {
+            Size = UDim2.new(0, 620, 0, 42)
+        }):Play()
+    else
+        TweenService:Create(MainFrame, TweenInfo.new(0.2, Enum.EasingStyle.Quad, Enum.EasingDirection.Out), {
+            Size = UDim2.new(0, 620, 0, 360)
+        }):Play()
+        task.wait(0.2)
+        if not GuiMinimized then
+            Sidebar.Visible = true
+            PagesContainer.Visible = true
+        end
+    end
+end)
+
 -- ==========================================
--- СОЗДАНИЕ ЯВНЫХ СТРАНИЦ (ФРЭЙМОВ)
+-- СОЗДАНИЕ СТРАНИЦ
 -- ==========================================
 local function CreatePageFrame(name)
     local pf = Instance.new("ScrollingFrame", PagesContainer)
@@ -312,9 +328,7 @@ local VisualPage = CreatePageFrame("Visual")
 local KillerPage = CreatePageFrame("Killer")
 local SheriffPage = CreatePageFrame("Sheriff")
 
--- ==========================================
--- ЯВНЫЕ КНОПКИ НАВИГАЦИИ (ВКЛАДКИ)
--- ==========================================
+-- Кнопки вкладок
 local function CreateTabButton(text, order)
     local b = Instance.new("TextButton", Sidebar)
     b.Size = UDim2.new(1, 0, 0, 34)
@@ -335,7 +349,6 @@ local VisualBtn = CreateTabButton("Визуал", 3)
 local KillerBtn = CreateTabButton("Киллер", 4)
 local SheriffBtn = CreateTabButton("Шериф", 5)
 
--- Переключение страниц (ПРЯМАЯ КЛИК-ЛОГИКА)
 local function SwitchToPage(targetPage, targetBtn)
     MainPage.Visible = (MainPage == targetPage)
     PlayerPage.Visible = (PlayerPage == targetPage)
@@ -360,13 +373,11 @@ VisualBtn.MouseButton1Click:Connect(function() SwitchToPage(VisualPage, VisualBt
 KillerBtn.MouseButton1Click:Connect(function() SwitchToPage(KillerPage, KillerBtn) end)
 SheriffBtn.MouseButton1Click:Connect(function() SwitchToPage(SheriffPage, SheriffBtn) end)
 
--- Открываем первую вкладку по дефолту
 SwitchToPage(MainPage, MainBtn)
 
 -- ==========================================
--- ПРЯМОЕ НАПОЛНЕНИЕ КНОПКАМИ И ФУНКЦИЯМИ
+-- КОНСТРУКТОРЫ КНОПОК И СЛАЙДЕРОВ (ИСПРАВЛЕННЫЕ)
 -- ==========================================
-
 local function AddToggle(parent, text, callback)
     local f = Instance.new("Frame", parent)
     f.Size = UDim2.new(1, 0, 0, 38)
@@ -424,14 +435,15 @@ local function AddSlider(parent, text, min, max, default, callback)
     lbl.TextSize = 12
     lbl.TextXAlignment = Enum.TextXAlignment.Left
 
+    -- ТУТ ИСПРАВЛЕНЫ ГАБАРИТЫ, ЦИФРЫ ТЕПЕРЬ ВИДНО ОКОЛО СЛАЙДЕРА
     local val = Instance.new("TextLabel", f)
-    val.Size = UDim2.new(0.3, 0, 0, 22)
-    val.Position = UDim2.new(1, -48, 0, 4)
+    val.Size = UDim2.new(0, 50, 0, 22)
+    val.Position = UDim2.new(1, -62, 0, 4)
     val.BackgroundTransparency = 1
     val.Font = Enum.Font.GothamBold
     val.Text = tostring(default)
     val.TextColor3 = Color3.fromRGB(240, 240, 245)
-    val.TextSize = 11
+    val.TextSize = 12
     val.TextXAlignment = Enum.TextXAlignment.Right
 
     local bar = Instance.new("TextButton", f)
@@ -467,7 +479,11 @@ local function AddSlider(parent, text, min, max, default, callback)
     end)
 end
 
--- --- ВКЛАДКА: ГЛАВНАЯ ---
+-- ==========================================
+-- НАПОЛНЕНИЕ КНОПКАМИ И ФУНКЦИЯМИ
+-- ==========================================
+
+-- Вкладка: Главная
 AddToggle(MainPage, "Универсальный Авто-Фарм Монет", function(state)
     AutoFarmEnabled = state
     if state then StartAutoFarm() else StopAutoFarm() end
@@ -476,7 +492,10 @@ AddSlider(MainPage, "Скорость авто-фарма", 10, 25, 16, function
     AutoFarmSpeed = value
 end)
 
--- --- ВКЛАДКА: ИГРОК ---
+-- Вкладка: Игрок
+AddToggle(PlayerPage, "God Mode (Бессмертие от Ножа)", function(state)
+    GodModeEnabled = state
+end)
 AddToggle(PlayerPage, "Bypass Fly (Полет)", function(state)
     Flying = state
     if state then StartFlying() else StopFlying() end
@@ -519,27 +538,55 @@ AddToggle(PlayerPage, "Inf Jump (Беск. Прыжки)", function(state)
     end
 end)
 
--- --- ВКЛАДКА: ВИЗУАЛ ---
+-- Вкладка: Визуал
 AddToggle(VisualPage, "MM2 ESP (Подсветка Ролей)", function(state)
     ESPEnabled = state
 end)
 
--- --- ВКЛАДКА: КИЛЛЕР ---
+-- Вкладка: Киллер
 AddToggle(KillerPage, "Auto Kill (Убивать всех)", function(state)
     AutoKillEnabled = state
 end)
 
--- --- ВКЛАДКА: ШЕРИФ ---
-AddToggle(SheriffPage, "Авто-Убийство маньяка", function(state)
-    AutoShootMurdererEnabled = state
-end)
+-- Вкладка: Шериф (БЕЗ АВТОУБИЙСТВА, ТОЛЬКО ПОДБОР)
 AddToggle(SheriffPage, "Авто-подбор пистолета", function(state)
     AutoGetGunEnabled = state
 end)
 
 -- ==========================================
--- ПОТОКИ ПРОВЕРОК И ЦИКЛЫ ХЕНДЛЕРОВ
+-- ПОТОКИ ПРОВЕРОК И ХЕНДЛЕРЫ ЛОГИКИ
 -- ==========================================
+
+-- Поток для God Mode (Полная неуязвимость к лезвию маньяка)
+task.spawn(function()
+    while task.wait(0.2) do
+        if GodModeEnabled then
+            pcall(function()
+                -- Удаляем тач-сенсоры у ножей в руках игроков
+                for _, player in pairs(Players:GetPlayers()) do
+                    if player ~= LocalPlayer and player.Character then
+                        for _, item in pairs(player.Character:GetChildren()) do
+                            if item:IsA("Tool") and (item.Name:lower():find("knife") or item:FindFirstChild("KnifeServer")) then
+                                local handle = item:FindFirstChild("Handle") or item:FindFirstChild("Blade")
+                                if handle then
+                                    local ti = handle:FindFirstChildWhichIsA("TouchTransmitter")
+                                    if ti then ti:Destroy() end
+                                end
+                            end
+                        end
+                    end
+                end
+                -- Ломаем сенсоры у брошенных/летящих ножей на карте
+                for _, obj in pairs(workspace:GetDescendants()) do
+                    if obj:IsA("BasePart") and (obj.Name:lower():find("knife") or obj.Name:lower():find("blade")) and obj.Parent ~= LocalPlayer.Character then
+                        local ti = obj:FindFirstChildWhichIsA("TouchTransmitter")
+                        if ti then ti:Destroy() end
+                    end
+                end
+            end)
+        end
+    end
+end)
 
 -- Поток для ESP
 task.spawn(function()
@@ -576,7 +623,7 @@ task.spawn(function()
     end
 end)
 
--- Поток для Auto Kill (Маньяк)
+-- Поток для Auto Kill
 task.spawn(function()
     while task.wait(0.25) do
         if AutoKillEnabled then
@@ -598,46 +645,6 @@ task.spawn(function()
                             knife:Activate()
                             task.wait(0.3)
                             break
-                        end
-                    end
-                end
-            end
-        end
-    end
-end)
-
--- Поток для Auto Shoot Murderer (Шериф)
-task.spawn(function()
-    while task.wait(0.2) do
-        if AutoShootMurdererEnabled then
-            if LocalPlayer.Character and LocalPlayer.Character:FindFirstChild("HumanoidRootPart") then
-                local myHum = LocalPlayer.Character:FindFirstChild("Humanoid")
-                local myRoot = LocalPlayer.Character:FindFirstChild("HumanoidRootPart")
-                if myHum and myHum.Health > 0 then
-                    local _, isSheriff, gun = GetPlayerRoleAndTool(LocalPlayer)
-                    if isSheriff and gun then
-                        if gun.Parent ~= LocalPlayer.Character then myHum:EquipTool(gun) task.wait(0.2) end
-                        local murdererRoot = nil
-                        for _, target in pairs(Players:GetPlayers()) do
-                            if target ~= LocalPlayer and IsPlayerInGame(target) then
-                                local targetIsMurderer = GetPlayerRoleAndTool(target)
-                                if targetIsMurderer and target.Character then
-                                    local targetHum = target.Character:FindFirstChild("Humanoid")
-                                    local targetRoot = target.Character:FindFirstChild("HumanoidRootPart")
-                                    if targetHum and targetHum.Health > 0 and targetRoot then murdererRoot = targetRoot break end
-                                end
-                            end
-                        end
-                        if murdererRoot then
-                            local cam = workspace.CurrentCamera
-                            cam.CameraType = Enum.CameraType.Scriptable
-                            myRoot.Velocity = Vector3.new(0,0,0)
-                            myRoot.CFrame = murdererRoot.CFrame * CFrame.new(0, 0, 5)
-                            cam.CFrame = CFrame.lookAt(cam.CFrame.Position, murdererRoot.Position)
-                            task.wait(0.1)
-                            ForceMobileShoot(gun, murdererRoot.Position)
-                            cam.CameraType = Enum.CameraType.Custom
-                            task.wait(1.5)
                         end
                     end
                 end
@@ -696,7 +703,7 @@ WalkSpeedConnection = RunService.Stepped:Connect(function()
     end
 end)
 
--- Система Драга GUI (ПК + Мобилки)
+-- Система перетаскивания GUI (ПК + Экран телефона)
 local dragging, dragInput, dragStart, startPos
 MainFrame.InputBegan:Connect(function(input)
     if input.UserInputType == Enum.UserInputType.MouseButton1 or input.UserInputType == Enum.UserInputType.Touch then
@@ -718,7 +725,7 @@ end)
 
 -- Закрытие GUI
 CloseBtn.MouseButton1Click:Connect(function()
-    Flying = false AutoFarmEnabled = false WalkSpeedEnabled = false ESPEnabled = false AutoKillEnabled = false AutoShootMurdererEnabled = false AutoGetGunEnabled = false
+    Flying = false AutoFarmEnabled = false WalkSpeedEnabled = false ESPEnabled = false AutoKillEnabled = false AutoGetGunEnabled = false GodModeEnabled = false
     StopFlying() StopAutoFarm()
     if NoclipConnection then NoclipConnection:Disconnect() end
     if WalkSpeedConnection then WalkSpeedConnection:Disconnect() end
