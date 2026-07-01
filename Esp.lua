@@ -451,12 +451,11 @@ AddToggle(PlayerPage, "God Mode (Защита от урона)", function(state)
     if state then
         if GodModeConnection then GodModeConnection:Disconnect() end
         
-        -- Создаем невидимый защитный парт под игроком на клиенте
         if not GodModePart or not GodModePart.Parent then
             GodModePart = Instance.new("Part")
             GodModePart.Name = "Hoshi_AntiKnife_Shield"
             GodModePart.Size = Vector3.new(6, 0.5, 6)
-            GodModePart.Transparency = 1 -- Полностью невидимый
+            GodModePart.Transparency = 1
             GodModePart.Anchored = true
             GodModePart.CanCollide = true
             GodModePart.Parent = workspace
@@ -469,10 +468,8 @@ AddToggle(PlayerPage, "God Mode (Защита от урона)", function(state)
             local hum = char and char:FindFirstChildOfClass("Humanoid")
             
             if root and hum and hum.Health > 0 then
-                -- Удерживаем платформу строго под ногами игрока
                 GodModePart.CFrame = root.CFrame * CFrame.new(0, -3.2, 0)
                 
-                -- Отключаем коллизию с другими игроками, чтобы хитбокс проваливался сквозь атаки маньяка
                 for _, part in pairs(char:GetDescendants()) do
                     if part:IsA("BasePart") then
                         part.CanTouch = false
@@ -535,7 +532,7 @@ task.spawn(function()
                         local isMurd, isSher = GetPlayerRoleAndTool(player)
                         local color = Color3.fromRGB(50, 255, 100)
                         if isMurd then color = Color3.fromRGB(255, 30, 30) end
-                        if isSher orient = Color3.fromRGB(30, 144, 255) end
+                        if isSher then color = Color3.fromRGB(30, 144, 255) end
                         
                         local hl = char:FindFirstChild("MM2_RoleESP")
                         if not hl then
