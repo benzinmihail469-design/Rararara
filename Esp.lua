@@ -190,11 +190,12 @@ local function IsPlayerInGame(player)
 end
 
 -- ==========================================
--- СОЗДАНИЕ ИНТЕРФЕЙСА
+-- СОЗДАНИЕ ИНТЕРФЕЙСА (ПОВЕРХ ВСЕГО)
 -- ==========================================
 local ScreenGui = Instance.new("ScreenGui")
 ScreenGui.Name = "HoshiMM2Gui"
 ScreenGui.ResetOnSpawn = false
+ScreenGui.DisplayOrder = 99999999 -- ДЕЛАЕТ ГУИ ПОВЕРХ ВСЕХ ОКРЫТЫХ ОКОН И ЧАТА
 ScreenGui.Parent = PlayerGui
 
 local MainFrame = Instance.new("Frame")
@@ -236,9 +237,9 @@ CloseBtn.Size = UDim2.new(0, 32, 0, 32)
 CloseBtn.Position = UDim2.new(1, -38, 0.5, -16)
 CloseBtn.BackgroundTransparency = 1
 CloseBtn.Font = Enum.Font.GothamMedium
-CloseBtn.Text = "+"
+CloseBtn.Text = "⬜"
 CloseBtn.TextColor3 = Color3.fromRGB(120, 125, 140)
-CloseBtn.TextSize = 12
+CloseBtn.TextSize = 11
 
 -- Кнопка Сворачивания
 local MinizeBtn = Instance.new("TextButton", Header)
@@ -376,7 +377,7 @@ SheriffBtn.MouseButton1Click:Connect(function() SwitchToPage(SheriffPage, Sherif
 SwitchToPage(MainPage, MainBtn)
 
 -- ==========================================
--- КОНСТРУКТОРЫ КНОПОК И СЛАЙДЕРОВ (ИСПРАВЛЕННЫЕ)
+-- КОНСТРУКТОРЫ ЭЛЕМЕНТОВ
 -- ==========================================
 local function AddToggle(parent, text, callback)
     local f = Instance.new("Frame", parent)
@@ -435,10 +436,10 @@ local function AddSlider(parent, text, min, max, default, callback)
     lbl.TextSize = 12
     lbl.TextXAlignment = Enum.TextXAlignment.Left
 
-    -- ТУТ ИСПРАВЛЕНЫ ГАБАРИТЫ, ЦИФРЫ ТЕПЕРЬ ВИДНО ОКОЛО СЛАЙДЕРА
+    -- Позиционирование цифр строго внутри контейнера
     local val = Instance.new("TextLabel", f)
-    val.Size = UDim2.new(0, 50, 0, 22)
-    val.Position = UDim2.new(1, -62, 0, 4)
+    val.Size = UDim2.new(0, 60, 0, 22)
+    val.Position = UDim2.new(1, -72, 0, 4)
     val.BackgroundTransparency = 1
     val.Font = Enum.Font.GothamBold
     val.Text = tostring(default)
@@ -493,8 +494,14 @@ AddSlider(MainPage, "Скорость авто-фарма", 10, 25, 16, function
 end)
 
 -- Вкладка: Игрок
-AddToggle(PlayerPage, "God Mode (Бессмертие от Ножа)", function(state)
+AddToggle(PlayerPage, "God Mode (Полное бессмертие)", function(state)
     GodModeEnabled = state
+    if not state and LocalPlayer.Character then
+        -- Возвращаем деталям осязаемость при выключении
+        for _, part in pairs(LocalPlayer.Character:GetDescendants()) do
+            if part:IsA("BasePart") then part.CanTouch = true end
+        end
+    end
 end)
 AddToggle(PlayerPage, "Bypass Fly (Полет)", function(state)
     Flying = state
@@ -548,7 +555,7 @@ AddToggle(KillerPage, "Auto Kill (Убивать всех)", function(state)
     AutoKillEnabled = state
 end)
 
--- Вкладка: Шериф (БЕЗ АВТОУБИЙСТВА, ТОЛЬКО ПОДБОР)
+-- Вкладка: Шериф
 AddToggle(SheriffPage, "Авто-подбор пистолета", function(state)
     AutoGetGunEnabled = state
 end)
@@ -557,33 +564,32 @@ end)
 -- ПОТОКИ ПРОВЕРОК И ХЕНДЛЕРЫ ЛОГИКИ
 -- ==========================================
 
--- Поток для God Mode (Полная неуязвимость к лезвию маньяка)
-task.spawn(function()
-    while task.wait(0.2) do
-        if GodModeEnabled then
-            pcall(function()
-                -- Удаляем тач-сенсоры у ножей в руках игроков
-                for _, player in pairs(Players:GetPlayers()) do
-                    if player ~= LocalPlayer and player.Character then
-                        for _, item in pairs(player.Character:GetChildren()) do
-                            if item:IsA("Tool") and (item.Name:lower():find("knife") or item:FindFirstChild("KnifeServer")) then
-                                local handle = item:FindFirstChild("Handle") or item:FindFirstChild("Blade")
-                                if handle then
-                                    local ti = handle:FindFirstChildWhichIsA("TouchTransmitter")
-                                    if ti then ti:Destroy() end
-                                end
-                            end
+-- Переписанный мощный поток God Mode (CanTouch Bypass + Смарт-уклонение)
+RunService.Stepped:Connect(function()
+    if GodModeEnabled and LocalPlayer.Character then
+        -- 1. Делаем твой персонаж полностью неосязаемым для чужих систем регистрации .Touched
+        for _, part in pairs(LocalPlayer.Character:GetDescendants()) do
+            if part:IsA("BasePart") then
+                part.CanTouch = false
+            end
+        end
+        
+        -- 2. Смарт-уклонение (Если маньяк подошел слишком близко с ножом — превентивно разрываем дистанцию)
+        local myRoot = LocalPlayer.Character:FindFirstChild("HumanoidRootPart")
+        if myRoot then
+            for _, player in pairs(Players:GetPlayers()) do
+                if player ~= LocalPlayer and player.Character then
+                    local isMurd = GetPlayerRoleAndTool(player)
+                    local tRoot = player.Character:FindFirstChild("HumanoidRootPart")
+                    if isMurd and tRoot then
+                        local distance = (myRoot.Position - tRoot.Position).Magnitude
+                        if distance < 7.5 then -- Дистанция атаки маньяка
+                            -- Мгновенный незаметный микро-стрейф вверх/назад, ломающий хитбокс маньяку
+                            myRoot.CFrame = myRoot.CFrame * CFrame.new(0, 12, 0) 
                         end
                     end
                 end
-                -- Ломаем сенсоры у брошенных/летящих ножей на карте
-                for _, obj in pairs(workspace:GetDescendants()) do
-                    if obj:IsA("BasePart") and (obj.Name:lower():find("knife") or obj.Name:lower():find("blade")) and obj.Parent ~= LocalPlayer.Character then
-                        local ti = obj:FindFirstChildWhichIsA("TouchTransmitter")
-                        if ti then ti:Destroy() end
-                    end
-                end
-            end)
+            end
         end
     end
 end)
@@ -731,6 +737,9 @@ CloseBtn.MouseButton1Click:Connect(function()
     if WalkSpeedConnection then WalkSpeedConnection:Disconnect() end
     local char = LocalPlayer.Character
     local hum = char and char:FindFirstChildOfClass("Humanoid")
-    if hum then hum.WalkSpeed = 16 end
+    if hum then 
+        hum.WalkSpeed = 16 
+        for _, part in pairs(char:GetDescendants()) do if part:IsA("BasePart") then part.CanTouch = true end end
+    end
     ScreenGui:Destroy()
 end)
