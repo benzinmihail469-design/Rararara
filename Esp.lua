@@ -2,7 +2,6 @@ local TweenService = game:GetService("TweenService")
 local UserInputService = game:GetService("UserInputService")
 local RunService = game:GetService("RunService")
 local Players = game:GetService("Players")
-local VirtualInput = game:GetService("VirtualInputManager")
 
 local LocalPlayer = Players.LocalPlayer
 local PlayerGui = LocalPlayer:WaitForChild("PlayerGui")
@@ -13,7 +12,7 @@ if PlayerGui:FindFirstChild("HoshiMM2Gui") then
 end
 
 -- ==========================================
--- ВСЕ ТВОИ НАСТРОЙКИ И ПЕРЕМЕННЫЕ ЛОГИКИ
+-- ПЕРЕМЕННЫЕ ЛОГИКИ И НАСТРОЕК
 -- ==========================================
 local MasterControl = nil
 local CharacterScripts = LocalPlayer:FindFirstChild("PlayerScripts")
@@ -48,7 +47,7 @@ local BVelocity = nil
 local BGyro = nil
 
 -- ==========================================
--- ОСНОВНЫЕ ФУНКЦИИ
+-- ВСПОМОГАТЕЛЬНЫЕ ФУНКЦИИ
 -- ==========================================
 local function StopFlying()
     if FlyConnection then FlyConnection:Disconnect() FlyConnection = nil end
@@ -195,66 +194,66 @@ end
 local ScreenGui = Instance.new("ScreenGui")
 ScreenGui.Name = "HoshiMM2Gui"
 ScreenGui.ResetOnSpawn = false
-ScreenGui.DisplayOrder = 99999999 -- ДЕЛАЕТ ГУИ ПОВЕРХ ВСЕХ ОКРЫТЫХ ОКОН И ЧАТА
+ScreenGui.DisplayOrder = 99999999 -- Поверх всего интерфейса игры
 ScreenGui.Parent = PlayerGui
 
 local MainFrame = Instance.new("Frame")
 MainFrame.Name = "MainFrame"
 MainFrame.AnchorPoint = Vector2.new(0.5, 0.5)
-MainFrame.Position = UDim2.new(0.5, 0, 0.5, 0)
-MainFrame.Size = UDim2.new(0, 620, 0, 360)
+MainFrame.Position = UDim2.new(0.5, 0, 0.5, 0) -- По центру изначально
+MainFrame.Size = UDim2.new(0, 600, 0, 330)
 MainFrame.BackgroundColor3 = Color3.fromRGB(13, 14, 18)
 MainFrame.BorderSizePixel = 0
 MainFrame.ClipsDescendants = true
 MainFrame.Parent = ScreenGui
-Instance.new("UICorner", MainFrame).CornerRadius = UDim.new(0, 9)
+Instance.new("UICorner", MainFrame).CornerRadius = UDim.new(0, 8)
 
 local MainStroke = Instance.new("UIStroke", MainFrame)
 MainStroke.Thickness = 1
 MainStroke.Color = Color3.fromRGB(35, 38, 47)
 MainStroke.Transparency = 0.3
 
--- Верхняя панель (Header)
+-- КОМПАКТНЫЙ ХЕДЕР
 local Header = Instance.new("Frame", MainFrame)
-Header.Size = UDim2.new(1, 0, 0, 42)
+Header.Size = UDim2.new(1, 0, 0, 34) -- Сделан ниже и аккуратнее
 Header.BackgroundColor3 = Color3.fromRGB(18, 20, 26)
 Header.BorderSizePixel = 0
-Instance.new("UICorner", Header).CornerRadius = UDim.new(0, 9)
+Instance.new("UICorner", Header).CornerRadius = UDim.new(0, 8)
 
 local Title = Instance.new("TextLabel", Header)
 Title.Size = UDim2.new(0, 150, 1, 0)
-Title.Position = UDim2.new(0, 16, 0, 0)
+Title.Position = UDim2.new(0, 14, 0, 0)
 Title.BackgroundTransparency = 1
 Title.Font = Enum.Font.GothamBold
 Title.Text = "Hoshi Hub — MM2"
 Title.TextColor3 = Color3.fromRGB(255, 255, 255)
-Title.TextSize = 16
+Title.TextSize = 13 -- Чуть уменьшен текст
 Title.TextXAlignment = Enum.TextXAlignment.Left
 
--- Кнопка Закрытия (Квадрат)
+-- Кнопка закрытия
 local CloseBtn = Instance.new("TextButton", Header)
-CloseBtn.Size = UDim2.new(0, 32, 0, 32)
-CloseBtn.Position = UDim2.new(1, -38, 0.5, -16)
+CloseBtn.Size = UDim2.new(0, 26, 0, 26)
+CloseBtn.Position = UDim2.new(1, -32, 0.5, -13)
 CloseBtn.BackgroundTransparency = 1
 CloseBtn.Font = Enum.Font.GothamMedium
 CloseBtn.Text = "⬜"
 CloseBtn.TextColor3 = Color3.fromRGB(120, 125, 140)
-CloseBtn.TextSize = 11
+CloseBtn.TextSize = 10
 
--- Кнопка Сворачивания
+-- Кнопка сворачивания
 local MinizeBtn = Instance.new("TextButton", Header)
-MinizeBtn.Size = UDim2.new(0, 32, 0, 32)
-MinizeBtn.Position = UDim2.new(1, -74, 0.5, -16)
+MinizeBtn.Size = UDim2.new(0, 26, 0, 26)
+MinizeBtn.Position = UDim2.new(1, -62, 0.5, -13)
 MinizeBtn.BackgroundTransparency = 1
 MinizeBtn.Font = Enum.Font.GothamMedium
 MinizeBtn.Text = "—"
 MinizeBtn.TextColor3 = Color3.fromRGB(120, 125, 140)
-MinizeBtn.TextSize = 14
+MinizeBtn.TextSize = 12
 
--- Боковая Панель Навигации
+-- Навигация (Боковая панель)
 local Sidebar = Instance.new("Frame", MainFrame)
-Sidebar.Size = UDim2.new(0, 140, 1, -42)
-Sidebar.Position = UDim2.new(0, 0, 0, 42)
+Sidebar.Size = UDim2.new(0, 130, 1, -34)
+Sidebar.Position = UDim2.new(0, 0, 0, 34)
 Sidebar.BackgroundColor3 = Color3.fromRGB(16, 17, 22)
 Sidebar.BorderSizePixel = 0
 
@@ -263,24 +262,24 @@ SidebarLayout.Padding = UDim.new(0, 4)
 SidebarLayout.SortOrder = Enum.SortOrder.LayoutOrder
 
 local SidebarPadding = Instance.new("UIPadding", Sidebar)
-SidebarPadding.PaddingTop = UDim.new(0, 10)
-SidebarPadding.PaddingLeft = UDim.new(0, 8)
-SidebarPadding.PaddingRight = UDim.new(0, 8)
+SidebarPadding.PaddingTop = UDim.new(0, 8)
+SidebarPadding.PaddingLeft = UDim.new(0, 6)
+SidebarPadding.PaddingRight = UDim.new(0, 6)
 
 -- Контейнер для страниц
 local PagesContainer = Instance.new("Frame", MainFrame)
-PagesContainer.Size = UDim2.new(1, -140, 1, -42)
-PagesContainer.Position = UDim2.new(0, 140, 0, 42)
+PagesContainer.Size = UDim2.new(1, -130, 1, -34)
+PagesContainer.Position = UDim2.new(0, 130, 0, 34)
 PagesContainer.BackgroundTransparency = 1
 
 local function StyleElement(frame)
-    Instance.new("UICorner", frame).CornerRadius = UDim.new(0, 6)
+    Instance.new("UICorner", frame).CornerRadius = UDim.new(0, 5)
     local s = Instance.new("UIStroke", frame)
     s.Thickness = 1
     s.Color = Color3.fromRGB(30, 33, 43)
 end
 
--- Логика сворачивания (Minimize)
+-- ЛОГИКА СВОРАЧИВАНИЯ И АВТО-ЦЕНТРИРОВАНИЯ ТУТ
 local GuiMinimized = false
 MinizeBtn.MouseButton1Click:Connect(function()
     GuiMinimized = not GuiMinimized
@@ -288,11 +287,13 @@ MinizeBtn.MouseButton1Click:Connect(function()
         Sidebar.Visible = false
         PagesContainer.Visible = false
         TweenService:Create(MainFrame, TweenInfo.new(0.2, Enum.EasingStyle.Quad, Enum.EasingDirection.Out), {
-            Size = UDim2.new(0, 620, 0, 42)
+            Size = UDim2.new(0, 600, 0, 34),
+            Position = UDim2.new(0.5, 0, 0.5, 0) -- Сворачиваем по центру экрана
         }):Play()
     else
         TweenService:Create(MainFrame, TweenInfo.new(0.2, Enum.EasingStyle.Quad, Enum.EasingDirection.Out), {
-            Size = UDim2.new(0, 620, 0, 360)
+            Size = UDim2.new(0, 600, 0, 330),
+            Position = UDim2.new(0.5, 0, 0.5, 0) -- При разворачивании ВСЕГДА перемещает в центр!
         }):Play()
         task.wait(0.2)
         if not GuiMinimized then
@@ -303,7 +304,7 @@ MinizeBtn.MouseButton1Click:Connect(function()
 end)
 
 -- ==========================================
--- СОЗДАНИЕ СТРАНИЦ
+-- КОНСТРУКТОР СТРАНИЦ
 -- ==========================================
 local function CreatePageFrame(name)
     local pf = Instance.new("ScrollingFrame", PagesContainer)
@@ -314,11 +315,11 @@ local function CreatePageFrame(name)
     pf.ScrollBarThickness = 2
     pf.Visible = false
     local l = Instance.new("UIListLayout", pf)
-    l.Padding = UDim.new(0, 8)
+    l.Padding = UDim.new(0, 6)
     local p = Instance.new("UIPadding", pf)
-    p.PaddingTop = UDim.new(0, 12) p.PaddingLeft = UDim.new(0, 12) p.PaddingRight = UDim.new(0, 12)
+    p.PaddingTop = UDim.new(0, 10) p.PaddingLeft = UDim.new(0, 10) p.PaddingRight = UDim.new(0, 10)
     l:GetPropertyChangedSignal("AbsoluteContentSize"):Connect(function()
-        pf.CanvasSize = UDim2.new(0, 0, 0, l.AbsoluteContentSize.Y + 20)
+        pf.CanvasSize = UDim2.new(0, 0, 0, l.AbsoluteContentSize.Y + 15)
     end)
     return pf
 end
@@ -329,18 +330,17 @@ local VisualPage = CreatePageFrame("Visual")
 local KillerPage = CreatePageFrame("Killer")
 local SheriffPage = CreatePageFrame("Sheriff")
 
--- Кнопки вкладок
 local function CreateTabButton(text, order)
     local b = Instance.new("TextButton", Sidebar)
-    b.Size = UDim2.new(1, 0, 0, 34)
+    b.Size = UDim2.new(1, 0, 0, 32)
     b.BackgroundTransparency = 1
     b.Font = Enum.Font.GothamMedium
     b.Text = "  " .. text
     b.TextColor3 = Color3.fromRGB(140, 145, 160)
-    b.TextSize = 12
+    b.TextSize = 11
     b.TextXAlignment = Enum.TextXAlignment.Left
     b.LayoutOrder = order
-    Instance.new("UICorner", b).CornerRadius = UDim.new(0, 5)
+    Instance.new("UICorner", b).CornerRadius = UDim.new(0, 4)
     return b
 end
 
@@ -377,11 +377,11 @@ SheriffBtn.MouseButton1Click:Connect(function() SwitchToPage(SheriffPage, Sherif
 SwitchToPage(MainPage, MainBtn)
 
 -- ==========================================
--- КОНСТРУКТОРЫ ЭЛЕМЕНТОВ
+-- КОНСТРУКТОРЫ ЭЛЕМЕНТОВ УПРАВЛЕНИЯ
 -- ==========================================
 local function AddToggle(parent, text, callback)
     local f = Instance.new("Frame", parent)
-    f.Size = UDim2.new(1, 0, 0, 38)
+    f.Size = UDim2.new(1, 0, 0, 36)
     f.BackgroundColor3 = Color3.fromRGB(18, 20, 26)
     StyleElement(f)
 
@@ -392,28 +392,28 @@ local function AddToggle(parent, text, callback)
     lbl.Font = Enum.Font.GothamMedium
     lbl.Text = text
     lbl.TextColor3 = Color3.fromRGB(210, 215, 225)
-    lbl.TextSize = 12
+    lbl.TextSize = 11
     lbl.TextXAlignment = Enum.TextXAlignment.Left
 
     local btn = Instance.new("TextButton", f)
-    btn.Size = UDim2.new(0, 38, 0, 20)
-    btn.Position = UDim2.new(1, -50, 0.5, -10)
+    btn.Size = UDim2.new(0, 34, 0, 18)
+    btn.Position = UDim2.new(1, -46, 0.5, -9)
     btn.BackgroundColor3 = Color3.fromRGB(32, 35, 45)
     btn.Text = ""
-    Instance.new("UICorner", btn).CornerRadius = UDim.new(0, 10)
+    Instance.new("UICorner", btn).CornerRadius = UDim.new(0, 9)
 
     local sw = Instance.new("Frame", btn)
-    sw.Size = UDim2.new(0, 14, 0, 14)
-    sw.Position = UDim2.new(0, 3, 0.5, -7)
+    sw.Size = UDim2.new(0, 12, 0, 12)
+    sw.Position = UDim2.new(0, 3, 0.5, -6)
     sw.BackgroundColor3 = Color3.fromRGB(150, 155, 165)
-    Instance.new("UICorner", sw).CornerRadius = UDim.new(0, 7)
+    Instance.new("UICorner", sw).CornerRadius = UDim.new(0, 6)
 
     local toggled = false
     btn.MouseButton1Click:Connect(function()
         toggled = not toggled
         local bg = toggled and Color3.fromRGB(240, 240, 245) or Color3.fromRGB(32, 35, 45)
         local ball = toggled and Color3.fromRGB(20, 22, 28) or Color3.fromRGB(150, 155, 165)
-        local pos = toggled and UDim2.new(1, -17, 0.5, -7) or UDim2.new(0, 3, 0.5, -7)
+        local pos = toggled and UDim2.new(1, -15, 0.5, -6) or UDim2.new(0, 3, 0.5, -6)
         TweenService:Create(btn, TweenInfo.new(0.15), {BackgroundColor3 = bg}):Play()
         TweenService:Create(sw, TweenInfo.new(0.15), {Position = pos, BackgroundColor3 = ball}):Play()
         callback(toggled)
@@ -422,34 +422,33 @@ end
 
 local function AddSlider(parent, text, min, max, default, callback)
     local f = Instance.new("Frame", parent)
-    f.Size = UDim2.new(1, 0, 0, 46)
+    f.Size = UDim2.new(1, 0, 0, 44)
     f.BackgroundColor3 = Color3.fromRGB(18, 20, 26)
     StyleElement(f)
 
     local lbl = Instance.new("TextLabel", f)
-    lbl.Size = UDim2.new(0.6, 0, 0, 22)
+    lbl.Size = UDim2.new(0.6, 0, 0, 20)
     lbl.Position = UDim2.new(0, 12, 0, 4)
     lbl.BackgroundTransparency = 1
     lbl.Font = Enum.Font.GothamMedium
     lbl.Text = text
     lbl.TextColor3 = Color3.fromRGB(210, 215, 225)
-    lbl.TextSize = 12
+    lbl.TextSize = 11
     lbl.TextXAlignment = Enum.TextXAlignment.Left
 
-    -- Позиционирование цифр строго внутри контейнера
     local val = Instance.new("TextLabel", f)
-    val.Size = UDim2.new(0, 60, 0, 22)
+    val.Size = UDim2.new(0, 60, 0, 20)
     val.Position = UDim2.new(1, -72, 0, 4)
     val.BackgroundTransparency = 1
     val.Font = Enum.Font.GothamBold
     val.Text = tostring(default)
     val.TextColor3 = Color3.fromRGB(240, 240, 245)
-    val.TextSize = 12
+    val.TextSize = 11
     val.TextXAlignment = Enum.TextXAlignment.Right
 
     local bar = Instance.new("TextButton", f)
     bar.Size = UDim2.new(1, -24, 0, 4)
-    bar.Position = UDim2.new(0, 12, 0, 32)
+    bar.Position = UDim2.new(0, 12, 0, 30)
     bar.BackgroundColor3 = Color3.fromRGB(35, 38, 48)
     bar.Text = ""
     Instance.new("UICorner", bar).CornerRadius = UDim.new(0, 2)
@@ -481,11 +480,10 @@ local function AddSlider(parent, text, min, max, default, callback)
 end
 
 -- ==========================================
--- НАПОЛНЕНИЕ КНОПКАМИ И ФУНКЦИЯМИ
+-- ИНИЦИАЛИЗАЦИЯ ФУНКЦИЙ С КНОПКАМИ
 -- ==========================================
 
--- Вкладка: Главная
-AddToggle(MainPage, "Универсальный Авто-Фарм Монет", function(state)
+AddToggle(MainPage, "Авто-Фарм Монет", function(state)
     AutoFarmEnabled = state
     if state then StartAutoFarm() else StopAutoFarm() end
 end)
@@ -493,11 +491,10 @@ AddSlider(MainPage, "Скорость авто-фарма", 10, 25, 16, function
     AutoFarmSpeed = value
 end)
 
--- Вкладка: Игрок
+-- Вкладка Игрок (С Новым Безопасным Бессмертием!)
 AddToggle(PlayerPage, "God Mode (Полное бессмертие)", function(state)
     GodModeEnabled = state
     if not state and LocalPlayer.Character then
-        -- Возвращаем деталям осязаемость при выключении
         for _, part in pairs(LocalPlayer.Character:GetDescendants()) do
             if part:IsA("BasePart") then part.CanTouch = true end
         end
@@ -510,13 +507,13 @@ end)
 AddSlider(PlayerPage, "Скорость полета", 15, 90, 35, function(value)
     FlySpeed = value
 end)
-AddToggle(PlayerPage, "Toggle WalkSpeed", function(state)
+AddToggle(PlayerPage, "Включить кастомный WalkSpeed", function(state)
     WalkSpeedEnabled = state
 end)
-AddSlider(PlayerPage, "WalkSpeed (Бег)", 16, 120, 16, function(value)
+AddSlider(PlayerPage, "WalkSpeed (Скорость)", 16, 120, 16, function(value)
     NormalWalkSpeed = value
 end)
-AddToggle(PlayerPage, "Noclip (Сквозь стены)", function(state)
+AddToggle(PlayerPage, "Noclip (Сквозь Стены)", function(state)
     if state then
         NoclipConnection = RunService.Stepped:Connect(function()
             if LocalPlayer.Character then
@@ -534,7 +531,7 @@ AddToggle(PlayerPage, "Noclip (Сквозь стены)", function(state)
         end
     end
 end)
-AddToggle(PlayerPage, "Inf Jump (Беск. Прыжки)", function(state)
+AddToggle(PlayerPage, "Inf Jump (Бесконечные прыжки)", function(state)
     _G.InfJump = state
     if state then
         UserInputService.JumpRequest:Connect(function()
@@ -545,47 +542,44 @@ AddToggle(PlayerPage, "Inf Jump (Беск. Прыжки)", function(state)
     end
 end)
 
--- Вкладка: Визуал
-AddToggle(VisualPage, "MM2 ESP (Подсветка Ролей)", function(state)
+AddToggle(VisualPage, "ESP (Подсветка Мафии/Шерифа)", function(state)
     ESPEnabled = state
 end)
 
--- Вкладка: Киллер
-AddToggle(KillerPage, "Auto Kill (Убивать всех)", function(state)
+AddToggle(KillerPage, "Auto Kill (Убивать сервер)", function(state)
     AutoKillEnabled = state
 end)
 
--- Вкладка: Шериф
 AddToggle(SheriffPage, "Авто-подбор пистолета", function(state)
     AutoGetGunEnabled = state
 end)
 
 -- ==========================================
--- ПОТОКИ ПРОВЕРОК И ХЕНДЛЕРЫ ЛОГИКИ
+-- ИСПРАВЛЕННАЯ СИСТЕМА БЕЗОПАСНОГО GOD MODE
 -- ==========================================
-
--- Переписанный мощный поток God Mode (CanTouch Bypass + Смарт-уклонение)
 RunService.Stepped:Connect(function()
     if GodModeEnabled and LocalPlayer.Character then
-        -- 1. Делаем твой персонаж полностью неосязаемым для чужих систем регистрации .Touched
+        -- Выключаем CanTouch чтобы локальные ножи врагов игнорировали нас
         for _, part in pairs(LocalPlayer.Character:GetDescendants()) do
             if part:IsA("BasePart") then
                 part.CanTouch = false
             end
         end
         
-        -- 2. Смарт-уклонение (Если маньяк подошел слишком близко с ножом — превентивно разрываем дистанцию)
         local myRoot = LocalPlayer.Character:FindFirstChild("HumanoidRootPart")
         if myRoot then
+            myRoot.Velocity = Vector3.new(0,0,0) -- Гасим импульсы взрывов и пинков
+            
+            -- Проверка дистанции до маньяка для безопасного микро-десинхрона
             for _, player in pairs(Players:GetPlayers()) do
                 if player ~= LocalPlayer and player.Character then
                     local isMurd = GetPlayerRoleAndTool(player)
                     local tRoot = player.Character:FindFirstChild("HumanoidRootPart")
                     if isMurd and tRoot then
                         local distance = (myRoot.Position - tRoot.Position).Magnitude
-                        if distance < 7.5 then -- Дистанция атаки маньяка
-                            -- Мгновенный незаметный микро-стрейф вверх/назад, ломающий хитбокс маньяку
-                            myRoot.CFrame = myRoot.CFrame * CFrame.new(0, 12, 0) 
+                        if distance < 7 then 
+                            -- Не телепортирует вверх! Делает микро-сдвиг на микроны, ломая хитбокс
+                            myRoot.CFrame = myRoot.CFrame * CFrame.new(0.05, 0, 0.05)
                         end
                     end
                 end
@@ -594,9 +588,9 @@ RunService.Stepped:Connect(function()
     end
 end)
 
--- Поток для ESP
+-- Логика ESP
 task.spawn(function()
-    while task.wait(0.2) do
+    while task.wait(0.25) do
         if ESPEnabled then
             for _, player in pairs(Players:GetPlayers()) do
                 if player ~= LocalPlayer and player.Character and player.Character:FindFirstChild("HumanoidRootPart") then
@@ -629,7 +623,7 @@ task.spawn(function()
     end
 end)
 
--- Поток для Auto Kill
+-- Логика Auto Kill
 task.spawn(function()
     while task.wait(0.25) do
         if AutoKillEnabled then
@@ -659,7 +653,7 @@ task.spawn(function()
     end
 end)
 
--- Поток для автоматического сбора выпавшего пистолета
+-- Логика авто-подбора оружия
 task.spawn(function()
     while task.wait(0.3) do
         if AutoGetGunEnabled then
@@ -690,7 +684,7 @@ task.spawn(function()
     end
 end)
 
--- Респавн хендлер
+-- Авто-респавн хуки
 LocalPlayer.CharacterAdded:Connect(function(newChar)
     local root = newChar:WaitForChild("HumanoidRootPart", 5)
     local hum = newChar:WaitForChild("Humanoid", 5)
@@ -700,7 +694,7 @@ LocalPlayer.CharacterAdded:Connect(function(newChar)
     end
 end)
 
--- Хендлер бега
+-- Скорость бега
 WalkSpeedConnection = RunService.Stepped:Connect(function()
     local char = LocalPlayer.Character
     local hum = char and char:FindFirstChildOfClass("Humanoid")
@@ -709,7 +703,7 @@ WalkSpeedConnection = RunService.Stepped:Connect(function()
     end
 end)
 
--- Система перетаскивания GUI (ПК + Экран телефона)
+-- Перетаскивание (Drag GUI)
 local dragging, dragInput, dragStart, startPos
 MainFrame.InputBegan:Connect(function(input)
     if input.UserInputType == Enum.UserInputType.MouseButton1 or input.UserInputType == Enum.UserInputType.Touch then
@@ -723,13 +717,13 @@ end)
 UserInputService.InputChanged:Connect(function(input)
     if input == dragInput and dragging then
         local delta = input.Position - dragStart
-        TweenService:Create(MainFrame, TweenInfo.new(0.1, Enum.EasingStyle.Quad, Enum.EasingDirection.Out), {
+        TweenService:Create(MainFrame, TweenInfo.new(0.08, Enum.EasingStyle.Quad, Enum.EasingDirection.Out), {
             Position = UDim2.new(startPos.X.Scale, startPos.X.Offset + delta.X, startPos.Y.Scale, startPos.Y.Offset + delta.Y)
         }):Play()
     end
 end)
 
--- Закрытие GUI
+-- Кнопка закрытия
 CloseBtn.MouseButton1Click:Connect(function()
     Flying = false AutoFarmEnabled = false WalkSpeedEnabled = false ESPEnabled = false AutoKillEnabled = false AutoGetGunEnabled = false GodModeEnabled = false
     StopFlying() StopAutoFarm()
