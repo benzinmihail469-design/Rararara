@@ -28,6 +28,7 @@ local Flying, FlySpeed, NormalWalkSpeed, WalkSpeedEnabled, AutoFarmEnabled, Auto
 local FlyConnection, NoclipConnection, WalkSpeedConnection, AutoFarmConnection = nil, nil, nil, nil
 local NextScanTime, CachedCoin, BVelocity, BGyro = 0, nil, nil, nil
 local GodModeConnection = nil
+local GodModePart = nil
 
 -- Вспомогательные функции
 local function StopFlying()
@@ -162,7 +163,7 @@ local function IsPlayerInGame(player)
 end
 
 -- ==========================================
--- ИНТЕРФЕЙС (АККУРАТНЫЙ И КОМПАКТНЫЙ)
+-- ИНТЕРФЕЙС
 -- ==========================================
 local ScreenGui = Instance.new("ScreenGui")
 ScreenGui.Name = "HoshiMM2Gui"
@@ -172,9 +173,8 @@ ScreenGui.Parent = PlayerGui
 
 local MainFrame = Instance.new("Frame")
 MainFrame.Name = "MainFrame"
-MainFrame.AnchorPoint = Vector2.new(0.5, 0)
-MainFrame.Position = UDim2.new(0.5, 0, 0.1, 0) -- Изначально сверху по центру
-MainFrame.Size = UDim2.new(0, 480, 0, 310) -- Сделан заметно короче и компактнее
+MainFrame.Position = UDim2.new(0.5, -300, 0.5, -200)
+MainFrame.Size = UDim2.new(0, 600, 0, 400)
 MainFrame.BackgroundColor3 = Color3.fromRGB(13, 14, 18)
 MainFrame.BorderSizePixel = 0
 MainFrame.ClipsDescendants = true
@@ -221,7 +221,7 @@ MinizeBtn.TextColor3 = Color3.fromRGB(120, 125, 140)
 MinizeBtn.TextSize = 11
 
 local Sidebar = Instance.new("Frame", MainFrame)
-Sidebar.Size = UDim2.new(0, 120, 1, -32)
+Sidebar.Size = UDim2.new(0, 140, 1, -32)
 Sidebar.Position = UDim2.new(0, 0, 0, 32)
 Sidebar.BackgroundColor3 = Color3.fromRGB(16, 17, 22)
 Sidebar.BorderSizePixel = 0
@@ -232,12 +232,12 @@ SidebarLayout.SortOrder = Enum.SortOrder.LayoutOrder
 
 local SidebarPadding = Instance.new("UIPadding", Sidebar)
 SidebarPadding.PaddingTop = UDim.new(0, 8)
-SidebarPadding.PaddingLeft = UDim.new(0, 6)
-SidebarPadding.PaddingRight = UDim.new(0, 6)
+SidebarPadding.PaddingLeft = UDim.new(0, 8)
+SidebarPadding.PaddingRight = UDim.new(0, 8)
 
 local PagesContainer = Instance.new("Frame", MainFrame)
-PagesContainer.Size = UDim2.new(1, -120, 1, -32)
-PagesContainer.Position = UDim2.new(0, 120, 0, 32)
+PagesContainer.Size = UDim2.new(1, -140, 1, -32)
+PagesContainer.Position = UDim2.new(0, 140, 0, 32)
 PagesContainer.BackgroundTransparency = 1
 
 local function StyleElement(frame)
@@ -247,7 +247,6 @@ local function StyleElement(frame)
     s.Color = Color3.fromRGB(30, 33, 43)
 end
 
--- ЛОГИКА СВОРАЧИВАНИЯ (ВСЕГДА СВЕРХУ ПО ЦЕНТРУ)
 local GuiMinimized = false
 MinizeBtn.MouseButton1Click:Connect(function()
     GuiMinimized = not GuiMinimized
@@ -255,13 +254,11 @@ MinizeBtn.MouseButton1Click:Connect(function()
         Sidebar.Visible = false
         PagesContainer.Visible = false
         TweenService:Create(MainFrame, TweenInfo.new(0.2, Enum.EasingStyle.Quad, Enum.EasingDirection.Out), {
-            Size = UDim2.new(0, 480, 0, 32),
-            Position = UDim2.new(0.5, 0, 0.1, 0) -- Фиксация сверху по центру
+            Size = UDim2.new(0, 600, 0, 32)
         }):Play()
     else
         TweenService:Create(MainFrame, TweenInfo.new(0.2, Enum.EasingStyle.Quad, Enum.EasingDirection.Out), {
-            Size = UDim2.new(0, 480, 0, 310),
-            Position = UDim2.new(0.5, 0, 0.1, 0) -- Фиксация сверху по центру при открытии
+            Size = UDim2.new(0, 600, 0, 400)
         }):Play()
         task.wait(0.2)
         if not GuiMinimized then
@@ -271,7 +268,6 @@ MinizeBtn.MouseButton1Click:Connect(function()
     end
 end)
 
--- Конструктор страниц
 local function CreatePageFrame(name)
     local pf = Instance.new("ScrollingFrame", PagesContainer)
     pf.Name = name .. "Page"
@@ -298,12 +294,12 @@ local SheriffPage = CreatePageFrame("Sheriff")
 
 local function CreateTabButton(text, order)
     local b = Instance.new("TextButton", Sidebar)
-    b.Size = UDim2.new(1, 0, 0, 30)
+    b.Size = UDim2.new(1, 0, 0, 34)
     b.BackgroundTransparency = 1
     b.Font = Enum.Font.GothamMedium
     b.Text = "  " .. text
     b.TextColor3 = Color3.fromRGB(140, 145, 160)
-    b.TextSize = 11
+    b.TextSize = 12
     b.TextXAlignment = Enum.TextXAlignment.Left
     b.LayoutOrder = order
     Instance.new("UICorner", b).CornerRadius = UDim.new(0, 4)
@@ -344,39 +340,39 @@ SwitchToPage(MainPage, MainBtn)
 
 local function AddToggle(parent, text, callback)
     local f = Instance.new("Frame", parent)
-    f.Size = UDim2.new(1, 0, 0, 34)
+    f.Size = UDim2.new(1, 0, 0, 38)
     f.BackgroundColor3 = Color3.fromRGB(18, 20, 26)
     StyleElement(f)
 
     local lbl = Instance.new("TextLabel", f)
     lbl.Size = UDim2.new(0.7, 0, 1, 0)
-    lbl.Position = UDim2.new(0, 10, 0, 0)
+    lbl.Position = UDim2.new(0, 12, 0, 0)
     lbl.BackgroundTransparency = 1
     lbl.Font = Enum.Font.GothamMedium
     lbl.Text = text
     lbl.TextColor3 = Color3.fromRGB(210, 215, 225)
-    lbl.TextSize = 11
+    lbl.TextSize = 12
     lbl.TextXAlignment = Enum.TextXAlignment.Left
 
     local btn = Instance.new("TextButton", f)
-    btn.Size = UDim2.new(0, 32, 0, 16)
-    btn.Position = UDim2.new(1, -42, 0.5, -8)
+    btn.Size = UDim2.new(0, 36, 0, 18)
+    btn.Position = UDim2.new(1, -48, 0.5, -9)
     btn.BackgroundColor3 = Color3.fromRGB(32, 35, 45)
     btn.Text = ""
-    Instance.new("UICorner", btn).CornerRadius = UDim.new(0, 8)
+    Instance.new("UICorner", btn).CornerRadius = UDim.new(0, 9)
 
     local sw = Instance.new("Frame", btn)
-    sw.Size = UDim2.new(0, 10, 0, 10)
-    sw.Position = UDim2.new(0, 3, 0.5, -5)
+    sw.Size = UDim2.new(0, 12, 0, 12)
+    sw.Position = UDim2.new(0, 3, 0.5, -6)
     sw.BackgroundColor3 = Color3.fromRGB(150, 155, 165)
-    Instance.new("UICorner", sw).CornerRadius = UDim.new(0, 5)
+    Instance.new("UICorner", sw).CornerRadius = UDim.new(0, 6)
 
     local toggled = false
     btn.MouseButton1Click:Connect(function()
         toggled = not toggled
         local bg = toggled and Color3.fromRGB(240, 240, 245) or Color3.fromRGB(32, 35, 45)
         local ball = toggled and Color3.fromRGB(20, 22, 28) or Color3.fromRGB(150, 155, 165)
-        local pos = toggled and UDim2.new(1, -13, 0.5, -5) or UDim2.new(0, 3, 0.5, -5)
+        local pos = toggled and UDim2.new(1, -15, 0.5, -6) or UDim2.new(0, 3, 0.5, -6)
         TweenService:Create(btn, TweenInfo.new(0.15), {BackgroundColor3 = bg}):Play()
         TweenService:Create(sw, TweenInfo.new(0.15), {Position = pos, BackgroundColor3 = ball}):Play()
         callback(toggled)
@@ -385,33 +381,33 @@ end
 
 local function AddSlider(parent, text, min, max, default, callback)
     local f = Instance.new("Frame", parent)
-    f.Size = UDim2.new(1, 0, 0, 42)
+    f.Size = UDim2.new(1, 0, 0, 48)
     f.BackgroundColor3 = Color3.fromRGB(18, 20, 26)
     StyleElement(f)
 
     local lbl = Instance.new("TextLabel", f)
-    lbl.Size = UDim2.new(0.6, 0, 0, 18)
-    lbl.Position = UDim2.new(0, 10, 0, 2)
+    lbl.Size = UDim2.new(0.6, 0, 0, 22)
+    lbl.Position = UDim2.new(0, 12, 0, 4)
     lbl.BackgroundTransparency = 1
     lbl.Font = Enum.Font.GothamMedium
     lbl.Text = text
     lbl.TextColor3 = Color3.fromRGB(210, 215, 225)
-    lbl.TextSize = 11
+    lbl.TextSize = 12
     lbl.TextXAlignment = Enum.TextXAlignment.Left
 
     local val = Instance.new("TextLabel", f)
-    val.Size = UDim2.new(0, 50, 0, 18)
-    val.Position = UDim2.new(1, -62, 0, 2)
+    val.Size = UDim2.new(0, 50, 0, 22)
+    val.Position = UDim2.new(1, -62, 0, 4)
     val.BackgroundTransparency = 1
     val.Font = Enum.Font.GothamBold
     val.Text = tostring(default)
     val.TextColor3 = Color3.fromRGB(240, 240, 245)
-    val.TextSize = 11
+    val.TextSize = 12
     val.TextXAlignment = Enum.TextXAlignment.Right
 
     local bar = Instance.new("TextButton", f)
-    bar.Size = UDim2.new(1, -20, 0, 4)
-    bar.Position = UDim2.new(0, 10, 0, 28)
+    bar.Size = UDim2.new(1, -24, 0, 4)
+    bar.Position = UDim2.new(0, 12, 0, 32)
     bar.BackgroundColor3 = Color3.fromRGB(35, 38, 48)
     bar.Text = ""
     Instance.new("UICorner", bar).CornerRadius = UDim.new(0, 2)
@@ -449,34 +445,45 @@ AddToggle(MainPage, "Авто-Фарм Монет", function(state)
 end)
 AddSlider(MainPage, "Скорость авто-фарма", 10, 25, 16, function(value) AutoFarmSpeed = value end)
 
--- ВКЛАДКА ИГРОК: Ультимативный God Mode
+-- ВКЛАДКА ИГРОК: Физический God Mode (Защитная платформа)
 AddToggle(PlayerPage, "God Mode (Защита от урона)", function(state)
     GodModeEnabled = state
     if state then
-        -- Сетевой обход урона (Fake Dead / Netless патч)
         if GodModeConnection then GodModeConnection:Disconnect() end
+        
+        -- Создаем невидимый защитный парт под игроком на клиенте
+        if not GodModePart or not GodModePart.Parent then
+            GodModePart = Instance.new("Part")
+            GodModePart.Name = "Hoshi_AntiKnife_Shield"
+            GodModePart.Size = Vector3.new(6, 0.5, 6)
+            GodModePart.Transparency = 1 -- Полностью невидимый
+            GodModePart.Anchored = true
+            GodModePart.CanCollide = true
+            GodModePart.Parent = workspace
+        end
+
         GodModeConnection = RunService.Heartbeat:Connect(function()
             if not GodModeEnabled then return end
             local char = LocalPlayer.Character
+            local root = char and char:FindFirstChild("HumanoidRootPart")
             local hum = char and char:FindFirstChildOfClass("Humanoid")
-            if hum then
-                -- Фиксируем здоровье на клиенте и ломаем входящие триггеры смерти
-                if hum.Health > 0 and hum.Health < 100 then
-                    hum.Health = 100
-                end
-                -- Полная блокировка детекта ножа через коллизию деталей
+            
+            if root and hum and hum.Health > 0 then
+                -- Удерживаем платформу строго под ногами игрока
+                GodModePart.CFrame = root.CFrame * CFrame.new(0, -3.2, 0)
+                
+                -- Отключаем коллизию с другими игроками, чтобы хитбокс проваливался сквозь атаки маньяка
                 for _, part in pairs(char:GetDescendants()) do
-                    if part:IsA("BasePart") then 
-                        part.CanTouch = false 
-                        -- Обнуляем внешнюю скорость от ударов маньяка
+                    if part:IsA("BasePart") then
+                        part.CanTouch = false
                         part.Velocity = Vector3.new(0, 0, 0)
-                        part.RotVelocity = Vector3.new(0, 0, 0)
                     end
                 end
             end
         end)
     else
         if GodModeConnection then GodModeConnection:Disconnect() GodModeConnection = nil end
+        if GodModePart then GodModePart:Destroy() GodModePart = nil end
         local char = LocalPlayer.Character
         if char then
             for _, part in pairs(char:GetDescendants()) do
@@ -528,7 +535,7 @@ task.spawn(function()
                         local isMurd, isSher = GetPlayerRoleAndTool(player)
                         local color = Color3.fromRGB(50, 255, 100)
                         if isMurd then color = Color3.fromRGB(255, 30, 30) end
-                        if isSher then color = Color3.fromRGB(30, 144, 255) end
+                        if isSher orient = Color3.fromRGB(30, 144, 255) end
                         
                         local hl = char:FindFirstChild("MM2_RoleESP")
                         if not hl then
@@ -648,6 +655,7 @@ CloseBtn.MouseButton1Click:Connect(function()
     if NoclipConnection then NoclipConnection:Disconnect() end
     if WalkSpeedConnection then WalkSpeedConnection:Disconnect() end
     if GodModeConnection then GodModeConnection:Disconnect() end
+    if GodModePart then GodModePart:Destroy() end
     local char = LocalPlayer.Character
     local hum = char and char:FindFirstChildOfClass("Humanoid")
     if hum then hum.WalkSpeed = 16 end
