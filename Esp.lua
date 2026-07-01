@@ -7,11 +7,11 @@ local VirtualInput = game:GetService("VirtualInputManager")
 local LocalPlayer = Players.LocalPlayer
 local PlayerGui = LocalPlayer:WaitForChild("PlayerGui")
 
--- Удаление старого интерфейса, если он существовал
 if PlayerGui:FindFirstChild("HoshiMM2Gui") then
     PlayerGui.HoshiMM2Gui:Destroy()
 end
 
+-- ТВОИ ОРИГИНАЛЬНЫЕ НАСТРОЙКИ И ПЕРЕМЕННЫЕ LOGIC
 local MasterControl = nil
 local CharacterScripts = LocalPlayer:FindFirstChild("PlayerScripts")
 if CharacterScripts then
@@ -24,7 +24,6 @@ if CharacterScripts then
     end
 end
 
--- Логические переменные твоего скрипта
 local Flying = false
 local FlySpeed = 35 
 local NormalWalkSpeed = 16
@@ -45,7 +44,7 @@ local CachedCoin = nil
 local BVelocity = nil
 local BGyro = nil
 
--- Создание основы интерфейса (Стиль Hoshi Hub)
+-- СОЗДАНИЕ КРАСИВОГО ИНТЕРФЕЙСА HOSHI HUB
 local ScreenGui = Instance.new("ScreenGui")
 ScreenGui.Name = "HoshiMM2Gui"
 ScreenGui.ResetOnSpawn = false
@@ -94,7 +93,6 @@ Title.TextSize = 16
 Title.TextXAlignment = Enum.TextXAlignment.Left
 Title.Parent = Header
 
--- Дополнительные теги панели (как на скриншоте)
 local TagFrame = Instance.new("Frame")
 TagFrame.Size = UDim2.new(0, 50, 0, 18)
 TagFrame.Position = UDim2.new(0, 75, 0.5, -9)
@@ -127,7 +125,6 @@ VerLabel.TextColor3 = Color3.fromRGB(160, 165, 180)
 VerLabel.TextSize = 9
 VerLabel.Parent = VerFrame
 
--- Кнопки управления окном
 local CloseBtn = Instance.new("TextButton")
 CloseBtn.Size = UDim2.new(0, 32, 0, 32)
 CloseBtn.Position = UDim2.new(1, -38, 0.5, -16)
@@ -183,7 +180,7 @@ PagesContainer.Position = UDim2.new(0, 140, 0, 42)
 PagesContainer.BackgroundTransparency = 1
 PagesContainer.Parent = MainFrame
 
--- Скрипт перетаскивания (Адаптирован для ПК и Телефонов)
+-- Система перетаскивания (ПК + Телефоны)
 local dragging, dragInput, dragStart, startPos
 MainFrame.InputBegan:Connect(function(input)
     if input.UserInputType == Enum.UserInputType.MouseButton1 or input.UserInputType == Enum.UserInputType.Touch then
@@ -211,7 +208,7 @@ UserInputService.InputChanged:Connect(function(input)
     end
 end)
 
--- Сворачивание интерфейса
+-- Сворачивание
 local isMinimized = false
 MinBtn.MouseButton1Click:Connect(function()
     isMinimized = not isMinimized
@@ -223,7 +220,6 @@ end)
 local tabs = {}
 local activeTab = nil
 
--- Функция динамического создания вкладок в стиле Hoshi
 local function CreateTab(name, order)
     local Page = Instance.new("ScrollingFrame")
     Page.Name = name .. "Page"
@@ -286,11 +282,9 @@ local function CreateTab(name, order)
 
     TabBtn.MouseButton1Click:Connect(select)
     tabs[name] = {TabBtn = TabBtn, Page = Page, Select = select}
-    
     return Page
 end
 
--- Функция создания блоков/секций (как AUTO PLANT / AUTO HARVEST на фото)
 local function CreateSection(parentPage, title)
     local SectionFrame = Instance.new("Frame")
     SectionFrame.Size = UDim2.new(1, 0, 0, 35)
@@ -315,11 +309,9 @@ local function CreateSection(parentPage, title)
     SectionLayout:GetPropertyChangedSignal("AbsoluteContentSize"):Connect(function()
         SectionFrame.Size = UDim2.new(1, 0, 0, SectionLayout.AbsoluteContentSize.Y)
     end)
-
     return SectionFrame
 end
 
--- Функция создания современных тумблеров (Toggles)
 local function CreateToggle(parentSection, text, default, callback)
     local TglFrame = Instance.new("Frame")
     TglFrame.Size = UDim2.new(1, 0, 0, 38)
@@ -365,14 +357,12 @@ local function CreateToggle(parentSection, text, default, callback)
         local targetBg = state and Color3.fromRGB(240, 240, 245) or Color3.fromRGB(32, 35, 45)
         local targetBall = state and Color3.fromRGB(20, 22, 28) or Color3.fromRGB(150, 155, 165)
         local targetPos = state and UDim2.new(1, -17, 0.5, -7) or UDim2.new(0, 3, 0.5, -7)
-        
         TweenService:Create(TglBtn, TweenInfo.new(0.2), {BackgroundColor3 = targetBg}):Play()
         TweenService:Create(Switch, TweenInfo.new(0.2), {Position = targetPos, BackgroundColor3 = targetBall}):Play()
         callback(state)
     end)
 end
 
--- Функция создания элегантных ползунков (Sliders)
 local function CreateSlider(parentSection, text, min, max, default, callback)
     local SldFrame = Instance.new("Frame")
     SldFrame.Size = UDim2.new(1, 0, 0, 46)
@@ -451,17 +441,28 @@ local function CreateSlider(parentSection, text, min, max, default, callback)
     end)
 end
 
--- ==========================================
--- ИСПОЛНИТЕЛЬНАЯ ЛОГИКА ТВОЕГО СКРИПТА
--- ==========================================
+-- =========================================================================
+-- ТВОИ ОРИГИНАЛЬНЫЕ ФУНКЦИИ ЛОГИКИ (ВЕРНУТЫ 1 В 1, БЕЗ СЖАТИЯ И ИЗМЕНЕНИЙ)
+-- =========================================================================
 
 local function StopFlying()
-    if FlyConnection then FlyConnection:Disconnect(); FlyConnection = nil end
-    if BVelocity then BVelocity:Destroy(); BVelocity = nil end
-    if BGyro then BGyro:Destroy(); BGyro = nil end
+    if FlyConnection then
+        FlyConnection:Disconnect()
+        FlyConnection = nil
+    end
+    if BVelocity then
+        BVelocity:Destroy()
+        BVelocity = nil
+    end
+    if BGyro then
+        BGyro:Destroy()
+        BGyro = nil
+    end
     local char = LocalPlayer.Character
     local hum = char and char:FindFirstChildOfClass("Humanoid")
-    if hum then hum.PlatformStand = false end
+    if hum then
+        hum.PlatformStand = false
+    end
 end
 
 local function StartFlying()
@@ -472,19 +473,24 @@ local function StartFlying()
     if not root or not hum then return end
     
     hum.PlatformStand = true
+
     BVelocity = Instance.new("BodyVelocity", root)
     BVelocity.MaxForce = Vector3.new(1e5, 1e5, 1e5)
     BVelocity.Velocity = Vector3.new(0, 0, 0)
 
     BGyro = Instance.new("BodyGyro", root)
     BGyro.MaxTorque = Vector3.new(1e5, 1e5, 1e5)
-    BGyro.P = 15000; BGyro.D = 100
+    BGyro.P = 15000
+    BGyro.D = 100
     BGyro.CFrame = root.CFrame
 
     local cam = workspace.CurrentCamera
 
     FlyConnection = RunService.RenderStepped:Connect(function()
-        if not Flying or not root or not LocalPlayer.Character then StopFlying(); return end
+        if not Flying or not root or not LocalPlayer.Character then
+            StopFlying()
+            return
+        end
         if AutoFarmEnabled then return end
 
         BGyro.CFrame = cam.CFrame
@@ -504,12 +510,18 @@ local function StartFlying()
             if UserInputService:IsKeyDown(Enum.KeyCode.D) then moveDir = moveDir + cam.CFrame.RightVector end
         end
 
-        if moveDir.Magnitude > 0 then BVelocity.Velocity = moveDir.Unit * FlySpeed else BVelocity.Velocity = Vector3.new(0, 0, 0) end
+        if moveDir.Magnitude > 0 then
+            BVelocity.Velocity = moveDir.Unit * FlySpeed
+        else
+            BVelocity.Velocity = Vector3.new(0, 0, 0)
+        end
     end)
 end
 
 local function GetTargetCoinGlobal()
-    if CachedCoin and CachedCoin.Parent and CachedCoin:IsA("BasePart") and CachedCoin.Transparency < 1 then return CachedCoin end
+    if CachedCoin and CachedCoin.Parent and CachedCoin:IsA("BasePart") and CachedCoin.Transparency < 1 then
+        return CachedCoin
+    end
     if tick() < NextScanTime then return nil end
     NextScanTime = tick() + 0.3
 
@@ -517,20 +529,25 @@ local function GetTargetCoinGlobal()
     if coinContainer then
         for _, child in pairs(coinContainer:GetDescendants()) do
             if child:IsA("BasePart") and (string.find(child.Name:lower(), "coin") or child.Name == "Coin_Server") and child.Transparency < 1 then
-                CachedCoin = child; return child
+                CachedCoin = child
+                return child
             end
         end
     end
     for _, child in pairs(workspace:GetDescendants()) do
         if child:IsA("BasePart") and not child:IsDescendantOf(Players) and (string.find(child.Name:lower(), "coin") or child.Name == "Coin_Server" or child:FindFirstChild("CoinVisual")) and child.Transparency < 1 and child.Parent ~= nil then
-            CachedCoin = child; return child
+            CachedCoin = child
+            return child
         end
     end
     return nil
 end
 
 local function StopAutoFarm()
-    if AutoFarmConnection then AutoFarmConnection:Disconnect(); AutoFarmConnection = nil end
+    if AutoFarmConnection then
+        AutoFarmConnection:Disconnect()
+        AutoFarmConnection = nil
+    end
     if not Flying then StopFlying() end
 end
 
@@ -553,7 +570,10 @@ local function StartAutoFarm()
     end
 
     AutoFarmConnection = RunService.Heartbeat:Connect(function()
-        if not AutoFarmEnabled then StopAutoFarm(); return end
+        if not AutoFarmEnabled then
+            StopAutoFarm()
+            return
+        end
         local char = LocalPlayer.Character
         local root = char and char:FindFirstChild("HumanoidRootPart")
         if not root then return end
@@ -583,7 +603,8 @@ LocalPlayer.CharacterAdded:Connect(function(newChar)
     local hum = newChar:WaitForChild("Humanoid", 5)
     if root and hum then
         task.wait(0.5)
-        if AutoFarmEnabled then StartAutoFarm() elseif Flying then StartFlying() end
+        if AutoFarmEnabled then StartAutoFarm()
+        elseif Flying then StartFlying() end
     end
 end)
 
@@ -596,50 +617,80 @@ WalkSpeedConnection = RunService.Stepped:Connect(function()
 end)
 
 local function GetPlayerRoleAndTool(player)
-    local isMurderer, isSheriff, specialTool = false, false, nil
+    local isMurderer = false
+    local isSheriff = false
+    local specialTool = nil
+
     local function check(container)
         if not container then return end
         for _, item in pairs(container:GetChildren()) do
             if item:IsA("Tool") then
-                if item:FindFirstChild("KnifeServer") or item:FindFirstChild("KnifeClient") then isMurderer = true; specialTool = item
-                elseif item:FindFirstChild("GunScript") or item:FindFirstChild("GunClient") then isSheriff = true; specialTool = item end
+                if item:FindFirstChild("KnifeServer") or item:FindFirstChild("KnifeClient") then
+                    isMurderer = true
+                    specialTool = item
+                elseif item:FindFirstChild("GunScript") or item:FindFirstChild("GunClient") then
+                    isSheriff = true
+                    specialTool = item
+                end
             end
         end
     end
+
     check(player:FindFirstChild("Backpack"))
     if player.Character then check(player.Character) end
+
     return isMurderer, isSheriff, specialTool
 end
 
 local function IsPlayerInGame(player)
     if not player or not player.Character then return false end
+    
     local root = player.Character:FindFirstChild("HumanoidRootPart")
     local hum = player.Character:FindFirstChild("Humanoid")
     if not root or not hum or hum.Health <= 0 then return false end
+    
     local map = workspace:FindFirstChild("Normal") or workspace:FindFirstChild("Map")
     if not map then return false end 
+    
     local mapPart = map:FindFirstChildWhichIsA("BasePart", true)
     if not mapPart then return false end 
-    return (root.Position - mapPart.Position).Magnitude <= 600
+    
+    local distance = (root.Position - mapPart.Position).Magnitude
+    if distance > 600 then 
+        return false 
+    end
+    
+    return true
 end
 
 local function ForceMobileShoot(gun, targetPos)
     if not gun or not targetPos then return false end
-    for i = 1, 3 do gun:Activate(); task.wait(0.02) end
+    
+    for i = 1, 3 do
+        gun:Activate()
+        task.wait(0.02)
+    end
+    
     local cam = workspace.CurrentCamera
     local screenPos, onScreen = cam:WorldToScreenPoint(targetPos)
+    
     if onScreen then
-        VirtualInput:SendMouseButtonEvent(screenPos.X, screenPos.Y, 0, true, game, 0); task.wait(0.05)
+        VirtualInput:SendMouseButtonEvent(screenPos.X, screenPos.Y, 0, true, game, 0)
+        task.wait(0.05)
         VirtualInput:SendMouseButtonEvent(screenPos.X, screenPos.Y, 0, false, game, 0)
     else
         local viewportSize = cam.ViewportSize
-        VirtualInput:SendMouseButtonEvent(viewportSize.X / 2, viewportSize.Y / 2, 0, true, game, 0); task.wait(0.05)
-        VirtualInput:SendMouseButtonEvent(viewportSize.X / 2, viewportSize.Y / 2, 0, false, game, 0)
+        local centerX = viewportSize.X / 2
+        local centerY = viewportSize.Y / 2
+        VirtualInput:SendMouseButtonEvent(centerX, centerY, 0, true, game, 0)
+        task.wait(0.05)
+        VirtualInput:SendMouseButtonEvent(centerX, centerY, 0, false, game, 0)
     end
+    
     return true
 end
 
--- Потоки автоматизации (ESP, Auto Kill, Auto Shoot, Auto Get Gun)
+-- ESP ПОКАЗЫВАЕТ СКВОЗЬ СТЕНЫ
 task.spawn(function()
     while task.wait(0.2) do
         if ESPEnabled then
@@ -647,43 +698,68 @@ task.spawn(function()
                 if player ~= LocalPlayer and player.Character and player.Character:FindFirstChild("HumanoidRootPart") then
                     local char = player.Character
                     local hum = char:FindFirstChild("Humanoid")
+                    
                     if hum and hum.Health > 0 then
                         local isMurd, isSher = GetPlayerRoleAndTool(player)
                         local color = Color3.fromRGB(50, 255, 100)
-                        if isMurd then color = Color3.fromRGB(255, 30, 30) elseif isSher then color = Color3.fromRGB(30, 144, 255) end
-                        local hl = char:FindFirstChild("MM2_RoleESP") or Instance.new("Highlight", char)
-                        hl.Name = "MM2_RoleESP"; hl.FillTransparency = 0.5; hl.OutlineTransparency = 0.2
-                        hl.FillColor = color; hl.OutlineColor = color
+                        if isMurd then color = Color3.fromRGB(255, 30, 30) end
+                        if isSher then color = Color3.fromRGB(30, 144, 255) end
+                        
+                        local hl = char:FindFirstChild("MM2_RoleESP")
+                        if not hl then
+                            hl = Instance.new("Highlight")
+                            hl.Name = "MM2_RoleESP"
+                            hl.FillTransparency = 0.5
+                            hl.OutlineTransparency = 0.2
+                            hl.Parent = char
+                        end
+                        hl.FillColor = color
+                        hl.OutlineColor = color
                     else
-                        if char:FindFirstChild("MM2_RoleESP") then char.MM2_RoleESP:Destroy() end
+                        local hl = char:FindFirstChild("MM2_RoleESP")
+                        if hl then hl:Destroy() end
                     end
                 end
             end
         else
             for _, player in pairs(Players:GetPlayers()) do
-                if player.Character and player.Character:FindFirstChild("MM2_RoleESP") then player.Character.MM2_RoleESP:Destroy() end
+                if player.Character then
+                    local hl = player.Character:FindFirstChild("MM2_RoleESP")
+                    if hl then hl:Destroy() end
+                end
             end
         end
     end
 end)
 
+-- Auto Kill для МАНЬЯКА
 task.spawn(function()
     while task.wait(0.25) do
         if AutoKillEnabled then
             local isMurderer, _, knife = GetPlayerRoleAndTool(LocalPlayer)
+            
             if isMurderer and knife and LocalPlayer.Character and LocalPlayer.Character:FindFirstChild("HumanoidRootPart") then
                 local myHum = LocalPlayer.Character:FindFirstChild("Humanoid")
                 local myRoot = LocalPlayer.Character:FindFirstChild("HumanoidRootPart")
-                if myHum and knife.Parent ~= LocalPlayer.Character then myHum:EquipTool(knife); task.wait(0.1) end
+                
+                if myHum and knife.Parent ~= LocalPlayer.Character then
+                    myHum:EquipTool(knife)
+                    task.wait(0.1)
+                end
+
                 for _, target in pairs(Players:GetPlayers()) do
                     if target ~= LocalPlayer and IsPlayerInGame(target) then
-                        local targetIsMurderer = GetPlayerRoleAndTool(target)
+                        local targetIsMurderer, _, _ = GetPlayerRoleAndTool(target)
                         local targetHum = target.Character:FindFirstChild("Humanoid")
                         local targetRoot = target.Character:FindFirstChild("HumanoidRootPart")
+                        
                         if not targetIsMurderer and targetHum and targetHum.Health > 0 and not targetHum.PlatformStand then
                             myRoot.Velocity = Vector3.new(0, 0, 0)
-                            myRoot.CFrame = targetRoot.CFrame * CFrame.new(0, 0, 1.5); task.wait(0.1)
-                            knife:Activate(); task.wait(0.3); break
+                            myRoot.CFrame = targetRoot.CFrame * CFrame.new(0, 0, 1.5)
+                            task.wait(0.1)
+                            knife:Activate()
+                            task.wait(0.3)
+                            break
                         end
                     end
                 end
@@ -692,35 +768,56 @@ task.spawn(function()
     end
 end)
 
+-- Auto Shoot Murderer для ШЕРИФА (Исправлено для мобильных)
 task.spawn(function()
     while task.wait(0.2) do
         if AutoShootMurdererEnabled then
             if LocalPlayer.Character and LocalPlayer.Character:FindFirstChild("HumanoidRootPart") then
                 local myHum = LocalPlayer.Character:FindFirstChild("Humanoid")
                 local myRoot = LocalPlayer.Character:FindFirstChild("HumanoidRootPart")
+                
                 if myHum and myHum.Health > 0 then
                     local _, isSheriff, gun = GetPlayerRoleAndTool(LocalPlayer)
+                    
                     if isSheriff and gun then
-                        if gun.Parent ~= LocalPlayer.Character then myHum:EquipTool(gun); task.wait(0.2) end
+                        if gun.Parent ~= LocalPlayer.Character then
+                            myHum:EquipTool(gun)
+                            task.wait(0.2)
+                        end
+                        
                         local murdererRoot = nil
+                        
                         for _, target in pairs(Players:GetPlayers()) do
                             if target ~= LocalPlayer and IsPlayerInGame(target) then
-                                local targetIsMurderer = GetPlayerRoleAndTool(target)
+                                local targetIsMurderer, _, _ = GetPlayerRoleAndTool(target)
                                 if targetIsMurderer and target.Character then
                                     local targetHum = target.Character:FindFirstChild("Humanoid")
                                     local targetRoot = target.Character:FindFirstChild("HumanoidRootPart")
-                                    if targetHum and targetHum.Health > 0 and targetRoot then murdererRoot = targetRoot; break end
+                                    
+                                    if targetHum and targetHum.Health > 0 and targetRoot then
+                                        murdererRoot = targetRoot
+                                        break
+                                    end
                                 end
                             end
                         end
+                        
                         if murdererRoot then
                             local cam = workspace.CurrentCamera
                             cam.CameraType = Enum.CameraType.Scriptable
+                            
                             myRoot.Velocity = Vector3.new(0,0,0)
                             myRoot.CFrame = murdererRoot.CFrame * CFrame.new(0, 0, 5)
-                            cam.CFrame = CFrame.lookAt(cam.CFrame.Position, murdererRoot.Position); task.wait(0.1)
+                            
+                            local aimCFrame = CFrame.lookAt(cam.CFrame.Position, murdererRoot.Position)
+                            cam.CFrame = aimCFrame
+                            
+                            task.wait(0.1)
+                            
                             ForceMobileShoot(gun, murdererRoot.Position)
-                            cam.CameraType = Enum.CameraType.Custom; task.wait(1.5)
+                            
+                            cam.CameraType = Enum.CameraType.Custom
+                            task.wait(1.5)
                         end
                     end
                 end
@@ -732,36 +829,58 @@ end)
 task.spawn(function()
     while task.wait(0.3) do
         if AutoGetGunEnabled then
-            local _, isSheriff = GetPlayerRoleAndTool(LocalPlayer)
+            local _, isSheriff, _ = GetPlayerRoleAndTool(LocalPlayer)
+            
             if not isSheriff and LocalPlayer.Character and LocalPlayer.Character:FindFirstChild("HumanoidRootPart") then
                 local myHum = LocalPlayer.Character:FindFirstChild("Humanoid")
                 if myHum and myHum.Health > 0 then
                     local gunDrop = nil
-                    local dropContainers = {workspace:FindFirstChild("Normal"), workspace:FindFirstChild("Map"), workspace:FindFirstChild("Drops"), workspace:FindFirstChild("Items"), workspace:FindFirstChild("Weapons")}
+                    local dropContainers = {
+                        workspace:FindFirstChild("Normal"),
+                        workspace:FindFirstChild("Map"),
+                        workspace:FindFirstChild("Drops"),
+                        workspace:FindFirstChild("Items"),
+                        workspace:FindFirstChild("Weapons")
+                    }
+                    
                     for _, container in pairs(dropContainers) do
                         if container then
                             for _, obj in pairs(container:GetDescendants()) do
                                 if obj:IsA("BasePart") and obj.Parent and not obj:IsDescendantOf(Players) then
                                     local objName = obj.Name:lower()
-                                    if objName == "gundrop" or objName == "gun_drop" or objName == "gun" or (objName:find("gun") and obj:FindFirstChild("GunScript")) or (obj:FindFirstChild("GunScript") and obj:FindFirstChild("Handle")) then
-                                        gunDrop = obj; break
+                                    if objName == "gundrop" or 
+                                       objName == "gun_drop" or 
+                                       objName == "gun" or
+                                       (objName:find("gun") and obj:FindFirstChild("GunScript")) or
+                                       (obj:FindFirstChild("GunScript") and obj:FindFirstChild("Handle")) then
+                                        gunDrop = obj
+                                        break
                                     end
                                 end
                             end
                         end
                         if gunDrop then break end
                     end
+                    
                     if not gunDrop then
                         for _, obj in pairs(workspace:GetDescendants()) do
                             if obj:IsA("BasePart") and obj.Parent and not obj:IsDescendantOf(Players) then
                                 local objName = obj.Name:lower()
-                                if objName == "gundrop" or objName == "gun_drop" or (objName:find("gun") and obj:FindFirstChild("GunScript")) then gunDrop = obj; break end
+                                if objName == "gundrop" or objName == "gun_drop" or 
+                                   (objName:find("gun") and obj:FindFirstChild("GunScript")) then
+                                    gunDrop = obj
+                                    break
+                                end
                             end
                         end
                     end
+                    
                     if gunDrop and gunDrop:IsA("BasePart") and gunDrop.Parent and not gunDrop:IsDescendantOf(Players) then
                         local myRoot = LocalPlayer.Character:FindFirstChild("HumanoidRootPart")
-                        if myRoot then myRoot.CFrame = gunDrop.CFrame * CFrame.new(0, 0, 1); task.wait(0.2) end
+                        if myRoot then
+                            myRoot.CFrame = gunDrop.CFrame * CFrame.new(0, 0, 1)
+                            task.wait(0.2)
+                        end
                     end
                 end
             end
@@ -769,9 +888,9 @@ task.spawn(function()
     end
 end)
 
--- ==========================================
--- ИНИЦИАЛИЗАЦИЯ ВКЛАДОК И СЕКЦИЙ ИНТЕРФЕЙСА
--- ==========================================
+-- =========================================================================
+-- ИНИЦИАЛИЗАЦИЯ ВКЛАДОК И СЕКЦИЙ ИНТЕРФЕЙСА С ТВОИМИ КНОПКАМИ
+-- =========================================================================
 
 local MainTab = CreateTab("Главная", 1)
 local PlayerTab = CreateTab("Игрок", 2)
@@ -780,35 +899,38 @@ local KillerTab = CreateTab("Киллер", 4)
 local SheriffTab = CreateTab("Шериф", 5)
 
 -- Вкладка: Главная
-local MainSec = CreateSection(MainTab, "Авто-Фарм Монет")
-CreateToggle(MainSec, "Включить Авто-Фарм", false, function(state)
+local FarmSec = CreateSection(MainTab, "Авто-Фарм Монет")
+CreateToggle(FarmSec, "Универсальный Авто-Фарм Монет", false, function(state)
     AutoFarmEnabled = state
     if state then StartAutoFarm() else StopAutoFarm() end
 end)
-CreateSlider(MainSec, "Скорость авто-фарма", 10, 25, 16, function(value)
+
+CreateSlider(FarmSec, "Скорость авто-фарма", 10, 25, 16, function(value)
     AutoFarmSpeed = value
 end)
 
 -- Вкладка: Игрок
 local FlySec = CreateSection(PlayerTab, "Режимы Полета")
-CreateToggle(FlySec, "Bypass Fly (Полет)", false, function(state)
+CreateToggle(FlySec, "Bypass Fly", false, function(state)
     Flying = state
     if state then StartFlying() else StopFlying() end
 end)
+
 CreateSlider(FlySec, "Скорость полета", 15, 90, 35, function(value)
     FlySpeed = value
 end)
 
-local MoveSec = CreateSection(PlayerTab, "Характеристики")
-CreateToggle(MoveSec, "Кастомная Скорость Бега", false, function(state)
+local WalkSec = CreateSection(PlayerTab, "Характеристики")
+CreateToggle(WalkSec, "Toggle WalkSpeed", false, function(state)
     WalkSpeedEnabled = state
 end)
-CreateSlider(MoveSec, "Скорость бега", 16, 120, 16, function(value)
+
+CreateSlider(WalkSec, "WalkSpeed", 16, 120, 16, function(value)
     NormalWalkSpeed = value
 end)
 
-local PhaseSec = CreateSection(PlayerTab, "Окружение")
-CreateToggle(PhaseSec, "Noclip (Сквозь стены)", false, function(state)
+local WallSec = CreateSection(PlayerTab, "Окружение")
+CreateToggle(WallSec, "Noclip (Сквозь стены)", false, function(state)
     if state then
         NoclipConnection = RunService.Stepped:Connect(function()
             if LocalPlayer.Character then
@@ -818,7 +940,10 @@ CreateToggle(PhaseSec, "Noclip (Сквозь стены)", false, function(state
             end
         end)
     else
-        if NoclipConnection then NoclipConnection:Disconnect(); NoclipConnection = nil end
+        if NoclipConnection then
+            NoclipConnection:Disconnect()
+            NoclipConnection = nil
+        end
         if LocalPlayer.Character then
             for _, part in pairs(LocalPlayer.Character:GetDescendants()) do
                 if part:IsA("BasePart") then part.CanCollide = true end
@@ -826,7 +951,8 @@ CreateToggle(PhaseSec, "Noclip (Сквозь стены)", false, function(state
         end
     end
 end)
-CreateToggle(PhaseSec, "Inf Jump (Беск. Прыжки)", false, function(state)
+
+CreateToggle(WallSec, "Inf Jump", false, function(state)
     _G.InfJump = state
     if state then
         UserInputService.JumpRequest:Connect(function()
@@ -838,14 +964,14 @@ CreateToggle(PhaseSec, "Inf Jump (Беск. Прыжки)", false, function(stat
 end)
 
 -- Вкладка: Визуал
-local VisSec = CreateSection(VisualTab, "Отображение Ролей")
-CreateToggle(VisSec, "MM2 ESP (Подсветка)", false, function(state)
+local EspSec = CreateSection(VisualTab, "Отображение Ролей")
+CreateToggle(EspSec, "MM2 ESP (Роли)", false, function(state)
     ESPEnabled = state
 end)
 
 -- Вкладка: Киллер
 local KillSec = CreateSection(KillerTab, "Функции Убийцы")
-CreateToggle(KillSec, "Auto Kill (Убивать всех)", false, function(state)
+CreateToggle(KillSec, "Auto Kill (Всех)", false, function(state)
     AutoKillEnabled = state
 end)
 
@@ -854,16 +980,15 @@ local SheriffSec = CreateSection(SheriffTab, "Функции Защиты")
 CreateToggle(SheriffSec, "Авто-Убийство маньяка", false, function(state)
     AutoShootMurdererEnabled = state
 end)
-CreateToggle(SheriffSec, "Авто-подбор пистолета", false, function(state)
+
+CreateToggle(SheriffSec, "Авто-подбор пистолета (Невиновным)", false, function(state)
     AutoGetGunEnabled = state
 end)
 
--- Открытие первой вкладки по умолчанию
 if tabs["Главная"] then
     tabs["Главная"].Select()
 end
 
--- Закрытие и полная очистка при выходе из UI
 CloseBtn.MouseButton1Click:Connect(function()
     Flying = false
     AutoFarmEnabled = false
