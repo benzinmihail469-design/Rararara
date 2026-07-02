@@ -152,16 +152,17 @@ UserInputService.JumpRequest:Connect(function()
 end)
 
 -- ==========================================
--- ИСПРАВЛЕННЫЙ ПОИСК МОНЕТ
+-- НАДЕЖНЫЙ ПОИСК МОНЕТ
 -- ==========================================
 local function ScanAllCoins()
     if CachedCoin and CachedCoin.Parent and CachedCoin:IsA("BasePart") and CachedCoin.Transparency < 1 then
         return CachedCoin
     end
     
+    -- Сканируем контейнеры, где MM2 чаще всего хранит монеты
     for _, obj in pairs(workspace:GetDescendants()) do
-        if obj:IsA("BasePart") and (obj.Name == "Coin_Server" or obj.Name == "GoldCoin" or obj.Name == "Coin") then
-            if obj.Transparency < 1 and (obj:FindFirstChildOfClass("TouchTransmitter") or obj.Parent:FindFirstChildOfClass("TouchTransmitter")) then
+        if obj:IsA("BasePart") and (obj.Name == "Coin_Server" or obj.Name == "GoldCoin" or obj.Name == "Coin" or obj.Name:lower():find("coin")) then
+            if obj.Transparency < 1 then
                 CachedCoin = obj
                 return obj
             end
@@ -171,7 +172,7 @@ local function ScanAllCoins()
 end
 
 -- ==========================================
--- ИСПРАВЛЕННЫЙ АВТО-ФАРМ
+-- НАДЕЖНЫЙ АВТО-ФАРМ НА TWEEN (ПЛАВНЫЙ НАБОР)
 -- ==========================================
 local function ToggleAutoFarm(state)
     State.AutoFarmEnabled = state
@@ -185,7 +186,7 @@ local function ToggleAutoFarm(state)
 
     task.spawn(function()
         while State.AutoFarmEnabled do
-            task.wait(0.05)
+            task.wait(0.1)
             
             local root = GetRoot()
             local humanoid = GetHum()
@@ -193,21 +194,36 @@ local function ToggleAutoFarm(state)
 
             local coin = ScanAllCoins()
             if coin and coin.Parent then
-                humanoid.PlatformStand = true
-                root.CFrame = coin.CFrame
-                
-                local transmitter = coin:FindFirstChildOfClass("TouchTransmitter") or coin.Parent:FindFirstChildOfClass("TouchTransmitter")
-                if transmitter then
+                -- Включаем noclip для персонажа, чтобы не застревал в стенах по пути к монете
+                pcall(function()
+                    for _, part in pairs(LocalPlayer.Character:GetDescendants()) do
+                        if part:IsA("BasePart") then part.CanCollide = false end
+                    end
+                end)
+
+                -- Вычисляем дистанцию и время полета на основе слайдера скорости
+                local distance = (root.Position - coin.Position).Magnitude
+                local speed = State.AutoFarmSpeed * 2 -- Коэффициент скорости
+                local duration = distance / math.max(speed, 10)
+
+                -- Плавное перемещение к монете с помощью TweenService
+                local tweenInfo = TweenInfo.new(duration, Enum.EasingStyle.Linear)
+                local tween = TweenService:Create(root, tweenInfo, {CFrame = coin.CFrame})
+                tween:Play()
+                tween.Completed:Wait() -- Ждем окончания движения к монете
+
+                -- Симулируем подбор монеты
+                if firetouchinterest then
                     firetouchinterest(root, coin, 0)
-                    task.wait()
+                    task.wait(0.02)
                     firetouchinterest(root, coin, 1)
+                else
+                    -- Альтернативный сбор на случай, если firetouchinterest не поддерживается экзекутором
+                    root.CFrame = coin.CFrame
+                    task.wait(0.05)
                 end
                 
-                local farmDelay = math.clamp(1 / (State.AutoFarmSpeed or 15), 0.05, 1)
-                task.wait(farmDelay)
                 CachedCoin = nil
-            else
-                humanoid.PlatformStand = false
             end
         end
         
