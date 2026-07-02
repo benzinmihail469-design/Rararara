@@ -33,30 +33,29 @@ if CharacterScripts then
     end
 end
 
-local Flying, FlySpeed, NormalWalkSpeed, WalkSpeedEnabled, AutoFarmEnabled, ESPEnabled, AutoCombatEnabled, AutoGetGunEnabled = false, 35, 16, false, false, false, false, false
-local GodModeEnabled = false
-local FlyConnection, NoclipConnection, WalkSpeedConnection, AutoFarmConnection, ESPConnection, GodModeConnection = nil, nil, nil, nil, nil, nil
+local Flying, FlySpeed, NormalWalkSpeed, WalkSpeedEnabled = false, 35, 16, false
+local AutoFarmEnabled, AutoFarmSpeed = false, 30
+local ESPEnabled, AutoCombatEnabled, AutoGetGunEnabled = false, false, false
+local AutoFlingEnabled = false
+
+local FlyConnection, NoclipConnection, WalkSpeedConnection, AutoFarmConnection, ESPConnection, FlingConnection = nil, nil, nil, nil, nil, nil
 local NextScanTime, CachedCoin, BVelocity, BGyro = 0, nil, nil, nil
 
 -- Безопасное получение компонентов
 local function GetCurrentRoot()
     local char = LocalPlayer.Character
-    if char and char:FindFirstChild("HumanoidRootPart") then
-        return char.HumanoidRootPart
-    end
+    if char and char:FindFirstChild("HumanoidRootPart") then return char.HumanoidRootPart end
     return nil
 end
 
 local function GetCurrentHumanoid()
     local char = LocalPlayer.Character
-    if char and char:FindFirstChildOfClass("Humanoid") then
-        return char:FindFirstChildOfClass("Humanoid")
-    end
+    if char and char:FindFirstChildOfClass("Humanoid") then return char:FindFirstChildOfClass("Humanoid") end
     return nil
 end
 
 -- ==========================================
--- ИСПРАВЛЕННЫЙ ПОЛЕТ И АВТОФАРМ
+-- ФУНКЦИИ ПЕРЕМЕЩЕНИЯ И АВТО-ФАРМА
 -- ==========================================
 local function StopFlying()
     if FlyConnection then FlyConnection:Disconnect() FlyConnection = nil end
@@ -150,7 +149,13 @@ local function StartAutoFarm()
         
         local coin = GetTargetCoinGlobal()
         if coin and coin.Parent then
-            root.CFrame = coin.CFrame * CFrame.new(0, 0.2, 0)
+            -- Плавное или быстрое перемещение в зависимости от выставленного слайдера скорости
+            local targetPos = coin.CFrame * CFrame.new(0, 0.2, 0)
+            if AutoFarmSpeed >= 80 then
+                root.CFrame = targetPos
+            else
+                root.CFrame = root.CFrame:Lerp(targetPos, AutoFarmSpeed / 100)
+            end
             hum.PlatformStand = true
             pcall(function()
                 firetouchinterest(root, coin, 0)
@@ -190,7 +195,7 @@ local function IsPlayerInGame(player)
 end
 
 -- ==========================================
--- СОЗДАНИЕ ИДЕАЛЬНОГО ИНТЕРФЕЙСА (GUI)
+-- СОЗДАНИЕ ИНТЕРФЕЙСА (GUI)
 -- ==========================================
 local ScreenGui = Instance.new("ScreenGui")
 ScreenGui.Name = "HoshiMM2Gui"
@@ -451,48 +456,19 @@ local function AddSlider(parent, text, min, max, default, callback)
 end
 
 -- ==========================================
--- ИСПРАВЛЕННЫЕ КНОПКИ И СТАБИЛЬНЫЙ GOD MODE
+-- НАСТРОЙКА КНОПОК И ЭЛЕМЕНТОВ GUI
 -- ==========================================
 
 AddToggle(MainPage, "Авто-Фарм Монет", function(state)
     AutoFarmEnabled = state
     if state then StartAutoFarm() else StopAutoFarm() end
 end)
-
-AddToggle(PlayerPage, "Настоящий God Mode (Без Лобби)", function(state)
-    GodModeEnabled = state
-    if GodModeEnabled then
-        if GodModeConnection then GodModeConnection:Disconnect() end
-        -- Безопасный режим: убираем регистрацию коллизии с ножом локально
-        GodModeConnection = RunService.Stepped:Connect(function()
-            if not GodModeEnabled then return end
-            local char = LocalPlayer.Character
-            if char then
-                -- Отключаем коллизии со всеми хитбоксами других лезвий на карте
-                for _, v in pairs(workspace:GetDescendants()) do
-                    if v:IsA("BasePart") and (v.Name == "KnifeServer" or v.Name == "Handle" and v.Parent:IsA("Tool")) then
-                        pcall(function() v.CanCollide = false end)
-                    end
-                end
-                -- Локально убираем TouchInterest, отвечающий за урон шерифа/киллера
-                for _, part in pairs(char:GetChildren()) do
-                    if part:IsA("BasePart") then
-                        for _, ti in pairs(part:GetChildren()) do
-                            if ti:IsA("TouchTransmitter") then ti:Destroy() end
-                        end
-                    end
-                end
-            end
-        end)
-    else
-        if GodModeConnection then GodModeConnection:Disconnect() GodModeConnection = nil end
-    end
-end)
+AddSlider(MainPage, "Скорость Фарма монеток", 10, 100, 30, function(value) AutoFarmSpeed = value end)
 
 AddToggle(PlayerPage, "Bypass Fly (Полет)", function(state) Flying = state if state then StartFlying() else StopFlying() end end)
 AddSlider(PlayerPage, "Скорость полета", 15, 90, 35, function(value) FlySpeed = value end)
 AddToggle(PlayerPage, "Включить кастомный WalkSpeed", function(state) WalkSpeedEnabled = state end)
-AddSlider(PlayerPage, "WalkSpeed (Скорость)", 16, 120, 16, function(value) NormalWalkSpeed = value end)
+AddSlider(PlayerPage, "WalkSpeed (Скорость бега)", 16, 120, 16, function(value) NormalWalkSpeed = value end)
 
 AddToggle(PlayerPage, "Noclip (Сквозь Стены)", function(state)
     if state then
@@ -539,11 +515,52 @@ AddToggle(VisualPage, "ESP (Игроки)", function(state)
     end
 end)
 
+-- РАЗДЕЛ БОЯ (СТАРЫЕ ФУНКЦИИ + NEW AUTO FLING)
 AddToggle(CombatPage, "Авто-Режим (Убийца/Шериф)", function(state) AutoCombatEnabled = state end)
 AddToggle(CombatPage, "Авто-подбор пистолета", function(state) AutoGetGunEnabled = state end)
 
+AddToggle(CombatPage, "Включить Auto Fling (Убивать телом)", function(state)
+    AutoFlingEnabled = state
+    local root = GetCurrentRoot()
+    if state and root then
+        if FlingConnection then FlingConnection:Disconnect() end
+        FlingConnection = RunService.Heartbeat:Connect(function()
+            if not AutoFlingEnabled or not root or not root.Parent then return end
+            
+            -- Сверхбыстрое кручение физики для fling эффекта
+            root.AssemblyLinearVelocity = Vector3.new(0, 0, 0)
+            root.AssemblyAngularVelocity = Vector3.new(0, 99999, 0)
+            
+            -- Наведение на ближайшую цель (любой игрок кроме себя)
+            local closestPlayer = nil
+            local shortestDistance = math.huge
+            
+            for _, player in pairs(Players:GetPlayers()) do
+                if player ~= LocalPlayer and IsPlayerInGame(player) then
+                    local pRoot = player.Character:FindFirstChild("HumanoidRootPart")
+                    if pRoot then
+                        local dist = (root.Position - pRoot.Position).Magnitude
+                        if dist < shortestDistance and dist < 40 then -- Радиус действия флинга 40 блоков
+                            shortestDistance = dist
+                            closestPlayer = pRoot
+                        end
+                    end
+                end
+            end
+            
+            if closestPlayer then
+                -- Телепортируем часть торса прямо в цель, выбивая коллизию
+                root.CFrame = closestPlayer.CFrame * CFrame.new(math.sin(tick()*20)*0.5, 0, math.cos(tick()*20)*0.5)
+            end
+        end)
+    else
+        if FlingConnection then FlingConnection:Disconnect() FlingConnection = nil end
+        if root then root.AssemblyAngularVelocity = Vector3.new(0, 0, 0) end
+    end
+end)
+
 -- ==========================================
--- ПОЛНОСТЬЮ ИСПРАВЛЕННЫЙ ЦИКЛ БОЯ И ПОДБОРА
+-- ИСПРАВЛЕННЫЕ ОСНОВНЫЕ ИГРОВЫЕ ЦИКЛЫ
 -- ==========================================
 task.spawn(function()
     while task.wait(0.1) do
@@ -642,13 +659,16 @@ UserInputService.InputEnded:Connect(function(input)
     if input.UserInputType == Enum.UserInputType.MouseButton1 or input.UserInputType == Enum.UserInputType.Touch then dragging = false end
 end)
 
--- ЗАКРЫТИЕ С КОРРЕКТНЫМ СБРОСОМ
+-- КНОПКА ЗАКРЫТИЯ С СБРОСОМ ВСЕХ ФИЗИЧЕСКИХ ДЕЙСТВИЙ
 CloseBtn.MouseButton1Click:Connect(function()
-    Flying, AutoFarmEnabled, WalkSpeedEnabled, ESPEnabled, AutoCombatEnabled, AutoGetGunEnabled, GodModeEnabled = false, false, false, false, false, false, false
+    Flying, AutoFarmEnabled, WalkSpeedEnabled, ESPEnabled, AutoCombatEnabled, AutoGetGunEnabled, AutoFlingEnabled = false, false, false, false, false, false, false
     StopFlying() StopAutoFarm()
     if NoclipConnection then NoclipConnection:Disconnect() end
     if WalkSpeedConnection then WalkSpeedConnection:Disconnect() end
     if ESPConnection then ESPConnection:Disconnect() end
-    if GodModeConnection then GodModeConnection:Disconnect() end
+    if FlingConnection then FlingConnection:Disconnect() end
+    
+    local root = GetCurrentRoot()
+    if root then root.AssemblyAngularVelocity = Vector3.new(0,0,0) end
     ScreenGui:Destroy()
 end)
