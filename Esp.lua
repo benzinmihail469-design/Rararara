@@ -38,6 +38,24 @@ local FlyConnection, NoclipConnection, WalkSpeedConnection, AutoFarmConnection, 
 local GodModeConnection, CloneChar, RealCharObj = nil, nil, nil
 local NextScanTime, CachedCoin, BVelocity, BGyro = 0, nil, nil, nil
 
+-- Утилита для получения актуального "физического" RootPart (учитывает God Mode)
+local function GetCurrentRoot()
+    local char = RealCharObj or LocalPlayer.Character
+    if char and char:FindFirstChild("HumanoidRootPart") then
+        return char.HumanoidRootPart
+    end
+    return nil
+end
+
+-- Утилита для получения актуального Humanoid
+local function GetCurrentHumanoid()
+    local char = RealCharObj or LocalPlayer.Character
+    if char and char:FindFirstChildOfClass("Humanoid") then
+        return char:FindFirstChildOfClass("Humanoid")
+    end
+    return nil
+end
+
 -- ==========================================
 -- ОСНОВНЫЕ ФУНКЦИИ
 -- ==========================================
@@ -45,19 +63,14 @@ local function StopFlying()
     if FlyConnection then FlyConnection:Disconnect() FlyConnection = nil end
     if BVelocity then BVelocity:Destroy() BVelocity = nil end
     if BGyro then BGyro:Destroy() BGyro = nil end
-    local char = LocalPlayer.Character
-    if char then
-        local hum = char:FindFirstChildOfClass("Humanoid")
-        if hum then hum.PlatformStand = false end
-    end
+    local hum = GetCurrentHumanoid()
+    if hum then hum.PlatformStand = false end
 end
 
 local function StartFlying()
     StopFlying()
-    local char = LocalPlayer.Character
-    if not char then return end
-    local root = char:FindFirstChild("HumanoidRootPart")
-    local hum = char:FindFirstChildOfClass("Humanoid")
+    local root = GetCurrentRoot()
+    local hum = GetCurrentHumanoid()
     if not root or not hum then return end
     
     hum.PlatformStand = true
@@ -73,9 +86,15 @@ local function StartFlying()
 
     local cam = workspace.CurrentCamera
     FlyConnection = RunService.RenderStepped:Connect(function()
-        if not Flying or not root or not LocalPlayer.Character then StopFlying() return end
+        if not Flying or not root or not root.Parent then StopFlying() return end
         if AutoFarmEnabled then return end
 
+        -- Если включен God Mode, то логика полета должна управлять фейковым чаром, а не реальным隱
+        local activeRoot = (CloneChar and CloneChar:FindFirstChild("HumanoidRootPart")) or root
+        if not activeRoot then return end
+
+        BGyro.Parent = activeRoot
+        BVelocity.Parent = activeRoot
         BGyro.CFrame = cam.CFrame
         local moveDir = Vector3.new(0, 0, 0)
 
@@ -92,7 +111,7 @@ local function StartFlying()
             if UserInputService:IsKeyDown(Enum.KeyCode.W) then moveDir = moveDir + cam.CFrame.LookVector end
             if UserInputService:IsKeyDown(Enum.KeyCode.S) then moveDir = moveDir - cam.CFrame.LookVector end
             if UserInputService:IsKeyDown(Enum.KeyCode.A) then moveDir = moveDir - cam.CFrame.RightVector end
-            if UserInputService:IsKeyDown(Enum.KeyCode.D) then moveDir = moveDir + cam.CFrame.RightVector end
+            if UserInputService:IsKeyDown(Enum.KeyCode.D) then moveDir = moveDir - cam.CFrame.RightVector end
         end
 
         if moveDir.Magnitude > 0 then BVelocity.Velocity = moveDir.Unit * FlySpeed else BVelocity.Velocity = Vector3.new(0, 0, 0) end
@@ -105,13 +124,12 @@ local function GetTargetCoinGlobal()
     end
     
     if tick() < NextScanTime then return nil end
-    NextScanTime = tick() + 0.2
+    NextScanTime = tick() + 0.15
 
     local coinContainer = workspace:FindFirstChild("Normal") or workspace:FindFirstChild("Map") or workspace:FindFirstChild("CoinContainer")
     if coinContainer then
         for _, child in pairs(coinContainer:GetDescendants()) do
             if typeof(child) == "Instance" and child:IsA("BasePart") and (string.find(child.Name:lower(), "coin") or child.Name == "Coin_Server") and child.Transparency < 1 then
-                -- Проверка наличия TouchInterest для сбора
                 if child:FindFirstChildOfClass("TouchTransmitter") then
                     CachedCoin = child 
                     return child
@@ -129,27 +147,21 @@ end
 
 local function StartAutoFarm()
     StopAutoFarm()
-    local lastCoinCFrame = nil
     AutoFarmConnection = RunService.Heartbeat:Connect(function()
         if not AutoFarmEnabled then StopAutoFarm() return end
         
-        local activeChar = RealCharObj or LocalPlayer.Character
-        if typeof(activeChar) ~= "Instance" or not activeChar.Parent then return end
-        
-        local root = activeChar:FindFirstChild("HumanoidRootPart")
-        if not root then return end
+        local root = GetCurrentRoot()
+        local hum = GetCurrentHumanoid()
+        if not root or not hum then return end
         
         local coin = GetTargetCoinGlobal()
         if typeof(coin) == "Instance" and coin.Parent then
-            -- Фикс подбора: легкое смещение и покачивание персонажа вокруг монеты, чтобы триггерить TouchInterest
-            local swing = Vector3.new(math.sin(tick() * 10) * 0.2, 0.5, math.cos(tick() * 10) * 0.2)
+            -- Микро-движения для зачета коллизии
+            local swing = Vector3.new(math.sin(tick() * 14) * 0.2, 0.4, math.cos(tick() * 14) * 0.2)
             root.CFrame = coin.CFrame * CFrame.new(swing)
             
-            -- Обеспечиваем касание нижней частью RootPart / Ног
-            local hum = activeChar:FindFirstChildOfClass("Humanoid")
-            if hum then hum.PlatformStand = true end
+            hum.PlatformStand = true
             
-            -- Имитируем падение/касание
             pcall(function()
                 firetouchinterest(root, coin, 0)
                 firetouchinterest(root, coin, 1)
@@ -179,6 +191,8 @@ local function GetPlayerRoleAndTool(player)
     
     check(player:FindFirstChild("Backpack"))
     if player.Character then check(player.Character) end
+    -- Если включен God Mode, проверяем инструмент еще и в реальном (спрятанном) персонаже
+    if player == LocalPlayer and RealCharObj then check(RealCharObj) end
     return isMurderer, isSheriff, specialTool
 end
 
@@ -465,7 +479,7 @@ AddToggle(MainPage, "Авто-Фарм Монет (Умный)", function(state)
     if state then StartAutoFarm() else StopAutoFarm() end
 end)
 
-AddToggle(PlayerPage, "God Mode", function(state)
+AddToggle(PlayerPage, "God Mode (Бессмертие)", function(state)
     local char = LocalPlayer.Character
     if not char then return end
 
@@ -488,6 +502,7 @@ AddToggle(PlayerPage, "God Mode", function(state)
             animate.Disabled = true task.wait() animate.Disabled = false
         end
         
+        -- Скрываем физическое тело, чтобы его не убили напрямую
         for _, v in pairs(RealCharObj:GetDescendants()) do
             if v:IsA("BasePart") and v.Name ~= "HumanoidRootPart" then
                 v.Transparency = 1
@@ -496,9 +511,10 @@ AddToggle(PlayerPage, "God Mode", function(state)
         end
         
         GodModeConnection = RunService.Heartbeat:Connect(function()
-            if typeof(RealRoot) == "Instance" and RealRoot.Parent and typeof(FakeRoot) == "Instance" then
-                if not AutoFarmEnabled then
-                    RealRoot.CFrame = FakeRoot.CFrame * CFrame.new(0, 500, 0)
+            if typeof(RealRoot) == "Instance" and RealRoot.Parent and typeof(FakeRoot) == "Instance" and FakeRoot.Parent then
+                -- Если автофарм выключен, то ТПхаем настоящее тело далеко наверх за фейком
+                if not AutoFarmEnabled and not AutoCombatEnabled and not AutoGetGunEnabled then
+                    RealRoot.CFrame = FakeRoot.CFrame * CFrame.new(0, 800, 0)
                     RealRoot.Velocity = Vector3.new(0,0,0)
                 end
             else
@@ -507,17 +523,17 @@ AddToggle(PlayerPage, "God Mode", function(state)
         end)
     else
         if GodModeConnection then GodModeConnection:Disconnect() GodModeConnection = nil end
-        if CloneChar then CloneChar:Destroy() CloneChar = nil end
         
         if typeof(RealCharObj) == "Instance" and RealCharObj.Parent then
             LocalPlayer.Character = RealCharObj
             local RealHum = RealCharObj:FindFirstChildOfClass("Humanoid")
             if RealHum then
                 workspace.CurrentCamera.CameraSubject = RealHum
-                RealHum.Health = 0
+                RealHum.Health = 0 -- Сброс персонажа для безопасного респавна
             end
-            RealCharObj = nil
         end
+        if CloneChar then CloneChar:Destroy() CloneChar = nil end
+        RealCharObj = nil
     end
 end)
 
@@ -529,8 +545,12 @@ AddSlider(PlayerPage, "WalkSpeed (Скорость)", 16, 120, 16, function(valu
 AddToggle(PlayerPage, "Noclip (Сквозь Стены)", function(state)
     if state then
         NoclipConnection = RunService.Stepped:Connect(function()
-            if LocalPlayer.Character then
-                for _, part in pairs(LocalPlayer.Character:GetDescendants()) do if part:IsA("BasePart") then part.CanCollide = false end end
+            local char = RealCharObj or LocalPlayer.Character
+            if char then
+                for _, part in pairs(char:GetDescendants()) do if part:IsA("BasePart") then part.CanCollide = false end end
+            end
+            if CloneChar then
+                for _, part in pairs(CloneChar:GetDescendants()) do if part:IsA("BasePart") then part.CanCollide = false end end
             end
         end)
     else
@@ -574,46 +594,46 @@ end)
 AddToggle(CombatPage, "Авто-Режим (Убийца/Шериф)", function(state) AutoCombatEnabled = state end)
 AddToggle(CombatPage, "Авто-подбор пистолета", function(state) AutoGetGunEnabled = state end)
 
--- ЦИКЛ АВТО-БОЯ (Умная проверка роли)
+-- ЦИКЛ АВТО-БОЯ
 task.spawn(function()
     while task.wait(0.1) do
-        if AutoCombatEnabled and LocalPlayer.Character and LocalPlayer.Character:FindFirstChild("HumanoidRootPart") then
-            local myRoot = LocalPlayer.Character:FindFirstChild("HumanoidRootPart")
-            local myHum = LocalPlayer.Character:FindFirstChild("Humanoid")
+        if AutoCombatEnabled then
+            local myRoot = GetCurrentRoot()
+            local myHum = GetCurrentHumanoid()
             local isMurderer, isSheriff, myTool = GetPlayerRoleAndTool(LocalPlayer)
             
-            if isMurderer and myTool then
-                -- Ели мы МАРДЕР -> Убиваем мирных и шерифа
-                if myTool.Parent ~= LocalPlayer.Character and myHum then myHum:EquipTool(myTool) end
+            if myRoot and myHum and myTool then
+                -- Экипируем оружие в правильного (физического) персонажа
+                if myTool.Parent ~= myRoot.Parent then 
+                    myHum:EquipTool(myTool) 
+                end
                 
-                for _, target in pairs(Players:GetPlayers()) do
-                    if target ~= LocalPlayer and IsPlayerInGame(target) then
-                        local tMurd, tSher = GetPlayerRoleAndTool(target)
-                        if not tMurd then -- Не трогаем других убийц, если они есть
-                            local targetRoot = target.Character:FindFirstChild("HumanoidRootPart")
-                            if targetRoot then
-                                myRoot.CFrame = targetRoot.CFrame * CFrame.new(0, 0, 1)
-                                myTool:Activate()
-                                task.wait(0.15)
+                if isMurderer then
+                    for _, target in pairs(Players:GetPlayers()) do
+                        if target ~= LocalPlayer and IsPlayerInGame(target) then
+                            local tMurd, tSher = GetPlayerRoleAndTool(target)
+                            if not tMurd then
+                                local targetRoot = target.Character:FindFirstChild("HumanoidRootPart")
+                                if targetRoot then
+                                    myRoot.CFrame = targetRoot.CFrame * CFrame.new(0, 0, 1)
+                                    myTool:Activate()
+                                    task.wait(0.12)
+                                end
                             end
                         end
                     end
-                end
-                
-            elseif isSheriff and myTool then
-                -- Если мы ШЕРИФ (или взяли пест) -> Ищем и ликвидируем только МАРДЕРА
-                if myTool.Parent ~= LocalPlayer.Character and myHum then myHum:EquipTool(myTool) end
-                
-                for _, target in pairs(Players:GetPlayers()) do
-                    if target ~= LocalPlayer and IsPlayerInGame(target) then
-                        local tMurd = GetPlayerRoleAndTool(target)
-                        if tMurd then -- Цель только Мардер
-                            local targetRoot = target.Character:FindFirstChild("HumanoidRootPart")
-                            if targetRoot then
-                                -- Встаем на безопасную дистанцию над ним и стреляем
-                                myRoot.CFrame = CFrame.new(targetRoot.Position + Vector3.new(0, 8, 0), targetRoot.Position)
-                                myTool:Activate()
-                                task.wait(0.2)
+                    
+                elseif isSheriff then
+                    for _, target in pairs(Players:GetPlayers()) do
+                        if target ~= LocalPlayer and IsPlayerInGame(target) then
+                            local tMurd = GetPlayerRoleAndTool(target)
+                            if tMurd then
+                                local targetRoot = target.Character:FindFirstChild("HumanoidRootPart")
+                                if targetRoot then
+                                    myRoot.CFrame = CFrame.new(targetRoot.Position + Vector3.new(0, 9, 0), targetRoot.Position)
+                                    myTool:Activate()
+                                    task.wait(0.15)
+                                end
                             end
                         end
                     end
@@ -625,35 +645,31 @@ end)
 
 -- АВТОПОДБОР ПИСТОЛЕТА
 task.spawn(function()
-    while task.wait(0.3) do
+    while task.wait(0.25) do
         if AutoGetGunEnabled then
             local _, isSheriff = GetPlayerRoleAndTool(LocalPlayer)
-            if not isSheriff and LocalPlayer.Character and LocalPlayer.Character:FindFirstChild("HumanoidRootPart") then
-                local myHum = LocalPlayer.Character:FindFirstChild("Humanoid")
-                if myHum and myHum.Health > 0 then
-                    local gunDrop = nil
-                    local dropContainers = {workspace:FindFirstChild("Normal"), workspace:FindFirstChild("Map"), workspace:FindFirstChild("Drops"), workspace:FindFirstChild("Items")}
-                    for _, container in pairs(dropContainers) do
-                        if container then
-                            for _, obj in pairs(container:GetDescendants()) do
-                                if obj:IsA("BasePart") and obj.Parent and not obj:IsDescendantOf(Players) then
-                                    local n = obj.Name:lower()
-                                    if n == "gundrop" or n == "gun_drop" or n == "gun" or obj:FindFirstChild("GunScript") then gunDrop = obj break end
-                                end
+            local myRoot = GetCurrentRoot()
+            local myHum = GetCurrentHumanoid()
+            
+            if not isSheriff and myRoot and myHum and myHum.Health > 0 then
+                local gunDrop = nil
+                local dropContainers = {workspace:FindFirstChild("Normal"), workspace:FindFirstChild("Map"), workspace:FindFirstChild("Drops"), workspace:FindFirstChild("Items")}
+                for _, container in pairs(dropContainers) do
+                    if container then
+                        for _, obj in pairs(container:GetDescendants()) do
+                            if obj:IsA("BasePart") and obj.Parent and not obj:IsDescendantOf(Players) then
+                                local n = obj.Name:lower()
+                                if n == "gundrop" or n == "gun_drop" or n == "gun" or obj:FindFirstChild("GunScript") then gunDrop = obj break end
                             end
                         end
                     end
-                    if gunDrop and gunDrop:IsA("BasePart") and gunDrop.Parent then
-                        local myRoot = LocalPlayer.Character:FindFirstChild("HumanoidRootPart")
-                        if myRoot then 
-                            myRoot.CFrame = gunDrop.CFrame 
-                            pcall(function()
-                                firetouchinterest(myRoot, gunDrop, 0)
-                                firetouchinterest(myRoot, gunDrop, 1)
-                            end)
-                            task.wait(0.2) 
-                        end
-                    end
+                end
+                if gunDrop and gunDrop:IsA("BasePart") and gunDrop.Parent then
+                    myRoot.CFrame = gunDrop.CFrame 
+                    pcall(function()
+                        firetouchinterest(myRoot, gunDrop, 0)
+                        firetouchinterest(myRoot, gunDrop, 1)
+                    end)
                 end
             end
         end
@@ -666,8 +682,7 @@ LocalPlayer.CharacterAdded:Connect(function(newChar)
 end)
 
 WalkSpeedConnection = RunService.Stepped:Connect(function()
-    local char = LocalPlayer.Character
-    local hum = char and char:FindFirstChildOfClass("Humanoid")
+    local hum = GetCurrentHumanoid()
     if hum and not Flying and not AutoFarmEnabled then
         hum.WalkSpeed = WalkSpeedEnabled and NormalWalkSpeed or 16
     end
