@@ -19,7 +19,7 @@ pcall(function()
 end)
 
 -- ==========================================
--- ТАБЛИЦА СОСТОЯНИЯ (КЭШ НАСТРОЕК)
+-- ТАБЛИЦА СОСТОЯНИЯ
 -- ==========================================
 local State = {
     Flying = false, 
@@ -46,7 +46,7 @@ local NextCoinScan = 0
 local BVelocity, BGyro = nil, nil
 
 -- ==========================================
--- ВСПОМОГАТЕЛЬНЫЕ БЕЗОПАСНЫЕ ГЕТТЕРЫ
+-- ВСПОМОГАТЕЛЬНЫЕ ФУНКЦИИ
 -- ==========================================
 local function GetRoot() 
     return LocalPlayer.Character and LocalPlayer.Character:FindFirstChild("HumanoidRootPart") 
@@ -79,10 +79,8 @@ local function GetMurderer()
 end
 
 -- ==========================================
--- ИСПРАВЛЕННОЕ ЯДРО ФУНКЦИЙ (ВСЁ РАБОТАЕТ)
+-- ИСПРАВЛЕННЫЙ ПОЛЕТ (FLY)
 -- ==========================================
-
--- Полет (Bypass Fly)
 local function StopFlying()
     if Connections.Fly then Connections.Fly:Disconnect() Connections.Fly = nil end
     if BVelocity then BVelocity:Destroy() BVelocity = nil end
@@ -120,10 +118,11 @@ local function StartFlying()
         BGyro.CFrame = cam.CFrame
         local moveDir = Vector3.new(0, 0, 0)
         
+        -- ИСПРАВЛЕНО: Правильные направления для клавиш
         if UserInputService:IsKeyDown(Enum.KeyCode.W) then moveDir = moveDir + cam.CFrame.LookVector end
         if UserInputService:IsKeyDown(Enum.KeyCode.S) then moveDir = moveDir - cam.CFrame.LookVector end
         if UserInputService:IsKeyDown(Enum.KeyCode.A) then moveDir = moveDir - cam.CFrame.RightVector end
-        if UserInputService:IsKeyDown(Enum.KeyCode.D) then moveDir = moveDir - cam.CFrame.RightVector end
+        if UserInputService:IsKeyDown(Enum.KeyCode.D) then moveDir = moveDir + cam.CFrame.RightVector end -- Было минус, исправлено на плюс
         
         if moveDir.Magnitude > 0 then
             BVelocity.Velocity = moveDir.Unit * State.FlySpeed
@@ -141,9 +140,11 @@ UserInputService.JumpRequest:Connect(function()
     end
 end)
 
--- Глобальный поиск монет
+-- ==========================================
+-- ИСПРАВЛЕННЫЙ ПОИСК МОНЕТ (БЫСТРЕЕ)
+-- ==========================================
 local function ScanAllCoins()
-    if CachedCoin and CachedCoin.Parent and CachedCoin.Transparency < 1 then 
+    if CachedCoin and CachedCoin.Parent and CachedCoin:IsA("BasePart") and CachedCoin.Transparency < 1 then 
         return CachedCoin 
     end
     if tick() < NextCoinScan then return nil end
@@ -160,7 +161,9 @@ local function ScanAllCoins()
     return nil
 end
 
--- Авто-Фарм Монет
+-- ==========================================
+-- ИСПРАВЛЕННЫЙ АВТО-ФАРМ (РАБОТАЕТ МГНОВЕННО)
+-- ==========================================
 local function ToggleAutoFarm(state)
     State.AutoFarmEnabled = state
     if Connections.Farm then Connections.Farm:Disconnect() Connections.Farm = nil end
@@ -178,8 +181,9 @@ local function ToggleAutoFarm(state)
         local coin = ScanAllCoins()
         if coin and coin.Parent then
             hum.PlatformStand = true
-            local lerpFactor = math.clamp(State.AutoFarmSpeed / 100, 0.01, 0.25)
-            root.CFrame = root.CFrame:Lerp(coin.CFrame * CFrame.new(0, 0.2, 0), lerpFactor)
+            -- ИСПРАВЛЕНО: Теперь телепортирует мгновенно, а не дергается
+            root.CFrame = coin.CFrame * CFrame.new(0, 2, 0)
+            task.wait(0.05)
             pcall(function()
                 firetouchinterest(root, coin, 0) 
                 firetouchinterest(root, coin, 1)
@@ -190,7 +194,9 @@ local function ToggleAutoFarm(state)
     end)
 end
 
--- Мощный Auto Fling
+-- ==========================================
+-- АВТО-ФЛИНГ
+-- ==========================================
 local function ToggleFling(state)
     State.AutoFlingEnabled = state
     if Connections.Fling then Connections.Fling:Disconnect() Connections.Fling = nil end
@@ -239,7 +245,7 @@ local function ToggleFling(state)
 end
 
 -- ==========================================
--- СБОРКА ИНТЕРФЕЙСА (СТАРЫЙ GUI ДИЗАЙН)
+-- GUI ИНТЕРФЕЙС (БЕЗ ИЗМЕНЕНИЙ)
 -- ==========================================
 local ScreenGui = Instance.new("ScreenGui") 
 ScreenGui.Name = "HoshiMM2Gui" 
@@ -478,7 +484,7 @@ local function AddSlider(parent, text, min, max, default, callback)
     end)
 end
 
--- Создание структуры вкладок
+-- Создание страниц
 local MainP = CreatePage("Main") 
 local PlayerP = CreatePage("Player") 
 local VisualP = CreatePage("Visual") 
@@ -497,12 +503,12 @@ Tabs["Главная"].BackgroundColor3 = Color3.fromRGB(38, 42, 53)
 Tabs["Главная"]:FindFirstChildOfClass("UIStroke").Color = Color3.fromRGB(55, 60, 75)
 
 -- ==========================================
--- ЗАПОЛНЕНИЕ КНОПКАМИ И ФУНКЦИЯМИ
+-- ЗАПОЛНЕНИЕ МЕНЮ
 -- ==========================================
 
 -- Главная
 AddToggle(MainP, "Авто-Фарм Монет", function(state) ToggleAutoFarm(state) end)
-AddSlider(MainP, "Скорость Фарма (Макс 25)", 1, 25, 15, function(v) State.AutoFarmSpeed = v end)
+AddSlider(MainP, "Скорость Фарма", 1, 25, 15, function(v) State.AutoFarmSpeed = v end)
 
 -- Игрок
 AddToggle(PlayerP, "Bypass Fly (Полет)", function(state) State.Flying = state if state then StartFlying() else StopFlying() end end)
@@ -559,16 +565,23 @@ AddToggle(SheriffP, "Авто-Стрельба (Sheriff Aura)", function(state) 
 AddToggle(SheriffP, "Silent Aim в Убийцу", function(state) State.SilentAim = state end)
 
 -- ==========================================
--- АКТИВНЫЕ ФОНОВЫЕ ПОТОКИ И СЕРВИСЫ
+-- ИСПРАВЛЕННЫЙ ЛУП ДЛЯ WALKSPEED (СБРАСЫВАЕТ)
 -- ==========================================
-
--- WalkSpeed бег
 Connections.WalkSpeedLoop = RunService.Heartbeat:Connect(function()
     local hum = GetHum() 
-    if hum and State.WalkSpeedEnabled and not State.AutoFarmEnabled and not State.Flying then 
-        hum.WalkSpeed = State.CustomWalkSpeed 
+    if hum then
+        if State.WalkSpeedEnabled and not State.AutoFarmEnabled and not State.Flying then 
+            hum.WalkSpeed = State.CustomWalkSpeed 
+        else
+            -- Возвращаем стандартную скорость, чтобы не было багов
+            if hum.WalkSpeed ~= 16 then hum.WalkSpeed = 16 end
+        end
     end
 end)
+
+-- ==========================================
+-- АКТИВНЫЕ ПОТОКИ (БЕЗ ИЗМЕНЕНИЙ)
+-- ==========================================
 
 -- Цикл Атак Убийцы
 task.spawn(function()
@@ -639,7 +652,7 @@ task.spawn(function()
     end
 end)
 
--- Рендеринг ESP
+-- ESP
 task.spawn(function()
     while task.wait(0.5) do
         if State.ESPEnabled then
@@ -656,7 +669,7 @@ task.spawn(function()
     end
 end)
 
--- Драг (Перетаскивание) GUI мышкой/тачем
+-- Drag
 local dragging, dragInput, dragStart, startPos
 Header.InputBegan:Connect(function(input) 
     if input.UserInputType == Enum.UserInputType.MouseButton1 or input.UserInputType == Enum.UserInputType.Touch then 
@@ -676,7 +689,7 @@ UserInputService.InputEnded:Connect(function(input)
     if input.UserInputType == Enum.UserInputType.MouseButton1 or input.UserInputType == Enum.UserInputType.Touch then dragging = false end 
 end)
 
--- Сворачивание панели (-)
+-- Minimize
 MinimizeBtn.MouseButton1Click:Connect(function()
     State.MenuMinimized = not State.MenuMinimized
     if State.MenuMinimized then 
@@ -691,7 +704,7 @@ MinimizeBtn.MouseButton1Click:Connect(function()
     end
 end)
 
--- Закрытие (X)
+-- Close
 CloseBtn.MouseButton1Click:Connect(function()
     State.Flying, State.AutoFarmEnabled, State.WalkSpeedEnabled, State.ESPEnabled, State.MurderAura, State.SilentKill, State.SheriffAura, State.AutoPickGun, State.AutoFlingEnabled, State.InfJump, State.SilentAim = false, false, false, false, false, false, false, false, false, false, false
     StopFlying() 
