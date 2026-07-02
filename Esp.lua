@@ -40,7 +40,6 @@ local State = {
 }
 
 local Connections = {}
-local CachedCoin = nil
 local BVelocity, BGyro = nil, nil
 
 -- ==========================================
@@ -152,31 +151,37 @@ UserInputService.JumpRequest:Connect(function()
 end)
 
 -- ==========================================
--- НАДЕЖНЫЙ ПОИСК МОНЕТ
+-- УМНЫЙ ПОИСК БЛИЖАЙШЕЙ МОНЕТЫ
 -- ==========================================
 local function ScanAllCoins()
-    if CachedCoin and CachedCoin.Parent and CachedCoin:IsA("BasePart") and CachedCoin.Transparency < 1 then
-        return CachedCoin
-    end
-    
-    -- Сканируем контейнеры, где MM2 чаще всего хранит монеты
+    local root = GetRoot()
+    if not root then return nil end
+
+    local closestCoin = nil
+    local shortestDistance = math.huge
+
     for _, obj in pairs(workspace:GetDescendants()) do
         if obj:IsA("BasePart") and (obj.Name == "Coin_Server" or obj.Name == "GoldCoin" or obj.Name == "Coin" or obj.Name:lower():find("coin")) then
-            if obj.Transparency < 1 then
-                CachedCoin = obj
-                return obj
+            if obj.Transparency < 1 and obj.Parent then
+                local distance = (root.Position - obj.Position).Magnitude
+                if distance < shortestDistance then
+                    shortestDistance = distance
+                    closestCoin = obj
+                end
             end
         end
     end
-    return nil
+    return closestCoin
 end
 
 -- ==========================================
--- НАДЕЖНЫЙ АВТО-ФАРМ НА TWEEN (ПЛАВНЫЙ НАБОР)
+-- ДОРАБОТАННЫЙ АВТО-ФАРМ (БЛИЖНИЕ МОНЕТЫ + АВТО-NOCLIP)
 -- ==========================================
 local function ToggleAutoFarm(state)
     State.AutoFarmEnabled = state
+    
     if Connections.Farm then Connections.Farm:Disconnect() Connections.Farm = nil end
+    if Connections.FarmNoclip then Connections.FarmNoclip:Disconnect() Connections.FarmNoclip = nil end
     
     local hum = GetHum()
     if not state then
@@ -184,9 +189,21 @@ local function ToggleAutoFarm(state)
         return
     end
 
+    -- ЖЕСТКИЙ АВТО-NOCLIP: Работает без перерыва, пока включен авто-фарм
+    Connections.FarmNoclip = RunService.Stepped:Connect(function()
+        if State.AutoFarmEnabled and LocalPlayer.Character then
+            for _, part in pairs(LocalPlayer.Character:GetDescendants()) do
+                if part:IsA("BasePart") then 
+                    part.CanCollide = false 
+                end
+            end
+        end
+    end)
+
+    -- ПОТОК ПОЛЕТА К БЛИЖАЙШИМ МОНЕТАМ
     task.spawn(function()
         while State.AutoFarmEnabled do
-            task.wait(0.1)
+            task.wait(0.05)
             
             local root = GetRoot()
             local humanoid = GetHum()
@@ -194,36 +211,38 @@ local function ToggleAutoFarm(state)
 
             local coin = ScanAllCoins()
             if coin and coin.Parent then
-                -- Включаем noclip для персонажа, чтобы не застревал в стенах по пути к монете
-                pcall(function()
-                    for _, part in pairs(LocalPlayer.Character:GetDescendants()) do
-                        if part:IsA("BasePart") then part.CanCollide = false end
-                    end
-                end)
-
-                -- Вычисляем дистанцию и время полета на основе слайдера скорости
                 local distance = (root.Position - coin.Position).Magnitude
-                local speed = State.AutoFarmSpeed * 2 -- Коэффициент скорости
+                local speed = State.AutoFarmSpeed * 2
                 local duration = distance / math.max(speed, 10)
 
-                -- Плавное перемещение к монете с помощью TweenService
                 local tweenInfo = TweenInfo.new(duration, Enum.EasingStyle.Linear)
                 local tween = TweenService:Create(root, tweenInfo, {CFrame = coin.CFrame})
                 tween:Play()
-                tween.Completed:Wait() -- Ждем окончания движения к монете
+                
+                local tweenActive = true
+                local completedConn
+                completedConn = tween.Completed:Connect(function()
+                    tweenActive = false
+                    completedConn:Disconnect()
+                end)
+                
+                while tweenActive and State.AutoFarmEnabled do
+                    task.wait()
+                end
+                
+                if not State.AutoFarmEnabled then 
+                    tween:Cancel() 
+                    break 
+                end
 
-                -- Симулируем подбор монеты
                 if firetouchinterest then
                     firetouchinterest(root, coin, 0)
                     task.wait(0.02)
                     firetouchinterest(root, coin, 1)
                 else
-                    -- Альтернативный сбор на случай, если firetouchinterest не поддерживается экзекутором
                     root.CFrame = coin.CFrame
                     task.wait(0.05)
                 end
-                
-                CachedCoin = nil
             end
         end
         
@@ -772,6 +791,7 @@ CloseBtn.MouseButton1Click:Connect(function()
     State.Flying, State.AutoFarmEnabled, State.WalkSpeedEnabled, State.ESPEnabled, State.MurderAura, State.SilentKill, State.SheriffAura, State.AutoPickGun, State.AutoFlingEnabled, State.InfJump, State.SilentAim = false, false, false, false, false, false, false, false, false, false, false
     StopFlying()
     if Connections.Farm then Connections.Farm:Disconnect() end
+    if Connections.FarmNoclip then Connections.FarmNoclip:Disconnect() end
     if Connections.Noclip then Connections.Noclip:Disconnect() end
     if Connections.Fling then Connections.Fling:Disconnect() end
     if Connections.WalkSpeedLoop then Connections.WalkSpeedLoop:Disconnect() end
