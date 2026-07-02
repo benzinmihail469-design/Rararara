@@ -33,7 +33,7 @@ if CharacterScripts then
     end
 end
 
-local Flying, FlySpeed, NormalWalkSpeed, WalkSpeedEnabled, AutoFarmEnabled, AutoFarmSpeed, ESPEnabled, AutoKillEnabled, AutoGetGunEnabled = false, 35, 16, false, false, 16, false, false, false
+local Flying, FlySpeed, NormalWalkSpeed, WalkSpeedEnabled, AutoFarmEnabled, AutoFarmSpeed, ESPEnabled, AutoCombatEnabled, AutoGetGunEnabled = false, 35, 16, false, false, 16, false, false, false
 local FlyConnection, NoclipConnection, WalkSpeedConnection, AutoFarmConnection, ESPConnection = nil, nil, nil, nil, nil
 local GodModeConnection, CloneChar, RealCharObj = nil, nil, nil
 local NextScanTime, CachedCoin, BVelocity, BGyro = 0, nil, nil, nil
@@ -105,14 +105,17 @@ local function GetTargetCoinGlobal()
     end
     
     if tick() < NextScanTime then return nil end
-    NextScanTime = tick() + 0.3
+    NextScanTime = tick() + 0.2
 
     local coinContainer = workspace:FindFirstChild("Normal") or workspace:FindFirstChild("Map") or workspace:FindFirstChild("CoinContainer")
     if coinContainer then
         for _, child in pairs(coinContainer:GetDescendants()) do
             if typeof(child) == "Instance" and child:IsA("BasePart") and (string.find(child.Name:lower(), "coin") or child.Name == "Coin_Server") and child.Transparency < 1 then
-                CachedCoin = child 
-                return child
+                -- Проверка наличия TouchInterest для сбора
+                if child:FindFirstChildOfClass("TouchTransmitter") then
+                    CachedCoin = child 
+                    return child
+                end
             end
         end
     end
@@ -126,6 +129,7 @@ end
 
 local function StartAutoFarm()
     StopAutoFarm()
+    local lastCoinCFrame = nil
     AutoFarmConnection = RunService.Heartbeat:Connect(function()
         if not AutoFarmEnabled then StopAutoFarm() return end
         
@@ -135,34 +139,46 @@ local function StartAutoFarm()
         local root = activeChar:FindFirstChild("HumanoidRootPart")
         if not root then return end
         
-        for _, part in pairs(activeChar:GetDescendants()) do
-            if part:IsA("BasePart") then part.CanCollide = false end
-        end
-        
         local coin = GetTargetCoinGlobal()
         if typeof(coin) == "Instance" and coin.Parent then
-            root.CFrame = coin.CFrame
+            -- Фикс подбора: легкое смещение и покачивание персонажа вокруг монеты, чтобы триггерить TouchInterest
+            local swing = Vector3.new(math.sin(tick() * 10) * 0.2, 0.5, math.cos(tick() * 10) * 0.2)
+            root.CFrame = coin.CFrame * CFrame.new(swing)
+            
+            -- Обеспечиваем касание нижней частью RootPart / Ног
             local hum = activeChar:FindFirstChildOfClass("Humanoid")
             if hum then hum.PlatformStand = true end
+            
+            -- Имитируем падение/касание
+            pcall(function()
+                firetouchinterest(root, coin, 0)
+                firetouchinterest(root, coin, 1)
+            end)
         end
     end)
 end
 
 local function GetPlayerRoleAndTool(player)
     local isMurderer, isSheriff, specialTool = false, false, nil
+    if not player or typeof(player) ~= "Instance" then return isMurderer, isSheriff, specialTool end
+    
     local function check(container)
         if typeof(container) ~= "Instance" then return end
         for _, item in pairs(container:GetChildren()) do
             if item:IsA("Tool") then
-                if item:FindFirstChild("KnifeServer") or item:FindFirstChild("KnifeClient") then isMurderer = true specialTool = item
-                elseif item:FindFirstChild("GunScript") or item:FindFirstChild("GunClient") then isSheriff = true specialTool = item end
+                if item:FindFirstChild("KnifeServer") or item:FindFirstChild("KnifeClient") then 
+                    isMurderer = true 
+                    specialTool = item
+                elseif item:FindFirstChild("GunScript") or item:FindFirstChild("GunClient") then 
+                    isSheriff = true 
+                    specialTool = item 
+                end
             end
         end
     end
-    if player then
-        check(player:FindFirstChild("Backpack"))
-        if player.Character then check(player.Character) end
-    end
+    
+    check(player:FindFirstChild("Backpack"))
+    if player.Character then check(player.Character) end
     return isMurderer, isSheriff, specialTool
 end
 
@@ -297,8 +313,7 @@ end
 local MainPage = CreatePageFrame("Main")
 local PlayerPage = CreatePageFrame("Player")
 local VisualPage = CreatePageFrame("Visual")
-local KillerPage = CreatePageFrame("Killer")
-local SheriffPage = CreatePageFrame("Sheriff")
+local CombatPage = CreatePageFrame("Combat")
 
 local function CreateTabButton(text, order)
     local b = Instance.new("TextButton", Sidebar)
@@ -317,21 +332,18 @@ end
 local MainBtn = CreateTabButton("Главная", 1)
 local PlayerBtn = CreateTabButton("Игрок", 2)
 local VisualBtn = CreateTabButton("Визуал", 3)
-local KillerBtn = CreateTabButton("Киллер", 4)
-local SheriffBtn = CreateTabButton("Шериф", 5)
+local CombatBtn = CreateTabButton("Бой", 4)
 
 local function SwitchToPage(targetPage, targetBtn)
     MainPage.Visible = (MainPage == targetPage)
     PlayerPage.Visible = (PlayerPage == targetPage)
     VisualPage.Visible = (VisualPage == targetPage)
-    KillerPage.Visible = (KillerPage == targetPage)
-    SheriffPage.Visible = (SheriffPage == targetPage)
+    CombatPage.Visible = (CombatPage == targetPage)
 
     MainBtn.TextColor3 = Color3.fromRGB(140, 145, 160) MainBtn.BackgroundTransparency = 1
     PlayerBtn.TextColor3 = Color3.fromRGB(140, 145, 160) PlayerBtn.BackgroundTransparency = 1
     VisualBtn.TextColor3 = Color3.fromRGB(140, 145, 160) VisualBtn.BackgroundTransparency = 1
-    KillerBtn.TextColor3 = Color3.fromRGB(140, 145, 160) KillerBtn.BackgroundTransparency = 1
-    SheriffBtn.TextColor3 = Color3.fromRGB(140, 145, 160) SheriffBtn.BackgroundTransparency = 1
+    CombatBtn.TextColor3 = Color3.fromRGB(140, 145, 160) CombatBtn.BackgroundTransparency = 1
 
     targetBtn.TextColor3 = Color3.fromRGB(255, 255, 255)
     targetBtn.BackgroundColor3 = Color3.fromRGB(24, 26, 34)
@@ -341,8 +353,7 @@ end
 MainBtn.MouseButton1Click:Connect(function() SwitchToPage(MainPage, MainBtn) end)
 PlayerBtn.MouseButton1Click:Connect(function() SwitchToPage(PlayerPage, PlayerBtn) end)
 VisualBtn.MouseButton1Click:Connect(function() SwitchToPage(VisualPage, VisualBtn) end)
-KillerBtn.MouseButton1Click:Connect(function() SwitchToPage(KillerPage, KillerBtn) end)
-SheriffBtn.MouseButton1Click:Connect(function() SwitchToPage(SheriffPage, SheriffBtn) end)
+CombatBtn.MouseButton1Click:Connect(function() SwitchToPage(CombatPage, CombatBtn) end)
 SwitchToPage(MainPage, MainBtn)
 
 local function AddToggle(parent, text, callback)
@@ -446,14 +457,13 @@ local function AddSlider(parent, text, min, max, default, callback)
 end
 
 -- ==========================================
--- КНОПКИ В ИНТЕРФЕЙСЕ И ФУНКЦИОНАЛ
+-- НАСТРОЙКА КНОПОК
 -- ==========================================
 
-AddToggle(MainPage, "Авто-Фарм Монет", function(state)
+AddToggle(MainPage, "Авто-Фарм Монет (Умный)", function(state)
     AutoFarmEnabled = state
     if state then StartAutoFarm() else StopAutoFarm() end
 end)
-AddSlider(MainPage, "Скорость авто-фарма", 10, 25, 16, function(value) AutoFarmSpeed = value end)
 
 AddToggle(PlayerPage, "God Mode", function(state)
     local char = LocalPlayer.Character
@@ -475,9 +485,7 @@ AddToggle(PlayerPage, "God Mode", function(state)
         
         local animate = CloneChar:FindFirstChild("Animate")
         if animate then
-            animate.Disabled = true
-            task.wait()
-            animate.Disabled = false
+            animate.Disabled = true task.wait() animate.Disabled = false
         end
         
         for _, v in pairs(RealCharObj:GetDescendants()) do
@@ -530,17 +538,6 @@ AddToggle(PlayerPage, "Noclip (Сквозь Стены)", function(state)
     end
 end)
 
-AddToggle(PlayerPage, "Inf Jump (Бесконечные прыжки)", function(state)
-    _G.InfJump = state
-    if state then
-        UserInputService.JumpRequest:Connect(function()
-            if _G.InfJump and LocalPlayer.Character and LocalPlayer.Character:FindFirstChildOfClass("Humanoid") then
-                LocalPlayer.Character:FindFirstChildOfClass("Humanoid"):ChangeState("Jumping")
-            end
-        end)
-    end
-end)
-
 AddToggle(VisualPage, "ESP (Игроки)", function(state) 
     ESPEnabled = state 
     if state then
@@ -573,28 +570,51 @@ AddToggle(VisualPage, "ESP (Игроки)", function(state)
     end
 end)
 
-AddToggle(KillerPage, "Auto Kill (Убивать сервер)", function(state) AutoKillEnabled = state end)
-AddToggle(SheriffPage, "Авто-подбор пистолета", function(state) AutoGetGunEnabled = state end)
+-- УМНЫЙ КОМБАТ ПОД РОЛИ
+AddToggle(CombatPage, "Авто-Режим (Убийца/Шериф)", function(state) AutoCombatEnabled = state end)
+AddToggle(CombatPage, "Авто-подбор пистолета", function(state) AutoGetGunEnabled = state end)
 
+-- ЦИКЛ АВТО-БОЯ (Умная проверка роли)
 task.spawn(function()
-    while task.wait(0.25) do
-        if AutoKillEnabled then
-            local isMurderer, _, knife = GetPlayerRoleAndTool(LocalPlayer)
-            if isMurderer and knife and LocalPlayer.Character and LocalPlayer.Character:FindFirstChild("HumanoidRootPart") then
-                local myHum = LocalPlayer.Character:FindFirstChild("Humanoid")
-                local myRoot = LocalPlayer.Character:FindFirstChild("HumanoidRootPart")
-                if myHum and knife.Parent ~= LocalPlayer.Character then myHum:EquipTool(knife) task.wait(0.1) end
+    while task.wait(0.1) do
+        if AutoCombatEnabled and LocalPlayer.Character and LocalPlayer.Character:FindFirstChild("HumanoidRootPart") then
+            local myRoot = LocalPlayer.Character:FindFirstChild("HumanoidRootPart")
+            local myHum = LocalPlayer.Character:FindFirstChild("Humanoid")
+            local isMurderer, isSheriff, myTool = GetPlayerRoleAndTool(LocalPlayer)
+            
+            if isMurderer and myTool then
+                -- Ели мы МАРДЕР -> Убиваем мирных и шерифа
+                if myTool.Parent ~= LocalPlayer.Character and myHum then myHum:EquipTool(myTool) end
+                
                 for _, target in pairs(Players:GetPlayers()) do
                     if target ~= LocalPlayer and IsPlayerInGame(target) then
-                        local targetIsMurderer = GetPlayerRoleAndTool(target)
-                        local targetHum = target.Character:FindFirstChild("Humanoid")
-                        local targetRoot = target.Character:FindFirstChild("HumanoidRootPart")
-                        if not targetIsMurderer and targetHum and targetHum.Health > 0 and not targetHum.PlatformStand then
-                            myRoot.CFrame = targetRoot.CFrame * CFrame.new(0, 0, 1.2)
-                            task.wait(0.05)
-                            knife:Activate()
-                            task.wait(0.2)
-                            break
+                        local tMurd, tSher = GetPlayerRoleAndTool(target)
+                        if not tMurd then -- Не трогаем других убийц, если они есть
+                            local targetRoot = target.Character:FindFirstChild("HumanoidRootPart")
+                            if targetRoot then
+                                myRoot.CFrame = targetRoot.CFrame * CFrame.new(0, 0, 1)
+                                myTool:Activate()
+                                task.wait(0.15)
+                            end
+                        end
+                    end
+                end
+                
+            elseif isSheriff and myTool then
+                -- Если мы ШЕРИФ (или взяли пест) -> Ищем и ликвидируем только МАРДЕРА
+                if myTool.Parent ~= LocalPlayer.Character and myHum then myHum:EquipTool(myTool) end
+                
+                for _, target in pairs(Players:GetPlayers()) do
+                    if target ~= LocalPlayer and IsPlayerInGame(target) then
+                        local tMurd = GetPlayerRoleAndTool(target)
+                        if tMurd then -- Цель только Мардер
+                            local targetRoot = target.Character:FindFirstChild("HumanoidRootPart")
+                            if targetRoot then
+                                -- Встаем на безопасную дистанцию над ним и стреляем
+                                myRoot.CFrame = CFrame.new(targetRoot.Position + Vector3.new(0, 8, 0), targetRoot.Position)
+                                myTool:Activate()
+                                task.wait(0.2)
+                            end
                         end
                     end
                 end
@@ -603,6 +623,7 @@ task.spawn(function()
     end
 end)
 
+-- АВТОПОДБОР ПИСТОЛЕТА
 task.spawn(function()
     while task.wait(0.3) do
         if AutoGetGunEnabled then
@@ -624,7 +645,14 @@ task.spawn(function()
                     end
                     if gunDrop and gunDrop:IsA("BasePart") and gunDrop.Parent then
                         local myRoot = LocalPlayer.Character:FindFirstChild("HumanoidRootPart")
-                        if myRoot then myRoot.CFrame = gunDrop.CFrame task.wait(0.2) end
+                        if myRoot then 
+                            myRoot.CFrame = gunDrop.CFrame 
+                            pcall(function()
+                                firetouchinterest(myRoot, gunDrop, 0)
+                                firetouchinterest(myRoot, gunDrop, 1)
+                            end)
+                            task.wait(0.2) 
+                        end
                     end
                 end
             end
@@ -671,7 +699,7 @@ end)
 -- КНОПКА ЗАКРЫТИЯ С ПОЛНОЙ ОЧИСТКОЙ
 -- ==========================================
 CloseBtn.MouseButton1Click:Connect(function()
-    Flying, AutoFarmEnabled, WalkSpeedEnabled, ESPEnabled, AutoKillEnabled, AutoGetGunEnabled = false, false, false, false, false, false
+    Flying, AutoFarmEnabled, WalkSpeedEnabled, ESPEnabled, AutoCombatEnabled, AutoGetGunEnabled = false, false, false, false, false, false
     StopFlying() StopAutoFarm()
     if NoclipConnection then NoclipConnection:Disconnect() end
     if WalkSpeedConnection then WalkSpeedConnection:Disconnect() end
