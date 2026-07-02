@@ -41,7 +41,6 @@ local State = {
 
 local Connections = {}
 local CachedCoin = nil
-local NextCoinScan = 0
 local BVelocity, BGyro = nil, nil
 
 -- ==========================================
@@ -102,7 +101,6 @@ local function StartFlying()
 
     hum.PlatformStand = true
     
-    -- Основной движок полета
     BVelocity = Instance.new("BodyVelocity")
     BVelocity.MaxForce = Vector3.new(1e6, 1e6, 1e6)
     BVelocity.Velocity = Vector3.new(0, 0, 0)
@@ -154,18 +152,16 @@ UserInputService.JumpRequest:Connect(function()
 end)
 
 -- ==========================================
--- РАБОЧИЙ ПОИСК МОНЕТ
+-- ИСПРАВЛЕННЫЙ ПОИСК МОНЕТ
 -- ==========================================
 local function ScanAllCoins()
     if CachedCoin and CachedCoin.Parent and CachedCoin:IsA("BasePart") and CachedCoin.Transparency < 1 then
         return CachedCoin
     end
-    if tick() < NextCoinScan then return nil end
-    NextCoinScan = tick() + 0.05
     
     for _, obj in pairs(workspace:GetDescendants()) do
-        if obj:IsA("BasePart") and (obj.Name == "Coin_Server" or obj.Name == "GoldCoin" or obj.Name:lower():find("coin")) then
-            if obj.Transparency < 1 and obj:FindFirstChildOfClass("TouchTransmitter") then
+        if obj:IsA("BasePart") and (obj.Name == "Coin_Server" or obj.Name == "GoldCoin" or obj.Name == "Coin") then
+            if obj.Transparency < 1 and (obj:FindFirstChildOfClass("TouchTransmitter") or obj.Parent:FindFirstChildOfClass("TouchTransmitter")) then
                 CachedCoin = obj
                 return obj
             end
@@ -175,36 +171,48 @@ local function ScanAllCoins()
 end
 
 -- ==========================================
--- РАБОЧИЙ АВТО-ФАРМ
+-- ИСПРАВЛЕННЫЙ АВТО-ФАРМ
 -- ==========================================
 local function ToggleAutoFarm(state)
     State.AutoFarmEnabled = state
     if Connections.Farm then Connections.Farm:Disconnect() Connections.Farm = nil end
+    
+    local hum = GetHum()
     if not state then
-        local hum = GetHum()
         if hum then hum.PlatformStand = false end
         return
     end
 
-    Connections.Farm = RunService.Heartbeat:Connect(function()
-        local root = GetRoot()
-        local hum = GetHum()
-        if not State.AutoFarmEnabled or not root or not hum then return end
-
-        local coin = ScanAllCoins()
-        if coin and coin.Parent then
-            hum.PlatformStand = true
-            -- Мгновенная телепортация к монете
-            root.CFrame = coin.CFrame * CFrame.new(0, 2, 0)
+    task.spawn(function()
+        while State.AutoFarmEnabled do
             task.wait(0.05)
-            -- Принудительный сбор
-            pcall(function()
-                firetouchinterest(root, coin, 0)
-                firetouchinterest(root, coin, 1)
-            end)
-        else
-            hum.PlatformStand = false
+            
+            local root = GetRoot()
+            local humanoid = GetHum()
+            if not root or not humanoid or humanoid.Health <= 0 then continue end
+
+            local coin = ScanAllCoins()
+            if coin and coin.Parent then
+                humanoid.PlatformStand = true
+                root.CFrame = coin.CFrame
+                
+                local transmitter = coin:FindFirstChildOfClass("TouchTransmitter") or coin.Parent:FindFirstChildOfClass("TouchTransmitter")
+                if transmitter then
+                    firetouchinterest(root, coin, 0)
+                    task.wait()
+                    firetouchinterest(root, coin, 1)
+                end
+                
+                local farmDelay = math.clamp(1 / (State.AutoFarmSpeed or 15), 0.05, 1)
+                task.wait(farmDelay)
+                CachedCoin = nil
+            else
+                humanoid.PlatformStand = false
+            end
         end
+        
+        local humAfter = GetHum()
+        if humAfter then humAfter.PlatformStand = false end
     end)
 end
 
@@ -458,7 +466,7 @@ local function AddSlider(parent, text, min, max, default, callback)
 
     local valLabel = Instance.new("TextLabel", frame)
     valLabel.Size = UDim2.new(0.3, 0, 0, 24)
-    valLabel.Position = UDim2.new(0.65, 0, 0, 4) -- Фикс позиции
+    valLabel.Position = UDim2.new(0.65, 0, 0, 4)
     valLabel.BackgroundTransparency = 1
     valLabel.Text = tostring(default)
     valLabel.TextColor3 = Color3.fromRGB(255, 255, 255)
@@ -605,7 +613,6 @@ Connections.WalkSpeedLoop = RunService.Heartbeat:Connect(function()
         if State.WalkSpeedEnabled and not State.AutoFarmEnabled and not State.Flying then
             hum.WalkSpeed = State.CustomWalkSpeed
         else
-            -- Возвращаем стандартную скорость, если не активен
             if hum.WalkSpeed ~= 16 then
                 hum.WalkSpeed = 16
             end
