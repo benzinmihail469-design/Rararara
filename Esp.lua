@@ -33,12 +33,12 @@ if CharacterScripts then
     end
 end
 
-local Flying, FlySpeed, NormalWalkSpeed, WalkSpeedEnabled, AutoFarmEnabled, AutoFarmSpeed, ESPEnabled, AutoCombatEnabled, AutoGetGunEnabled = false, 35, 16, false, false, 16, false, false, false
+local Flying, FlySpeed, NormalWalkSpeed, WalkSpeedEnabled, AutoFarmEnabled, ESPEnabled, AutoCombatEnabled, AutoGetGunEnabled = false, 35, 16, false, false, false, false, false
 local FlyConnection, NoclipConnection, WalkSpeedConnection, AutoFarmConnection, ESPConnection = nil, nil, nil, nil, nil
 local GodModeConnection, CloneChar, RealCharObj = nil, nil, nil
 local NextScanTime, CachedCoin, BVelocity, BGyro = 0, nil, nil, nil
 
--- Утилиты позиционирования
+-- Получение правильного RootPart
 local function GetCurrentRoot()
     local char = RealCharObj or LocalPlayer.Character
     if char and char:FindFirstChild("HumanoidRootPart") then
@@ -47,6 +47,7 @@ local function GetCurrentRoot()
     return nil
 end
 
+-- Получение правильного Humanoid
 local function GetCurrentHumanoid()
     local char = RealCharObj or LocalPlayer.Character
     if char and char:FindFirstChildOfClass("Humanoid") then
@@ -56,7 +57,7 @@ local function GetCurrentHumanoid()
 end
 
 -- ==========================================
--- ОСНОВНЫЕ ФУНКЦИИ
+-- ОСНОВНЫЕ ФУНКЦИИ (ПОЛЕТ И АВТОФАРМ)
 -- ==========================================
 local function StopFlying()
     if FlyConnection then FlyConnection:Disconnect() FlyConnection = nil end
@@ -156,7 +157,6 @@ local function StartAutoFarm()
         if typeof(coin) == "Instance" and coin.Parent then
             local swing = Vector3.new(math.sin(tick() * 14) * 0.2, 0.4, math.cos(tick() * 14) * 0.2)
             root.CFrame = coin.CFrame * CFrame.new(swing)
-            
             hum.PlatformStand = true
             
             pcall(function()
@@ -467,7 +467,7 @@ local function AddSlider(parent, text, min, max, default, callback)
 end
 
 -- ==========================================
--- НАСТРОЙКА КНОПОК
+-- НАСТРОЙКА КНОПОК И ЛОГИКИ
 -- ==========================================
 
 AddToggle(MainPage, "Авто-Фарм Монет (Умный)", function(state)
@@ -475,7 +475,7 @@ AddToggle(MainPage, "Авто-Фарм Монет (Умный)", function(state)
     if state then StartAutoFarm() else StopAutoFarm() end
 end)
 
-AddToggle(PlayerPage, "God Mode (Полное десинк-бессмертие)", function(state)
+AddToggle(PlayerPage, "God Mode (Стабильный Десинк)", function(state)
     local char = LocalPlayer.Character
     if not char then return end
 
@@ -493,28 +493,27 @@ AddToggle(PlayerPage, "God Mode (Полное десинк-бессмертие)
         LocalPlayer.Character = CloneChar
         workspace.CurrentCamera.CameraSubject = FakeHum
         
-        local animate = CloneChar:FindFirstChild("Animate")
-        if animate then
-            animate.Disabled = true task.wait() animate.Disabled = false
-        end
-        
-        -- Фикс хитбокса: смещаем Motor6D суставов реального тела под карту, 
-        -- чтобы сервер думал, что хитбокс там, а RootPart свободно летает
+        -- Скрываем визуал реального тела БЕЗ изменения C0/суставов, чтобы не триггерить лобби-античит
         for _, v in pairs(RealCharObj:GetDescendants()) do
-            if v:IsA("Motor6D") and v.Name ~= "RootJoint" then
-                v.C0 = CFrame.new(0, -500, 0)
-            elseif v:IsA("BasePart") then
+            if v:IsA("BasePart") and v.Name ~= "HumanoidRootPart" then
                 v.Transparency = 1
                 v.CanCollide = false
             end
         end
         
+        -- Синхронизация фейкового аватара с реальным физическим RootPart
         GodModeConnection = RunService.Heartbeat:Connect(function()
             if typeof(RealRoot) == "Instance" and RealRoot.Parent and typeof(FakeRoot) == "Instance" and FakeRoot.Parent then
+                -- Безопасная синхронизация: если автоматические функции выключены, реальный хитбокс стоит под фейком
                 if not AutoFarmEnabled and not AutoCombatEnabled and not AutoGetGunEnabled then
-                    RealRoot.CFrame = FakeRoot.CFrame * CFrame.new(0, 500, 0)
+                    RealRoot.CFrame = FakeRoot.CFrame * CFrame.new(0, -0.1, 0)
                     RealRoot.Velocity = Vector3.new(0,0,0)
                 end
+                
+                -- Перенаправляем сетевой овнершип (Network Ownership Fix)
+                pcall(function()
+                    RealRoot.AssemblyLinearVelocity = Vector3.new(0, 0, 0)
+                end)
             else
                 if GodModeConnection then GodModeConnection:Disconnect() GodModeConnection = nil end
             end
@@ -524,18 +523,10 @@ AddToggle(PlayerPage, "God Mode (Полное десинк-бессмертие)
         
         if typeof(RealCharObj) == "Instance" and RealCharObj.Parent then
             LocalPlayer.Character = RealCharObj
-            
-            -- Возвращаем суставы на место
-            for _, v in pairs(RealCharObj:GetDescendants()) do
-                if v:IsA("Motor6D") then
-                    v.C0 = CFrame.new(0, 0, 0)
-                end
-            end
-            
             local RealHum = RealCharObj:FindFirstChildOfClass("Humanoid")
             if RealHum then
                 workspace.CurrentCamera.CameraSubject = RealHum
-                RealHum.Health = 0
+                RealHum.Health = 0 -- Убиваем для чистого респавна без багов физики
             end
         end
         if CloneChar then CloneChar:Destroy() CloneChar = nil end
@@ -723,9 +714,6 @@ CloseBtn.MouseButton1Click:Connect(function()
     
     if CloneChar then CloneChar:Destroy() end
     if typeof(RealCharObj) == "Instance" and RealCharObj.Parent then 
-        for _, v in pairs(RealCharObj:GetDescendants()) do
-            if v:IsA("Motor6D") then v.C0 = CFrame.new(0, 0, 0) end
-        end
         local hum = RealCharObj:FindFirstChildOfClass("Humanoid")
         if hum then hum.Health = 0 end 
     end
