@@ -26,12 +26,8 @@ end
 
 local Flying, FlySpeed, NormalWalkSpeed, WalkSpeedEnabled, AutoFarmEnabled, AutoFarmSpeed, ESPEnabled, AutoKillEnabled, AutoGetGunEnabled, GodModeEnabled = false, 35, 16, false, false, 16, false, false, false, false
 local FlyConnection, NoclipConnection, WalkSpeedConnection, AutoFarmConnection, ESPConnection = nil, nil, nil, nil, nil
+local GodModeConnection = nil
 local NextScanTime, CachedCoin, BVelocity, BGyro = 0, nil, nil, nil
-
--- Переменные для God Mode
-local GodModePlatform = nil
-local CloneChar = nil
-local RealCharCFrame = nil
 
 -- Вспомогательные функции
 local function StopFlying()
@@ -448,51 +444,37 @@ AddToggle(MainPage, "Авто-Фарм Монет", function(state)
 end)
 AddSlider(MainPage, "Скорость авто-фарма", 10, 25, 16, function(value) AutoFarmSpeed = value end)
 
--- God Mode (Улучшенный вариант)
-AddToggle(PlayerPage, "God Mode (Платформа)", function(state)
+-- РАБОЧИЙ GOD MODE ДЛЯ MM2
+AddToggle(PlayerPage, "God Mode (Бессмертие)", function(state)
     GodModeEnabled = state
-    local char = LocalPlayer.Character
-    local root = char and char:FindFirstChild("HumanoidRootPart")
-    local hum = char and char:FindFirstChildOfClass("Humanoid")
-
+    
     if state then
-        if not char or not root or not hum then return end
-        RealCharCFrame = root.CFrame
-        
-        if not GodModePlatform then
-            GodModePlatform = Instance.new("Part")
-            GodModePlatform.Name = "Hoshi_SafePlatform"
-            GodModePlatform.Size = Vector3.new(50, 5, 50)
-            GodModePlatform.Position = Vector3.new(0, 50000, 0)
-            GodModePlatform.Anchored = true
-            GodModePlatform.Transparency = 1
-            GodModePlatform.Parent = workspace
-        end
-
-        char.Archivable = true
-        CloneChar = char:Clone()
-        CloneChar.Name = LocalPlayer.Name .. "_Fake"
-        CloneChar.Parent = workspace
-        if CloneChar:FindFirstChild("HumanoidRootPart") then
-            CloneChar:SetPrimaryPartCFrame(RealCharCFrame)
-        end
-        for _, part in pairs(CloneChar:GetDescendants()) do
-            if part:IsA("BasePart") then part.Anchored = true part.CanCollide = false end
-        end
-
-        root.CFrame = GodModePlatform.CFrame * CFrame.new(0, 5, 0)
-        for _, part in pairs(char:GetDescendants()) do
-            if part:IsA("BasePart") then part.Anchored = true end
-        end
-        workspace.CurrentCamera.CameraSubject = CloneChar:FindFirstChildOfClass("Humanoid")
+        if GodModeConnection then GodModeConnection:Disconnect() end
+        -- Постоянно отключаем регистрацию касаний
+        GodModeConnection = RunService.Stepped:Connect(function()
+            if not GodModeEnabled then return end
+            local char = LocalPlayer.Character
+            if char then
+                for _, part in pairs(char:GetDescendants()) do
+                    if part:IsA("BasePart") then
+                        -- Выключаем CanTouch. Нож маньяка работает именно через касание (Touched).
+                        -- Пока это выключено, нож просто проходит сквозь тебя без урона.
+                        part.CanTouch = false
+                    end
+                end
+            end
+        end)
     else
+        if GodModeConnection then GodModeConnection:Disconnect() GodModeConnection = nil end
+        -- Возвращаем всё как было
+        local char = LocalPlayer.Character
         if char then
-            for _, part in pairs(char:GetDescendants()) do if part:IsA("BasePart") then part.Anchored = false end end
+            for _, part in pairs(char:GetDescendants()) do
+                if part:IsA("BasePart") then
+                    part.CanTouch = true
+                end
+            end
         end
-        if root and RealCharCFrame then root.CFrame = RealCharCFrame end
-        if GodModePlatform then GodModePlatform:Destroy() GodModePlatform = nil end
-        if CloneChar then CloneChar:Destroy() CloneChar = nil end
-        if hum then workspace.CurrentCamera.CameraSubject = hum end
     end
 end)
 
@@ -651,7 +633,15 @@ CloseBtn.MouseButton1Click:Connect(function()
     if NoclipConnection then NoclipConnection:Disconnect() end
     if WalkSpeedConnection then WalkSpeedConnection:Disconnect() end
     if ESPConnection then ESPConnection:Disconnect() end
-    if GodModePlatform then GodModePlatform:Destroy() end
-    if CloneChar then CloneChar:Destroy() end
+    if GodModeConnection then GodModeConnection:Disconnect() end
+    
+    local char = LocalPlayer.Character
+    local hum = char and char:FindFirstChildOfClass("Humanoid")
+    if hum then hum.WalkSpeed = 16 end
+    if char then 
+        for _, part in pairs(char:GetDescendants()) do 
+            if part:IsA("BasePart") then part.CanTouch = true end 
+        end 
+    end
     ScreenGui:Destroy()
 end)
