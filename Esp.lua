@@ -2,23 +2,34 @@ local TweenService = game:GetService("TweenService")
 local UserInputService = game:GetService("UserInputService")
 local RunService = game:GetService("RunService")
 local Players = game:GetService("Players")
+local CoreGui = game:GetService("CoreGui")
 
 local LocalPlayer = Players.LocalPlayer
-local PlayerGui = LocalPlayer:WaitForChild("PlayerGui")
 
-if PlayerGui:FindFirstChild("HoshiMM2Gui") then
-    PlayerGui.HoshiMM2Gui:Destroy()
-end
+-- ==========================================
+-- ОЧИСТКА СТАРОГО ИНТЕРФЕЙСА
+-- ==========================================
+pcall(function()
+    if CoreGui:FindFirstChild("HoshiMM2Gui") then CoreGui.HoshiMM2Gui:Destroy() end
+    if LocalPlayer:FindFirstChild("PlayerGui") and LocalPlayer.PlayerGui:FindFirstChild("HoshiMM2Gui") then
+        LocalPlayer.PlayerGui.HoshiMM2Gui:Destroy()
+    end
+end)
 
+-- ==========================================
+-- ПЕРЕМЕННЫЕ И НАСТРОЙКИ
+-- ==========================================
 local MasterControl = nil
 local CharacterScripts = LocalPlayer:FindFirstChild("PlayerScripts")
 if CharacterScripts then
     local PlayerModule = CharacterScripts:FindFirstChild("PlayerModule")
     if PlayerModule then
-        local requireModule = require(PlayerModule)
-        if requireModule and requireModule.GetControls then
-            MasterControl = requireModule:GetControls()
-        end
+        pcall(function()
+            local requireModule = require(PlayerModule)
+            if requireModule and requireModule.GetControls then
+                MasterControl = requireModule:GetControls()
+            end
+        end)
     end
 end
 
@@ -27,20 +38,26 @@ local FlyConnection, NoclipConnection, WalkSpeedConnection, AutoFarmConnection, 
 local GodModeConnection, CloneChar, RealCharObj = nil, nil, nil
 local NextScanTime, CachedCoin, BVelocity, BGyro = 0, nil, nil, nil
 
+-- ==========================================
+-- ОСНОВНЫЕ ФУНКЦИИ
+-- ==========================================
 local function StopFlying()
     if FlyConnection then FlyConnection:Disconnect() FlyConnection = nil end
     if BVelocity then BVelocity:Destroy() BVelocity = nil end
     if BGyro then BGyro:Destroy() BGyro = nil end
     local char = LocalPlayer.Character
-    local hum = char and char:FindFirstChildOfClass("Humanoid")
-    if hum then hum.PlatformStand = false end
+    if char then
+        local hum = char:FindFirstChildOfClass("Humanoid")
+        if hum then hum.PlatformStand = false end
+    end
 end
 
 local function StartFlying()
     StopFlying()
     local char = LocalPlayer.Character
-    local root = char and char:FindFirstChild("HumanoidRootPart")
-    local hum = char and char:FindFirstChildOfClass("Humanoid")
+    if not char then return end
+    local root = char:FindFirstChild("HumanoidRootPart")
+    local hum = char:FindFirstChildOfClass("Humanoid")
     if not root or not hum then return end
     
     hum.PlatformStand = true
@@ -62,12 +79,14 @@ local function StartFlying()
         BGyro.CFrame = cam.CFrame
         local moveDir = Vector3.new(0, 0, 0)
 
-        if MasterControl and MasterControl.GetMoveVector then
-            local moveVector = MasterControl:GetMoveVector()
-            if moveVector.Magnitude > 0 then
-                moveDir = (cam.CFrame.LookVector * -moveVector.Z) + (cam.CFrame.RightVector * moveVector.X)
+        pcall(function()
+            if MasterControl and MasterControl.GetMoveVector then
+                local moveVector = MasterControl:GetMoveVector()
+                if moveVector and moveVector.Magnitude > 0 then
+                    moveDir = (cam.CFrame.LookVector * -moveVector.Z) + (cam.CFrame.RightVector * moveVector.X)
+                end
             end
-        end
+        end)
 
         if moveDir.Magnitude == 0 and UserInputService.KeyboardEnabled then
             if UserInputService:IsKeyDown(Enum.KeyCode.W) then moveDir = moveDir + cam.CFrame.LookVector end
@@ -81,15 +100,19 @@ local function StartFlying()
 end
 
 local function GetTargetCoinGlobal()
-    if CachedCoin and CachedCoin.Parent and CachedCoin:IsA("BasePart") and CachedCoin.Transparency < 1 then return CachedCoin end
+    if typeof(CachedCoin) == "Instance" and CachedCoin.Parent and CachedCoin:IsA("BasePart") and CachedCoin.Transparency < 1 then 
+        return CachedCoin 
+    end
+    
     if tick() < NextScanTime then return nil end
     NextScanTime = tick() + 0.3
 
     local coinContainer = workspace:FindFirstChild("Normal") or workspace:FindFirstChild("Map") or workspace:FindFirstChild("CoinContainer")
     if coinContainer then
         for _, child in pairs(coinContainer:GetDescendants()) do
-            if child:IsA("BasePart") and (string.find(child.Name:lower(), "coin") or child.Name == "Coin_Server") and child.Transparency < 1 then
-                CachedCoin = child return child
+            if typeof(child) == "Instance" and child:IsA("BasePart") and (string.find(child.Name:lower(), "coin") or child.Name == "Coin_Server") and child.Transparency < 1 then
+                CachedCoin = child 
+                return child
             end
         end
     end
@@ -107,7 +130,9 @@ local function StartAutoFarm()
         if not AutoFarmEnabled then StopAutoFarm() return end
         
         local activeChar = RealCharObj or LocalPlayer.Character
-        local root = activeChar and activeChar:FindFirstChild("HumanoidRootPart")
+        if typeof(activeChar) ~= "Instance" or not activeChar.Parent then return end
+        
+        local root = activeChar:FindFirstChild("HumanoidRootPart")
         if not root then return end
         
         for _, part in pairs(activeChar:GetDescendants()) do
@@ -115,12 +140,10 @@ local function StartAutoFarm()
         end
         
         local coin = GetTargetCoinGlobal()
-        if coin and coin.Parent then
-            -- Телепортируем именно НАСТОЯЩИЙ рут парт к монете
+        if typeof(coin) == "Instance" and coin.Parent then
             root.CFrame = coin.CFrame
-            if activeChar:FindFirstChildOfClass("Humanoid") then
-                activeChar:FindFirstChildOfClass("Humanoid").PlatformStand = true
-            end
+            local hum = activeChar:FindFirstChildOfClass("Humanoid")
+            if hum then hum.PlatformStand = true end
         end
     end)
 end
@@ -128,7 +151,7 @@ end
 local function GetPlayerRoleAndTool(player)
     local isMurderer, isSheriff, specialTool = false, false, nil
     local function check(container)
-        if not container then return end
+        if typeof(container) ~= "Instance" then return end
         for _, item in pairs(container:GetChildren()) do
             if item:IsA("Tool") then
                 if item:FindFirstChild("KnifeServer") or item:FindFirstChild("KnifeClient") then isMurderer = true specialTool = item
@@ -136,13 +159,15 @@ local function GetPlayerRoleAndTool(player)
             end
         end
     end
-    check(player:FindFirstChild("Backpack"))
-    if player.Character then check(player.Character) end
+    if player then
+        check(player:FindFirstChild("Backpack"))
+        if player.Character then check(player.Character) end
+    end
     return isMurderer, isSheriff, specialTool
 end
 
 local function IsPlayerInGame(player)
-    if not player or not player.Character then return false end
+    if not player or typeof(player.Character) ~= "Instance" then return false end
     local root = player.Character:FindFirstChild("HumanoidRootPart")
     local hum = player.Character:FindFirstChild("Humanoid")
     if not root or not hum or hum.Health <= 0 then return false end
@@ -150,11 +175,16 @@ local function IsPlayerInGame(player)
     return map ~= nil
 end
 
+-- ==========================================
+-- СОЗДАНИЕ GUI
+-- ==========================================
 local ScreenGui = Instance.new("ScreenGui")
 ScreenGui.Name = "HoshiMM2Gui"
 ScreenGui.ResetOnSpawn = false
 ScreenGui.DisplayOrder = 99999999
-ScreenGui.Parent = PlayerGui
+
+local success = pcall(function() ScreenGui.Parent = CoreGui end)
+if not success then ScreenGui.Parent = LocalPlayer:WaitForChild("PlayerGui") end
 
 local MainFrame = Instance.new("Frame")
 MainFrame.Name = "MainFrame"
@@ -192,9 +222,9 @@ CloseBtn.Size = UDim2.new(0, 26, 0, 26)
 CloseBtn.Position = UDim2.new(1, -30, 0.5, -13)
 CloseBtn.BackgroundTransparency = 1
 CloseBtn.Font = Enum.Font.GothamMedium
-CloseBtn.Text = "⬜"
-CloseBtn.TextColor3 = Color3.fromRGB(120, 125, 140)
-CloseBtn.TextSize = 10
+CloseBtn.Text = "X"
+CloseBtn.TextColor3 = Color3.fromRGB(200, 100, 100)
+CloseBtn.TextSize = 12
 
 local MinizeBtn = Instance.new("TextButton", Header)
 MinizeBtn.Size = UDim2.new(0, 26, 0, 26)
@@ -238,18 +268,11 @@ MinizeBtn.MouseButton1Click:Connect(function()
     if GuiMinimized then
         Sidebar.Visible = false
         PagesContainer.Visible = false
-        TweenService:Create(MainFrame, TweenInfo.new(0.2, Enum.EasingStyle.Quad, Enum.EasingDirection.Out), {
-            Size = UDim2.new(0, 600, 0, 32)
-        }):Play()
+        TweenService:Create(MainFrame, TweenInfo.new(0.2, Enum.EasingStyle.Quad, Enum.EasingDirection.Out), {Size = UDim2.new(0, 600, 0, 32)}):Play()
     else
-        TweenService:Create(MainFrame, TweenInfo.new(0.2, Enum.EasingStyle.Quad, Enum.EasingDirection.Out), {
-            Size = UDim2.new(0, 600, 0, 400)
-        }):Play()
+        TweenService:Create(MainFrame, TweenInfo.new(0.2, Enum.EasingStyle.Quad, Enum.EasingDirection.Out), {Size = UDim2.new(0, 600, 0, 400)}):Play()
         task.wait(0.2)
-        if not GuiMinimized then
-            Sidebar.Visible = true
-            PagesContainer.Visible = true
-        end
+        if not GuiMinimized then Sidebar.Visible = true PagesContainer.Visible = true end
     end
 end)
 
@@ -320,7 +343,6 @@ PlayerBtn.MouseButton1Click:Connect(function() SwitchToPage(PlayerPage, PlayerBt
 VisualBtn.MouseButton1Click:Connect(function() SwitchToPage(VisualPage, VisualBtn) end)
 KillerBtn.MouseButton1Click:Connect(function() SwitchToPage(KillerPage, KillerBtn) end)
 SheriffBtn.MouseButton1Click:Connect(function() SwitchToPage(SheriffPage, SheriffBtn) end)
-
 SwitchToPage(MainPage, MainBtn)
 
 local function AddToggle(parent, text, callback)
@@ -360,7 +382,7 @@ local function AddToggle(parent, text, callback)
         local pos = toggled and UDim2.new(1, -15, 0.5, -6) or UDim2.new(0, 3, 0.5, -6)
         TweenService:Create(btn, TweenInfo.new(0.15), {BackgroundColor3 = bg}):Play()
         TweenService:Create(sw, TweenInfo.new(0.15), {Position = pos, BackgroundColor3 = ball}):Play()
-        callback(toggled)
+        pcall(function() callback(toggled) end)
     end)
 end
 
@@ -423,13 +445,16 @@ local function AddSlider(parent, text, min, max, default, callback)
     end)
 end
 
+-- ==========================================
+-- КНОПКИ В ИНТЕРФЕЙСЕ И ФУНКЦИОНАЛ
+-- ==========================================
+
 AddToggle(MainPage, "Авто-Фарм Монет", function(state)
     AutoFarmEnabled = state
     if state then StartAutoFarm() else StopAutoFarm() end
 end)
 AddSlider(MainPage, "Скорость авто-фарма", 10, 25, 16, function(value) AutoFarmSpeed = value end)
 
--- ИСПРАВЛЕННЫЙ GOD MODE: Совместим с авто-фармом, не ломает камеру
 AddToggle(PlayerPage, "God Mode", function(state)
     local char = LocalPlayer.Character
     if not char then return end
@@ -463,32 +488,25 @@ AddToggle(PlayerPage, "God Mode", function(state)
         end
         
         GodModeConnection = RunService.Heartbeat:Connect(function()
-            if RealRoot and FakeRoot then
-                -- Если авто-фарм выключен, держим настоящее тело высоко в небе в безопасности
+            if typeof(RealRoot) == "Instance" and RealRoot.Parent and typeof(FakeRoot) == "Instance" then
                 if not AutoFarmEnabled then
-                    local safePos = FakeRoot.CFrame * CFrame.new(0, 500, 0)
-                    RealRoot.CFrame = safePos
+                    RealRoot.CFrame = FakeRoot.CFrame * CFrame.new(0, 500, 0)
                     RealRoot.Velocity = Vector3.new(0,0,0)
                 end
-                -- Если авто-фарм включен, скрипт авто-фарма будет сам управлять CFrame реального тела, чтобы собирать монеты
             else
                 if GodModeConnection then GodModeConnection:Disconnect() GodModeConnection = nil end
             end
         end)
-        
     else
         if GodModeConnection then GodModeConnection:Disconnect() GodModeConnection = nil end
         if CloneChar then CloneChar:Destroy() CloneChar = nil end
         
-        -- ВОЗВРАЩЕНИЕ ПЕРСОНАЖА:
-        -- Поскольку мы отделили оригинальное тело, безопаснее всего просто сделать сброс (респавн),
-        -- чтобы избежать проваливания сквозь текстуры и поломки камеры.
-        if RealCharObj then
+        if typeof(RealCharObj) == "Instance" and RealCharObj.Parent then
             LocalPlayer.Character = RealCharObj
             local RealHum = RealCharObj:FindFirstChildOfClass("Humanoid")
             if RealHum then
                 workspace.CurrentCamera.CameraSubject = RealHum
-                RealHum.Health = 0 -- Убиваем персонажа для чистого респавна
+                RealHum.Health = 0
             end
             RealCharObj = nil
         end
@@ -499,6 +517,7 @@ AddToggle(PlayerPage, "Bypass Fly (Полет)", function(state) Flying = state 
 AddSlider(PlayerPage, "Скорость полета", 15, 90, 35, function(value) FlySpeed = value end)
 AddToggle(PlayerPage, "Включить кастомный WalkSpeed", function(state) WalkSpeedEnabled = state end)
 AddSlider(PlayerPage, "WalkSpeed (Скорость)", 16, 120, 16, function(value) NormalWalkSpeed = value end)
+
 AddToggle(PlayerPage, "Noclip (Сквозь Стены)", function(state)
     if state then
         NoclipConnection = RunService.Stepped:Connect(function()
@@ -510,6 +529,7 @@ AddToggle(PlayerPage, "Noclip (Сквозь Стены)", function(state)
         if NoclipConnection then NoclipConnection:Disconnect() NoclipConnection = nil end
     end
 end)
+
 AddToggle(PlayerPage, "Inf Jump (Бесконечные прыжки)", function(state)
     _G.InfJump = state
     if state then
@@ -521,7 +541,7 @@ AddToggle(PlayerPage, "Inf Jump (Бесконечные прыжки)", function
     end
 end)
 
-AddToggle(VisualPage, "ESP (Подсветка Мафии/Шерифа)", function(state) 
+AddToggle(VisualPage, "ESP (Игроки)", function(state) 
     ESPEnabled = state 
     if state then
         if ESPConnection then ESPConnection:Disconnect() end
@@ -625,6 +645,9 @@ WalkSpeedConnection = RunService.Stepped:Connect(function()
     end
 end)
 
+-- ==========================================
+-- ПЕРЕТАСКИВАНИЕ GUI
+-- ==========================================
 local dragging, dragInput, dragStart, startPos
 MainFrame.InputBegan:Connect(function(input)
     if input.UserInputType == Enum.UserInputType.MouseButton1 or input.UserInputType == Enum.UserInputType.Touch then
@@ -644,6 +667,9 @@ UserInputService.InputEnded:Connect(function(input)
     if input.UserInputType == Enum.UserInputType.MouseButton1 or input.UserInputType == Enum.UserInputType.Touch then dragging = false end
 end)
 
+-- ==========================================
+-- КНОПКА ЗАКРЫТИЯ С ПОЛНОЙ ОЧИСТКОЙ
+-- ==========================================
 CloseBtn.MouseButton1Click:Connect(function()
     Flying, AutoFarmEnabled, WalkSpeedEnabled, ESPEnabled, AutoKillEnabled, AutoGetGunEnabled = false, false, false, false, false, false
     StopFlying() StopAutoFarm()
@@ -653,7 +679,7 @@ CloseBtn.MouseButton1Click:Connect(function()
     if GodModeConnection then GodModeConnection:Disconnect() end
     
     if CloneChar then CloneChar:Destroy() end
-    if RealCharObj then 
+    if typeof(RealCharObj) == "Instance" and RealCharObj.Parent then 
         local hum = RealCharObj:FindFirstChildOfClass("Humanoid")
         if hum then hum.Health = 0 end 
     end
