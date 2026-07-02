@@ -34,22 +34,21 @@ if CharacterScripts then
 end
 
 local Flying, FlySpeed, NormalWalkSpeed, WalkSpeedEnabled, AutoFarmEnabled, ESPEnabled, AutoCombatEnabled, AutoGetGunEnabled = false, 35, 16, false, false, false, false, false
-local FlyConnection, NoclipConnection, WalkSpeedConnection, AutoFarmConnection, ESPConnection = nil, nil, nil, nil, nil
-local GodModeConnection, CloneChar, RealCharObj = nil, nil, nil
+local GodModeEnabled = false
+local FlyConnection, NoclipConnection, WalkSpeedConnection, AutoFarmConnection, ESPConnection, GodModeConnection = nil, nil, nil, nil, nil, nil
 local NextScanTime, CachedCoin, BVelocity, BGyro = 0, nil, nil, nil
 
--- Получение правильного RootPart
+-- Безопасное получение компонентов
 local function GetCurrentRoot()
-    local char = RealCharObj or LocalPlayer.Character
+    local char = LocalPlayer.Character
     if char and char:FindFirstChild("HumanoidRootPart") then
         return char.HumanoidRootPart
     end
     return nil
 end
 
--- Получение правильного Humanoid
 local function GetCurrentHumanoid()
-    local char = RealCharObj or LocalPlayer.Character
+    local char = LocalPlayer.Character
     if char and char:FindFirstChildOfClass("Humanoid") then
         return char:FindFirstChildOfClass("Humanoid")
     end
@@ -57,7 +56,7 @@ local function GetCurrentHumanoid()
 end
 
 -- ==========================================
--- ОСНОВНЫЕ ФУНКЦИИ (ПОЛЕТ И АВТОФАРМ)
+-- ИСПРАВЛЕННЫЙ ПОЛЕТ И АВТОФАРМ
 -- ==========================================
 local function StopFlying()
     if FlyConnection then FlyConnection:Disconnect() FlyConnection = nil end
@@ -86,14 +85,12 @@ local function StartFlying()
 
     local cam = workspace.CurrentCamera
     FlyConnection = RunService.RenderStepped:Connect(function()
-        if not Flying or not root or not root.Parent then StopFlying() return end
+        local r = GetCurrentRoot()
+        if not Flying or not r then StopFlying() return end
         if AutoFarmEnabled then return end
 
-        local activeRoot = (CloneChar and CloneChar:FindFirstChild("HumanoidRootPart")) or root
-        if not activeRoot then return end
-
-        BGyro.Parent = activeRoot
-        BVelocity.Parent = activeRoot
+        BGyro.Parent = r
+        BVelocity.Parent = r
         BGyro.CFrame = cam.CFrame
         local moveDir = Vector3.new(0, 0, 0)
 
@@ -121,14 +118,13 @@ local function GetTargetCoinGlobal()
     if typeof(CachedCoin) == "Instance" and CachedCoin.Parent and CachedCoin:IsA("BasePart") and CachedCoin.Transparency < 1 then 
         return CachedCoin 
     end
-    
     if tick() < NextScanTime then return nil end
-    NextScanTime = tick() + 0.15
+    NextScanTime = tick() + 0.1
 
     local coinContainer = workspace:FindFirstChild("Normal") or workspace:FindFirstChild("Map") or workspace:FindFirstChild("CoinContainer")
     if coinContainer then
         for _, child in pairs(coinContainer:GetDescendants()) do
-            if typeof(child) == "Instance" and child:IsA("BasePart") and (string.find(child.Name:lower(), "coin") or child.Name == "Coin_Server") and child.Transparency < 1 then
+            if child:IsA("BasePart") and (string.find(child.Name:lower(), "coin") or child.Name == "Coin_Server") and child.Transparency < 1 then
                 if child:FindFirstChildOfClass("TouchTransmitter") then
                     CachedCoin = child 
                     return child
@@ -148,17 +144,14 @@ local function StartAutoFarm()
     StopAutoFarm()
     AutoFarmConnection = RunService.Heartbeat:Connect(function()
         if not AutoFarmEnabled then StopAutoFarm() return end
-        
         local root = GetCurrentRoot()
         local hum = GetCurrentHumanoid()
         if not root or not hum then return end
         
         local coin = GetTargetCoinGlobal()
-        if typeof(coin) == "Instance" and coin.Parent then
-            local swing = Vector3.new(math.sin(tick() * 14) * 0.2, 0.4, math.cos(tick() * 14) * 0.2)
-            root.CFrame = coin.CFrame * CFrame.new(swing)
+        if coin and coin.Parent then
+            root.CFrame = coin.CFrame * CFrame.new(0, 0.2, 0)
             hum.PlatformStand = true
-            
             pcall(function()
                 firetouchinterest(root, coin, 0)
                 firetouchinterest(root, coin, 1)
@@ -169,48 +162,42 @@ end
 
 local function GetPlayerRoleAndTool(player)
     local isMurderer, isSheriff, specialTool = false, false, nil
-    if not player or typeof(player) ~= "Instance" then return isMurderer, isSheriff, specialTool end
+    if not player or not player.Character then return isMurderer, isSheriff, specialTool end
     
     local function check(container)
-        if typeof(container) ~= "Instance" then return end
+        if not container then return end
         for _, item in pairs(container:GetChildren()) do
             if item:IsA("Tool") then
                 if item:FindFirstChild("KnifeServer") or item:FindFirstChild("KnifeClient") then 
-                    isMurderer = true 
-                    specialTool = item
+                    isMurderer = true specialTool = item
                 elseif item:FindFirstChild("GunScript") or item:FindFirstChild("GunClient") then 
-                    isSheriff = true 
-                    specialTool = item 
+                    isSheriff = true specialTool = item 
                 end
             end
         end
     end
-    
     check(player:FindFirstChild("Backpack"))
-    if player.Character then check(player.Character) end
-    if player == LocalPlayer and RealCharObj then check(RealCharObj) end
+    check(player.Character)
     return isMurderer, isSheriff, specialTool
 end
 
 local function IsPlayerInGame(player)
-    if not player or typeof(player.Character) ~= "Instance" then return false end
+    if not player or not player.Character then return false end
     local root = player.Character:FindFirstChild("HumanoidRootPart")
     local hum = player.Character:FindFirstChild("Humanoid")
     if not root or not hum or hum.Health <= 0 then return false end
-    local map = workspace:FindFirstChild("Normal") or workspace:FindFirstChild("Map")
-    return map ~= nil
+    return (workspace:FindFirstChild("Normal") or workspace:FindFirstChild("Map")) ~= nil
 end
 
 -- ==========================================
--- СОЗДАНИЕ GUI
+-- СОЗДАНИЕ ИДЕАЛЬНОГО ИНТЕРФЕЙСА (GUI)
 -- ==========================================
 local ScreenGui = Instance.new("ScreenGui")
 ScreenGui.Name = "HoshiMM2Gui"
 ScreenGui.ResetOnSpawn = false
 ScreenGui.DisplayOrder = 99999999
-
-local success = pcall(function() ScreenGui.Parent = CoreGui end)
-if not success then ScreenGui.Parent = LocalPlayer:WaitForChild("PlayerGui") end
+pcall(function() ScreenGui.Parent = CoreGui end)
+if not ScreenGui.Parent then ScreenGui.Parent = LocalPlayer:WaitForChild("PlayerGui") end
 
 local MainFrame = Instance.new("Frame")
 MainFrame.Name = "MainFrame"
@@ -292,11 +279,10 @@ local GuiMinimized = false
 MinizeBtn.MouseButton1Click:Connect(function()
     GuiMinimized = not GuiMinimized
     if GuiMinimized then
-        Sidebar.Visible = false
-        PagesContainer.Visible = false
-        TweenService:Create(MainFrame, TweenInfo.new(0.2, Enum.EasingStyle.Quad, Enum.EasingDirection.Out), {Size = UDim2.new(0, 600, 0, 32)}):Play()
+        Sidebar.Visible = false PagesContainer.Visible = false
+        TweenService:Create(MainFrame, TweenInfo.new(0.2), {Size = UDim2.new(0, 600, 0, 32)}):Play()
     else
-        TweenService:Create(MainFrame, TweenInfo.new(0.2, Enum.EasingStyle.Quad, Enum.EasingDirection.Out), {Size = UDim2.new(0, 600, 0, 400)}):Play()
+        TweenService:Create(MainFrame, TweenInfo.new(0.2), {Size = UDim2.new(0, 600, 0, 400)}):Play()
         task.wait(0.2)
         if not GuiMinimized then Sidebar.Visible = true PagesContainer.Visible = true end
     end
@@ -349,12 +335,10 @@ local function SwitchToPage(targetPage, targetBtn)
     PlayerPage.Visible = (PlayerPage == targetPage)
     VisualPage.Visible = (VisualPage == targetPage)
     CombatPage.Visible = (CombatPage == targetPage)
-
     MainBtn.TextColor3 = Color3.fromRGB(140, 145, 160) MainBtn.BackgroundTransparency = 1
     PlayerBtn.TextColor3 = Color3.fromRGB(140, 145, 160) PlayerBtn.BackgroundTransparency = 1
     VisualBtn.TextColor3 = Color3.fromRGB(140, 145, 160) VisualBtn.BackgroundTransparency = 1
     CombatBtn.TextColor3 = Color3.fromRGB(140, 145, 160) CombatBtn.BackgroundTransparency = 1
-
     targetBtn.TextColor3 = Color3.fromRGB(255, 255, 255)
     targetBtn.BackgroundColor3 = Color3.fromRGB(24, 26, 34)
     targetBtn.BackgroundTransparency = 0
@@ -467,70 +451,41 @@ local function AddSlider(parent, text, min, max, default, callback)
 end
 
 -- ==========================================
--- НАСТРОЙКА КНОПОК И ЛОГИКИ
+-- ИСПРАВЛЕННЫЕ КНОПКИ И СТАБИЛЬНЫЙ GOD MODE
 -- ==========================================
 
-AddToggle(MainPage, "Авто-Фарм Монет (Умный)", function(state)
+AddToggle(MainPage, "Авто-Фарм Монет", function(state)
     AutoFarmEnabled = state
     if state then StartAutoFarm() else StopAutoFarm() end
 end)
 
-AddToggle(PlayerPage, "God Mode (Стабильный Десинк)", function(state)
-    local char = LocalPlayer.Character
-    if not char then return end
-
-    if state then
-        RealCharObj = char
-        RealCharObj.Archivable = true
-        CloneChar = RealCharObj:Clone()
-        CloneChar.Name = "Fake_" .. LocalPlayer.Name
-        CloneChar.Parent = workspace
-        
-        local RealRoot = RealCharObj:FindFirstChild("HumanoidRootPart")
-        local FakeRoot = CloneChar:FindFirstChild("HumanoidRootPart")
-        local FakeHum = CloneChar:FindFirstChildOfClass("Humanoid")
-        
-        LocalPlayer.Character = CloneChar
-        workspace.CurrentCamera.CameraSubject = FakeHum
-        
-        -- Скрываем визуал реального тела БЕЗ изменения C0/суставов, чтобы не триггерить лобби-античит
-        for _, v in pairs(RealCharObj:GetDescendants()) do
-            if v:IsA("BasePart") and v.Name ~= "HumanoidRootPart" then
-                v.Transparency = 1
-                v.CanCollide = false
-            end
-        end
-        
-        -- Синхронизация фейкового аватара с реальным физическим RootPart
-        GodModeConnection = RunService.Heartbeat:Connect(function()
-            if typeof(RealRoot) == "Instance" and RealRoot.Parent and typeof(FakeRoot) == "Instance" and FakeRoot.Parent then
-                -- Безопасная синхронизация: если автоматические функции выключены, реальный хитбокс стоит под фейком
-                if not AutoFarmEnabled and not AutoCombatEnabled and not AutoGetGunEnabled then
-                    RealRoot.CFrame = FakeRoot.CFrame * CFrame.new(0, -0.1, 0)
-                    RealRoot.Velocity = Vector3.new(0,0,0)
+AddToggle(PlayerPage, "Настоящий God Mode (Без Лобби)", function(state)
+    GodModeEnabled = state
+    if GodModeEnabled then
+        if GodModeConnection then GodModeConnection:Disconnect() end
+        -- Безопасный режим: убираем регистрацию коллизии с ножом локально
+        GodModeConnection = RunService.Stepped:Connect(function()
+            if not GodModeEnabled then return end
+            local char = LocalPlayer.Character
+            if char then
+                -- Отключаем коллизии со всеми хитбоксами других лезвий на карте
+                for _, v in pairs(workspace:GetDescendants()) do
+                    if v:IsA("BasePart") and (v.Name == "KnifeServer" or v.Name == "Handle" and v.Parent:IsA("Tool")) then
+                        pcall(function() v.CanCollide = false end)
+                    end
                 end
-                
-                -- Перенаправляем сетевой овнершип (Network Ownership Fix)
-                pcall(function()
-                    RealRoot.AssemblyLinearVelocity = Vector3.new(0, 0, 0)
-                end)
-            else
-                if GodModeConnection then GodModeConnection:Disconnect() GodModeConnection = nil end
+                -- Локально убираем TouchInterest, отвечающий за урон шерифа/киллера
+                for _, part in pairs(char:GetChildren()) do
+                    if part:IsA("BasePart") then
+                        for _, ti in pairs(part:GetChildren()) do
+                            if ti:IsA("TouchTransmitter") then ti:Destroy() end
+                        end
+                    end
+                end
             end
         end)
     else
         if GodModeConnection then GodModeConnection:Disconnect() GodModeConnection = nil end
-        
-        if typeof(RealCharObj) == "Instance" and RealCharObj.Parent then
-            LocalPlayer.Character = RealCharObj
-            local RealHum = RealCharObj:FindFirstChildOfClass("Humanoid")
-            if RealHum then
-                workspace.CurrentCamera.CameraSubject = RealHum
-                RealHum.Health = 0 -- Убиваем для чистого респавна без багов физики
-            end
-        end
-        if CloneChar then CloneChar:Destroy() CloneChar = nil end
-        RealCharObj = nil
     end
 end)
 
@@ -542,12 +497,9 @@ AddSlider(PlayerPage, "WalkSpeed (Скорость)", 16, 120, 16, function(valu
 AddToggle(PlayerPage, "Noclip (Сквозь Стены)", function(state)
     if state then
         NoclipConnection = RunService.Stepped:Connect(function()
-            local char = RealCharObj or LocalPlayer.Character
+            local char = LocalPlayer.Character
             if char then
                 for _, part in pairs(char:GetDescendants()) do if part:IsA("BasePart") then part.CanCollide = false end end
-            end
-            if CloneChar then
-                for _, part in pairs(CloneChar:GetDescendants()) do if part:IsA("BasePart") then part.CanCollide = false end end
             end
         end)
     else
@@ -590,7 +542,9 @@ end)
 AddToggle(CombatPage, "Авто-Режим (Убийца/Шериф)", function(state) AutoCombatEnabled = state end)
 AddToggle(CombatPage, "Авто-подбор пистолета", function(state) AutoGetGunEnabled = state end)
 
--- ЦИКЛ АВТО-БОЯ
+-- ==========================================
+-- ПОЛНОСТЬЮ ИСПРАВЛЕННЫЙ ЦИКЛ БОЯ И ПОДБОРА
+-- ==========================================
 task.spawn(function()
     while task.wait(0.1) do
         if AutoCombatEnabled then
@@ -599,25 +553,24 @@ task.spawn(function()
             local isMurderer, isSheriff, myTool = GetPlayerRoleAndTool(LocalPlayer)
             
             if myRoot and myHum and myTool then
-                if myTool.Parent ~= myRoot.Parent then 
+                if myTool.Parent ~= LocalPlayer.Character then 
                     myHum:EquipTool(myTool) 
                 end
                 
                 if isMurderer then
                     for _, target in pairs(Players:GetPlayers()) do
                         if target ~= LocalPlayer and IsPlayerInGame(target) then
-                            local tMurd, tSher = GetPlayerRoleAndTool(target)
+                            local tMurd = GetPlayerRoleAndTool(target)
                             if not tMurd then
                                 local targetRoot = target.Character:FindFirstChild("HumanoidRootPart")
                                 if targetRoot then
                                     myRoot.CFrame = targetRoot.CFrame * CFrame.new(0, 0, 1)
                                     myTool:Activate()
-                                    task.wait(0.12)
+                                    task.wait(0.1)
                                 end
                             end
                         end
                     end
-                    
                 elseif isSheriff then
                     for _, target in pairs(Players:GetPlayers()) do
                         if target ~= LocalPlayer and IsPlayerInGame(target) then
@@ -625,9 +578,9 @@ task.spawn(function()
                             if tMurd then
                                 local targetRoot = target.Character:FindFirstChild("HumanoidRootPart")
                                 if targetRoot then
-                                    myRoot.CFrame = CFrame.new(targetRoot.Position + Vector3.new(0, 9, 0), targetRoot.Position)
+                                    myRoot.CFrame = CFrame.new(targetRoot.Position + Vector3.new(0, 8, 0), targetRoot.Position)
                                     myTool:Activate()
-                                    task.wait(0.15)
+                                    task.wait(0.1)
                                 end
                             end
                         end
@@ -638,29 +591,20 @@ task.spawn(function()
     end
 end)
 
--- АВТОПОДБОР ПИСТОЛЕТА
 task.spawn(function()
-    while task.wait(0.25) do
+    while task.wait(0.2) do
         if AutoGetGunEnabled then
             local _, isSheriff = GetPlayerRoleAndTool(LocalPlayer)
             local myRoot = GetCurrentRoot()
-            local myHum = GetCurrentHumanoid()
-            
-            if not isSheriff and myRoot and myHum and myHum.Health > 0 then
+            if not isSheriff and myRoot then
                 local gunDrop = nil
-                local dropContainers = {workspace:FindFirstChild("Normal"), workspace:FindFirstChild("Map"), workspace:FindFirstChild("Drops"), workspace:FindFirstChild("Items")}
-                for _, container in pairs(dropContainers) do
-                    if container then
-                        for _, obj in pairs(container:GetDescendants()) do
-                            if obj:IsA("BasePart") and obj.Parent and not obj:IsDescendantOf(Players) then
-                                local n = obj.Name:lower()
-                                if n == "gundrop" or n == "gun_drop" or n == "gun" or obj:FindFirstChild("GunScript") then gunDrop = obj break end
-                            end
-                        end
+                for _, obj in pairs(workspace:GetDescendants()) do
+                    if obj:IsA("BasePart") and (obj.Name:lower() == "gundrop" or obj.Name == "Gun_Server" or obj:FindFirstChild("GunScript")) then
+                        gunDrop = obj break
                     end
                 end
-                if gunDrop and gunDrop:IsA("BasePart") and gunDrop.Parent then
-                    myRoot.CFrame = gunDrop.CFrame 
+                if gunDrop then
+                    myRoot.CFrame = gunDrop.CFrame
                     pcall(function()
                         firetouchinterest(myRoot, gunDrop, 0)
                         firetouchinterest(myRoot, gunDrop, 1)
@@ -669,11 +613,6 @@ task.spawn(function()
             end
         end
     end
-end)
-
-LocalPlayer.CharacterAdded:Connect(function(newChar)
-    task.wait(0.5)
-    if AutoFarmEnabled then StartAutoFarm() elseif Flying then StartFlying() end
 end)
 
 WalkSpeedConnection = RunService.Stepped:Connect(function()
@@ -703,19 +642,13 @@ UserInputService.InputEnded:Connect(function(input)
     if input.UserInputType == Enum.UserInputType.MouseButton1 or input.UserInputType == Enum.UserInputType.Touch then dragging = false end
 end)
 
--- КНОПКА ЗАКРЫТИЯ
+-- ЗАКРЫТИЕ С КОРРЕКТНЫМ СБРОСОМ
 CloseBtn.MouseButton1Click:Connect(function()
-    Flying, AutoFarmEnabled, WalkSpeedEnabled, ESPEnabled, AutoCombatEnabled, AutoGetGunEnabled = false, false, false, false, false, false
+    Flying, AutoFarmEnabled, WalkSpeedEnabled, ESPEnabled, AutoCombatEnabled, AutoGetGunEnabled, GodModeEnabled = false, false, false, false, false, false, false
     StopFlying() StopAutoFarm()
     if NoclipConnection then NoclipConnection:Disconnect() end
     if WalkSpeedConnection then WalkSpeedConnection:Disconnect() end
     if ESPConnection then ESPConnection:Disconnect() end
     if GodModeConnection then GodModeConnection:Disconnect() end
-    
-    if CloneChar then CloneChar:Destroy() end
-    if typeof(RealCharObj) == "Instance" and RealCharObj.Parent then 
-        local hum = RealCharObj:FindFirstChildOfClass("Humanoid")
-        if hum then hum.Health = 0 end 
-    end
     ScreenGui:Destroy()
 end)
