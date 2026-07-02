@@ -6,12 +6,10 @@ local Players = game:GetService("Players")
 local LocalPlayer = Players.LocalPlayer
 local PlayerGui = LocalPlayer:WaitForChild("PlayerGui")
 
--- Очистка старого интерфейса
 if PlayerGui:FindFirstChild("HoshiMM2Gui") then
     PlayerGui.HoshiMM2Gui:Destroy()
 end
 
--- Переменные логики
 local MasterControl = nil
 local CharacterScripts = LocalPlayer:FindFirstChild("PlayerScripts")
 if CharacterScripts then
@@ -26,10 +24,9 @@ end
 
 local Flying, FlySpeed, NormalWalkSpeed, WalkSpeedEnabled, AutoFarmEnabled, AutoFarmSpeed, ESPEnabled, AutoKillEnabled, AutoGetGunEnabled = false, 35, 16, false, false, 16, false, false, false
 local FlyConnection, NoclipConnection, WalkSpeedConnection, AutoFarmConnection, ESPConnection = nil, nil, nil, nil, nil
-local GodModeConnection, CloneChar = nil, nil
+local GodModeConnection, CloneChar, RealCharObj = nil, nil, nil
 local NextScanTime, CachedCoin, BVelocity, BGyro = 0, nil, nil, nil
 
--- Вспомогательные функции
 local function StopFlying()
     if FlyConnection then FlyConnection:Disconnect() FlyConnection = nil end
     if BVelocity then BVelocity:Destroy() BVelocity = nil end
@@ -106,32 +103,24 @@ end
 
 local function StartAutoFarm()
     StopAutoFarm()
-    local char = LocalPlayer.Character
-    local root = char and char:FindFirstChild("HumanoidRootPart")
-    local hum = char and char:FindFirstChildOfClass("Humanoid")
-    if not root or not hum then return end
-    
-    hum.PlatformStand = true
-    if not BVelocity or not BVelocity.Parent then BVelocity = Instance.new("BodyVelocity", root) BVelocity.MaxForce = Vector3.new(1e5, 1e5, 1e5) end
-    if not BGyro or not BGyro.Parent then BGyro = Instance.new("BodyGyro", root) BGyro.MaxTorque = Vector3.new(1e5, 1e5, 1e5) BGyro.CFrame = root.CFrame end
-
     AutoFarmConnection = RunService.Heartbeat:Connect(function()
         if not AutoFarmEnabled then StopAutoFarm() return end
-        local char = LocalPlayer.Character
-        local root = char and char:FindFirstChild("HumanoidRootPart")
+        
+        local activeChar = RealCharObj or LocalPlayer.Character
+        local root = activeChar and activeChar:FindFirstChild("HumanoidRootPart")
         if not root then return end
         
-        for _, part in pairs(char:GetDescendants()) do
+        for _, part in pairs(activeChar:GetDescendants()) do
             if part:IsA("BasePart") then part.CanCollide = false end
         end
         
         local coin = GetTargetCoinGlobal()
         if coin and coin.Parent then
-            BGyro.CFrame = CFrame.lookAt(root.Position, Vector3.new(coin.Position.X, root.Position.Y, coin.Position.Z))
-            local dir = (coin.Position - root.Position)
-            if dir.Magnitude > 1.5 then BVelocity.Velocity = dir.Unit * AutoFarmSpeed else root.CFrame = coin.CFrame BVelocity.Velocity = Vector3.new(0, 0, 0) end
-        else
-            BVelocity.Velocity = Vector3.new(0, 0, 0)
+            -- Телепортируем именно НАСТОЯЩИЙ рут парт к монете
+            root.CFrame = coin.CFrame
+            if activeChar:FindFirstChildOfClass("Humanoid") then
+                activeChar:FindFirstChildOfClass("Humanoid").PlatformStand = true
+            end
         end
     end)
 end
@@ -161,9 +150,6 @@ local function IsPlayerInGame(player)
     return map ~= nil
 end
 
--- ==========================================
--- ИНТЕРФЕЙС
--- ==========================================
 local ScreenGui = Instance.new("ScreenGui")
 ScreenGui.Name = "HoshiMM2Gui"
 ScreenGui.ResetOnSpawn = false
@@ -437,34 +423,31 @@ local function AddSlider(parent, text, min, max, default, callback)
     end)
 end
 
--- Наполнение функциями
 AddToggle(MainPage, "Авто-Фарм Монет", function(state)
     AutoFarmEnabled = state
     if state then StartAutoFarm() else StopAutoFarm() end
 end)
 AddSlider(MainPage, "Скорость авто-фарма", 10, 25, 16, function(value) AutoFarmSpeed = value end)
 
--- ИДЕАЛЬНЫЙ GOD MODE: Синхронизация Клона + Реальное тело в небе
-AddToggle(PlayerPage, "God Mode (Бессмертие + Синхрон)", function(state)
-    local RealChar = LocalPlayer.Character
-    if not RealChar then return end
+-- ИСПРАВЛЕННЫЙ GOD MODE: Совместим с авто-фармом, не ломает камеру
+AddToggle(PlayerPage, "God Mode", function(state)
+    local char = LocalPlayer.Character
+    if not char then return end
 
     if state then
-        -- 1. Делаем клона, чтобы запутать сервер
-        RealChar.Archivable = true
-        CloneChar = RealChar:Clone()
+        RealCharObj = char
+        RealCharObj.Archivable = true
+        CloneChar = RealCharObj:Clone()
         CloneChar.Name = "Fake_" .. LocalPlayer.Name
         CloneChar.Parent = workspace
         
-        local RealRoot = RealChar:FindFirstChild("HumanoidRootPart")
+        local RealRoot = RealCharObj:FindFirstChild("HumanoidRootPart")
         local FakeRoot = CloneChar:FindFirstChild("HumanoidRootPart")
         local FakeHum = CloneChar:FindFirstChildOfClass("Humanoid")
         
-        -- 2. Отдаем полное управление клону (ЭТО ЧИНИТ ПРЫЖКИ И БЕГ)
         LocalPlayer.Character = CloneChar
         workspace.CurrentCamera.CameraSubject = FakeHum
         
-        -- Перезагружаем анимации на клоне, чтобы он не скользил
         local animate = CloneChar:FindFirstChild("Animate")
         if animate then
             animate.Disabled = true
@@ -472,65 +455,42 @@ AddToggle(PlayerPage, "God Mode (Бессмертие + Синхрон)", functi
             animate.Disabled = false
         end
         
-        -- Прячем реальное тело локально (чтобы не мозолило глаза)
-        for _, v in pairs(RealChar:GetDescendants()) do
+        for _, v in pairs(RealCharObj:GetDescendants()) do
             if v:IsA("BasePart") and v.Name ~= "HumanoidRootPart" then
                 v.Transparency = 1
                 v.CanCollide = false
             end
         end
         
-        -- 3. Умная синхронизация (ЭТО ЧИНИТ ТЕЛЕПОРТЫ В ИГРУ И ОБРАТНО)
-        local lastPos = RealRoot.Position
         GodModeConnection = RunService.Heartbeat:Connect(function()
             if RealRoot and FakeRoot then
-                local currentPos = RealRoot.Position
-                -- Проверяем: если реального персонажа резко перекинуло (серверный телепорт MM2)
-                local dist = (currentPos - lastPos).Magnitude
-                
-                if dist > 50 then
-                    -- Нас телепортировали на карту! Мгновенно подтягиваем клона.
-                    FakeRoot.CFrame = RealRoot.CFrame
-                    lastPos = RealRoot.Position
-                else
-                    -- Иначе держим реальное тело (твой настоящий хитбокс) на высоте 300 метров над тобой!
-                    -- Убить тебя невозможно физически.
-                    local safePos = FakeRoot.CFrame * CFrame.new(0, 300, 0)
+                -- Если авто-фарм выключен, держим настоящее тело высоко в небе в безопасности
+                if not AutoFarmEnabled then
+                    local safePos = FakeRoot.CFrame * CFrame.new(0, 500, 0)
                     RealRoot.CFrame = safePos
-                    RealRoot.Velocity = Vector3.new(0,0,0) -- Чтобы не падал
-                    lastPos = safePos.Position
+                    RealRoot.Velocity = Vector3.new(0,0,0)
                 end
+                -- Если авто-фарм включен, скрипт авто-фарма будет сам управлять CFrame реального тела, чтобы собирать монеты
             else
-                -- Если кто-то умер, выключаем луп
                 if GodModeConnection then GodModeConnection:Disconnect() GodModeConnection = nil end
             end
         end)
         
     else
-        -- ВЫКЛЮЧАЕМ GOD MODE
         if GodModeConnection then GodModeConnection:Disconnect() GodModeConnection = nil end
+        if CloneChar then CloneChar:Destroy() CloneChar = nil end
         
-        if CloneChar then
-            local FakeRoot = CloneChar:FindFirstChild("HumanoidRootPart")
-            if RealChar and RealChar:FindFirstChild("HumanoidRootPart") and FakeRoot then
-                -- Спускаем тебя с небес на землю на место клона
-                RealChar.HumanoidRootPart.CFrame = FakeRoot.CFrame
+        -- ВОЗВРАЩЕНИЕ ПЕРСОНАЖА:
+        -- Поскольку мы отделили оригинальное тело, безопаснее всего просто сделать сброс (респавн),
+        -- чтобы избежать проваливания сквозь текстуры и поломки камеры.
+        if RealCharObj then
+            LocalPlayer.Character = RealCharObj
+            local RealHum = RealCharObj:FindFirstChildOfClass("Humanoid")
+            if RealHum then
+                workspace.CurrentCamera.CameraSubject = RealHum
+                RealHum.Health = 0 -- Убиваем персонажа для чистого респавна
             end
-            CloneChar:Destroy()
-            CloneChar = nil
-        end
-        
-        -- Возвращаем управление реальному игроку
-        LocalPlayer.Character = RealChar
-        local RealHum = RealChar:FindFirstChildOfClass("Humanoid")
-        if RealHum then workspace.CurrentCamera.CameraSubject = RealHum end
-        
-        -- Делаем видимым обратно
-        for _, v in pairs(RealChar:GetDescendants()) do
-            if v:IsA("BasePart") and v.Name ~= "HumanoidRootPart" then
-                v.Transparency = 0
-                v.CanCollide = true
-            end
+            RealCharObj = nil
         end
     end
 end)
@@ -693,11 +653,9 @@ CloseBtn.MouseButton1Click:Connect(function()
     if GodModeConnection then GodModeConnection:Disconnect() end
     
     if CloneChar then CloneChar:Destroy() end
-    local char = LocalPlayer.Character
-    local hum = char and char:FindFirstChildOfClass("Humanoid")
-    if hum then hum.WalkSpeed = 16 workspace.CurrentCamera.CameraSubject = hum end
-    if char then
-        for _, v in pairs(char:GetDescendants()) do if v:IsA("BasePart") then v.Transparency = 0 v.CanCollide = true end end
+    if RealCharObj then 
+        local hum = RealCharObj:FindFirstChildOfClass("Humanoid")
+        if hum then hum.Health = 0 end 
     end
     
     ScreenGui:Destroy()
