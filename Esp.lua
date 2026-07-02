@@ -175,7 +175,7 @@ local function ScanAllCoins()
 end
 
 -- ==========================================
--- ДОРАБОТАННЫЙ АВТО-ФАРМ (БЛИЖНИЕ МОНЕТЫ + АВТО-NOCLIP)
+-- ИСПРАВЛЕННЫЙ АВТО-ФАРМ (СТРОГО БЕЗ УЛЕТА ВВЕРХ)
 -- ==========================================
 local function ToggleAutoFarm(state)
     State.AutoFarmEnabled = state
@@ -185,25 +185,40 @@ local function ToggleAutoFarm(state)
     
     local hum = GetHum()
     if not state then
-        if hum then hum.PlatformStand = false end
+        if hum then 
+            hum.PlatformStand = false 
+            hum:ChangeState(Enum.HumanoidStateType.GettingUp)
+        end
         return
     end
 
-    -- ЖЕСТКИЙ АВТО-NOCLIP: Работает без перерыва, пока включен авто-фарм
+    -- ЖЕСТКИЙ АВТО-NOCLIP + СБРОС ИМПУЛЬСОВ ГРАВИТАЦИИ
     Connections.FarmNoclip = RunService.Stepped:Connect(function()
+        local root = GetRoot()
+        local humanoid = GetHum()
+        
         if State.AutoFarmEnabled and LocalPlayer.Character then
             for _, part in pairs(LocalPlayer.Character:GetDescendants()) do
                 if part:IsA("BasePart") then 
                     part.CanCollide = false 
                 end
             end
+            
+            -- Принудительно зануляем скорости, чтобы движок не подкидывал вверх
+            if root then
+                root.AssemblyLinearVelocity = Vector3.new(0, 0, 0)
+                root.AssemblyAngularVelocity = Vector3.new(0, 0, 0)
+            end
+            if humanoid then
+                humanoid.PlatformStand = true
+            end
         end
     end)
 
-    -- ПОТОК ПОЛЕТА К БЛИЖАЙШИМ МОНЕТАМ
+    -- ПОТОК ЛИНЕЙНОГО ПЕРЕМЕЩЕНИЯ К МОНЕТАМ
     task.spawn(function()
         while State.AutoFarmEnabled do
-            task.wait(0.05)
+            task.wait(0.01)
             
             local root = GetRoot()
             local humanoid = GetHum()
@@ -213,7 +228,7 @@ local function ToggleAutoFarm(state)
             if coin and coin.Parent then
                 local distance = (root.Position - coin.Position).Magnitude
                 local speed = State.AutoFarmSpeed * 2
-                local duration = distance / math.max(speed, 10)
+                local duration = distance / math.max(speed, 5)
 
                 local tweenInfo = TweenInfo.new(duration, Enum.EasingStyle.Linear)
                 local tween = TweenService:Create(root, tweenInfo, {CFrame = coin.CFrame})
@@ -227,6 +242,7 @@ local function ToggleAutoFarm(state)
                 end)
                 
                 while tweenActive and State.AutoFarmEnabled do
+                    if root then root.AssemblyLinearVelocity = Vector3.new(0, 0, 0) end
                     task.wait()
                 end
                 
@@ -237,17 +253,20 @@ local function ToggleAutoFarm(state)
 
                 if firetouchinterest then
                     firetouchinterest(root, coin, 0)
-                    task.wait(0.02)
+                    task.wait(0.01)
                     firetouchinterest(root, coin, 1)
                 else
                     root.CFrame = coin.CFrame
-                    task.wait(0.05)
+                    task.wait(0.02)
                 end
             end
         end
         
         local humAfter = GetHum()
-        if humAfter then humAfter.PlatformStand = false end
+        if humAfter then 
+            humAfter.PlatformStand = false 
+            humAfter:ChangeState(Enum.HumanoidStateType.GettingUp)
+        end
     end)
 end
 
