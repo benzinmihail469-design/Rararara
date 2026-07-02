@@ -38,7 +38,7 @@ local FlyConnection, NoclipConnection, WalkSpeedConnection, AutoFarmConnection, 
 local GodModeConnection, CloneChar, RealCharObj = nil, nil, nil
 local NextScanTime, CachedCoin, BVelocity, BGyro = 0, nil, nil, nil
 
--- Утилита для получения актуального "физического" RootPart (учитывает God Mode)
+-- Утилиты позиционирования
 local function GetCurrentRoot()
     local char = RealCharObj or LocalPlayer.Character
     if char and char:FindFirstChild("HumanoidRootPart") then
@@ -47,7 +47,6 @@ local function GetCurrentRoot()
     return nil
 end
 
--- Утилита для получения актуального Humanoid
 local function GetCurrentHumanoid()
     local char = RealCharObj or LocalPlayer.Character
     if char and char:FindFirstChildOfClass("Humanoid") then
@@ -89,7 +88,6 @@ local function StartFlying()
         if not Flying or not root or not root.Parent then StopFlying() return end
         if AutoFarmEnabled then return end
 
-        -- Если включен God Mode, то логика полета должна управлять фейковым чаром, а не реальным隱
         local activeRoot = (CloneChar and CloneChar:FindFirstChild("HumanoidRootPart")) or root
         if not activeRoot then return end
 
@@ -156,7 +154,6 @@ local function StartAutoFarm()
         
         local coin = GetTargetCoinGlobal()
         if typeof(coin) == "Instance" and coin.Parent then
-            -- Микро-движения для зачета коллизии
             local swing = Vector3.new(math.sin(tick() * 14) * 0.2, 0.4, math.cos(tick() * 14) * 0.2)
             root.CFrame = coin.CFrame * CFrame.new(swing)
             
@@ -191,7 +188,6 @@ local function GetPlayerRoleAndTool(player)
     
     check(player:FindFirstChild("Backpack"))
     if player.Character then check(player.Character) end
-    -- Если включен God Mode, проверяем инструмент еще и в реальном (спрятанном) персонаже
     if player == LocalPlayer and RealCharObj then check(RealCharObj) end
     return isMurderer, isSheriff, specialTool
 end
@@ -479,7 +475,7 @@ AddToggle(MainPage, "Авто-Фарм Монет (Умный)", function(state)
     if state then StartAutoFarm() else StopAutoFarm() end
 end)
 
-AddToggle(PlayerPage, "God Mode (Бессмертие)", function(state)
+AddToggle(PlayerPage, "God Mode (Полное десинк-бессмертие)", function(state)
     local char = LocalPlayer.Character
     if not char then return end
 
@@ -502,9 +498,12 @@ AddToggle(PlayerPage, "God Mode (Бессмертие)", function(state)
             animate.Disabled = true task.wait() animate.Disabled = false
         end
         
-        -- Скрываем физическое тело, чтобы его не убили напрямую
+        -- Фикс хитбокса: смещаем Motor6D суставов реального тела под карту, 
+        -- чтобы сервер думал, что хитбокс там, а RootPart свободно летает
         for _, v in pairs(RealCharObj:GetDescendants()) do
-            if v:IsA("BasePart") and v.Name ~= "HumanoidRootPart" then
+            if v:IsA("Motor6D") and v.Name ~= "RootJoint" then
+                v.C0 = CFrame.new(0, -500, 0)
+            elseif v:IsA("BasePart") then
                 v.Transparency = 1
                 v.CanCollide = false
             end
@@ -512,9 +511,8 @@ AddToggle(PlayerPage, "God Mode (Бессмертие)", function(state)
         
         GodModeConnection = RunService.Heartbeat:Connect(function()
             if typeof(RealRoot) == "Instance" and RealRoot.Parent and typeof(FakeRoot) == "Instance" and FakeRoot.Parent then
-                -- Если автофарм выключен, то ТПхаем настоящее тело далеко наверх за фейком
                 if not AutoFarmEnabled and not AutoCombatEnabled and not AutoGetGunEnabled then
-                    RealRoot.CFrame = FakeRoot.CFrame * CFrame.new(0, 800, 0)
+                    RealRoot.CFrame = FakeRoot.CFrame * CFrame.new(0, 500, 0)
                     RealRoot.Velocity = Vector3.new(0,0,0)
                 end
             else
@@ -526,10 +524,18 @@ AddToggle(PlayerPage, "God Mode (Бессмертие)", function(state)
         
         if typeof(RealCharObj) == "Instance" and RealCharObj.Parent then
             LocalPlayer.Character = RealCharObj
+            
+            -- Возвращаем суставы на место
+            for _, v in pairs(RealCharObj:GetDescendants()) do
+                if v:IsA("Motor6D") then
+                    v.C0 = CFrame.new(0, 0, 0)
+                end
+            end
+            
             local RealHum = RealCharObj:FindFirstChildOfClass("Humanoid")
             if RealHum then
                 workspace.CurrentCamera.CameraSubject = RealHum
-                RealHum.Health = 0 -- Сброс персонажа для безопасного респавна
+                RealHum.Health = 0
             end
         end
         if CloneChar then CloneChar:Destroy() CloneChar = nil end
@@ -590,7 +596,6 @@ AddToggle(VisualPage, "ESP (Игроки)", function(state)
     end
 end)
 
--- УМНЫЙ КОМБАТ ПОД РОЛИ
 AddToggle(CombatPage, "Авто-Режим (Убийца/Шериф)", function(state) AutoCombatEnabled = state end)
 AddToggle(CombatPage, "Авто-подбор пистолета", function(state) AutoGetGunEnabled = state end)
 
@@ -603,7 +608,6 @@ task.spawn(function()
             local isMurderer, isSheriff, myTool = GetPlayerRoleAndTool(LocalPlayer)
             
             if myRoot and myHum and myTool then
-                -- Экипируем оружие в правильного (физического) персонажа
                 if myTool.Parent ~= myRoot.Parent then 
                     myHum:EquipTool(myTool) 
                 end
@@ -688,9 +692,7 @@ WalkSpeedConnection = RunService.Stepped:Connect(function()
     end
 end)
 
--- ==========================================
 -- ПЕРЕТАСКИВАНИЕ GUI
--- ==========================================
 local dragging, dragInput, dragStart, startPos
 MainFrame.InputBegan:Connect(function(input)
     if input.UserInputType == Enum.UserInputType.MouseButton1 or input.UserInputType == Enum.UserInputType.Touch then
@@ -710,9 +712,7 @@ UserInputService.InputEnded:Connect(function(input)
     if input.UserInputType == Enum.UserInputType.MouseButton1 or input.UserInputType == Enum.UserInputType.Touch then dragging = false end
 end)
 
--- ==========================================
--- КНОПКА ЗАКРЫТИЯ С ПОЛНОЙ ОЧИСТКОЙ
--- ==========================================
+-- КНОПКА ЗАКРЫТИЯ
 CloseBtn.MouseButton1Click:Connect(function()
     Flying, AutoFarmEnabled, WalkSpeedEnabled, ESPEnabled, AutoCombatEnabled, AutoGetGunEnabled = false, false, false, false, false, false
     StopFlying() StopAutoFarm()
@@ -723,9 +723,11 @@ CloseBtn.MouseButton1Click:Connect(function()
     
     if CloneChar then CloneChar:Destroy() end
     if typeof(RealCharObj) == "Instance" and RealCharObj.Parent then 
+        for _, v in pairs(RealCharObj:GetDescendants()) do
+            if v:IsA("Motor6D") then v.C0 = CFrame.new(0, 0, 0) end
+        end
         local hum = RealCharObj:FindFirstChildOfClass("Humanoid")
         if hum then hum.Health = 0 end 
     end
-    
     ScreenGui:Destroy()
 end)
