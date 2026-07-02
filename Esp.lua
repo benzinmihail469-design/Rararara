@@ -24,9 +24,8 @@ if CharacterScripts then
     end
 end
 
-local Flying, FlySpeed, NormalWalkSpeed, WalkSpeedEnabled, AutoFarmEnabled, AutoFarmSpeed, ESPEnabled, AutoKillEnabled, AutoGetGunEnabled, GodModeEnabled = false, 35, 16, false, false, 16, false, false, false, false
+local Flying, FlySpeed, NormalWalkSpeed, WalkSpeedEnabled, AutoFarmEnabled, AutoFarmSpeed, ESPEnabled, AutoKillEnabled, AutoGetGunEnabled = false, 35, 16, false, false, 16, false, false, false
 local FlyConnection, NoclipConnection, WalkSpeedConnection, AutoFarmConnection, ESPConnection = nil, nil, nil, nil, nil
-local GodModeConnection = nil
 local NextScanTime, CachedCoin, BVelocity, BGyro = 0, nil, nil, nil
 
 -- Вспомогательные функции
@@ -444,36 +443,40 @@ AddToggle(MainPage, "Авто-Фарм Монет", function(state)
 end)
 AddSlider(MainPage, "Скорость авто-фарма", 10, 25, 16, function(value) AutoFarmSpeed = value end)
 
--- РАБОЧИЙ GOD MODE ДЛЯ MM2
-AddToggle(PlayerPage, "God Mode (Бессмертие)", function(state)
-    GodModeEnabled = state
-    
+-- НАСТОЯЩИЙ GOD MODE: Метод замены ядра (Humanoid Clone)
+AddToggle(PlayerPage, "God Mode (Клон Humanoid)", function(state)
+    local char = LocalPlayer.Character
+    if not char then return end
+
     if state then
-        if GodModeConnection then GodModeConnection:Disconnect() end
-        -- Постоянно отключаем регистрацию касаний
-        GodModeConnection = RunService.Stepped:Connect(function()
-            if not GodModeEnabled then return end
-            local char = LocalPlayer.Character
-            if char then
-                for _, part in pairs(char:GetDescendants()) do
-                    if part:IsA("BasePart") then
-                        -- Выключаем CanTouch. Нож маньяка работает именно через касание (Touched).
-                        -- Пока это выключено, нож просто проходит сквозь тебя без урона.
-                        part.CanTouch = false
-                    end
-                end
+        local hum = char:FindFirstChildOfClass("Humanoid")
+        if hum then
+            char.Archivable = true
+            
+            -- Делаем копию хуманоида
+            local clonedHum = hum:Clone()
+            clonedHum.Parent = char
+            
+            -- Уничтожаем оригинал (Сервер теряет связь с твоим здоровьем)
+            hum:Destroy()
+            
+            -- Восстанавливаем фокус камеры
+            workspace.CurrentCamera.CameraSubject = clonedHum
+            
+            -- Перезапуск скрипта анимаций, чтобы персонаж не "скользил"
+            local animate = char:FindFirstChild("Animate")
+            if animate then
+                local animateClone = animate:Clone()
+                animate:Destroy()
+                animateClone.Parent = char
             end
-        end)
+        end
     else
-        if GodModeConnection then GodModeConnection:Disconnect() GodModeConnection = nil end
-        -- Возвращаем всё как было
-        local char = LocalPlayer.Character
-        if char then
-            for _, part in pairs(char:GetDescendants()) do
-                if part:IsA("BasePart") then
-                    part.CanTouch = true
-                end
-            end
+        -- ВАЖНО: Восстановить связь сервера с новым хуманоидом невозможно.
+        -- Чтобы отключить год-мод, нужно убить игрока (сбросить персонажа).
+        local hum = char:FindFirstChildOfClass("Humanoid")
+        if hum then 
+            hum.Health = 0 
         end
     end
 end)
@@ -628,20 +631,14 @@ UserInputService.InputEnded:Connect(function(input)
 end)
 
 CloseBtn.MouseButton1Click:Connect(function()
-    Flying, AutoFarmEnabled, WalkSpeedEnabled, ESPEnabled, AutoKillEnabled, AutoGetGunEnabled, GodModeEnabled = false, false, false, false, false, false, false
+    Flying, AutoFarmEnabled, WalkSpeedEnabled, ESPEnabled, AutoKillEnabled, AutoGetGunEnabled = false, false, false, false, false, false
     StopFlying() StopAutoFarm()
     if NoclipConnection then NoclipConnection:Disconnect() end
     if WalkSpeedConnection then WalkSpeedConnection:Disconnect() end
     if ESPConnection then ESPConnection:Disconnect() end
-    if GodModeConnection then GodModeConnection:Disconnect() end
     
     local char = LocalPlayer.Character
     local hum = char and char:FindFirstChildOfClass("Humanoid")
     if hum then hum.WalkSpeed = 16 end
-    if char then 
-        for _, part in pairs(char:GetDescendants()) do 
-            if part:IsA("BasePart") then part.CanTouch = true end 
-        end 
-    end
     ScreenGui:Destroy()
 end)
