@@ -17,16 +17,17 @@ pcall(function()
 end)
 
 -- ==========================================
--- СОСТОЯНИЕ И НАСТРОЙКИ
+-- СОСТОЯНИЕ И НАСТРОЙКИ С КЭШЕМ
 -- ==========================================
 local State = {
     Flying = false, FlySpeed = 35,
-    AutoFarmEnabled = false, AutoFarmSpeed = 15, -- Максимум 25
+    AutoFarmEnabled = false, AutoFarmSpeed = 15, -- Ограничено до 25
     WalkSpeedEnabled = false, CustomWalkSpeed = 16,
     NoclipEnabled = false,
     ESPEnabled = false,
     AutoCombat = false, AutoPickGun = false,
-    AutoFlingEnabled = false
+    AutoFlingEnabled = false,
+    MenuMinimized = false
 }
 
 local Connections = {}
@@ -58,10 +59,10 @@ local function GetPlayerRole(player)
 end
 
 -- ==========================================
--- ИСПРАВЛЕННАЯ ЛОГИКА ФУНКЦИЙ (ПОЛНАЯ)
+-- ПОЛНАЯ ЛОГИКА ФУНКЦИЙ (БЕЗ СКАЧКОВ)
 -- ==========================================
 
--- 1. Исправленный Bypass Fly (Полет)
+-- Bypass Fly (Полет)
 local function StopFlying()
     if Connections.Fly then Connections.Fly:Disconnect() Connections.Fly = nil end
     if BVelocity then BVelocity:Destroy() BVelocity = nil end
@@ -110,7 +111,7 @@ local function StartFlying()
     end)
 end
 
--- 2. Стабильный Auto Fling (Без улетов в космос)
+-- Стабильный Auto Fling
 local function ToggleFling(state)
     State.AutoFlingEnabled = state
     if Connections.Fling then Connections.Fling:Disconnect() Connections.Fling = nil end
@@ -187,7 +188,7 @@ local function ScanForCoin()
     return nil
 end
 
--- 3. Плавный Авто-Фарм Монет
+-- Авто-Фарм Монет
 local function ToggleAutoFarm(state)
     State.AutoFarmEnabled = state
     if Connections.Farm then Connections.Farm:Disconnect() Connections.Farm = nil end
@@ -206,7 +207,6 @@ local function ToggleAutoFarm(state)
         local coin = ScanForCoin()
         if coin then
             hum.PlatformStand = true
-            -- State.AutoFarmSpeed ограничен слайдером жестко до 25 максимума
             local lerpFactor = math.clamp(State.AutoFarmSpeed / 100, 0.01, 0.25)
             root.CFrame = root.CFrame:Lerp(coin.CFrame * CFrame.new(0, 0.3, 0), lerpFactor)
             
@@ -221,7 +221,7 @@ local function ToggleAutoFarm(state)
 end
 
 -- ==========================================
--- СОЗДАНИЕ ИНТЕРФЕЙСА (GUI)
+-- ПОСТРОЕНИЕ ОРИГИНАЛЬНОГО ИНТЕРФЕЙСА (GUI)
 -- ==========================================
 local ScreenGui = Instance.new("ScreenGui")
 ScreenGui.Name = "HoshiMM2Gui"
@@ -229,6 +229,7 @@ ScreenGui.ResetOnSpawn = false
 pcall(function() ScreenGui.Parent = CoreGui end)
 if not ScreenGui.Parent then ScreenGui.Parent = LocalPlayer:WaitForChild("PlayerGui") end
 
+-- Главный фрейм
 local MainFrame = Instance.new("Frame", ScreenGui)
 MainFrame.Size = UDim2.new(0, 560, 0, 380)
 MainFrame.Position = UDim2.new(0.5, -280, 0.5, -190)
@@ -239,38 +240,55 @@ local MainStroke = Instance.new("UIStroke", MainFrame)
 MainStroke.Color = Color3.fromRGB(35, 38, 48)
 MainStroke.Thickness = 1
 
--- Шапка (Header)
+-- Старая Шапка (Header) с кнопками управления окна
 local Header = Instance.new("Frame", MainFrame)
-Header.Size = UDim2.new(1, 0, 0, 30)
+Header.Size = UDim2.new(1, 0, 0, 34)
 Header.BackgroundColor3 = Color3.fromRGB(18, 19, 24)
 Header.BorderSizePixel = 0
 local HeaderCorner = Instance.new("UICorner", Header)
 HeaderCorner.CornerRadius = UDim.new(0, 9)
 
+-- Нижняя плашка для скрытия скруглений шапки снизу
+local HeaderFix = Instance.new("Frame", Header)
+HeaderFix.Size = UDim2.new(1, 0, 0, 10)
+HeaderFix.Position = UDim2.new(0, 0, 1, -10)
+HeaderFix.BackgroundColor3 = Color3.fromRGB(18, 19, 24)
+HeaderFix.BorderSizePixel = 0
+
 local Title = Instance.new("TextLabel", Header)
-Title.Size = UDim2.new(0, 200, 1, 0)
-Title.Position = UDim2.new(0, 12, 0, 0)
+Title.Size = UDim2.new(0, 250, 1, 0)
+Title.Position = UDim2.new(0, 15, 0, 0)
 Title.BackgroundTransparency = 1
 Title.Font = Enum.Font.GothamBold
-Title.Text = "Hoshi Hub — MM2"
+Title.Text = "Hoshi Hub — Murder Mystery 2"
 Title.TextColor3 = Color3.fromRGB(255, 255, 255)
-Title.TextSize = 12
+Title.TextSize = 13
 Title.TextXAlignment = Enum.TextXAlignment.Left
 
--- Кнопка закрытия
+-- Старая кнопка Закрытия (X)
 local CloseBtn = Instance.new("TextButton", Header)
-CloseBtn.Size = UDim2.new(0, 30, 1, 0)
-CloseBtn.Position = UDim2.new(1, -30, 0, 0)
+CloseBtn.Size = UDim2.new(0, 34, 1, 0)
+CloseBtn.Position = UDim2.new(1, -34, 0, 0)
 CloseBtn.BackgroundTransparency = 1
 CloseBtn.Font = Enum.Font.GothamBold
-CloseBtn.Text = "X"
-CloseBtn.TextColor3 = Color3.fromRGB(240, 80, 80)
-CloseBtn.TextSize = 12
+CloseBtn.Text = "✕"
+CloseBtn.TextColor3 = Color3.fromRGB(160, 165, 175)
+CloseBtn.TextSize = 13
+
+-- Старая кнопка Минимизации (-)
+local MinimizeBtn = Instance.new("TextButton", Header)
+MinimizeBtn.Size = UDim2.new(0, 34, 1, 0)
+MinimizeBtn.Position = UDim2.new(1, -68, 0, 0)
+MinimizeBtn.BackgroundTransparency = 1
+MinimizeBtn.Font = Enum.Font.GothamBold
+MinimizeBtn.Text = "—"
+MinimizeBtn.TextColor3 = Color3.fromRGB(160, 165, 175)
+MinimizeBtn.TextSize = 11
 
 -- Сайдбар меню
 local Sidebar = Instance.new("Frame", MainFrame)
-Sidebar.Size = UDim2.new(0, 140, 1, -30)
-Sidebar.Position = UDim2.new(0, 0, 0, 30)
+Sidebar.Size = UDim2.new(0, 140, 1, -34)
+Sidebar.Position = UDim2.new(0, 0, 0, 34)
 Sidebar.BackgroundColor3 = Color3.fromRGB(19, 20, 25)
 Sidebar.BorderSizePixel = 0
 local SideCorner = Instance.new("UICorner", Sidebar)
@@ -280,12 +298,12 @@ local SidebarList = Instance.new("UIListLayout", Sidebar)
 SidebarList.Padding = UDim.new(0, 6)
 SidebarList.HorizontalAlignment = Enum.HorizontalAlignment.Center
 local SidebarPadding = Instance.new("UIPadding", Sidebar)
-SidebarPadding.PaddingTop = UDim.new(0, 10)
+SidebarPadding.PaddingTop = UDim.new(0, 12)
 
 -- Контейнер для страниц
 local PageContainer = Instance.new("Frame", MainFrame)
-PageContainer.Size = UDim2.new(1, -155, 1, -45)
-PageContainer.Position = UDim2.new(0, 150, 0, 40)
+PageContainer.Size = UDim2.new(1, -155, 1, -49)
+PageContainer.Position = UDim2.new(0, 150, 0, 44)
 PageContainer.BackgroundTransparency = 1
 
 local Pages = {}
@@ -297,11 +315,11 @@ local function CreatePage(name)
     page.BackgroundTransparency = 1
     page.Visible = false
     page.CanvasSize = UDim2.new(0, 0, 0, 0)
-    page.ScrollBarThickness = 3
+    page.ScrollBarThickness = 4
     page.ScrollBarImageColor3 = Color3.fromRGB(45, 48, 60)
     
     local list = Instance.new("UIListLayout", page)
-    list.Padding = UDim.new(0, 7)
+    list.Padding = UDim.new(0, 8)
     list.SortOrder = Enum.SortOrder.LayoutOrder
     list:GetPropertyChangedSignal("AbsoluteContentSize"):Connect(function()
         page.CanvasSize = UDim2.new(0, 0, 0, list.AbsoluteContentSize.Y + 15)
@@ -313,37 +331,47 @@ end
 
 local function CreateTab(name, pageName)
     local btn = Instance.new("TextButton", Sidebar)
-    btn.Size = UDim2.new(0.9, 0, 0, 34)
+    btn.Size = UDim2.new(0.92, 0, 0, 36)
     btn.BackgroundColor3 = Color3.fromRGB(26, 28, 35)
-    btn.Text = "  " .. name
-    btn.TextColor3 = Color3.fromRGB(150, 155, 170)
+    btn.Text = "   " .. name
+    btn.TextColor3 = Color3.fromRGB(145, 150, 165)
     btn.Font = Enum.Font.GothamMedium
     btn.TextSize = 12
     btn.TextXAlignment = Enum.TextXAlignment.Left
     Instance.new("UICorner", btn).CornerRadius = UDim.new(0, 6)
     
+    local tabStroke = Instance.new("UIStroke", btn)
+    tabStroke.Color = Color3.fromRGB(33, 36, 46)
+    tabStroke.Thickness = 1
+
     btn.MouseButton1Click:Connect(function()
         for _, p in pairs(Pages) do p.Visible = false end
-        for _, t in pairs(Tabs) do t.TextColor3 = Color3.fromRGB(150, 155, 170) t.BackgroundColor3 = Color3.fromRGB(26, 28, 35) end
+        for _, t in pairs(Tabs) do 
+            t.TextColor3 = Color3.fromRGB(145, 150, 165) 
+            t.BackgroundColor3 = Color3.fromRGB(26, 28, 35) 
+            t:FindFirstChildOfClass("UIStroke").Color = Color3.fromRGB(33, 36, 46)
+        end
         Pages[pageName].Visible = true
         btn.TextColor3 = Color3.fromRGB(255, 255, 255)
         btn.BackgroundColor3 = Color3.fromRGB(38, 42, 53)
+        tabStroke.Color = Color3.fromRGB(55, 60, 75)
     end)
     
     Tabs[name] = btn
 end
 
--- Конструкторы элементов UI
+-- Оригинальные интерактивные кнопки (Переключатели)
 local function AddToggle(parent, text, callback)
     local frame = Instance.new("Frame", parent)
-    frame.Size = UDim2.new(0.96, 0, 0, 38)
+    frame.Size = UDim2.new(0.96, 0, 0, 40)
     frame.BackgroundColor3 = Color3.fromRGB(22, 24, 30)
     Instance.new("UICorner", frame).CornerRadius = UDim.new(0, 6)
-    Instance.new("UIStroke", frame).Color = Color3.fromRGB(32, 35, 45)
+    local toggleStroke = Instance.new("UIStroke", frame)
+    toggleStroke.Color = Color3.fromRGB(32, 35, 45)
     
     local label = Instance.new("TextLabel", frame)
     label.Size = UDim2.new(0.7, 0, 1, 0)
-    label.Position = UDim2.new(0, 12, 0, 0)
+    label.Position = UDim2.new(0, 14, 0, 0)
     label.BackgroundTransparency = 1
     label.Text = text
     label.TextColor3 = Color3.fromRGB(215, 220, 230)
@@ -351,31 +379,39 @@ local function AddToggle(parent, text, callback)
     label.TextSize = 12
     label.TextXAlignment = Enum.TextXAlignment.Left
     
-    local btn = Instance.new("TextButton", frame)
-    btn.Size = UDim2.new(0, 38, 0, 20)
-    btn.Position = UDim2.new(1, -50, 0.5, -10)
-    btn.BackgroundColor3 = Color3.fromRGB(45, 48, 60)
-    btn.Text = ""
-    Instance.new("UICorner", btn).CornerRadius = UDim.new(0, 10)
+    local switch = Instance.new("TextButton", frame)
+    switch.Size = UDim2.new(0, 40, 0, 22)
+    switch.Position = UDim2.new(1, -54, 0.5, -11)
+    switch.BackgroundColor3 = Color3.fromRGB(45, 48, 60)
+    switch.Text = ""
+    Instance.new("UICorner", switch).CornerRadius = UDim.new(0, 11)
     
+    local circle = Instance.new("Frame", switch)
+    circle.Size = UDim2.new(0, 16, 0, 16)
+    circle.Position = UDim2.new(0, 3, 0.5, -8)
+    circle.BackgroundColor3 = Color3.fromRGB(255, 255, 255)
+    Instance.new("UICorner", circle).CornerRadius = UDim.new(0, 8)
+
     local toggled = false
-    btn.MouseButton1Click:Connect(function()
+    switch.MouseButton1Click:Connect(function()
         toggled = not toggled
-        btn.BackgroundColor3 = toggled and Color3.fromRGB(75, 190, 115) or Color3.fromRGB(45, 48, 60)
+        TweenService:Create(switch, TweenInfo.new(0.2), {BackgroundColor3 = toggled and Color3.fromRGB(75, 190, 115) or Color3.fromRGB(45, 48, 60)}):Play()
+        TweenService:Create(circle, TweenInfo.new(0.2), {Position = toggled and UDim2.new(1, -19, 0.5, -8) or UDim2.new(0, 3, 0.5, -8)}):Play()
         pcall(callback, toggled)
     end)
 end
 
+-- Оригинальные Слайдеры
 local function AddSlider(parent, text, min, max, default, callback)
     local frame = Instance.new("Frame", parent)
-    frame.Size = UDim2.new(0.96, 0, 0, 48)
+    frame.Size = UDim2.new(0.96, 0, 0, 50)
     frame.BackgroundColor3 = Color3.fromRGB(22, 24, 30)
     Instance.new("UICorner", frame).CornerRadius = UDim.new(0, 6)
     Instance.new("UIStroke", frame).Color = Color3.fromRGB(32, 35, 45)
     
     local label = Instance.new("TextLabel", frame)
-    label.Size = UDim2.new(0.6, 0, 0, 22)
-    label.Position = UDim2.new(0, 12, 0, 4)
+    label.Size = UDim2.new(0.6, 0, 0, 24)
+    label.Position = UDim2.new(0, 14, 0, 4)
     label.BackgroundTransparency = 1
     label.Text = text
     label.TextColor3 = Color3.fromRGB(215, 220, 230)
@@ -384,7 +420,7 @@ local function AddSlider(parent, text, min, max, default, callback)
     label.TextXAlignment = Enum.TextXAlignment.Left
     
     local valLabel = Instance.new("TextLabel", frame)
-    valLabel.Size = UDim2.new(0.3, 0, 0, 22)
+    valLabel.Size = UDim2.new(0.3, 0, 0, 24)
     valLabel.Position = UDim2.new(1, -75, 0, 4)
     valLabel.BackgroundTransparency = 1
     valLabel.Text = tostring(default)
@@ -394,17 +430,17 @@ local function AddSlider(parent, text, min, max, default, callback)
     valLabel.TextXAlignment = Enum.TextXAlignment.Right
     
     local sliderBar = Instance.new("TextButton", frame)
-    sliderBar.Size = UDim2.new(0.93, 0, 0, 5)
-    sliderBar.Position = UDim2.new(0, 12, 0, 32)
+    sliderBar.Size = UDim2.new(0.93, 0, 0, 6)
+    sliderBar.Position = UDim2.new(0, 14, 0, 34)
     sliderBar.BackgroundColor3 = Color3.fromRGB(38, 41, 52)
     sliderBar.Text = ""
-    Instance.new("UICorner", sliderBar).CornerRadius = UDim.new(0, 2)
+    Instance.new("UICorner", sliderBar).CornerRadius = UDim.new(0, 3)
     
     local fill = Instance.new("Frame", sliderBar)
     fill.Size = UDim2.new((default - min) / (max - min), 0, 1, 0)
     fill.BackgroundColor3 = Color3.fromRGB(240, 240, 245)
     fill.BorderSizePixel = 0
-    Instance.new("UICorner", fill).CornerRadius = UDim.new(0, 2)
+    Instance.new("UICorner", fill).CornerRadius = UDim.new(0, 3)
     
     local isSliding = false
     local function updateSlider(input)
@@ -426,7 +462,7 @@ local function AddSlider(parent, text, min, max, default, callback)
     end)
 end
 
--- Создание страниц
+-- Инициализация структуры вкладок
 local MainP = CreatePage("Main")
 local PlayerP = CreatePage("Player")
 local VisualP = CreatePage("Visual")
@@ -437,13 +473,14 @@ CreateTab("Игрок", "Player")
 CreateTab("Визуал", "Visual")
 CreateTab("Бой", "Combat")
 
--- Старт с первой вкладки
+-- Открытие дефолтной страницы
 Pages["Main"].Visible = true
 Tabs["Главная"].TextColor3 = Color3.fromRGB(255, 255, 255)
 Tabs["Главная"].BackgroundColor3 = Color3.fromRGB(38, 42, 53)
+Tabs["Главная"]:FindFirstChildOfClass("UIStroke").Color = Color3.fromRGB(55, 60, 75)
 
 -- ==========================================
--- ЗАПОЛНЕНИЕ КОНТЕНТОМ (ВСЕ ЭЛЕМЕНТЫ)
+-- ЗАПОЛНЕНИЕ ВСЕМИ ЭЛЕМЕНТАМИ КНОПОК
 -- ==========================================
 
 -- Вкладка: Главная
@@ -488,10 +525,10 @@ AddToggle(CombatP, "Авто-Атака (Combat Aura)", function(state) State.Au
 AddToggle(CombatP, "Авто-подбор оружия (Gun Pick)", function(state) State.AutoPickGun = state end)
 
 -- ==========================================
--- СЕРВИСНЫЕ ЦИКЛЫ И ФОНОВЫЕ ПОТОКИ
+-- СЕРВИСНЫЕ ФОНОВЫЕ ПОТОКИ И ЦИКЛЫ
 -- ==========================================
 
--- Цикл изменения скорости персонажа
+-- Поток WalkSpeed
 Connections.WalkSpeedLoop = RunService.Heartbeat:Connect(function()
     local hum = GetHum()
     if hum and State.WalkSpeedEnabled and not State.AutoFarmEnabled and not State.Flying then
@@ -499,7 +536,7 @@ Connections.WalkSpeedLoop = RunService.Heartbeat:Connect(function()
     end
 end)
 
--- Авто-Удар
+-- Поток Авто-Атаки
 task.spawn(function()
     while task.wait(0.2) do
         if State.AutoCombat and LocalPlayer.Character then
@@ -511,7 +548,7 @@ task.spawn(function()
     end
 end)
 
--- Автоподбор пистолета
+-- Поток подбора Оружия
 task.spawn(function()
     while task.wait(0.3) do
         if State.AutoPickGun then
@@ -530,7 +567,7 @@ task.spawn(function()
     end
 end)
 
--- Отрисовка ESP
+-- Поток рендеринга ESP Ролей
 task.spawn(function()
     while task.wait(0.5) do
         if State.ESPEnabled then
@@ -557,14 +594,14 @@ task.spawn(function()
     end
 end)
 
--- Система перетаскивания GUI
+-- Система перетаскивания GUI мышкой или тачем
 local dragging, dragInput, dragStart, startPos
-MainFrame.InputBegan:Connect(function(input)
+Header.InputBegan:Connect(function(input)
     if input.UserInputType == Enum.UserInputType.MouseButton1 or input.UserInputType == Enum.UserInputType.Touch then
         dragging = true dragStart = input.Position startPos = MainFrame.Position
     end
 end)
-MainFrame.InputChanged:Connect(function(input)
+Header.InputChanged:Connect(function(input)
     if input.UserInputType == Enum.UserInputType.MouseMovement or input.UserInputType == Enum.UserInputType.Touch then dragInput = input end
 end)
 UserInputService.InputChanged:Connect(function(input)
@@ -577,7 +614,22 @@ UserInputService.InputEnded:Connect(function(input)
     if input.UserInputType == Enum.UserInputType.MouseButton1 or input.UserInputType == Enum.UserInputType.Touch then dragging = false end
 end)
 
--- Функционал Кнопки Закрытия
+-- Логика кнопки Минимизации (Сворачивание панели)
+MinimizeBtn.MouseButton1Click:Connect(function()
+    State.MenuMinimized = not State.MenuMinimized
+    if State.MenuMinimized then
+        Sidebar.Visible = false
+        PageContainer.Visible = false
+        MainFrame:TweenSize(UDim2.new(0, 560, 0, 34), Enum.EasingDirection.Out, Enum.EasingStyle.Quart, 0.25, true)
+    else
+        MainFrame:TweenSize(UDim2.new(0, 560, 0, 380), Enum.EasingDirection.Out, Enum.EasingStyle.Quart, 0.25, true, function()
+            Sidebar.Visible = true
+            PageContainer.Visible = true
+        end)
+    end
+end)
+
+-- Полное уничтожение скрипта при нажатии на Закрытие
 CloseBtn.MouseButton1Click:Connect(function()
     State.Flying, State.AutoFarmEnabled, State.WalkSpeedEnabled, State.ESPEnabled, State.AutoCombat, State.AutoPickGun, State.AutoFlingEnabled = false, false, false, false, false, false, false
     StopFlying()
