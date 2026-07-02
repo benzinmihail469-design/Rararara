@@ -34,7 +34,7 @@ if CharacterScripts then
 end
 
 local Flying, FlySpeed, NormalWalkSpeed, WalkSpeedEnabled = false, 35, 16, false
-local AutoFarmEnabled, AutoFarmSpeed = false, 30
+local AutoFarmEnabled, AutoFarmSpeed = false, 15
 local ESPEnabled, AutoCombatEnabled, AutoGetGunEnabled = false, false, false
 local AutoFlingEnabled = false
 
@@ -149,13 +149,8 @@ local function StartAutoFarm()
         
         local coin = GetTargetCoinGlobal()
         if coin and coin.Parent then
-            -- Плавное или быстрое перемещение в зависимости от выставленного слайдера скорости
             local targetPos = coin.CFrame * CFrame.new(0, 0.2, 0)
-            if AutoFarmSpeed >= 80 then
-                root.CFrame = targetPos
-            else
-                root.CFrame = root.CFrame:Lerp(targetPos, AutoFarmSpeed / 100)
-            end
+            root.CFrame = root.CFrame:Lerp(targetPos, AutoFarmSpeed / 100)
             hum.PlatformStand = true
             pcall(function()
                 firetouchinterest(root, coin, 0)
@@ -195,7 +190,7 @@ local function IsPlayerInGame(player)
 end
 
 -- ==========================================
--- СОЗДАНИЕ ИНТЕРФЕЙСА (GUI)
+-- СОЗДАНИЕ ИНТЕРФЕЙСА (GUI) И ВКЛАДОК
 -- ==========================================
 local ScreenGui = Instance.new("ScreenGui")
 ScreenGui.Name = "HoshiMM2Gui"
@@ -459,12 +454,14 @@ end
 -- НАСТРОЙКА КНОПОК И ЭЛЕМЕНТОВ GUI
 -- ==========================================
 
+-- Главная
 AddToggle(MainPage, "Авто-Фарм Монет", function(state)
     AutoFarmEnabled = state
     if state then StartAutoFarm() else StopAutoFarm() end
 end)
-AddSlider(MainPage, "Скорость Фарма монеток", 10, 100, 30, function(value) AutoFarmSpeed = value end)
+AddSlider(MainPage, "Скорость Авто-Фарма", 1, 25, 15, function(value) AutoFarmSpeed = value end)
 
+-- Игрок
 AddToggle(PlayerPage, "Bypass Fly (Полет)", function(state) Flying = state if state then StartFlying() else StopFlying() end end)
 AddSlider(PlayerPage, "Скорость полета", 15, 90, 35, function(value) FlySpeed = value end)
 AddToggle(PlayerPage, "Включить кастомный WalkSpeed", function(state) WalkSpeedEnabled = state end)
@@ -483,6 +480,7 @@ AddToggle(PlayerPage, "Noclip (Сквозь Стены)", function(state)
     end
 end)
 
+-- Визуал
 AddToggle(VisualPage, "ESP (Игроки)", function(state) 
     ESPEnabled = state 
     if state then
@@ -515,11 +513,11 @@ AddToggle(VisualPage, "ESP (Игроки)", function(state)
     end
 end)
 
--- РАЗДЕЛ БОЯ (СТАРЫЕ ФУНКЦИИ + NEW AUTO FLING)
+-- Бой
 AddToggle(CombatPage, "Авто-Режим (Убийца/Шериф)", function(state) AutoCombatEnabled = state end)
 AddToggle(CombatPage, "Авто-подбор пистолета", function(state) AutoGetGunEnabled = state end)
 
-AddToggle(CombatPage, "Включить Auto Fling (Убивать телом)", function(state)
+AddToggle(CombatPage, "Включить Auto Fling", function(state)
     AutoFlingEnabled = state
     local root = GetCurrentRoot()
     if state and root then
@@ -527,11 +525,9 @@ AddToggle(CombatPage, "Включить Auto Fling (Убивать телом)",
         FlingConnection = RunService.Heartbeat:Connect(function()
             if not AutoFlingEnabled or not root or not root.Parent then return end
             
-            -- Сверхбыстрое кручение физики для fling эффекта
             root.AssemblyLinearVelocity = Vector3.new(0, 0, 0)
             root.AssemblyAngularVelocity = Vector3.new(0, 99999, 0)
             
-            -- Наведение на ближайшую цель (любой игрок кроме себя)
             local closestPlayer = nil
             local shortestDistance = math.huge
             
@@ -540,7 +536,7 @@ AddToggle(CombatPage, "Включить Auto Fling (Убивать телом)",
                     local pRoot = player.Character:FindFirstChild("HumanoidRootPart")
                     if pRoot then
                         local dist = (root.Position - pRoot.Position).Magnitude
-                        if dist < shortestDistance and dist < 40 then -- Радиус действия флинга 40 блоков
+                        if dist < shortestDistance and dist < 40 then
                             shortestDistance = dist
                             closestPlayer = pRoot
                         end
@@ -549,7 +545,6 @@ AddToggle(CombatPage, "Включить Auto Fling (Убивать телом)",
             end
             
             if closestPlayer then
-                -- Телепортируем часть торса прямо в цель, выбивая коллизию
                 root.CFrame = closestPlayer.CFrame * CFrame.new(math.sin(tick()*20)*0.5, 0, math.cos(tick()*20)*0.5)
             end
         end)
