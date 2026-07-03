@@ -151,7 +151,7 @@ UserInputService.JumpRequest:Connect(function()
 end)
 
 -- ==========================================
--- УМНЫЙ ПОИСК БЛИЖАЙШЕЙ МОНЕТЫ
+-- УМНЫЙ ПОИСК БЛИЖАЙШЕЙ МОНЕТЫ (ИСПРАВЛЕНО ДЛЯ ЛОББИ)
 -- ==========================================
 local function ScanAllCoins()
     local root = GetRoot()
@@ -164,7 +164,9 @@ local function ScanAllCoins()
         if obj:IsA("BasePart") and (obj.Name == "Coin_Server" or obj.Name == "GoldCoin" or obj.Name == "Coin" or obj.Name:lower():find("coin")) then
             if obj.Transparency < 1 and obj.Parent then
                 local distance = (root.Position - obj.Position).Magnitude
-                if distance < shortestDistance then
+                -- Если монета дальше 1500 стадов, значит она на карте, а мы в лобби.
+                -- Игнорируем такие монеты, чтобы скрипт не зависал!
+                if distance < shortestDistance and distance < 1500 then
                     shortestDistance = distance
                     closestCoin = obj
                 end
@@ -175,9 +177,9 @@ local function ScanAllCoins()
 end
 
 -- ==========================================
--- УМНЫЙ АВТО-ФАРМ (С ПРОВЕРКОЙ ЛОББИ)
+-- УМНЫЙ АВТО-ФАРМ 
 -- ==========================================
-local isCurrentlyFarming = false -- Переменная, которая понимает, идет ли катка
+local isCurrentlyFarming = false 
 
 local function ToggleAutoFarm(state)
     State.AutoFarmEnabled = state
@@ -195,7 +197,6 @@ local function ToggleAutoFarm(state)
         return
     end
 
-    -- Стабильный Noclip, работает ТОЛЬКО когда скрипт видит монеты (в катке)
     Connections.FarmNoclip = RunService.Stepped:Connect(function()
         local root = GetRoot()
         local humanoid = GetHum()
@@ -217,7 +218,6 @@ local function ToggleAutoFarm(state)
         end
     end)
 
-    -- Поток линейного перемещения к монетам
     task.spawn(function()
         while State.AutoFarmEnabled do
             task.wait(0.2)
@@ -229,14 +229,11 @@ local function ToggleAutoFarm(state)
             local coin = ScanAllCoins()
             
             if coin and coin.Parent then
-                -- Если монета найдена, значит катка идет
                 isCurrentlyFarming = true
                 
-                -- Безопасный отступ (+1.5 по Y), чтобы не провалиться
                 local targetCFrame = coin.CFrame * CFrame.new(0, 1.5, 0)
                 local distance = (root.Position - targetCFrame.Position).Magnitude
                 
-                -- Линейный расчет времени с учетом скорости
                 local duration = distance / math.max(State.AutoFarmSpeed, 1)
 
                 local tweenInfo = TweenInfo.new(duration, Enum.EasingStyle.Linear)
@@ -260,7 +257,6 @@ local function ToggleAutoFarm(state)
                     break 
                 end
 
-                -- Мгновенный сбор монеты
                 if firetouchinterest then
                     firetouchinterest(root, coin, 0)
                     task.wait(0.02)
@@ -270,15 +266,13 @@ local function ToggleAutoFarm(state)
                     task.wait(0.02)
                 end
             else
-                -- ЕСЛИ МОНЕТ НЕТ (Игрок в лобби)
                 if isCurrentlyFarming then
-                    isCurrentlyFarming = false -- Отключаем режим полета
+                    isCurrentlyFarming = false 
                     if humanoid then 
                         humanoid.PlatformStand = false 
                         humanoid:ChangeState(Enum.HumanoidStateType.GettingUp)
                     end
                 end
-                -- Просто ждем в лобби, не напрягая игру
                 task.wait(1)
             end
         end
@@ -438,7 +432,6 @@ local function CreatePage(name)
 
     Pages[name] = page
     return page
-
 end
 
 local function CreateTab(name, pageName)
@@ -613,11 +606,9 @@ Tabs["Главная"]:FindFirstChildOfClass("UIStroke").Color = Color3.fromRGB(
 -- ЗАПОЛНЕНИЕ МЕНЮ
 -- ==========================================
 
--- Главная
 AddToggle(MainP, "Авто-Фарм Монет", function(state) ToggleAutoFarm(state) end)
 AddSlider(MainP, "Скорость Фарма", 1, 25, 25, function(v) State.AutoFarmSpeed = v end)
 
--- Игрок
 AddToggle(PlayerP, "Bypass Fly (Полет)", function(state)
     State.Flying = state
     if state then StartFlying() else StopFlying() end
@@ -646,7 +637,6 @@ AddToggle(PlayerP, "Noclip (Сквозь стены)", function(state)
 end)
 AddToggle(PlayerP, "Бесконечный Прыжок", function(state) State.InfJump = state end)
 
--- Визуал
 AddToggle(VisualP, "Включить ESP Ролей", function(state)
     State.ESPEnabled = state
     if not state then
@@ -656,7 +646,6 @@ AddToggle(VisualP, "Включить ESP Ролей", function(state)
     end
 end)
 
--- Убийца
 AddToggle(MurderP, "Включить Auto Fling", function(state) ToggleFling(state) end)
 AddToggle(MurderP, "Авто-Удар Ножом (Kill Aura)", function(state) State.MurderAura = state end)
 AddToggle(MurderP, "Радиусный Silent Kill", function(state) State.SilentKill = state end)
@@ -675,7 +664,6 @@ AddButton(MurderP, "Телепорт за спину Жертвы", function()
     end
 end)
 
--- Шериф
 AddToggle(SheriffP, "Авто-подбор пистолета", function(state) State.AutoPickGun = state end)
 AddToggle(SheriffP, "Авто-Стрельба (Sheriff Aura)", function(state) State.SheriffAura = state end)
 AddToggle(SheriffP, "Silent Aim в Убийцу", function(state) State.SilentAim = state end)
@@ -700,7 +688,6 @@ end)
 -- АКТИВНЫЕ ПОТОКИ
 -- ==========================================
 
--- Атаки Убийцы
 task.spawn(function()
     while task.wait(0.05) do
         local root = GetRoot()
@@ -728,7 +715,6 @@ task.spawn(function()
     end
 end)
 
--- Атаки Шерифа
 task.spawn(function()
     while task.wait(0.1) do
         local root = GetRoot()
@@ -750,7 +736,6 @@ task.spawn(function()
     end
 end)
 
--- Подбор пистолета
 task.spawn(function()
     while task.wait(0.1) do
         if State.AutoPickGun then
@@ -769,7 +754,6 @@ task.spawn(function()
     end
 end)
 
--- ESP
 task.spawn(function()
     while task.wait(0.5) do
         if State.ESPEnabled then
@@ -786,7 +770,6 @@ task.spawn(function()
     end
 end)
 
--- DRAG
 local dragging, dragInput, dragStart, startPos
 Header.InputBegan:Connect(function(input)
     if input.UserInputType == Enum.UserInputType.MouseButton1 or input.UserInputType == Enum.UserInputType.Touch then
@@ -812,7 +795,6 @@ UserInputService.InputEnded:Connect(function(input)
     end
 end)
 
--- MINIMIZE
 MinimizeBtn.MouseButton1Click:Connect(function()
     State.MenuMinimized = not State.MenuMinimized
     if State.MenuMinimized then
@@ -827,7 +809,6 @@ MinimizeBtn.MouseButton1Click:Connect(function()
     end
 end)
 
--- CLOSE
 CloseBtn.MouseButton1Click:Connect(function()
     State.Flying, State.AutoFarmEnabled, State.WalkSpeedEnabled, State.ESPEnabled, State.MurderAura, State.SilentKill, State.SheriffAura, State.AutoPickGun, State.AutoFlingEnabled, State.InfJump, State.SilentAim = false, false, false, false, false, false, false, false, false, false, false
     StopFlying()
