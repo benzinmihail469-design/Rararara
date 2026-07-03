@@ -24,7 +24,7 @@ local State = {
     Flying = false,
     FlySpeed = 35,
     AutoFarmEnabled = false,
-    AutoFarmSpeed = 25, -- По умолчанию выставили макс. скорость
+    AutoFarmSpeed = 25,
     WalkSpeedEnabled = false,
     CustomWalkSpeed = 16,
     NoclipEnabled = false,
@@ -175,8 +175,10 @@ local function ScanAllCoins()
 end
 
 -- ==========================================
--- ИСПРАВЛЕННЫЙ АВТО-ФАРМ (БЕЗ БЛОКИРУЮЩИХ ПРОВЕРОК)
+-- УМНЫЙ АВТО-ФАРМ (С ПРОВЕРКОЙ ЛОББИ)
 -- ==========================================
+local isCurrentlyFarming = false -- Переменная, которая понимает, идет ли катка
+
 local function ToggleAutoFarm(state)
     State.AutoFarmEnabled = state
     
@@ -185,6 +187,7 @@ local function ToggleAutoFarm(state)
     
     local hum = GetHum()
     if not state then
+        isCurrentlyFarming = false
         if hum then 
             hum.PlatformStand = false 
             hum:ChangeState(Enum.HumanoidStateType.GettingUp)
@@ -192,12 +195,12 @@ local function ToggleAutoFarm(state)
         return
     end
 
-    -- Стабильный Noclip во время фарма
+    -- Стабильный Noclip, работает ТОЛЬКО когда скрипт видит монеты (в катке)
     Connections.FarmNoclip = RunService.Stepped:Connect(function()
         local root = GetRoot()
         local humanoid = GetHum()
         
-        if State.AutoFarmEnabled and LocalPlayer.Character then
+        if State.AutoFarmEnabled and isCurrentlyFarming and LocalPlayer.Character then
             for _, part in pairs(LocalPlayer.Character:GetDescendants()) do
                 if part:IsA("BasePart") then 
                     part.CanCollide = false 
@@ -224,12 +227,16 @@ local function ToggleAutoFarm(state)
             if not root or not humanoid or humanoid.Health <= 0 then continue end
 
             local coin = ScanAllCoins()
+            
             if coin and coin.Parent then
-                -- Безопасный отступ (+1.5 по Y), персонаж летит прямо над монетой и не проваливается под карту
+                -- Если монета найдена, значит катка идет
+                isCurrentlyFarming = true
+                
+                -- Безопасный отступ (+1.5 по Y), чтобы не провалиться
                 local targetCFrame = coin.CFrame * CFrame.new(0, 1.5, 0)
                 local distance = (root.Position - targetCFrame.Position).Magnitude
                 
-                -- Линейный расчет времени с учетом скорости (до 25)
+                -- Линейный расчет времени с учетом скорости
                 local duration = distance / math.max(State.AutoFarmSpeed, 1)
 
                 local tweenInfo = TweenInfo.new(duration, Enum.EasingStyle.Linear)
@@ -253,7 +260,7 @@ local function ToggleAutoFarm(state)
                     break 
                 end
 
-                -- Мгновенный сбор монеты без задержек физики
+                -- Мгновенный сбор монеты
                 if firetouchinterest then
                     firetouchinterest(root, coin, 0)
                     task.wait(0.02)
@@ -262,6 +269,17 @@ local function ToggleAutoFarm(state)
                     root.CFrame = coin.CFrame
                     task.wait(0.02)
                 end
+            else
+                -- ЕСЛИ МОНЕТ НЕТ (Игрок в лобби)
+                if isCurrentlyFarming then
+                    isCurrentlyFarming = false -- Отключаем режим полета
+                    if humanoid then 
+                        humanoid.PlatformStand = false 
+                        humanoid:ChangeState(Enum.HumanoidStateType.GettingUp)
+                    end
+                end
+                -- Просто ждем в лобби, не напрягая игру
+                task.wait(1)
             end
         end
         
@@ -420,6 +438,7 @@ local function CreatePage(name)
 
     Pages[name] = page
     return page
+
 end
 
 local function CreateTab(name, pageName)
