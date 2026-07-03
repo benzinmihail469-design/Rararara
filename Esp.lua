@@ -8,7 +8,7 @@ local VirtualUser = game:GetService("VirtualUser")
 local LocalPlayer = Players.LocalPlayer
 
 -- ==========================================
--- ПОЛНАЯ ОЧИСТКА
+-- ПОЛНАЯ ОЧИСТКА СТАРЫХ ИНТЕРФЕЙСОВ
 -- ==========================================
 pcall(function()
     if CoreGui:FindFirstChild("HoshiMM2Gui") then CoreGui.HoshiMM2Gui:Destroy() end
@@ -18,7 +18,7 @@ pcall(function()
 end)
 
 -- ==========================================
--- СОСТОЯНИЕ
+-- СОСТОЯНИЕ СТРУКТУРЫ
 -- ==========================================
 local State = {
     Flying = false,
@@ -41,7 +41,7 @@ local State = {
 
 local Connections = {}
 local BVelocity, BGyro = nil, nil
-local CollectedCoinsInRound = 0 -- Внутренний счетчик собранных монет
+local CollectedCoinsInRound = 0 
 
 -- ==========================================
 -- ВСПОМОГАТЕЛЬНЫЕ ФУНКЦИИ
@@ -89,8 +89,10 @@ local function TeleportToLobby()
     root.CFrame = CFrame.new(-108, 145, 0) 
 end
 
--- Проверка: есть ли вообще монеты в игре (идет ли катка)
 local function IsRoundActive()
+    local container = workspace:FindFirstChild("Normal") or workspace:FindFirstChild("Map")
+    if not container then return false end
+    
     for _, obj in pairs(workspace:GetDescendants()) do
         if obj:IsA("BasePart") and (obj.Name == "Coin_Server" or obj.Name == "GoldCoin" or obj.Name == "Coin" or obj.Name:lower():find("coin")) then
             if obj.Transparency < 1 and obj.Parent then
@@ -102,7 +104,7 @@ local function IsRoundActive()
 end
 
 -- ==========================================
--- РАБОЧИЙ ФЛАЙ
+-- ИСПРАВЛЕННЫЙ ПОЛЕТ (FLY)
 -- ==========================================
 local function StopFlying()
     if Connections.Fly then Connections.Fly:Disconnect() Connections.Fly = nil end
@@ -153,12 +155,8 @@ local function StartFlying()
         if UserInputService:IsKeyDown(Enum.KeyCode.A) then moveDir = moveDir - cam.CFrame.RightVector end
         if UserInputService:IsKeyDown(Enum.KeyCode.D) then moveDir = moveDir + cam.CFrame.RightVector end
         
-        if UserInputService:IsKeyDown(Enum.KeyCode.Space) then
-            moveDir = moveDir + Vector3.new(0, 1, 0)
-        end
-        if UserInputService:IsKeyDown(Enum.KeyCode.LeftShift) then
-            moveDir = moveDir - Vector3.new(0, 1, 0)
-        end
+        if UserInputService:IsKeyDown(Enum.KeyCode.Space) then moveDir = moveDir + Vector3.new(0, 1, 0) end
+        if UserInputService:IsKeyDown(Enum.KeyCode.LeftShift) then moveDir = moveDir - Vector3.new(0, 1, 0) end
 
         if moveDir.Magnitude > 0 then
             BVelocity.Velocity = moveDir.Unit * State.FlySpeed
@@ -169,7 +167,7 @@ local function StartFlying()
 end
 
 -- ==========================================
--- БЕСКОНЕЧНЫЙ ПРЫЖОК
+-- ИНФИНИТИ ПРЫЖОК
 -- ==========================================
 UserInputService.JumpRequest:Connect(function()
     if State.InfJump then
@@ -179,7 +177,7 @@ UserInputService.JumpRequest:Connect(function()
 end)
 
 -- ==========================================
--- ПОИСК БЛИЖАЙШЕЙ МОНЕТЫ С АНТИ-УБИЙЦЕЙ
+-- ПОИСК БЛИЖАЙШЕЙ МОНЕТЫ + СЕЙВ ТРИГГЕРЫ
 -- ==========================================
 local function ScanAllCoins(safeRadius)
     local root = GetRoot()
@@ -200,9 +198,7 @@ local function ScanAllCoins(safeRadius)
                     local isSafe = true
                     if mRoot and safeRadius then
                         local distFromM = (mRoot.Position - obj.Position).Magnitude
-                        if distFromM < safeRadius then
-                            isSafe = false
-                        end
+                        if distFromM < safeRadius then isSafe = false end
                     end
                     
                     if isSafe then
@@ -217,7 +213,7 @@ local function ScanAllCoins(safeRadius)
 end
 
 -- ==========================================
--- УМНЫЙ АВТО-ФАРМ (ИСПРАВЛЕННЫЙ)
+-- ИСПРАВЛЕННЫЙ АВТО-ФАРМ (БЕЗ УЛЕТА И ТРЯСКИ)
 -- ==========================================
 local isCurrentlyFarming = false 
 local AntiFallBV = nil
@@ -244,27 +240,24 @@ local function ToggleAutoFarm(state)
 
     CollectedCoinsInRound = 0 
 
-    -- Исправленный условный ноуклип
+    -- Безопасный цикл Ноуклипа и Контроля стейтов физики
     Connections.FarmNoclip = RunService.Stepped:Connect(function()
         local root = GetRoot()
         local humanoid = GetHum()
         
         if State.AutoFarmEnabled and IsRoundActive() and LocalPlayer.Character then
             for _, part in pairs(LocalPlayer.Character:GetDescendants()) do
-                if part:IsA("BasePart") then 
-                    part.CanCollide = false 
-                end
+                if part:IsA("BasePart") then part.CanCollide = false end
             end
-            
             if isCurrentlyFarming and root then
                 root.AssemblyLinearVelocity = Vector3.new(0, 0, 0)
                 root.AssemblyAngularVelocity = Vector3.new(0, 0, 0)
             end
-            if humanoid then
+            if humanoid and not humanoid.PlatformStand then
                 humanoid.PlatformStand = true
             end
         elseif humanoid and not State.Flying then
-            -- Если раунд НЕ идет — принудительно размораживаем персонажа в лобби
+            -- Фикс тряски в Лобби: Полностью убираем блокировку стейтов
             if humanoid.PlatformStand then
                 humanoid.PlatformStand = false
                 humanoid:ChangeState(Enum.HumanoidStateType.GettingUp)
@@ -274,13 +267,13 @@ local function ToggleAutoFarm(state)
 
     task.spawn(function()
         while State.AutoFarmEnabled do
-            task.wait(0.1)
+            task.wait(0.05)
             
             local root = GetRoot()
             local humanoid = GetHum()
             if not root or not humanoid or humanoid.Health <= 0 then continue end
 
-            -- ИСПРАВЛЕНО: Полный сброс параметров фиксации при простое в Лобби
+            -- Поведение в Лобби (раунд завершен)
             if not IsRoundActive() then
                 isCurrentlyFarming = false
                 if CurrentActiveTween then CurrentActiveTween:Cancel() CurrentActiveTween = nil end
@@ -294,7 +287,7 @@ local function ToggleAutoFarm(state)
                 continue
             end
 
-            -- Инициализируем удерживающий плагин (только для фазы активного раунда)
+            -- Создание стабильного якоря удержания высоты (чтобы не проваливаться)
             if not AntiFallBV or not AntiFallBV.Parent then
                 AntiFallBV = Instance.new("BodyVelocity")
                 AntiFallBV.Name = "FarmAntiFallAnchor"
@@ -303,7 +296,7 @@ local function ToggleAutoFarm(state)
                 AntiFallBV.Parent = root
             end
 
-            -- ПРОВЕРКА НА 40 МОНЕТ
+            -- Стоп-лимит монет
             if CollectedCoinsInRound >= 40 then
                 isCurrentlyFarming = false
                 if CurrentActiveTween then CurrentActiveTween:Cancel() CurrentActiveTween = nil end
@@ -323,7 +316,7 @@ local function ToggleAutoFarm(state)
             
             if coin and coin.Parent then
                 isCurrentlyFarming = true
-                AntiFallBV.MaxForce = Vector3.new(0, 0, 0) 
+                AntiFallBV.MaxForce = Vector3.new(0, 0, 0) -- Отключаем стопор для свободного перемещения
                 
                 local targetCFrame = coin.CFrame * CFrame.new(0, 1.5, 0)
                 local distance = (root.Position - targetCFrame.Position).Magnitude
@@ -353,7 +346,6 @@ local function ToggleAutoFarm(state)
                             break
                         end
                     end
-                    
                     task.wait()
                 end
                 
@@ -365,26 +357,25 @@ local function ToggleAutoFarm(state)
                 if (root.Position - targetCFrame.Position).Magnitude < 7 then
                     if firetouchinterest then
                         firetouchinterest(root, coin, 0)
-                        task.wait(0.02)
+                        task.wait(0.01)
                         firetouchinterest(root, coin, 1)
                     else
                         root.CFrame = coin.CFrame
-                        task.wait(0.02)
+                        task.wait(0.01)
                     end
                     CollectedCoinsInRound = CollectedCoinsInRound + 1 
                 end
             else
+                -- ФИКС ПОЛЕТА В ПУСТОТУ:
+                -- Если монета пропала/ещё не загрузилась — мы просто застываем на месте, а не летим вниз!
                 isCurrentlyFarming = false 
                 if CurrentActiveTween then CurrentActiveTween:Cancel() CurrentActiveTween = nil end
                 
-                -- ИСПРАВЛЕНО: Зависание в воздухе срабатывает ТОЛЬКО посреди активного раунда
                 if root and AntiFallBV and IsRoundActive() then
-                    root.CFrame = root.CFrame * CFrame.new(0, -0.2, 0) 
                     root.AssemblyLinearVelocity = Vector3.new(0, 0, 0)
-                    AntiFallBV.MaxForce = Vector3.new(1e6, 1e6, 1e6) 
+                    AntiFallBV.MaxForce = Vector3.new(1e6, 1e6, 1e6) -- Жестко блокируем падение по осям
                     AntiFallBV.Velocity = Vector3.new(0, 0, 0)
                 end
-                task.wait(0.2)
             end
         end
         
@@ -448,7 +439,7 @@ local function ToggleFling(state)
 end
 
 -- ==========================================
--- СОЗДАНИЕ GUI
+-- ИНТЕРФЕЙС СТИЛИЗАЦИЯ (GUI)
 -- ==========================================
 local ScreenGui = Instance.new("ScreenGui")
 ScreenGui.Name = "HoshiMM2Gui"
@@ -695,7 +686,7 @@ local function AddSlider(parent, text, min, max, default, callback)
 end
 
 -- ==========================================
--- СОЗДАНИЕ СТРАНИЦ
+-- ИНИЦИАЛИЗАЦИЯ ВКЛАДОК
 -- ==========================================
 local MainP = CreatePage("Main")
 local PlayerP = CreatePage("Player")
@@ -715,7 +706,7 @@ Tabs["Главная"].BackgroundColor3 = Color3.fromRGB(38, 42, 53)
 Tabs["Главная"]:FindFirstChildOfClass("UIStroke").Color = Color3.fromRGB(55, 60, 75)
 
 -- ==========================================
--- ЗАПОЛНЕНИЕ МЕНЮ
+-- НАПОЛНЕНИЕ ФУНКЦИОНАЛА СОРСА
 -- ==========================================
 AddToggle(MainP, "Авто-Фарм Монет", function(state) ToggleAutoFarm(state) end)
 AddSlider(MainP, "Скорость Фарма", 1, 25, 25, function(v) State.AutoFarmSpeed = v end)
@@ -729,9 +720,7 @@ AddToggle(PlayerP, "Кастомный бег", function(state) State.WalkSpeedE
 AddSlider(PlayerP, "Скорость бега", 16, 120, 16, function(v)
     State.CustomWalkSpeed = v
     local hum = GetHum()
-    if hum and State.WalkSpeedEnabled then
-        hum.WalkSpeed = v
-    end
+    if hum and State.WalkSpeedEnabled then hum.WalkSpeed = v end
 end)
 AddToggle(PlayerP, "Noclip (Сквозь стены)", function(state)
     State.NoclipEnabled = state
@@ -780,7 +769,7 @@ AddToggle(SheriffP, "Авто-Стрельба (Sheriff Aura)", function(state) 
 AddToggle(SheriffP, "Silent Aim в Убийцу", function(state) State.SilentAim = state end)
 
 -- ==========================================
--- РАБОЧИЙ WALK SPEED ЛУП
+-- ЦИКЛ СКОРОСТИ ХОДЬБЫ
 -- ==========================================
 Connections.WalkSpeedLoop = RunService.Heartbeat:Connect(function()
     local hum = GetHum()
@@ -796,7 +785,7 @@ Connections.WalkSpeedLoop = RunService.Heartbeat:Connect(function()
 end)
 
 -- ==========================================
--- АКТИВНЫЕ ПОТОКИ
+-- СТРИМ ПАРАЛЛЕЛЬНЫХ ПОТОКОВ ПОЛУЧЕНИЯ ДАННЫХ
 -- ==========================================
 task.spawn(function()
     while task.wait(0.05) do
@@ -880,6 +869,7 @@ task.spawn(function()
     end
 end)
 
+-- Драг-система UI
 local dragging, dragInput, dragStart, startPos
 Header.InputBegan:Connect(function(input)
     if input.UserInputType == Enum.UserInputType.MouseButton1 or input.UserInputType == Enum.UserInputType.Touch then
