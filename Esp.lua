@@ -71,22 +71,42 @@ local function GetMurderer()
     return nil
 end
 
--- Очистка физических сил, чтобы они не мешали CFrame
+-- Полная очистка физики для стабильного CFrame
 local function ClearForces()
     local root = GetRoot()
     if root then
         for _, v in pairs(root:GetChildren()) do
-            if v:IsA("BodyVelocity") or v:IsA("BodyGyro") then
+            if v:IsA("BodyVelocity") or v:IsA("BodyGyro") or v.Name == "AntiGravity" then
                 v:Destroy()
             end
         end
-        root.AssemblyLinearVelocity = Vector3.new(0, 0, 0)
-        root.AssemblyAngularVelocity = Vector3.new(0, 0, 0)
+    end
+end
+
+-- Контроль анти-гравитации (чтобы флай не падал вниз)
+local function UpdateAntiGravity()
+    local root = GetRoot()
+    if not root then return end
+    
+    local existing = root:FindFirstChild("AntiGravity")
+    if State.Flying or State.AutoFarmEnabled then
+        if not existing then
+            local attachment = root:FindFirstChild("RootAttachment") or Instance.new("Attachment", root)
+            local vf = Instance.new("VectorForce")
+            vf.Name = "AntiGravity"
+            vf.Attachment0 = attachment
+            vf.Force = Vector3.new(0, workspace.Gravity * root:GetMass(), 0) -- Полная компенсация веса персонажа
+            vf.RelativeTo = Enum.ActuatorRelativeTo.World
+            vf.Parent = root
+        end
+        root.AssemblyLinearVelocity = Vector3.new(root.AssemblyLinearVelocity.X, 0, root.AssemblyLinearVelocity.Z)
+    else
+        if existing then existing:Destroy() end
     end
 end
 
 -- ==========================================
--- ОБЪЕДИНЕННАЯ СИСТЕМА ДВИЖЕНИЯ (CFRAME)
+-- ОБЪЕДИНЕННАЯ СИСТЕМА ДВИЖЕНИЯ (CFRAME + АНТИ-ПАДЕНИЕ)
 -- ==========================================
 if Connections.MainLoop then Connections.MainLoop:Disconnect() end
 
@@ -96,13 +116,12 @@ Connections.MainLoop = RunService.RenderStepped:Connect(function(dt)
     if not root or not hum or hum.Health <= 0 then return end
     
     local cam = workspace.CurrentCamera
+    UpdateAntiGravity()
 
-    -- 1. ЛОГИКА АВТОФАРМА (Максимальный приоритет)
+    -- 1. ЛОГИКА АВТОФАРМА
     if State.AutoFarmEnabled then
-        ClearForces()
         hum.PlatformStand = true
         
-        -- Ищем вообще любую монетку без ограничений
         local closestCoin = nil
         local shortestDist = math.huge
         for _, obj in pairs(workspace:GetDescendants()) do
@@ -120,10 +139,8 @@ Connections.MainLoop = RunService.RenderStepped:Connect(function(dt)
             local dist = dir.Magnitude
 
             if dist > 3 then
-                -- Передвигаем через жесткий расчет CFrame (Никаких замираний)
                 root.CFrame = CFrame.new(root.Position + dir.Unit * math.min(State.AutoFarmSpeed * dt * 5, dist), closestCoin.Position)
             else
-                -- Моментальный сбор
                 if firetouchinterest then
                     firetouchinterest(root, closestCoin, 0)
                     task.wait(0.01)
@@ -132,37 +149,82 @@ Connections.MainLoop = RunService.RenderStepped:Connect(function(dt)
                     root.CFrame = closestCoin.CFrame
                 end
             end
-            return -- Завершаем кадр, чтобы обычный флай не перебивал координаты
+            return 
         end
     end
 
-    -- 2. ЛОГИКА РУЧНОГО ФЛАЯ (Если автофарм не занят монетами)
+    -- 2. ЛОГИКА РУЧНОГО ФЛАЯ (Жесткая фиксация высоты)
     if State.Flying then
-        ClearForces()
         hum.PlatformStand = true
 
         local moveDir = Vector3.new(0, 0, 0)
         if UserInputService:IsKeyDown(Enum.KeyCode.W) then moveDir = moveDir + cam.CFrame.LookVector end
         if UserInputService:IsKeyDown(Enum.KeyCode.S) then moveDir = moveDir - cam.CFrame.LookVector end
         if UserInputService:IsKeyDown(Enum.KeyCode.A) then moveDir = moveDir - cam.CFrame.RightVector end
-        if UserInputService:IsKeyDown(Enum.KeyCode.D) then moveDir = moveDir + cam.CFrame.RightVector end
+        if UserInputService:IsKeyDown(Enum.KeyCode.D) then moveDir = moveDir - cam.CFrame.RightVector end
         if UserInputService:IsKeyDown(Enum.KeyCode.Space) then moveDir = moveDir + Vector3.new(0, 1, 0) end
         if UserInputService:IsKeyDown(Enum.KeyCode.LeftShift) then moveDir = moveDir - Vector3.new(0, 1, 0) end
 
         if moveDir.Magnitude > 0 then
             root.CFrame = CFrame.new(root.Position + moveDir.Unit * (State.FlySpeed * dt), root.Position + cam.CFrame.LookVector)
         else
+            -- Замораживаем позицию на месте, убирая падение
             root.CFrame = CFrame.new(root.Position, root.Position + cam.CFrame.LookVector)
         end
         return
     end
 
-    -- 3. ЕСЛИ ВСЕ ВЫКЛЮЧЕНО (Или мы в лобби без монет) — СТАВИМ НА НОГИ
+    -- 3. СТАВИМ НА НОГИ
     if hum.PlatformStand and not State.Flying and not State.AutoFarmEnabled then
         hum.PlatformStand = false
         hum:ChangeState(Enum.HumanoidStateType.GettingUp)
     end
 end)
+
+-- ==========================================
+-- БЕЗОПАСНЫЙ И МОЩНЫЙ AUTO FLING
+-- ==========================================
+local function ToggleFling(state)
+    State.AutoFlingEnabled = state
+    local root = GetRoot()
+    if not root then return end
+
+    -- Очистка старого флинга
+    for _, v in pairs(root:GetChildren()) do
+        if v.Name == "FlingPart" or v.Name == "FlingConstraint" then
+            v:Destroy()
+        end
+    end
+
+    if not state then return end
+
+    -- Создаем невидимый крутящийся хитбокс, приваренный к тебе
+    local flingPart = Instance.new("Part")
+    flingPart.Name = "FlingPart"
+    flingPart.Size = Vector3.new(4, 4, 4)
+    flingPart.Transparency = 1
+    flingPart.CanCollide = false
+    flingPart.Massless = true
+    flingPart.Parent = root
+
+    local weld = Instance.new("Weld", flingPart)
+    weld.Name = "FlingConstraint"
+    weld.Part0 = root
+    weld.Part1 = flingPart
+    weld.C0 = CFrame.new(0, 0, 0)
+
+    -- Придаем хитбоксу дикую угловую скорость. Тебя не кидает, а врагов стирает в порошок
+    flingPart.AssemblyAngularVelocity = Vector3.new(0, 999999, 0)
+
+    -- Поток удержания коллизии для флинг-зоны
+    task.spawn(function()
+        while State.AutoFlingEnabled and flingPart.Parent do
+            RunService.Heartbeat:Wait()
+            flingPart.CanCollide = true -- Включаем коллизию только для физических расчетов с другими игроками
+            flingPart.AssemblyAngularVelocity = Vector3.new(0, 999999, 0)
+        end
+    end)
+end
 
 -- ==========================================
 -- WALK SPEED И NOCLIP
@@ -179,10 +241,10 @@ RunService.Stepped:Connect(function()
         hum.WalkSpeed = 16
     end
 
-    -- Ноклип активен всегда, когда летим или фармим, чтобы не застревать в текстурах
     if State.NoclipEnabled or State.Flying or State.AutoFarmEnabled then
         for _, part in pairs(char:GetDescendants()) do
-            if part:IsA("BasePart") and part.CanCollide then
+            -- Оставляем FlingPart осязаемым, чтобы он швырял игроков
+            if part:IsA("BasePart") and part.CanCollide and part.Name ~= "FlingPart" then
                 part.CanCollide = false
             end
         end
@@ -195,56 +257,6 @@ UserInputService.JumpRequest:Connect(function()
         if hum then hum:ChangeState(Enum.HumanoidStateType.Jumping) end
     end
 end)
-
--- ==========================================
--- АВТО-ФЛИНГ
--- ==========================================
-local function ToggleFling(state)
-    State.AutoFlingEnabled = state
-    if Connections.Fling then Connections.Fling:Disconnect() Connections.Fling = nil end
-    local root = GetRoot()
-
-    if not state then
-        if root then
-            root.AssemblyAngularVelocity = Vector3.new(0, 0, 0)
-            for _, v in pairs(root:GetChildren()) do
-                if v.Name == "FlingForce" then v:Destroy() end
-            end
-        end
-        return
-    end
-
-    local bavl = Instance.new("BodyAngularVelocity")
-    bavl.Name = "FlingForce"
-    bavl.MaxTorque = Vector3.new(0, math.huge, 0)
-    bavl.AngularVelocity = Vector3.new(0, 99999, 0)
-    bavl.Parent = root
-
-    Connections.Fling = RunService.Heartbeat:Connect(function()
-        local myRoot = GetRoot()
-        if not State.AutoFlingEnabled or not myRoot then return end
-
-        local targetRoot = nil
-        local maxDist = math.huge
-
-        for _, p in pairs(Players:GetPlayers()) do
-            if p ~= LocalPlayer and p.Character and p.Character:FindFirstChild("HumanoidRootPart") then
-                local hum = p.Character:FindFirstChildOfClass("Humanoid")
-                if hum and hum.Health > 0 and GetPlayerRole(p) ~= "Murderer" then
-                    local dist = (myRoot.Position - p.Character.HumanoidRootPart.Position).Magnitude
-                    if dist < maxDist then
-                        maxDist = dist
-                        targetRoot = p.Character.HumanoidRootPart
-                    end
-                end
-            end
-        end
-        if targetRoot then
-            myRoot.AssemblyLinearVelocity = Vector3.new(0, 0, 0)
-            myRoot.CFrame = targetRoot.CFrame * CFrame.new(0, 0, 0.2)
-        end
-    end)
-end
 
 -- ==========================================
 -- ПОТОКИ АУР И СБОРЩИКОВ
@@ -620,7 +632,7 @@ AddToggle(VisualP, "Включить ESP Ролей", function(state)
     end
 end)
 
-AddToggle(MurderP, "Включить Auto Fling", function(state) ToggleFling(state) end)
+AddToggle(MurderP, "Включить Мощный Fling", function(state) ToggleFling(state) end)
 AddToggle(MurderP, "Авто-Удар Ножом (Kill Aura)", function(state) State.MurderAura = state end)
 AddToggle(MurderP, "Радиусный Silent Kill", function(state) State.SilentKill = state end)
 AddButton(MurderP, "Телепорт за спину Жертвы", function()
@@ -687,7 +699,7 @@ end)
 CloseBtn.MouseButton1Click:Connect(function()
     State.Flying, State.AutoFarmEnabled, State.WalkSpeedEnabled, State.ESPEnabled, State.MurderAura, State.SilentKill, State.SheriffAura, State.AutoPickGun, State.AutoFlingEnabled, State.InfJump, State.SilentAim = false, false, false, false, false, false, false, false, false, false, false
     if Connections.MainLoop then Connections.MainLoop:Disconnect() end
-    if Connections.Fling then Connections.Fling:Disconnect() end
+    ToggleFling(false)
     local root = GetRoot()
     if root then 
         root.Anchored = false 
