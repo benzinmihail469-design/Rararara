@@ -53,15 +53,6 @@ local function GetHum()
     return LocalPlayer.Character and LocalPlayer.Character:FindFirstChildOfClass("Humanoid")
 end
 
-local function IsInGame()
-    -- Проверка на наличие игровой карты в MM2 (если папки нет или она пустая — мы в лобби)
-    local mapFolder = workspace:FindFirstChild("Normal") or workspace:FindFirstChild("SandBox")
-    if mapFolder and #mapFolder:GetChildren() > 0 then
-        return true
-    end
-    return false
-end
-
 local function GetPlayerRole(player)
     if not player or not player.Character then return "Innocent" end
     local backpack = player:FindFirstChild("Backpack")
@@ -184,7 +175,7 @@ local function ScanAllCoins()
 end
 
 -- ==========================================
--- ИСПРАВЛЕННЫЙ АВТО-ФАРМ (БЕЗ ПАДЕНИЙ И РАБОТЫ В ЛОББИ)
+-- ИСПРАВЛЕННЫЙ АВТО-ФАРМ (БЕЗ БЛОКИРУЮЩИХ ПРОВЕРОК)
 -- ==========================================
 local function ToggleAutoFarm(state)
     State.AutoFarmEnabled = state
@@ -201,12 +192,12 @@ local function ToggleAutoFarm(state)
         return
     end
 
-    -- ЖЕСТКИЙ АВТО-NOCLIP + СБРОС СКОРОСТЕЙ
+    -- Стабильный Noclip во время фарма
     Connections.FarmNoclip = RunService.Stepped:Connect(function()
         local root = GetRoot()
         local humanoid = GetHum()
         
-        if State.AutoFarmEnabled and LocalPlayer.Character and IsInGame() then
+        if State.AutoFarmEnabled and LocalPlayer.Character then
             for _, part in pairs(LocalPlayer.Character:GetDescendants()) do
                 if part:IsA("BasePart") then 
                     part.CanCollide = false 
@@ -223,20 +214,10 @@ local function ToggleAutoFarm(state)
         end
     end)
 
-    -- ПОТОК ЛИНЕЙНОГО ПЕРЕМЕЩЕНИЯ К МОНЕТАМ
+    -- Поток линейного перемещения к монетам
     task.spawn(function()
         while State.AutoFarmEnabled do
-            task.wait(0.1)
-            
-            -- Если не в раунде (в лобби), то просто ждем и отключаем зависание физики персонажа
-            if not IsInGame() then
-                local humLobby = GetHum()
-                if humLobby and humLobby.PlatformStand then
-                    humLobby.PlatformStand = false
-                    humLobby:ChangeState(Enum.HumanoidStateType.GettingUp)
-                end
-                continue
-            end
+            task.wait(0.2)
             
             local root = GetRoot()
             local humanoid = GetHum()
@@ -244,12 +225,12 @@ local function ToggleAutoFarm(state)
 
             local coin = ScanAllCoins()
             if coin and coin.Parent then
-                -- Добавляем легкий отступ вверх (+1.5 по Y), чтобы не проваливаться под текстуры пола
+                -- Безопасный отступ (+1.5 по Y), персонаж летит прямо над монетой и не проваливается под карту
                 local targetCFrame = coin.CFrame * CFrame.new(0, 1.5, 0)
                 local distance = (root.Position - targetCFrame.Position).Magnitude
                 
-                local speed = State.AutoFarmSpeed * 2
-                local duration = distance / math.max(speed, 5)
+                -- Линейный расчет времени с учетом скорости (до 25)
+                local duration = distance / math.max(State.AutoFarmSpeed, 1)
 
                 local tweenInfo = TweenInfo.new(duration, Enum.EasingStyle.Linear)
                 local tween = TweenService:Create(root, tweenInfo, {CFrame = targetCFrame})
@@ -262,7 +243,7 @@ local function ToggleAutoFarm(state)
                     completedConn:Disconnect()
                 end)
                 
-                while tweenActive and State.AutoFarmEnabled and IsInGame() do
+                while tweenActive and State.AutoFarmEnabled do
                     if root then root.AssemblyLinearVelocity = Vector3.new(0, 0, 0) end
                     task.wait()
                 end
@@ -272,10 +253,10 @@ local function ToggleAutoFarm(state)
                     break 
                 end
 
-                -- Сбор монеты (смещаемся чуть ниже на долю секунды, чтобы достать)
+                -- Мгновенный сбор монеты без задержек физики
                 if firetouchinterest then
                     firetouchinterest(root, coin, 0)
-                    task.wait(0.01)
+                    task.wait(0.02)
                     firetouchinterest(root, coin, 1)
                 else
                     root.CFrame = coin.CFrame
@@ -615,7 +596,7 @@ Tabs["Главная"]:FindFirstChildOfClass("UIStroke").Color = Color3.fromRGB(
 
 -- Главная
 AddToggle(MainP, "Авто-Фарм Монет", function(state) ToggleAutoFarm(state) end)
-AddSlider(MainP, "Скорость Фарма", 1, 25, 25, function(v) State.AutoFarmSpeed = v end) -- Максимальная скорость теперь 25
+AddSlider(MainP, "Скорость Фарма", 1, 25, 25, function(v) State.AutoFarmSpeed = v end)
 
 -- Игрок
 AddToggle(PlayerP, "Bypass Fly (Полет)", function(state)
