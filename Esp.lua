@@ -213,9 +213,8 @@ local function ScanAllCoins(safeRadius)
 end
 
 -- ==========================================
--- ИСПРАВЛЕННЫЙ АВТО-ФАРМ (БЕЗ ЗАВИСАНИЙ)
+-- ИСПРАВЛЕННЫЙ АВТО-ФАРМ (БЕЗ ГРАВИТАЦИИ)
 -- ==========================================
-local AntiFallBV = nil
 local CurrentActiveTween = nil
 local CurrentCoinTarget = nil 
 
@@ -225,11 +224,13 @@ local function ToggleAutoFarm(state)
     if Connections.FarmNoclip then Connections.FarmNoclip:Disconnect() Connections.FarmNoclip = nil end
     
     local hum = GetHum()
-    if AntiFallBV then AntiFallBV:Destroy() AntiFallBV = nil end
+    local root = GetRoot()
+    
     if CurrentActiveTween then CurrentActiveTween:Cancel() CurrentActiveTween = nil end
     CurrentCoinTarget = nil
     
     if not state then
+        if root then root.Anchored = false end
         if hum then 
             hum.PlatformStand = false 
             hum:ChangeState(Enum.HumanoidStateType.GettingUp)
@@ -259,39 +260,33 @@ local function ToggleAutoFarm(state)
         while State.AutoFarmEnabled do
             task.wait(0.05)
             
-            local root = GetRoot()
-            local humanoid = GetHum()
-            if not root or not humanoid or humanoid.Health <= 0 then continue end
+            root = GetRoot()
+            hum = GetHum()
+            if not root or not hum or hum.Health <= 0 then continue end
 
+            -- Остановка фарма вне раунда
             if not IsRoundActive() then
                 if CurrentActiveTween then CurrentActiveTween:Cancel() CurrentActiveTween = nil end
                 CurrentCoinTarget = nil
-                if AntiFallBV then AntiFallBV.MaxForce = Vector3.new(0, 0, 0) end
+                root.Anchored = false
                 
-                if humanoid and not State.Flying then
-                    humanoid.PlatformStand = false
-                    humanoid:ChangeState(Enum.HumanoidStateType.GettingUp)
+                if hum and not State.Flying then
+                    hum.PlatformStand = false
+                    hum:ChangeState(Enum.HumanoidStateType.GettingUp)
                 end
                 CollectedCoinsInRound = 0
                 continue
             end
 
-            if not AntiFallBV or not AntiFallBV.Parent then
-                AntiFallBV = Instance.new("BodyVelocity")
-                AntiFallBV.Name = "FarmAntiFallAnchor"
-                AntiFallBV.MaxForce = Vector3.new(0, 0, 0)
-                AntiFallBV.Velocity = Vector3.new(0, 0, 0)
-                AntiFallBV.Parent = root
-            end
-
+            -- Проверка лимита мешка
             if CollectedCoinsInRound >= 40 then
                 if CurrentActiveTween then CurrentActiveTween:Cancel() CurrentActiveTween = nil end
                 CurrentCoinTarget = nil
-                AntiFallBV.MaxForce = Vector3.new(0, 0, 0)
+                root.Anchored = false
                 
-                if humanoid then
-                    humanoid.PlatformStand = false
-                    humanoid:ChangeState(Enum.HumanoidStateType.GettingUp)
+                if hum then
+                    hum.PlatformStand = false
+                    hum:ChangeState(Enum.HumanoidStateType.GettingUp)
                 end
                 
                 TeleportToLobby()
@@ -299,12 +294,13 @@ local function ToggleAutoFarm(state)
                 continue
             end
 
-            -- Защита от зависания: если старая цель пропала из игры, сбрасываем ее
+            -- Сброс цели, если монета пропала
             if CurrentCoinTarget and not CurrentCoinTarget.Parent then
                 CurrentCoinTarget = nil
                 if CurrentActiveTween then CurrentActiveTween:Cancel() CurrentActiveTween = nil end
             end
 
+            -- Защита от спама твинами, если мы уже летим
             if CurrentCoinTarget and CurrentCoinTarget.Parent and (root.Position - CurrentCoinTarget.Position).Magnitude < 150 then
                 continue
             end
@@ -313,12 +309,13 @@ local function ToggleAutoFarm(state)
             
             if coin and coin.Parent then
                 CurrentCoinTarget = coin
-                AntiFallBV.MaxForce = Vector3.new(0, 0, 0)
                 
+                -- ГЛАВНЫЙ ФИКС: Жестко якорим игрока, чтобы гравитация не тянула вниз
+                root.Anchored = true 
                 root.AssemblyLinearVelocity = Vector3.new(0, 0, 0)
                 root.AssemblyAngularVelocity = Vector3.new(0, 0, 0)
                 
-                local targetCFrame = coin.CFrame * CFrame.new(0, 1.5, 0)
+                local targetCFrame = coin.CFrame
                 local distance = (root.Position - targetCFrame.Position).Magnitude
                 local duration = distance / math.max(State.AutoFarmSpeed, 1)
 
@@ -336,11 +333,6 @@ local function ToggleAutoFarm(state)
                 end)
                 
                 while tweenActive and State.AutoFarmEnabled and IsRoundActive() and CurrentCoinTarget == coin and coin.Parent do
-                    if root then 
-                        root.AssemblyLinearVelocity = Vector3.new(0, 0, 0) 
-                        root.AssemblyAngularVelocity = Vector3.new(0, 0, 0)
-                    end
-                    
                     local m = GetMurderer()
                     if m and m.Character and m.Character:FindFirstChild("HumanoidRootPart") then
                         local mDist = (root.Position - m.Character.HumanoidRootPart.Position).Magnitude
@@ -354,37 +346,45 @@ local function ToggleAutoFarm(state)
                     task.wait()
                 end
                 
-                if not State.AutoFarmEnabled then break end
+                if not State.AutoFarmEnabled then 
+                    root.Anchored = false 
+                    break 
+                end
 
-                if coin and coin.Parent and (root.Position - coin.Position).Magnitude < 8 then
+                -- Снимаем якорь перед сбором для корректной физики касания
+                root.Anchored = false 
+                
+                if coin and coin.Parent and (root.Position - coin.Position).Magnitude < 12 then
                     if firetouchinterest then
                         firetouchinterest(root, coin, 0)
-                        task.wait(0.02)
+                        task.wait(0.01)
                         firetouchinterest(root, coin, 1)
                     else
                         root.CFrame = coin.CFrame
-                        task.wait(0.02)
+                        task.wait(0.01)
                     end
                     CollectedCoinsInRound = CollectedCoinsInRound + 1
                 end
                 CurrentCoinTarget = nil
             else
+                -- Если монет нет — зависаем в воздухе
                 if CurrentActiveTween then CurrentActiveTween:Cancel() CurrentActiveTween = nil end
                 CurrentCoinTarget = nil
-                if root and AntiFallBV and IsRoundActive() then
+                if root and IsRoundActive() then
+                    root.Anchored = true
                     root.AssemblyLinearVelocity = Vector3.new(0, 0, 0)
-                    AntiFallBV.MaxForce = Vector3.new(0, math.huge, 0)
-                    AntiFallBV.Velocity = Vector3.new(0, 0, 0)
                 end
             end
         end
         
+        -- Сброс состояния после выключения авто-фарма
+        root = GetRoot()
+        if root then root.Anchored = false end
         local humAfter = GetHum()
         if humAfter then 
             humAfter.PlatformStand = false 
             humAfter:ChangeState(Enum.HumanoidStateType.GettingUp)
         end
-        if AntiFallBV then AntiFallBV:Destroy() end
     end)
 end
 
@@ -917,7 +917,9 @@ CloseBtn.MouseButton1Click:Connect(function()
     if Connections.Fling then Connections.Fling:Disconnect() end
     if Connections.WalkSpeedLoop then Connections.WalkSpeedLoop:Disconnect() end
     local root = GetRoot()
-    if root then root.AssemblyAngularVelocity = Vector3.new(0, 0, 0) end
-    if AntiFallBV then AntiFallBV:Destroy() end
+    if root then 
+        root.Anchored = false 
+        root.AssemblyAngularVelocity = Vector3.new(0, 0, 0) 
+    end
     ScreenGui:Destroy()
 end)
