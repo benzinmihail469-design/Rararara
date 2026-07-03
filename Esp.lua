@@ -41,6 +41,7 @@ local State = {
 
 local Connections = {}
 local BVelocity, BGyro = nil, nil
+local CollectedCoinsInRound = 0 -- Внутренний счетчик собранных монет
 
 -- ==========================================
 -- ВСПОМОГАТЕЛЬНЫЕ ФУНКЦИИ
@@ -71,18 +72,6 @@ local function GetMurderer()
         if GetPlayerRole(p) == "Murderer" then return p end
     end
     return nil
-end
-
--- ==========================================
--- ПОЛУЧЕНИЕ КОЛ-ВА МОНЕТ И ТЕЛЕПОРТ В ЛОББИ
--- ==========================================
-local function GetCoinCount()
-    local count = 0
-    pcall(function()
-        local coinText = LocalPlayer.PlayerGui.MainGUI.Game.Cashbag.Amount.Text
-        count = tonumber(coinText) or 0
-    end)
-    return count
 end
 
 local function TeleportToLobby()
@@ -216,7 +205,7 @@ local function ScanAllCoins(safeRadius)
 end
 
 -- ==========================================
--- УМНЫЙ АВТО-ФАРМ (ИСПРАВЛЕННЫЙ)
+-- УМНЫЙ АВТО-ФАРМ (ОБНОВЛЕННЫЙ)
 -- ==========================================
 local isCurrentlyFarming = false 
 local AntiFallBV = nil
@@ -241,6 +230,8 @@ local function ToggleAutoFarm(state)
         return
     end
 
+    CollectedCoinsInRound = 0 -- Сбрасываем счетчик при включении фарма
+
     Connections.FarmNoclip = RunService.Stepped:Connect(function()
         local root = GetRoot()
         local humanoid = GetHum()
@@ -264,13 +255,13 @@ local function ToggleAutoFarm(state)
 
     task.spawn(function()
         while State.AutoFarmEnabled do
-            task.wait(0.1)
+            task.wait(0.05)
             
             local root = GetRoot()
             local humanoid = GetHum()
             if not root or not humanoid or humanoid.Health <= 0 then continue end
 
-            -- Создаем невидимый якорь для удержания высоты в воздухе
+            -- Инициализируем удерживающий силу плагин против падения
             if not AntiFallBV or not AntiFallBV.Parent then
                 AntiFallBV = Instance.new("BodyVelocity")
                 AntiFallBV.Name = "FarmAntiFallAnchor"
@@ -279,8 +270,8 @@ local function ToggleAutoFarm(state)
                 AntiFallBV.Parent = root
             end
 
-            -- ИСПРАВЛЕНО: ПРОВЕРКА НА ФУЛЛ МЕШОК СРАБАТЫВАЕТ ВСЕГДА
-            if GetCoinCount() >= 40 then
+            -- НАДЕЖНАЯ ПРОВЕРКА НА 40 МОНЕТ
+            if CollectedCoinsInRound >= 40 then
                 isCurrentlyFarming = false
                 if CurrentActiveTween then CurrentActiveTween:Cancel() CurrentActiveTween = nil end
                 AntiFallBV.MaxForce = Vector3.new(0, 0, 0)
@@ -291,19 +282,19 @@ local function ToggleAutoFarm(state)
                 end
                 
                 TeleportToLobby()
-                task.wait(2) 
+                CollectedCoinsInRound = 0 -- Сброс после ТП
+                task.wait(3) 
                 continue
             end
 
-            local coin = ScanAllCoins(45) 
+            local coin = ScanAllCoins(45) -- Безопасный радиус от маньяка 45 единиц
             
             if coin and coin.Parent then
                 isCurrentlyFarming = true
-                AntiFallBV.MaxForce = Vector3.new(0, 0, 0) -- Отключаем стопор во время движения
+                AntiFallBV.MaxForce = Vector3.new(0, 0, 0) -- Отключаем стопор во время полета
                 
                 local targetCFrame = coin.CFrame * CFrame.new(0, 1.5, 0)
                 local distance = (root.Position - targetCFrame.Position).Magnitude
-                
                 local duration = distance / math.max(State.AutoFarmSpeed, 1)
 
                 local tweenInfo = TweenInfo.new(duration, Enum.EasingStyle.Linear)
@@ -320,10 +311,11 @@ local function ToggleAutoFarm(state)
                 while tweenActive and State.AutoFarmEnabled do
                     if root then root.AssemblyLinearVelocity = Vector3.new(0, 0, 0) end
                     
-                    if GetCoinCount() >= 40 then
+                    if CollectedCoinsInRound >= 40 then
                         break
                     end
 
+                    -- Экстренный выход из твина, если убийца подошел близко во время полета
                     local m = GetMurderer()
                     if m and m.Character and m.Character:FindFirstChild("HumanoidRootPart") then
                         local mDist = (root.Position - m.Character.HumanoidRootPart.Position).Magnitude
@@ -342,7 +334,9 @@ local function ToggleAutoFarm(state)
                     break 
                 end
 
-                if (root.Position - targetCFrame.Position).Magnitude < 5 then
+                -- Подбираем монетку
+                if (root.Position - targetCFrame.Position).Magnitude < 7 then
+                    local currentCoinsBefore = CollectedCoinsInRound
                     if firetouchinterest then
                         firetouchinterest(root, coin, 0)
                         task.wait(0.02)
@@ -351,18 +345,21 @@ local function ToggleAutoFarm(state)
                         root.CFrame = coin.CFrame
                         task.wait(0.02)
                     end
+                    CollectedCoinsInRound = CollectedCoinsInRound + 1 -- Засчитываем монетку в память
                 end
             else
-                -- ИСПРАВЛЕНО: ЕСЛИ РЯДОМ УБИЙЦА, ЗАВИСАЕМ В ВОЗДУХЕ, А НЕ ПАДАЕМ
+                -- ЛОГИКА ЗАВИСАНИЯ ПРИ ОПАСНОСТИ / ОТСУТСТВИИ МОНЕТ
                 isCurrentlyFarming = false 
                 if CurrentActiveTween then CurrentActiveTween:Cancel() CurrentActiveTween = nil end
                 
                 if root and AntiFallBV then
+                    -- Немного опускаемся вниз и жестко фиксируемся на этой высоте
+                    root.CFrame = root.CFrame * CFrame.new(0, -0.5, 0) 
                     root.AssemblyLinearVelocity = Vector3.new(0, 0, 0)
-                    AntiFallBV.MaxForce = Vector3.new(1e6, 1e6, 1e6) -- Заставляем жестко держать позицию
+                    AntiFallBV.MaxForce = Vector3.new(1e6, 1e6, 1e6) 
                     AntiFallBV.Velocity = Vector3.new(0, 0, 0)
                 end
-                task.wait(0.5)
+                task.wait(0.2)
             end
         end
         
