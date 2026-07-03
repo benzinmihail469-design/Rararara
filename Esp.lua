@@ -85,7 +85,7 @@ local function IsRoundActive()
 end
 
 -- ==========================================
--- ИСПРАВЛЕННЫЙ ПОЛЕТ (FLY)
+-- СТАБИЛЬНЫЙ ПОЛЕТ (FLY)
 -- ==========================================
 local function StopFlying()
     if Connections.Fly then Connections.Fly:Disconnect() Connections.Fly = nil end
@@ -112,7 +112,7 @@ local function StartFlying()
     
     local bv = Instance.new("BodyVelocity")
     bv.Name = "FlyVelocity"
-    bv.MaxForce = Vector3.new(9e9, 9e9, 9e9) -- Увеличена сила, чтобы не фризило
+    bv.MaxForce = Vector3.new(9e9, 9e9, 9e9) -- Огромная сила, чтобы исключить замирания физики
     bv.Velocity = Vector3.new(0, 0, 0)
     bv.Parent = root
 
@@ -127,9 +127,9 @@ local function StartFlying()
     Connections.Fly = RunService.RenderStepped:Connect(function()
         if not State.Flying or not GetRoot() then StopFlying() return end
         
-        -- Если авто-фарм работает и собирает монеты, отдаем приоритет ему
+        -- Если активен авто-фарм в катке, ручной флай временно уступает ему управление
         if State.AutoFarmEnabled and IsRoundActive() then
-            bv.Velocity = Vector3.new(0, 0, 0)
+            if root:FindFirstChild("FlyVelocity") then root.FlyVelocity.Velocity = Vector3.new(0,0,0) end
             return
         end
 
@@ -153,7 +153,7 @@ local function StartFlying()
 end
 
 -- ==========================================
--- ИСПРАВЛЕННЫЙ АВТО-ФАРМ
+-- СУПЕР АВТО-ФАРМ (КАТКА / ЛОББИ)
 -- ==========================================
 local function ToggleAutoFarm(state)
     State.AutoFarmEnabled = state
@@ -179,10 +179,11 @@ local function ToggleAutoFarm(state)
             local hum = GetHum()
             if not root or not hum or hum.Health <= 0 then continue end
 
-            -- Если мы в лобби (раунд не идет) или мешок полон
+            -- ПРОВЕРКА НА ЛОББИ ИЛИ КАРМАНЫ ПОЛНЫ: СТАВИМ НА НОГИ
             if not IsRoundActive() or CollectedCoins >= 40 then
                 if root:FindFirstChild("FarmVelocity") then root.FarmVelocity:Destroy() end
                 if root:FindFirstChild("FarmGyro") then root.FarmGyro:Destroy() end
+                
                 if hum.PlatformStand and not State.Flying then
                     hum.PlatformStand = false
                     hum:ChangeState(Enum.HumanoidStateType.GettingUp)
@@ -195,7 +196,7 @@ local function ToggleAutoFarm(state)
                 continue
             end
 
-            -- Поиск ближайшей монеты
+            -- ЛОГИКА В КАТКЕ: ИЩЕМ МОНЕТЫ И ЛЕТИМ
             local closestCoin = nil
             local shortestDist = math.huge
             for _, obj in pairs(workspace:GetDescendants()) do
@@ -211,42 +212,39 @@ local function ToggleAutoFarm(state)
             if closestCoin then
                 hum.PlatformStand = true
 
-                local bv = root:FindFirstChild("FarmVelocity")
-                if not bv then
-                    bv = Instance.new("BodyVelocity")
+                local bv = root:FindFirstChild("FarmVelocity") or Instance.new("BodyVelocity")
+                if not bv.Parent then
                     bv.Name = "FarmVelocity"
                     bv.MaxForce = Vector3.new(9e9, 9e9, 9e9)
                     bv.Parent = root
                 end
 
-                local bg = root:FindFirstChild("FarmGyro")
-                if not bg then
-                    bg = Instance.new("BodyGyro")
+                local bg = root:FindFirstChild("FarmGyro") or Instance.new("BodyGyro")
+                if not bg.Parent then
                     bg.Name = "FarmGyro"
                     bg.MaxTorque = Vector3.new(9e9, 9e9, 9e9)
                     bg.P = 9e4
                     bg.Parent = root
                 end
 
-                -- Плавный полет через BodyVelocity
                 local dir = (closestCoin.Position - root.Position)
                 local dist = dir.Magnitude
 
-                if dist > 8 then
+                if dist > 4 then
                     bv.Velocity = dir.Unit * State.AutoFarmSpeed
                     bg.CFrame = CFrame.new(root.Position, closestCoin.Position)
                 else
-                    -- Мы близко, подбираем
+                    -- Дистанция моментального сбора
                     bv.Velocity = Vector3.new(0, 0, 0)
                     if firetouchinterest then
                         firetouchinterest(root, closestCoin, 0)
-                        task.wait(0.01)
+                        task.wait(0.02)
                         firetouchinterest(root, closestCoin, 1)
                     else
                         root.CFrame = closestCoin.CFrame
                     end
                     CollectedCoins = CollectedCoins + 1
-                    task.wait(0.2) -- Небольшая пауза после подбора
+                    task.wait(0.1)
                 end
             else
                 if root:FindFirstChild("FarmVelocity") then
@@ -268,10 +266,11 @@ RunService.Stepped:Connect(function()
 
     if State.WalkSpeedEnabled and not State.Flying and not hum.PlatformStand then
         hum.WalkSpeed = State.CustomWalkSpeed
-    elseif not State.WalkSpeedEnabled and hum.WalkSpeed ~= 16 then
+    elseif not State.WalkSpeedEnabled and hum.WalkSpeed ~= 16 and not hum.PlatformStand then
         hum.WalkSpeed = 16
     end
 
+    -- Авто-ноклип активируется в раунде, если включен фарм
     if State.NoclipEnabled or (State.AutoFarmEnabled and IsRoundActive()) then
         for _, part in pairs(char:GetDescendants()) do
             if part:IsA("BasePart") and part.CanCollide then
