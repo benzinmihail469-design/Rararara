@@ -3,12 +3,11 @@ local UserInputService = game:GetService("UserInputService")
 local RunService = game:GetService("RunService")
 local Players = game:GetService("Players")
 local CoreGui = game:GetService("CoreGui")
-local VirtualUser = game:GetService("VirtualUser")
 
 local LocalPlayer = Players.LocalPlayer
 
 -- ==========================================
--- ПОЛНАЯ ОЧИСТКА СТАРЫХ ИНТЕРФЕЙСОВ
+-- ОЧИСТКА СТАРЫХ UI
 -- ==========================================
 pcall(function()
     if CoreGui:FindFirstChild("HoshiMM2Gui") then CoreGui.HoshiMM2Gui:Destroy() end
@@ -18,7 +17,7 @@ pcall(function()
 end)
 
 -- ==========================================
--- СОСТОЯНИЕ СТРУКТУРЫ
+-- СОСТОЯНИЯ
 -- ==========================================
 local State = {
     Flying = false,
@@ -40,8 +39,7 @@ local State = {
 }
 
 local Connections = {}
-local BVelocity, BGyro = nil, nil
-local CollectedCoinsInRound = 0 
+local CollectedCoins = 0 
 
 -- ==========================================
 -- ВСПОМОГАТЕЛЬНЫЕ ФУНКЦИИ
@@ -74,51 +72,33 @@ local function GetMurderer()
     return nil
 end
 
-local function TeleportToLobby()
-    local root = GetRoot()
-    if not root then return end
-    
-    local lobby = workspace:FindFirstChild("Lobby")
-    if lobby and lobby:FindFirstChild("Spawns") then
-        local spawns = lobby.Spawns:GetChildren()
-        if #spawns > 0 then
-            root.CFrame = spawns[1].CFrame * CFrame.new(0, 5, 0)
-            return
-        end
-    end
-    root.CFrame = CFrame.new(-108, 145, 0) 
-end
-
 local function IsRoundActive()
     local map = workspace:FindFirstChild("Normal") or workspace:FindFirstChild("Map")
     if not map then return false end
     
     for _, obj in pairs(workspace:GetDescendants()) do
         if obj:IsA("BasePart") and (obj.Name == "Coin_Server" or obj.Name == "GoldCoin" or obj.Name == "Coin" or obj.Name:lower():find("coin")) then
-            if obj.Parent then
-                return true
-            end
+            return true
         end
     end
     return false
 end
 
 -- ==========================================
--- ПОЛЕТ (FLY)
+-- ИСПРАВЛЕННЫЙ ПОЛЕТ (FLY)
 -- ==========================================
 local function StopFlying()
     if Connections.Fly then Connections.Fly:Disconnect() Connections.Fly = nil end
-    if BVelocity then BVelocity:Destroy() BVelocity = nil end
-    if BGyro then BGyro:Destroy() BGyro = nil end
+    local root = GetRoot()
+    if root then
+        if root:FindFirstChild("FlyVelocity") then root.FlyVelocity:Destroy() end
+        if root:FindFirstChild("FlyGyro") then root.FlyGyro:Destroy() end
+        root.AssemblyLinearVelocity = Vector3.new(0, 0, 0)
+    end
     local hum = GetHum()
     if hum then
         hum.PlatformStand = false
         hum:ChangeState(Enum.HumanoidStateType.GettingUp)
-    end
-    local root = GetRoot()
-    if root then
-        root.AssemblyLinearVelocity = Vector3.new(0, 0, 0)
-        root.AssemblyAngularVelocity = Vector3.new(0, 0, 0)
     end
 end
 
@@ -130,24 +110,24 @@ local function StartFlying()
 
     hum.PlatformStand = true
     
-    BVelocity = Instance.new("BodyVelocity")
-    BVelocity.MaxForce = Vector3.new(1e6, 1e6, 1e6)
-    BVelocity.Velocity = Vector3.new(0, 0, 0)
-    BVelocity.Parent = root
+    local bv = Instance.new("BodyVelocity")
+    bv.Name = "FlyVelocity"
+    bv.MaxForce = Vector3.new(1e6, 1e6, 1e6)
+    bv.Velocity = Vector3.new(0, 0, 0)
+    bv.Parent = root
 
-    BGyro = Instance.new("BodyGyro")
-    BGyro.MaxTorque = Vector3.new(1e6, 1e6, 1e6)
-    BGyro.P = 25000
-    BGyro.CFrame = root.CFrame
-    BGyro.Parent = root
+    local bg = Instance.new("BodyGyro")
+    bg.Name = "FlyGyro"
+    bg.MaxTorque = Vector3.new(1e6, 1e6, 1e6)
+    bg.P = 9e4
+    bg.CFrame = root.CFrame
+    bg.Parent = root
 
     local cam = workspace.CurrentCamera
     Connections.Fly = RunService.RenderStepped:Connect(function()
-        local r = GetRoot()
-        if not State.Flying or not r then StopFlying() return end
+        if not State.Flying or not GetRoot() then StopFlying() return end
 
-        BGyro.CFrame = cam.CFrame
-        
+        bg.CFrame = cam.CFrame
         local moveDir = Vector3.new(0, 0, 0)
         
         if UserInputService:IsKeyDown(Enum.KeyCode.W) then moveDir = moveDir + cam.CFrame.LookVector end
@@ -159,78 +139,23 @@ local function StartFlying()
         if UserInputService:IsKeyDown(Enum.KeyCode.LeftShift) then moveDir = moveDir - Vector3.new(0, 1, 0) end
 
         if moveDir.Magnitude > 0 then
-            BVelocity.Velocity = moveDir.Unit * State.FlySpeed
+            bv.Velocity = moveDir.Unit * State.FlySpeed
         else
-            BVelocity.Velocity = Vector3.new(0, 0, 0)
+            bv.Velocity = Vector3.new(0, 0, 0)
         end
     end)
 end
 
 -- ==========================================
--- ИНФИНИТИ ПРЫЖОК
+-- ИСПРАВЛЕННЫЙ АВТО-ФАРМ
 -- ==========================================
-UserInputService.JumpRequest:Connect(function()
-    if State.InfJump then
-        local hum = GetHum()
-        if hum then hum:ChangeState(Enum.HumanoidStateType.Jumping) end
-    end
-end)
-
--- ==========================================
--- ПОИСК БЛИЖАЙШЕЙ МОНЕТЫ
--- ==========================================
-local function ScanAllCoins(safeRadius)
-    local root = GetRoot()
-    if not root then return nil end
-
-    local closestCoin = nil
-    local shortestDistance = math.huge
-    
-    local m = GetMurderer()
-    local mRoot = m and m.Character and m.Character:FindFirstChild("HumanoidRootPart")
-
-    for _, obj in pairs(workspace:GetDescendants()) do
-        if obj:IsA("BasePart") and (obj.Name == "Coin_Server" or obj.Name == "GoldCoin" or obj.Name == "Coin" or obj.Name:lower():find("coin")) then
-            if obj.Parent then
-                local distance = (root.Position - obj.Position).Magnitude
-                
-                if distance < shortestDistance and distance < 2000 then
-                    local isSafe = true
-                    if mRoot and safeRadius then
-                        local distFromM = (mRoot.Position - obj.Position).Magnitude
-                        if distFromM < safeRadius then isSafe = false end
-                    end
-                    
-                    if isSafe then
-                        shortestDistance = distance
-                        closestCoin = obj
-                    end
-                end
-            end
-        end
-    end
-    return closestCoin
-end
-
--- ==========================================
--- ИСПРАВЛЕННЫЙ АВТО-ФАРМ (БЕЗ ГРАВИТАЦИИ)
--- ==========================================
-local CurrentActiveTween = nil
-local CurrentCoinTarget = nil 
-
 local function ToggleAutoFarm(state)
     State.AutoFarmEnabled = state
     
-    if Connections.FarmNoclip then Connections.FarmNoclip:Disconnect() Connections.FarmNoclip = nil end
-    
-    local hum = GetHum()
-    local root = GetRoot()
-    
-    if CurrentActiveTween then CurrentActiveTween:Cancel() CurrentActiveTween = nil end
-    CurrentCoinTarget = nil
-    
     if not state then
-        if root then root.Anchored = false end
+        local root = GetRoot()
+        local hum = GetHum()
+        if root and root:FindFirstChild("FarmVelocity") then root.FarmVelocity:Destroy() end
         if hum then 
             hum.PlatformStand = false 
             hum:ChangeState(Enum.HumanoidStateType.GettingUp)
@@ -238,155 +163,114 @@ local function ToggleAutoFarm(state)
         return
     end
 
-    CollectedCoinsInRound = 0 
-
-    Connections.FarmNoclip = RunService.Stepped:Connect(function()
-        if State.AutoFarmEnabled and IsRoundActive() and LocalPlayer.Character then
-            for _, part in pairs(LocalPlayer.Character:GetDescendants()) do
-                if part:IsA("BasePart") then part.CanCollide = false end
-            end
-            if hum and not hum.PlatformStand then
-                hum.PlatformStand = true
-            end
-        elseif hum and not State.Flying then
-            if hum.PlatformStand then
-                hum.PlatformStand = false
-                hum:ChangeState(Enum.HumanoidStateType.GettingUp)
-            end
-        end
-    end)
+    CollectedCoins = 0 
 
     task.spawn(function()
         while State.AutoFarmEnabled do
-            task.wait(0.05)
-            
-            root = GetRoot()
-            hum = GetHum()
+            task.wait()
+            local root = GetRoot()
+            local hum = GetHum()
             if not root or not hum or hum.Health <= 0 then continue end
 
-            -- Остановка фарма вне раунда
-            if not IsRoundActive() then
-                if CurrentActiveTween then CurrentActiveTween:Cancel() CurrentActiveTween = nil end
-                CurrentCoinTarget = nil
-                root.Anchored = false
-                
-                if hum and not State.Flying then
-                    hum.PlatformStand = false
-                    hum:ChangeState(Enum.HumanoidStateType.GettingUp)
-                end
-                CollectedCoinsInRound = 0
-                continue
-            end
-
-            -- Проверка лимита мешка
-            if CollectedCoinsInRound >= 40 then
-                if CurrentActiveTween then CurrentActiveTween:Cancel() CurrentActiveTween = nil end
-                CurrentCoinTarget = nil
-                root.Anchored = false
-                
-                if hum then
+            -- Если мы в лобби (раунд не идет) или мешок полон
+            if not IsRoundActive() or CollectedCoins >= 40 then
+                if root:FindFirstChild("FarmVelocity") then root.FarmVelocity:Destroy() end
+                if hum.PlatformStand and not State.Flying then
                     hum.PlatformStand = false
                     hum:ChangeState(Enum.HumanoidStateType.GettingUp)
                 end
                 
-                TeleportToLobby()
-                task.wait(2) 
+                if not IsRoundActive() then
+                    CollectedCoins = 0
+                end
+                task.wait(1)
                 continue
             end
 
-            -- Сброс цели, если монета пропала
-            if CurrentCoinTarget and not CurrentCoinTarget.Parent then
-                CurrentCoinTarget = nil
-                if CurrentActiveTween then CurrentActiveTween:Cancel() CurrentActiveTween = nil end
-            end
-
-            -- Защита от спама твинами, если мы уже летим
-            if CurrentCoinTarget and CurrentCoinTarget.Parent and (root.Position - CurrentCoinTarget.Position).Magnitude < 150 then
-                continue
-            end
-
-            local coin = ScanAllCoins(45) 
-            
-            if coin and coin.Parent then
-                CurrentCoinTarget = coin
-                
-                -- ГЛАВНЫЙ ФИКС: Жестко якорим игрока, чтобы гравитация не тянула вниз
-                root.Anchored = true 
-                root.AssemblyLinearVelocity = Vector3.new(0, 0, 0)
-                root.AssemblyAngularVelocity = Vector3.new(0, 0, 0)
-                
-                local targetCFrame = coin.CFrame
-                local distance = (root.Position - targetCFrame.Position).Magnitude
-                local duration = distance / math.max(State.AutoFarmSpeed, 1)
-
-                if CurrentActiveTween then CurrentActiveTween:Cancel() end
-                
-                local tweenInfo = TweenInfo.new(duration, Enum.EasingStyle.Linear)
-                CurrentActiveTween = TweenService:Create(root, tweenInfo, {CFrame = targetCFrame})
-                CurrentActiveTween:Play()
-                
-                local tweenActive = true
-                local completedConn
-                completedConn = CurrentActiveTween.Completed:Connect(function()
-                    tweenActive = false
-                    if completedConn then completedConn:Disconnect() end
-                end)
-                
-                while tweenActive and State.AutoFarmEnabled and IsRoundActive() and CurrentCoinTarget == coin and coin.Parent do
-                    local m = GetMurderer()
-                    if m and m.Character and m.Character:FindFirstChild("HumanoidRootPart") then
-                        local mDist = (root.Position - m.Character.HumanoidRootPart.Position).Magnitude
-                        if mDist < 45 then
-                            if CurrentActiveTween then CurrentActiveTween:Cancel() CurrentActiveTween = nil end
-                            CurrentCoinTarget = nil
-                            tweenActive = false
-                            break
-                        end
+            -- Поиск ближайшей монеты
+            local closestCoin = nil
+            local shortestDist = math.huge
+            for _, obj in pairs(workspace:GetDescendants()) do
+                if obj:IsA("BasePart") and (obj.Name == "Coin_Server" or obj.Name == "GoldCoin" or obj.Name == "Coin") then
+                    local dist = (root.Position - obj.Position).Magnitude
+                    if dist < shortestDist then
+                        shortestDist = dist
+                        closestCoin = obj
                     end
+                end
+            end
+
+            if closestCoin then
+                if not root:FindFirstChild("FarmVelocity") then
+                    local bv = Instance.new("BodyVelocity")
+                    bv.Name = "FarmVelocity"
+                    bv.MaxForce = Vector3.new(9e9, 9e9, 9e9)
+                    bv.Velocity = Vector3.new(0, 0, 0)
+                    bv.Parent = root
+                end
+                hum.PlatformStand = true
+
+                local dist = (root.Position - closestCoin.Position).Magnitude
+                local timeToReach = dist / math.max(State.AutoFarmSpeed, 1)
+
+                local tween = TweenService:Create(root, TweenInfo.new(timeToReach, Enum.EasingStyle.Linear), {CFrame = closestCoin.CFrame})
+                tween:Play()
+                
+                local start = tick()
+                while tick() - start < timeToReach and closestCoin.Parent and State.AutoFarmEnabled and IsRoundActive() do
                     task.wait()
                 end
-                
-                if not State.AutoFarmEnabled then 
-                    root.Anchored = false 
-                    break 
-                end
+                tween:Cancel()
 
-                -- Снимаем якорь перед сбором для корректной физики касания
-                root.Anchored = false 
-                
-                if coin and coin.Parent and (root.Position - coin.Position).Magnitude < 12 then
+                if closestCoin and closestCoin.Parent and (root.Position - closestCoin.Position).Magnitude <= 15 then
                     if firetouchinterest then
-                        firetouchinterest(root, coin, 0)
+                        firetouchinterest(root, closestCoin, 0)
                         task.wait(0.01)
-                        firetouchinterest(root, coin, 1)
+                        firetouchinterest(root, closestCoin, 1)
                     else
-                        root.CFrame = coin.CFrame
-                        task.wait(0.01)
+                        root.CFrame = closestCoin.CFrame
                     end
-                    CollectedCoinsInRound = CollectedCoinsInRound + 1
+                    CollectedCoins = CollectedCoins + 1
                 end
-                CurrentCoinTarget = nil
             else
-                -- Если монет нет — зависаем в воздухе
-                if CurrentActiveTween then CurrentActiveTween:Cancel() CurrentActiveTween = nil end
-                CurrentCoinTarget = nil
-                if root and IsRoundActive() then
-                    root.Anchored = true
-                    root.AssemblyLinearVelocity = Vector3.new(0, 0, 0)
+                if root:FindFirstChild("FarmVelocity") then
+                    root.FarmVelocity.Velocity = Vector3.new(0,0,0)
                 end
             end
-        end
-        
-        -- Сброс состояния после выключения авто-фарма
-        root = GetRoot()
-        if root then root.Anchored = false end
-        local humAfter = GetHum()
-        if humAfter then 
-            humAfter.PlatformStand = false 
-            humAfter:ChangeState(Enum.HumanoidStateType.GettingUp)
         end
     end)
 end
+
+-- ==========================================
+-- ИСПРАВЛЕННЫЙ WALK SPEED И NOCLIP
+-- ==========================================
+RunService.Stepped:Connect(function()
+    local char = LocalPlayer.Character
+    local hum = GetHum()
+    
+    if not char or not hum then return end
+
+    if State.WalkSpeedEnabled and not State.Flying and not hum.PlatformStand then
+        hum.WalkSpeed = State.CustomWalkSpeed
+    elseif not State.WalkSpeedEnabled and hum.WalkSpeed ~= 16 then
+        hum.WalkSpeed = 16
+    end
+
+    if State.NoclipEnabled or (State.AutoFarmEnabled and IsRoundActive()) then
+        for _, part in pairs(char:GetDescendants()) do
+            if part:IsA("BasePart") and part.CanCollide then
+                part.CanCollide = false
+            end
+        end
+    end
+end)
+
+UserInputService.JumpRequest:Connect(function()
+    if State.InfJump then
+        local hum = GetHum()
+        if hum then hum:ChangeState(Enum.HumanoidStateType.Jumping) end
+    end
+end)
 
 -- ==========================================
 -- АВТО-ФЛИНГ
@@ -437,6 +321,91 @@ local function ToggleFling(state)
         end
     end)
 end
+
+-- ==========================================
+-- ПОТОКИ АУР И СБОРЩИКОВ
+-- ==========================================
+task.spawn(function()
+    while task.wait(0.05) do
+        local root = GetRoot()
+        if root and (State.MurderAura or State.SilentKill) then
+            local knife = LocalPlayer.Character:FindFirstChild("Knife") or LocalPlayer.Backpack:FindFirstChild("Knife")
+            if knife then
+                if knife.Parent == LocalPlayer.Backpack then knife.Parent = LocalPlayer.Character end
+                knife:Activate()
+
+                if State.SilentKill then
+                    for _, p in pairs(Players:GetPlayers()) do
+                        if p ~= LocalPlayer and p.Character and p.Character:FindFirstChild("HumanoidRootPart") then
+                            local tRoot = p.Character.HumanoidRootPart
+                            if (root.Position - tRoot.Position).Magnitude <= 18 and GetPlayerRole(p) ~= "Murderer" then
+                                pcall(function()
+                                    firetouchinterest(tRoot, knife.Handle, 0)
+                                    firetouchinterest(tRoot, knife.Handle, 1)
+                                end)
+                            end
+                        end
+                    end
+                end
+            end
+        end
+    end
+end)
+
+task.spawn(function()
+    while task.wait(0.1) do
+        local root = GetRoot()
+        if root and (State.SheriffAura or State.SilentAim) then
+            local gun = LocalPlayer.Character:FindFirstChild("Gun") or LocalPlayer.Backpack:FindFirstChild("Gun")
+            if gun then
+                if gun.Parent == LocalPlayer.Backpack then gun.Parent = LocalPlayer.Character end
+                gun:Activate()
+
+                if State.SilentAim then
+                    local m = GetMurderer()
+                    if m and m.Character and m.Character:FindFirstChild("Head") then
+                        local cam = workspace.CurrentCamera
+                        cam.CFrame = CFrame.new(cam.CFrame.Position, m.Character.Head.Position)
+                    end
+                end
+            end
+        end
+    end
+end)
+
+task.spawn(function()
+    while task.wait(0.1) do
+        if State.AutoPickGun then
+            local root = GetRoot()
+            if root then
+                for _, obj in pairs(workspace:GetDescendants()) do
+                    if obj:IsA("BasePart") and (obj.Name == "GunDrop" or obj.Name == "Gun_Server") then
+                        root.CFrame = obj.CFrame
+                        firetouchinterest(root, obj, 0)
+                        firetouchinterest(root, obj, 1)
+                        break
+                    end
+                end
+            end
+        end
+    end
+end)
+
+task.spawn(function()
+    while task.wait(0.5) do
+        if State.ESPEnabled then
+            for _, p in pairs(Players:GetPlayers()) do
+                if p ~= LocalPlayer and p.Character and p.Character:FindFirstChild("HumanoidRootPart") then
+                    local role = GetPlayerRole(p)
+                    local hl = p.Character:FindFirstChild("MM2Highlight") or Instance.new("Highlight", p.Character)
+                    hl.Name = "MM2Highlight"
+                    hl.FillColor = role == "Murderer" and Color3.fromRGB(255, 30, 30) or role == "Sheriff" and Color3.fromRGB(30, 140, 255) or Color3.fromRGB(50, 255, 100)
+                    hl.FillTransparency = 0.4
+                end
+            end
+        end
+    end
+end)
 
 -- ==========================================
 -- ИНТЕРФЕЙС GUI
@@ -709,7 +678,7 @@ Tabs["Главная"]:FindFirstChildOfClass("UIStroke").Color = Color3.fromRGB(
 -- НАПОЛНЕНИЕ ФУНКЦИОНАЛА
 -- ==========================================
 AddToggle(MainP, "Авто-Фарм Монет", function(state) ToggleAutoFarm(state) end)
-AddSlider(MainP, "Скорость Фарма", 1, 50, 25, function(v) State.AutoFarmSpeed = v end)
+AddSlider(MainP, "Скорость Фарма", 1, 25, 25, function(v) State.AutoFarmSpeed = v end)
 
 AddToggle(PlayerP, "Bypass Fly (Полет)", function(state)
     State.Flying = state
@@ -717,24 +686,8 @@ AddToggle(PlayerP, "Bypass Fly (Полет)", function(state)
 end)
 AddSlider(PlayerP, "Скорость полета", 15, 90, 35, function(v) State.FlySpeed = v end)
 AddToggle(PlayerP, "Кастомный бег", function(state) State.WalkSpeedEnabled = state end)
-AddSlider(PlayerP, "Скорость бега", 16, 120, 16, function(v)
-    State.CustomWalkSpeed = v
-    local hum = GetHum()
-    if hum and State.WalkSpeedEnabled then hum.WalkSpeed = v end
-end)
-AddToggle(PlayerP, "Noclip (Сквозь стены)", function(state)
-    State.NoclipEnabled = state
-    if Connections.Noclip then Connections.Noclip:Disconnect() Connections.Noclip = nil end
-    if state then
-        Connections.Noclip = RunService.Stepped:Connect(function()
-            if LocalPlayer.Character and not (State.AutoFarmEnabled and not IsRoundActive()) then
-                for _, part in pairs(LocalPlayer.Character:GetDescendants()) do
-                    if part:IsA("BasePart") then part.CanCollide = false end
-                end
-            end
-        end)
-    end
-end)
+AddSlider(PlayerP, "Скорость бега", 16, 120, 16, function(v) State.CustomWalkSpeed = v end)
+AddToggle(PlayerP, "Noclip (Сквозь стены)", function(state) State.NoclipEnabled = state end)
 AddToggle(PlayerP, "Бесконечный Прыжок", function(state) State.InfJump = state end)
 
 AddToggle(VisualP, "Включить ESP Ролей", function(state)
@@ -769,107 +722,8 @@ AddToggle(SheriffP, "Авто-Стрельба (Sheriff Aura)", function(state) 
 AddToggle(SheriffP, "Silent Aim в Убийцу", function(state) State.SilentAim = state end)
 
 -- ==========================================
--- ЦИКЛ СКОРОСТИ ХОДЬБЫ
+-- DRAG SYSTEM & MINIMIZE
 -- ==========================================
-Connections.WalkSpeedLoop = RunService.Heartbeat:Connect(function()
-    local hum = GetHum()
-    if hum then
-        if State.WalkSpeedEnabled and not (State.AutoFarmEnabled and IsRoundActive()) and not State.Flying then
-            hum.WalkSpeed = State.CustomWalkSpeed
-        else
-            if hum.WalkSpeed ~= 16 and not State.Flying and not (State.AutoFarmEnabled and IsRoundActive()) then
-                hum.WalkSpeed = 16
-            end
-        end
-    end
-end)
-
--- ==========================================
--- ПОТОКИ АУР И СБОРЩИКОВ
--- ==========================================
-task.spawn(function()
-    while task.wait(0.05) do
-        local root = GetRoot()
-        if root and (State.MurderAura or State.SilentKill) then
-            local knife = LocalPlayer.Character:FindFirstChild("Knife") or LocalPlayer.Backpack:FindFirstChild("Knife")
-            if knife then
-                if knife.Parent == LocalPlayer.Backpack then knife.Parent = LocalPlayer.Character end
-                knife:Activate()
-
-                if State.SilentKill then
-                    for _, p in pairs(Players:GetPlayers()) do
-                        if p ~= LocalPlayer and p.Character and p.Character:FindFirstChild("HumanoidRootPart") then
-                            local tRoot = p.Character.HumanoidRootPart
-                            if (root.Position - tRoot.Position).Magnitude <= 18 and GetPlayerRole(p) ~= "Murderer" then
-                                pcall(function()
-                                    firetouchinterest(tRoot, knife.Handle, 0)
-                                    firetouchinterest(tRoot, knife.Handle, 1)
-                                end)
-                            end
-                        end
-                    end
-                end
-            end
-        end
-    end
-end)
-
-task.spawn(function()
-    while task.wait(0.1) do
-        local root = GetRoot()
-        if root and (State.SheriffAura or State.SilentAim) then
-            local gun = LocalPlayer.Character:FindFirstChild("Gun") or LocalPlayer.Backpack:FindFirstChild("Gun")
-            if gun then
-                if gun.Parent == LocalPlayer.Backpack then gun.Parent = LocalPlayer.Character end
-                gun:Activate()
-
-                if State.SilentAim then
-                    local m = GetMurderer()
-                    if m and m.Character and m.Character:FindFirstChild("Head") then
-                        local cam = workspace.CurrentCamera
-                        cam.CFrame = CFrame.new(cam.CFrame.Position, m.Character.Head.Position)
-                    end
-                end
-            end
-        end
-    end
-end)
-
-task.spawn(function()
-    while task.wait(0.1) do
-        if State.AutoPickGun then
-            local root = GetRoot()
-            if root then
-                for _, obj in pairs(workspace:GetDescendants()) do
-                    if obj:IsA("BasePart") and (obj.Name == "GunDrop" or obj.Name == "Gun_Server") then
-                        root.CFrame = obj.CFrame
-                        firetouchinterest(root, obj, 0)
-                        firetouchinterest(root, obj, 1)
-                        break
-                    end
-                end
-            end
-        end
-    end
-end)
-
-task.spawn(function()
-    while task.wait(0.5) do
-        if State.ESPEnabled then
-            for _, p in pairs(Players:GetPlayers()) do
-                if p ~= LocalPlayer and p.Character and p.Character:FindFirstChild("HumanoidRootPart") then
-                    local role = GetPlayerRole(p)
-                    local hl = p.Character:FindFirstChild("MM2Highlight") or Instance.new("Highlight", p.Character)
-                    hl.Name = "MM2Highlight"
-                    hl.FillColor = role == "Murderer" and Color3.fromRGB(255, 30, 30) or role == "Sheriff" and Color3.fromRGB(30, 140, 255) or Color3.fromRGB(50, 255, 100)
-                    hl.FillTransparency = 0.4
-                end
-            end
-        end
-    end
-end)
-
--- Драг-система UI
 local dragging, dragInput, dragStart, startPos
 Header.InputBegan:Connect(function(input)
     if input.UserInputType == Enum.UserInputType.MouseButton1 or input.UserInputType == Enum.UserInputType.Touch then
@@ -912,10 +766,7 @@ end)
 CloseBtn.MouseButton1Click:Connect(function()
     State.Flying, State.AutoFarmEnabled, State.WalkSpeedEnabled, State.ESPEnabled, State.MurderAura, State.SilentKill, State.SheriffAura, State.AutoPickGun, State.AutoFlingEnabled, State.InfJump, State.SilentAim = false, false, false, false, false, false, false, false, false, false, false
     StopFlying()
-    if Connections.FarmNoclip then Connections.FarmNoclip:Disconnect() end
-    if Connections.Noclip then Connections.Noclip:Disconnect() end
     if Connections.Fling then Connections.Fling:Disconnect() end
-    if Connections.WalkSpeedLoop then Connections.WalkSpeedLoop:Disconnect() end
     local root = GetRoot()
     if root then 
         root.Anchored = false 
