@@ -89,12 +89,10 @@ local function TeleportToLobby()
     root.CFrame = CFrame.new(-108, 145, 0) 
 end
 
--- ИСПРАВЛЕНО: Более надежное определение активного раунда
 local function IsRoundActive()
     local map = workspace:FindFirstChild("Normal") or workspace:FindFirstChild("Map")
     if not map then return false end
     
-    -- Проверяем наличие спавнов карты или монет внутри нее
     local coinFound = false
     for _, obj in pairs(workspace:GetDescendants()) do
         if obj:IsA("BasePart") and (obj.Name == "Coin_Server" or obj.Name == "GoldCoin" or obj.Name == "Coin" or obj.Name:lower():find("coin")) then
@@ -217,7 +215,7 @@ local function ScanAllCoins(safeRadius)
 end
 
 -- ==========================================
--- ИСПРАВЛЕННЫЙ АВТО-ФАРМ (СТАБИЛЬНЫЙ СТАРТ)
+-- ИСПРАВЛЕННЫЙ АВТО-ФАРМ (БЕЗ ДЕРГАНИЙ И СИЛОВОГО КОНФЛИКТА)
 -- ==========================================
 local isCurrentlyFarming = false 
 local AntiFallBV = nil
@@ -244,7 +242,7 @@ local function ToggleAutoFarm(state)
 
     CollectedCoinsInRound = 0 
 
-    -- Цикл Ноуклипа
+    -- Цикл noclip и принудительного состояния PlatformStand
     Connections.FarmNoclip = RunService.Stepped:Connect(function()
         local root = GetRoot()
         local humanoid = GetHum()
@@ -252,10 +250,6 @@ local function ToggleAutoFarm(state)
         if State.AutoFarmEnabled and IsRoundActive() and LocalPlayer.Character then
             for _, part in pairs(LocalPlayer.Character:GetDescendants()) do
                 if part:IsA("BasePart") then part.CanCollide = false end
-            end
-            if isCurrentlyFarming and root then
-                root.AssemblyLinearVelocity = Vector3.new(0, 0, 0)
-                root.AssemblyAngularVelocity = Vector3.new(0, 0, 0)
             end
             if humanoid and not humanoid.PlatformStand then
                 humanoid.PlatformStand = true
@@ -270,13 +264,13 @@ local function ToggleAutoFarm(state)
 
     task.spawn(function()
         while State.AutoFarmEnabled do
-            task.wait(0.05)
+            task.wait(0.02) -- Ускоренный отклик цикла
             
             local root = GetRoot()
             local humanoid = GetHum()
             if not root or not humanoid or humanoid.Health <= 0 then continue end
 
-            -- Если раунд не активен (мы в Лобби)
+            -- Поведение в лобби
             if not IsRoundActive() then
                 isCurrentlyFarming = false
                 if CurrentActiveTween then CurrentActiveTween:Cancel() CurrentActiveTween = nil end
@@ -290,7 +284,7 @@ local function ToggleAutoFarm(state)
                 continue
             end
 
-            -- Создание стабильного якоря удержания высоты
+            -- Создание/Проверка мягкого якоря высоты (запрещает падение, но не мешает твину ехать вперед/назад/вбок)
             if not AntiFallBV or not AntiFallBV.Parent then
                 AntiFallBV = Instance.new("BodyVelocity")
                 AntiFallBV.Name = "FarmAntiFallAnchor"
@@ -319,12 +313,19 @@ local function ToggleAutoFarm(state)
             
             if coin and coin.Parent then
                 isCurrentlyFarming = true
-                AntiFallBV.MaxForce = Vector3.new(0, 0, 0) -- Выключаем стопор, летим к монете
+                
+                -- ИСПРАВЛЕНО: Полностью отключаем любые внешние сопротивления физики для твина
+                AntiFallBV.MaxForce = Vector3.new(0, 0, 0) 
+                root.AssemblyLinearVelocity = Vector3.new(0, 0, 0)
+                root.AssemblyAngularVelocity = Vector3.new(0, 0, 0)
                 
                 local targetCFrame = coin.CFrame * CFrame.new(0, 1.5, 0)
                 local distance = (root.Position - targetCFrame.Position).Magnitude
                 local duration = distance / math.max(State.AutoFarmSpeed, 1)
 
+                -- Пересоздаем твин к новой актуальной монете
+                if CurrentActiveTween then CurrentActiveTween:Cancel() end
+                
                 local tweenInfo = TweenInfo.new(duration, Enum.EasingStyle.Linear)
                 CurrentActiveTween = TweenService:Create(root, tweenInfo, {CFrame = targetCFrame})
                 CurrentActiveTween:Play()
@@ -336,10 +337,15 @@ local function ToggleAutoFarm(state)
                     if completedConn then completedConn:Disconnect() end
                 end)
                 
+                -- Пока твин выполняется, следим за прерываниями
                 while tweenActive and State.AutoFarmEnabled and IsRoundActive() do
-                    if root then root.AssemblyLinearVelocity = Vector3.new(0, 0, 0) end
+                    if root then 
+                        root.AssemblyLinearVelocity = Vector3.new(0, 0, 0) 
+                        root.AssemblyAngularVelocity = Vector3.new(0, 0, 0)
+                    end
                     if CollectedCoinsInRound >= 40 then break end
 
+                    -- Если убийца близко, сбрасываем твин, чтобы найти другую безопасную монету
                     local m = GetMurderer()
                     if m and m.Character and m.Character:FindFirstChild("HumanoidRootPart") then
                         local mDist = (root.Position - m.Character.HumanoidRootPart.Position).Magnitude
@@ -357,6 +363,7 @@ local function ToggleAutoFarm(state)
                     break 
                 end
 
+                -- Сбор монеты на финише
                 if (root.Position - targetCFrame.Position).Magnitude < 7 then
                     if firetouchinterest then
                         firetouchinterest(root, coin, 0)
@@ -369,13 +376,13 @@ local function ToggleAutoFarm(state)
                     CollectedCoinsInRound = CollectedCoinsInRound + 1 
                 end
             else
-                -- Если катка идет, но монет на карте временно нет
+                -- ИСПРАВЛЕНО: Если монет временно нет — гасим только вертикальное падение, горизонтали не дергаем!
                 isCurrentlyFarming = false 
                 if CurrentActiveTween then CurrentActiveTween:Cancel() CurrentActiveTween = nil end
                 
                 if root and AntiFallBV and IsRoundActive() then
                     root.AssemblyLinearVelocity = Vector3.new(0, 0, 0)
-                    AntiFallBV.MaxForce = Vector3.new(1e6, 1e6, 1e6) -- Зависаем на текущей высоте
+                    AntiFallBV.MaxForce = Vector3.new(0, math.huge, 0) -- Блокирует ТОЛЬКО падение по высоте (Y)
                     AntiFallBV.Velocity = Vector3.new(0, 0, 0)
                 end
             end
