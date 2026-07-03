@@ -104,7 +104,7 @@ local function IsRoundActive()
 end
 
 -- ==========================================
--- ИСПРАВЛЕННЫЙ ПОЛЕТ (FLY)
+-- ПОЛЕТ (FLY)
 -- ==========================================
 local function StopFlying()
     if Connections.Fly then Connections.Fly:Disconnect() Connections.Fly = nil end
@@ -213,11 +213,11 @@ local function ScanAllCoins(safeRadius)
 end
 
 -- ==========================================
--- ПОЛНОСТЬЮ ИСПРАВЛЕННЫЙ АВТО-ФАРМ
+-- ИСПРАВЛЕННЫЙ АВТО-ФАРМ (БЕЗ ЗАВИСАНИЙ)
 -- ==========================================
 local AntiFallBV = nil
 local CurrentActiveTween = nil
-local CurrentCoinTarget = nil -- Переменная блокировки цели для исключения тряски
+local CurrentCoinTarget = nil 
 
 local function ToggleAutoFarm(state)
     State.AutoFarmEnabled = state
@@ -239,7 +239,6 @@ local function ToggleAutoFarm(state)
 
     CollectedCoinsInRound = 0 
 
-    -- Стрим коллизий и падения
     Connections.FarmNoclip = RunService.Stepped:Connect(function()
         if State.AutoFarmEnabled and IsRoundActive() and LocalPlayer.Character then
             for _, part in pairs(LocalPlayer.Character:GetDescendants()) do
@@ -264,7 +263,6 @@ local function ToggleAutoFarm(state)
             local humanoid = GetHum()
             if not root or not humanoid or humanoid.Health <= 0 then continue end
 
-            -- Остановка фарма вне раунда
             if not IsRoundActive() then
                 if CurrentActiveTween then CurrentActiveTween:Cancel() CurrentActiveTween = nil end
                 CurrentCoinTarget = nil
@@ -278,7 +276,6 @@ local function ToggleAutoFarm(state)
                 continue
             end
 
-            -- Якорь защиты от бездны
             if not AntiFallBV or not AntiFallBV.Parent then
                 AntiFallBV = Instance.new("BodyVelocity")
                 AntiFallBV.Name = "FarmAntiFallAnchor"
@@ -287,7 +284,6 @@ local function ToggleAutoFarm(state)
                 AntiFallBV.Parent = root
             end
 
-            -- Проверка лимита мешка
             if CollectedCoinsInRound >= 40 then
                 if CurrentActiveTween then CurrentActiveTween:Cancel() CurrentActiveTween = nil end
                 CurrentCoinTarget = nil
@@ -303,17 +299,21 @@ local function ToggleAutoFarm(state)
                 continue
             end
 
-            -- Если текущая цель активна и существует, скрипт НЕ прерывает движение (Защита от дергания)
+            -- Защита от зависания: если старая цель пропала из игры, сбрасываем ее
+            if CurrentCoinTarget and not CurrentCoinTarget.Parent then
+                CurrentCoinTarget = nil
+                if CurrentActiveTween then CurrentActiveTween:Cancel() CurrentActiveTween = nil end
+            end
+
             if CurrentCoinTarget and CurrentCoinTarget.Parent and (root.Position - CurrentCoinTarget.Position).Magnitude < 150 then
                 continue
             end
 
-            -- Поиск новой монеты, если старой нет или мы долетели
             local coin = ScanAllCoins(45) 
             
             if coin and coin.Parent then
                 CurrentCoinTarget = coin
-                AntiFallBV.MaxForce = Vector3.new(0, 0, 0) -- Полное отключение сил физики перед твином
+                AntiFallBV.MaxForce = Vector3.new(0, 0, 0)
                 
                 root.AssemblyLinearVelocity = Vector3.new(0, 0, 0)
                 root.AssemblyAngularVelocity = Vector3.new(0, 0, 0)
@@ -335,19 +335,17 @@ local function ToggleAutoFarm(state)
                     if completedConn then completedConn:Disconnect() end
                 end)
                 
-                -- Отслеживание процесса полета
                 while tweenActive and State.AutoFarmEnabled and IsRoundActive() and CurrentCoinTarget == coin and coin.Parent do
                     if root then 
                         root.AssemblyLinearVelocity = Vector3.new(0, 0, 0) 
                         root.AssemblyAngularVelocity = Vector3.new(0, 0, 0)
                     end
                     
-                    -- Проверка опасности от Мардера
                     local m = GetMurderer()
                     if m and m.Character and m.Character:FindFirstChild("HumanoidRootPart") then
                         local mDist = (root.Position - m.Character.HumanoidRootPart.Position).Magnitude
                         if mDist < 45 then
-                            if CurrentActiveTween then CurrentActiveTween:Cancel() end
+                            if CurrentActiveTween then CurrentActiveTween:Cancel() CurrentActiveTween = nil end
                             CurrentCoinTarget = nil
                             tweenActive = false
                             break
@@ -358,7 +356,6 @@ local function ToggleAutoFarm(state)
                 
                 if not State.AutoFarmEnabled then break end
 
-                -- Фаза сбора монеты
                 if coin and coin.Parent and (root.Position - coin.Position).Magnitude < 8 then
                     if firetouchinterest then
                         firetouchinterest(root, coin, 0)
@@ -372,7 +369,6 @@ local function ToggleAutoFarm(state)
                 end
                 CurrentCoinTarget = nil
             else
-                -- Если монет нет — висим на высоте
                 if CurrentActiveTween then CurrentActiveTween:Cancel() CurrentActiveTween = nil end
                 CurrentCoinTarget = nil
                 if root and AntiFallBV and IsRoundActive() then
@@ -443,7 +439,7 @@ local function ToggleFling(state)
 end
 
 -- ==========================================
--- ИНТЕРФЕЙС СТИЛИЗАЦИЯ (GUI)
+-- ИНТЕРФЕЙС GUI
 -- ==========================================
 local ScreenGui = Instance.new("ScreenGui")
 ScreenGui.Name = "HoshiMM2Gui"
@@ -710,7 +706,7 @@ Tabs["Главная"].BackgroundColor3 = Color3.fromRGB(38, 42, 53)
 Tabs["Главная"]:FindFirstChildOfClass("UIStroke").Color = Color3.fromRGB(55, 60, 75)
 
 -- ==========================================
--- НАПОЛНЕНИЕ ФУНКЦИОНАЛА СОРСА
+-- НАПОЛНЕНИЕ ФУНКЦИОНАЛА
 -- ==========================================
 AddToggle(MainP, "Авто-Фарм Монет", function(state) ToggleAutoFarm(state) end)
 AddSlider(MainP, "Скорость Фарма", 1, 50, 25, function(v) State.AutoFarmSpeed = v end)
