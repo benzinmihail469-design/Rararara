@@ -217,7 +217,7 @@ local function ScanAllCoins(safeRadius)
 end
 
 -- ==========================================
--- УМНЫЙ АВТО-ФАРМ (С АВТО-ОТКЛЮЧЕНИЕМ В ЛОББИ)
+-- УМНЫЙ АВТО-ФАРМ (ИСПРАВЛЕННЫЙ)
 -- ==========================================
 local isCurrentlyFarming = false 
 local AntiFallBV = nil
@@ -244,7 +244,7 @@ local function ToggleAutoFarm(state)
 
     CollectedCoinsInRound = 0 
 
-    -- Специфический Ноуклип: работает ТОЛЬКО когда идет активный фарм в раунде
+    -- Исправленный условный ноуклип
     Connections.FarmNoclip = RunService.Stepped:Connect(function()
         local root = GetRoot()
         local humanoid = GetHum()
@@ -264,7 +264,7 @@ local function ToggleAutoFarm(state)
                 humanoid.PlatformStand = true
             end
         elseif humanoid and not State.Flying then
-            -- Если мы в лобби, возвращаем нормальное состояние персонажа
+            -- Если раунд НЕ идет — принудительно размораживаем персонажа в лобби
             if humanoid.PlatformStand then
                 humanoid.PlatformStand = false
                 humanoid:ChangeState(Enum.HumanoidStateType.GettingUp)
@@ -280,21 +280,21 @@ local function ToggleAutoFarm(state)
             local humanoid = GetHum()
             if not root or not humanoid or humanoid.Health <= 0 then continue end
 
-            -- Проверяем, началась ли катка. Если нет монет -> мы в лобби, отдыхаем
+            -- ИСПРАВЛЕНО: Полный сброс параметров фиксации при простое в Лобби
             if not IsRoundActive() then
                 isCurrentlyFarming = false
                 if CurrentActiveTween then CurrentActiveTween:Cancel() CurrentActiveTween = nil end
                 if AntiFallBV then AntiFallBV.MaxForce = Vector3.new(0, 0, 0) end
                 
-                if humanoid and humanoid.PlatformStand and not State.Flying then
+                if humanoid and not State.Flying then
                     humanoid.PlatformStand = false
                     humanoid:ChangeState(Enum.HumanoidStateType.GettingUp)
                 end
-                CollectedCoinsInRound = 0 -- Сброс счетчика перед новой каткой
+                CollectedCoinsInRound = 0
                 continue
             end
 
-            -- Инициализируем удерживающий силу плагин против падения
+            -- Инициализируем удерживающий плагин (только для фазы активного раунда)
             if not AntiFallBV or not AntiFallBV.Parent then
                 AntiFallBV = Instance.new("BodyVelocity")
                 AntiFallBV.Name = "FarmAntiFallAnchor"
@@ -319,11 +319,11 @@ local function ToggleAutoFarm(state)
                 continue
             end
 
-            local coin = ScanAllCoins(45) -- Безопасный радиус от маньяка 45 единиц
+            local coin = ScanAllCoins(45) 
             
             if coin and coin.Parent then
                 isCurrentlyFarming = true
-                AntiFallBV.MaxForce = Vector3.new(0, 0, 0) -- Отключаем стопор во время полета
+                AntiFallBV.MaxForce = Vector3.new(0, 0, 0) 
                 
                 local targetCFrame = coin.CFrame * CFrame.new(0, 1.5, 0)
                 local distance = (root.Position - targetCFrame.Position).Magnitude
@@ -344,7 +344,6 @@ local function ToggleAutoFarm(state)
                     if root then root.AssemblyLinearVelocity = Vector3.new(0, 0, 0) end
                     if CollectedCoinsInRound >= 40 then break end
 
-                    -- Экстренный выход из твина, если убийца подошел близко
                     local m = GetMurderer()
                     if m and m.Character and m.Character:FindFirstChild("HumanoidRootPart") then
                         local mDist = (root.Position - m.Character.HumanoidRootPart.Position).Magnitude
@@ -363,7 +362,6 @@ local function ToggleAutoFarm(state)
                     break 
                 end
 
-                -- Подбираем монетку
                 if (root.Position - targetCFrame.Position).Magnitude < 7 then
                     if firetouchinterest then
                         firetouchinterest(root, coin, 0)
@@ -376,12 +374,12 @@ local function ToggleAutoFarm(state)
                     CollectedCoinsInRound = CollectedCoinsInRound + 1 
                 end
             else
-                -- ЛОГИКА ЗАВИСАНИЯ (Если катка идет, но монет временно нет/опасно)
                 isCurrentlyFarming = false 
                 if CurrentActiveTween then CurrentActiveTween:Cancel() CurrentActiveTween = nil end
                 
+                -- ИСПРАВЛЕНО: Зависание в воздухе срабатывает ТОЛЬКО посреди активного раунда
                 if root and AntiFallBV and IsRoundActive() then
-                    root.CFrame = root.CFrame * CFrame.new(0, -0.5, 0) 
+                    root.CFrame = root.CFrame * CFrame.new(0, -0.2, 0) 
                     root.AssemblyLinearVelocity = Vector3.new(0, 0, 0)
                     AntiFallBV.MaxForce = Vector3.new(1e6, 1e6, 1e6) 
                     AntiFallBV.Velocity = Vector3.new(0, 0, 0)
