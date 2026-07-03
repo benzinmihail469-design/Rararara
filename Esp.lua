@@ -89,18 +89,22 @@ local function TeleportToLobby()
     root.CFrame = CFrame.new(-108, 145, 0) 
 end
 
+-- ИСПРАВЛЕНО: Более надежное определение активного раунда
 local function IsRoundActive()
-    local container = workspace:FindFirstChild("Normal") or workspace:FindFirstChild("Map")
-    if not container then return false end
+    local map = workspace:FindFirstChild("Normal") or workspace:FindFirstChild("Map")
+    if not map then return false end
     
+    -- Проверяем наличие спавнов карты или монет внутри нее
+    local coinFound = false
     for _, obj in pairs(workspace:GetDescendants()) do
         if obj:IsA("BasePart") and (obj.Name == "Coin_Server" or obj.Name == "GoldCoin" or obj.Name == "Coin" or obj.Name:lower():find("coin")) then
-            if obj.Transparency < 1 and obj.Parent then
-                return true
+            if obj.Parent then
+                coinFound = true
+                break
             end
         end
     end
-    return false
+    return coinFound
 end
 
 -- ==========================================
@@ -177,7 +181,7 @@ UserInputService.JumpRequest:Connect(function()
 end)
 
 -- ==========================================
--- ПОИСК БЛИЖАЙШЕЙ МОНЕТЫ + СЕЙВ ТРИГГЕРЫ
+-- ПОИСК БЛИЖАЙШЕЙ МОНЕТЫ
 -- ==========================================
 local function ScanAllCoins(safeRadius)
     local root = GetRoot()
@@ -191,10 +195,10 @@ local function ScanAllCoins(safeRadius)
 
     for _, obj in pairs(workspace:GetDescendants()) do
         if obj:IsA("BasePart") and (obj.Name == "Coin_Server" or obj.Name == "GoldCoin" or obj.Name == "Coin" or obj.Name:lower():find("coin")) then
-            if obj.Transparency < 1 and obj.Parent then
+            if obj.Parent then
                 local distance = (root.Position - obj.Position).Magnitude
                 
-                if distance < shortestDistance and distance < 1500 then
+                if distance < shortestDistance and distance < 2000 then
                     local isSafe = true
                     if mRoot and safeRadius then
                         local distFromM = (mRoot.Position - obj.Position).Magnitude
@@ -213,7 +217,7 @@ local function ScanAllCoins(safeRadius)
 end
 
 -- ==========================================
--- ИСПРАВЛЕННЫЙ АВТО-ФАРМ (БЕЗ УЛЕТА И ТРЯСКИ)
+-- ИСПРАВЛЕННЫЙ АВТО-ФАРМ (СТАБИЛЬНЫЙ СТАРТ)
 -- ==========================================
 local isCurrentlyFarming = false 
 local AntiFallBV = nil
@@ -240,7 +244,7 @@ local function ToggleAutoFarm(state)
 
     CollectedCoinsInRound = 0 
 
-    -- Безопасный цикл Ноуклипа и Контроля стейтов физики
+    -- Цикл Ноуклипа
     Connections.FarmNoclip = RunService.Stepped:Connect(function()
         local root = GetRoot()
         local humanoid = GetHum()
@@ -257,7 +261,6 @@ local function ToggleAutoFarm(state)
                 humanoid.PlatformStand = true
             end
         elseif humanoid and not State.Flying then
-            -- Фикс тряски в Лобби: Полностью убираем блокировку стейтов
             if humanoid.PlatformStand then
                 humanoid.PlatformStand = false
                 humanoid:ChangeState(Enum.HumanoidStateType.GettingUp)
@@ -273,7 +276,7 @@ local function ToggleAutoFarm(state)
             local humanoid = GetHum()
             if not root or not humanoid or humanoid.Health <= 0 then continue end
 
-            -- Поведение в Лобби (раунд завершен)
+            -- Если раунд не активен (мы в Лобби)
             if not IsRoundActive() then
                 isCurrentlyFarming = false
                 if CurrentActiveTween then CurrentActiveTween:Cancel() CurrentActiveTween = nil end
@@ -287,7 +290,7 @@ local function ToggleAutoFarm(state)
                 continue
             end
 
-            -- Создание стабильного якоря удержания высоты (чтобы не проваливаться)
+            -- Создание стабильного якоря удержания высоты
             if not AntiFallBV or not AntiFallBV.Parent then
                 AntiFallBV = Instance.new("BodyVelocity")
                 AntiFallBV.Name = "FarmAntiFallAnchor"
@@ -296,7 +299,7 @@ local function ToggleAutoFarm(state)
                 AntiFallBV.Parent = root
             end
 
-            -- Стоп-лимит монет
+            -- Лимит монет
             if CollectedCoinsInRound >= 40 then
                 isCurrentlyFarming = false
                 if CurrentActiveTween then CurrentActiveTween:Cancel() CurrentActiveTween = nil end
@@ -316,7 +319,7 @@ local function ToggleAutoFarm(state)
             
             if coin and coin.Parent then
                 isCurrentlyFarming = true
-                AntiFallBV.MaxForce = Vector3.new(0, 0, 0) -- Отключаем стопор для свободного перемещения
+                AntiFallBV.MaxForce = Vector3.new(0, 0, 0) -- Выключаем стопор, летим к монете
                 
                 local targetCFrame = coin.CFrame * CFrame.new(0, 1.5, 0)
                 local distance = (root.Position - targetCFrame.Position).Magnitude
@@ -366,14 +369,13 @@ local function ToggleAutoFarm(state)
                     CollectedCoinsInRound = CollectedCoinsInRound + 1 
                 end
             else
-                -- ФИКС ПОЛЕТА В ПУСТОТУ:
-                -- Если монета пропала/ещё не загрузилась — мы просто застываем на месте, а не летим вниз!
+                -- Если катка идет, но монет на карте временно нет
                 isCurrentlyFarming = false 
                 if CurrentActiveTween then CurrentActiveTween:Cancel() CurrentActiveTween = nil end
                 
                 if root and AntiFallBV and IsRoundActive() then
                     root.AssemblyLinearVelocity = Vector3.new(0, 0, 0)
-                    AntiFallBV.MaxForce = Vector3.new(1e6, 1e6, 1e6) -- Жестко блокируем падение по осям
+                    AntiFallBV.MaxForce = Vector3.new(1e6, 1e6, 1e6) -- Зависаем на текущей высоте
                     AntiFallBV.Velocity = Vector3.new(0, 0, 0)
                 end
             end
