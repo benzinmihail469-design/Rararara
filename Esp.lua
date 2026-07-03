@@ -74,7 +74,36 @@ local function GetMurderer()
 end
 
 -- ==========================================
--- РАБОЧИЙ ФЛАЙ (С ОБХОДОМ)
+-- ПОЛУЧЕНИЕ КОЛ-ВА МОНЕТ И ТЕЛЕПОРТ В ЛОББИ
+-- ==========================================
+local function GetCoinCount()
+    local count = 0
+    pcall(function()
+        -- Считываем количество монет из интерфейса игры
+        local coinText = LocalPlayer.PlayerGui.MainGUI.Game.Cashbag.Amount.Text
+        count = tonumber(coinText) or 0
+    end)
+    return count
+end
+
+local function TeleportToLobby()
+    local root = GetRoot()
+    if not root then return end
+    
+    local lobby = workspace:FindFirstChild("Lobby")
+    if lobby and lobby:FindFirstChild("Spawns") then
+        local spawns = lobby.Spawns:GetChildren()
+        if #spawns > 0 then
+            root.CFrame = spawns[1].CFrame * CFrame.new(0, 5, 0)
+            return
+        end
+    end
+    -- Резервный телепорт (стандартные координаты)
+    root.CFrame = CFrame.new(-108, 145, 0) 
+end
+
+-- ==========================================
+-- РАБОЧИЙ ФЛАЙ
 -- ==========================================
 local function StopFlying()
     if Connections.Fly then Connections.Fly:Disconnect() Connections.Fly = nil end
@@ -151,24 +180,37 @@ UserInputService.JumpRequest:Connect(function()
 end)
 
 -- ==========================================
--- УМНЫЙ ПОИСК БЛИЖАЙШЕЙ МОНЕТЫ (ИСПРАВЛЕНО ДЛЯ ЛОББИ)
+-- ПОИСК БЛИЖАЙШЕЙ МОНЕТЫ С АНТИ-УБИЙЦЕЙ
 -- ==========================================
-local function ScanAllCoins()
+local function ScanAllCoins(safeRadius)
     local root = GetRoot()
     if not root then return nil end
 
     local closestCoin = nil
     local shortestDistance = math.huge
+    
+    local m = GetMurderer()
+    local mRoot = m and m.Character and m.Character:FindFirstChild("HumanoidRootPart")
 
     for _, obj in pairs(workspace:GetDescendants()) do
         if obj:IsA("BasePart") and (obj.Name == "Coin_Server" or obj.Name == "GoldCoin" or obj.Name == "Coin" or obj.Name:lower():find("coin")) then
             if obj.Transparency < 1 and obj.Parent then
                 local distance = (root.Position - obj.Position).Magnitude
-                -- Если монета дальше 1500 стадов, значит она на карте, а мы в лобби.
-                -- Игнорируем такие монеты, чтобы скрипт не зависал!
+                
                 if distance < shortestDistance and distance < 1500 then
-                    shortestDistance = distance
-                    closestCoin = obj
+                    local isSafe = true
+                    -- Проверяем, не слишком ли близко монета к убийце
+                    if mRoot and safeRadius then
+                        local distFromM = (mRoot.Position - obj.Position).Magnitude
+                        if distFromM < safeRadius then
+                            isSafe = false
+                        end
+                    end
+                    
+                    if isSafe then
+                        shortestDistance = distance
+                        closestCoin = obj
+                    end
                 end
             end
         end
@@ -220,13 +262,26 @@ local function ToggleAutoFarm(state)
 
     task.spawn(function()
         while State.AutoFarmEnabled do
-            task.wait(0.2)
+            task.wait(0.1)
             
             local root = GetRoot()
             local humanoid = GetHum()
             if not root or not humanoid or humanoid.Health <= 0 then continue end
 
-            local coin = ScanAllCoins()
+            -- ПРОВЕРКА НА ФУЛЛ МЕШОК (40 МОНЕТ)
+            if GetCoinCount() >= 40 then
+                if isCurrentlyFarming then
+                    isCurrentlyFarming = false
+                    humanoid.PlatformStand = false
+                    humanoid:ChangeState(Enum.HumanoidStateType.GettingUp)
+                    TeleportToLobby()
+                end
+                task.wait(2) -- Ждем в лобби и не спамим поиск
+                continue
+            end
+
+            -- Ищем монету с условием, что убийца дальше 45 стадов от неё
+            local coin = ScanAllCoins(45) 
             
             if coin and coin.Parent then
                 isCurrentlyFarming = true
@@ -249,6 +304,18 @@ local function ToggleAutoFarm(state)
                 
                 while tweenActive and State.AutoFarmEnabled do
                     if root then root.AssemblyLinearVelocity = Vector3.new(0, 0, 0) end
+                    
+                    -- ДИНАМИЧЕСКАЯ ЗАЩИТА: Если убийца подошел близко ВО ВРЕМЯ полета
+                    local m = GetMurderer()
+                    if m and m.Character and m.Character:FindFirstChild("HumanoidRootPart") then
+                        local mDist = (root.Position - m.Character.HumanoidRootPart.Position).Magnitude
+                        if mDist < 45 then
+                            tween:Cancel() -- Срочно прерываем полет
+                            tweenActive = false
+                            break
+                        end
+                    end
+                    
                     task.wait()
                 end
                 
@@ -257,13 +324,16 @@ local function ToggleAutoFarm(state)
                     break 
                 end
 
-                if firetouchinterest then
-                    firetouchinterest(root, coin, 0)
-                    task.wait(0.02)
-                    firetouchinterest(root, coin, 1)
-                else
-                    root.CFrame = coin.CFrame
-                    task.wait(0.02)
+                -- Берем монетку, если долетели (и нас не спугнул убийца)
+                if (root.Position - targetCFrame.Position).Magnitude < 5 then
+                    if firetouchinterest then
+                        firetouchinterest(root, coin, 0)
+                        task.wait(0.02)
+                        firetouchinterest(root, coin, 1)
+                    else
+                        root.CFrame = coin.CFrame
+                        task.wait(0.02)
+                    end
                 end
             else
                 if isCurrentlyFarming then
