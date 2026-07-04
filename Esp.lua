@@ -51,6 +51,26 @@ local function GetHum()
     return LocalPlayer.Character and LocalPlayer.Character:FindFirstChildOfClass("Humanoid")
 end
 
+-- Проверка: находится ли игрок в лобби
+local function IsInLobby()
+    local root = GetRoot()
+    if not root then return true end
+    
+    -- Способ 1: Проверка по наличию карты в Workspace
+    local map = workspace:FindFirstChild("Normal") or workspace:FindFirstChild("Map")
+    if not map then return true end -- Если карты раунда нет, мы в лобби
+
+    -- Способ 2: Дистанция до спавна лобби (если он существует)
+    local lobbySpawn = workspace:FindFirstChild("Lobby") and workspace.Lobby:FindFirstChild("SpawnLocation")
+    if lobbySpawn then
+        if (root.Position - lobbySpawn.Position).Magnitude < 150 then
+            return true
+        end
+    end
+
+    return false
+end
+
 local function GetPlayerRole(player)
     if not player or not player.Character then return "Innocent" end
     local backpack = player:FindFirstChild("Backpack")
@@ -83,21 +103,21 @@ Connections.MainLoop = RunService.RenderStepped:Connect(function(dt)
     
     local cam = workspace.CurrentCamera
 
-    -- Если активирован флай или автофарм — полностью сбрасываем стандартные силы и гравитацию
-    if State.Flying or State.AutoFarmEnabled then
-        root.AssemblyLinearVelocity = Vector3.new(0, 0, 0)
-        root.AssemblyAngularVelocity = Vector3.new(0, 0, 0)
+    -- Логика удержания высоты и отключения падения при флай/фарме
+    if State.Flying or (State.AutoFarmEnabled and not IsInLobby()) then
+        root.AssemblyLinearVelocity = Vector3.zero
+        root.AssemblyAngularVelocity = Vector3.zero
         if hum:GetState() ~= Enum.HumanoidStateType.Physics then
             hum:ChangeState(Enum.HumanoidStateType.Physics)
         end
     end
 
-    -- 1. ЛОГИКА АВТОФАРМА (Приоритет)
-    if State.AutoFarmEnabled then
+    -- 1. ЛОГИКА АВТОФАРМА (Только если НЕ в лобби)
+    if State.AutoFarmEnabled and not IsInLobby() then
         local closestCoin = nil
         local shortestDist = math.huge
         
-        -- Ищем доступные монеты на карте
+        -- Поиск монет
         for _, obj in pairs(workspace:GetDescendants()) do
             if obj:IsA("BasePart") and (obj.Name == "Coin_Server" or obj.Name == "GoldCoin" or obj.Name == "Coin" or obj.Name:lower():find("coin")) then
                 if obj.Transparency < 1 and obj:IsDescendantOf(workspace) then
@@ -116,13 +136,11 @@ Connections.MainLoop = RunService.RenderStepped:Connect(function(dt)
             local speed = math.clamp(State.AutoFarmSpeed, 1, 25)
 
             if dist > 1.5 then
-                -- Стабильное движение к монете с учетом DeltaTime
                 root.CFrame = CFrame.new(root.Position + dir.Unit * math.min(speed * dt, dist), closestCoin.Position)
             else
-                -- Сбор монеты через тач-интерест
                 if firetouchinterest then
                     firetouchinterest(root, closestCoin, 0)
-                    task.wait(0.02)
+                    task.wait(0.01)
                     firetouchinterest(root, closestCoin, 1)
                 else
                     root.CFrame = closestCoin.CFrame
@@ -132,7 +150,7 @@ Connections.MainLoop = RunService.RenderStepped:Connect(function(dt)
         end
     end
 
-    -- 2. ЛОГИКА ОБЫЧНОГО ФЛАЯ
+    -- 2. ИСПРАВЛЕННАЯ ЛОГИКА ОБЫЧНОГО ФЛАЯ
     if State.Flying then
         local moveDir = Vector3.new(0, 0, 0)
         if UserInputService:IsKeyDown(Enum.KeyCode.W) then moveDir = moveDir + cam.CFrame.LookVector end
@@ -145,14 +163,13 @@ Connections.MainLoop = RunService.RenderStepped:Connect(function(dt)
         if moveDir.Magnitude > 0 then
             root.CFrame = CFrame.new(root.Position + moveDir.Unit * (State.FlySpeed * dt), root.Position + cam.CFrame.LookVector)
         else
-            -- Зависаем на месте и смотрим туда же, куда направлена камера
             root.CFrame = CFrame.new(root.Position, root.Position + cam.CFrame.LookVector)
         end
         return
     end
 
-    -- 3. ВОЗВРАТ В ОБЫЧНОЕ СОСТОЯНИЕ ИГРОКА
-    if hum:GetState() == Enum.HumanoidStateType.Physics and not State.Flying and not State.AutoFarmEnabled then
+    -- Возврат нормального состояния физики
+    if hum:GetState() == Enum.HumanoidStateType.Physics and not State.Flying and not (State.AutoFarmEnabled and not IsInLobby()) then
         hum:ChangeState(Enum.HumanoidStateType.GettingUp)
     end
 end)
@@ -203,7 +220,7 @@ RunService.Stepped:Connect(function()
         hum.WalkSpeed = 16
     end
 
-    if State.NoclipEnabled or State.Flying or State.AutoFarmEnabled then
+    if State.NoclipEnabled or State.Flying or (State.AutoFarmEnabled and not IsInLobby()) then
         for _, part in pairs(char:GetDescendants()) do
             if part:IsA("BasePart") and part.CanCollide then
                 part.CanCollide = false
