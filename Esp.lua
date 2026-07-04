@@ -1,175 +1,209 @@
--- [[ Hoshi Hub Remake для Murder Mystery 2 ]] --
--- Оригинальный дизайн взят из Screenshot_2026-07-01-17-39-20-746_com.android.chrome.jpg
+-- Защита от дублирования интерфейса при повторном запуске
+local CoreGui = game:GetService("CoreGui")
+if CoreGui:FindFirstChild("CustomMM2Hub") then
+    CoreGui.CustomMM2Hub:Destroy()
+end
 
+-- ==========================================
+-- ОСНОВНОЕ ОКНО
+-- ==========================================
 local ScreenGui = Instance.new("ScreenGui")
+ScreenGui.Name = "CustomMM2Hub"
+ScreenGui.Parent = CoreGui
+
 local MainFrame = Instance.new("Frame")
-local Sidebar = Instance.new("Frame")
-local ContentFrame = Instance.new("Frame")
-local UICorner = Instance.new("UICorner")
-local UIListLayout = Instance.new("UIListLayout")
-local Title = Instance.new("TextLabel")
-
--- Настройки ScreenGui
-ScreenGui.Name = "HoshiHub_MM2"
-ScreenGui.Parent = game.CoreGui
-ScreenGui.ResetOnSpawn = false
-
--- Главное окно
-MainFrame.Name = "MainFrame"
+MainFrame.Size = UDim2.new(0, 500, 0, 320)
+MainFrame.Position = UDim2.new(0.5, -250, 0.5, -160)
+MainFrame.BackgroundColor3 = Color3.fromRGB(20, 20, 20) -- Темный фон (как в Hoshi)
+MainFrame.BorderSizePixel = 0
 MainFrame.Parent = ScreenGui
-MainFrame.BackgroundColor3 = Color3.fromRGB(15, 15, 20)
-MainFrame.Position = UDim2.new(0.3, 0, 0.25, 0)
-MainFrame.Size = UDim2.new(0, 550, 0, 330)
-MainFrame.Active = true
-MainFrame.Draggable = true -- Позволяет двигать интерфейс
 
-local MainCorner = Instance.new("UICorner", MainFrame)
+-- Скругление углов главного окна
+local MainCorner = Instance.new("UICorner")
 MainCorner.CornerRadius = UDim.new(0, 8)
+MainCorner.Parent = MainFrame
 
--- Боковое меню (Sidebar)
-Sidebar.Name = "Sidebar"
-Sidebar.Parent = MainFrame
-Sidebar.BackgroundColor3 = Color3.fromRGB(22, 22, 28)
-Sidebar.Size = UDim2.new(0, 130, 1, 0)
-
-local SidebarCorner = Instance.new("UICorner", Sidebar)
-SidebarCorner.CornerRadius = UDim.new(0, 8)
-
--- Заголовок "Hoshi"
-Title.Name = "Title"
-Title.Parent = Sidebar
+-- Заголовок
+local Title = Instance.new("TextLabel")
+Title.Size = UDim2.new(1, 0, 0, 35)
 Title.BackgroundTransparency = 1
-Title.Position = UDim2.new(0, 12, 0, 10)
-Title.Size = UDim2.new(0, 100, 0, 30)
-Title.Font = Enum.Font.GothamBold
-Title.Text = "Hoshi"
+Title.Text = " 🔪 MM2 Hub (Raw Lua)"
 Title.TextColor3 = Color3.fromRGB(255, 255, 255)
-Title.TextSize = 20
 Title.TextXAlignment = Enum.TextXAlignment.Left
+Title.Font = Enum.Font.GothamBold
+Title.TextSize = 16
+Title.Parent = MainFrame
 
--- Список для кнопок в боковом меню
-local MenuList = Instance.new("Frame", Sidebar)
-MenuList.BackgroundTransparency = 1
-MenuList.Position = UDim2.new(0, 0, 0, 50)
-MenuList.Size = UDim2.new(1, 0, 1, -50)
+-- Отступ для текста заголовка
+local TitlePadding = Instance.new("UIPadding")
+TitlePadding.PaddingLeft = UDim.new(0, 15)
+TitlePadding.Parent = Title
 
-UIListLayout.Parent = MenuList
-UIListLayout.SortOrder = Enum.SortOrder.LayoutOrder
-UIListLayout.Padding = UDim.new(0, 5)
+-- Боковая панель для вкладок
+local Sidebar = Instance.new("Frame")
+Sidebar.Size = UDim2.new(0, 130, 1, -35)
+Sidebar.Position = UDim2.new(0, 0, 0, 35)
+Sidebar.BackgroundColor3 = Color3.fromRGB(25, 25, 25)
+Sidebar.BorderSizePixel = 0
+Sidebar.Parent = MainFrame
 
--- Контентная зона (Основная панель)
-ContentFrame.Name = "ContentFrame"
-ContentFrame.Parent = MainFrame
-ContentFrame.BackgroundColor3 = Color3.fromRGB(15, 15, 20)
-ContentFrame.Position = UDim2.new(0, 140, 0, 10)
-ContentFrame.Size = UDim2.new(1, -150, 1, -20)
+-- Авто-расположение кнопок вкладок
+local SidebarLayout = Instance.new("UIListLayout")
+SidebarLayout.SortOrder = Enum.SortOrder.LayoutOrder
+SidebarLayout.Parent = Sidebar
 
--- Заголовок секции Фарма
-local SectionTitle = Instance.new("TextLabel", ContentFrame)
-SectionTitle.BackgroundTransparency = 1
-SectionTitle.Size = UDim2.new(1, 0, 0, 25)
-SectionTitle.Font = Enum.Font.GothamBold
-SectionTitle.Text = "AUTO FARM"
-SectionTitle.TextColor3 = Color3.fromRGB(255, 255, 255)
-SectionTitle.TextSize = 14
-SectionTitle.TextXAlignment = Enum.TextXAlignment.Left
+-- Зона для контента (где будут кнопки)
+local ContentArea = Instance.new("Frame")
+ContentArea.Size = UDim2.new(1, -130, 1, -35)
+ContentArea.Position = UDim2.new(0, 130, 0, 35)
+ContentArea.BackgroundTransparency = 1
+ContentArea.Parent = MainFrame
 
---- Контейнер для функции авто-фарма
-local FarmCard = Instance.new("Frame", ContentFrame)
-FarmCard.BackgroundColor3 = Color3.fromRGB(22, 22, 28)
-FarmCard.Position = UDim2.new(0, 0, 0, 35)
-FarmCard.Size = UDim2.new(1, 0, 0, 60)
-Instance.new("UICorner", FarmCard).CornerRadius = UDim.new(0, 6)
+-- ==========================================
+-- ЛОГИКА ВКЛАДОК И КНОПОК
+-- ==========================================
+local firstTab = true
 
-local FarmLabel = Instance.new("TextLabel", FarmCard)
-FarmLabel.BackgroundTransparency = 1
-FarmLabel.Position = UDim2.new(0, 15, 0, 0)
-FarmLabel.Size = UDim2.new(0, 200, 1, 0)
-FarmLabel.Font = Enum.Font.Gotham
-FarmLabel.Text = "Auto Farm Coins"
-FarmLabel.TextColor3 = Color3.fromRGB(200, 200, 200)
-FarmLabel.TextSize = 14
-FarmLabel.TextXAlignment = Enum.TextXAlignment.Left
+local function CreateTab(name)
+    -- Кнопка вкладки в боковой панели
+    local TabBtn = Instance.new("TextButton")
+    TabBtn.Size = UDim2.new(1, 0, 0, 35)
+    TabBtn.BackgroundColor3 = Color3.fromRGB(35, 35, 35)
+    TabBtn.BackgroundTransparency = firstTab and 0 or 1
+    TabBtn.BorderSizePixel = 0
+    TabBtn.Text = name
+    TabBtn.TextColor3 = Color3.fromRGB(220, 220, 220)
+    TabBtn.Font = Enum.Font.GothamSemibold
+    TabBtn.TextSize = 14
+    TabBtn.Parent = Sidebar
+    
+    -- Страница вкладки
+    local TabPage = Instance.new("ScrollingFrame")
+    TabPage.Size = UDim2.new(1, 0, 1, 0)
+    TabPage.BackgroundTransparency = 1
+    TabPage.ScrollBarThickness = 4
+    TabPage.Visible = firstTab
+    TabPage.Parent = ContentArea
+    
+    -- Авто-расположение элементов на странице
+    local PageLayout = Instance.new("UIListLayout")
+    PageLayout.SortOrder = Enum.SortOrder.LayoutOrder
+    PageLayout.Padding = UDim.new(0, 8)
+    PageLayout.Parent = TabPage
+    
+    local PagePadding = Instance.new("UIPadding")
+    PagePadding.PaddingTop = UDim.new(0, 10)
+    PagePadding.PaddingLeft = UDim.new(0, 10)
+    PagePadding.PaddingRight = UDim.new(0, 10)
+    PagePadding.Parent = TabPage
 
--- Переключатель (Toggle)
-local ToggleBtn = Instance.new("TextButton", FarmCard)
-ToggleBtn.BackgroundColor3 = Color3.fromRGB(40, 40, 50)
-ToggleBtn.Position = UDim2.new(1, -65, 0, 17)
-ToggleBtn.Size = UDim2.new(0, 50, 0, 26)
-ToggleBtn.Text = ""
-local ToggleCorner = Instance.new("UICorner", ToggleBtn)
-ToggleCorner.CornerRadius = UDim.new(1, 0)
-
-local ToggleCircle = Instance.new("Frame", ToggleBtn)
-ToggleCircle.BackgroundColor3 = Color3.fromRGB(255, 255, 255)
-ToggleCircle.Position = UDim2.new(0, 4, 0, 3)
-ToggleCircle.Size = UDim2.new(0, 20, 0, 20)
-Instance.new("UICorner", ToggleCircle).CornerRadius = UDim.new(1, 0)
-
--- Функция создания вкладки в меню (для визуала)
-local function createTab(name, active)
-    local Tab = Instance.new("TextButton", MenuList)
-    Tab.BackgroundTransparency = 1
-    Tab.Size = UDim2.new(1, 0, 0, 35)
-    Tab.Font = Enum.Font.Gotham
-    Tab.Text = "   " .. name
-    Tab.TextColor3 = active and Color3.fromRGB(255, 255, 255) or Color3.fromRGB(130, 130, 140)
-    Tab.TextSize = 13
-    Tab.TextXAlignment = Enum.TextXAlignment.Left
-end
-
-createTab("Farm", true)
-createTab("Shop & Gacha", false)
-createTab("Settings", false)
-
--- [[ ЛОГИКА АВТОФАРМА МОНЕТ ДЛЯ MM2 ]] --
-local _G = getgenv and getgenv() or _G
-_G.CoinFarm = false
-
-local Players = game:GetService("Players")
-local LocalPlayer = Players.LocalPlayer
-
--- Функция плавного перемещения (Tween) к монете
-local function teleportToCoin(coin)
-    if LocalPlayer.Character and LocalPlayer.Character:FindFirstChild("HumanoidRootPart") then
-        local hrp = LocalPlayer.Character.HumanoidRootPart
-        -- Телепортируем персонажа чуть выше монеты для безопасного подбора
-        hrp.CFrame = coin.CFrame + Vector3.new(0, 1, 0)
-    end
-end
-
--- Основной цикл фарма
-task.spawn(function()
-    while task.wait(0.5) do
-        if _G.CoinFarm then
-            -- Ищем контейнер с монетами на карте MM2
-            local container = workspace:FindFirstChild("Normal") or workspace:FindFirstChild("Innocent")
-            local map = container and container:FindFirstChildOfClass("Model")
-            local coinContainer = map and (map:FindFirstChild("CoinContainer") or map:FindFirstChild("Coins"))
-            
-            if coinContainer then
-                for _, coin in pairs(coinContainer:GetChildren()) do
-                    if _G.CoinFarm and coin:IsA("BasePart") and coin.Name == "Coin_Sub" then
-                        teleportToCoin(coin)
-                        task.wait(0.3) -- Небольшая задержка, чтобы античит не кикал
-                    end
-                end
-            end
+    -- Переключение вкладок
+    TabBtn.MouseButton1Click:Connect(function()
+        for _, child in pairs(Sidebar:GetChildren()) do
+            if child:IsA("TextButton") then child.BackgroundTransparency = 1 end
         end
+        for _, child in pairs(ContentArea:GetChildren()) do
+            if child:IsA("ScrollingFrame") then child.Visible = false end
+        end
+        TabBtn.BackgroundTransparency = 0
+        TabPage.Visible = true
+    end)
+    
+    firstTab = false
+    return TabPage
+end
+
+local function CreateButton(parentPage, text, callback)
+    local Btn = Instance.new("TextButton")
+    Btn.Size = UDim2.new(1, 0, 0, 35)
+    Btn.BackgroundColor3 = Color3.fromRGB(40, 40, 40)
+    Btn.Text = text
+    Btn.TextColor3 = Color3.fromRGB(255, 255, 255)
+    Btn.Font = Enum.Font.Gotham
+    Btn.TextSize = 14
+    Btn.AutoButtonColor = true
+    Btn.Parent = parentPage
+    
+    local BtnCorner = Instance.new("UICorner")
+    BtnCorner.CornerRadius = UDim.new(0, 6)
+    BtnCorner.Parent = Btn
+    
+    Btn.MouseButton1Click:Connect(callback)
+end
+
+-- ==========================================
+-- СОЗДАЕМ ИНТЕРФЕЙС ДЛЯ MM2
+-- ==========================================
+
+-- Вкладка 1: Фарм
+local FarmTab = CreateTab("🏠 Main")
+CreateButton(FarmTab, "Авто-монеты (Coin Farm)", function()
+    print("Скрипт на монеты запущен")
+    -- Твой код на фарм монет
+end)
+
+CreateButton(FarmTab, "Подобрать пистолет", function()
+    print("Телепорт к пистолету")
+    -- Твой код на тп к дропу
+end)
+
+-- Вкладка 2: Визуалы (ESP)
+local VisualsTab = CreateTab("👁️ Visuals")
+CreateButton(VisualsTab, "ESP Убийца (Красный)", function()
+    print("ESP Murderer включен")
+    -- Твой код на подсветку убийцы
+end)
+
+CreateButton(VisualsTab, "ESP Шериф (Синий)", function()
+    print("ESP Sheriff включен")
+    -- Твой код на подсветку шерифа
+end)
+
+-- Вкладка 3: Игрок
+local PlayerTab = CreateTab("🏃 Player")
+CreateButton(PlayerTab, "Скорость бега (WalkSpeed 50)", function()
+    local player = game.Players.LocalPlayer
+    if player.Character and player.Character:FindFirstChild("Humanoid") then
+        player.Character.Humanoid.WalkSpeed = 50
     end
 end)
 
--- Обработка клика по кнопке-переключателю
-ToggleBtn.MouseButton1Click:Connect(function()
-    _G.CoinFarm = not _G.CoinFarm
-    
-    if _G.CoinFarm then
-        -- Включено (Стиль кнопки меняется на зеленый/активный)
-        ToggleBtn.BackgroundColor3 = Color3.fromRGB(0, 180, 110)
-        ToggleCircle:TweenPosition(UDim2.new(0, 26, 0, 3), "Out", "Linear", 0.1, true)
-    else
-        -- Выключено
-        ToggleBtn.BackgroundColor3 = Color3.fromRGB(40, 40, 50)
-        ToggleCircle:TweenPosition(UDim2.new(0, 4, 0, 3), "Out", "Linear", 0.1, true)
+CreateButton(PlayerTab, "Прыжок (JumpPower 100)", function()
+    local player = game.Players.LocalPlayer
+    if player.Character and player.Character:FindFirstChild("Humanoid") then
+        player.Character.Humanoid.JumpPower = 100
+    end
+end)
+
+-- ==========================================
+-- ПЛАВНОЕ ПЕРЕТАСКИВАНИЕ (DRAG)
+-- ==========================================
+local UserInputService = game:GetService("UserInputService")
+local dragging, dragInput, dragStart, startPos
+
+MainFrame.InputBegan:Connect(function(input)
+    if input.UserInputType == Enum.UserInputType.MouseButton1 or input.UserInputType == Enum.UserInputType.Touch then
+        dragging = true
+        dragStart = input.Position
+        startPos = MainFrame.Position
+        
+        input.Changed:Connect(function()
+            if input.UserInputState == Enum.UserInputState.End then
+                dragging = false
+            end
+        end)
+    end
+end)
+
+MainFrame.InputChanged:Connect(function(input)
+    if input.UserInputType == Enum.UserInputType.MouseMovement or input.UserInputType == Enum.UserInputType.Touch then
+        dragInput = input
+    end
+end)
+
+UserInputService.InputChanged:Connect(function(input)
+    if input == dragInput and dragging then
+        local delta = input.Position - dragStart
+        MainFrame.Position = UDim2.new(startPos.X.Scale, startPos.X.Offset + delta.X, startPos.Y.Scale, startPos.Y.Offset + delta.Y)
     end
 end)
