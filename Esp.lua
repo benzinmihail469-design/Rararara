@@ -122,18 +122,24 @@ Connections.MainLoop = RunService.Heartbeat:Connect(function(dt)
             local targetPos = closestCoin.Position
             local dir = (targetPos - root.Position)
             local dist = dir.Magnitude
-            local maxSpeed = math.clamp(State.AutoFarmSpeed, 1, 25) -- Лимит 25 для безопасности аккаунта
+            local maxSpeed = math.clamp(State.AutoFarmSpeed, 1, 25)
 
             if dist > 2 then
                 lVelocity.VectorVelocity = dir.Unit * maxSpeed
                 lGyro.CFrame = CFrame.new(root.Position, targetPos)
             else
                 lVelocity.VectorVelocity = Vector3.zero
-                root.CFrame = closestCoin.CFrame -- Моментальный забор хитбокса
-                if firetouchinterest then
-                    firetouchinterest(root, closestCoin, 0)
-                    task.wait(0.01)
-                    firetouchinterest(root, closestCoin, 1)
+                -- Безопасный сбор монет
+                if dist < 3 then
+                    root.CFrame = closestCoin.CFrame
+                    -- Имитация сбора через touch
+                    for _, part in pairs(root.Parent:GetDescendants()) do
+                        if part:IsA("BasePart") then
+                            firetouchinterest(part, closestCoin, 0)
+                            task.wait()
+                            firetouchinterest(part, closestCoin, 1)
+                        end
+                    end
                 end
             end
             return 
@@ -165,7 +171,8 @@ end)
 -- ==========================================
 -- МОДЕРНИЗИРОВАННЫЙ NOCLIP И СКОРОСТЬ
 -- ==========================================
-RunService.Stepped:Connect(function()
+local steppedConnection
+steppedConnection = RunService.Stepped:Connect(function()
     local char = LocalPlayer.Character
     local hum = GetHum()
     if not char or not hum then return end
@@ -186,15 +193,21 @@ RunService.Stepped:Connect(function()
     end
 end)
 
-UserInputService.JumpRequest:Connect(function()
+-- Исправленный Infinite Jump
+local jumpConnection
+jumpConnection = UserInputService.JumpRequest:Connect(function()
     if State.InfJump then
         local hum = GetHum()
-        if hum then hum:ChangeState(Enum.HumanoidStateType.Jumping) end
+        if hum and hum:GetState() ~= Enum.HumanoidStateType.Jumping then
+            hum:ChangeState(Enum.HumanoidStateType.Jumping)
+        end
     end
 end)
 
-task.spawn(function()
-    while task.wait(0.5) do
+-- Исправленный ESP
+local espTask
+espTask = task.spawn(function()
+    while task.wait(0.3) do
         if State.ESPEnabled then
             for _, p in pairs(Players:GetPlayers()) do
                 if p ~= LocalPlayer and p.Character and p.Character:FindFirstChild("HumanoidRootPart") then
@@ -203,10 +216,20 @@ task.spawn(function()
                     local isMurder = (backpack and backpack:FindFirstChild("Knife")) or (char and char:FindFirstChild("Knife"))
                     local isSheriff = (backpack and backpack:FindFirstChild("Gun")) or (char and char:FindFirstChild("Gun"))
                     
-                    local hl = p.Character:FindFirstChild("MM2Highlight") or Instance.new("Highlight", p.Character)
-                    hl.Name = "MM2Highlight"
+                    local hl = p.Character:FindFirstChild("MM2Highlight")
+                    if not hl then
+                        hl = Instance.new("Highlight", p.Character)
+                        hl.Name = "MM2Highlight"
+                    end
                     hl.FillColor = isMurder and Color3.fromRGB(255, 45, 45) or isSheriff and Color3.fromRGB(45, 140, 255) or Color3.fromRGB(50, 255, 110)
                     hl.FillTransparency = 0.4
+                end
+            end
+        else
+            -- Удаляем все ESP при выключении
+            for _, p in pairs(Players:GetPlayers()) do
+                if p.Character and p.Character:FindFirstChild("MM2Highlight") then
+                    p.Character.MM2Highlight:Destroy()
                 end
             end
         end
@@ -566,6 +589,9 @@ end)
 CloseBtn.MouseButton1Click:Connect(function()
     State.Flying, State.AutoFarmEnabled, State.WalkSpeedEnabled, State.ESPEnabled = false, false, false, false
     if Connections.MainLoop then Connections.MainLoop:Disconnect() end
+    if steppedConnection then steppedConnection:Disconnect() end
+    if jumpConnection then jumpConnection:Disconnect() end
+    if espTask then task.cancel(espTask) end
     CleanForces()
     ScreenGui:Destroy()
 end)
