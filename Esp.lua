@@ -1,91 +1,137 @@
-local TweenService = game:GetService("TweenService")
-local UserInputService = game:GetService("UserInputService")
-local CoreGui = game:GetService("CoreGui")
-local Players = game:GetService("Players")
-local LocalPlayer = Players.LocalPlayer
+-- Проверяем, загружена ли игра, чтобы не было сбоев
+if not game:IsLoaded() then game.Loaded:Wait() end
 
--- Очистка старого GUI
-pcall(function() if CoreGui:FindFirstChild("HoshiAnimalHospital") then CoreGui.HoshiAnimalHospital:Destroy() end end)
+-- Подключаем визуальную библиотеку (стиль Hoshi Hub / Modern Dark)
+local OrionLib = loadstring(game:HttpGet(('https://raw.githubusercontent.com/shlexware/Orion/main/source')))()
 
--- Создание основы Hoshi Style
-local ScreenGui = Instance.new("ScreenGui", CoreGui)
-ScreenGui.Name = "HoshiAnimalHospital"
+-- Создаём главное окно
+local Window = OrionLib:MakeWindow({
+    Name = "🌌 Hoshi Hub | Murder Mystery 2", 
+    HidePremium = false, 
+    SaveConfig = true, 
+    ConfigFolder = "HoshiMM2",
+    IntroText = "Loading Hoshi Hub..."
+})
 
-local MainFrame = Instance.new("Frame", ScreenGui)
-MainFrame.Size = UDim2.new(0, 450, 0, 300)
-MainFrame.Position = UDim2.new(0.5, -225, 0.5, -150)
-MainFrame.BackgroundColor3 = Color3.fromRGB(13, 14, 18)
-MainFrame.BorderSizePixel = 0
-Instance.new("UICorner", MainFrame).CornerRadius = UDim.new(0, 8)
+-- Переменные для функций
+local AutoFarmCoins = false
+local KillAura = false
 
--- Header Hoshi
-local Header = Instance.new("Frame", MainFrame)
-Header.Size = UDim2.new(1, 0, 0, 40)
-Header.BackgroundColor3 = Color3.fromRGB(19, 21, 27)
-Header.BorderSizePixel = 0
-Instance.new("UICorner", Header).CornerRadius = UDim.new(0, 8)
+-- ================= ТАБЫ (ВКЛАДКИ) =================
+local MainTab = Window:MakeTab({ Name = "Главная", Icon = "rbxassetid://4483345998" })
+local EspTab = Window:MakeTab({ Name = "ESP (Подсветка)", Icon = "rbxassetid://4483345998" })
+local MiscTab = Window:MakeTab({ Name = "Разное", Icon = "rbxassetid://4483345998" })
 
-local Title = Instance.new("TextLabel", Header)
-Title.Size = UDim2.new(1, -40, 1, 0)
-Title.Position = UDim2.new(0, 15, 0, 0)
-Title.BackgroundTransparency = 1
-Title.Text = "Hoshi Hub | Animal Hospital"
-Title.Font = Enum.Font.GothamBold
-Title.TextColor3 = Color3.fromRGB(255, 255, 255)
-Title.TextSize = 14
-Title.TextXAlignment = Enum.TextXAlignment.Left
+-- ================= ФУНКЦИИ: ГЛАВНАЯ =================
+MainTab:AddSection({ Name = "Автоматизация" })
 
--- Функция создания переключателей (Hoshi style)
-local function AddToggle(name, callback)
-    local btn = Instance.new("TextButton", MainFrame)
-    btn.Size = UDim2.new(0.9, 0, 0, 40)
-    btn.BackgroundColor3 = Color3.fromRGB(24, 26, 34)
-    btn.Text = "  " .. name
-    btn.Font = Enum.Font.Gotham
-    btn.TextColor3 = Color3.fromRGB(200, 200, 200)
-    btn.TextSize = 13
-    btn.TextXAlignment = Enum.TextXAlignment.Left
-    Instance.new("UICorner", btn).CornerRadius = UDim.new(0, 6)
+MainTab:AddToggle({
+    Name = "Авто-фарм монет (Телепорт)",
+    Default = false,
+    Callback = function(Value)
+        AutoFarmCoins = Value
+        spawn(function()
+            while AutoFarmCoins do
+                task.wait(0.1)
+                -- Логика сбора монет (ищет контейнеры с монетами на карте)
+                local Container = workspace:FindFirstChild("Normal") and workspace.Normal:FindFirstChild("CoinContainer")
+                if Container then
+                    for _, coin in pairs(Container:GetChildren()) do
+                        if AutoFarmCoins and game.Players.LocalPlayer.Character and game.Players.LocalPlayer.Character:FindFirstChild("HumanoidRootPart") then
+                            if coin:IsA("BasePart") or coin:FindFirstChild("TouchInterest") then
+                                game.Players.LocalPlayer.Character.HumanoidRootPart.CFrame = coin.CFrame
+                                task.wait(0.3) -- Задержка, чтобы античит не кикнул сразу
+                            end
+                        end
+                    end
+                end
+            end
+        end)
+    end    
+})
+
+-- ================= ФУНКЦИИ: ESP =================
+EspTab:AddSection({ Name = "Видеть сквозь стены" })
+
+-- Простенький, но рабочий трекер ролей
+local function CreateESP(player)
+    if player == game.Players.LocalPlayer then return end
     
-    local toggled = false
-    btn.MouseButton1Click:Connect(function()
-        toggled = not toggled
-        btn.TextColor3 = toggled and Color3.fromRGB(255, 255, 255) or Color3.fromRGB(200, 200, 200)
-        btn.BackgroundColor3 = toggled and Color3.fromRGB(95, 110, 255) or Color3.fromRGB(24, 26, 34)
-        callback(toggled)
+    player.CharacterAdded:Connect(function(char)
+        task.wait(0.5)
+        if not char:FindFirstChild("Highlight") then
+            local highlight = Instance.new("Highlight")
+            highlight.Name = "MM2_ESP"
+            highlight.Parent = char
+            highlight.FillTransparency = 0.5
+            highlight.OutlineTransparency = 0
+            
+            -- Проверка роли
+            if player.Backpack:FindFirstChild("Knife") or char:FindFirstChild("Knife") then
+                highlight.FillColor = Color3.fromRGB(255, 0, 0) -- Убийца (Красный)
+            elseif player.Backpack:FindFirstChild("Gun") or char:FindFirstChild("Gun") then
+                highlight.FillColor = Color3.fromRGB(0, 0, 255) -- Шериф (Синий)
+            else
+                highlight.FillColor = Color3.fromRGB(0, 255, 0) -- Мирный (Зелёный)
+            end
+        end
     end)
-    return btn
 end
 
--- Сетка элементов
-local List = Instance.new("UIListLayout", MainFrame)
-List.Padding = UDim.new(0, 10)
-List.HorizontalAlignment = Enum.HorizontalAlignment.Center
-List.Padding = UDim.new(0, 10)
-Instance.new("UIPadding", MainFrame).PaddingTop = UDim.new(0, 50)
-
--- Функционал Animal Hospital (заглушки для логики)
-AddToggle("Auto Treat Pets", function(state)
-    print("Auto Treat: " .. tostring(state))
-    -- Здесь будет логика поиска питомцев и применения лечения
-end)
-
-AddToggle("Auto Collect Money", function(state)
-    print("Auto Collect: " .. tostring(state))
-    -- Здесь будет логика сбора внутриигровой валюты
-end)
-
--- Драг для Hoshi GUI
-local dragging, dragInput, dragStart, startPos
-Header.InputBegan:Connect(function(input)
-    if input.UserInputType == Enum.UserInputType.MouseButton1 then
-        dragging = true; dragStart = input.Position; startPos = MainFrame.Position
+EspTab:AddToggle({
+    Name = "Включить ESP на роли",
+    Default = false,
+    Callback = function(Value)
+        if Value then
+            for _, p in pairs(game.Players:GetPlayers()) do
+                CreateESP(p)
+            end
+            game.Players.PlayerAdded:Connect(CreateESP)
+        else
+            -- Удаляем ESP при выключении
+            for _, p in pairs(game.Players:GetPlayers()) do
+                if p.Character and p.Character:FindFirstChild("MM2_ESP") then
+                    p.Character.MM2_ESP:Destroy()
+                end
+            end
+        end
     end
-end)
-UserInputService.InputChanged:Connect(function(input)
-    if dragging and input.UserInputType == Enum.UserInputType.MouseMovement then
-        local delta = input.Position - dragStart
-        MainFrame.Position = UDim2.new(startPos.X.Scale, startPos.X.Offset + delta.X, startPos.Y.Scale, startPos.Y.Offset + delta.Y)
+})
+
+-- ================= ФУНКЦИИ: РАЗНОЕ =================
+MiscTab:AddSection({ Name = "Характеристики персонажа" })
+
+MiscTab:AddSlider({
+    Name = "Скорость бега (WalkSpeed)",
+    Min = 16,
+    Max = 100,
+    Default = 16,
+    Color = Color3.fromRGB(140, 0, 255),
+    Increment = 1,
+    ValueName = "скорость",
+    Callback = function(Value)
+        if game.Players.LocalPlayer.Character and game.Players.LocalPlayer.Character:FindFirstChild("Humanoid") then
+            game.Players.LocalPlayer.Character.Humanoid.WalkSpeed = Value
+        end
+    end    
+})
+
+MiscTab:AddButton({
+    Name = "Режим Бога (Godmode)",
+    Callback = function()
+        local player = game.Players.LocalPlayer
+        if player.Character and player.Character:FindFirstChild("Humanoid") then
+            player.Character.Humanoid.MaxHealth = math.huge
+            player.Character.Humanoid.Health = math.huge
+            OrionLib:MakeNotification({
+                Name = "Hoshi Hub",
+                Content = "Режим бога активирован! (Работает до первой перезагрузки)",
+                Image = "rbxassetid://4483345998",
+                Time = 5
+            })
+        end
     end
-end)
-UserInputService.InputEnded:Connect(function(input) if input.UserInputType == Enum.UserInputType.MouseButton1 then dragging = false end end)
+})
+
+-- Инициализация интерфейса
+OrionLib:Init()
