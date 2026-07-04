@@ -7,7 +7,7 @@ local CoreGui = game:GetService("CoreGui")
 local LocalPlayer = Players.LocalPlayer
 
 -- ==========================================
--- ПОЛНАЯ ОЧИСТКА ПРЕДЫДУЩИХ UI
+-- ОЧИСТКА СТАРЫХ ИНСТАНСОВ И СТРУКТУР
 -- ==========================================
 pcall(function()
     if CoreGui:FindFirstChild("HoshiMM2Gui") then CoreGui.HoshiMM2Gui:Destroy() end
@@ -17,7 +17,7 @@ pcall(function()
 end)
 
 -- ==========================================
--- НАСТРОЙКИ И СОСТОЯНИЯ
+-- СОСТОЯНИЯ И НАСТРОЙКИ
 -- ==========================================
 local State = {
     Flying = false,
@@ -33,43 +33,82 @@ local State = {
 }
 
 local Connections = {}
+local lVelocity, lGyro = nil, nil
+local Attachment = nil
+
+-- Сброс физических сил
+local function CleanForces()
+    if lVelocity then pcall(function() lVelocity:Destroy() end); lVelocity = nil end
+    if lGyro then pcall(function() lGyro:Destroy() end); lGyro = nil end
+    if Attachment then pcall(function() Attachment:Destroy() end); Attachment = nil end
+    local root = LocalPlayer.Character and LocalPlayer.Character:FindFirstChild("HumanoidRootPart")
+    if root then root.Anchored = false end
+end
 
 local function GetRoot()
-    return LocalPlayer.Character and LocalPlayer.Character:FindFirstChild("HumanoidRootPart")
+    local char = LocalPlayer.Character
+    return char and char:FindFirstChild("HumanoidRootPart")
 end
 
 local function GetHum()
-    return LocalPlayer.Character and LocalPlayer.Character:FindFirstChildOfClass("Humanoid")
+    local char = LocalPlayer.Character
+    return char and char:FindFirstChildOfClass("Humanoid")
+end
+
+-- Инициализация легального перемещения без триггера античита
+local function InitForces(root)
+    if not Attachment or not Attachment.Parent then
+        Attachment = Instance.new("Attachment", root)
+    end
+    if not lVelocity or not lVelocity.Parent then
+        lVelocity = Instance.new("LinearVelocity")
+        lVelocity.MaxForce = math.huge
+        lVelocity.VectorVelocity = Vector3.zero
+        lVelocity.RelativeTo = Enum.ActuatorRelativeTo.World
+        lVelocity.Attachment0 = Attachment
+        lVelocity.Parent = root
+    end
+    if not lGyro or not lGyro.Parent then
+        lGyro = Instance.new("AlignOrientation")
+        lGyro.MaxTorque = math.huge
+        lGyro.Responsiveness = 200
+        lGyro.Mode = Enum.OrientationMode.OneAttachment
+        lGyro.Attachment0 = Attachment
+        lGyro.Parent = root
+    end
 end
 
 -- ==========================================
--- ОБХОД АНТИЧИТА: ЖЕСТКИЙ СБОР И БЕЗБАГОВЫЙ ФЛАЙ
+-- ОСНОВНОЙ СТАБИЛЬНЫЙ ДВИЖОК СБОРА И ПОЛЕТА
 -- ==========================================
 if Connections.MainLoop then Connections.MainLoop:Disconnect() end
 
 Connections.MainLoop = RunService.Heartbeat:Connect(function(dt)
     local root = GetRoot()
     local hum = GetHum()
-    if not root or not hum or hum.Health <= 0 then return end
+    if not root or not hum or hum.Health <= 0 then 
+        CleanForces()
+        return 
+    end
     
     local cam = workspace.CurrentCamera
 
-    -- Если включен флай или фарм — анкорим рут, чтобы античит не симулировал падение и откидывание
+    -- Включение сил при активном чите
     if State.Flying or State.AutoFarmEnabled then
-        root.Anchored = true
+        InitForces(root)
     else
-        root.Anchored = false
+        CleanForces()
+        return
     end
 
-    -- 1. БЕЗУСЛОВНЫЙ АВТОФАРМ (ВСЕ ПРОВЕРКИ УБРАНЫ НАФИГ)
+    -- 1. АВТОФАРМ ЧЕРЕЗ СИЛЫ СКОРОСТИ (БЕЗ CFRAME)
     if State.AutoFarmEnabled then
         local closestCoin = nil
         local shortestDist = math.huge
         
-        -- Сканируем абсолютно весь workspace на монеты без ограничений на зоны
         for _, obj in pairs(workspace:GetDescendants()) do
             if obj:IsA("BasePart") and (obj.Name == "Coin_Server" or obj.Name == "GoldCoin" or obj.Name == "Coin" or obj.Name:lower():find("coin")) then
-                if obj.Transparency < 1 then
+                if obj.Transparency < 1 and obj:IsDescendantOf(workspace) then
                     local dist = (root.Position - obj.Position).Magnitude
                     if dist < shortestDist then
                         shortestDist = dist
@@ -79,18 +118,18 @@ Connections.MainLoop = RunService.Heartbeat:Connect(function(dt)
             end
         end
 
-        if closestCoin then
+        if closestCoin and lVelocity and lGyro then
             local targetPos = closestCoin.Position
             local dir = (targetPos - root.Position)
             local dist = dir.Magnitude
-            local maxSpeed = math.clamp(State.AutoFarmSpeed, 1, 25) -- Скорость строго до 25
+            local maxSpeed = math.clamp(State.AutoFarmSpeed, 1, 25) -- Лимит 25 для безопасности аккаунта
 
-            if dist > 1.2 then
-                -- Прямое, плавное и безоткатное смещение координат кадра
-                root.CFrame = CFrame.new(root.Position + dir.Unit * math.min(maxSpeed * dt, dist), targetPos)
+            if dist > 2 then
+                lVelocity.VectorVelocity = dir.Unit * maxSpeed
+                lGyro.CFrame = CFrame.new(root.Position, targetPos)
             else
-                -- Моментальное касание хитбокса монеты
-                root.CFrame = closestCoin.CFrame
+                lVelocity.VectorVelocity = Vector3.zero
+                root.CFrame = closestCoin.CFrame -- Моментальный забор хитбокса
                 if firetouchinterest then
                     firetouchinterest(root, closestCoin, 0)
                     task.wait(0.01)
@@ -98,11 +137,13 @@ Connections.MainLoop = RunService.Heartbeat:Connect(function(dt)
                 end
             end
             return 
+        elseif lVelocity then
+            lVelocity.VectorVelocity = Vector3.zero
         end
     end
 
-    -- 2. АБСОЛЮТНО СТАБИЛЬНЫЙ ФЛАЙ С ПРЯМЫМ СМЕЩЕНИЕМ КООРДИНАТ
-    if State.Flying then
+    -- 2. ПОЛНОСТЬЮ ИСПРАВЛЕННЫЙ ФЛАЙ
+    if State.Flying and lVelocity and lGyro then
         local moveDir = Vector3.zero
         if UserInputService:IsKeyDown(Enum.KeyCode.W) then moveDir = moveDir + cam.CFrame.LookVector end
         if UserInputService:IsKeyDown(Enum.KeyCode.S) then moveDir = moveDir - cam.CFrame.LookVector end
@@ -112,16 +153,17 @@ Connections.MainLoop = RunService.Heartbeat:Connect(function(dt)
         if UserInputService:IsKeyDown(Enum.KeyCode.LeftShift) then moveDir = moveDir - Vector3.new(0, 1, 0) end
 
         if moveDir.Magnitude > 0 then
-            root.CFrame = CFrame.new(root.Position + moveDir.Unit * (State.FlySpeed * dt), root.Position + cam.CFrame.LookVector)
+            lVelocity.VectorVelocity = moveDir.Unit * State.FlySpeed
         else
-            root.CFrame = CFrame.new(root.Position, root.Position + cam.CFrame.LookVector)
+            lVelocity.VectorVelocity = Vector3.zero
         end
+        lGyro.CFrame = CFrame.new(root.Position, root.Position + cam.CFrame.LookVector)
         return
     end
 end)
 
 -- ==========================================
--- СКОРОСТЬ ХОДЬБЫ И СКВОЗЬ СТЕНЫ
+-- МОДЕРНИЗИРОВАННЫЙ NOCLIP И СКОРОСТЬ
 -- ==========================================
 RunService.Stepped:Connect(function()
     local char = LocalPlayer.Character
@@ -134,9 +176,10 @@ RunService.Stepped:Connect(function()
         hum.WalkSpeed = 16
     end
 
+    -- Жесткое отключение столкновений с объектами карты во время полета/фарма
     if State.NoclipEnabled or State.Flying or State.AutoFarmEnabled then
         for _, part in pairs(char:GetDescendants()) do
-            if part:IsA("BasePart") and part.CanCollide then
+            if part:IsA("BasePart") then
                 part.CanCollide = false
             end
         end
@@ -171,7 +214,7 @@ task.spawn(function()
 end)
 
 -- ==========================================
--- ОРИГИНАЛЬНЫЙ GUI ТОЧЬ-В-ТОЧЬ ПО СКРИНШОТУ (3299.jpg)
+-- ИНТЕРФЕЙС GUI ТОЧЬ-В-ТОЧЬ (3299.jpg)
 -- ==========================================
 local ScreenGui = Instance.new("ScreenGui")
 ScreenGui.Name = "HoshiMM2Gui"
@@ -190,7 +233,6 @@ local MainStroke = Instance.new("UIStroke", MainFrame)
 MainStroke.Color = Color3.fromRGB(26, 28, 36)
 MainStroke.Thickness = 1
 
--- Шапка главного окна
 local Header = Instance.new("Frame", MainFrame)
 Header.Size = UDim2.new(1, 0, 0, 44)
 Header.BackgroundColor3 = Color3.fromRGB(19, 21, 27)
@@ -213,7 +255,6 @@ Title.TextColor3 = Color3.fromRGB(255, 255, 255)
 Title.TextSize = 15
 Title.TextXAlignment = Enum.TextXAlignment.Left
 
--- Рендер верхних тегов (FREE, Версия) со скриншота
 local function CreateHeaderTag(text, posX, isBlue)
     local tag = Instance.new("TextLabel", Header)
     tag.Size = UDim2.new(0, 52, 0, 18)
@@ -249,7 +290,6 @@ MinimizeBtn.Text = "—"
 MinimizeBtn.TextColor3 = Color3.fromRGB(120, 125, 135)
 MinimizeBtn.TextSize = 12
 
--- Сайдбар навигации
 local Sidebar = Instance.new("Frame", MainFrame)
 Sidebar.Size = UDim2.new(0, 140, 1, -44)
 Sidebar.Position = UDim2.new(0, 0, 0, 44)
@@ -312,7 +352,6 @@ local function CreateTab(name, pageName)
     Tabs[name] = btn
 end
 
--- Модульные блоки-рамки (AUTO FARM, AUTO PLANT со скриншота)
 local function CreateSection(parent, title)
     local sec = Instance.new("Frame", parent)
     sec.Size = UDim2.new(0.96, 0, 0, 30)
@@ -448,7 +487,7 @@ local function AddSlider(parent, text, min, max, default, callback)
 end
 
 -- ==========================================
--- ИНИЦИАЛИЗАЦИЯ ВКЛАДОК И СТРАНИЦ
+-- ИНИЦИАЛИЗАЦИЯ ВКЛАДОК
 -- ==========================================
 local FarmP = CreatePage("Farm")
 local PlayerP = CreatePage("Player")
@@ -462,7 +501,6 @@ Pages["Farm"].Visible = true
 Tabs["Farm"].TextColor3 = Color3.fromRGB(255, 255, 255)
 Tabs["Farm"].BackgroundColor3 = Color3.fromRGB(24, 26, 34)
 
--- Секции настроек и ползунки управления
 local AutoFarmSection = CreateSection(FarmP, "Auto Farm")
 AddToggle(AutoFarmSection, "Auto Farm Coins", function(state) State.AutoFarmEnabled = state end)
 AddSlider(AutoFarmSection, "Farm Speed (Max 25)", 1, 25, 25, function(v) State.AutoFarmSpeed = math.clamp(v, 1, 25) end)
@@ -486,7 +524,7 @@ AddToggle(VisualSection, "Player ESP", function(state)
 end)
 
 -- ==========================================
--- ДРАГ И СВЕРТЫВАНИЕ ИНТЕРФЕЙСА
+-- СИСТЕМА ДРАГА И ВЫХОДА
 -- ==========================================
 local dragging, dragInput, dragStart, startPos
 Header.InputBegan:Connect(function(input)
@@ -528,7 +566,6 @@ end)
 CloseBtn.MouseButton1Click:Connect(function()
     State.Flying, State.AutoFarmEnabled, State.WalkSpeedEnabled, State.ESPEnabled = false, false, false, false
     if Connections.MainLoop then Connections.MainLoop:Disconnect() end
-    local root = GetRoot()
-    if root then root.Anchored = false end
+    CleanForces()
     ScreenGui:Destroy()
 end)
