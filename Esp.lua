@@ -72,7 +72,7 @@ local function GetMurderer()
 end
 
 -- ==========================================
--- ОСНОВНОЙ ЦИКЛ: ФЛАЙ И АВТО-ФАРМ (CFRAME)
+-- ИСПРАВЛЕННЫЙ ОСНОВНОЙ ЦИКЛ: ФЛАЙ И АВТО-ФАРМ
 -- ==========================================
 if Connections.MainLoop then Connections.MainLoop:Disconnect() end
 
@@ -83,25 +83,29 @@ Connections.MainLoop = RunService.RenderStepped:Connect(function(dt)
     
     local cam = workspace.CurrentCamera
 
-    -- Принудительно гасим импульс падения от гравитации, если включен флай или фарм
+    -- Если активирован флай или автофарм — полностью сбрасываем стандартные силы и гравитацию
     if State.Flying or State.AutoFarmEnabled then
-        root.AssemblyLinearVelocity = Vector3.new(root.AssemblyLinearVelocity.X, 0, root.AssemblyLinearVelocity.Z)
+        root.AssemblyLinearVelocity = Vector3.new(0, 0, 0)
+        root.AssemblyAngularVelocity = Vector3.new(0, 0, 0)
+        if hum:GetState() ~= Enum.HumanoidStateType.Physics then
+            hum:ChangeState(Enum.HumanoidStateType.Physics)
+        end
     end
 
     -- 1. ЛОГИКА АВТОФАРМА (Приоритет)
     if State.AutoFarmEnabled then
-        hum.PlatformStand = true
-        
         local closestCoin = nil
         local shortestDist = math.huge
         
-        -- Ищем любые монеты на карте
+        -- Ищем доступные монеты на карте
         for _, obj in pairs(workspace:GetDescendants()) do
             if obj:IsA("BasePart") and (obj.Name == "Coin_Server" or obj.Name == "GoldCoin" or obj.Name == "Coin" or obj.Name:lower():find("coin")) then
-                local dist = (root.Position - obj.Position).Magnitude
-                if dist < shortestDist then
-                    shortestDist = dist
-                    closestCoin = obj
+                if obj.Transparency < 1 and obj:IsDescendantOf(workspace) then
+                    local dist = (root.Position - obj.Position).Magnitude
+                    if dist < shortestDist then
+                        shortestDist = dist
+                        closestCoin = obj
+                    end
                 end
             end
         end
@@ -109,15 +113,16 @@ Connections.MainLoop = RunService.RenderStepped:Connect(function(dt)
         if closestCoin then
             local dir = (closestCoin.Position - root.Position)
             local dist = dir.Magnitude
+            local speed = math.clamp(State.AutoFarmSpeed, 1, 25)
 
-            if dist > 2.5 then
-                -- Ограничение скорости фарма жестко вшито (макс 25)
-                local speed = math.clamp(State.AutoFarmSpeed, 1, 25)
-                root.CFrame = CFrame.new(root.Position + dir.Unit * math.min(speed * dt * 5, dist), closestCoin.Position)
+            if dist > 1.5 then
+                -- Стабильное движение к монете с учетом DeltaTime
+                root.CFrame = CFrame.new(root.Position + dir.Unit * math.min(speed * dt, dist), closestCoin.Position)
             else
+                -- Сбор монеты через тач-интерест
                 if firetouchinterest then
                     firetouchinterest(root, closestCoin, 0)
-                    task.wait(0.01)
+                    task.wait(0.02)
                     firetouchinterest(root, closestCoin, 1)
                 else
                     root.CFrame = closestCoin.CFrame
@@ -129,8 +134,6 @@ Connections.MainLoop = RunService.RenderStepped:Connect(function(dt)
 
     -- 2. ЛОГИКА ОБЫЧНОГО ФЛАЯ
     if State.Flying then
-        hum.PlatformStand = true
-
         local moveDir = Vector3.new(0, 0, 0)
         if UserInputService:IsKeyDown(Enum.KeyCode.W) then moveDir = moveDir + cam.CFrame.LookVector end
         if UserInputService:IsKeyDown(Enum.KeyCode.S) then moveDir = moveDir - cam.CFrame.LookVector end
@@ -142,15 +145,14 @@ Connections.MainLoop = RunService.RenderStepped:Connect(function(dt)
         if moveDir.Magnitude > 0 then
             root.CFrame = CFrame.new(root.Position + moveDir.Unit * (State.FlySpeed * dt), root.Position + cam.CFrame.LookVector)
         else
-            -- Жестко удерживаем на месте, если кнопки не нажаты
+            -- Зависаем на месте и смотрим туда же, куда направлена камера
             root.CFrame = CFrame.new(root.Position, root.Position + cam.CFrame.LookVector)
         end
         return
     end
 
-    -- 3. ВОЗВРАТ В ОБЫЧНОЕ СОСТОЯНИЕ
-    if hum.PlatformStand and not State.Flying and not State.AutoFarmEnabled then
-        hum.PlatformStand = false
+    -- 3. ВОЗВРАТ В ОБЫЧНОЕ СОСТОЯНИЕ ИГРОКА
+    if hum:GetState() == Enum.HumanoidStateType.Physics and not State.Flying and not State.AutoFarmEnabled then
         hum:ChangeState(Enum.HumanoidStateType.GettingUp)
     end
 end)
@@ -172,14 +174,13 @@ task.spawn(function()
                 
                 if tHum and tHum.Health > 0 and GetPlayerRole(p) ~= "Murderer" then
                     local dist = (myRoot.Position - tRoot.Position).Magnitude
-                    -- Если подошли близко к игроку — даем мощный крутящий импульс
                     if dist <= 6 then
                         local oldCFrame = myRoot.CFrame
-                        myRoot.AssemblyAngularVelocity = Vector3.new(0, 99999, 0) -- Вращаем физику торса
-                        myRoot.CFrame = tRoot.CFrame * CFrame.new(0, 0, 0.1) -- Сталкиваем хитбоксы
+                        myRoot.AssemblyAngularVelocity = Vector3.new(0, 99999, 0)
+                        myRoot.CFrame = tRoot.CFrame * CFrame.new(0, 0, 0.1)
                         task.wait(0.02)
-                        myRoot.AssemblyAngularVelocity = Vector3.new(0, 0, 0) -- Мгновенно тушим скорость
-                        myRoot.CFrame = oldCFrame -- Возвращаем тебя на место
+                        myRoot.AssemblyAngularVelocity = Vector3.new(0, 0, 0)
+                        myRoot.CFrame = oldCFrame
                     end
                 end
             end
@@ -196,13 +197,12 @@ RunService.Stepped:Connect(function()
     
     if not char or not hum then return end
 
-    if State.WalkSpeedEnabled and not State.Flying and not hum.PlatformStand then
+    if State.WalkSpeedEnabled and not State.Flying and hum:GetState() ~= Enum.HumanoidStateType.Physics then
         hum.WalkSpeed = State.CustomWalkSpeed
-    elseif not State.WalkSpeedEnabled and hum.WalkSpeed ~= 16 and not hum.PlatformStand then
+    elseif not State.WalkSpeedEnabled and hum.WalkSpeed ~= 16 and hum:GetState() ~= Enum.HumanoidStateType.Physics then
         hum.WalkSpeed = 16
     end
 
-    -- Авто-ноклип, чтобы не застревать во время полетов и фарма
     if State.NoclipEnabled or State.Flying or State.AutoFarmEnabled then
         for _, part in pairs(char:GetDescendants()) do
             if part:IsA("BasePart") and part.CanCollide then
