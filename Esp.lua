@@ -1,4 +1,4 @@
--- [[ Pulse Hub GUI — Полная версия с исправленным сворачиванием ]] --
+-- [[ Pulse Hub GUI — Идеальное сворачивание по дизайну 3358.jpg ]] --
 local TweenService = game:GetService("TweenService")
 local UserInputService = game:GetService("UserInputService")
 local PulseHub = Instance.new("ScreenGui")
@@ -29,13 +29,13 @@ MainFrame.Size = UDim2.new(0, 550, 0, 350)
 MainFrame.ClipsDescendants = true
 
 local MainCorner = Instance.new("UICorner", MainFrame)
-MainCorner.CornerRadius = UDim.new(0, 10)
+MainCorner.CornerRadius = UDim.new(0, 14)
 
--- Появление окна
+-- Анимация появления
 MainFrame.Size = UDim2.new(0, 550, 0, 0)
 tween(MainFrame, {Size = UDim2.new(0, 550, 0, 350)}, 0.3)
 
--- Drag (Перетаскивание)
+-- Перетаскивание (Drag)
 local dragging, dragInput, dragStart, startPos
 MainFrame.InputBegan:Connect(function(input)
     if input.UserInputType == Enum.UserInputType.MouseButton1 or input.UserInputType == Enum.UserInputType.Touch then
@@ -59,37 +59,58 @@ UserInputService.InputChanged:Connect(function(input)
     end
 end)
 
--- [[ ВЕРХНИЙ МИНИ-ЗАГОЛОВОК ДЛЯ СВЕРНУТОГО СОСТОЯНИЯ ]] --
--- Он будет виден ВСЕГДА, обеспечивая аккуратный вид
+-- [[ ФИРМЕННЫЙ ЗАГОЛОВОК (ИЗ 3358.jpg) ]] --
 local TopBar = Instance.new("Frame", MainFrame)
-TopBar.Size = UDim2.new(1, 0, 0, 40)
+TopBar.Size = UDim2.new(1, 0, 0, 55)
 TopBar.BackgroundTransparency = 1
 TopBar.ZIndex = 5
 
-local MinLogo = Instance.new("TextLabel", TopBar)
-MinLogo.Text = "Pulse Hub"
-MinLogo.Font = Enum.Font.GothamBold
-MinLogo.TextColor3 = Color3.fromRGB(255, 255, 255)
-MinLogo.TextSize = 14
-MinLogo.Position = UDim2.new(0, 15, 0, 0)
-MinLogo.Size = UDim2.new(0, 100, 1, 0)
-MinLogo.TextXAlignment = Enum.TextXAlignment.Left
-MinLogo.BackgroundTransparency = 1
+-- Зеленая иконка пульса
+local HubIcon = Instance.new("ImageLabel", TopBar)
+HubIcon.Size = UDim2.new(0, 34, 0, 34)
+HubIcon.Position = UDim2.new(0, 15, 0, 10)
+HubIcon.Image = "rbxassetid://10840212450" -- Красивая неоновая иконка звуковой волны/пульса
+HubIcon.BackgroundColor3 = Color3.fromRGB(25, 25, 25)
+HubIcon.BackgroundTransparency = 0
+Instance.new("UICorner", HubIcon).CornerRadius = UDim.new(0, 8)
 
+-- Название Хаба
+local HubTitle = Instance.new("TextLabel", TopBar)
+HubTitle.Text = "Pulse Hub"
+HubTitle.Font = Enum.Font.GothamBold
+HubTitle.TextColor3 = Color3.fromRGB(255, 255, 255)
+HubTitle.TextSize = 14
+HubTitle.Position = UDim2.new(0, 58, 0, 11)
+HubTitle.Size = UDim2.new(0, 120, 0, 16)
+HubTitle.TextXAlignment = Enum.TextXAlignment.Left
+HubTitle.BackgroundTransparency = 1
+
+-- Название игры (Подзаголовок)
+local SubTitle = Instance.new("TextLabel", TopBar)
+SubTitle.Text = "Grow A Garden 2"
+SubTitle.Font = Enum.Font.Gotham
+SubTitle.TextColor3 = Color3.fromRGB(140, 140, 140)
+SubTitle.TextSize = 11
+SubTitle.Position = UDim2.new(0, 58, 0, 27)
+SubTitle.Size = UDim2.new(0, 120, 0, 14)
+SubTitle.TextXAlignment = Enum.TextXAlignment.Left
+SubTitle.BackgroundTransparency = 1
+
+-- Динамическое отображение текущей вкладки рядом
 local TabTitle = Instance.new("TextLabel", TopBar)
-TabTitle.Text = "Auto Farm"
+TabTitle.Text = "— Auto Farm"
 TabTitle.Font = Enum.Font.GothamMedium
-TabTitle.TextColor3 = Color3.fromRGB(180, 180, 180)
-TabTitle.TextSize = 14
-TabTitle.Position = UDim2.new(0, 165, 0, 0)
-TabTitle.Size = UDim2.new(0, 150, 1, 0)
+TabTitle.TextColor3 = Color3.fromRGB(100, 100, 100)
+TabTitle.TextSize = 13
+TabTitle.Position = UDim2.new(0, 165, 0, 11)
+TabTitle.Size = UDim2.new(0, 150, 0, 16)
 TabTitle.TextXAlignment = Enum.TextXAlignment.Left
 TabTitle.BackgroundTransparency = 1
 
--- Кнопки управления (Крестик и Минус)
+-- Кнопки управления
 local CloseBtn = Instance.new("TextButton", TopBar)
 CloseBtn.Size = UDim2.new(0, 30, 0, 30)
-CloseBtn.Position = UDim2.new(1, -35, 0, 5)
+CloseBtn.Position = UDim2.new(1, -35, 0, 12)
 CloseBtn.Text = "×"
 CloseBtn.Font = Enum.Font.Arial
 CloseBtn.TextSize = 22
@@ -98,7 +119,7 @@ CloseBtn.BackgroundTransparency = 1
 
 local MinBtn = Instance.new("TextButton", TopBar)
 MinBtn.Size = UDim2.new(0, 30, 0, 30)
-MinBtn.Position = UDim2.new(1, -65, 0, 5)
+MinBtn.Position = UDim2.new(1, -65, 0, 12)
 MinBtn.Text = "—"
 MinBtn.Font = Enum.Font.GothamBold
 MinBtn.TextSize = 12
@@ -106,7 +127,6 @@ MinBtn.TextColor3 = Color3.fromRGB(150, 150, 150)
 MinBtn.BackgroundTransparency = 1
 
 -- [[ ОСНОВНОЙ КОНТЕНТ (Сайдбар и страницы) ]] --
--- Помещаем всё в один контейнер, чтобы скрывать при сворачивании без косяков
 local BodyContainer = Instance.new("Frame", MainFrame)
 BodyContainer.Size = UDim2.new(1, 0, 1, 0)
 BodyContainer.BackgroundTransparency = 1
@@ -117,11 +137,11 @@ Sidebar.Name = "Sidebar"
 Sidebar.BackgroundColor3 = Color3.fromRGB(14, 14, 14)
 Sidebar.BackgroundTransparency = 0.15
 Sidebar.Size = UDim2.new(0, 160, 1, 0)
-Instance.new("UICorner", Sidebar).CornerRadius = UDim.new(0, 10)
+Instance.new("UICorner", Sidebar).CornerRadius = UDim.new(0, 14)
 
 local Navigation = Instance.new("ScrollingFrame", Sidebar)
 Navigation.Size = UDim2.new(1, 0, 1, -110)
-Navigation.Position = UDim2.new(0, 0, 0, 55)
+Navigation.Position = UDim2.new(0, 0, 0, 60)
 Navigation.BackgroundTransparency = 1
 Navigation.ScrollBarThickness = 0
 
@@ -129,7 +149,7 @@ local NavLayout = Instance.new("UIListLayout", Navigation)
 NavLayout.Padding = UDim.new(0, 4)
 NavLayout.SortOrder = Enum.SortOrder.LayoutOrder
 
--- Подвал внутри сайдбара
+-- Подвал
 local DiscordLabel = Instance.new("TextLabel", Sidebar)
 DiscordLabel.Position = UDim2.new(0, 12, 1, -30)
 DiscordLabel.Size = UDim2.new(1, -12, 0, 15)
@@ -150,7 +170,7 @@ StatsLabel.TextSize = 9
 StatsLabel.TextXAlignment = Enum.TextXAlignment.Left
 StatsLabel.BackgroundTransparency = 1
 
--- Логика кнопок управления
+-- Логика кнопок закрытия и сворачивания
 CloseBtn.MouseEnter:Connect(function() tween(CloseBtn, {TextColor3 = Color3.fromRGB(255, 70, 70)}) end)
 CloseBtn.MouseLeave:Connect(function() tween(CloseBtn, {TextColor3 = Color3.fromRGB(150, 150, 150)}) end)
 CloseBtn.MouseButton1Click:Connect(function()
@@ -164,12 +184,17 @@ MinBtn.MouseLeave:Connect(function() tween(MinBtn, {TextColor3 = Color3.fromRGB(
 MinBtn.MouseButton1Click:Connect(function()
     isMinimized = not isMinimized
     if isMinimized then
-        BodyContainer.Visible = false -- Полностью убираем сайдбар и контент, чтобы не сжимались
-        tween(MainFrame, {Size = UDim2.new(0, 550, 0, 40)}, 0.2)
+        BodyContainer.Visible = false
+        TabTitle.Visible = false -- Скрываем имя вкладки, оставляя только чистый бренд
+        tween(MainFrame, {Size = UDim2.new(0, 240, 0, 55)}, 0.2) -- Сужаем окно под размер заголовка
+        MinBtn.Position = UDim2.new(1, -65, 0, 12)
+        CloseBtn.Position = UDim2.new(1, -35, 0, 12)
     else
-        local t = tween(MainFrame, {Size = UDim2.new(0, 550, 0, 350)}, 0.2)
-        t.Completed:Connect(function()
-            if not isMinimized then BodyContainer.Visible = true end
+        tween(MainFrame, {Size = UDim2.new(0, 550, 0, 350)}, 0.2).Completed:Connect(function()
+            if not isMinimized then 
+                BodyContainer.Visible = true 
+                TabTitle.Visible = true
+            end
         end)
     end
 end)
@@ -182,8 +207,8 @@ local allPages = {}
 local function CreatePage(name)
     local PageFrame = Instance.new("ScrollingFrame", PagesFolder)
     PageFrame.Name = name .. "Page"
-    PageFrame.Size = UDim2.new(1, -180, 1, -65)
-    PageFrame.Position = UDim2.new(0, 175, 0, 55)
+    PageFrame.Size = UDim2.new(1, -180, 1, -75)
+    PageFrame.Position = UDim2.new(0, 175, 0, 60)
     PageFrame.BackgroundTransparency = 1
     PageFrame.Visible = false
     PageFrame.ScrollBarThickness = 2
@@ -220,7 +245,7 @@ local function CreatePage(name)
             tBtn.UIStroke.Enabled = false
             allPages[tName].Visible = false
         end
-        TabTitle.Text = name
+        TabTitle.Text = "— " .. name
         PageFrame.Visible = true
         TabStroke.Enabled = true
         tween(TabBtn, {BackgroundTransparency = 0, TextColor3 = Color3.new(1,1,1)})
@@ -260,10 +285,10 @@ local function CreatePage(name)
     end)
     
     TabBtn.MouseEnter:Connect(function()
-        if TabTitle.Text ~= name then tween(TabBtn, {BackgroundTransparency = 0.6, TextColor3 = Color3.new(1,1,1)}) end
+        if TabTitle.Text ~= "— " .. name then tween(TabBtn, {BackgroundTransparency = 0.6, TextColor3 = Color3.new(1,1,1)}) end
     end)
     TabBtn.MouseLeave:Connect(function()
-        if TabTitle.Text ~= name then
+        if TabTitle.Text ~= "— " .. name then
             tween(TabBtn, {BackgroundTransparency = 1, TextColor3 = Color3.fromRGB(140, 140, 140)})
             tween(TabBtn, {Size = UDim2.new(1, -10, 0, 32), Position = UDim2.new(0, 5, 0, 0)}, 0.1)
         end
@@ -315,21 +340,17 @@ local function CreateToggle(parentPage, name, default, callback)
     end)
 end
 
--- Создание контента
+-- Создание структуры меню
 local MainPage = CreatePage("Main")
-local SheriffPage = CreatePage("Sheriff")
-local MurderPage = CreatePage("Murder")
-local AutoFarmPage = CreatePage("Auto Farm")
-local TeleportPage = CreatePage("Teleport")
-local SettingsPage = CreatePage("Settings")
+local AutoPage = CreatePage("Auto")
+local AutoBuyPage = CreatePage("Auto Buy")
+local PlayersPage = CreatePage("Players")
 
-CreateToggle(AutoFarmPage, "Auto Farm", true)
-CreateToggle(AutoFarmPage, "Auto-Respawn", false)
-CreateToggle(AutoFarmPage, "Anti-Fling", true)
-CreateToggle(AutoFarmPage, "Avoid Murderer", false)
+CreateToggle(AutoPage, "Auto Farm", true)
+CreateToggle(AutoPage, "Anti-Fling", true)
 
--- Открытие дефолтной страницы
-allTabs["Auto Farm"].BackgroundTransparency = 0
-allTabs["Auto Farm"].TextColor3 = Color3.new(1,1,1)
-allTabs["Auto Farm"].UIStroke.Enabled = true
-allPages["Auto Farm"].Visible = true
+-- Открытие по умолчанию первой страницы
+allTabs["Auto"].BackgroundTransparency = 0
+allTabs["Auto"].TextColor3 = Color3.new(1,1,1)
+allTabs["Auto"].UIStroke.Enabled = true
+allPages["Auto"].Visible = true
