@@ -1,4 +1,4 @@
--- [[ Pulse Hub GUI — Истинная фиксация на месте переноса ]] --
+-- [[ Pulse Hub GUI — Абсолютная фиксация и маленький заголовок ]] --
 local TweenService = game:GetService("TweenService")
 local UserInputService = game:GetService("UserInputService")
 local RunService = game:GetService("RunService")
@@ -25,7 +25,7 @@ MainFrame.Name = "MainFrame"
 MainFrame.Parent = PulseHub
 MainFrame.BackgroundColor3 = Color3.fromRGB(18, 18, 18)
 MainFrame.BackgroundTransparency = 0.15
-MainFrame.Position = UDim2.new(0.5, -275, 0.5, -175) -- Стартует в центре
+MainFrame.Position = UDim2.new(0.5, -275, 0.5, -175) -- Исходный центр экрана
 MainFrame.Size = UDim2.new(0, 550, 0, 350)
 MainFrame.ClipsDescendants = true
 
@@ -36,33 +36,44 @@ MainCorner.CornerRadius = UDim.new(0, 14)
 MainFrame.Size = UDim2.new(0, 550, 0, 0)
 tween(MainFrame, {Size = UDim2.new(0, 550, 0, 350)}, 0.3)
 
--- Drag (Перетаскивание без багов с фиксацией)
+-- Исправленный Drag (Идеальная фиксация позиции без прыжков)
 local dragging, dragInput, dragStart, startPos
 MainFrame.InputBegan:Connect(function(input)
     if input.UserInputType == Enum.UserInputType.MouseButton1 or input.UserInputType == Enum.UserInputType.Touch then
         dragging = true
         dragStart = input.Position
         startPos = MainFrame.Position
+        
         input.Changed:Connect(function()
-            if input.UserInputState == Enum.UserInputState.End then dragging = false end
+            if input.UserInputState == Enum.UserInputState.End then
+                dragging = false
+            end
         end)
     end
 end)
+
 MainFrame.InputChanged:Connect(function(input)
     if input.UserInputType == Enum.UserInputType.MouseMovement or input.UserInputType == Enum.UserInputType.Touch then
         dragInput = input
     end
 end)
+
 UserInputService.InputChanged:Connect(function(input)
     if input == dragInput and dragging then
         local delta = input.Position - dragStart
-        MainFrame.Position = UDim2.new(startPos.X.Scale, startPos.X.Offset + delta.X, startPos.Y.Scale, startPos.Y.Offset + delta.Y)
+        MainFrame.Position = UDim2.new(
+            startPos.X.Scale, 
+            startPos.X.Offset + delta.X, 
+            startPos.Y.Scale, 
+            startPos.Y.Offset + delta.Y
+        )
     end
 end)
 
 -- [[ ФИРМЕННЫЙ ЗАГОЛОВОК ]] --
 local TopBar = Instance.new("Frame", MainFrame)
-TopBar.Size = UDim2.new(0, 550, 0, 55) -- Фиксированная ширина верхнего бара
+TopBar.Name = "TopBar"
+TopBar.Size = UDim2.new(0, 550, 0, 55)
 TopBar.BackgroundTransparency = 1
 TopBar.ZIndex = 5
 
@@ -104,8 +115,9 @@ TabTitle.Size = UDim2.new(0, 150, 0, 16)
 TabTitle.TextXAlignment = Enum.TextXAlignment.Left
 TabTitle.BackgroundTransparency = 1
 
--- Кнопки управления привязаны к контейнеру, меняющему положение при сворачивании
+-- Контейнер для кнопок, чтобы они плавно съезжались при уменьшении шапки
 local ButtonHolder = Instance.new("Frame", TopBar)
+ButtonHolder.Name = "ButtonHolder"
 ButtonHolder.Size = UDim2.new(0, 60, 0, 30)
 ButtonHolder.Position = UDim2.new(0, 475, 0, 12)
 ButtonHolder.BackgroundTransparency = 1
@@ -178,13 +190,13 @@ local StatsLabel = Instance.new("TextLabel", FooterFrame)
 StatsLabel.Position = UDim2.new(0, 8, 0, 22)
 StatsLabel.Size = UDim2.new(1, -16, 0, 15)
 StatsLabel.Font = Enum.Font.Gotham
-StatsLabel.Text = "Performance: Calculating..."
+StatsLabel.Text = "Performance: ..."
 StatsLabel.TextColor3 = Color3.fromRGB(140, 140, 140)
 StatsLabel.TextSize = 10
 StatsLabel.TextXAlignment = Enum.TextXAlignment.Left
 StatsLabel.BackgroundTransparency = 1
 
--- Счётчик FPS в реальном времени
+-- Стабильный счётчик FPS
 local FrameUpdateTable = {}
 local function GetFPS()
     local CurrentTime = os.clock()
@@ -199,7 +211,7 @@ RunService.RenderStepped:Connect(function()
     StatsLabel.Text = "Performance: " .. GetFPS() .. " FPS"
 end)
 
--- Логика кнопок
+-- Логика кнопок управления
 CloseBtn.MouseEnter:Connect(function() tween(CloseBtn, {TextColor3 = Color3.fromRGB(255, 70, 70)}) end)
 CloseBtn.MouseLeave:Connect(function() tween(CloseBtn, {TextColor3 = Color3.fromRGB(150, 150, 150)}) end)
 CloseBtn.MouseButton1Click:Connect(function()
@@ -216,11 +228,11 @@ MinBtn.MouseButton1Click:Connect(function()
         BodyContainer.Visible = false
         TabTitle.Visible = false
         
-        -- Сворачиваем в маленький красивый заголовок БЕЗ изменения позиции угла
+        -- Сворачиваем строго в компактную плашку 240х55 там, где оно стоит
         tween(MainFrame, {Size = UDim2.new(0, 240, 0, 55)}, 0.2)
         tween(ButtonHolder, {Position = UDim2.new(0, 170, 0, 12)}, 0.2)
     else
-        -- Разворачиваем обратно ровно там, где оно стоит на экране
+        -- Плавно разворачиваем обратно, позиция угла мёртво зафиксирована
         tween(MainFrame, {Size = UDim2.new(0, 550, 0, 350)}, 0.2).Completed:Connect(function()
             if not isMinimized then 
                 BodyContainer.Visible = true 
