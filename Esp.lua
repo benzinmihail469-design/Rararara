@@ -1,4 +1,4 @@
--- [[ Pulse Hub GUI — Исправленный монолитный заголовок с контуром ]] --
+-- [[ Pulse Hub GUI — Полностью исправленные закругления углов шапки ]] --
 local TweenService = game:GetService("TweenService")
 local UserInputService = game:GetService("UserInputService")
 local RunService = game:GetService("RunService")
@@ -76,14 +76,16 @@ UserInputService.InputChanged:Connect(function(input)
     end
 end)
 
--- [[ ФИРМЕННЫЙ ЗАГОЛОВОК (Теперь с фоном для красивого сворачивания) ]] --
+-- [[ ФИРМЕННЫЙ ЗАГОЛОВОК (Исправлена ширина на 100%) ]] --
 local TopBar = Instance.new("Frame", MainFrame)
 TopBar.Name = "TopBar"
-TopBar.Size = UDim2.new(0, 550, 0, 55)
+TopBar.Size = UDim2.new(1, 0, 0, 55) -- Ширина 1 (100%), чтобы идеально сжиматься вместе с окном
 TopBar.BackgroundColor3 = Color3.fromRGB(18, 18, 18)
-TopBar.BackgroundTransparency = 1 -- По умолчанию прозрачный, когда меню открыто
+TopBar.BackgroundTransparency = 1 
 TopBar.ZIndex = 5
-Instance.new("UICorner", TopBar).CornerRadius = UDim.new(0, 14)
+
+local TopBarCorner = Instance.new("UICorner", TopBar)
+TopBarCorner.CornerRadius = UDim.new(0, 14)
 
 local HubIcon = Instance.new("ImageLabel", TopBar)
 HubIcon.Size = UDim2.new(0, 34, 0, 34)
@@ -123,11 +125,11 @@ TabTitle.Size = UDim2.new(0, 150, 0, 16)
 TabTitle.TextXAlignment = Enum.TextXAlignment.Left
 TabTitle.BackgroundTransparency = 1
 
--- Контейнер кнопок управления
+-- Контейнер кнопок управления (Привязан к правой стороне TopBar)
 local ButtonHolder = Instance.new("Frame", TopBar)
 ButtonHolder.Name = "ButtonHolder"
 ButtonHolder.Size = UDim2.new(0, 60, 0, 30)
-ButtonHolder.Position = UDim2.new(0, 475, 0, 12)
+ButtonHolder.Position = UDim2.new(1, -75, 0, 12) -- Позиция от правого края для плавной адаптации
 ButtonHolder.BackgroundTransparency = 1
 
 local MinBtn = Instance.new("TextButton", ButtonHolder)
@@ -225,7 +227,7 @@ CloseBtn.MouseButton1Click:Connect(function()
     t.Completed:Connect(function() PulseHub:Destroy() end)
 end)
 
--- [[ УМНАЯ СИСТЕМА СВОРАЧИВАНИЯ С АВТО-ЦЕНТРИРОВАНИЕМ ]] --
+-- [[ УМНАЯ СИСТЕМА СВОРАЧИВАНИЯ ]] --
 local isMinimized = false
 MinBtn.MouseEnter:Connect(function() tween(MinBtn, {TextColor3 = Color3.new(1,1,1)}) end)
 MinBtn.MouseLeave:Connect(function() tween(MinBtn, {TextColor3 = Color3.fromRGB(150, 150, 150)}) end)
@@ -235,14 +237,13 @@ MinBtn.MouseButton1Click:Connect(function()
         BodyContainer.Visible = false
         TabTitle.Visible = false
         
-        -- Делаем заголовок непрозрачным черным, чтобы скрыть пустоту сзади
+        -- Включаем черный фон шапки
         TopBar.BackgroundTransparency = 0.15
         
-        -- Сжимаем окно в плашку 240х55 и сдвигаем кнопки управления
+        -- Сжимаем окно в красивую плашку, кнопки встают на место автоматически благодаря привязке к правому краю
         tween(MainFrame, {Size = UDim2.new(0, 240, 0, 55)}, 0.2)
-        tween(ButtonHolder, {Position = UDim2.new(0, 170, 0, 12)}, 0.2)
     else
-        -- При разворачивании ВСЕГДА перемещаем главное меню строго в центр экрана!
+        -- Возвращаем в центр экрана при разворачивании
         MainFrame.Position = UDim2.new(0.5, -275, 0.5, -175)
         TopBar.BackgroundTransparency = 1
         
@@ -252,7 +253,6 @@ MinBtn.MouseButton1Click:Connect(function()
                 TabTitle.Visible = true
             end
         end)
-        tween(ButtonHolder, {Position = UDim2.new(0, 475, 0, 12)}, 0.2)
     end
 end)
 
@@ -376,7 +376,7 @@ local function CreateToggle(parentPage, name, default, callback)
     end)
 end
 
--- Инициализация вкладок
+-- Вкладки
 local MainPage = CreatePage("Main")
 local AutoPage = CreatePage("Auto")
 local AutoBuyPage = CreatePage("Auto Buy")
