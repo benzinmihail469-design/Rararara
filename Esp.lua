@@ -1,4 +1,4 @@
--- [[ Pulse Hub GUI — Полная рабочая версия с Touch/Click анимациями ]] --
+-- [[ Pulse Hub GUI — Premium Styled & Fixed Version ]] --
 local TweenService = game:GetService("TweenService")
 local UserInputService = game:GetService("UserInputService")
 local PulseHub = Instance.new("ScreenGui")
@@ -25,6 +25,7 @@ local MainFrame = Instance.new("Frame")
 MainFrame.Name = "MainFrame"
 MainFrame.Parent = PulseHub
 MainFrame.BackgroundColor3 = Color3.fromRGB(18, 18, 18)
+MainFrame.BackgroundTransparency = 0.15 -- Стильная полупрозрачность основного окна
 MainFrame.Position = UDim2.new(0.5, -275, 0.5, -175)
 MainFrame.Size = UDim2.new(0, 550, 0, 350)
 MainFrame.ClipsDescendants = true
@@ -36,7 +37,7 @@ MainCorner.CornerRadius = UDim.new(0, 10)
 MainFrame.Size = UDim2.new(0, 550, 0, 0)
 tween(MainFrame, {Size = UDim2.new(0, 550, 0, 350)}, 0.3)
 
--- Скрипт перетаскивания (Drag) окна мышкой или пальцем
+-- Скрипт перетаскивания (Drag) окна
 local dragging, dragInput, dragStart, startPos
 MainFrame.InputBegan:Connect(function(input)
     if input.UserInputType == Enum.UserInputType.MouseButton1 or input.UserInputType == Enum.UserInputType.Touch then
@@ -64,6 +65,7 @@ end)
 local Sidebar = Instance.new("Frame", MainFrame)
 Sidebar.Name = "Sidebar"
 Sidebar.BackgroundColor3 = Color3.fromRGB(14, 14, 14)
+Sidebar.BackgroundTransparency = 0.15 -- Полупрозрачность сайдбара в тон меню
 Sidebar.Size = UDim2.new(0, 160, 1, 0)
 Sidebar.ZIndex = 2
 Instance.new("UICorner", Sidebar).CornerRadius = UDim.new(0, 10)
@@ -93,6 +95,29 @@ local NavLayout = Instance.new("UIListLayout", Navigation)
 NavLayout.Padding = UDim.new(0, 4)
 NavLayout.SortOrder = Enum.SortOrder.LayoutOrder
 
+-- [[ ПОДВАЛ (FOOTER) — Перемещен внутрь Sidebar, чтобы правильно сворачивался! ]] --
+local DiscordLabel = Instance.new("TextLabel", Sidebar)
+DiscordLabel.Position = UDim2.new(0, 12, 1, -30)
+DiscordLabel.Size = UDim2.new(1, -12, 0, 15)
+DiscordLabel.Font = Enum.Font.Gotham
+DiscordLabel.Text = "discord.gg/pulsezone"
+DiscordLabel.TextColor3 = Color3.fromRGB(120, 120, 120)
+DiscordLabel.TextSize = 10
+DiscordLabel.TextXAlignment = Enum.TextXAlignment.Left
+DiscordLabel.BackgroundTransparency = 1
+DiscordLabel.ZIndex = 3
+
+local StatsLabel = Instance.new("TextLabel", Sidebar)
+StatsLabel.Position = UDim2.new(0, 12, 1, -18)
+StatsLabel.Size = UDim2.new(1, -12, 0, 15)
+StatsLabel.Font = Enum.Font.Gotham
+StatsLabel.Text = "Session: 02:30 — 163 FPS"
+StatsLabel.TextColor3 = Color3.fromRGB(90, 90, 90)
+StatsLabel.TextSize = 9
+StatsLabel.TextXAlignment = Enum.TextXAlignment.Left
+StatsLabel.BackgroundTransparency = 1
+StatsLabel.ZIndex = 3
+
 -- [[ ВЕРХНЯЯ ПАНЕЛЬ С УПРАВЛЕНИЕМ ]] --
 local TopBar = Instance.new("Frame", MainFrame)
 TopBar.Size = UDim2.new(1, -160, 0, 45)
@@ -109,12 +134,13 @@ TabTitle.Position = UDim2.new(0, 15, 0, 15)
 TabTitle.TextXAlignment = Enum.TextXAlignment.Left
 TabTitle.BackgroundTransparency = 1
 
--- Кнопка закрытия (X)
+-- Кнопка закрытия (Исправлен баг с квадратом)
 local CloseBtn = Instance.new("TextButton", TopBar)
 CloseBtn.Size = UDim2.new(0, 25, 0, 25)
-CloseBtn.Position = UDim2.new(1, -35, 0, 10)
-CloseBtn.Text = "✕"
-CloseBtn.Font = Enum.Font.GothamBold
+CloseBtn.Position = UDim2.new(1, -35, 0, 12)
+CloseBtn.Text = "×" -- Использование чистого символа умножения/крестика
+CloseBtn.Font = Enum.Font.Arial -- Стабильный шрифт для крестиков
+CloseBtn.TextSize = 20
 CloseBtn.TextColor3 = Color3.fromRGB(150, 150, 150)
 CloseBtn.BackgroundTransparency = 1
 
@@ -128,9 +154,10 @@ end)
 -- Кнопка сворачивания (-)
 local MinBtn = Instance.new("TextButton", TopBar)
 MinBtn.Size = UDim2.new(0, 25, 0, 25)
-MinBtn.Position = UDim2.new(1, -65, 0, 10)
+MinBtn.Position = UDim2.new(1, -65, 0, 12)
 MinBtn.Text = "—"
 MinBtn.Font = Enum.Font.GothamBold
+MinBtn.TextSize = 12
 MinBtn.TextColor3 = Color3.fromRGB(150, 150, 150)
 MinBtn.BackgroundTransparency = 1
 
@@ -147,7 +174,7 @@ local PagesFolder = Instance.new("Folder", MainFrame)
 local allTabs = {}
 local allPages = {}
 
--- Функция создания новой страницы (Вкладки) с Touch/Click анимациями
+-- Функция создания новой страницы (Вкладки)
 local function CreatePage(name)
     local PageFrame = Instance.new("ScrollingFrame", PagesFolder)
     PageFrame.Name = name .. "Page"
@@ -170,11 +197,18 @@ local function CreatePage(name)
     TabBtn.Font = Enum.Font.GothamMedium
     TabBtn.TextSize = 12
     TabBtn.TextColor3 = Color3.fromRGB(140, 140, 140)
-    TabBtn.BackgroundColor3 = Color3.fromRGB(255, 255, 255)
+    TabBtn.BackgroundColor3 = Color3.fromRGB(34, 34, 34) -- Серо-черный цвет в активном состоянии
     TabBtn.BackgroundTransparency = 1
     TabBtn.TextXAlignment = Enum.TextXAlignment.Left
     TabBtn.ClipsDescendants = true
     Instance.new("UICorner", TabBtn).CornerRadius = UDim.new(0, 6)
+    
+    -- Стильный контур для активной кнопки
+    local TabStroke = Instance.new("UIStroke", TabBtn)
+    TabStroke.Color = Color3.fromRGB(55, 55, 55)
+    TabStroke.Thickness = 1
+    TabStroke.ApplyStrokeMode = Enum.ApplyStrokeMode.Border
+    TabStroke.Enabled = false -- Включается только при активации
     
     allTabs[name] = TabBtn
     allPages[name] = PageFrame
@@ -182,14 +216,16 @@ local function CreatePage(name)
     local function selectTab()
         for tName, tBtn in pairs(allTabs) do
             tween(tBtn, {BackgroundTransparency = 1, TextColor3 = Color3.fromRGB(140, 140, 140)})
+            tBtn.UIStroke.Enabled = false
             allPages[tName].Visible = false
         end
         TabTitle.Text = name
         PageFrame.Visible = true
-        tween(TabBtn, {BackgroundTransparency = 0.15, TextColor3 = Color3.new(1,1,1)})
+        TabStroke.Enabled = true
+        tween(TabBtn, {BackgroundTransparency = 0, TextColor3 = Color3.new(1,1,1)})
     end
     
-    -- АНИМАЦИЯ НАЖАТИЯ ПАЛЬЦЕМ (Ripple + Scale эффекты)
+    -- АНИМАЦИЯ НАЖАТИЯ ПАЛЬЦЕМ (С эффектом Ripple)
     TabBtn.InputBegan:Connect(function(input)
         if input.UserInputType == Enum.UserInputType.MouseButton1 or input.UserInputType == Enum.UserInputType.Touch then
             tween(TabBtn, {Size = UDim2.new(1, -14, 0, 30), Position = UDim2.new(0, 7, 0, 1)}, 0.1)
@@ -200,8 +236,8 @@ local function CreatePage(name)
             Circle.BackgroundColor3 = Color3.new(1, 1, 1)
             Circle.BackgroundTransparency = 1
             Circle.Image = "rbxassetid://266543268"
-            Circle.ImageColor3 = Color3.new(1, 1, 1)
-            Circle.ImageTransparency = 0.6
+            Circle.ImageColor3 = Color3.fromRGB(255, 255, 255)
+            Circle.ImageTransparency = 0.7
             
             local mousePos = UserInputService:GetMouseLocation()
             local btnPos = TabBtn.AbsolutePosition
@@ -231,7 +267,7 @@ local function CreatePage(name)
     
     TabBtn.MouseEnter:Connect(function()
         if TabTitle.Text ~= name then
-            tween(TabBtn, {BackgroundTransparency = 0.08, TextColor3 = Color3.new(1,1,1)})
+            tween(TabBtn, {BackgroundTransparency = 0.6, TextColor3 = Color3.new(1,1,1)})
         end
     end)
     TabBtn.MouseLeave:Connect(function()
@@ -248,6 +284,7 @@ end
 local function CreateToggle(parentPage, name, default, callback)
     local ToggleFrame = Instance.new("Frame", parentPage)
     ToggleFrame.BackgroundColor3 = Color3.fromRGB(24, 24, 24)
+    ToggleFrame.BackgroundTransparency = 0.1 -- Небольшая прозрачность плашек для стиля
     ToggleFrame.Size = UDim2.new(1, -5, 0, 38)
     Instance.new("UICorner", ToggleFrame).CornerRadius = UDim.new(0, 6)
     
@@ -288,7 +325,7 @@ local function CreateToggle(parentPage, name, default, callback)
     end)
 end
 
--- [[ НАПОЛНЕНИЕ ДАННЫМИ ИЗ 3348.jpg ]] --
+-- [[ ИНИЦИАЛИЗАЦИЯ СТРАНИЦ ]] --
 local MainPage = CreatePage("Main")
 local SheriffPage = CreatePage("Sheriff")
 local MurderPage = CreatePage("Murder")
@@ -299,7 +336,7 @@ local FlingPage = CreatePage("Fling Players")
 local VisualsPage = CreatePage("Visuals")
 local SettingsPage = CreatePage("Settings")
 
--- Элементы для страницы Auto Farm
+-- Контент страницы Auto Farm (из 3348.jpg)
 CreateToggle(AutoFarmPage, "Auto Farm", true)
 CreateToggle(AutoFarmPage, "Auto-Respawn", false)
 CreateToggle(AutoFarmPage, "Anti-Fling", true)
@@ -307,32 +344,9 @@ CreateToggle(AutoFarmPage, "Avoid Murderer", false)
 CreateToggle(AutoFarmPage, "Auto-Fling", false)
 CreateToggle(AutoFarmPage, "Kill Aura", false)
 
--- Элементы для теста на вкладке Main
-CreateToggle(MainPage, "Enable Script", false)
-
--- Открываем Auto Farm по умолчанию
-allTabs["Auto Farm"].BackgroundTransparency = 0.15
+-- Дефолтное открытие Auto Farm
+allTabs["Auto Farm"].BackgroundTransparency = 0
 allTabs["Auto Farm"].TextColor3 = Color3.new(1,1,1)
+allTabs["Auto Farm"].UIStroke.Enabled = true
 allPages["Auto Farm"].Visible = true
 TabTitle.Text = "Auto Farm"
-
--- [[ ФУТЕР ]] --
-local DiscordLabel = Instance.new("TextLabel", Sidebar)
-DiscordLabel.Position = UDim2.new(0, 12, 1, -30)
-DiscordLabel.Size = UDim2.new(1, -12, 0, 15)
-DiscordLabel.Font = Enum.Font.Gotham
-DiscordLabel.Text = "discord.gg/pulsezone"
-DiscordLabel.TextColor3 = Color3.fromRGB(100, 100, 100)
-DiscordLabel.TextSize = 10
-DiscordLabel.TextXAlignment = Enum.TextXAlignment.Left
-DiscordLabel.BackgroundTransparency = 1
-
-local StatsLabel = Instance.new("TextLabel", Sidebar)
-StatsLabel.Position = UDim2.new(0, 12, 1, -18)
-StatsLabel.Size = UDim2.new(1, -12, 0, 15)
-StatsLabel.Font = Enum.Font.Gotham
-StatsLabel.Text = "Session: 02:30 — 163 FPS"
-StatsLabel.TextColor3 = Color3.fromRGB(70, 70, 70)
-StatsLabel.TextSize = 9
-StatsLabel.TextXAlignment = Enum.TextXAlignment.Left
-StatsLabel.BackgroundTransparency = 1
