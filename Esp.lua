@@ -1,4 +1,4 @@
--- [[ Pulse Hub GUI — Идеальное позиционирование и прозрачность ]] --
+-- [[ Pulse Hub GUI — Фиксированный заголовок без косяков с позицией ]] --
 local TweenService = game:GetService("TweenService")
 local UserInputService = game:GetService("UserInputService")
 local PulseHub = Instance.new("ScreenGui")
@@ -23,7 +23,7 @@ local MainFrame = Instance.new("Frame")
 MainFrame.Name = "MainFrame"
 MainFrame.Parent = PulseHub
 MainFrame.BackgroundColor3 = Color3.fromRGB(18, 18, 18)
-MainFrame.BackgroundTransparency = 0.15 -- Прозрачность главного окна
+MainFrame.BackgroundTransparency = 0.15
 MainFrame.Position = UDim2.new(0.5, -275, 0.5, -175)
 MainFrame.Size = UDim2.new(0, 550, 0, 350)
 MainFrame.ClipsDescendants = true
@@ -31,11 +31,11 @@ MainFrame.ClipsDescendants = true
 local MainCorner = Instance.new("UICorner", MainFrame)
 MainCorner.CornerRadius = UDim.new(0, 14)
 
--- Анимация появления в центре
+-- Появление
 MainFrame.Size = UDim2.new(0, 550, 0, 0)
 tween(MainFrame, {Size = UDim2.new(0, 550, 0, 350)}, 0.3)
 
--- Перетаскивание (Drag) — Работает только в развёрнутом состоянии
+-- Drag (Перетаскивание)
 local dragging, dragInput, dragStart, startPos
 MainFrame.InputBegan:Connect(function(input)
     if input.UserInputType == Enum.UserInputType.MouseButton1 or input.UserInputType == Enum.UserInputType.Touch then
@@ -59,13 +59,13 @@ UserInputService.InputChanged:Connect(function(input)
     end
 end)
 
--- [[ ФИРМЕННЫЙ ЗАГОЛОВОК (ИЗ 3358.jpg) ]] --
+-- [[ ФИРМЕННЫЙ ЗАГОЛОВОК ]] --
 local TopBar = Instance.new("Frame", MainFrame)
 TopBar.Size = UDim2.new(1, 0, 0, 55)
 TopBar.BackgroundTransparency = 1
 TopBar.ZIndex = 5
 
--- Зеленая иконка пульса
+-- Зеленая иконка пульса (из 3358.jpg)
 local HubIcon = Instance.new("ImageLabel", TopBar)
 HubIcon.Size = UDim2.new(0, 34, 0, 34)
 HubIcon.Position = UDim2.new(0, 15, 0, 10)
@@ -107,10 +107,10 @@ TabTitle.Size = UDim2.new(0, 150, 0, 16)
 TabTitle.TextXAlignment = Enum.TextXAlignment.Left
 TabTitle.BackgroundTransparency = 1
 
--- Кнопки управления
+-- Кнопки управления (Привязаны жестко к исходной ширине хаба)
 local CloseBtn = Instance.new("TextButton", TopBar)
 CloseBtn.Size = UDim2.new(0, 30, 0, 30)
-CloseBtn.Position = UDim2.new(1, -35, 0, 12)
+CloseBtn.Position = UDim2.new(0, 505, 0, 12) -- Жесткая позиция X, заголовок не уедет
 CloseBtn.Text = "×"
 CloseBtn.Font = Enum.Font.Arial
 CloseBtn.TextSize = 22
@@ -119,7 +119,7 @@ CloseBtn.BackgroundTransparency = 1
 
 local MinBtn = Instance.new("TextButton", TopBar)
 MinBtn.Size = UDim2.new(0, 30, 0, 30)
-MinBtn.Position = UDim2.new(1, -65, 0, 12)
+MinBtn.Position = UDim2.new(0, 475, 0, 12) -- Жесткая позиция X
 MinBtn.Text = "—"
 MinBtn.Font = Enum.Font.GothamBold
 MinBtn.TextSize = 12
@@ -132,11 +132,10 @@ BodyContainer.Size = UDim2.new(1, 0, 1, 0)
 BodyContainer.BackgroundTransparency = 1
 BodyContainer.ZIndex = 2
 
--- Сайдбар (Отдел вкладок) с добавленной прозрачностью
 local Sidebar = Instance.new("Frame", BodyContainer)
 Sidebar.Name = "Sidebar"
 Sidebar.BackgroundColor3 = Color3.fromRGB(14, 14, 14)
-Sidebar.BackgroundTransparency = 0.4 -- Добавили прозрачность в сам отдел вкладок
+Sidebar.BackgroundTransparency = 0.4
 Sidebar.Size = UDim2.new(0, 160, 1, 0)
 Instance.new("UICorner", Sidebar).CornerRadius = UDim.new(0, 14)
 
@@ -150,7 +149,6 @@ local NavLayout = Instance.new("UIListLayout", Navigation)
 NavLayout.Padding = UDim.new(0, 4)
 NavLayout.SortOrder = Enum.SortOrder.LayoutOrder
 
--- Подвал
 local DiscordLabel = Instance.new("TextLabel", Sidebar)
 DiscordLabel.Position = UDim2.new(0, 12, 1, -30)
 DiscordLabel.Size = UDim2.new(1, -12, 0, 15)
@@ -171,7 +169,7 @@ StatsLabel.TextSize = 9
 StatsLabel.TextXAlignment = Enum.TextXAlignment.Left
 StatsLabel.BackgroundTransparency = 1
 
--- Логика кнопок управления
+-- Логика кнопок
 CloseBtn.MouseEnter:Connect(function() tween(CloseBtn, {TextColor3 = Color3.fromRGB(255, 70, 70)}) end)
 CloseBtn.MouseLeave:Connect(function() tween(CloseBtn, {TextColor3 = Color3.fromRGB(150, 150, 150)}) end)
 CloseBtn.MouseButton1Click:Connect(function()
@@ -188,23 +186,19 @@ MinBtn.MouseButton1Click:Connect(function()
         BodyContainer.Visible = false
         TabTitle.Visible = false
         
-        -- Заголовок остается на месте, меняется только размер окна в ширину до 240
-        tween(MainFrame, {Size = UDim2.new(0, 240, 0, 55)}, 0.2)
-        MinBtn.Position = UDim2.new(1, -65, 0, 12)
-        CloseBtn.Position = UDim2.new(1, -35, 0, 12)
+        -- Меняем только высоту, заголовок остается идеально на месте!
+        tween(MainFrame, {Size = UDim2.new(0, 550, 0, 55)}, 0.2)
     else
-        -- При разворачивании ВСЕГДА возвращаем GUI точно в центр экрана
+        -- При разворачивании плавно возвращаем в исходный размер и точно в центр экрана
         tween(MainFrame, {
             Size = UDim2.new(0, 550, 0, 350),
-            Position = UDim2.new(0.5, -275, 0.5, -175) -- Точный центр
+            Position = UDim2.new(0.5, -275, 0.5, -175)
         }, 0.25).Completed:Connect(function()
             if not isMinimized then 
                 BodyContainer.Visible = true 
                 TabTitle.Visible = true
             end
         end)
-        MinBtn.Position = UDim2.new(1, -65, 0, 12)
-        CloseBtn.Position = UDim2.new(1, -35, 0, 12)
     end
 end)
 
@@ -235,7 +229,7 @@ local function CreatePage(name)
     TabBtn.TextSize = 12
     TabBtn.TextColor3 = Color3.fromRGB(140, 140, 140)
     TabBtn.BackgroundColor3 = Color3.fromRGB(34, 34, 34)
-    TabBtn.BackgroundTransparency = 1 -- По умолчанию кнопки прозрачные, пока не станут активными
+    TabBtn.BackgroundTransparency = 1
     TabBtn.ClipsDescendants = true
     TabBtn.TextXAlignment = Enum.TextXAlignment.Left
     Instance.new("UICorner", TabBtn).CornerRadius = UDim.new(0, 6)
@@ -257,7 +251,7 @@ local function CreatePage(name)
         TabTitle.Text = "— " .. name
         PageFrame.Visible = true
         TabStroke.Enabled = true
-        tween(TabBtn, {BackgroundTransparency = 0, TextColor3 = Color3.new(1,1,1)}) -- Вкладка становится непрозрачной серо-черной при клике
+        tween(TabBtn, {BackgroundTransparency = 0, TextColor3 = Color3.new(1,1,1)})
     end
     
     TabBtn.InputBegan:Connect(function(input)
@@ -349,7 +343,7 @@ local function CreateToggle(parentPage, name, default, callback)
     end)
 end
 
--- Создание структуры меню
+-- Вкладки хаба
 local MainPage = CreatePage("Main")
 local AutoPage = CreatePage("Auto")
 local AutoBuyPage = CreatePage("Auto Buy")
@@ -358,7 +352,7 @@ local PlayersPage = CreatePage("Players")
 CreateToggle(AutoPage, "Auto Farm", true)
 CreateToggle(AutoPage, "Anti-Fling", true)
 
--- Активация дефолтной страницы
+-- Дефолт старт
 allTabs["Auto"].BackgroundTransparency = 0
 allTabs["Auto"].TextColor3 = Color3.new(1,1,1)
 allTabs["Auto"].UIStroke.Enabled = true
