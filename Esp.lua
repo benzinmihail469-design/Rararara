@@ -1,4 +1,4 @@
--- [[ Pulse Hub GUI — Раздельный интерфейс с фиксацией и авто-центром ]] --
+-- [[ Pulse Hub GUI — Монолитный дизайн с фиксацией и авто-центром ]] --
 local TweenService = game:GetService("TweenService")
 local UserInputService = game:GetService("UserInputService")
 local RunService = game:GetService("RunService")
@@ -19,101 +19,113 @@ local function tween(object, properties, duration)
     return t
 end
 
--- Функция для перетаскивания (работает независимо для любого окна)
-local function MakeDraggable(frame)
-    local dragging, dragInput, dragStart, startPos
-    frame.InputBegan:Connect(function(input)
-        if input.UserInputType == Enum.UserInputType.MouseButton1 or input.UserInputType == Enum.UserInputType.Touch then
-            dragging = true
-            dragStart = input.Position
-            startPos = frame.Position
-            input.Changed:Connect(function()
-                if input.UserInputState == Enum.UserInputState.End then dragging = false end
-            end)
-        end
-    end)
-    frame.InputChanged:Connect(function(input)
-        if input.UserInputType == Enum.UserInputType.MouseMovement or input.UserInputType == Enum.UserInputType.Touch then
-            dragInput = input
-        end
-    end)
-    UserInputService.InputChanged:Connect(function(input)
-        if input == dragInput and dragging then
-            local delta = input.Position - dragStart
-            frame.Position = UDim2.new(startPos.X.Scale, startPos.X.Offset + delta.X, startPos.Y.Scale, startPos.Y.Offset + delta.Y)
-        end
-    end)
-end
-
--- [[ 1. МАЛЕНЬКИЙ НЕЗАВИСИМЫЙ ЗАГОЛОВОК (Фиксируется где угодно) ]] --
-local MiniFrame = Instance.new("Frame")
-MiniFrame.Name = "MiniFrame"
-MiniFrame.Parent = PulseHub
-MiniFrame.BackgroundColor3 = Color3.fromRGB(18, 18, 18)
-MiniFrame.BackgroundTransparency = 0.15
-MiniFrame.Position = UDim2.new(0.1, 0, 0.1, 0) -- Начальная позиция в углу
-MiniFrame.Size = UDim2.new(0, 220, 0, 55)
-MiniFrame.ZIndex = 10
-Instance.new("UICorner", MiniFrame).CornerRadius = UDim.new(0, 12)
-
-local MiniStroke = Instance.new("UIStroke", MiniFrame)
-MiniStroke.Color = Color3.fromRGB(45, 45, 45)
-MiniStroke.Thickness = 1
-
-local MiniIcon = Instance.new("ImageLabel", MiniFrame)
-MiniIcon.Size = UDim2.new(0, 34, 0, 34)
-MiniIcon.Position = UDim2.new(0, 12, 0, 10)
-MiniIcon.Image = "rbxassetid://10840212450"
-MiniIcon.BackgroundColor3 = Color3.fromRGB(25, 25, 25)
-Instance.new("UICorner", MiniIcon).CornerRadius = UDim.new(0, 8)
-
-local MiniTitle = Instance.new("TextLabel", MiniFrame)
-MiniTitle.Text = "Pulse Hub"
-MiniTitle.Font = Enum.Font.GothamBold
-MiniTitle.TextColor3 = Color3.fromRGB(255, 255, 255)
-MiniTitle.TextSize = 13
-MiniTitle.Position = UDim2.new(0, 54, 0, 11)
-MiniTitle.Size = UDim2.new(0, 100, 0, 16)
-MiniTitle.TextXAlignment = Enum.TextXAlignment.Left
-MiniTitle.BackgroundTransparency = 1
-
-local MiniSub = Instance.new("TextLabel", MiniFrame)
-MiniSub.Text = "Grow A Garden 2"
-MiniSub.Font = Enum.Font.Gotham
-MiniSub.TextColor3 = Color3.fromRGB(140, 140, 140)
-MiniSub.TextSize = 10
-MiniSub.Position = UDim2.new(0, 54, 0, 27)
-MiniSub.Size = UDim2.new(0, 100, 0, 14)
-MiniSub.TextXAlignment = Enum.TextXAlignment.Left
-MiniSub.BackgroundTransparency = 1
-
-local ToggleBtn = Instance.new("TextButton", MiniFrame)
-ToggleBtn.Size = UDim2.new(0, 30, 0, 30)
-ToggleBtn.Position = UDim2.new(1, -40, 0, 12)
-ToggleBtn.Text = "—"
-ToggleBtn.Font = Enum.Font.GothamBold
-ToggleBtn.TextSize = 12
-ToggleBtn.TextColor3 = Color3.fromRGB(150, 150, 150)
-ToggleBtn.BackgroundTransparency = 1
-
-MakeDraggable(MiniFrame) -- Маленький заголовок можно таскать, он останется на месте!
-
--- [[ 2. ГЛАВНОЕ ГУИ (Всегда центрируется) ]] --
+-- [[ ГЛАВНОЕ ОКНО ]] --
 local MainFrame = Instance.new("Frame")
 MainFrame.Name = "MainFrame"
 MainFrame.Parent = PulseHub
 MainFrame.BackgroundColor3 = Color3.fromRGB(18, 18, 18)
 MainFrame.BackgroundTransparency = 0.15
-MainFrame.Position = UDim2.new(0.5, -275, 0.5, -175) -- Ровно центр
+MainFrame.Position = UDim2.new(0.5, -275, 0.5, -175) -- Стартует строго по центру
 MainFrame.Size = UDim2.new(0, 550, 0, 350)
 MainFrame.ClipsDescendants = true
-MainFrame.Visible = true
 Instance.new("UICorner", MainFrame).CornerRadius = UDim.new(0, 14)
 
--- [[ ОСНОВНОЙ КОНТЕНТ ГЛАВНОГО ОКНА ]] --
+-- Перетаскивание (Drag)
+local dragging, dragInput, dragStart, startPos
+MainFrame.InputBegan:Connect(function(input)
+    if input.UserInputType == Enum.UserInputType.MouseButton1 or input.UserInputType == Enum.UserInputType.Touch then
+        dragging = true
+        dragStart = input.Position
+        startPos = MainFrame.Position
+        input.Changed:Connect(function()
+            if input.UserInputState == Enum.UserInputState.End then dragging = false end
+        end)
+    end
+end)
+MainFrame.InputChanged:Connect(function(input)
+    if input.UserInputType == Enum.UserInputType.MouseMovement or input.UserInputType == Enum.UserInputType.Touch then
+        dragInput = input
+    end
+end)
+UserInputService.InputChanged:Connect(function(input)
+    if input == dragInput and dragging then
+        local delta = input.Position - dragStart
+        MainFrame.Position = UDim2.new(startPos.X.Scale, startPos.X.Offset + delta.X, startPos.Y.Scale, startPos.Y.Offset + delta.Y)
+    end
+end)
+
+-- [[ СТАРЫЙ ФИРМЕННЫЙ ЗАГОЛОВОК (Внутри Главного ГУИ) ]] --
+local TopBar = Instance.new("Frame", MainFrame)
+TopBar.Name = "TopBar"
+TopBar.Size = UDim2.new(0, 550, 0, 55)
+TopBar.BackgroundTransparency = 1
+TopBar.ZIndex = 5
+
+local HubIcon = Instance.new("ImageLabel", TopBar)
+HubIcon.Size = UDim2.new(0, 34, 0, 34)
+HubIcon.Position = UDim2.new(0, 15, 0, 10)
+HubIcon.Image = "rbxassetid://10840212450"
+HubIcon.BackgroundColor3 = Color3.fromRGB(25, 25, 25)
+Instance.new("UICorner", HubIcon).CornerRadius = UDim.new(0, 8)
+
+local HubTitle = Instance.new("TextLabel", TopBar)
+HubTitle.Text = "Pulse Hub"
+HubTitle.Font = Enum.Font.GothamBold
+HubTitle.TextColor3 = Color3.fromRGB(255, 255, 255)
+HubTitle.TextSize = 14
+HubTitle.Position = UDim2.new(0, 58, 0, 11)
+HubTitle.Size = UDim2.new(0, 120, 0, 16)
+HubTitle.TextXAlignment = Enum.TextXAlignment.Left
+HubTitle.BackgroundTransparency = 1
+
+local SubTitle = Instance.new("TextLabel", TopBar)
+SubTitle.Text = "Grow A Garden 2"
+SubTitle.Font = Enum.Font.Gotham
+SubTitle.TextColor3 = Color3.fromRGB(140, 140, 140)
+SubTitle.TextSize = 11
+SubTitle.Position = UDim2.new(0, 58, 0, 27)
+SubTitle.Size = UDim2.new(0, 120, 0, 14)
+SubTitle.TextXAlignment = Enum.TextXAlignment.Left
+SubTitle.BackgroundTransparency = 1
+
+local TabTitle = Instance.new("TextLabel", TopBar)
+TabTitle.Text = "— Main"
+TabTitle.Font = Enum.Font.GothamMedium
+TabTitle.TextColor3 = Color3.fromRGB(100, 100, 100)
+TabTitle.TextSize = 13
+TabTitle.Position = UDim2.new(0, 165, 0, 11)
+TabTitle.Size = UDim2.new(0, 150, 0, 16)
+TabTitle.TextXAlignment = Enum.TextXAlignment.Left
+TabTitle.BackgroundTransparency = 1
+
+-- Кнопки управления шапкой
+local ButtonHolder = Instance.new("Frame", TopBar)
+ButtonHolder.Size = UDim2.new(0, 60, 0, 30)
+ButtonHolder.Position = UDim2.new(0, 475, 0, 12)
+ButtonHolder.BackgroundTransparency = 1
+
+local MinBtn = Instance.new("TextButton", ButtonHolder)
+MinBtn.Size = UDim2.new(0, 30, 0, 30)
+MinBtn.Text = "—"
+MinBtn.Font = Enum.Font.GothamBold
+MinBtn.TextSize = 12
+MinBtn.TextColor3 = Color3.fromRGB(150, 150, 150)
+MinBtn.BackgroundTransparency = 1
+
+local CloseBtn = Instance.new("TextButton", ButtonHolder)
+CloseBtn.Size = UDim2.new(0, 30, 0, 30)
+CloseBtn.Position = UDim2.new(0, 30, 0, 0)
+CloseBtn.Text = "×"
+CloseBtn.Font = Enum.Font.Arial
+CloseBtn.TextSize = 22
+CloseBtn.TextColor3 = Color3.fromRGB(150, 150, 150)
+CloseBtn.BackgroundTransparency = 1
+
+-- [[ ОСНОВНОЙ КОНТЕНТ ]] --
 local BodyContainer = Instance.new("Frame", MainFrame)
 BodyContainer.Size = UDim2.new(1, 0, 1, 0)
 BodyContainer.BackgroundTransparency = 1
+BodyContainer.ZIndex = 2
 
 local Sidebar = Instance.new("Frame", BodyContainer)
 Sidebar.BackgroundColor3 = Color3.fromRGB(14, 14, 14)
@@ -123,13 +135,13 @@ Instance.new("UICorner", Sidebar).CornerRadius = UDim.new(0, 14)
 
 local Navigation = Instance.new("ScrollingFrame", Sidebar)
 Navigation.Size = UDim2.new(1, 0, 1, -135)
-Navigation.Position = UDim2.new(0, 0, 0, 20)
+Navigation.Position = UDim2.new(0, 0, 0, 60)
 Navigation.BackgroundTransparency = 1
 Navigation.ScrollBarThickness = 0
 local NavLayout = Instance.new("UIListLayout", Navigation)
 NavLayout.Padding = UDim.new(0, 4)
 
--- [[ ВЫДЕЛЕННЫЙ ПОДВАЛ В СЕНТРЕ С FPS ]] --
+-- [[ ВЫДЕЛЕННЫЙ ПОДВАЛ С FPS ]] --
 local FooterFrame = Instance.new("Frame", Sidebar)
 FooterFrame.Name = "FooterFrame"
 FooterFrame.BackgroundColor3 = Color3.fromRGB(22, 22, 22)
@@ -174,40 +186,49 @@ RunService.RenderStepped:Connect(function()
     StatsLabel.Text = "Performance: " .. GetFPS() .. " FPS"
 end)
 
--- [[ ЛОГИКА СВОРАЧИВАНИЯ / РАЗВОРАЧИВАНИЯ ]] --
-local isMenuOpen = true
+-- [[ УМНАЯ ЛОГИКА СВОРАЧИВАНИЯ И ЦЕНТРИРОВАНИЯ ]] --
+local isMinimized = false
 
-ToggleBtn.MouseButton1Click:Connect(function()
-    isMenuOpen = not isMenuOpen
-    if isMenuOpen then
-        ToggleBtn.Text = "—"
-        -- Принудительно кидаем Главное ГУИ строго в центр экрана при разворачивании!
-        MainFrame.Position = UDim2.new(0.5, -275, 0.5, -175)
-        MainFrame.Size = UDim2.new(0, 550, 0, 0)
-        MainFrame.Visible = true
-        tween(MainFrame, {Size = UDim2.new(0, 550, 0, 350)}, 0.25)
+CloseBtn.MouseButton1Click:Connect(function() PulseHub:Destroy() end)
+
+MinBtn.MouseButton1Click:Connect(function()
+    isMinimized = not isMinimized
+    if isMinimized then
+        -- Сворачиваем: убираем тело, превращая окно в заголовок (240x55)
+        BodyContainer.Visible = false
+        TabTitle.Visible = false
+        
+        -- Кнопки пододвигаем ближе, чтобы они поместились в маленький размер
+        tween(ButtonHolder, {Position = UDim2.new(0, 170, 0, 12)}, 0.15)
+        tween(MainFrame, {Size = UDim2.new(0, 240, 0, 55)}, 0.2)
+        -- Маленький заголовок "намертво" зафиксируется там, куда ты его передвинул, так как Position не меняется!
     else
-        ToggleBtn.Text = "┌┐"
-        local t = tween(MainFrame, {Size = UDim2.new(0, 550, 0, 0)}, 0.2)
-        t.Completed:Connect(function()
-            if not isMenuOpen then MainFrame.Visible = false end
+        -- Разворачиваем: Принудительно телепортируем всё меню ВСЕГДА В ЦЕНТР экрана!
+        MainFrame.Position = UDim2.new(0.5, -275, 0.5, -175)
+        MainFrame.Size = UDim2.new(0, 550, 0, 55) -- Ставим ширину, высоту раскроем плавно
+        
+        tween(ButtonHolder, {Position = UDim2.new(0, 475, 0, 12)}, 0.2)
+        tween(MainFrame, {Size = UDim2.new(0, 550, 0, 350)}, 0.25).Completed:Connect(function()
+            if not isMinimized then
+                BodyContainer.Visible = true
+                TabTitle.Visible = true
+            end
         end)
     end
 end)
 
--- [[ СИСТЕМА СТРАНИЦ ]] --
+-- [[ СИСТЕМЫ СТРАНИЦ ]] --
 local PagesFolder = Instance.new("Folder", BodyContainer)
 local allTabs = {}
 local allPages = {}
 
 local function CreatePage(name)
     local PageFrame = Instance.new("ScrollingFrame", PagesFolder)
-    PageFrame.Size = UDim2.new(1, -180, 1, -40)
-    PageFrame.Position = UDim2.new(0, 175, 0, 20)
+    PageFrame.Size = UDim2.new(1, -180, 1, -75)
+    PageFrame.Position = UDim2.new(0, 175, 0, 60)
     PageFrame.BackgroundTransparency = 1
     PageFrame.Visible = false
     PageFrame.ScrollBarThickness = 2
-    PageFrame.ScrollBarImageColor3 = Color3.fromRGB(50, 50, 50)
     Instance.new("UIListLayout", PageFrame).Padding = UDim.new(0, 6)
     
     local TabBtn = Instance.new("TextButton", Navigation)
@@ -238,6 +259,7 @@ local function CreatePage(name)
         end
         PageFrame.Visible = true
         TabStroke.Enabled = true
+        TabTitle.Text = "— " .. name
         tween(TabBtn, {BackgroundTransparency = 0, TextColor3 = Color3.new(1,1,1)})
     end)
     
@@ -286,7 +308,7 @@ local function CreateToggle(parentPage, name, default)
     end)
 end
 
--- Инициализация вкладок
+-- Создаем вкладки
 local MainPage = CreatePage("Main")
 local AutoPage = CreatePage("Auto")
 
