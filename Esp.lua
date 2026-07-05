@@ -1,4 +1,4 @@
--- [[ Pulse Hub GUI — Идеальное сворачивание по дизайну 3358.jpg ]] --
+-- [[ Pulse Hub GUI — Идеальное позиционирование и прозрачность ]] --
 local TweenService = game:GetService("TweenService")
 local UserInputService = game:GetService("UserInputService")
 local PulseHub = Instance.new("ScreenGui")
@@ -23,7 +23,7 @@ local MainFrame = Instance.new("Frame")
 MainFrame.Name = "MainFrame"
 MainFrame.Parent = PulseHub
 MainFrame.BackgroundColor3 = Color3.fromRGB(18, 18, 18)
-MainFrame.BackgroundTransparency = 0.15
+MainFrame.BackgroundTransparency = 0.15 -- Прозрачность главного окна
 MainFrame.Position = UDim2.new(0.5, -275, 0.5, -175)
 MainFrame.Size = UDim2.new(0, 550, 0, 350)
 MainFrame.ClipsDescendants = true
@@ -31,11 +31,11 @@ MainFrame.ClipsDescendants = true
 local MainCorner = Instance.new("UICorner", MainFrame)
 MainCorner.CornerRadius = UDim.new(0, 14)
 
--- Анимация появления
+-- Анимация появления в центре
 MainFrame.Size = UDim2.new(0, 550, 0, 0)
 tween(MainFrame, {Size = UDim2.new(0, 550, 0, 350)}, 0.3)
 
--- Перетаскивание (Drag)
+-- Перетаскивание (Drag) — Работает только в развёрнутом состоянии
 local dragging, dragInput, dragStart, startPos
 MainFrame.InputBegan:Connect(function(input)
     if input.UserInputType == Enum.UserInputType.MouseButton1 or input.UserInputType == Enum.UserInputType.Touch then
@@ -69,7 +69,7 @@ TopBar.ZIndex = 5
 local HubIcon = Instance.new("ImageLabel", TopBar)
 HubIcon.Size = UDim2.new(0, 34, 0, 34)
 HubIcon.Position = UDim2.new(0, 15, 0, 10)
-HubIcon.Image = "rbxassetid://10840212450" -- Красивая неоновая иконка звуковой волны/пульса
+HubIcon.Image = "rbxassetid://10840212450"
 HubIcon.BackgroundColor3 = Color3.fromRGB(25, 25, 25)
 HubIcon.BackgroundTransparency = 0
 Instance.new("UICorner", HubIcon).CornerRadius = UDim.new(0, 8)
@@ -85,7 +85,7 @@ HubTitle.Size = UDim2.new(0, 120, 0, 16)
 HubTitle.TextXAlignment = Enum.TextXAlignment.Left
 HubTitle.BackgroundTransparency = 1
 
--- Название игры (Подзаголовок)
+-- Название игры
 local SubTitle = Instance.new("TextLabel", TopBar)
 SubTitle.Text = "Grow A Garden 2"
 SubTitle.Font = Enum.Font.Gotham
@@ -96,9 +96,9 @@ SubTitle.Size = UDim2.new(0, 120, 0, 14)
 SubTitle.TextXAlignment = Enum.TextXAlignment.Left
 SubTitle.BackgroundTransparency = 1
 
--- Динамическое отображение текущей вкладки рядом
+-- Текущая вкладка
 local TabTitle = Instance.new("TextLabel", TopBar)
-TabTitle.Text = "— Auto Farm"
+TabTitle.Text = "— Auto"
 TabTitle.Font = Enum.Font.GothamMedium
 TabTitle.TextColor3 = Color3.fromRGB(100, 100, 100)
 TabTitle.TextSize = 13
@@ -126,16 +126,17 @@ MinBtn.TextSize = 12
 MinBtn.TextColor3 = Color3.fromRGB(150, 150, 150)
 MinBtn.BackgroundTransparency = 1
 
--- [[ ОСНОВНОЙ КОНТЕНТ (Сайдбар и страницы) ]] --
+-- [[ ОСНОВНОЙ КОНТЕНТ ]] --
 local BodyContainer = Instance.new("Frame", MainFrame)
 BodyContainer.Size = UDim2.new(1, 0, 1, 0)
 BodyContainer.BackgroundTransparency = 1
 BodyContainer.ZIndex = 2
 
+-- Сайдбар (Отдел вкладок) с добавленной прозрачностью
 local Sidebar = Instance.new("Frame", BodyContainer)
 Sidebar.Name = "Sidebar"
 Sidebar.BackgroundColor3 = Color3.fromRGB(14, 14, 14)
-Sidebar.BackgroundTransparency = 0.15
+Sidebar.BackgroundTransparency = 0.4 -- Добавили прозрачность в сам отдел вкладок
 Sidebar.Size = UDim2.new(0, 160, 1, 0)
 Instance.new("UICorner", Sidebar).CornerRadius = UDim.new(0, 14)
 
@@ -170,7 +171,7 @@ StatsLabel.TextSize = 9
 StatsLabel.TextXAlignment = Enum.TextXAlignment.Left
 StatsLabel.BackgroundTransparency = 1
 
--- Логика кнопок закрытия и сворачивания
+-- Логика кнопок управления
 CloseBtn.MouseEnter:Connect(function() tween(CloseBtn, {TextColor3 = Color3.fromRGB(255, 70, 70)}) end)
 CloseBtn.MouseLeave:Connect(function() tween(CloseBtn, {TextColor3 = Color3.fromRGB(150, 150, 150)}) end)
 CloseBtn.MouseButton1Click:Connect(function()
@@ -185,17 +186,25 @@ MinBtn.MouseButton1Click:Connect(function()
     isMinimized = not isMinimized
     if isMinimized then
         BodyContainer.Visible = false
-        TabTitle.Visible = false -- Скрываем имя вкладки, оставляя только чистый бренд
-        tween(MainFrame, {Size = UDim2.new(0, 240, 0, 55)}, 0.2) -- Сужаем окно под размер заголовка
+        TabTitle.Visible = false
+        
+        -- Заголовок остается на месте, меняется только размер окна в ширину до 240
+        tween(MainFrame, {Size = UDim2.new(0, 240, 0, 55)}, 0.2)
         MinBtn.Position = UDim2.new(1, -65, 0, 12)
         CloseBtn.Position = UDim2.new(1, -35, 0, 12)
     else
-        tween(MainFrame, {Size = UDim2.new(0, 550, 0, 350)}, 0.2).Completed:Connect(function()
+        -- При разворачивании ВСЕГДА возвращаем GUI точно в центр экрана
+        tween(MainFrame, {
+            Size = UDim2.new(0, 550, 0, 350),
+            Position = UDim2.new(0.5, -275, 0.5, -175) -- Точный центр
+        }, 0.25).Completed:Connect(function()
             if not isMinimized then 
                 BodyContainer.Visible = true 
                 TabTitle.Visible = true
             end
         end)
+        MinBtn.Position = UDim2.new(1, -65, 0, 12)
+        CloseBtn.Position = UDim2.new(1, -35, 0, 12)
     end
 end)
 
@@ -226,9 +235,9 @@ local function CreatePage(name)
     TabBtn.TextSize = 12
     TabBtn.TextColor3 = Color3.fromRGB(140, 140, 140)
     TabBtn.BackgroundColor3 = Color3.fromRGB(34, 34, 34)
-    TabBtn.BackgroundTransparency = 1
-    TabBtn.TextXAlignment = Enum.TextXAlignment.Left
+    TabBtn.BackgroundTransparency = 1 -- По умолчанию кнопки прозрачные, пока не станут активными
     TabBtn.ClipsDescendants = true
+    TabBtn.TextXAlignment = Enum.TextXAlignment.Left
     Instance.new("UICorner", TabBtn).CornerRadius = UDim.new(0, 6)
     
     local TabStroke = Instance.new("UIStroke", TabBtn)
@@ -248,7 +257,7 @@ local function CreatePage(name)
         TabTitle.Text = "— " .. name
         PageFrame.Visible = true
         TabStroke.Enabled = true
-        tween(TabBtn, {BackgroundTransparency = 0, TextColor3 = Color3.new(1,1,1)})
+        tween(TabBtn, {BackgroundTransparency = 0, TextColor3 = Color3.new(1,1,1)}) -- Вкладка становится непрозрачной серо-черной при клике
     end
     
     TabBtn.InputBegan:Connect(function(input)
@@ -349,7 +358,7 @@ local PlayersPage = CreatePage("Players")
 CreateToggle(AutoPage, "Auto Farm", true)
 CreateToggle(AutoPage, "Anti-Fling", true)
 
--- Открытие по умолчанию первой страницы
+-- Активация дефолтной страницы
 allTabs["Auto"].BackgroundTransparency = 0
 allTabs["Auto"].TextColor3 = Color3.new(1,1,1)
 allTabs["Auto"].UIStroke.Enabled = true
