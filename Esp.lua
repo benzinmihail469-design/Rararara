@@ -1,363 +1,272 @@
--- 🌙 Dark Hub (Premium Edition)
--- Плавные анимации, UIStroke, умный автофарм с флаем
-
-local Players = game:GetService("Players")
-local TweenService = game:GetService("TweenService")
-local UserInputService = game:GetService("UserInputService")
-local RunService = game:GetService("RunService")
-local CoreGui = game:GetService("CoreGui")
-
-local LP = Players.LocalPlayer
-
--- Удаляем старую версию, если она есть
-if CoreGui:FindFirstChild("DarkHub_Premium") then
-    CoreGui.DarkHub_Premium:Destroy()
-end
-
-local ScreenGui = Instance.new("ScreenGui")
-ScreenGui.Name = "DarkHub_Premium"
-ScreenGui.ResetOnSpawn = false
-ScreenGui.Parent = CoreGui
-
--- Функция для красивых анимаций кнопок
-local function RippleEffect(button)
-    local originalColor = button.BackgroundColor3
-    local hoverColor = Color3.new(
-        math.clamp(originalColor.R + 0.08, 0, 1),
-        math.clamp(originalColor.G + 0.08, 0, 1),
-        math.clamp(originalColor.B + 0.12, 0, 1) -- Легкий сине-фиолетовый оттенок
-    )
-
-    button.MouseEnter:Connect(function()
-        TweenService:Create(button, TweenInfo.new(0.3, Enum.EasingStyle.Quint), {BackgroundColor3 = hoverColor}):Play()
-    end)
-    button.MouseLeave:Connect(function()
-        TweenService:Create(button, TweenInfo.new(0.3, Enum.EasingStyle.Quint), {BackgroundColor3 = originalColor}):Play()
-    end)
-end
-
----------------------------------------------------------
--- 🎨 ГЛАВНЫЙ ИНТЕРФЕЙС
----------------------------------------------------------
+-- [[ Pulse Hub GUI Clone ]] --
+local PulseHub = Instance.new("ScreenGui")
 local MainFrame = Instance.new("Frame")
-MainFrame.Size = UDim2.new(0, 0, 0, 0) -- Для анимации появления
-MainFrame.Position = UDim2.new(0.5, -275, 0.5, -175)
-MainFrame.BackgroundColor3 = Color3.fromRGB(15, 15, 18)
-MainFrame.BorderSizePixel = 0
-MainFrame.ClipsDescendants = true
-MainFrame.Parent = ScreenGui
-
-local MainCorner = Instance.new("UICorner")
-MainCorner.CornerRadius = UDim.new(0, 10)
-MainCorner.Parent = MainFrame
-
--- Красивая обводка (Stroke)
-local MainStroke = Instance.new("UIStroke")
-MainStroke.Color = Color3.fromRGB(45, 40, 60)
-MainStroke.Thickness = 1.5
-MainStroke.Parent = MainFrame
-
----------------------------------------------------------
--- 🕹️ ВЕРХНЯЯ ПАНЕЛЬ (TopBar)
----------------------------------------------------------
+local UICorner = Instance.new("UICorner")
+local Sidebar = Instance.new("Frame")
+local UICorner_2 = Instance.new("UICorner")
+local LogoArea = Instance.new("Frame")
+local HubTitle = Instance.new("TextLabel")
+local HubSub = Instance.new("TextLabel")
+local Navigation = Instance.new("ScrollingFrame")
+local UIListLayout = Instance.new("UIListLayout")
+local ContentArea = Instance.new("Frame")
+local TabTitle = Instance.new("TextLabel")
 local TopBar = Instance.new("Frame")
-TopBar.Size = UDim2.new(1, 0, 0, 45)
-TopBar.BackgroundColor3 = Color3.fromRGB(20, 20, 25)
-TopBar.BorderSizePixel = 0
-TopBar.Parent = MainFrame
-
-local TopBarCorner = Instance.new("UICorner")
-TopBarCorner.CornerRadius = UDim.new(0, 10)
-TopBarCorner.Parent = TopBar
-
-local TopBarBottom = Instance.new("Frame")
-TopBarBottom.Size = UDim2.new(1, 0, 0, 10)
-TopBarBottom.Position = UDim2.new(0, 0, 1, -10)
-TopBarBottom.BackgroundColor3 = Color3.fromRGB(20, 20, 25)
-TopBarBottom.BorderSizePixel = 0
-TopBarBottom.Parent = TopBar
-
-local Title = Instance.new("TextLabel")
-Title.Size = UDim2.new(0, 200, 1, 0)
-Title.Position = UDim2.new(0, 15, 0, 0)
-Title.BackgroundTransparency = 1
-Title.Text = "🌙 Dark Hub"
-Title.TextColor3 = Color3.fromRGB(255, 255, 255)
-Title.TextSize = 16
-Title.Font = Enum.Font.GothamBold
-Title.TextXAlignment = Enum.TextXAlignment.Left
-Title.Parent = TopBar
-
--- Кнопки управления (Свернуть и Закрыть)
-local Controls = Instance.new("Frame")
-Controls.Size = UDim2.new(0, 80, 1, 0)
-Controls.Position = UDim2.new(1, -80, 0, 0)
-Controls.BackgroundTransparency = 1
-Controls.Parent = TopBar
-
-local MinBtn = Instance.new("TextButton")
-MinBtn.Size = UDim2.new(0, 28, 0, 28)
-MinBtn.Position = UDim2.new(0, 5, 0.5, -14)
-MinBtn.BackgroundColor3 = Color3.fromRGB(35, 35, 45)
-MinBtn.Text = "−"
-MinBtn.TextColor3 = Color3.fromRGB(200, 200, 200)
-MinBtn.TextSize = 20
-MinBtn.Font = Enum.Font.GothamBold
-MinBtn.Parent = Controls
-Instance.new("UICorner", MinBtn).CornerRadius = UDim.new(0, 6)
-RippleEffect(MinBtn)
-
 local CloseBtn = Instance.new("TextButton")
-CloseBtn.Size = UDim2.new(0, 28, 0, 28)
-CloseBtn.Position = UDim2.new(0, 40, 0.5, -14)
-CloseBtn.BackgroundColor3 = Color3.fromRGB(220, 60, 60)
+local SearchBar = Instance.new("TextBox")
+local ElementsHolder = Instance.new("ScrollingFrame")
+local UIListLayout_2 = Instance.new("UIListLayout")
+
+-- Настройка главного контейнера
+PulseHub.Name = "PulseHub"
+PulseHub.Parent = game:GetService("CoreGui")
+PulseHub.ZIndexBehavior = Enum.ZIndexBehavior.Sibling
+
+MainFrame.Name = "MainFrame"
+MainFrame.Parent = PulseHub
+MainFrame.BackgroundColor3 = Color3.fromRGB(18, 18, 18)
+MainFrame.Position = UDim2.new(0.5, -275, 0.5, -175)
+MainFrame.Size = UDim2.new(0, 550, 0, 350)
+MainFrame.Active = true
+MainFrame.Draggable = true -- Позволяет перетаскивать окно
+
+UICorner.CornerRadius = UDim.new(0, 10)
+UICorner.Parent = MainFrame
+
+-- [[ САЙДБАР (Левое меню) ]] --
+Sidebar.Name = "Sidebar"
+Sidebar.Parent = MainFrame
+Sidebar.BackgroundColor3 = Color3.fromRGB(14, 14, 14)
+Sidebar.Size = UDim2.new(0, 160, 1, 0)
+
+UICorner_2.CornerRadius = UDim.new(0, 10)
+UICorner_2.Parent = Sidebar
+
+LogoArea.Name = "LogoArea"
+LogoArea.Parent = Sidebar
+LogoArea.BackgroundTransparency = 1.000
+LogoArea.Size = UDim2.new(1, 0, 0, 50)
+
+HubTitle.Name = "HubTitle"
+HubTitle.Parent = LogoArea
+HubTitle.BackgroundTransparency = 1.000
+HubTitle.Position = UDim2.new(0, 15, 0, 10)
+HubTitle.Size = UDim2.new(1, -15, 0, 18)
+HubTitle.Font = Enum.Font.GothamBold
+HubTitle.Text = "Pulse Hub"
+HubTitle.TextColor3 = Color3.fromRGB(255, 255, 255)
+HubTitle.TextSize = 14.000
+HubTitle.TextXAlignment = Enum.TextXAlignment.Left
+
+HubSub.Name = "HubSub"
+HubSub.Parent = LogoArea
+HubSub.BackgroundTransparency = 1.000
+HubSub.Position = UDim2.new(0, 15, 0, 26)
+HubSub.Size = UDim2.new(1, -15, 0, 14)
+HubSub.Font = Enum.Font.Gotham
+HubSub.Text = "Murder Mystery 2"
+HubSub.TextColor3 = Color3.fromRGB(120, 120, 120)
+HubSub.TextSize = 10.000
+HubSub.TextXAlignment = Enum.TextXAlignment.Left
+
+Navigation.Name = "Navigation"
+Navigation.Parent = Sidebar
+Navigation.BackgroundTransparency = 1.000
+Navigation.Position = UDim2.new(0, 0, 0, 55)
+Navigation.Size = UDim2.new(1, 0, 1, -95)
+Navigation.ScrollBarThickness = 0
+
+UIListLayout.Parent = Navigation
+UIListLayout.SortOrder = Enum.SortOrder.LayoutOrder
+UIListLayout.Padding = UDim.new(0, 3)
+
+-- [[ ЗОНА КОНТЕНТА ]] --
+ContentArea.Name = "ContentArea"
+ContentArea.Parent = MainFrame
+ContentArea.BackgroundTransparency = 1.000
+ContentArea.Position = UDim2.new(0, 165, 0, 0)
+ContentArea.Size = UDim2.new(1, -165, 1, 0)
+
+TopBar.Name = "TopBar"
+TopBar.Parent = ContentArea
+TopBar.BackgroundTransparency = 1.000
+TopBar.Size = UDim2.new(1, 0, 0, 45)
+
+TabTitle.Name = "TabTitle"
+TabTitle.Parent = TopBar
+TabTitle.BackgroundTransparency = 1.000
+TabTitle.Position = UDim2.new(0, 10, 0, 15)
+TabTitle.Size = UDim2.new(0, 200, 0, 20)
+TabTitle.Font = Enum.Font.GothamBold
+TabTitle.Text = "Auto Farm"
+TabTitle.TextColor3 = Color3.fromRGB(255, 255, 255)
+TabTitle.TextSize = 16.000
+TabTitle.TextXAlignment = Enum.TextXAlignment.Left
+
+CloseBtn.Name = "CloseBtn"
+CloseBtn.Parent = TopBar
+CloseBtn.BackgroundTransparency = 1.000
+CloseBtn.Position = UDim2.new(1, -30, 0, 12)
+CloseBtn.Size = UDim2.new(0, 20, 0, 20)
+CloseBtn.Font = Enum.Font.Gotham
 CloseBtn.Text = "✕"
-CloseBtn.TextColor3 = Color3.fromRGB(255, 255, 255)
-CloseBtn.TextSize = 14
-CloseBtn.Font = Enum.Font.GothamBold
-CloseBtn.Parent = Controls
-Instance.new("UICorner", CloseBtn).CornerRadius = UDim.new(0, 6)
-RippleEffect(CloseBtn)
-
--- Логика перетаскивания окна (Draggable)
-local dragging, dragInput, dragStart, startPos
-TopBar.InputBegan:Connect(function(input)
-    if input.UserInputType == Enum.UserInputType.MouseButton1 or input.UserInputType == Enum.UserInputType.Touch then
-        dragging = true
-        dragStart = input.Position
-        startPos = MainFrame.Position
-        input.Changed:Connect(function()
-            if input.UserInputState == Enum.UserInputState.End then dragging = false end
-        end)
-    end
-end)
-TopBar.InputChanged:Connect(function(input)
-    if input.UserInputType == Enum.UserInputType.MouseMovement or input.UserInputType == Enum.UserInputType.Touch then dragInput = input end
-end)
-UserInputService.InputChanged:Connect(function(input)
-    if input == dragInput and dragging then
-        local delta = input.Position - dragStart
-        MainFrame.Position = UDim2.new(startPos.X.Scale, startPos.X.Offset + delta.X, startPos.Y.Scale, startPos.Y.Offset + delta.Y)
-    end
-end)
-
--- Логика сворачивания и закрытия
-local isMinimized = false
-MinBtn.MouseButton1Click:Connect(function()
-    isMinimized = not isMinimized
-    local goalSize = isMinimized and UDim2.new(0, 550, 0, 45) or UDim2.new(0, 550, 0, 360)
-    TweenService:Create(MainFrame, TweenInfo.new(0.5, Enum.EasingStyle.Quint, Enum.EasingDirection.Out), {Size = goalSize}):Play()
-end)
+CloseBtn.TextColor3 = Color3.fromRGB(150, 150, 150)
+CloseBtn.TextSize = 14.000
 
 CloseBtn.MouseButton1Click:Connect(function()
-    local tween = TweenService:Create(MainFrame, TweenInfo.new(0.3, Enum.EasingStyle.Back, Enum.EasingDirection.In), {Size = UDim2.new(0, 0, 0, 0)})
-    tween:Play()
-    tween.Completed:Wait()
-    ScreenGui:Destroy()
+    PulseHub:Destroy()
 end)
 
----------------------------------------------------------
--- 📋 БОКОВОЕ МЕНЮ И КОНТЕНТ
----------------------------------------------------------
-local Sidebar = Instance.new("Frame")
-Sidebar.Size = UDim2.new(0, 150, 1, -45)
-Sidebar.Position = UDim2.new(0, 0, 0, 45)
-Sidebar.BackgroundColor3 = Color3.fromRGB(18, 18, 22)
-Sidebar.BorderSizePixel = 0
-Sidebar.Parent = MainFrame
+SearchBar.Name = "SearchBar"
+SearchBar.Parent = TopBar
+SearchBar.BackgroundColor3 = Color3.fromRGB(25, 25, 25)
+SearchBar.Position = UDim2.new(1, -150, 0, 12)
+SearchBar.Size = UDim2.new(0, 110, 0, 22)
+SearchBar.Font = Enum.Font.Gotham
+SearchBar.PlaceholderText = "Search..."
+SearchBar.Text = ""
+SearchBar.TextColor3 = Color3.fromRGB(255, 255, 255)
+SearchBar.TextSize = 11.000
+local SearchCorner = Instance.new("UICorner", SearchBar)
+SearchCorner.CornerRadius = UDim.new(0, 4)
 
-local ContentArea = Instance.new("Frame")
-ContentArea.Size = UDim2.new(1, -150, 1, -45)
-ContentArea.Position = UDim2.new(0, 150, 0, 45)
-ContentArea.BackgroundTransparency = 1
-ContentArea.Parent = MainFrame
+ElementsHolder.Name = "ElementsHolder"
+ElementsHolder.Parent = ContentArea
+ElementsHolder.BackgroundTransparency = 1.000
+ElementsHolder.Position = UDim2.new(0, 10, 0, 50)
+ElementsHolder.Size = UDim2.new(1, -20, 1, -60)
+ElementsHolder.ScrollBarThickness = 2
+ElementsHolder.ScrollBarImageColor3 = Color3.fromRGB(50, 50, 50)
 
-local TabContainer = Instance.new("ScrollingFrame")
-TabContainer.Size = UDim2.new(1, -10, 1, -20)
-TabContainer.Position = UDim2.new(0, 5, 0, 10)
-TabContainer.BackgroundTransparency = 1
-TabContainer.ScrollBarThickness = 0
-TabContainer.Parent = Sidebar
+UIListLayout_2.Parent = ElementsHolder
+UIListLayout_2.SortOrder = Enum.SortOrder.LayoutOrder
+UIListLayout_2.Padding = UDim.new(0, 6)
 
-local TabListLayout = Instance.new("UIListLayout")
-TabListLayout.SortOrder = Enum.SortOrder.LayoutOrder
-TabListLayout.Padding = UDim.new(0, 6)
-TabListLayout.Parent = TabContainer
+-- [[ ФУНКЦИИ ДЛЯ СОЗДАНИЯ ЭЛЕМЕНТОВ ]] --
 
-local Pages = {}
-
-local function CreateTab(name, icon, isDefault)
+-- Кнопка в Сайдбаре (Вкладка)
+local function CreateTab(name, selected)
     local TabBtn = Instance.new("TextButton")
-    TabBtn.Size = UDim2.new(1, 0, 0, 34)
-    TabBtn.BackgroundColor3 = Color3.fromRGB(130, 90, 255)
-    TabBtn.BackgroundTransparency = 1
-    TabBtn.Text = "  " .. icon .. "  " .. name
-    TabBtn.TextColor3 = Color3.fromRGB(150, 150, 160)
-    TabBtn.TextSize = 13
-    TabBtn.Font = Enum.Font.GothamBold
+    TabBtn.Name = name .. "Tab"
+    TabBtn.Parent = Navigation
+    TabBtn.BackgroundColor3 = selected and Color3.fromRGB(25, 25, 25) or Color3.fromRGB(14, 14, 14)
+    TabBtn.BackgroundTransparency = selected and 0 or 1
+    TabBtn.Size = UDim2.new(1, -10, 0, 30)
+    TabBtn.Position = UDim2.new(0, 5, 0, 0)
+    TabBtn.Font = Enum.Font.GothamMedium
+    TabBtn.Text = "    " .. name
+    TabBtn.TextColor3 = selected and Color3.fromRGB(255, 255, 255) or Color3.fromRGB(14, 14, 14)
     TabBtn.TextXAlignment = Enum.TextXAlignment.Left
-    TabBtn.Parent = TabContainer
-    Instance.new("UICorner", TabBtn).CornerRadius = UDim.new(0, 6)
-
-    local Page = Instance.new("ScrollingFrame")
-    Page.Size = UDim2.new(1, -20, 1, -20)
-    Page.Position = UDim2.new(0, 10, 0, 10)
-    Page.BackgroundTransparency = 1
-    Page.ScrollBarThickness = 2
-    Page.ScrollBarImageColor3 = Color3.fromRGB(80, 80, 100)
-    Page.Visible = false
-    Page.Parent = ContentArea
-
-    local PageLayout = Instance.new("UIListLayout")
-    PageLayout.SortOrder = Enum.SortOrder.LayoutOrder
-    PageLayout.Padding = UDim.new(0, 8)
-    PageLayout.Parent = Page
-
-    Pages[name] = {Button = TabBtn, Page = Page}
-
-    TabBtn.MouseButton1Click:Connect(function()
-        for _, t in pairs(Pages) do
-            TweenService:Create(t.Button, TweenInfo.new(0.3), {BackgroundTransparency = 1, TextColor3 = Color3.fromRGB(150, 150, 160)}):Play()
-            t.Page.Visible = false
-        end
-        TweenService:Create(TabBtn, TweenInfo.new(0.3), {BackgroundTransparency = 0.1, TextColor3 = Color3.fromRGB(255, 255, 255)}):Play()
-        Page.Visible = true
-    end)
-
-    if isDefault then
-        TabBtn.BackgroundTransparency = 0.1
-        TabBtn.TextColor3 = Color3.fromRGB(255, 255, 255)
-        Page.Visible = true
-    end
-
-    return Page
-end
-
-local function CreateToggle(parent, text, callback)
-    local ToggleFrame = Instance.new("Frame")
-    ToggleFrame.Size = UDim2.new(1, -5, 0, 42)
-    ToggleFrame.BackgroundColor3 = Color3.fromRGB(22, 22, 28)
-    ToggleFrame.BorderSizePixel = 0
-    ToggleFrame.Parent = parent
-    Instance.new("UICorner", ToggleFrame).CornerRadius = UDim.new(0, 8)
-
-    local Label = Instance.new("TextLabel")
-    Label.Size = UDim2.new(0.7, 0, 1, 0)
-    Label.Position = UDim2.new(0, 15, 0, 0)
-    Label.BackgroundTransparency = 1
-    Label.Text = text
-    Label.TextColor3 = Color3.fromRGB(230, 230, 230)
-    Label.TextSize = 14
-    Label.Font = Enum.Font.Gotham
-    Label.TextXAlignment = Enum.TextXAlignment.Left
-    Label.Parent = ToggleFrame
-
-    local SwitchBG = Instance.new("TextButton")
-    SwitchBG.Size = UDim2.new(0, 44, 0, 24)
-    SwitchBG.Position = UDim2.new(1, -60, 0.5, -12)
-    SwitchBG.BackgroundColor3 = Color3.fromRGB(40, 40, 50)
-    SwitchBG.Text = ""
-    SwitchBG.AutoButtonColor = false
-    SwitchBG.Parent = ToggleFrame
-    Instance.new("UICorner", SwitchBG).CornerRadius = UDim.new(1, 0)
-
-    local Circle = Instance.new("Frame")
-    Circle.Size = UDim2.new(0, 20, 0, 20)
-    Circle.Position = UDim2.new(0, 2, 0.5, -10)
-    Circle.BackgroundColor3 = Color3.fromRGB(200, 200, 200)
-    Circle.Parent = SwitchBG
-    Instance.new("UICorner", Circle).CornerRadius = UDim.new(1, 0)
-
-    local toggled = false
-    SwitchBG.MouseButton1Click:Connect(function()
-        toggled = not toggled
-        local goalPos = toggled and UDim2.new(1, -22, 0.5, -10) or UDim2.new(0, 2, 0.5, -10)
-        local goalColor = toggled and Color3.fromRGB(130, 90, 255) or Color3.fromRGB(40, 40, 50)
-        
-        TweenService:Create(Circle, TweenInfo.new(0.3, Enum.EasingStyle.Quint, Enum.EasingDirection.Out), {Position = goalPos}):Play()
-        TweenService:Create(SwitchBG, TweenInfo.new(0.3), {BackgroundColor3 = goalColor}):Play()
-        
-        callback(toggled)
-    end)
-end
-
----------------------------------------------------------
--- 🛠️ НАСТРОЙКА ВКЛАДОК И ЛОГИКИ
----------------------------------------------------------
-local FarmPage = CreateTab("Auto Farm", "💰", true)
-CreateTab("Combat", "⚔️", false)
-CreateTab("Visuals", "👁️", false)
-
--- ГЛОБАЛЬНЫЕ ПЕРЕМЕННЫЕ
-_G.AutoFarm = false
-local FlyBody = nil
-
--- ФУНКЦИИ ФЛАЯ
-local function EnableFly(char)
-    if not char:FindFirstChild("HumanoidRootPart") then return end
-    if not FlyBody then
-        FlyBody = Instance.new("BodyVelocity")
-        FlyBody.Name = "HubFly"
-        FlyBody.MaxForce = Vector3.new(400000, 400000, 400000)
-        FlyBody.Velocity = Vector3.new(0, 0, 0)
-        FlyBody.Parent = char.HumanoidRootPart
-    end
-end
-
-local function DisableFly(char)
-    if FlyBody then
-        FlyBody:Destroy()
-        FlyBody = nil
-    end
-end
-
--- РАБОЧИЙ АВТОФАРМ С ПРОВЕРКОЙ ЛОББИ И ОГРАНИЧЕНИЕМ СКОРОСТИ
-CreateToggle(FarmPage, "Enable Auto-Farm", function(state)
-    _G.AutoFarm = state
+    TabBtn.TextSize = 12.000
     
-    if _G.AutoFarm then
-        task.spawn(function()
-            while _G.AutoFarm do
-                task.wait(0.1)
-                local char = LP.Character
-                if char and char:FindFirstChild("HumanoidRootPart") and char:FindFirstChild("Humanoid") then
-                    
-                    -- Проверка на лобби (Обычно лобби находится высоко в небе)
-                    -- Настрой это значение (например, > 100 или > 50) под конкретную игру
-                    local isInLobby = (char.HumanoidRootPart.Position.Y > 100) 
-                    
-                    if isInLobby then
-                        -- ЕСЛИ ИГРОК В ЛОББИ:
-                        -- Скрипт стоит нормально, флай отключается, скорость стандартная
-                        DisableFly(char)
-                        char.Humanoid.WalkSpeed = 16
-                    else
-                        -- ЕСЛИ ИГРОК В КАТКЕ:
-                        -- Включается флай и максимальная скорость фиксируется на 25
-                        EnableFly(char)
-                        char.Humanoid.WalkSpeed = 25
-                        
-                        -- Тут размещается логика телепорта к монетам:
-                        -- Если используешь флай, меняй FlyBody.Velocity в сторону ближайшей монеты
-                        -- Или используй TweenService для перемещения HumanoidRootPart.CFrame
-                    end
-                end
-            end
-        end)
+    if selected then
+        TabBtn.TextColor3 = Color3.fromRGB(255, 255, 255)
     else
-        -- Полный сброс при выключении скрипта
-        local char = LP.Character
-        if char and char:FindFirstChild("Humanoid") then
-            DisableFly(char)
-            char.Humanoid.WalkSpeed = 16
-        end
+        TabBtn.TextColor3 = Color3.fromRGB(140, 140, 140)
     end
-end)
+    
+    local btnCorner = Instance.new("UICorner", TabBtn)
+    btnCorner.CornerRadius = UDim.new(0, 6)
+end
 
-CreateToggle(FarmPage, "Auto-Respawn", function(state) end)
-CreateToggle(FarmPage, "Anti-Fling", function(state) end)
+-- Переключатель (Toggle) из правой части 3348.jpg
+local function CreateToggle(name, default)
+    local ToggleFrame = Instance.new("Frame")
+    local ToggleTitle = Instance.new("TextLabel")
+    local ToggleBG = Instance.new("TextButton")
+    local ToggleCircle = Instance.new("Frame")
+    
+    ToggleFrame.Name = name .. "Toggle"
+    ToggleFrame.Parent = ElementsHolder
+    ToggleFrame.BackgroundColor3 = Color3.fromRGB(24, 24, 24)
+    ToggleFrame.Size = UDim2.new(1, 0, 0, 38)
+    
+    local tfCorner = Instance.new("UICorner", ToggleFrame)
+    tfCorner.CornerRadius = UDim.new(0, 6)
+    
+    ToggleTitle.Parent = ToggleFrame
+    ToggleTitle.BackgroundTransparency = 1.000
+    ToggleTitle.Position = UDim2.new(0, 12, 0, 0)
+    ToggleTitle.Size = UDim2.new(1, -60, 1, 0)
+    ToggleTitle.Font = Enum.Font.GothamMedium
+    ToggleTitle.Text = name
+    ToggleTitle.TextColor3 = Color3.fromRGB(220, 220, 220)
+    ToggleTitle.TextSize = 12.000
+    ToggleTitle.TextXAlignment = Enum.TextXAlignment.Left
+    
+    ToggleBG.Name = "ToggleBG"
+    ToggleBG.Parent = ToggleFrame
+    ToggleBG.BackgroundColor3 = default and Color3.fromRGB(100, 100, 100) or Color3.fromRGB(40, 40, 40)
+    ToggleBG.Position = UDim2.new(1, -45, 0, 10)
+    ToggleBG.Size = UDim2.new(0, 32, 0, 18)
+    ToggleBG.Text = ""
+    
+    local tbgCorner = Instance.new("UICorner", ToggleBG)
+    tbgCorner.CornerRadius = UDim.new(1, 0)
+    
+    ToggleCircle.Name = "ToggleCircle"
+    ToggleCircle.Parent = ToggleBG
+    ToggleCircle.BackgroundColor3 = Color3.fromRGB(255, 255, 255)
+    ToggleCircle.Position = default and UDim2.new(1, -15, 0, 2) or UDim2.new(0, 2, 0, 2)
+    ToggleCircle.Size = UDim2.new(0, 14, 0, 14)
+    
+    local tcCorner = Instance.new("UICorner", ToggleCircle)
+    tcCorner.CornerRadius = UDim.new(1, 0)
+    
+    -- Логика переключения
+    local enabled = default
+    ToggleBG.MouseButton1Click:Connect(function()
+        enabled = not enabled
+        if enabled then
+            ToggleBG.BackgroundColor3 = Color3.fromRGB(140, 140, 140) -- Светло-серый активный цвет как на скрине
+            ToggleCircle:TweenPosition(UDim2.new(1, -16, 0, 2), "Out", "Quad", 0.15, true)
+        else
+            ToggleBG.BackgroundColor3 = Color3.fromRGB(40, 40, 40)
+            ToggleCircle:TweenPosition(UDim2.new(0, 2, 0, 2), "Out", "Quad", 0.15, true)
+        }
+    end)
+end
 
----------------------------------------------------------
--- 🚀 ЗАПУСК GUI (Анимация появления)
----------------------------------------------------------
-TweenService:Create(MainFrame, TweenInfo.new(0.6, Enum.EasingStyle.Back, Enum.EasingDirection.Out), {Size = UDim2.new(0, 550, 0, 360)}):Play()
+-- [[ НАПОЛНЕНИЕ ИНТЕРФЕЙСА (копии элементов из 3348.jpg) ]] --
+
+-- Вкладки слева
+CreateTab("Main", false)
+CreateTab("Sheriff", false)
+CreateTab("Murder", false)
+CreateTab("Auto Farm", true) -- Выбранная
+CreateTab("Teleport", false)
+CreateTab("Fun/Troll", false)
+CreateTab("Fling Players", false)
+CreateTab("Visuals", false)
+CreateTab("Settings", false)
+
+-- Переключатели справа (Auto Farm вкладка)
+CreateToggle("Auto Farm", true)
+CreateToggle("Auto-Respawn", false)
+CreateToggle("Anti-Fling", true)
+CreateToggle("Avoid Murderer", false)
+CreateToggle("Auto-Fling", false)
+CreateToggle("Kill Aura", false)
+
+-- Подвал сайдбара с Discord ссылкой
+local DiscordLabel = Instance.new("TextLabel")
+DiscordLabel.Parent = Sidebar
+DiscordLabel.BackgroundTransparency = 1.000
+DiscordLabel.Position = UDim2.new(0, 12, 1, -30)
+DiscordLabel.Size = UDim2.new(1, -12, 0, 15)
+DiscordLabel.Font = Enum.Font.Gotham
+DiscordLabel.Text = "discord.gg/pulsezone"
+DiscordLabel.TextColor3 = Color3.fromRGB(100, 100, 100)
+DiscordLabel.TextSize = 10.000
+DiscordLabel.TextXAlignment = Enum.TextXAlignment.Left
+
+local StatsLabel = Instance.new("TextLabel")
+StatsLabel.Parent = Sidebar
+StatsLabel.BackgroundTransparency = 1.000
+StatsLabel.Position = UDim2.new(0, 12, 1, -18)
+StatsLabel.Size = UDim2.new(1, -12, 0, 15)
+StatsLabel.Font = Enum.Font.Gotham
+StatsLabel.Text = "Session: 02:30 — 163 FPS"
+StatsLabel.TextColor3 = Color3.fromRGB(70, 70, 70)
+StatsLabel.TextSize = 9.000
+StatsLabel.TextXAlignment = Enum.TextXAlignment.Left
