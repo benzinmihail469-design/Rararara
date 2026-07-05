@@ -1,38 +1,127 @@
--- Pulse Hub UI (Точная копия по скриншоту)
--- Без сторонних библиотек
+-- 🌙 Dark Hub (Premium Edition)
+-- Плавные анимации, UIStroke, умный автофарм с флаем
 
 local Players = game:GetService("Players")
 local TweenService = game:GetService("TweenService")
 local UserInputService = game:GetService("UserInputService")
+local RunService = game:GetService("RunService")
 local CoreGui = game:GetService("CoreGui")
+
 local LP = Players.LocalPlayer
 
--- Защита от дубликатов
-if CoreGui:FindFirstChild("PulseHub_Exact") then
-    CoreGui.PulseHub_Exact:Destroy()
+-- Удаляем старую версию, если она есть
+if CoreGui:FindFirstChild("DarkHub_Premium") then
+    CoreGui.DarkHub_Premium:Destroy()
 end
 
 local ScreenGui = Instance.new("ScreenGui")
-ScreenGui.Name = "PulseHub_Exact"
+ScreenGui.Name = "DarkHub_Premium"
 ScreenGui.ResetOnSpawn = false
 ScreenGui.Parent = CoreGui
 
--- Главный фрейм (окно)
+-- Функция для красивых анимаций кнопок
+local function RippleEffect(button)
+    local originalColor = button.BackgroundColor3
+    local hoverColor = Color3.new(
+        math.clamp(originalColor.R + 0.08, 0, 1),
+        math.clamp(originalColor.G + 0.08, 0, 1),
+        math.clamp(originalColor.B + 0.12, 0, 1) -- Легкий сине-фиолетовый оттенок
+    )
+
+    button.MouseEnter:Connect(function()
+        TweenService:Create(button, TweenInfo.new(0.3, Enum.EasingStyle.Quint), {BackgroundColor3 = hoverColor}):Play()
+    end)
+    button.MouseLeave:Connect(function()
+        TweenService:Create(button, TweenInfo.new(0.3, Enum.EasingStyle.Quint), {BackgroundColor3 = originalColor}):Play()
+    end)
+end
+
+---------------------------------------------------------
+-- 🎨 ГЛАВНЫЙ ИНТЕРФЕЙС
+---------------------------------------------------------
 local MainFrame = Instance.new("Frame")
-MainFrame.Size = UDim2.new(0, 550, 0, 350)
+MainFrame.Size = UDim2.new(0, 0, 0, 0) -- Для анимации появления
 MainFrame.Position = UDim2.new(0.5, -275, 0.5, -175)
-MainFrame.BackgroundColor3 = Color3.fromRGB(15, 15, 15)
+MainFrame.BackgroundColor3 = Color3.fromRGB(15, 15, 18)
 MainFrame.BorderSizePixel = 0
 MainFrame.ClipsDescendants = true
 MainFrame.Parent = ScreenGui
 
 local MainCorner = Instance.new("UICorner")
-MainCorner.CornerRadius = UDim.new(0, 8)
+MainCorner.CornerRadius = UDim.new(0, 10)
 MainCorner.Parent = MainFrame
 
--- Функция перетаскивания (Draggable)
+-- Красивая обводка (Stroke)
+local MainStroke = Instance.new("UIStroke")
+MainStroke.Color = Color3.fromRGB(45, 40, 60)
+MainStroke.Thickness = 1.5
+MainStroke.Parent = MainFrame
+
+---------------------------------------------------------
+-- 🕹️ ВЕРХНЯЯ ПАНЕЛЬ (TopBar)
+---------------------------------------------------------
+local TopBar = Instance.new("Frame")
+TopBar.Size = UDim2.new(1, 0, 0, 45)
+TopBar.BackgroundColor3 = Color3.fromRGB(20, 20, 25)
+TopBar.BorderSizePixel = 0
+TopBar.Parent = MainFrame
+
+local TopBarCorner = Instance.new("UICorner")
+TopBarCorner.CornerRadius = UDim.new(0, 10)
+TopBarCorner.Parent = TopBar
+
+local TopBarBottom = Instance.new("Frame")
+TopBarBottom.Size = UDim2.new(1, 0, 0, 10)
+TopBarBottom.Position = UDim2.new(0, 0, 1, -10)
+TopBarBottom.BackgroundColor3 = Color3.fromRGB(20, 20, 25)
+TopBarBottom.BorderSizePixel = 0
+TopBarBottom.Parent = TopBar
+
+local Title = Instance.new("TextLabel")
+Title.Size = UDim2.new(0, 200, 1, 0)
+Title.Position = UDim2.new(0, 15, 0, 0)
+Title.BackgroundTransparency = 1
+Title.Text = "🌙 Dark Hub"
+Title.TextColor3 = Color3.fromRGB(255, 255, 255)
+Title.TextSize = 16
+Title.Font = Enum.Font.GothamBold
+Title.TextXAlignment = Enum.TextXAlignment.Left
+Title.Parent = TopBar
+
+-- Кнопки управления (Свернуть и Закрыть)
+local Controls = Instance.new("Frame")
+Controls.Size = UDim2.new(0, 80, 1, 0)
+Controls.Position = UDim2.new(1, -80, 0, 0)
+Controls.BackgroundTransparency = 1
+Controls.Parent = TopBar
+
+local MinBtn = Instance.new("TextButton")
+MinBtn.Size = UDim2.new(0, 28, 0, 28)
+MinBtn.Position = UDim2.new(0, 5, 0.5, -14)
+MinBtn.BackgroundColor3 = Color3.fromRGB(35, 35, 45)
+MinBtn.Text = "−"
+MinBtn.TextColor3 = Color3.fromRGB(200, 200, 200)
+MinBtn.TextSize = 20
+MinBtn.Font = Enum.Font.GothamBold
+MinBtn.Parent = Controls
+Instance.new("UICorner", MinBtn).CornerRadius = UDim.new(0, 6)
+RippleEffect(MinBtn)
+
+local CloseBtn = Instance.new("TextButton")
+CloseBtn.Size = UDim2.new(0, 28, 0, 28)
+CloseBtn.Position = UDim2.new(0, 40, 0.5, -14)
+CloseBtn.BackgroundColor3 = Color3.fromRGB(220, 60, 60)
+CloseBtn.Text = "✕"
+CloseBtn.TextColor3 = Color3.fromRGB(255, 255, 255)
+CloseBtn.TextSize = 14
+CloseBtn.Font = Enum.Font.GothamBold
+CloseBtn.Parent = Controls
+Instance.new("UICorner", CloseBtn).CornerRadius = UDim.new(0, 6)
+RippleEffect(CloseBtn)
+
+-- Логика перетаскивания окна (Draggable)
 local dragging, dragInput, dragStart, startPos
-MainFrame.InputBegan:Connect(function(input)
+TopBar.InputBegan:Connect(function(input)
     if input.UserInputType == Enum.UserInputType.MouseButton1 or input.UserInputType == Enum.UserInputType.Touch then
         dragging = true
         dragStart = input.Position
@@ -42,10 +131,8 @@ MainFrame.InputBegan:Connect(function(input)
         end)
     end
 end)
-MainFrame.InputChanged:Connect(function(input)
-    if input.UserInputType == Enum.UserInputType.MouseMovement or input.UserInputType == Enum.UserInputType.Touch then
-        dragInput = input
-    end
+TopBar.InputChanged:Connect(function(input)
+    if input.UserInputType == Enum.UserInputType.MouseMovement or input.UserInputType == Enum.UserInputType.Touch then dragInput = input end
 end)
 UserInputService.InputChanged:Connect(function(input)
     if input == dragInput and dragging then
@@ -54,107 +141,70 @@ UserInputService.InputChanged:Connect(function(input)
     end
 end)
 
+-- Логика сворачивания и закрытия
+local isMinimized = false
+MinBtn.MouseButton1Click:Connect(function()
+    isMinimized = not isMinimized
+    local goalSize = isMinimized and UDim2.new(0, 550, 0, 45) or UDim2.new(0, 550, 0, 360)
+    TweenService:Create(MainFrame, TweenInfo.new(0.5, Enum.EasingStyle.Quint, Enum.EasingDirection.Out), {Size = goalSize}):Play()
+end)
+
+CloseBtn.MouseButton1Click:Connect(function()
+    local tween = TweenService:Create(MainFrame, TweenInfo.new(0.3, Enum.EasingStyle.Back, Enum.EasingDirection.In), {Size = UDim2.new(0, 0, 0, 0)})
+    tween:Play()
+    tween.Completed:Wait()
+    ScreenGui:Destroy()
+end)
+
 ---------------------------------------------------------
--- ЛЕВАЯ ПАНЕЛЬ (Sidebar)
+-- 📋 БОКОВОЕ МЕНЮ И КОНТЕНТ
 ---------------------------------------------------------
 local Sidebar = Instance.new("Frame")
-Sidebar.Size = UDim2.new(0, 160, 1, 0)
-Sidebar.BackgroundColor3 = Color3.fromRGB(12, 12, 12)
+Sidebar.Size = UDim2.new(0, 150, 1, -45)
+Sidebar.Position = UDim2.new(0, 0, 0, 45)
+Sidebar.BackgroundColor3 = Color3.fromRGB(18, 18, 22)
 Sidebar.BorderSizePixel = 0
 Sidebar.Parent = MainFrame
 
--- Логотип и Заголовок
-local LogoText = Instance.new("TextLabel")
-LogoText.Size = UDim2.new(1, 0, 0, 40)
-LogoText.Position = UDim2.new(0, 15, 0, 10)
-LogoText.BackgroundTransparency = 1
-LogoText.Text = "⚡ Pulse Hub\n<font size='10' color='#888888'>Murder Mystery 2</font>"
-LogoText.RichText = true
-LogoText.TextColor3 = Color3.fromRGB(255, 255, 255)
-LogoText.TextSize = 14
-LogoText.Font = Enum.Font.GothamBold
-LogoText.TextXAlignment = Enum.TextXAlignment.Left
-LogoText.Parent = Sidebar
+local ContentArea = Instance.new("Frame")
+ContentArea.Size = UDim2.new(1, -150, 1, -45)
+ContentArea.Position = UDim2.new(0, 150, 0, 45)
+ContentArea.BackgroundTransparency = 1
+ContentArea.Parent = MainFrame
 
--- Контейнер для вкладок
 local TabContainer = Instance.new("ScrollingFrame")
-TabContainer.Size = UDim2.new(1, 0, 1, -110)
-TabContainer.Position = UDim2.new(0, 0, 0, 60)
+TabContainer.Size = UDim2.new(1, -10, 1, -20)
+TabContainer.Position = UDim2.new(0, 5, 0, 10)
 TabContainer.BackgroundTransparency = 1
 TabContainer.ScrollBarThickness = 0
 TabContainer.Parent = Sidebar
 
 local TabListLayout = Instance.new("UIListLayout")
 TabListLayout.SortOrder = Enum.SortOrder.LayoutOrder
-TabListLayout.Padding = UDim.new(0, 2)
+TabListLayout.Padding = UDim.new(0, 6)
 TabListLayout.Parent = TabContainer
 
--- Футер в сайдбаре
-local Footer = Instance.new("Frame")
-Footer.Size = UDim2.new(1, 0, 0, 40)
-Footer.Position = UDim2.new(0, 0, 1, -40)
-Footer.BackgroundTransparency = 1
-Footer.Parent = Sidebar
-
-local FooterText = Instance.new("TextLabel")
-FooterText.Size = UDim2.new(1, -20, 1, 0)
-FooterText.Position = UDim2.new(0, 15, 0, 0)
-FooterText.BackgroundTransparency = 1
-FooterText.Text = "discord.gg/pulsezone\nSession 02:30 — 163 FPS"
-FooterText.TextColor3 = Color3.fromRGB(100, 100, 100)
-FooterText.TextSize = 10
-FooterText.Font = Enum.Font.Gotham
-FooterText.TextXAlignment = Enum.TextXAlignment.Left
-FooterText.Parent = Footer
-
----------------------------------------------------------
--- ПРАВАЯ ПАНЕЛЬ (Контент)
----------------------------------------------------------
-local ContentArea = Instance.new("Frame")
-ContentArea.Size = UDim2.new(1, -160, 1, 0)
-ContentArea.Position = UDim2.new(0, 160, 0, 0)
-ContentArea.BackgroundTransparency = 1
-ContentArea.Parent = MainFrame
-
--- Кнопка закрытия окна
-local CloseButton = Instance.new("TextButton")
-CloseButton.Size = UDim2.new(0, 24, 0, 24)
-CloseButton.Position = UDim2.new(1, -30, 0, 10)
-CloseButton.BackgroundTransparency = 1
-CloseButton.Text = "✕"
-CloseButton.TextColor3 = Color3.fromRGB(150, 150, 150)
-CloseButton.TextSize = 14
-CloseButton.Font = Enum.Font.GothamBold
-CloseButton.Parent = ContentArea
-CloseButton.MouseButton1Click:Connect(function() ScreenGui:Destroy() end)
-
 local Pages = {}
-local CurrentTab = nil
 
--- Функция создания вкладки
 local function CreateTab(name, icon, isDefault)
-    local TabButton = Instance.new("TextButton")
-    TabButton.Size = UDim2.new(1, -10, 0, 28)
-    TabButton.Position = UDim2.new(0, 5, 0, 0)
-    TabButton.BackgroundColor3 = Color3.fromRGB(30, 30, 30)
-    TabButton.BackgroundTransparency = 1
-    TabButton.Text = "  " .. icon .. "   " .. name
-    TabButton.TextColor3 = Color3.fromRGB(150, 150, 150)
-    TabButton.TextSize = 12
-    TabButton.Font = Enum.Font.Gotham
-    TabButton.TextXAlignment = Enum.TextXAlignment.Left
-    TabButton.Parent = TabContainer
-
-    local TabCorner = Instance.new("UICorner")
-    TabCorner.CornerRadius = UDim.new(0, 6)
-    TabCorner.Parent = TabButton
+    local TabBtn = Instance.new("TextButton")
+    TabBtn.Size = UDim2.new(1, 0, 0, 34)
+    TabBtn.BackgroundColor3 = Color3.fromRGB(130, 90, 255)
+    TabBtn.BackgroundTransparency = 1
+    TabBtn.Text = "  " .. icon .. "  " .. name
+    TabBtn.TextColor3 = Color3.fromRGB(150, 150, 160)
+    TabBtn.TextSize = 13
+    TabBtn.Font = Enum.Font.GothamBold
+    TabBtn.TextXAlignment = Enum.TextXAlignment.Left
+    TabBtn.Parent = TabContainer
+    Instance.new("UICorner", TabBtn).CornerRadius = UDim.new(0, 6)
 
     local Page = Instance.new("ScrollingFrame")
-    Page.Size = UDim2.new(1, -20, 1, -50)
-    Page.Position = UDim2.new(0, 10, 0, 40)
+    Page.Size = UDim2.new(1, -20, 1, -20)
+    Page.Position = UDim2.new(0, 10, 0, 10)
     Page.BackgroundTransparency = 1
     Page.ScrollBarThickness = 2
-    Page.ScrollBarImageColor3 = Color3.fromRGB(50, 50, 50)
+    Page.ScrollBarImageColor3 = Color3.fromRGB(80, 80, 100)
     Page.Visible = false
     Page.Parent = ContentArea
 
@@ -163,184 +213,151 @@ local function CreateTab(name, icon, isDefault)
     PageLayout.Padding = UDim.new(0, 8)
     PageLayout.Parent = Page
 
-    -- Заголовок страницы
-    local PageTitle = Instance.new("TextLabel")
-    PageTitle.Size = UDim2.new(1, 0, 0, 30)
-    PageTitle.Position = UDim2.new(0, 10, 0, 5)
-    PageTitle.BackgroundTransparency = 1
-    PageTitle.Text = name
-    PageTitle.TextColor3 = Color3.fromRGB(255, 255, 255)
-    PageTitle.TextSize = 16
-    PageTitle.Font = Enum.Font.GothamBold
-    PageTitle.TextXAlignment = Enum.TextXAlignment.Left
-    PageTitle.Visible = false
-    PageTitle.Parent = ContentArea
+    Pages[name] = {Button = TabBtn, Page = Page}
 
-    Pages[name] = {Button = TabButton, Page = Page, Title = PageTitle}
-
-    TabButton.MouseButton1Click:Connect(function()
+    TabBtn.MouseButton1Click:Connect(function()
         for _, t in pairs(Pages) do
-            t.Button.BackgroundTransparency = 1
-            t.Button.TextColor3 = Color3.fromRGB(150, 150, 150)
+            TweenService:Create(t.Button, TweenInfo.new(0.3), {BackgroundTransparency = 1, TextColor3 = Color3.fromRGB(150, 150, 160)}):Play()
             t.Page.Visible = false
-            t.Title.Visible = false
         end
-        TabButton.BackgroundTransparency = 0
-        TabButton.TextColor3 = Color3.fromRGB(255, 255, 255)
+        TweenService:Create(TabBtn, TweenInfo.new(0.3), {BackgroundTransparency = 0.1, TextColor3 = Color3.fromRGB(255, 255, 255)}):Play()
         Page.Visible = true
-        PageTitle.Visible = true
     end)
 
     if isDefault then
-        TabButton.BackgroundTransparency = 0
-        TabButton.TextColor3 = Color3.fromRGB(255, 255, 255)
+        TabBtn.BackgroundTransparency = 0.1
+        TabBtn.TextColor3 = Color3.fromRGB(255, 255, 255)
         Page.Visible = true
-        PageTitle.Visible = true
     end
 
     return Page
 end
 
--- Функция создания переключателя (Toggle) в стиле iOS, как на картинке
 local function CreateToggle(parent, text, callback)
     local ToggleFrame = Instance.new("Frame")
-    ToggleFrame.Size = UDim2.new(1, -10, 0, 36)
-    ToggleFrame.BackgroundColor3 = Color3.fromRGB(20, 20, 20)
+    ToggleFrame.Size = UDim2.new(1, -5, 0, 42)
+    ToggleFrame.BackgroundColor3 = Color3.fromRGB(22, 22, 28)
     ToggleFrame.BorderSizePixel = 0
     ToggleFrame.Parent = parent
-
-    local TFC = Instance.new("UICorner")
-    TFC.CornerRadius = UDim.new(0, 6)
-    TFC.Parent = ToggleFrame
+    Instance.new("UICorner", ToggleFrame).CornerRadius = UDim.new(0, 8)
 
     local Label = Instance.new("TextLabel")
     Label.Size = UDim2.new(0.7, 0, 1, 0)
-    Label.Position = UDim2.new(0, 10, 0, 0)
+    Label.Position = UDim2.new(0, 15, 0, 0)
     Label.BackgroundTransparency = 1
     Label.Text = text
-    Label.TextColor3 = Color3.fromRGB(220, 220, 220)
-    Label.TextSize = 13
+    Label.TextColor3 = Color3.fromRGB(230, 230, 230)
+    Label.TextSize = 14
     Label.Font = Enum.Font.Gotham
     Label.TextXAlignment = Enum.TextXAlignment.Left
     Label.Parent = ToggleFrame
 
     local SwitchBG = Instance.new("TextButton")
-    SwitchBG.Size = UDim2.new(0, 36, 0, 20)
-    SwitchBG.Position = UDim2.new(1, -46, 0.5, -10)
-    SwitchBG.BackgroundColor3 = Color3.fromRGB(40, 40, 40)
+    SwitchBG.Size = UDim2.new(0, 44, 0, 24)
+    SwitchBG.Position = UDim2.new(1, -60, 0.5, -12)
+    SwitchBG.BackgroundColor3 = Color3.fromRGB(40, 40, 50)
     SwitchBG.Text = ""
     SwitchBG.AutoButtonColor = false
     SwitchBG.Parent = ToggleFrame
-
-    local SbgCorner = Instance.new("UICorner")
-    SbgCorner.CornerRadius = UDim.new(1, 0)
-    SbgCorner.Parent = SwitchBG
+    Instance.new("UICorner", SwitchBG).CornerRadius = UDim.new(1, 0)
 
     local Circle = Instance.new("Frame")
-    Circle.Size = UDim2.new(0, 16, 0, 16)
-    Circle.Position = UDim2.new(0, 2, 0.5, -8)
+    Circle.Size = UDim2.new(0, 20, 0, 20)
+    Circle.Position = UDim2.new(0, 2, 0.5, -10)
     Circle.BackgroundColor3 = Color3.fromRGB(200, 200, 200)
     Circle.Parent = SwitchBG
-
-    local CircleCorner = Instance.new("UICorner")
-    CircleCorner.CornerRadius = UDim.new(1, 0)
-    CircleCorner.Parent = Circle
+    Instance.new("UICorner", Circle).CornerRadius = UDim.new(1, 0)
 
     local toggled = false
     SwitchBG.MouseButton1Click:Connect(function()
         toggled = not toggled
+        local goalPos = toggled and UDim2.new(1, -22, 0.5, -10) or UDim2.new(0, 2, 0.5, -10)
+        local goalColor = toggled and Color3.fromRGB(130, 90, 255) or Color3.fromRGB(40, 40, 50)
         
-        local goalPos = toggled and UDim2.new(1, -18, 0.5, -8) or UDim2.new(0, 2, 0.5, -8)
-        local goalColor = toggled and Color3.fromRGB(255, 255, 255) or Color3.fromRGB(40, 40, 40)
-        
-        TweenService:Create(Circle, TweenInfo.new(0.2), {Position = goalPos}):Play()
-        TweenService:Create(SwitchBG, TweenInfo.new(0.2), {BackgroundColor3 = goalColor}):Play()
+        TweenService:Create(Circle, TweenInfo.new(0.3, Enum.EasingStyle.Quint, Enum.EasingDirection.Out), {Position = goalPos}):Play()
+        TweenService:Create(SwitchBG, TweenInfo.new(0.3), {BackgroundColor3 = goalColor}):Play()
         
         callback(toggled)
     end)
 end
 
--- Функция создания категории внутри страницы (например, "Farm")
-local function CreateSectionLabel(parent, text)
-    local Label = Instance.new("TextLabel")
-    Label.Size = UDim2.new(1, 0, 0, 20)
-    Label.BackgroundTransparency = 1
-    Label.Text = text
-    Label.TextColor3 = Color3.fromRGB(255, 255, 255)
-    Label.TextSize = 13
-    Label.Font = Enum.Font.GothamBold
-    Label.TextXAlignment = Enum.TextXAlignment.Left
-    Label.Parent = parent
-    return Label
+---------------------------------------------------------
+-- 🛠️ НАСТРОЙКА ВКЛАДОК И ЛОГИКИ
+---------------------------------------------------------
+local FarmPage = CreateTab("Auto Farm", "💰", true)
+CreateTab("Combat", "⚔️", false)
+CreateTab("Visuals", "👁️", false)
+
+-- ГЛОБАЛЬНЫЕ ПЕРЕМЕННЫЕ
+_G.AutoFarm = false
+local FlyBody = nil
+
+-- ФУНКЦИИ ФЛАЯ
+local function EnableFly(char)
+    if not char:FindFirstChild("HumanoidRootPart") then return end
+    if not FlyBody then
+        FlyBody = Instance.new("BodyVelocity")
+        FlyBody.Name = "HubFly"
+        FlyBody.MaxForce = Vector3.new(400000, 400000, 400000)
+        FlyBody.Velocity = Vector3.new(0, 0, 0)
+        FlyBody.Parent = char.HumanoidRootPart
+    end
 end
 
----------------------------------------------------------
--- СОЗДАНИЕ ВКЛАДОК (Опираясь на картинку)
----------------------------------------------------------
-CreateTab("Main", "👁", false)
-CreateTab("Sheriff", "🔫", false)
-CreateTab("Murder", "🔪", false)
-local AutoFarmPage = CreateTab("Auto Farm", "💰", true) -- Сделано вкладкой по умолчанию для демонстрации
-CreateTab("Teleport", "🔓", false)
-CreateTab("Fun/Troll", "😂", false)
-CreateTab("Fling Players", "🌀", false)
-CreateTab("Visuals", "👁", false)
-CreateTab("Settings", "⚙", false)
+local function DisableFly(char)
+    if FlyBody then
+        FlyBody:Destroy()
+        FlyBody = nil
+    end
+end
 
----------------------------------------------------------
--- НАПОЛНЕНИЕ ВКЛАДКИ AUTO FARM (Как на скриншоте)
----------------------------------------------------------
-CreateSectionLabel(AutoFarmPage, "Farm")
-
-CreateToggle(AutoFarmPage, "Auto Farm", function(state)
-    -- Базовая логика для автофарма
-    if state then
-        _G.AutoFarmEnabled = true
+-- РАБОЧИЙ АВТОФАРМ С ПРОВЕРКОЙ ЛОББИ И ОГРАНИЧЕНИЕМ СКОРОСТИ
+CreateToggle(FarmPage, "Enable Auto-Farm", function(state)
+    _G.AutoFarm = state
+    
+    if _G.AutoFarm then
         task.spawn(function()
-            while _G.AutoFarmEnabled do
+            while _G.AutoFarm do
                 task.wait(0.1)
-                
-                -- Проверка: фарм работает в катке (игрок должен быть жив и на карте), 
-                -- а в лобби скрипт не должен пытаться фармить/двигаться хаотично.
-                local inLobby = false -- Заменить на реальную проверку лобби для MM2
-                
-                if LP.Character and LP.Character:FindFirstChild("Humanoid") then
-                    if not inLobby then
-                        -- Установка максимальной скорости на 25 для стабильного сбора монет
-                        LP.Character.Humanoid.WalkSpeed = 25
-                        
-                        -- Место для вашей логики полета и сбора монет
+                local char = LP.Character
+                if char and char:FindFirstChild("HumanoidRootPart") and char:FindFirstChild("Humanoid") then
+                    
+                    -- Проверка на лобби (Обычно лобби находится высоко в небе)
+                    -- Настрой это значение (например, > 100 или > 50) под конкретную игру
+                    local isInLobby = (char.HumanoidRootPart.Position.Y > 100) 
+                    
+                    if isInLobby then
+                        -- ЕСЛИ ИГРОК В ЛОББИ:
+                        -- Скрипт стоит нормально, флай отключается, скорость стандартная
+                        DisableFly(char)
+                        char.Humanoid.WalkSpeed = 16
                     else
-                        -- Обычное поведение в лобби
-                        LP.Character.Humanoid.WalkSpeed = 16 
+                        -- ЕСЛИ ИГРОК В КАТКЕ:
+                        -- Включается флай и максимальная скорость фиксируется на 25
+                        EnableFly(char)
+                        char.Humanoid.WalkSpeed = 25
+                        
+                        -- Тут размещается логика телепорта к монетам:
+                        -- Если используешь флай, меняй FlyBody.Velocity в сторону ближайшей монеты
+                        -- Или используй TweenService для перемещения HumanoidRootPart.CFrame
                     end
                 end
             end
         end)
     else
-        _G.AutoFarmEnabled = false
-        if LP.Character and LP.Character:FindFirstChild("Humanoid") then
-            LP.Character.Humanoid.WalkSpeed = 16 -- Сброс скорости при выключении
+        -- Полный сброс при выключении скрипта
+        local char = LP.Character
+        if char and char:FindFirstChild("Humanoid") then
+            DisableFly(char)
+            char.Humanoid.WalkSpeed = 16
         end
     end
 end)
 
-CreateToggle(AutoFarmPage, "Auto-Respawn", function(state)
-    -- Логика
-end)
+CreateToggle(FarmPage, "Auto-Respawn", function(state) end)
+CreateToggle(FarmPage, "Anti-Fling", function(state) end)
 
-CreateToggle(AutoFarmPage, "Anti-Fling", function(state)
-    -- Логика
-end)
-
-CreateToggle(AutoFarmPage, "Avoid Murderer", function(state)
-    -- Логика
-end)
-
-CreateToggle(AutoFarmPage, "Auto-Fling", function(state)
-    -- Логика
-end)
-
-CreateToggle(AutoFarmPage, "Kill Aura", function(state)
-    -- Логика
-end)
+---------------------------------------------------------
+-- 🚀 ЗАПУСК GUI (Анимация появления)
+---------------------------------------------------------
+TweenService:Create(MainFrame, TweenInfo.new(0.6, Enum.EasingStyle.Back, Enum.EasingDirection.Out), {Size = UDim2.new(0, 550, 0, 360)}):Play()
