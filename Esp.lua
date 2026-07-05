@@ -1,6 +1,7 @@
--- [[ Pulse Hub GUI — Фиксированный заголовок без косяков с позицией ]] --
+-- [[ Pulse Hub GUI — Абсолютная фиксация и живой FPS ]] --
 local TweenService = game:GetService("TweenService")
 local UserInputService = game:GetService("UserInputService")
+local RunService = game:GetService("RunService")
 local PulseHub = Instance.new("ScreenGui")
 
 if game:GetService("CoreGui"):FindFirstChild("PulseHub") then
@@ -24,7 +25,8 @@ MainFrame.Name = "MainFrame"
 MainFrame.Parent = PulseHub
 MainFrame.BackgroundColor3 = Color3.fromRGB(18, 18, 18)
 MainFrame.BackgroundTransparency = 0.15
-MainFrame.Position = UDim2.new(0.5, -275, 0.5, -175)
+MainFrame.AnchorPoint = Vector2.new(0.5, 0.5) -- Центрируем точку привязки для мертвой фиксации
+MainFrame.Position = UDim2.new(0.5, 0, 0.5, 0) -- Ровно по центру экрана
 MainFrame.Size = UDim2.new(0, 550, 0, 350)
 MainFrame.ClipsDescendants = true
 
@@ -35,7 +37,7 @@ MainCorner.CornerRadius = UDim.new(0, 14)
 MainFrame.Size = UDim2.new(0, 550, 0, 0)
 tween(MainFrame, {Size = UDim2.new(0, 550, 0, 350)}, 0.3)
 
--- Drag (Перетаскивание)
+-- Drag (Перетаскивание с учетом AnchorPoint 0.5)
 local dragging, dragInput, dragStart, startPos
 MainFrame.InputBegan:Connect(function(input)
     if input.UserInputType == Enum.UserInputType.MouseButton1 or input.UserInputType == Enum.UserInputType.Touch then
@@ -59,13 +61,12 @@ UserInputService.InputChanged:Connect(function(input)
     end
 end)
 
--- [[ ФИРМЕННЫЙ ЗАГОЛОВОК ]] --
+-- [[ ФИРМЕННЫЙ ЗАГОЛОВОК (МЕРТВАЯ ФИКСАЦИЯ) ]] --
 local TopBar = Instance.new("Frame", MainFrame)
 TopBar.Size = UDim2.new(1, 0, 0, 55)
 TopBar.BackgroundTransparency = 1
 TopBar.ZIndex = 5
 
--- Зеленая иконка пульса (из 3358.jpg)
 local HubIcon = Instance.new("ImageLabel", TopBar)
 HubIcon.Size = UDim2.new(0, 34, 0, 34)
 HubIcon.Position = UDim2.new(0, 15, 0, 10)
@@ -74,7 +75,6 @@ HubIcon.BackgroundColor3 = Color3.fromRGB(25, 25, 25)
 HubIcon.BackgroundTransparency = 0
 Instance.new("UICorner", HubIcon).CornerRadius = UDim.new(0, 8)
 
--- Название Хаба
 local HubTitle = Instance.new("TextLabel", TopBar)
 HubTitle.Text = "Pulse Hub"
 HubTitle.Font = Enum.Font.GothamBold
@@ -85,7 +85,6 @@ HubTitle.Size = UDim2.new(0, 120, 0, 16)
 HubTitle.TextXAlignment = Enum.TextXAlignment.Left
 HubTitle.BackgroundTransparency = 1
 
--- Название игры
 local SubTitle = Instance.new("TextLabel", TopBar)
 SubTitle.Text = "Grow A Garden 2"
 SubTitle.Font = Enum.Font.Gotham
@@ -96,7 +95,6 @@ SubTitle.Size = UDim2.new(0, 120, 0, 14)
 SubTitle.TextXAlignment = Enum.TextXAlignment.Left
 SubTitle.BackgroundTransparency = 1
 
--- Текущая вкладка
 local TabTitle = Instance.new("TextLabel", TopBar)
 TabTitle.Text = "— Auto"
 TabTitle.Font = Enum.Font.GothamMedium
@@ -107,10 +105,9 @@ TabTitle.Size = UDim2.new(0, 150, 0, 16)
 TabTitle.TextXAlignment = Enum.TextXAlignment.Left
 TabTitle.BackgroundTransparency = 1
 
--- Кнопки управления (Привязаны жестко к исходной ширине хаба)
 local CloseBtn = Instance.new("TextButton", TopBar)
 CloseBtn.Size = UDim2.new(0, 30, 0, 30)
-CloseBtn.Position = UDim2.new(0, 505, 0, 12) -- Жесткая позиция X, заголовок не уедет
+CloseBtn.Position = UDim2.new(1, -35, 0, 12)
 CloseBtn.Text = "×"
 CloseBtn.Font = Enum.Font.Arial
 CloseBtn.TextSize = 22
@@ -119,7 +116,7 @@ CloseBtn.BackgroundTransparency = 1
 
 local MinBtn = Instance.new("TextButton", TopBar)
 MinBtn.Size = UDim2.new(0, 30, 0, 30)
-MinBtn.Position = UDim2.new(0, 475, 0, 12) -- Жесткая позиция X
+MinBtn.Position = UDim2.new(1, -65, 0, 12)
 MinBtn.Text = "—"
 MinBtn.Font = Enum.Font.GothamBold
 MinBtn.TextSize = 12
@@ -140,7 +137,7 @@ Sidebar.Size = UDim2.new(0, 160, 1, 0)
 Instance.new("UICorner", Sidebar).CornerRadius = UDim.new(0, 14)
 
 local Navigation = Instance.new("ScrollingFrame", Sidebar)
-Navigation.Size = UDim2.new(1, 0, 1, -110)
+Navigation.Size = UDim2.new(1, 0, 1, -135) -- Чуть уменьшил, чтобы подвал не перекрывался
 Navigation.Position = UDim2.new(0, 0, 0, 60)
 Navigation.BackgroundTransparency = 1
 Navigation.ScrollBarThickness = 0
@@ -149,27 +146,55 @@ local NavLayout = Instance.new("UIListLayout", Navigation)
 NavLayout.Padding = UDim.new(0, 4)
 NavLayout.SortOrder = Enum.SortOrder.LayoutOrder
 
-local DiscordLabel = Instance.new("TextLabel", Sidebar)
-DiscordLabel.Position = UDim2.new(0, 12, 1, -30)
-DiscordLabel.Size = UDim2.new(1, -12, 0, 15)
-DiscordLabel.Font = Enum.Font.Gotham
+-- [[ КРАСИВОЕ ВЫДЕЛЕНИЕ ПОДВАЛА ]] --
+local FooterFrame = Instance.new("Frame", Sidebar)
+FooterFrame.Name = "FooterFrame"
+FooterFrame.BackgroundColor3 = Color3.fromRGB(22, 22, 22)
+FooterFrame.BackgroundTransparency = 0.3
+FooterFrame.Position = UDim2.new(0, 8, 1, -55)
+FooterFrame.Size = UDim2.new(1, -16, 0, 45)
+Instance.new("UICorner", FooterFrame).CornerRadius = UDim.new(0, 8)
+
+local FooterStroke = Instance.new("UIStroke", FooterFrame)
+FooterStroke.Color = Color3.fromRGB(45, 45, 45)
+FooterStroke.Thickness = 1
+
+local DiscordLabel = Instance.new("TextLabel", FooterFrame)
+DiscordLabel.Position = UDim2.new(0, 8, 0, 6)
+DiscordLabel.Size = UDim2.new(1, -16, 0, 15)
+DiscordLabel.Font = Enum.Font.GothamMedium
 DiscordLabel.Text = "discord.gg/pulsezone"
-DiscordLabel.TextColor3 = Color3.fromRGB(120, 120, 120)
+DiscordLabel.TextColor3 = Color3.fromRGB(140, 140, 255) -- Легкий фиолетовый оттенок Дискорда
 DiscordLabel.TextSize = 10
 DiscordLabel.TextXAlignment = Enum.TextXAlignment.Left
 DiscordLabel.BackgroundTransparency = 1
 
-local StatsLabel = Instance.new("TextLabel", Sidebar)
-StatsLabel.Position = UDim2.new(0, 12, 1, -18)
-StatsLabel.Size = UDim2.new(1, -12, 0, 15)
+local StatsLabel = Instance.new("TextLabel", FooterFrame)
+StatsLabel.Position = UDim2.new(0, 8, 0, 22)
+StatsLabel.Size = UDim2.new(1, -16, 0, 15)
 StatsLabel.Font = Enum.Font.Gotham
-StatsLabel.Text = "Session: 02:30 — 163 FPS"
-StatsLabel.TextColor3 = Color3.fromRGB(90, 90, 90)
-StatsLabel.TextSize = 9
+StatsLabel.Text = "FPS: Посчет..."
+StatsLabel.TextColor3 = Color3.fromRGB(140, 140, 140)
+StatsLabel.TextSize = 10
 StatsLabel.TextXAlignment = Enum.TextXAlignment.Left
 StatsLabel.BackgroundTransparency = 1
 
--- Логика кнопок
+-- [[ ЖИВОЙ СЧЁТЧИК FPS ]] --
+local LastIteration, FrameUpdateTable = nil, {}
+local function GetFPS()
+    local CurrentTime = os.clock()
+    table.insert(FrameUpdateTable, CurrentTime)
+    while FrameUpdateTable[1] < CurrentTime - 1 do
+        table.remove(FrameUpdateTable, 1)
+    end
+    return #FrameUpdateTable
+end
+
+RunService.RenderStepped:Connect(function()
+    StatsLabel.Text = "Performance: " .. GetFPS() .. " FPS"
+end)
+
+-- Логика сворачивания (Мёртвая фиксация)
 CloseBtn.MouseEnter:Connect(function() tween(CloseBtn, {TextColor3 = Color3.fromRGB(255, 70, 70)}) end)
 CloseBtn.MouseLeave:Connect(function() tween(CloseBtn, {TextColor3 = Color3.fromRGB(150, 150, 150)}) end)
 CloseBtn.MouseButton1Click:Connect(function()
@@ -186,13 +211,13 @@ MinBtn.MouseButton1Click:Connect(function()
         BodyContainer.Visible = false
         TabTitle.Visible = false
         
-        -- Меняем только высоту, заголовок остается идеально на месте!
+        -- Окно схлопывается по высоте ровно к верхней панели, заголовок на месте!
         tween(MainFrame, {Size = UDim2.new(0, 550, 0, 55)}, 0.2)
     else
-        -- При разворачивании плавно возвращаем в исходный размер и точно в центр экрана
+        -- При разворачивании плавно возвращаем высоту и центрируем
         tween(MainFrame, {
             Size = UDim2.new(0, 550, 0, 350),
-            Position = UDim2.new(0.5, -275, 0.5, -175)
+            Position = UDim2.new(0.5, 0, 0.5, 0)
         }, 0.25).Completed:Connect(function()
             if not isMinimized then 
                 BodyContainer.Visible = true 
@@ -257,26 +282,6 @@ local function CreatePage(name)
     TabBtn.InputBegan:Connect(function(input)
         if input.UserInputType == Enum.UserInputType.MouseButton1 or input.UserInputType == Enum.UserInputType.Touch then
             tween(TabBtn, {Size = UDim2.new(1, -14, 0, 30), Position = UDim2.new(0, 7, 0, 1)}, 0.1)
-            
-            local Circle = Instance.new("ImageLabel", TabBtn)
-            Circle.BackgroundColor3 = Color3.new(1, 1, 1)
-            Circle.BackgroundTransparency = 1
-            Circle.Image = "rbxassetid://266543268"
-            Circle.ImageTransparency = 0.7
-            
-            local mousePos = UserInputService:GetMouseLocation()
-            local btnPos = TabBtn.AbsolutePosition
-            Circle.Position = UDim2.new(0, mousePos.X - btnPos.X, 0, (mousePos.Y - 36) - btnPos.Y)
-            Circle.Size = UDim2.new(0, 0, 0, 0)
-            Circle.AnchorPoint = Vector2.new(0.5, 0.5)
-            
-            local rippleTween = TweenService:Create(Circle, TweenInfo.new(0.4, Enum.EasingStyle.Quad, Enum.EasingDirection.Out), {
-                Size = UDim2.new(0, 200, 0, 200),
-                ImageTransparency = 1
-            })
-            rippleTween:Play()
-            rippleTween.Completed:Connect(function() Circle:Destroy() end)
-            
             selectTab()
         end
     end)
@@ -293,7 +298,6 @@ local function CreatePage(name)
     TabBtn.MouseLeave:Connect(function()
         if TabTitle.Text ~= "— " .. name then
             tween(TabBtn, {BackgroundTransparency = 1, TextColor3 = Color3.fromRGB(140, 140, 140)})
-            tween(TabBtn, {Size = UDim2.new(1, -10, 0, 32), Position = UDim2.new(0, 5, 0, 0)}, 0.1)
         end
     end)
     
@@ -343,7 +347,6 @@ local function CreateToggle(parentPage, name, default, callback)
     end)
 end
 
--- Вкладки хаба
 local MainPage = CreatePage("Main")
 local AutoPage = CreatePage("Auto")
 local AutoBuyPage = CreatePage("Auto Buy")
@@ -352,7 +355,6 @@ local PlayersPage = CreatePage("Players")
 CreateToggle(AutoPage, "Auto Farm", true)
 CreateToggle(AutoPage, "Anti-Fling", true)
 
--- Дефолт старт
 allTabs["Auto"].BackgroundTransparency = 0
 allTabs["Auto"].TextColor3 = Color3.new(1,1,1)
 allTabs["Auto"].UIStroke.Enabled = true
