@@ -1,101 +1,118 @@
--- Использование: просто запустите этот скрипт. 
--- Интерфейс автоматически адаптируется под размер мобильного экрана.
+--[[
+    Это основа твоего GUI без библиотек.
+    Используй ScreenGuis, Frames, TextButtons и TextLabels.
+    Для функций фарма смотри в сторону RemoteEvent/RemoteFunction.
+]]
 
-local TweenService = game:GetService("TweenService")
-local UserInputService = game:GetService("UserInputService")
-local Players = game:GetService("Players")
-local LocalPlayer = Players.LocalPlayer
-local PlayerGui = LocalPlayer:WaitForChild("PlayerGui")
+local Player = game.Players.LocalPlayer
+local Mouse = Player:GetMouse()
 
-if PlayerGui:FindFirstChild("HoshiHubMobile") then PlayerGui.HoshiHubMobile:Destroy() end
+-- Функция для создания базового окна (как у Pulse Hub)
+local function CreateWindow(title)
+    local ScreenGui = Instance.new("ScreenGui")
+    ScreenGui.Parent = game.Players.LocalPlayer:WaitForChild("PlayerGui")
 
-local ScreenGui = Instance.new("ScreenGui")
-ScreenGui.Name = "HoshiHubMobile"
-ScreenGui.Parent = PlayerGui
+    local MainFrame = Instance.new("Frame")
+    MainFrame.Size = UDim2.new(0, 500, 0, 600)
+    MainFrame.Position = UDim2.new(0.5, -250, 0.5, -300)
+    MainFrame.BackgroundColor3 = Color3.fromRGB(30, 30, 35)
+    MainFrame.BackgroundTransparency = 0.1
+    MainFrame.BorderSizePixel = 0
+    MainFrame.Parent = ScreenGui
+    -- Эффект прозрачности
+    MainFrame.BackgroundTransparency = 0.15
 
-local MainFrame = Instance.new("Frame")
-MainFrame.Size = UDim2.new(0, 320, 0, 400) -- Компактный размер для телефона
-MainFrame.Position = UDim2.new(0.5, -160, 0.5, -200)
-MainFrame.BackgroundColor3 = Color3.fromRGB(15, 15, 20)
-MainFrame.Parent = ScreenGui
-Instance.new("UICorner", MainFrame).CornerRadius = UDim.new(0, 12)
+    local TitleBar = Instance.new("Frame")
+    TitleBar.Size = UDim2.new(1, 0, 0, 30)
+    TitleBar.BackgroundColor3 = Color3.fromRGB(45, 45, 50)
+    TitleBar.BorderSizePixel = 0
+    TitleBar.Parent = MainFrame
 
--- Заголовок
-local TopBar = Instance.new("Frame")
-TopBar.Size = UDim2.new(1, 0, 0, 45)
-TopBar.BackgroundTransparency = 1
-TopBar.Parent = MainFrame
-Instance.new("TextLabel", TopBar).Text = " HOSHI HUB"
-TopBar.TextLabel.Size = UDim2.new(1, 0, 1, 0)
-TopBar.TextLabel.Font = Enum.Font.GothamBold
-TopBar.TextLabel.TextColor3 = Color3.fromRGB(255, 255, 255)
-TopBar.TextLabel.TextXAlignment = Enum.TextXAlignment.Left
+    local TitleLabel = Instance.new("TextLabel")
+    TitleLabel.Size = UDim2.new(1, 0, 1, 0)
+    TitleLabel.BackgroundTransparency = 1
+    TitleLabel.Text = title
+    TitleLabel.TextColor3 = Color3.fromRGB(255, 255, 255)
+    TitleLabel.TextScaled = true
+    TitleLabel.Font = Enum.Font.GothamBold
+    TitleLabel.Parent = TitleBar
 
--- Контейнер для вкладок
-local TabContainer = Instance.new("ScrollingFrame")
-TabContainer.Size = UDim2.new(1, -20, 1, -60)
-TabContainer.Position = UDim2.new(0, 10, 0, 50)
-TabContainer.BackgroundTransparency = 1
-TabContainer.ScrollBarThickness = 0
-TabContainer.Parent = MainFrame
-
-local ListLayout = Instance.new("UIListLayout")
-ListLayout.Padding = UDim.new(0, 12) -- Большой отступ между элементами
-ListLayout.Parent = TabContainer
-
--- Функция создания элементов с большими отступами
-local function CreateButton(text, callback)
-    local Btn = Instance.new("TextButton")
-    Btn.Size = UDim2.new(1, 0, 0, 50) -- Высота для удобного нажатия
-    Btn.BackgroundColor3 = Color3.fromRGB(30, 30, 40)
-    Btn.Text = text
-    Btn.TextColor3 = Color3.fromRGB(255, 255, 255)
-    Btn.Font = Enum.Font.GothamSemibold
-    Btn.Parent = TabContainer
-    Instance.new("UICorner", Btn).CornerRadius = UDim.new(0, 10)
-    
-    local state = false
-    Btn.MouseButton1Click:Connect(function()
-        state = not state
-        Btn.BackgroundColor3 = state and Color3.fromRGB(0, 255, 140) or Color3.fromRGB(30, 30, 40)
-        callback(state)
+    -- Функция для перетаскивания окна
+    local dragging = false
+    local dragStart, startPos
+    TitleBar.InputBegan:Connect(function(input)
+        if input.UserInputType == Enum.UserInputType.MouseButton1 then
+            dragging = true
+            dragStart = input.Position
+            startPos = MainFrame.Position
+        end
     end)
+    TitleBar.InputEnded:Connect(function(input)
+        if input.UserInputType == Enum.UserInputType.MouseButton1 then
+            dragging = false
+        end
+    end)
+    game:GetService("UserInputService").InputChanged:Connect(function(input)
+        if dragging and input.UserInputType == Enum.UserInputType.MouseMovement then
+            local delta = input.Position - dragStart
+            MainFrame.Position = UDim2.new(startPos.X.Scale, startPos.X.Offset + delta.X, startPos.Y.Scale, startPos.Y.Offset + delta.Y)
+        end
+    end)
+
+    return MainFrame
 end
 
--- Добавление кнопок (все функции из вашего кода работают)
-CreateButton("Auto Farm (Coins)", function(s) _G.AutoFarm = s end)
-CreateButton("Bypass Fly", function(s) _G.Flying = s end)
-CreateButton("Role ESP", function(s) _G.ESP = s end)
-CreateButton("Auto Kill (Murderer)", function(s) _G.Kill = s end)
-CreateButton("Infinite Jump", function(s) _G.InfJump = s end)
+-- Функция для создания кнопок (как разделы Main)
+local function CreateButton(parent, text, position, callback)
+    local Button = Instance.new("TextButton")
+    Button.Size = UDim2.new(0.9, 0, 0, 40)
+    Button.Position = UDim2.new(0.05, 0, position, 0)
+    Button.BackgroundColor3 = Color3.fromRGB(60, 60, 65)
+    Button.BorderSizePixel = 0
+    Button.Text = text
+    Button.TextColor3 = Color3.fromRGB(255, 255, 255)
+    Button.TextScaled = true
+    Button.Font = Enum.Font.Gotham
+    Button.Parent = parent
 
--- Кнопка закрытия
-local CloseBtn = Instance.new("TextButton", MainFrame)
-CloseBtn.Size = UDim2.new(0, 30, 0, 30)
-CloseBtn.Position = UDim2.new(1, -35, 0, 7)
-CloseBtn.Text = "X"
-CloseBtn.BackgroundColor3 = Color3.fromRGB(255, 60, 60)
-CloseBtn.Parent = MainFrame
-Instance.new("UICorner", CloseBtn).CornerRadius = UDim.new(1, 0)
-CloseBtn.MouseButton1Click:Connect(function() ScreenGui:Destroy() end)
+    -- Эффект наведения
+    Button.MouseEnter:Connect(function()
+        Button.BackgroundColor3 = Color3.fromRGB(80, 80, 85)
+    end)
+    Button.MouseLeave:Connect(function()
+        Button.BackgroundColor3 = Color3.fromRGB(60, 60, 65)
+    end)
 
--- Перетаскивание для мобильных
-local UserInputService = game:GetService("UserInputService")
-local dragging, dragStart, startPos
+    Button.MouseButton1Click:Connect(callback)
+    return Button
+end
 
-MainFrame.InputBegan:Connect(function(input)
-    if input.UserInputType == Enum.UserInputType.Touch then
-        dragging = true
-        dragStart = input.Position
-        startPos = MainFrame.Position
-    end
-end)
+-- Создаем окно
+local MainGui = CreateWindow("Pulse Hub")
 
-UserInputService.TouchMoved:Connect(function(input)
-    if dragging then
-        local delta = input.Position - dragStart
-        MainFrame.Position = UDim2.new(startPos.X.Scale, startPos.X.Offset + delta.X, startPos.Y.Scale, startPos.Y.Offset + delta.Y)
-    end
-end)
+-- Создаем кнопки разделов
+local buttonPositions = {0.1, 0.2, 0.3, 0.4, 0.5, 0.6, 0.7}
+local sections = {
+    {"Sheriff", function() print("Sheriff functions") end},
+    {"Murder", function() print("Murder functions") end},
+    {"Auto Farm", function() print("Auto Farm functions") end},
+    {"Teleport", function() print("Teleport functions") end},
+    {"Fun/Troll", function() print("Fun/Troll functions") end},
+    {"Visuals", function() print("Visuals functions") end},
+    {"Settings", function() print("Settings functions") end}
+}
 
-UserInputService.TouchEnded:Connect(function() dragging = false end)
+for i, v in ipairs(sections) do
+    CreateButton(MainGui, v[1], buttonPositions[i], v[2])
+end
+
+-- Пример подвала с информацией (как в Pulse Hub)
+local Footer = Instance.new("TextLabel")
+Footer.Size = UDim2.new(1, 0, 0, 20)
+Footer.Position = UDim2.new(0, 0, 1, -20)
+Footer.BackgroundTransparency = 1
+Footer.Text = "discord.gg/pulsezone | Session 00:00"
+Footer.TextColor3 = Color3.fromRGB(150, 150, 150)
+Footer.TextScaled = true
+Footer.Font = Enum.Font.Gotham
+Footer.Parent = MainGui
