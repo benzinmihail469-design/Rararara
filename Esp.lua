@@ -1,4 +1,4 @@
--- [[ Pulse Hub GUI — Абсолютная фиксация и живой FPS ]] --
+-- [[ Pulse Hub GUI — Истинная фиксация на месте переноса ]] --
 local TweenService = game:GetService("TweenService")
 local UserInputService = game:GetService("UserInputService")
 local RunService = game:GetService("RunService")
@@ -25,8 +25,7 @@ MainFrame.Name = "MainFrame"
 MainFrame.Parent = PulseHub
 MainFrame.BackgroundColor3 = Color3.fromRGB(18, 18, 18)
 MainFrame.BackgroundTransparency = 0.15
-MainFrame.AnchorPoint = Vector2.new(0.5, 0.5) -- Центрируем точку привязки для мертвой фиксации
-MainFrame.Position = UDim2.new(0.5, 0, 0.5, 0) -- Ровно по центру экрана
+MainFrame.Position = UDim2.new(0.5, -275, 0.5, -175) -- Стартует в центре
 MainFrame.Size = UDim2.new(0, 550, 0, 350)
 MainFrame.ClipsDescendants = true
 
@@ -37,7 +36,7 @@ MainCorner.CornerRadius = UDim.new(0, 14)
 MainFrame.Size = UDim2.new(0, 550, 0, 0)
 tween(MainFrame, {Size = UDim2.new(0, 550, 0, 350)}, 0.3)
 
--- Drag (Перетаскивание с учетом AnchorPoint 0.5)
+-- Drag (Перетаскивание без багов с фиксацией)
 local dragging, dragInput, dragStart, startPos
 MainFrame.InputBegan:Connect(function(input)
     if input.UserInputType == Enum.UserInputType.MouseButton1 or input.UserInputType == Enum.UserInputType.Touch then
@@ -61,9 +60,9 @@ UserInputService.InputChanged:Connect(function(input)
     end
 end)
 
--- [[ ФИРМЕННЫЙ ЗАГОЛОВОК (МЕРТВАЯ ФИКСАЦИЯ) ]] --
+-- [[ ФИРМЕННЫЙ ЗАГОЛОВОК ]] --
 local TopBar = Instance.new("Frame", MainFrame)
-TopBar.Size = UDim2.new(1, 0, 0, 55)
+TopBar.Size = UDim2.new(0, 550, 0, 55) -- Фиксированная ширина верхнего бара
 TopBar.BackgroundTransparency = 1
 TopBar.ZIndex = 5
 
@@ -105,23 +104,29 @@ TabTitle.Size = UDim2.new(0, 150, 0, 16)
 TabTitle.TextXAlignment = Enum.TextXAlignment.Left
 TabTitle.BackgroundTransparency = 1
 
-local CloseBtn = Instance.new("TextButton", TopBar)
-CloseBtn.Size = UDim2.new(0, 30, 0, 30)
-CloseBtn.Position = UDim2.new(1, -35, 0, 12)
-CloseBtn.Text = "×"
-CloseBtn.Font = Enum.Font.Arial
-CloseBtn.TextSize = 22
-CloseBtn.TextColor3 = Color3.fromRGB(150, 150, 150)
-CloseBtn.BackgroundTransparency = 1
+-- Кнопки управления привязаны к контейнеру, меняющему положение при сворачивании
+local ButtonHolder = Instance.new("Frame", TopBar)
+ButtonHolder.Size = UDim2.new(0, 60, 0, 30)
+ButtonHolder.Position = UDim2.new(0, 475, 0, 12)
+ButtonHolder.BackgroundTransparency = 1
 
-local MinBtn = Instance.new("TextButton", TopBar)
+local MinBtn = Instance.new("TextButton", ButtonHolder)
 MinBtn.Size = UDim2.new(0, 30, 0, 30)
-MinBtn.Position = UDim2.new(1, -65, 0, 12)
+MinBtn.Position = UDim2.new(0, 0, 0, 0)
 MinBtn.Text = "—"
 MinBtn.Font = Enum.Font.GothamBold
 MinBtn.TextSize = 12
 MinBtn.TextColor3 = Color3.fromRGB(150, 150, 150)
 MinBtn.BackgroundTransparency = 1
+
+local CloseBtn = Instance.new("TextButton", ButtonHolder)
+CloseBtn.Size = UDim2.new(0, 30, 0, 30)
+CloseBtn.Position = UDim2.new(0, 30, 0, 0)
+CloseBtn.Text = "×"
+CloseBtn.Font = Enum.Font.Arial
+CloseBtn.TextSize = 22
+CloseBtn.TextColor3 = Color3.fromRGB(150, 150, 150)
+CloseBtn.BackgroundTransparency = 1
 
 -- [[ ОСНОВНОЙ КОНТЕНТ ]] --
 local BodyContainer = Instance.new("Frame", MainFrame)
@@ -137,7 +142,7 @@ Sidebar.Size = UDim2.new(0, 160, 1, 0)
 Instance.new("UICorner", Sidebar).CornerRadius = UDim.new(0, 14)
 
 local Navigation = Instance.new("ScrollingFrame", Sidebar)
-Navigation.Size = UDim2.new(1, 0, 1, -135) -- Чуть уменьшил, чтобы подвал не перекрывался
+Navigation.Size = UDim2.new(1, 0, 1, -135)
 Navigation.Position = UDim2.new(0, 0, 0, 60)
 Navigation.BackgroundTransparency = 1
 Navigation.ScrollBarThickness = 0
@@ -146,7 +151,7 @@ local NavLayout = Instance.new("UIListLayout", Navigation)
 NavLayout.Padding = UDim.new(0, 4)
 NavLayout.SortOrder = Enum.SortOrder.LayoutOrder
 
--- [[ КРАСИВОЕ ВЫДЕЛЕНИЕ ПОДВАЛА ]] --
+-- [[ ВЫДЕЛЕННЫЙ ПОДВАЛ С FPS ]] --
 local FooterFrame = Instance.new("Frame", Sidebar)
 FooterFrame.Name = "FooterFrame"
 FooterFrame.BackgroundColor3 = Color3.fromRGB(22, 22, 22)
@@ -164,7 +169,7 @@ DiscordLabel.Position = UDim2.new(0, 8, 0, 6)
 DiscordLabel.Size = UDim2.new(1, -16, 0, 15)
 DiscordLabel.Font = Enum.Font.GothamMedium
 DiscordLabel.Text = "discord.gg/pulsezone"
-DiscordLabel.TextColor3 = Color3.fromRGB(140, 140, 255) -- Легкий фиолетовый оттенок Дискорда
+DiscordLabel.TextColor3 = Color3.fromRGB(140, 140, 255)
 DiscordLabel.TextSize = 10
 DiscordLabel.TextXAlignment = Enum.TextXAlignment.Left
 DiscordLabel.BackgroundTransparency = 1
@@ -173,14 +178,14 @@ local StatsLabel = Instance.new("TextLabel", FooterFrame)
 StatsLabel.Position = UDim2.new(0, 8, 0, 22)
 StatsLabel.Size = UDim2.new(1, -16, 0, 15)
 StatsLabel.Font = Enum.Font.Gotham
-StatsLabel.Text = "FPS: Посчет..."
+StatsLabel.Text = "Performance: Calculating..."
 StatsLabel.TextColor3 = Color3.fromRGB(140, 140, 140)
 StatsLabel.TextSize = 10
 StatsLabel.TextXAlignment = Enum.TextXAlignment.Left
 StatsLabel.BackgroundTransparency = 1
 
--- [[ ЖИВОЙ СЧЁТЧИК FPS ]] --
-local LastIteration, FrameUpdateTable = nil, {}
+-- Счётчик FPS в реальном времени
+local FrameUpdateTable = {}
 local function GetFPS()
     local CurrentTime = os.clock()
     table.insert(FrameUpdateTable, CurrentTime)
@@ -194,7 +199,7 @@ RunService.RenderStepped:Connect(function()
     StatsLabel.Text = "Performance: " .. GetFPS() .. " FPS"
 end)
 
--- Логика сворачивания (Мёртвая фиксация)
+-- Логика кнопок
 CloseBtn.MouseEnter:Connect(function() tween(CloseBtn, {TextColor3 = Color3.fromRGB(255, 70, 70)}) end)
 CloseBtn.MouseLeave:Connect(function() tween(CloseBtn, {TextColor3 = Color3.fromRGB(150, 150, 150)}) end)
 CloseBtn.MouseButton1Click:Connect(function()
@@ -211,19 +216,18 @@ MinBtn.MouseButton1Click:Connect(function()
         BodyContainer.Visible = false
         TabTitle.Visible = false
         
-        -- Окно схлопывается по высоте ровно к верхней панели, заголовок на месте!
-        tween(MainFrame, {Size = UDim2.new(0, 550, 0, 55)}, 0.2)
+        -- Сворачиваем в маленький красивый заголовок БЕЗ изменения позиции угла
+        tween(MainFrame, {Size = UDim2.new(0, 240, 0, 55)}, 0.2)
+        tween(ButtonHolder, {Position = UDim2.new(0, 170, 0, 12)}, 0.2)
     else
-        -- При разворачивании плавно возвращаем высоту и центрируем
-        tween(MainFrame, {
-            Size = UDim2.new(0, 550, 0, 350),
-            Position = UDim2.new(0.5, 0, 0.5, 0)
-        }, 0.25).Completed:Connect(function()
+        -- Разворачиваем обратно ровно там, где оно стоит на экране
+        tween(MainFrame, {Size = UDim2.new(0, 550, 0, 350)}, 0.2).Completed:Connect(function()
             if not isMinimized then 
                 BodyContainer.Visible = true 
                 TabTitle.Visible = true
             end
         end)
+        tween(ButtonHolder, {Position = UDim2.new(0, 475, 0, 12)}, 0.2)
     end
 end)
 
@@ -347,6 +351,7 @@ local function CreateToggle(parentPage, name, default, callback)
     end)
 end
 
+-- Вкладки
 local MainPage = CreatePage("Main")
 local AutoPage = CreatePage("Auto")
 local AutoBuyPage = CreatePage("Auto Buy")
