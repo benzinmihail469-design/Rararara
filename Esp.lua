@@ -1,4 +1,4 @@
--- [[ Pulse Hub GUI — Полностью исправленные закругления углов шапки ]] --
+-- [[ Pulse Hub GUI — Идеальные углы, черный заголовок и правильный контур ]] --
 local TweenService = game:GetService("TweenService")
 local UserInputService = game:GetService("UserInputService")
 local RunService = game:GetService("RunService")
@@ -19,30 +19,29 @@ local function tween(object, properties, duration)
     return t
 end
 
--- [[ ГЛАВНОЕ ОКНО ]] --
+-- [[ ГЛАВНОЕ ОКНО (Теперь оно дает единый черный цвет всему хабу) ]] --
 local MainFrame = Instance.new("Frame")
 MainFrame.Name = "MainFrame"
 MainFrame.Parent = PulseHub
-MainFrame.BackgroundColor3 = Color3.fromRGB(18, 18, 18)
-MainFrame.BackgroundTransparency = 0.15
+MainFrame.BackgroundColor3 = Color3.fromRGB(15, 15, 15) -- Сплошной черный фон
+MainFrame.BackgroundTransparency = 0.05
 MainFrame.Position = UDim2.new(0.5, -275, 0.5, -175)
 MainFrame.Size = UDim2.new(0, 550, 0, 350)
-MainFrame.ClipsDescendants = true
+MainFrame.ClipsDescendants = true -- Обязательно, чтобы всё обрезалось по углам
 
 local MainCorner = Instance.new("UICorner", MainFrame)
-MainCorner.CornerRadius = UDim.new(0, 14)
+MainCorner.CornerRadius = UDim.new(0, 12)
 
--- Стильный контур вокруг всего GUI
+-- Идеальный контур (Убран багованный ApplyStrokeMode)
 local MainStroke = Instance.new("UIStroke", MainFrame)
-MainStroke.Color = Color3.fromRGB(45, 45, 45)
+MainStroke.Color = Color3.fromRGB(55, 55, 55)
 MainStroke.Thickness = 1.5
-MainStroke.ApplyStrokeMode = Enum.ApplyStrokeMode.Border
 
 -- Появление
 MainFrame.Size = UDim2.new(0, 550, 0, 0)
 tween(MainFrame, {Size = UDim2.new(0, 550, 0, 350)}, 0.3)
 
--- Скрипт перетаскивания (Drag)
+-- Drag (Перетаскивание)
 local dragging, dragInput, dragStart, startPos
 MainFrame.InputBegan:Connect(function(input)
     if input.UserInputType == Enum.UserInputType.MouseButton1 or input.UserInputType == Enum.UserInputType.Touch then
@@ -51,9 +50,7 @@ MainFrame.InputBegan:Connect(function(input)
         startPos = MainFrame.Position
         
         input.Changed:Connect(function()
-            if input.UserInputState == Enum.UserInputState.End then
-                dragging = false
-            end
+            if input.UserInputState == Enum.UserInputState.End then dragging = false end
         end)
     end
 end)
@@ -67,25 +64,16 @@ end)
 UserInputService.InputChanged:Connect(function(input)
     if input == dragInput and dragging then
         local delta = input.Position - dragStart
-        MainFrame.Position = UDim2.new(
-            startPos.X.Scale, 
-            startPos.X.Offset + delta.X, 
-            startPos.Y.Scale, 
-            startPos.Y.Offset + delta.Y
-        )
+        MainFrame.Position = UDim2.new(startPos.X.Scale, startPos.X.Offset + delta.X, startPos.Y.Scale, startPos.Y.Offset + delta.Y)
     end
 end)
 
--- [[ ФИРМЕННЫЙ ЗАГОЛОВОК (Исправлена ширина на 100%) ]] --
+-- [[ ФИРМЕННЫЙ ЗАГОЛОВОК (Теперь это просто прозрачный контейнер) ]] --
 local TopBar = Instance.new("Frame", MainFrame)
 TopBar.Name = "TopBar"
-TopBar.Size = UDim2.new(1, 0, 0, 55) -- Ширина 1 (100%), чтобы идеально сжиматься вместе с окном
-TopBar.BackgroundColor3 = Color3.fromRGB(18, 18, 18)
+TopBar.Size = UDim2.new(1, 0, 0, 55)
 TopBar.BackgroundTransparency = 1 
 TopBar.ZIndex = 5
-
-local TopBarCorner = Instance.new("UICorner", TopBar)
-TopBarCorner.CornerRadius = UDim.new(0, 14)
 
 local HubIcon = Instance.new("ImageLabel", TopBar)
 HubIcon.Size = UDim2.new(0, 34, 0, 34)
@@ -125,11 +113,11 @@ TabTitle.Size = UDim2.new(0, 150, 0, 16)
 TabTitle.TextXAlignment = Enum.TextXAlignment.Left
 TabTitle.BackgroundTransparency = 1
 
--- Контейнер кнопок управления (Привязан к правой стороне TopBar)
+-- Контейнер кнопок (привязан к правому краю)
 local ButtonHolder = Instance.new("Frame", TopBar)
 ButtonHolder.Name = "ButtonHolder"
 ButtonHolder.Size = UDim2.new(0, 60, 0, 30)
-ButtonHolder.Position = UDim2.new(1, -75, 0, 12) -- Позиция от правого края для плавной адаптации
+ButtonHolder.Position = UDim2.new(1, -75, 0, 12)
 ButtonHolder.BackgroundTransparency = 1
 
 local MinBtn = Instance.new("TextButton", ButtonHolder)
@@ -149,22 +137,23 @@ CloseBtn.TextSize = 22
 CloseBtn.TextColor3 = Color3.fromRGB(150, 150, 150)
 CloseBtn.BackgroundTransparency = 1
 
--- [[ ОСНОВНОЙ КОНТЕНТ ]] --
+-- [[ ОСНОВНОЙ КОНТЕНТ (Сдвинут строго вниз, чтобы не ломать цвет шапки) ]] --
 local BodyContainer = Instance.new("Frame", MainFrame)
-BodyContainer.Size = UDim2.new(1, 0, 1, 0)
+BodyContainer.Size = UDim2.new(1, 0, 1, -55)
+BodyContainer.Position = UDim2.new(0, 0, 0, 55)
 BodyContainer.BackgroundTransparency = 1
 BodyContainer.ZIndex = 2
 
 local Sidebar = Instance.new("Frame", BodyContainer)
 Sidebar.Name = "Sidebar"
-Sidebar.BackgroundColor3 = Color3.fromRGB(14, 14, 14)
-Sidebar.BackgroundTransparency = 0.4
+Sidebar.BackgroundColor3 = Color3.fromRGB(20, 20, 20)
+Sidebar.BackgroundTransparency = 0.3
 Sidebar.Size = UDim2.new(0, 160, 1, 0)
-Instance.new("UICorner", Sidebar).CornerRadius = UDim.new(0, 14)
+Instance.new("UICorner", Sidebar).CornerRadius = UDim.new(0, 12)
 
 local Navigation = Instance.new("ScrollingFrame", Sidebar)
-Navigation.Size = UDim2.new(1, 0, 1, -135)
-Navigation.Position = UDim2.new(0, 0, 0, 60)
+Navigation.Size = UDim2.new(1, 0, 1, -65)
+Navigation.Position = UDim2.new(0, 0, 0, 10)
 Navigation.BackgroundTransparency = 1
 Navigation.ScrollBarThickness = 0
 
@@ -172,17 +161,17 @@ local NavLayout = Instance.new("UIListLayout", Navigation)
 NavLayout.Padding = UDim.new(0, 4)
 NavLayout.SortOrder = Enum.SortOrder.LayoutOrder
 
--- [[ ВЫДЕЛЕННЫЙ ПОДВАЛ С FPS ]] --
+-- [[ ПОДВАЛ С FPS ]] --
 local FooterFrame = Instance.new("Frame", Sidebar)
 FooterFrame.Name = "FooterFrame"
-FooterFrame.BackgroundColor3 = Color3.fromRGB(22, 22, 22)
-FooterFrame.BackgroundTransparency = 0.3
+FooterFrame.BackgroundColor3 = Color3.fromRGB(25, 25, 25)
+FooterFrame.BackgroundTransparency = 0.2
 FooterFrame.Position = UDim2.new(0, 8, 1, -55)
 FooterFrame.Size = UDim2.new(1, -16, 0, 45)
 Instance.new("UICorner", FooterFrame).CornerRadius = UDim.new(0, 8)
 
 local FooterStroke = Instance.new("UIStroke", FooterFrame)
-FooterStroke.Color = Color3.fromRGB(45, 45, 45)
+FooterStroke.Color = Color3.fromRGB(50, 50, 50)
 FooterStroke.Thickness = 1
 
 local DiscordLabel = Instance.new("TextLabel", FooterFrame)
@@ -219,7 +208,7 @@ RunService.RenderStepped:Connect(function()
     StatsLabel.Text = "Performance: " .. GetFPS() .. " FPS"
 end)
 
--- Анимация кнопок
+-- Анимация кнопок окна
 CloseBtn.MouseEnter:Connect(function() tween(CloseBtn, {TextColor3 = Color3.fromRGB(255, 70, 70)}) end)
 CloseBtn.MouseLeave:Connect(function() tween(CloseBtn, {TextColor3 = Color3.fromRGB(150, 150, 150)}) end)
 CloseBtn.MouseButton1Click:Connect(function()
@@ -227,7 +216,7 @@ CloseBtn.MouseButton1Click:Connect(function()
     t.Completed:Connect(function() PulseHub:Destroy() end)
 end)
 
--- [[ УМНАЯ СИСТЕМА СВОРАЧИВАНИЯ ]] --
+-- [[ ИДЕАЛЬНОЕ СВОРАЧИВАНИЕ ]] --
 local isMinimized = false
 MinBtn.MouseEnter:Connect(function() tween(MinBtn, {TextColor3 = Color3.new(1,1,1)}) end)
 MinBtn.MouseLeave:Connect(function() tween(MinBtn, {TextColor3 = Color3.fromRGB(150, 150, 150)}) end)
@@ -237,15 +226,10 @@ MinBtn.MouseButton1Click:Connect(function()
         BodyContainer.Visible = false
         TabTitle.Visible = false
         
-        -- Включаем черный фон шапки
-        TopBar.BackgroundTransparency = 0.15
-        
-        -- Сжимаем окно в красивую плашку, кнопки встают на место автоматически благодаря привязке к правому краю
+        -- Просто уменьшаем окно! Так как оно само по себе черное, оно сожмется в безупречную капсулу
         tween(MainFrame, {Size = UDim2.new(0, 240, 0, 55)}, 0.2)
     else
-        -- Возвращаем в центр экрана при разворачивании
         MainFrame.Position = UDim2.new(0.5, -275, 0.5, -175)
-        TopBar.BackgroundTransparency = 1
         
         tween(MainFrame, {Size = UDim2.new(0, 550, 0, 350)}, 0.2).Completed:Connect(function()
             if not isMinimized then 
@@ -264,12 +248,12 @@ local allPages = {}
 local function CreatePage(name)
     local PageFrame = Instance.new("ScrollingFrame", PagesFolder)
     PageFrame.Name = name .. "Page"
-    PageFrame.Size = UDim2.new(1, -180, 1, -75)
-    PageFrame.Position = UDim2.new(0, 175, 0, 60)
+    PageFrame.Size = UDim2.new(1, -185, 1, -20)
+    PageFrame.Position = UDim2.new(0, 175, 0, 10)
     PageFrame.BackgroundTransparency = 1
     PageFrame.Visible = false
     PageFrame.ScrollBarThickness = 2
-    PageFrame.ScrollBarImageColor3 = Color3.fromRGB(50, 50, 50)
+    PageFrame.ScrollBarImageColor3 = Color3.fromRGB(70, 70, 70)
     
     local PageLayout = Instance.new("UIListLayout", PageFrame)
     PageLayout.Padding = UDim.new(0, 6)
@@ -289,7 +273,7 @@ local function CreatePage(name)
     Instance.new("UICorner", TabBtn).CornerRadius = UDim.new(0, 6)
     
     local TabStroke = Instance.new("UIStroke", TabBtn)
-    TabStroke.Color = Color3.fromRGB(60, 60, 60)
+    TabStroke.Color = Color3.fromRGB(70, 70, 70)
     TabStroke.Thickness = 1
     TabStroke.Enabled = false
     
@@ -305,7 +289,7 @@ local function CreatePage(name)
         TabTitle.Text = "— " .. name
         PageFrame.Visible = true
         TabStroke.Enabled = true
-        tween(TabBtn, {BackgroundTransparency = 0, TextColor3 = Color3.new(1,1,1)})
+        tween(TabBtn, {BackgroundTransparency = 0.5, TextColor3 = Color3.new(1,1,1)})
     end
     
     TabBtn.InputBegan:Connect(function(input)
@@ -322,7 +306,7 @@ local function CreatePage(name)
     end)
     
     TabBtn.MouseEnter:Connect(function()
-        if TabTitle.Text ~= "— " .. name then tween(TabBtn, {BackgroundTransparency = 0.6, TextColor3 = Color3.new(1,1,1)}) end
+        if TabTitle.Text ~= "— " .. name then tween(TabBtn, {BackgroundTransparency = 0.8, TextColor3 = Color3.new(1,1,1)}) end
     end)
     TabBtn.MouseLeave:Connect(function()
         if TabTitle.Text ~= "— " .. name then
@@ -385,7 +369,7 @@ local PlayersPage = CreatePage("Players")
 CreateToggle(AutoPage, "Auto Farm", true)
 CreateToggle(AutoPage, "Anti-Fling", true)
 
-allTabs["Auto"].BackgroundTransparency = 0
+allTabs["Auto"].BackgroundTransparency = 0.5
 allTabs["Auto"].TextColor3 = Color3.new(1,1,1)
 allTabs["Auto"].UIStroke.Enabled = true
 allPages["Auto"].Visible = true
