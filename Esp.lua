@@ -1,9 +1,9 @@
--- [[ Pulse Hub GUI — Исправленная и анимированная версия ]] --
+-- [[ Pulse Hub GUI — Полная рабочая версия с Touch/Click анимациями ]] --
 local TweenService = game:GetService("TweenService")
 local UserInputService = game:GetService("UserInputService")
 local PulseHub = Instance.new("ScreenGui")
 
--- Защита от повторного запуска (чтобы GUI не спавнился много раз)
+-- Защита от повторного запуска
 if game:GetService("CoreGui"):FindFirstChild("PulseHub") then
     game:GetService("CoreGui").PulseHub:Destroy()
 end
@@ -36,7 +36,7 @@ MainCorner.CornerRadius = UDim.new(0, 10)
 MainFrame.Size = UDim2.new(0, 550, 0, 0)
 tween(MainFrame, {Size = UDim2.new(0, 550, 0, 350)}, 0.3)
 
--- Скрипт перетаскивания (Drag) окна мышкой
+-- Скрипт перетаскивания (Drag) окна мышкой или пальцем
 local dragging, dragInput, dragStart, startPos
 MainFrame.InputBegan:Connect(function(input)
     if input.UserInputType == Enum.UserInputType.MouseButton1 or input.UserInputType == Enum.UserInputType.Touch then
@@ -80,6 +80,7 @@ HubTitle.TextColor3 = Color3.new(1,1,1)
 HubTitle.TextSize = 14
 HubTitle.Position = UDim2.new(0, 15, 0, 12)
 HubTitle.TextXAlignment = Enum.TextXAlignment.Left
+HubTitle.BackgroundTransparency = 1
 
 -- Контейнер для вкладок
 local Navigation = Instance.new("ScrollingFrame", Sidebar)
@@ -106,6 +107,7 @@ TabTitle.TextColor3 = Color3.new(1,1,1)
 TabTitle.TextSize = 16
 TabTitle.Position = UDim2.new(0, 15, 0, 15)
 TabTitle.TextXAlignment = Enum.TextXAlignment.Left
+TabTitle.BackgroundTransparency = 1
 
 -- Кнопка закрытия (X)
 local CloseBtn = Instance.new("TextButton", TopBar)
@@ -145,7 +147,7 @@ local PagesFolder = Instance.new("Folder", MainFrame)
 local allTabs = {}
 local allPages = {}
 
--- Функция создания новой страницы (вкладки)
+-- Функция создания новой страницы (Вкладки) с Touch/Click анимациями
 local function CreatePage(name)
     local PageFrame = Instance.new("ScrollingFrame", PagesFolder)
     PageFrame.Name = name .. "Page"
@@ -168,15 +170,15 @@ local function CreatePage(name)
     TabBtn.Font = Enum.Font.GothamMedium
     TabBtn.TextSize = 12
     TabBtn.TextColor3 = Color3.fromRGB(140, 140, 140)
-    TabBtn.BackgroundColor3 = Color3.fromRGB(30, 30, 30)
+    TabBtn.BackgroundColor3 = Color3.fromRGB(255, 255, 255)
     TabBtn.BackgroundTransparency = 1
     TabBtn.TextXAlignment = Enum.TextXAlignment.Left
+    TabBtn.ClipsDescendants = true
     Instance.new("UICorner", TabBtn).CornerRadius = UDim.new(0, 6)
     
     allTabs[name] = TabBtn
     allPages[name] = PageFrame
     
-    -- Логика переключения вкладки
     local function selectTab()
         for tName, tBtn in pairs(allTabs) do
             tween(tBtn, {BackgroundTransparency = 1, TextColor3 = Color3.fromRGB(140, 140, 140)})
@@ -184,27 +186,65 @@ local function CreatePage(name)
         end
         TabTitle.Text = name
         PageFrame.Visible = true
-        tween(TabBtn, {BackgroundTransparency = 0.4, TextColor3 = Color3.new(1,1,1)})
+        tween(TabBtn, {BackgroundTransparency = 0.15, TextColor3 = Color3.new(1,1,1)})
     end
     
-    TabBtn.MouseButton1Click:Connect(selectTab)
+    -- АНИМАЦИЯ НАЖАТИЯ ПАЛЬЦЕМ (Ripple + Scale эффекты)
+    TabBtn.InputBegan:Connect(function(input)
+        if input.UserInputType == Enum.UserInputType.MouseButton1 or input.UserInputType == Enum.UserInputType.Touch then
+            tween(TabBtn, {Size = UDim2.new(1, -14, 0, 30), Position = UDim2.new(0, 7, 0, 1)}, 0.1)
+            
+            local Circle = Instance.new("ImageLabel")
+            Circle.Name = "Ripple"
+            Circle.Parent = TabBtn
+            Circle.BackgroundColor3 = Color3.new(1, 1, 1)
+            Circle.BackgroundTransparency = 1
+            Circle.Image = "rbxassetid://266543268"
+            Circle.ImageColor3 = Color3.new(1, 1, 1)
+            Circle.ImageTransparency = 0.6
+            
+            local mousePos = UserInputService:GetMouseLocation()
+            local btnPos = TabBtn.AbsolutePosition
+            local relativeX = mousePos.X - btnPos.X
+            local relativeY = (mousePos.Y - 36) - btnPos.Y
+            
+            Circle.Position = UDim2.new(0, relativeX, 0, relativeY)
+            Circle.Size = UDim2.new(0, 0, 0, 0)
+            Circle.AnchorPoint = Vector2.new(0.5, 0.5)
+            
+            local rippleTween = TweenService:Create(Circle, TweenInfo.new(0.4, Enum.EasingStyle.Quad, Enum.EasingDirection.Out), {
+                Size = UDim2.new(0, 200, 0, 200),
+                ImageTransparency = 1
+            })
+            rippleTween:Play()
+            rippleTween.Completed:Connect(function() Circle:Destroy() end)
+            
+            selectTab()
+        end
+    end)
     
-    -- Анимация наведения мыши
+    TabBtn.InputEnded:Connect(function(input)
+        if input.UserInputType == Enum.UserInputType.MouseButton1 or input.UserInputType == Enum.UserInputType.Touch then
+            tween(TabBtn, {Size = UDim2.new(1, -10, 0, 32), Position = UDim2.new(0, 5, 0, 0)}, 0.1)
+        end
+    end)
+    
     TabBtn.MouseEnter:Connect(function()
         if TabTitle.Text ~= name then
-            tween(TabBtn, {BackgroundTransparency = 0.8, TextColor3 = Color3.new(1,1,1)})
+            tween(TabBtn, {BackgroundTransparency = 0.08, TextColor3 = Color3.new(1,1,1)})
         end
     end)
     TabBtn.MouseLeave:Connect(function()
         if TabTitle.Text ~= name then
             tween(TabBtn, {BackgroundTransparency = 1, TextColor3 = Color3.fromRGB(140, 140, 140)})
+            tween(TabBtn, {Size = UDim2.new(1, -10, 0, 32), Position = UDim2.new(0, 5, 0, 0)}, 0.1)
         end
     end)
     
     return PageFrame
 end
 
--- Функция создания переключателя (Toggle) внутри страницы
+-- Функция создания переключателя (Toggle)
 local function CreateToggle(parentPage, name, default, callback)
     local ToggleFrame = Instance.new("Frame", parentPage)
     ToggleFrame.BackgroundColor3 = Color3.fromRGB(24, 24, 24)
@@ -248,31 +288,35 @@ local function CreateToggle(parentPage, name, default, callback)
     end)
 end
 
--- [[ НАПОЛНЕНИЕ СТРАНИЦ ИЗ ФОТОГРАФИИ 3348.jpg ]] --
-
--- Создаем страницы (Вкладки)
+-- [[ НАПОЛНЕНИЕ ДАННЫМИ ИЗ 3348.jpg ]] --
 local MainPage = CreatePage("Main")
 local SheriffPage = CreatePage("Sheriff")
 local MurderPage = CreatePage("Murder")
 local AutoFarmPage = CreatePage("Auto Farm")
 local TeleportPage = CreatePage("Teleport")
+local FunPage = CreatePage("Fun/Troll")
+local FlingPage = CreatePage("Fling Players")
+local VisualsPage = CreatePage("Visuals")
 local SettingsPage = CreatePage("Settings")
 
--- Контент для страницы Auto Farm (как на скриншоте)
-CreateToggle(AutoFarmPage, "Auto Farm", true, function(val) print("Auto Farm:", val) end)
+-- Элементы для страницы Auto Farm
+CreateToggle(AutoFarmPage, "Auto Farm", true)
 CreateToggle(AutoFarmPage, "Auto-Respawn", false)
 CreateToggle(AutoFarmPage, "Anti-Fling", true)
 CreateToggle(AutoFarmPage, "Avoid Murderer", false)
 CreateToggle(AutoFarmPage, "Auto-Fling", false)
 CreateToggle(AutoFarmPage, "Kill Aura", false)
 
--- Делаем вкладку "Auto Farm" открытой по умолчанию
-allTabs["Auto Farm"].BackgroundTransparency = 0.4
+-- Элементы для теста на вкладке Main
+CreateToggle(MainPage, "Enable Script", false)
+
+-- Открываем Auto Farm по умолчанию
+allTabs["Auto Farm"].BackgroundTransparency = 0.15
 allTabs["Auto Farm"].TextColor3 = Color3.new(1,1,1)
 allPages["Auto Farm"].Visible = true
 TabTitle.Text = "Auto Farm"
 
--- [[ ИНФО-ПАНЕЛЬ СНИЗУ (FOOTER) ]] --
+-- [[ ФУТЕР ]] --
 local DiscordLabel = Instance.new("TextLabel", Sidebar)
 DiscordLabel.Position = UDim2.new(0, 12, 1, -30)
 DiscordLabel.Size = UDim2.new(1, -12, 0, 15)
