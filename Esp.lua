@@ -1,4 +1,4 @@
--- [[ Pulse Hub GUI Clone ]] --
+-- [[ Pulse Hub GUI Clone — Fixed Version ]] --
 local PulseHub = Instance.new("ScreenGui")
 local MainFrame = Instance.new("Frame")
 local UICorner = Instance.new("UICorner")
@@ -28,12 +28,12 @@ MainFrame.BackgroundColor3 = Color3.fromRGB(18, 18, 18)
 MainFrame.Position = UDim2.new(0.5, -275, 0.5, -175)
 MainFrame.Size = UDim2.new(0, 550, 0, 350)
 MainFrame.Active = true
-MainFrame.Draggable = true -- Позволяет перетаскивать окно
+MainFrame.Draggable = true
 
 UICorner.CornerRadius = UDim.new(0, 10)
 UICorner.Parent = MainFrame
 
--- [[ САЙДБАР (Левое меню) ]] --
+-- [[ САЙДБАР ]] --
 Sidebar.Name = "Sidebar"
 Sidebar.Parent = MainFrame
 Sidebar.BackgroundColor3 = Color3.fromRGB(14, 14, 14)
@@ -73,7 +73,7 @@ Navigation.Name = "Navigation"
 Navigation.Parent = Sidebar
 Navigation.BackgroundTransparency = 1.000
 Navigation.Position = UDim2.new(0, 0, 0, 55)
-Navigation.Size = UDim2.new(1, 0, 1, -95)
+Navigation.Size = UDim2.new(1, 0, 1, -110)
 Navigation.ScrollBarThickness = 0
 
 UIListLayout.Parent = Navigation
@@ -142,9 +142,8 @@ UIListLayout_2.Parent = ElementsHolder
 UIListLayout_2.SortOrder = Enum.SortOrder.LayoutOrder
 UIListLayout_2.Padding = UDim.new(0, 6)
 
--- [[ ФУНКЦИИ ДЛЯ СОЗДАНИЯ ЭЛЕМЕНТОВ ]] --
+-- [[ ФУНКЦИИ ДЛЯ ЭЛЕМЕНТОВ ]] --
 
--- Кнопка в Сайдбаре (Вкладка)
 local function CreateTab(name, selected)
     local TabBtn = Instance.new("TextButton")
     TabBtn.Name = name .. "Tab"
@@ -155,7 +154,6 @@ local function CreateTab(name, selected)
     TabBtn.Position = UDim2.new(0, 5, 0, 0)
     TabBtn.Font = Enum.Font.GothamMedium
     TabBtn.Text = "    " .. name
-    TabBtn.TextColor3 = selected and Color3.fromRGB(255, 255, 255) or Color3.fromRGB(14, 14, 14)
     TabBtn.TextXAlignment = Enum.TextXAlignment.Left
     TabBtn.TextSize = 12.000
     
@@ -169,7 +167,6 @@ local function CreateTab(name, selected)
     btnCorner.CornerRadius = UDim.new(0, 6)
 end
 
--- Переключатель (Toggle) из правой части 3348.jpg
 local function CreateToggle(name, default)
     local ToggleFrame = Instance.new("Frame")
     local ToggleTitle = Instance.new("TextLabel")
@@ -196,7 +193,7 @@ local function CreateToggle(name, default)
     
     ToggleBG.Name = "ToggleBG"
     ToggleBG.Parent = ToggleFrame
-    ToggleBG.BackgroundColor3 = default and Color3.fromRGB(100, 100, 100) or Color3.fromRGB(40, 40, 40)
+    ToggleBG.BackgroundColor3 = default and Color3.fromRGB(140, 140, 140) or Color3.fromRGB(40, 40, 40)
     ToggleBG.Position = UDim2.new(1, -45, 0, 10)
     ToggleBG.Size = UDim2.new(0, 32, 0, 18)
     ToggleBG.Text = ""
@@ -207,40 +204,36 @@ local function CreateToggle(name, default)
     ToggleCircle.Name = "ToggleCircle"
     ToggleCircle.Parent = ToggleBG
     ToggleCircle.BackgroundColor3 = Color3.fromRGB(255, 255, 255)
-    ToggleCircle.Position = default and UDim2.new(1, -15, 0, 2) or UDim2.new(0, 2, 0, 2)
+    ToggleCircle.Position = default and UDim2.new(1, -16, 0, 2) or UDim2.new(0, 2, 0, 2)
     ToggleCircle.Size = UDim2.new(0, 14, 0, 14)
     
     local tcCorner = Instance.new("UICorner", ToggleCircle)
     tcCorner.CornerRadius = UDim.new(1, 0)
     
-    -- Логика переключения
     local enabled = default
     ToggleBG.MouseButton1Click:Connect(function()
         enabled = not enabled
         if enabled then
-            ToggleBG.BackgroundColor3 = Color3.fromRGB(140, 140, 140) -- Светло-серый активный цвет как на скрине
+            ToggleBG.BackgroundColor3 = Color3.fromRGB(140, 140, 140)
             ToggleCircle:TweenPosition(UDim2.new(1, -16, 0, 2), "Out", "Quad", 0.15, true)
         else
             ToggleBG.BackgroundColor3 = Color3.fromRGB(40, 40, 40)
             ToggleCircle:TweenPosition(UDim2.new(0, 2, 0, 2), "Out", "Quad", 0.15, true)
-        }
+        end
     end)
 end
 
--- [[ НАПОЛНЕНИЕ ИНТЕРФЕЙСА (копии элементов из 3348.jpg) ]] --
-
--- Вкладки слева
+-- [[ ОРИГИНАЛЬНЫЕ ДАННЫЕ ИЗ 3348.jpg ]] --
 CreateTab("Main", false)
 CreateTab("Sheriff", false)
 CreateTab("Murder", false)
-CreateTab("Auto Farm", true) -- Выбранная
+CreateTab("Auto Farm", true)
 CreateTab("Teleport", false)
 CreateTab("Fun/Troll", false)
 CreateTab("Fling Players", false)
 CreateTab("Visuals", false)
 CreateTab("Settings", false)
 
--- Переключатели справа (Auto Farm вкладка)
 CreateToggle("Auto Farm", true)
 CreateToggle("Auto-Respawn", false)
 CreateToggle("Anti-Fling", true)
@@ -248,7 +241,7 @@ CreateToggle("Avoid Murderer", false)
 CreateToggle("Auto-Fling", false)
 CreateToggle("Kill Aura", false)
 
--- Подвал сайдбара с Discord ссылкой
+-- Инфо-панель снизу
 local DiscordLabel = Instance.new("TextLabel")
 DiscordLabel.Parent = Sidebar
 DiscordLabel.BackgroundTransparency = 1.000
