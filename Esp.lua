@@ -423,7 +423,7 @@ local function CreatePage(name, iconId)
     TabBtn.Name = "TabBtn" 
     TabBtn.Size = UDim2.new(1, 0, 1, 0)
     TabBtn.Text = name 
-    TabBtn.Font = Enum.Font.GothamMedium
+    TabBtn.Font = Enum.Font.GothamBold -- ШРИФТ ШИРЕ (GothamBold вместо Medium)
     TabBtn.TextSize = 13
     TabBtn.TextColor3 = Color3.fromRGB(140, 140, 140)
     TabBtn.BackgroundTransparency = 1
@@ -431,18 +431,16 @@ local function CreatePage(name, iconId)
     TabBtn.ZIndex = 7
     
     local Padding = Instance.new("UIPadding", TabBtn)
-    Padding.PaddingLeft = UDim.new(0, iconId and 36 or 12)
+    Padding.PaddingLeft = UDim.new(0, iconId and 42 or 12) -- Увеличен отступ для большой иконки
     
-    -- ИСПОЛЬЗУЕМ ФОРМАТ КАК В ЗАГОЛОВКЕ
     if iconId then
         local TabIcon = Instance.new("ImageLabel", TabContainer)
         TabIcon.Name = "TabIcon"
-        TabIcon.Size = UDim2.new(0, 18, 0, 18)
-        TabIcon.Position = UDim2.new(0, 10, 0.5, -9) 
+        TabIcon.Size = UDim2.new(0, 24, 0, 24) -- ИКОНКА БОЛЬШЕ (24 вместо 18)
+        TabIcon.Position = UDim2.new(0, 10, 0.5, -12) -- Центрирование по вертикали для 24px
         TabIcon.BackgroundTransparency = 1
-        -- ВОТ ЗДЕСЬ ИЗМЕНЕНИЯ:
         TabIcon.Image = "rbxthumb://type=Asset&id=" .. iconId .. "&w=150&h=150"
-        TabIcon.ImageTransparency = 0.4 -- Тусклая, если вкладка не выбрана
+        TabIcon.ImageTransparency = 0.25 -- БОЛЕЕ ВИДИМАЯ (0.25 вместо 0.4)
         TabIcon.ZIndex = 7
         allTabIcons[name] = TabIcon
     end
@@ -462,7 +460,7 @@ local function CreatePage(name, iconId)
             tween(tContainer, {BackgroundTransparency = 1}, 0.2)
             tween(allTabButtons[tName], {TextColor3 = Color3.fromRGB(140, 140, 140)}, 0.2)
             if allTabIcons[tName] then
-                tween(allTabIcons[tName], {ImageTransparency = 0.4}, 0.2) -- Делаем тусклой
+                tween(allTabIcons[tName], {ImageTransparency = 0.25}, 0.2) -- Возвращаем к видимой прозрачности
             end
             allPages[tName].Visible = false
         end
@@ -472,18 +470,18 @@ local function CreatePage(name, iconId)
         tween(TabContainer, {BackgroundTransparency = 0}, 0.2)
         tween(TabBtn, {TextColor3 = Color3.fromRGB(255, 255, 255)}, 0.2)
         if allTabIcons[name] then
-            tween(allTabIcons[name], {ImageTransparency = 0}, 0.2) -- Делаем яркой при выборе
+            tween(allTabIcons[name], {ImageTransparency = 0}, 0.2) -- Яркая при выборе
         end
     end)
     
     return PageFrame
 end
 
--- Создание страниц
-local MainPage     = CreatePage("Main", "117996761927034")
-local AutoPage     = CreatePage("Auto", "117996761927034")
-local AutoBuyPage  = CreatePage("Auto Buy", "117996761927034")
-local PlayersPage  = CreatePage("Players", "117996761927034")
+-- Создание страниц (Картинка осталась только у Settings)
+local MainPage     = CreatePage("Main")
+local AutoPage     = CreatePage("Auto")
+local AutoBuyPage  = CreatePage("Auto Buy")
+local PlayersPage  = CreatePage("Players")
 local SettingsPage = CreatePage("Settings", "117996761927034")
 
 -- Наполнение (Пример):
