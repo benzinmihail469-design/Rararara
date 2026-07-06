@@ -1,4 +1,4 @@
--- [[ Pulse Hub GUI — Фикс сворачивания, прозрачность и монолитный подвал ]] --
+-- [[ Pulse Hub GUI — Полное исправление вкладок, отступов и сворачивания ]] --
 local TweenService = game:GetService("TweenService")
 local UserInputService = game:GetService("UserInputService")
 local RunService = game:GetService("RunService")
@@ -21,7 +21,7 @@ end
 local MainFrame = Instance.new("Frame", PulseHub)
 MainFrame.Name = "MainFrame"
 MainFrame.BackgroundColor3 = Color3.fromRGB(14, 14, 14)
-MainFrame.BackgroundTransparency = 0.15 -- Красивая прозрачность для заднего фона хаба
+MainFrame.BackgroundTransparency = 0.15 -- Прозрачность только фона хаба
 MainFrame.Position = UDim2.new(0.5, -275, 0.5, -175)
 MainFrame.Size = UDim2.new(0, 550, 0, 350)
 MainFrame.ClipsDescendants = true 
@@ -33,7 +33,7 @@ local MainStroke = Instance.new("UIStroke", MainFrame)
 MainStroke.Color = Color3.fromRGB(40, 40, 40)
 MainStroke.Thickness = 1.5
 
--- [[ КОНТЕЙНЕР ДЛЯ ВСЕГО САЙДБАРА (Защита от деформации при сворачивании) ]] --
+-- [[ КОНТЕЙНЕР ДЛЯ ВСЕГО САЙДБАРА ]] --
 local SidebarContainer = Instance.new("Frame", MainFrame)
 SidebarContainer.Name = "SidebarContainer"
 SidebarContainer.Size = UDim2.new(0, 160, 1, 0)
@@ -45,7 +45,7 @@ local HeaderBg = Instance.new("Frame", SidebarContainer)
 HeaderBg.Name = "HeaderBg"
 HeaderBg.Size = UDim2.new(1, -10, 0, 46)
 HeaderBg.Position = UDim2.new(0, 10, 0, 10)
-HeaderBg.BackgroundColor3 = Color3.fromRGB(22, 22, 22) -- Полностью непрозрачная плашка
+HeaderBg.BackgroundColor3 = Color3.fromRGB(22, 22, 22)
 HeaderBg.BackgroundTransparency = 0
 HeaderBg.ZIndex = 4
 
@@ -85,7 +85,7 @@ SubTitle.TextXAlignment = Enum.TextXAlignment.Left
 SubTitle.BackgroundTransparency = 1
 SubTitle.ZIndex = 5
 
--- [[ НАВИГАЦИЯ (ВКЛАДКИ) ]] --
+-- [[ НАВИГАЦИЯ (КНОПКИ ВКЛАДОК НЕ ТРОНУТЫ И ПРОЗРАЧНЫ) ]] --
 local Navigation = Instance.new("ScrollingFrame", SidebarContainer)
 Navigation.Size = UDim2.new(1, -10, 1, -135)
 Navigation.Position = UDim2.new(0, 10, 0, 65)
@@ -96,12 +96,12 @@ local NavLayout = Instance.new("UIListLayout", Navigation)
 NavLayout.Padding = UDim.new(0, 5)
 NavLayout.SortOrder = Enum.SortOrder.LayoutOrder
 
--- [[ ВЫДЕЛЕННЫЙ ПОДВАЛ (В сочетании с заголовком) ]] --
+-- [[ ВЫДЕЛЕННЫЙ ПОДВАЛ ]] --
 local FooterBg = Instance.new("Frame", SidebarContainer)
 FooterBg.Name = "FooterBg"
 FooterBg.Size = UDim2.new(1, -10, 0, 46)
 FooterBg.Position = UDim2.new(0, 10, 1, -56)
-FooterBg.BackgroundColor3 = Color3.fromRGB(22, 22, 22) -- Полностью непрозрачный подвал
+FooterBg.BackgroundColor3 = Color3.fromRGB(22, 22, 22)
 FooterBg.BackgroundTransparency = 0
 FooterBg.ZIndex = 4
 
@@ -109,7 +109,7 @@ local FooterCorner = Instance.new("UICorner", FooterBg)
 FooterCorner.CornerRadius = UDim.new(0, 10)
 
 local FooterStroke = Instance.new("UIStroke", FooterBg)
-FooterStroke.Color = Color3.fromRGB(45, 45, 45) -- Такой же контур, как у заголовка
+FooterStroke.Color = Color3.fromRGB(45, 45, 45)
 FooterStroke.Thickness = 1.2
 
 local DiscordLabel = Instance.new("TextLabel", FooterBg)
@@ -142,7 +142,7 @@ RunService.RenderStepped:Connect(function()
     StatsLabel.Text = "FPS: " .. #FrameUpdateTable
 end)
 
--- [[ ВЕРХНЯЯ ПАНЕЛЬ КОНТЕНТА И КНОПОК ]] --
+-- [[ ВЕРХНЯЯ ПАНЕЛЬ С СИСТЕМОЙ УПРАВЛЕНИЯ ]] --
 local TopBar = Instance.new("Frame", MainFrame)
 TopBar.Name = "TopBar"
 TopBar.Size = UDim2.new(1, 0, 0, 60)
@@ -159,7 +159,7 @@ TabTitle.Size = UDim2.new(0, 150, 0, 20)
 TabTitle.TextXAlignment = Enum.TextXAlignment.Left
 TabTitle.BackgroundTransparency = 1
 
--- Кнопки управления (Привязаны к правому краю MainFrame)
+-- Кнопки управления (ОБЕСПЕЧЕН СТРОГИЙ ОТСТУП ОТ САЙДБАРА ПРИ СВОРАЧИВАНИИ)
 local ButtonHolder = Instance.new("Frame", TopBar)
 ButtonHolder.Name = "ButtonHolder"
 ButtonHolder.Size = UDim2.new(0, 70, 0, 30)
@@ -191,19 +191,21 @@ PagesContainer.Position = UDim2.new(0, 175, 0, 60)
 PagesContainer.BackgroundTransparency = 1
 PagesContainer.ZIndex = 2
 
--- [[ МОДЕРНИЗИРОВАННАЯ СИСТЕМА ИДЕАЛЬНОГО СВОРАЧИВАНИЯ ]] --
+-- [[ МОДЕРНИЗИРОВАННОЕ СВОРАЧИВАНИЕ (Идеальный баланс без соприкосновений) ]] --
 local isMinimized = false
 MinBtn.MouseButton1Click:Connect(function()
     isMinimized = not isMinimized
     if isMinimized then
         PagesContainer.Visible = false
         TabTitle.Visible = false
+        FooterBg.Visible = false -- Скрываем подвал при полном закрытии, чтобы не ломать структуру
         
-        -- Плавно перемещаем контейнер кнопок внутрь заголовка сайдбара, чтобы не ломать структуру
-        ButtonHolder.Position = UDim2.new(0, 125, 0, 15)
-        tween(MainFrame, {Size = UDim2.new(0, 170, 0, 350)}) -- Сжатие ровно по границе сайдбара
+        -- Смещаем блок кнопок на безопасное расстояние справа от сайдбара
+        ButtonHolder.Position = UDim2.new(0, 180, 0, 15)
+        tween(MainFrame, {Size = UDim2.new(0, 225, 0, 66)}) -- Сворачивается аккуратно под плашку заголовка
     else
         ButtonHolder.Position = UDim2.new(1, -80, 0, 15)
+        FooterBg.Visible = true
         
         tween(MainFrame, {Size = UDim2.new(0, 550, 0, 350)}).Completed:Connect(function()
             if not isMinimized then
@@ -219,7 +221,7 @@ CloseBtn.MouseButton1Click:Connect(function()
     t.Completed:Connect(function() PulseHub:Destroy() end)
 end)
 
--- Drag (Перетаскивание GUI за любую область)
+-- Перетаскивание хаба за любую область
 local dragging, dragStart, startPos
 MainFrame.InputBegan:Connect(function(input)
     if input.UserInputType == Enum.UserInputType.MouseButton1 then
@@ -256,7 +258,7 @@ local function CreatePage(name)
     TabBtn.TextSize = 13
     TabBtn.TextColor3 = Color3.fromRGB(150, 150, 150)
     TabBtn.BackgroundColor3 = Color3.fromRGB(24, 24, 24)
-    TabBtn.BackgroundTransparency = 1
+    TabBtn.BackgroundTransparency = 1 -- По умолчанию кнопки полностью прозрачны
     TabBtn.TextXAlignment = Enum.TextXAlignment.Left
     Instance.new("UICorner", TabBtn).CornerRadius = UDim.new(0, 6)
     
