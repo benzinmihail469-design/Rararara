@@ -1,4 +1,4 @@
--- [[ Pulse Hub GUI — Выделенный заголовок и белый Discord ]] --
+-- [[ Pulse Hub GUI — Выделенная плашка заголовка и белый Discord ]] --
 local TweenService = game:GetService("TweenService")
 local UserInputService = game:GetService("UserInputService")
 local RunService = game:GetService("RunService")
@@ -23,7 +23,7 @@ end
 local MainFrame = Instance.new("Frame")
 MainFrame.Name = "MainFrame"
 MainFrame.Parent = PulseHub
-MainFrame.BackgroundColor3 = Color3.fromRGB(14, 14, 14) -- Глубокий темный фон
+MainFrame.BackgroundColor3 = Color3.fromRGB(14, 14, 14)
 MainFrame.BackgroundTransparency = 0.05
 MainFrame.Position = UDim2.new(0.5, -275, 0.5, -175)
 MainFrame.Size = UDim2.new(0, 550, 0, 350)
@@ -32,7 +32,6 @@ MainFrame.ClipsDescendants = true
 local MainCorner = Instance.new("UICorner", MainFrame)
 MainCorner.CornerRadius = UDim.new(0, 12)
 
--- Контур всего меню
 local MainStroke = Instance.new("UIStroke", MainFrame)
 MainStroke.Color = Color3.fromRGB(55, 55, 55)
 MainStroke.Thickness = 1.5
@@ -68,51 +67,59 @@ UserInputService.InputChanged:Connect(function(input)
     end
 end)
 
--- [[ ВЫДЕЛЕННЫЙ ЗАГОЛОВОК (Слегка светлее для объема) ]] --
+-- [[ ЗАГОЛОВОК С ОТДЕЛЬНОЙ ПЛАШКОЙ ]] --
 local TopBar = Instance.new("Frame", MainFrame)
 TopBar.Name = "TopBar"
 TopBar.Size = UDim2.new(1, 0, 0, 55)
-TopBar.BackgroundColor3 = Color3.fromRGB(22, 22, 22) -- Слегка выделенный тон
-TopBar.BackgroundTransparency = 0.2                  -- Легкая прозрачность для стиля
+TopBar.BackgroundTransparency = 1 
 TopBar.ZIndex = 5
 
-local TopBarCorner = Instance.new("UICorner", TopBar)
-TopBarCorner.CornerRadius = UDim.new(0, 12)
+-- Красивая отдельная подложка для самого текста и иконки, как на скриншоте 3358_3.jpg
+local HeaderBackground = Instance.new("Frame", TopBar)
+HeaderBackground.Name = "HeaderBackground"
+HeaderBackground.Size = UDim2.new(0, 220, 0, 45)
+HeaderBackground.Position = UDim2.new(0, 8, 0, 5)
+HeaderBackground.BackgroundColor3 = Color3.fromRGB(24, 24, 24) -- Выделенный серый цвет
+HeaderBackground.BackgroundTransparency = 0.3
+HeaderBackground.ZIndex = 1
+local HeaderCorner = Instance.new("UICorner", HeaderBackground)
+HeaderCorner.CornerRadius = UDim.new(0, 10)
 
 local HubIcon = Instance.new("ImageLabel", TopBar)
-HubIcon.Size = UDim2.new(0, 34, 0, 34)
-HubIcon.Position = UDim2.new(0, 15, 0, 10)
+HubIcon.Size = UDim2.new(0, 32, 0, 32)
+HubIcon.Position = UDim2.new(0, 15, 0, 11)
 HubIcon.Image = "rbxassetid://10840212450"
-HubIcon.BackgroundColor3 = Color3.fromRGB(30, 30, 30)
-HubIcon.BackgroundTransparency = 0
-Instance.new("UICorner", HubIcon).CornerRadius = UDim.new(0, 8)
+HubIcon.BackgroundTransparency = 1
+HubIcon.ZIndex = 2
 
 local HubTitle = Instance.new("TextLabel", TopBar)
 HubTitle.Text = "Pulse Hub"
 HubTitle.Font = Enum.Font.GothamBold
 HubTitle.TextColor3 = Color3.fromRGB(255, 255, 255)
 HubTitle.TextSize = 14
-HubTitle.Position = UDim2.new(0, 58, 0, 11)
+HubTitle.Position = UDim2.new(0, 55, 0, 11)
 HubTitle.Size = UDim2.new(0, 120, 0, 16)
 HubTitle.TextXAlignment = Enum.TextXAlignment.Left
 HubTitle.BackgroundTransparency = 1
+HubTitle.ZIndex = 2
 
 local SubTitle = Instance.new("TextLabel", TopBar)
 SubTitle.Text = "Grow A Garden 2"
 SubTitle.Font = Enum.Font.Gotham
 SubTitle.TextColor3 = Color3.fromRGB(140, 140, 140)
-SubTitle.TextSize = 11
-SubTitle.Position = UDim2.new(0, 58, 0, 27)
+SubTitle.TextSize = 10
+SubTitle.Position = UDim2.new(0, 55, 0, 27)
 SubTitle.Size = UDim2.new(0, 120, 0, 14)
 SubTitle.TextXAlignment = Enum.TextXAlignment.Left
 SubTitle.BackgroundTransparency = 1
+SubTitle.ZIndex = 2
 
 local TabTitle = Instance.new("TextLabel", TopBar)
 TabTitle.Text = "— Auto"
 TabTitle.Font = Enum.Font.GothamMedium
 TabTitle.TextColor3 = Color3.fromRGB(110, 110, 110)
 TabTitle.TextSize = 13
-TabTitle.Position = UDim2.new(0, 165, 0, 11)
+TabTitle.Position = UDim2.new(0, 240, 0, 11)
 TabTitle.Size = UDim2.new(0, 150, 0, 16)
 TabTitle.TextXAlignment = Enum.TextXAlignment.Left
 TabTitle.BackgroundTransparency = 1
@@ -150,10 +157,8 @@ BodyContainer.ZIndex = 2
 
 local Sidebar = Instance.new("Frame", BodyContainer)
 Sidebar.Name = "Sidebar"
-Sidebar.BackgroundColor3 = Color3.fromRGB(18, 18, 18)
-Sidebar.BackgroundTransparency = 0.4
+Sidebar.BackgroundTransparency = 1 -- Сделал прозрачным, так как заголовки теперь на собственных плашках
 Sidebar.Size = UDim2.new(0, 160, 1, 0)
-Instance.new("UICorner", Sidebar).CornerRadius = UDim.new(0, 12)
 
 local Navigation = Instance.new("ScrollingFrame", Sidebar)
 Navigation.Size = UDim2.new(1, 0, 1, -65)
@@ -183,7 +188,7 @@ DiscordLabel.Position = UDim2.new(0, 8, 0, 6)
 DiscordLabel.Size = UDim2.new(1, -16, 0, 15)
 DiscordLabel.Font = Enum.Font.GothamMedium
 DiscordLabel.Text = "discord.gg/pulsezone"
-DiscordLabel.TextColor3 = Color3.fromRGB(255, 255, 255) -- Изменено на белый цвет
+DiscordLabel.TextColor3 = Color3.fromRGB(255, 255, 255) -- Белый текст Дискорда
 DiscordLabel.TextSize = 10
 DiscordLabel.TextXAlignment = Enum.TextXAlignment.Left
 DiscordLabel.BackgroundTransparency = 1
@@ -229,11 +234,12 @@ MinBtn.MouseButton1Click:Connect(function()
     if isMinimized then
         BodyContainer.Visible = false
         TabTitle.Visible = false
+        HeaderBackground.Size = UDim2.new(0, 150, 0, 45) -- Слегка адаптируем плашку при свертывании
         
-        -- Сворачиваем в аккуратную выделенную плашку
         tween(MainFrame, {Size = UDim2.new(0, 240, 0, 55)}, 0.2)
     else
         MainFrame.Position = UDim2.new(0.5, -275, 0.5, -175)
+        HeaderBackground.Size = UDim2.new(0, 220, 0, 45)
         
         tween(MainFrame, {Size = UDim2.new(0, 550, 0, 350)}, 0.2).Completed:Connect(function()
             if not isMinimized then 
@@ -264,17 +270,17 @@ local function CreatePage(name)
     PageLayout.SortOrder = Enum.SortOrder.LayoutOrder
     
     local TabBtn = Instance.new("TextButton", Navigation)
-    TabBtn.Size = UDim2.new(1, -10, 0, 32)
+    TabBtn.Size = UDim2.new(1, -10, 0, 36) -- Слегка увеличил высоту кнопок под стиль плашки заголовка
     TabBtn.Position = UDim2.new(0, 5, 0, 0)
     TabBtn.Text = "     " .. name
     TabBtn.Font = Enum.Font.GothamMedium
     TabBtn.TextSize = 12
     TabBtn.TextColor3 = Color3.fromRGB(140, 140, 140)
-    TabBtn.BackgroundColor3 = Color3.fromRGB(34, 34, 34)
+    TabBtn.BackgroundColor3 = Color3.fromRGB(24, 24, 24)
     TabBtn.BackgroundTransparency = 1
     TabBtn.ClipsDescendants = true
     TabBtn.TextXAlignment = Enum.TextXAlignment.Left
-    Instance.new("UICorner", TabBtn).CornerRadius = UDim.new(0, 6)
+    Instance.new("UICorner", TabBtn).CornerRadius = UDim.new(0, 8)
     
     local TabStroke = Instance.new("UIStroke", TabBtn)
     TabStroke.Color = Color3.fromRGB(70, 70, 70)
@@ -293,24 +299,24 @@ local function CreatePage(name)
         TabTitle.Text = "— " .. name
         PageFrame.Visible = true
         TabStroke.Enabled = true
-        tween(TabBtn, {BackgroundTransparency = 0.5, TextColor3 = Color3.new(1,1,1)})
+        tween(TabBtn, {BackgroundTransparency = 0.3, TextColor3 = Color3.new(1,1,1)})
     end
     
     TabBtn.InputBegan:Connect(function(input)
         if input.UserInputType == Enum.UserInputType.MouseButton1 or input.UserInputType == Enum.UserInputType.Touch then
-            tween(TabBtn, {Size = UDim2.new(1, -14, 0, 30), Position = UDim2.new(0, 7, 0, 1)}, 0.1)
+            tween(TabBtn, {Size = UDim2.new(1, -14, 0, 34), Position = UDim2.new(0, 7, 0, 1)}, 0.1)
             selectTab()
         end
     end)
     
     TabBtn.InputEnded:Connect(function(input)
         if input.UserInputType == Enum.UserInputType.MouseButton1 or input.UserInputType == Enum.UserInputType.Touch then
-            tween(TabBtn, {Size = UDim2.new(1, -10, 0, 32), Position = UDim2.new(0, 5, 0, 0)}, 0.1)
+            tween(TabBtn, {Size = UDim2.new(1, -10, 0, 36), Position = UDim2.new(0, 5, 0, 0)}, 0.1)
         end
     end)
     
     TabBtn.MouseEnter:Connect(function()
-        if TabTitle.Text ~= "— " .. name then tween(TabBtn, {BackgroundTransparency = 0.8, TextColor3 = Color3.new(1,1,1)}) end
+        if TabTitle.Text ~= "— " .. name then tween(TabBtn, {BackgroundTransparency = 0.6, TextColor3 = Color3.new(1,1,1)}) end
     end)
     TabBtn.MouseLeave:Connect(function()
         if TabTitle.Text ~= "— " .. name then
@@ -373,7 +379,7 @@ local PlayersPage = CreatePage("Players")
 CreateToggle(AutoPage, "Auto Farm", true)
 CreateToggle(AutoPage, "Anti-Fling", true)
 
-allTabs["Auto"].BackgroundTransparency = 0.5
+allTabs["Auto"].BackgroundTransparency = 0.3
 allTabs["Auto"].TextColor3 = Color3.new(1,1,1)
 allTabs["Auto"].UIStroke.Enabled = true
 allPages["Auto"].Visible = true
