@@ -391,7 +391,7 @@ local allTabs = {}
 local allTabButtons = {} 
 local allPages = {}
 
-local function CreatePage(name, symbol)
+local function CreatePage(name)
     local PageFrame = Instance.new("ScrollingFrame", PagesContainer)
     PageFrame.Size = UDim2.new(1, 0, 1, 0)
     PageFrame.BackgroundTransparency = 1
@@ -421,11 +421,9 @@ local function CreatePage(name, symbol)
     local TabBtn = Instance.new("TextButton", TabContainer)
     TabBtn.Name = "TabBtn" 
     TabBtn.Size = UDim2.new(1, 0, 1, 0)
-    
-    -- Исправленные отступы и гарантированно рабочие символы
-    TabBtn.Text = "   " .. (symbol or "") .. "  " .. name
+    TabBtn.Text = "   " .. name
     TabBtn.Font = Enum.Font.GothamMedium
-    TabBtn.TextSize = 14
+    TabBtn.TextSize = 13
     TabBtn.TextColor3 = Color3.fromRGB(140, 140, 140)
     TabBtn.BackgroundTransparency = 1
     TabBtn.TextXAlignment = Enum.TextXAlignment.Left
@@ -457,13 +455,14 @@ local function CreatePage(name, symbol)
     return PageFrame
 end
 
--- ИСПОЛЬЗУЕМ 100% СОВМЕСТИМЫЕ СИМВОЛЫ ИЗ ВАШЕГО ПРИМЕРА (НЕ БУДЕТ КВАДРАТОВ):
-local MainPage    = CreatePage("Main", "🏠")      -- Дом для главной страницы
-local AutoPage    = CreatePage("Auto", "🔄")      -- Стрелочки лупа/авто-фарма
-local AutoBuyPage = CreatePage("Auto Buy", "🛒")  -- Тележка покупок
-local PlayersPage = CreatePage("Players", "👤")   -- Аккуратный силуэт игрока
+-- Создание страниц без символов
+local MainPage     = CreatePage("Main")
+local AutoPage     = CreatePage("Auto")
+local AutoBuyPage  = CreatePage("Auto Buy")
+local PlayersPage  = CreatePage("Players")
+local SettingsPage = CreatePage("Settings") -- Новая вкладка Settings
 
--- Пример наполнения страницы:
+-- Наполнение (Пример):
 Library:CreateToggle(MainPage, "Авто-Фарм Монет", false, function(state)
     print("Статус автофарма:", state)
 end)
