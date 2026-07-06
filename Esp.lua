@@ -15,13 +15,13 @@ if not SafeParent then
     SafeParent = game:GetService("Players").LocalPlayer:WaitForChild("PlayerGui")
 end
 
-local PulseHub = Instance.new("ScreenGui")
-if SafeParent:FindFirstChild("PulseHub") then 
-    SafeParent.PulseHub:Destroy() 
+local DarkHub = Instance.new("ScreenGui")
+if SafeParent:FindFirstChild("DarkHub") then 
+    SafeParent.DarkHub:Destroy() 
 end
-PulseHub.Name = "PulseHub"
-PulseHub.Parent = SafeParent
-PulseHub.ZIndexBehavior = Enum.ZIndexBehavior.Sibling
+DarkHub.Name = "DarkHub"
+DarkHub.Parent = SafeParent
+DarkHub.ZIndexBehavior = Enum.ZIndexBehavior.Sibling
 
 local function tween(obj, props, dur) 
     local t = TweenService:Create(obj, TweenInfo.new(dur or 0.25, Enum.EasingStyle.Quart, Enum.EasingDirection.Out), props)
@@ -29,7 +29,7 @@ local function tween(obj, props, dur)
     return t
 end
 
-local MainFrame = Instance.new("Frame", PulseHub)
+local MainFrame = Instance.new("Frame", DarkHub)
 MainFrame.Name = "MainFrame"
 MainFrame.BackgroundColor3 = Color3.fromRGB(14, 14, 14)
 MainFrame.BackgroundTransparency = 0.15
@@ -117,14 +117,13 @@ HubIcon.BackgroundTransparency = 1
 HubIcon.ScaleType = Enum.ScaleType.Fit 
 HubIcon.ZIndex = 5
 
--- Закругление углов для иконки (Добавлено)
 local HubIconCorner = Instance.new("UICorner", HubIcon)
 HubIconCorner.CornerRadius = UDim.new(0, 6)
 
 HubIcon.Image = "rbxthumb://type=Asset&id=" .. CustomIconID .. "&w=150&h=150"
 
 local HubTitle = Instance.new("TextLabel", HeaderBg)
-HubTitle.Text = "Pulse Hub"
+HubTitle.Text = "Dark Hub" -- Изменено здесь
 HubTitle.Font = Enum.Font.GothamBold
 HubTitle.TextColor3 = Color3.fromRGB(255, 255, 255)
 HubTitle.TextSize = 13
@@ -279,7 +278,7 @@ end
 MinBtn.MouseButton1Click:Connect(ToggleMinimize)
 EmbMinBtn.MouseButton1Click:Connect(ToggleMinimize)
 
-local function CloseGui() PulseHub:Destroy() end
+local function CloseGui() DarkHub:Destroy() end
 CloseBtn.MouseButton1Click:Connect(CloseGui)
 EmbCloseBtn.MouseButton1Click:Connect(CloseGui)
 
