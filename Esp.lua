@@ -1,7 +1,8 @@
--- [[ Pulse Hub GUI — Фикс видимости анимации волны ]] --
+-- [[ Pulse Hub GUI — Полный скрипт с бронебойным Ripple эффектом ]] --
 local TweenService = game:GetService("TweenService")
 local UserInputService = game:GetService("UserInputService")
 local RunService = game:GetService("RunService")
+local GuiService = game:GetService("GuiService")
 local PulseHub = Instance.new("ScreenGui")
 
 if game:GetService("CoreGui"):FindFirstChild("PulseHub") then 
@@ -212,7 +213,7 @@ TabTitle.Size = UDim2.new(0, 150, 0, 20)
 TabTitle.TextXAlignment = Enum.TextXAlignment.Left
 TabTitle.BackgroundTransparency = 1
 
--- [[ НАДЕЖНАЯ ФУНКЦИЯ ВОЛНЫ С КОРРЕКТНЫМ НАЛОЖЕНИЕМ Z-INDEX ]] --
+-- [[ ФУНКЦИЯ ДЛЯ ОТРИСОВКИ ВОЛНЫ ]] --
 local function CreateRipple(button, clickX, clickY)
     local Ripple = Instance.new("ImageLabel")
     Ripple.Name = "Ripple"
@@ -220,14 +221,14 @@ local function CreateRipple(button, clickX, clickY)
     Ripple.BackgroundTransparency = 1
     Ripple.Image = "rbxassetid://4012975932"
     Ripple.ImageColor3 = Color3.fromRGB(255, 255, 255)
-    Ripple.ImageTransparency = 0.5 -- Сделали ярче, чтобы было отлично видно на тёмном фоне
-    Ripple.ZIndex = 15 -- Принудительный вывод поверх подложки вкладки
+    Ripple.ImageTransparency = 0.4 -- Сделали ярче для контраста
+    Ripple.ZIndex = 20 -- Принудительно поверх любого фона
     Ripple.AnchorPoint = Vector2.new(0.5, 0.5)
     
     Ripple.Position = UDim2.new(0, clickX, 0, clickY)
     Ripple.Size = UDim2.new(0, 0, 0, 0)
     
-    local maxLength = math.max(button.AbsoluteSize.X, button.AbsoluteSize.Y) * 2.5
+    local maxLength = math.max(button.AbsoluteSize.X, button.AbsoluteSize.Y) * 3
     local t = TweenService:Create(Ripple, TweenInfo.new(0.4, Enum.EasingStyle.Quad, Enum.EasingDirection.Out), {
         Size = UDim2.new(0, maxLength, 0, maxLength),
         ImageTransparency = 1
@@ -347,13 +348,16 @@ local function CreatePage(name)
     allTabs[name] = TabBtn
     allPages[name] = PageFrame
     
-    -- Перехватываем координаты клика ДО основного переключения состояний
-    TabBtn.InputBegan:Connect(function(input)
-        if input.UserInputType == Enum.UserInputType.MouseButton1 or input.UserInputType == Enum.UserInputType.Touch) then
-            local localX = input.Position.X - TabBtn.AbsolutePosition.X
-            local localY = input.Position.Y - TabBtn.AbsolutePosition.Y
-            CreateRipple(TabBtn, localX, localY)
-        end
+    -- Моментальная детонация волны по клику без задержек
+    TabBtn.MouseButton1Down:Connect(function()
+        local mousePos = UserInputService:GetMouseLocation()
+        local inset = GuiService:GetGuiInset()
+        
+        -- Рассчитываем чистую позицию курсора внутри фрейма вкладки
+        local localX = mousePos.X - TabBtn.AbsolutePosition.X
+        local localY = (mousePos.Y - inset.Y) - TabBtn.AbsolutePosition.Y
+        
+        CreateRipple(TabBtn, localX, localY)
     end)
     
     TabBtn.MouseButton1Click:Connect(function()
@@ -371,12 +375,13 @@ local function CreatePage(name)
     return PageFrame
 end
 
--- ИНИЦИАЛИЗАЦИЯ
+-- ИНИЦИАЛИЗАЦИЯ СТРАНИЦ
 local MainPage = CreatePage("Main")
 local AutoPage = CreatePage("Auto")
 local AutoBuyPage = CreatePage("Auto Buy")
 local PlayersPage = CreatePage("Players")
 
+-- Установка активной вкладки по умолчанию
 allTabs["Main"].BackgroundTransparency = 0
 allTabs["Main"].TextColor3 = Color3.new(1, 1, 1)
 allTabs["Main"].UIStroke.Enabled = true
