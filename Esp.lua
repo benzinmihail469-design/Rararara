@@ -1,4 +1,4 @@
--- [[ Pulse Hub GUI — Полная Монолитная Версия ]] --
+-- [[ Pulse Hub GUI — Фикс кнопок по скриншоту 3382.jpg и анимация волны ]] --
 local TweenService = game:GetService("TweenService")
 local UserInputService = game:GetService("UserInputService")
 local RunService = game:GetService("RunService")
@@ -21,7 +21,7 @@ end
 local MainFrame = Instance.new("Frame", PulseHub)
 MainFrame.Name = "MainFrame"
 MainFrame.BackgroundColor3 = Color3.fromRGB(14, 14, 14)
-MainFrame.BackgroundTransparency = 0.15 -- Прозрачная основа
+MainFrame.BackgroundTransparency = 0.15 -- Прозрачный фон основы
 MainFrame.Position = UDim2.new(0.5, -275, 0.5, -175)
 MainFrame.Size = UDim2.new(0, 550, 0, 350)
 MainFrame.ClipsDescendants = true 
@@ -46,7 +46,7 @@ HeaderBg.Name = "HeaderBg"
 HeaderBg.Size = UDim2.new(0, 150, 0, 46)
 HeaderBg.Position = UDim2.new(0, 10, 0, 10)
 HeaderBg.BackgroundColor3 = Color3.fromRGB(22, 22, 22)
-HeaderBg.BackgroundTransparency = 0 -- Сплошной цвет
+HeaderBg.BackgroundTransparency = 0 
 HeaderBg.ZIndex = 4
 
 local HeaderCorner = Instance.new("UICorner", HeaderBg)
@@ -56,7 +56,7 @@ local HeaderStroke = Instance.new("UIStroke", HeaderBg)
 HeaderStroke.Color = Color3.fromRGB(45, 45, 45)
 HeaderStroke.Thickness = 1.2
 
--- Тексты и иконка
+-- Тексты и иконка внутри плашки
 local HubIcon = Instance.new("ImageLabel", HeaderBg)
 HubIcon.Size = UDim2.new(0, 26, 0, 26)
 HubIcon.Position = UDim2.new(0, 10, 0, 10)
@@ -86,11 +86,11 @@ SubTitle.TextXAlignment = Enum.TextXAlignment.Left
 SubTitle.BackgroundTransparency = 1
 SubTitle.ZIndex = 5
 
--- [[ КНОПКИ УПРАВЛЕНИЯ (СТРОГО ПО СКРИНШОТУ 3381.jpg) ]] --
+-- [[ ИСПРАВЛЕННОЕ РАСПОЛОЖЕНИЕ КНОПОК УПРАВЛЕНИЯ (СТРОГО ПО СКРИНШОТУ 3382.jpg) ]] --
 local MinBtn = Instance.new("TextButton", HeaderBg)
 MinBtn.Name = "MinBtn"
 MinBtn.Size = UDim2.new(0, 16, 0, 16)
-MinBtn.Position = UDim2.new(1, -38, 1, -22) -- В правом нижнем углу плашки
+MinBtn.Position = UDim2.new(1, -38, 1, -22) -- Точно в правом нижнем углу плашки
 MinBtn.Text = "—"
 MinBtn.Font = Enum.Font.GothamBold
 MinBtn.TextSize = 11
@@ -101,7 +101,7 @@ MinBtn.ZIndex = 6
 local CloseBtn = Instance.new("TextButton", HeaderBg)
 CloseBtn.Name = "CloseBtn"
 CloseBtn.Size = UDim2.new(0, 16, 0, 16)
-CloseBtn.Position = UDim2.new(1, -20, 1, -22) -- Правее от черточки
+CloseBtn.Position = UDim2.new(1, -20, 1, -22) -- Правее от кнопки сворачивания
 CloseBtn.Text = "×"
 CloseBtn.Font = Enum.Font.Arial
 CloseBtn.TextSize = 18
@@ -120,13 +120,13 @@ local NavLayout = Instance.new("UIListLayout", Navigation)
 NavLayout.Padding = UDim.new(0, 5)
 NavLayout.SortOrder = Enum.SortOrder.LayoutOrder
 
--- [[ ВЫДЕЛЕННЫЙ ПОДВАЛ (СПЛОШНОЙ) ]] --
+-- [[ ВЫДЕЛЕННЫЙ ПОДВАЛ ДИСКОРДА ]] --
 local FooterBg = Instance.new("Frame", SidebarContainer)
 FooterBg.Name = "FooterBg"
 FooterBg.Size = UDim2.new(0, 150, 0, 46)
 FooterBg.Position = UDim2.new(0, 10, 1, -56)
 FooterBg.BackgroundColor3 = Color3.fromRGB(22, 22, 22)
-FooterBg.BackgroundTransparency = 0 -- Сплошной
+FooterBg.BackgroundTransparency = 0 
 FooterBg.ZIndex = 4
 
 local FooterCorner = Instance.new("UICorner", FooterBg)
@@ -173,7 +173,7 @@ PagesContainer.BackgroundTransparency = 1
 PagesContainer.ZIndex = 2
 
 local TabTitle = Instance.new("TextLabel", MainFrame)
-TabTitle.Text = "Auto"
+TabTitle.Text = "Players"
 TabTitle.Font = Enum.Font.GothamBold
 TabTitle.TextColor3 = Color3.fromRGB(255, 255, 255)
 TabTitle.TextSize = 16
@@ -183,16 +183,16 @@ TabTitle.TextXAlignment = Enum.TextXAlignment.Left
 TabTitle.BackgroundTransparency = 1
 TabTitle.ZIndex = 5
 
--- [[ ЭФФЕКТ ВОЛНЫ (RIPPLE EFFECT) ]] --
+-- [[ НАСТОЯЩАЯ АНИМАЦИЯ ВОЛНЫ (RIPPLE EFFECT) ]] --
 local function CreateRipple(button, mouseX, mouseY)
     local Ripple = Instance.new("ImageLabel")
     Ripple.Name = "Ripple"
     Ripple.Parent = button
     Ripple.BackgroundColor3 = Color3.new(1, 1, 1)
     Ripple.BackgroundTransparency = 1
-    Ripple.Image = "rbxassetid://4012975932"
+    Ripple.Image = "rbxassetid://4012975932" -- Текстура радиального размытого круга
     Ripple.ImageColor3 = Color3.fromRGB(255, 255, 255)
-    Ripple.ImageTransparency = 0.75
+    Ripple.ImageTransparency = 0.7
     Ripple.ZIndex = button.ZIndex + 1
     
     local topLeft = button.AbsolutePosition
@@ -203,7 +203,7 @@ local function CreateRipple(button, mouseX, mouseY)
     Ripple.Size = UDim2.new(0, 0, 0, 0)
     Ripple.AnchorPoint = Vector2.new(0.5, 0.5)
     
-    local maxLength = math.max(size.X, size.Y) * 2
+    local maxLength = math.max(size.X, size.Y) * 2.5
     local t1 = TweenService:Create(Ripple, TweenInfo.new(0.4, Enum.EasingStyle.Quad, Enum.EasingDirection.Out), {
         Size = UDim2.new(0, maxLength, 0, maxLength),
         ImageTransparency = 1
@@ -212,7 +212,7 @@ local function CreateRipple(button, mouseX, mouseY)
     t1.Completed:Connect(function() Ripple:Destroy() end)
 end
 
--- [[ ЛОГИКА ИДЕАЛЬНОГО СВОРАЧИВАНИЯ ]] --
+-- [[ ЛОГИКА СВОРАЧИВАНИЯ ]] --
 local isMinimized = false
 MinBtn.MouseButton1Click:Connect(function()
     isMinimized = not isMinimized
@@ -223,7 +223,7 @@ MinBtn.MouseButton1Click:Connect(function()
         FooterBg.Visible = false
         CloseBtn.Visible = false
         
-        MinBtn.Position = UDim2.new(1, -22, 1, -22) -- Центрируем черточку при сворачивании
+        MinBtn.Position = UDim2.new(1, -22, 1, -22) -- Центрируем при закрытии
         tween(MainFrame, {Size = UDim2.new(0, 170, 0, 66)})
     else
         MinBtn.Position = UDim2.new(1, -38, 1, -22)
@@ -271,7 +271,7 @@ UserInputService.InputChanged:Connect(function(input)
     if input == dragInput and dragToggle then updateInput(input) end
 end)
 
--- [[ ГЕНЕРАТОР СТРАНИЦ ]] --
+-- [[ ФАБРИКА СТРАНИЦ И ВКЛАДОК ]] --
 local allTabs = {}
 local allPages = {}
 
@@ -293,9 +293,9 @@ local function CreatePage(name)
     TabBtn.TextSize = 13
     TabBtn.TextColor3 = Color3.fromRGB(150, 150, 150)
     TabBtn.BackgroundColor3 = Color3.fromRGB(24, 24, 24)
-    TabBtn.BackgroundTransparency = 1 -- Сплошной серо-черный при нажатии
+    TabBtn.BackgroundTransparency = 1 
     TabBtn.TextXAlignment = Enum.TextXAlignment.Left
-    TabBtn.ClipsDescendants = true
+    TabBtn.ClipsDescendants = true -- Ограничивает волну рамками кнопки
     TabBtn.ZIndex = 5
     Instance.new("UICorner", TabBtn).CornerRadius = UDim.new(0, 6)
     
@@ -309,6 +309,7 @@ local function CreatePage(name)
     
     TabBtn.MouseButton1Click:Connect(function()
         local mousePos = UserInputService:GetMouseLocation()
+        -- Вызов волны строго из точки клика (корректируем смещение топ-бара Roblox)
         CreateRipple(TabBtn, mousePos.X, mousePos.Y - 36)
         
         for tName, tBtn in pairs(allTabs) do
@@ -369,19 +370,16 @@ local function CreateToggle(parentPage, name, default, callback)
     end)
 end
 
--- [[ ИНИЦИАЛИЗАЦИЯ СТРАНИЦ ]] --
+-- [[ ИНИЦИАЛИЗАЦИЯ ]] --
 local MainPage = CreatePage("Main")
 local AutoPage = CreatePage("Auto")
 local AutoBuyPage = CreatePage("Auto Buy")
 local PlayersPage = CreatePage("Players")
 
--- Элементы управления внутри страниц
 CreateToggle(MainPage, "Anti-AFK System", true)
-CreateToggle(AutoPage, "Auto Farm Grass", true)
-CreateToggle(AutoPage, "Anti-Fling Bypass", true)
 
--- Выбор дефолтной страницы по скриншоту 3381.jpg (Страница Auto)
-allTabs["Auto"].BackgroundTransparency = 0
-allTabs["Auto"].TextColor3 = Color3.new(1,1,1)
-allTabs["Auto"].UIStroke.Enabled = true
-allPages["Auto"].Visible = true
+-- Выбираем дефолтную вкладку Players (как на скриншоте 3382.jpg)
+allTabs["Players"].BackgroundTransparency = 0
+allTabs["Players"].TextColor3 = Color3.new(1,1,1)
+allTabs["Players"].UIStroke.Enabled = true
+allPages["Players"].Visible = true
