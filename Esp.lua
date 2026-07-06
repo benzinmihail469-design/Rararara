@@ -1,17 +1,29 @@
--- [[ Dark Hub GUI — Фикс загрузки кастомной иконки ]] --
-local CustomIconID = 76579925188009 -- Твой новый ID
+-- [[ Dark Hub GUI — Ультра-стабильная версия под любые эксплоиты ]] --
+local CustomIconID = 76579925188009 
 
 local TweenService = game:GetService("TweenService")
 local UserInputService = game:GetService("UserInputService")
 local RunService = game:GetService("RunService")
 local GuiService = game:GetService("GuiService")
 
+-- Автоматический обход блокировки CoreGui (Исправлено)
+local SafeParent = nil
+if gethui then
+    SafeParent = gethui()
+elseif game:GetService("CoreGui") then
+    local success, _ = pcall(function() return game:GetService("CoreGui").Name end)
+    if success then SafeParent = game:GetService("CoreGui") end
+end
+if not SafeParent then
+    SafeParent = game:GetService("Players").LocalPlayer:WaitForChild("PlayerGui")
+end
+
 local PulseHub = Instance.new("ScreenGui")
-if game:GetService("CoreGui"):FindFirstChild("PulseHub") then 
-    game:GetService("CoreGui").PulseHub:Destroy() 
+if SafeParent:FindFirstChild("PulseHub") then 
+    SafeParent.PulseHub:Destroy() 
 end
 PulseHub.Name = "PulseHub"
-PulseHub.Parent = game:GetService("CoreGui")
+PulseHub.Parent = SafeParent
 PulseHub.ZIndexBehavior = Enum.ZIndexBehavior.Sibling
 
 local function tween(obj, props, dur) 
@@ -113,7 +125,7 @@ HubIcon.BackgroundTransparency = 1
 HubIcon.ScaleType = Enum.ScaleType.Fit 
 HubIcon.ZIndex = 5
 
--- НАДЁЖНЫЙ МЕТОД ЗАГРУЗКИ ПО ID (Даже если это декаль)
+-- Гарантированное отображение твоей иконки по ID через миниатюры
 HubIcon.Image = "rbxthumb://type=Asset&id=" .. tostring(CustomIconID) .. "&w=150&h=150"
 
 local HubTitle = Instance.new("TextLabel", HeaderBg)
@@ -390,6 +402,7 @@ end
 
 -- [[ СИСТЕМА СТРАНИЦ ]] --
 local allTabs = {}
+local allTabButtons = {} -- Защита от ошибок поиска дочерних элементов (Исправлено)
 local allPages = {}
 
 local function CreatePage(name)
@@ -433,6 +446,7 @@ local function CreatePage(name)
     TabBtn.ZIndex = 7
     
     allTabs[name] = TabContainer
+    allTabButtons[name] = TabBtn -- Прямое кэширование
     allPages[name] = PageFrame
     
     -- Клик (Анимация волны + переключение страниц)
@@ -445,7 +459,7 @@ local function CreatePage(name)
     TabBtn.MouseButton1Click:Connect(function()
         for tName, tContainer in pairs(allTabs) do
             tween(tContainer, {BackgroundTransparency = 1}, 0.2)
-            tween(tContainer.TabBtn, {TextColor3 = Color3.fromRGB(140, 140, 140)}, 0.2)
+            tween(allTabButtons[tName], {TextColor3 = Color3.fromRGB(140, 140, 140)}, 0.2)
             allPages[tName].Visible = false
         end
         TabTitle.Text = name
@@ -469,8 +483,11 @@ Library:CreateToggle(MainPage, "Авто-Фарм Монет", false, function(s
     print("Статус автофарма:", state)
 end)
 
--- Настройки дефолтной активной страницы
-allTabs["Main"].BackgroundTransparency = 0
-allTabs["Main"].TabBtn.TextColor3 = Color3.fromRGB(255, 255, 255)
-allPages["Main"].Visible = true  
-э
+-- Настройки дефолтной активной страницы без риска краша скрипта
+if allTabs["Main"] and allTabButtons["Main"] then
+    allTabs["Main"].BackgroundTransparency = 0
+    allTabButtons["Main"].TextColor3 = Color3.fromRGB(255, 255, 255)
+    allPages["Main"].Visible = true  
+end
+
+print("[Pulse Hub]: Успешно загружен!")
