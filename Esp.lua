@@ -1,5 +1,6 @@
--- [[ Dark Hub GUI — Полный скрипт с иконкой коня ]] --
-local HorseIconID = "rbxassetid://93790908316981" -- Твой ID для коня успешно добавлен!
+-- [[ Dark Hub GUI — Полный скрипт с исправленной иконкой ]] --
+-- Исправлен формат ID для корректного отображения картинки
+local HorseIconID = "http://www.roblox.com/asset/?id=93790908316981" 
 
 local TweenService = game:GetService("TweenService")
 local UserInputService = game:GetService("UserInputService")
@@ -108,10 +109,10 @@ HeaderStroke.Thickness = 1.2
 local HubIcon = Instance.new("ImageLabel", HeaderBg)
 HubIcon.Name = "HubIcon"
 HubIcon.Size = UDim2.new(0, 28, 0, 28)
-HubIcon.Position = UDim2.new(0, 9, 0, 9)
+HubIcon.Position = UDim2.new(0, 8, 0, 9)
 HubIcon.Image = HorseIconID
 HubIcon.BackgroundTransparency = 1
-HubIcon.ScaleType = Enum.ScaleType.Fit -- Конь встанет ровно и красиво без косяков
+HubIcon.ScaleType = Enum.ScaleType.Fit 
 HubIcon.ZIndex = 5
 
 local HubTitle = Instance.new("TextLabel", HeaderBg)
@@ -360,7 +361,6 @@ function Library:CreateToggle(parentPage, text, default, callback)
     local Checkbox = Instance.new("TextButton", TglFrame)
     Checkbox.Size = UDim2.new(0, 34, 0, 18)
     Checkbox.Position = UDim2.new(1, -44, 0.5, -9)
-    -- Оранжевый цвет по умолчанию, если активен
     Checkbox.BackgroundColor3 = default and Color3.fromRGB(240, 110, 20) or Color3.fromRGB(40, 40, 40)
     Checkbox.Text = ""
     Checkbox.ZIndex = 7
@@ -377,7 +377,6 @@ function Library:CreateToggle(parentPage, text, default, callback)
     Checkbox.MouseButton1Click:Connect(function()
         enabled = not enabled
         if enabled then
-            -- Переключение в сочный оранжевый
             tween(Checkbox, {BackgroundColor3 = Color3.fromRGB(240, 110, 20)}, 0.2)
             tween(Indicator, {Position = UDim2.new(1, -16, 0.5, -7)}, 0.2)
         else
