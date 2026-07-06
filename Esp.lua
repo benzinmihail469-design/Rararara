@@ -423,7 +423,7 @@ local function CreatePage(name)
     TabBtn.Size = UDim2.new(1, 0, 1, 0)
     TabBtn.Text = "   " .. name
     TabBtn.Font = Enum.Font.GothamMedium
-    TabBtn.TextSize = 16 -- ЗДЕСЬ УВЕЛИЧЕН ШРИФТ ДЛЯ ВКЛАДОК ДО 16
+    TabBtn.TextSize = 13 -- РАЗМЕР ШРИФТА УСПЕШНО ИЗМЕНЕН НА 13
     TabBtn.TextColor3 = Color3.fromRGB(140, 140, 140)
     TabBtn.BackgroundTransparency = 1
     TabBtn.TextXAlignment = Enum.TextXAlignment.Left
@@ -455,7 +455,7 @@ local function CreatePage(name)
     return PageFrame
 end
 
--- Создание страниц без символов
+-- Создание страниц
 local MainPage     = CreatePage("Main")
 local AutoPage     = CreatePage("Auto")
 local AutoBuyPage  = CreatePage("Auto Buy")
