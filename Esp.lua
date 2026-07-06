@@ -1,4 +1,7 @@
--- [[ Dark Hub GUI — Полный и финальный скрипт ]] --
+-- [[ Dark Hub GUI — Полный скрипт ]] --
+-- НАСТРОЙКА ИКОНКИ: Загрузи коня из "3391.jpg" в Roblox Asset Manager и вставь ID ниже
+local HorseIconID = "rbxassetid://10840212450" -- Замени этот ID на свой, когда загрузишь
+
 local TweenService = game:GetService("TweenService")
 local UserInputService = game:GetService("UserInputService")
 local RunService = game:GetService("RunService")
@@ -105,10 +108,11 @@ HeaderStroke.Thickness = 1.2
 
 local HubIcon = Instance.new("ImageLabel", HeaderBg)
 HubIcon.Name = "HubIcon"
-HubIcon.Size = UDim2.new(0, 26, 0, 26)
-HubIcon.Position = UDim2.new(0, 10, 0, 10)
-HubIcon.Image = "rbxassetid://10840212450"
+HubIcon.Size = UDim2.new(0, 28, 0, 28)
+HubIcon.Position = UDim2.new(0, 9, 0, 9)
+HubIcon.Image = HorseIconID
 HubIcon.BackgroundTransparency = 1
+HubIcon.ScaleType = Enum.ScaleType.Fit -- Чтобы конь поместился идеально и без искажений
 HubIcon.ZIndex = 5
 
 local HubTitle = Instance.new("TextLabel", HeaderBg)
@@ -133,7 +137,7 @@ SubTitle.TextXAlignment = Enum.TextXAlignment.Left
 SubTitle.BackgroundTransparency = 1
 SubTitle.ZIndex = 5
 
--- Кнопки управления для свёрнутого режима
+-- Свёрнутые контролы
 local EmbeddedControls = Instance.new("Frame", HeaderBg)
 EmbeddedControls.Name = "EmbeddedControls"
 EmbeddedControls.Size = UDim2.new(0, 50, 0, 30)
@@ -235,7 +239,7 @@ local function CreateRipple(button, clickX, clickY)
     t.Completed:Connect(function() Ripple:Destroy() end)
 end
 
--- ЛОГИКА СВОРАЧИВАНИЯ (С ПОДВАЛОМ)
+-- ЛОГИКА СВОРАЧИВАНИЯ
 local isMinimized = false
 local function ToggleMinimize()
     isMinimized = not isMinimized
@@ -245,23 +249,18 @@ local function ToggleMinimize()
         Navigation.Visible = false
         FooterBg.Visible = false
         ControlsContainer.Visible = false
-        
         MainStroke.Enabled = false
         MainFrame.BackgroundTransparency = 1
-        
         HeaderBg.Position = UDim2.new(0, 0, 0, 0)
         HeaderBg.Size = UDim2.new(0, 175, 0, 46) 
         EmbeddedControls.Visible = true 
-        
         tween(MainFrame, {Size = UDim2.new(0, 175, 0, 46)})
     else
         EmbeddedControls.Visible = false
         HeaderBg.Position = UDim2.new(0, 10, 0, 10)
         HeaderBg.Size = UDim2.new(0, 150, 0, 46)
-        
         MainStroke.Enabled = true
         MainFrame.BackgroundTransparency = 0.15
-        
         tween(MainFrame, {Size = UDim2.new(0, 550, 0, 350)}).Completed:Connect(function()
             if not isMinimized then
                 PagesContainer.Visible = true
@@ -312,7 +311,7 @@ UserInputService.InputChanged:Connect(function(input)
     end
 end)
 
--- [[ КОНСТРУКТОР ЭЛЕМЕНТОВ (КНОПКИ/ТОГГЛЫ) ]] --
+-- [[ КОНСТРУКТОР ЭЛЕМЕНТОВ ]] --
 local Library = {}
 
 function Library:CreateButton(parentPage, text, callback)
@@ -362,7 +361,8 @@ function Library:CreateToggle(parentPage, text, default, callback)
     local Checkbox = Instance.new("TextButton", TglFrame)
     Checkbox.Size = UDim2.new(0, 34, 0, 18)
     Checkbox.Position = UDim2.new(1, -44, 0.5, -9)
-    Checkbox.BackgroundColor3 = default and Color3.fromRGB(50, 150, 50) or Color3.fromRGB(40, 40, 40)
+    -- ТЕПЕРЬ ОРАНЖЕВЫЙ ЦВЕТ ПРИ ВКЛЮЧЕНИИ ИЗНАЧАЛЬНО
+    Checkbox.BackgroundColor3 = default and Color3.fromRGB(240, 110, 20) or Color3.fromRGB(40, 40, 40)
     Checkbox.Text = ""
     Checkbox.ZIndex = 7
     Instance.new("UICorner", Checkbox).CornerRadius = UDim.new(0, 9)
@@ -378,7 +378,8 @@ function Library:CreateToggle(parentPage, text, default, callback)
     Checkbox.MouseButton1Click:Connect(function()
         enabled = not enabled
         if enabled then
-            tween(Checkbox, {BackgroundColor3 = Color3.fromRGB(50, 150, 50)}, 0.2)
+            -- ТЕПЕРЬ ОРАНЖЕВЫЙ ЦВЕТ ПРИ КЛИКЕ
+            tween(Checkbox, {BackgroundColor3 = Color3.fromRGB(240, 110, 20)}, 0.2)
             tween(Indicator, {Position = UDim2.new(1, -16, 0.5, -7)}, 0.2)
         else
             tween(Checkbox, {BackgroundColor3 = Color3.fromRGB(40, 40, 40)}, 0.2)
@@ -414,7 +415,7 @@ local function CreatePage(name)
     TabBtn.Font = Enum.Font.GothamMedium
     TabBtn.TextSize = 13
     TabBtn.TextColor3 = Color3.fromRGB(140, 140, 140)
-    TabBtn.BackgroundColor3 = Color3.fromRGB(28, 28, 30) -- Серо-черный фон по умолчанию
+    TabBtn.BackgroundColor3 = Color3.fromRGB(28, 28, 30)
     TabBtn.BackgroundTransparency = 1
     TabBtn.TextXAlignment = Enum.TextXAlignment.Left
     TabBtn.ClipsDescendants = true
@@ -422,7 +423,7 @@ local function CreatePage(name)
     Instance.new("UICorner", TabBtn).CornerRadius = UDim.new(0, 6)
     
     local TabStroke = Instance.new("UIStroke", TabBtn)
-    TabStroke.Color = Color3.fromRGB(60, 60, 62) -- Контур
+    TabStroke.Color = Color3.fromRGB(60, 60, 62)
     TabStroke.Thickness = 1.2
     TabStroke.Enabled = false
     
@@ -457,10 +458,7 @@ local AutoBuyPage = CreatePage("Auto Buy")
 local PlayersPage = CreatePage("Players")
 
 -- [[ НАПОЛНЕНИЕ КОНТЕНТОМ ]] --
-Library:CreateButton(MainPage, "Тестовая Кнопка (Проверка)", function()
-    print("Кнопка отлично нажимается!")
-end)
-
+-- Тестовая кнопка убрана! Остался только тоггл:
 Library:CreateToggle(MainPage, "Авто-Фарм Монет", false, function(state)
     print("Статус автофарма:", state)
 end)
