@@ -1,4 +1,4 @@
--- [[ Dark Hub GUI — Скрипт со скругленными вкладками без обводки ]] --
+-- [[ Dark Hub GUI — Полностью очищенный от оранжевой обводки ]] --
 local RawAssetID = 93790908316981 
 
 local TweenService = game:GetService("TweenService")
@@ -416,17 +416,17 @@ local function CreatePage(name)
     
     Instance.new("UIPadding", PageFrame).PaddingTop = UDim.new(0, 2)
     
-    -- Контейнер для вкладки (гарантирует идеальное закругление)
+    -- Контейнер для вкладки (гарантирует закругление)
     local TabContainer = Instance.new("Frame", Navigation)
     TabContainer.Name = name .. "_Tab"
     TabContainer.Size = UDim2.new(1, 0, 0, 34)
-    TabContainer.BackgroundColor3 = Color3.fromRGB(22, 22, 22)
+    TabContainer.BackgroundColor3 = Color3.fromRGB(28, 28, 28) -- Цвет для активной вкладки
     TabContainer.BackgroundTransparency = 1
     TabContainer.ClipsDescendants = true
     TabContainer.ZIndex = 6
     
     local TabCorner = Instance.new("UICorner", TabContainer)
-    TabCorner.CornerRadius = UDim.new(0, 8) -- Скругленные углы
+    TabCorner.CornerRadius = UDim.new(0, 8)
     
     -- Сама кнопка внутри контейнера
     local TabBtn = Instance.new("TextButton", TabContainer)
@@ -442,7 +442,7 @@ local function CreatePage(name)
     allTabs[name] = TabContainer
     allPages[name] = PageFrame
     
-    -- Клик (Анимация волны + переключение)
+    -- Клик (Анимация волны + переключение страниц)
     TabBtn.MouseButton1Down:Connect(function()
         local mousePos = UserInputService:GetMouseLocation()
         local inset = GuiService:GetGuiInset()
