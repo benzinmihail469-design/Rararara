@@ -1,4 +1,4 @@
--- [[ Pulse Hub GUI — Выделенная плашка заголовка и белый Discord ]] --
+-- [[ Pulse Hub GUI — Полное исправление плашки заголовка под скриншот ]] --
 local TweenService = game:GetService("TweenService")
 local UserInputService = game:GetService("UserInputService")
 local RunService = game:GetService("RunService")
@@ -40,7 +40,7 @@ MainStroke.Thickness = 1.5
 MainFrame.Size = UDim2.new(0, 550, 0, 0)
 tween(MainFrame, {Size = UDim2.new(0, 550, 0, 350)}, 0.3)
 
--- Перетаскивание (Drag)
+-- Drag (Перетаскивание)
 local dragging, dragInput, dragStart, startPos
 MainFrame.InputBegan:Connect(function(input)
     if input.UserInputType == Enum.UserInputType.MouseButton1 or input.UserInputType == Enum.UserInputType.Touch then
@@ -67,64 +67,66 @@ UserInputService.InputChanged:Connect(function(input)
     end
 end)
 
--- [[ ЗАГОЛОВОК С ОТДЕЛЬНОЙ ПЛАШКОЙ ]] --
+-- [[ ЗАГОЛОВОК С ПРАВИЛЬНЫМ РОДИТЕЛЕМ ЭЛЕМЕНТОВ ]] --
 local TopBar = Instance.new("Frame", MainFrame)
 TopBar.Name = "TopBar"
 TopBar.Size = UDim2.new(1, 0, 0, 55)
 TopBar.BackgroundTransparency = 1 
 TopBar.ZIndex = 5
 
--- Красивая отдельная подложка для самого текста и иконки, как на скриншоте 3358_3.jpg
+-- Отдельная плашка-подложка, точь-в-точь как на скриншоте 3358_3.jpg
 local HeaderBackground = Instance.new("Frame", TopBar)
 HeaderBackground.Name = "HeaderBackground"
-HeaderBackground.Size = UDim2.new(0, 220, 0, 45)
-HeaderBackground.Position = UDim2.new(0, 8, 0, 5)
-HeaderBackground.BackgroundColor3 = Color3.fromRGB(24, 24, 24) -- Выделенный серый цвет
-HeaderBackground.BackgroundTransparency = 0.3
-HeaderBackground.ZIndex = 1
+HeaderBackground.Size = UDim2.new(0, 144, 0, 42) -- Идеальный размер под плашку на фото
+HeaderBackground.Position = UDim2.new(0, 8, 0, 8)
+HeaderBackground.BackgroundColor3 = Color3.fromRGB(30, 30, 30)
+HeaderBackground.BackgroundTransparency = 0.4
+HeaderBackground.ZIndex = 2
 local HeaderCorner = Instance.new("UICorner", HeaderBackground)
 HeaderCorner.CornerRadius = UDim.new(0, 10)
 
-local HubIcon = Instance.new("ImageLabel", TopBar)
-HubIcon.Size = UDim2.new(0, 32, 0, 32)
-HubIcon.Position = UDim2.new(0, 15, 0, 11)
+-- Теперь все элементы лежат ВНУТРИ плашки, чтобы она их выделяла
+local HubIcon = Instance.new("ImageLabel", HeaderBackground)
+HubIcon.Size = UDim2.new(0, 28, 0, 28)
+HubIcon.Position = UDim2.new(0, 7, 0, 7) -- Ровно по центру плашки
 HubIcon.Image = "rbxassetid://10840212450"
 HubIcon.BackgroundTransparency = 1
-HubIcon.ZIndex = 2
+HubIcon.ZIndex = 3
 
-local HubTitle = Instance.new("TextLabel", TopBar)
+local HubTitle = Instance.new("TextLabel", HeaderBackground)
 HubTitle.Text = "Pulse Hub"
 HubTitle.Font = Enum.Font.GothamBold
 HubTitle.TextColor3 = Color3.fromRGB(255, 255, 255)
-HubTitle.TextSize = 14
-HubTitle.Position = UDim2.new(0, 55, 0, 11)
-HubTitle.Size = UDim2.new(0, 120, 0, 16)
+HubTitle.TextSize = 13
+HubTitle.Position = UDim2.new(0, 42, 0, 6)
+HubTitle.Size = UDim2.new(0, 95, 0, 14)
 HubTitle.TextXAlignment = Enum.TextXAlignment.Left
 HubTitle.BackgroundTransparency = 1
-HubTitle.ZIndex = 2
+HubTitle.ZIndex = 3
 
-local SubTitle = Instance.new("TextLabel", TopBar)
+local SubTitle = Instance.new("TextLabel", HeaderBackground)
 SubTitle.Text = "Grow A Garden 2"
 SubTitle.Font = Enum.Font.Gotham
 SubTitle.TextColor3 = Color3.fromRGB(140, 140, 140)
-SubTitle.TextSize = 10
-SubTitle.Position = UDim2.new(0, 55, 0, 27)
-SubTitle.Size = UDim2.new(0, 120, 0, 14)
+SubTitle.TextSize = 9
+SubTitle.Position = UDim2.new(0, 42, 0, 22)
+SubTitle.Size = UDim2.new(0, 95, 0, 12)
 SubTitle.TextXAlignment = Enum.TextXAlignment.Left
 SubTitle.BackgroundTransparency = 1
-SubTitle.ZIndex = 2
+SubTitle.ZIndex = 3
 
+-- Текущая вкладка (Текст)
 local TabTitle = Instance.new("TextLabel", TopBar)
 TabTitle.Text = "— Auto"
 TabTitle.Font = Enum.Font.GothamMedium
 TabTitle.TextColor3 = Color3.fromRGB(110, 110, 110)
 TabTitle.TextSize = 13
-TabTitle.Position = UDim2.new(0, 240, 0, 11)
+TabTitle.Position = UDim2.new(0, 165, 0, 11)
 TabTitle.Size = UDim2.new(0, 150, 0, 16)
 TabTitle.TextXAlignment = Enum.TextXAlignment.Left
 TabTitle.BackgroundTransparency = 1
 
--- Кнопки управления
+-- Кнопки управления (Справа)
 local ButtonHolder = Instance.new("Frame", TopBar)
 ButtonHolder.Name = "ButtonHolder"
 ButtonHolder.Size = UDim2.new(0, 60, 0, 30)
@@ -157,7 +159,7 @@ BodyContainer.ZIndex = 2
 
 local Sidebar = Instance.new("Frame", BodyContainer)
 Sidebar.Name = "Sidebar"
-Sidebar.BackgroundTransparency = 1 -- Сделал прозрачным, так как заголовки теперь на собственных плашках
+Sidebar.BackgroundTransparency = 1 
 Sidebar.Size = UDim2.new(0, 160, 1, 0)
 
 local Navigation = Instance.new("ScrollingFrame", Sidebar)
@@ -217,7 +219,7 @@ RunService.RenderStepped:Connect(function()
     StatsLabel.Text = "Performance: " .. GetFPS() .. " FPS"
 end)
 
--- Анимация кнопок закрытия
+-- Управление окном (Закрытие)
 CloseBtn.MouseEnter:Connect(function() tween(CloseBtn, {TextColor3 = Color3.fromRGB(255, 70, 70)}) end)
 CloseBtn.MouseLeave:Connect(function() tween(CloseBtn, {TextColor3 = Color3.fromRGB(150, 150, 150)}) end)
 CloseBtn.MouseButton1Click:Connect(function()
@@ -234,12 +236,11 @@ MinBtn.MouseButton1Click:Connect(function()
     if isMinimized then
         BodyContainer.Visible = false
         TabTitle.Visible = false
-        HeaderBackground.Size = UDim2.new(0, 150, 0, 45) -- Слегка адаптируем плашку при свертывании
         
-        tween(MainFrame, {Size = UDim2.new(0, 240, 0, 55)}, 0.2)
+        -- Сворачиваем фрейм ровно под размер нашей выделенной плашки
+        tween(MainFrame, {Size = UDim2.new(0, 160, 0, 55)}, 0.2)
     else
         MainFrame.Position = UDim2.new(0.5, -275, 0.5, -175)
-        HeaderBackground.Size = UDim2.new(0, 220, 0, 45)
         
         tween(MainFrame, {Size = UDim2.new(0, 550, 0, 350)}, 0.2).Completed:Connect(function()
             if not isMinimized then 
@@ -250,7 +251,7 @@ MinBtn.MouseButton1Click:Connect(function()
     end
 end)
 
--- [[ СИСТЕМЫ СТРАНИЦ ]] --
+-- [[ СИСТЕМЫ СТРАНИЦ И ВКЛАДОК ]] --
 local PagesFolder = Instance.new("Folder", BodyContainer)
 local allTabs = {}
 local allPages = {}
@@ -270,13 +271,13 @@ local function CreatePage(name)
     PageLayout.SortOrder = Enum.SortOrder.LayoutOrder
     
     local TabBtn = Instance.new("TextButton", Navigation)
-    TabBtn.Size = UDim2.new(1, -10, 0, 36) -- Слегка увеличил высоту кнопок под стиль плашки заголовка
+    TabBtn.Size = UDim2.new(1, -10, 0, 36)
     TabBtn.Position = UDim2.new(0, 5, 0, 0)
     TabBtn.Text = "     " .. name
     TabBtn.Font = Enum.Font.GothamMedium
     TabBtn.TextSize = 12
     TabBtn.TextColor3 = Color3.fromRGB(140, 140, 140)
-    TabBtn.BackgroundColor3 = Color3.fromRGB(24, 24, 24)
+    TabBtn.BackgroundColor3 = Color3.fromRGB(28, 28, 28)
     TabBtn.BackgroundTransparency = 1
     TabBtn.ClipsDescendants = true
     TabBtn.TextXAlignment = Enum.TextXAlignment.Left
@@ -299,7 +300,7 @@ local function CreatePage(name)
         TabTitle.Text = "— " .. name
         PageFrame.Visible = true
         TabStroke.Enabled = true
-        tween(TabBtn, {BackgroundTransparency = 0.3, TextColor3 = Color3.new(1,1,1)})
+        tween(TabBtn, {BackgroundTransparency = 0.4, TextColor3 = Color3.new(1,1,1)})
     end
     
     TabBtn.InputBegan:Connect(function(input)
@@ -316,7 +317,7 @@ local function CreatePage(name)
     end)
     
     TabBtn.MouseEnter:Connect(function()
-        if TabTitle.Text ~= "— " .. name then tween(TabBtn, {BackgroundTransparency = 0.6, TextColor3 = Color3.new(1,1,1)}) end
+        if TabTitle.Text ~= "— " .. name then tween(TabBtn, {BackgroundTransparency = 0.7, TextColor3 = Color3.new(1,1,1)}) end
     end)
     TabBtn.MouseLeave:Connect(function()
         if TabTitle.Text ~= "— " .. name then
@@ -370,7 +371,7 @@ local function CreateToggle(parentPage, name, default, callback)
     end)
 end
 
--- Инициализация вкладок
+-- Инициализация структуры
 local MainPage = CreatePage("Main")
 local AutoPage = CreatePage("Auto")
 local AutoBuyPage = CreatePage("Auto Buy")
@@ -379,7 +380,7 @@ local PlayersPage = CreatePage("Players")
 CreateToggle(AutoPage, "Auto Farm", true)
 CreateToggle(AutoPage, "Anti-Fling", true)
 
-allTabs["Auto"].BackgroundTransparency = 0.3
+allTabs["Auto"].BackgroundTransparency = 0.4
 allTabs["Auto"].TextColor3 = Color3.new(1,1,1)
 allTabs["Auto"].UIStroke.Enabled = true
 allPages["Auto"].Visible = true
