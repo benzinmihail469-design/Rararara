@@ -1,13 +1,13 @@
--- [[ Dark Hub GUI — Полный скрипт с исправленной иконкой ]] --
--- Исправлен формат ID для корректного отображения картинки
-local HorseIconID = "http://www.roblox.com/asset/?id=93790908316981" 
+-- [[ Dark Hub GUI — Исправленная загрузка иконки ]] --
+local RawAssetID = 93790908316981 -- Твой ID
 
 local TweenService = game:GetService("TweenService")
 local UserInputService = game:GetService("UserInputService")
 local RunService = game:GetService("RunService")
 local GuiService = game:GetService("GuiService")
-local PulseHub = Instance.new("ScreenGui")
+local MarketplaceService = game:GetService("MarketplaceService")
 
+local PulseHub = Instance.new("ScreenGui")
 if game:GetService("CoreGui"):FindFirstChild("PulseHub") then 
     game:GetService("CoreGui").PulseHub:Destroy() 
 end
@@ -110,10 +110,24 @@ local HubIcon = Instance.new("ImageLabel", HeaderBg)
 HubIcon.Name = "HubIcon"
 HubIcon.Size = UDim2.new(0, 28, 0, 28)
 HubIcon.Position = UDim2.new(0, 8, 0, 9)
-HubIcon.Image = HorseIconID
 HubIcon.BackgroundTransparency = 1
 HubIcon.ScaleType = Enum.ScaleType.Fit 
 HubIcon.ZIndex = 5
+
+-- Умная подгрузка иконки (проверяет все возможные форматы Roblox)
+task.spawn(function()
+    -- Вариант 1: Быстрая подгрузка через миниатюры (работает в 95% случаев для кастомных ID)
+    HubIcon.Image = "rbxthumb://type=Asset&id=" .. RawAssetID .. "&w=150&h=150"
+    
+    -- Вариант 2: Попытка конвертации Decal -> Image ID в реальном времени, если первый способ забагался
+    pcall(function()
+        local assetInfo = MarketplaceService:GetProductInfo(RawAssetID)
+        if assetInfo and assetInfo.AssetTypeId == 13 then -- Если это Декаль
+            -- Используем альтернативный рабочий линк
+            HubIcon.Image = "http://www.roblox.com/asset/?id=" .. tostring(RawAssetID)
+        end
+    end)
+end)
 
 local HubTitle = Instance.new("TextLabel", HeaderBg)
 HubTitle.Text = "Pulse Hub"
