@@ -1,4 +1,4 @@
--- [[ Pulse Hub GUI — Фикс подвала и крестика по скриншоту 3384.jpg ]] --
+-- [[ Pulse Hub GUI — Полное исправление иконок, крестика и Ripple эффекта ]] --
 local TweenService = game:GetService("TweenService")
 local UserInputService = game:GetService("UserInputService")
 local RunService = game:GetService("RunService")
@@ -32,7 +32,7 @@ local MainStroke = Instance.new("UIStroke", MainFrame)
 MainStroke.Color = Color3.fromRGB(40, 40, 40)
 MainStroke.Thickness = 1.5
 
--- [[ КОНТЕЙНЕР КНОПОК УПРАВЛЕНИЯ (ВЕРХНИЙ ПРАВЫЙ УГОЛ) ]] --
+-- [[ КОНТЕЙНЕР КНОПОК УПРАВЛЕНИЯ (ДЛЯ РАЗВЕРНУТОГО GUI) ]] --
 local ControlsContainer = Instance.new("Frame", MainFrame)
 ControlsContainer.Name = "ControlsContainer"
 ControlsContainer.Size = UDim2.new(0, 60, 0, 30)
@@ -55,7 +55,7 @@ local CloseBtn = Instance.new("TextButton", ControlsContainer)
 CloseBtn.Name = "CloseBtn"
 CloseBtn.Size = UDim2.new(0, 24, 0, 24)
 CloseBtn.Position = UDim2.new(0, 30, 0, 0)
-CloseBtn.Text = "×" -- Четкий крестик
+CloseBtn.Text = "×"
 CloseBtn.Font = Enum.Font.Arial
 CloseBtn.TextSize = 22
 CloseBtn.TextColor3 = Color3.fromRGB(180, 180, 180)
@@ -84,12 +84,21 @@ local HeaderStroke = Instance.new("UIStroke", HeaderBg)
 HeaderStroke.Color = Color3.fromRGB(45, 45, 45)
 HeaderStroke.Thickness = 1.2
 
+-- Иконка (Возвращена на место)
+local HubIcon = Instance.new("ImageLabel", HeaderBg)
+HubIcon.Name = "HubIcon"
+HubIcon.Size = UDim2.new(0, 26, 0, 26)
+HubIcon.Position = UDim2.new(0, 10, 0, 10)
+HubIcon.Image = "rbxassetid://10840212450"
+HubIcon.BackgroundTransparency = 1
+HubIcon.ZIndex = 5
+
 local HubTitle = Instance.new("TextLabel", HeaderBg)
 HubTitle.Text = "Pulse Hub"
 HubTitle.Font = Enum.Font.GothamBold
 HubTitle.TextColor3 = Color3.fromRGB(255, 255, 255)
 HubTitle.TextSize = 13
-HubTitle.Position = UDim2.new(0, 15, 0, 7)
+HubTitle.Position = UDim2.new(0, 44, 0, 7)
 HubTitle.Size = UDim2.new(0, 95, 0, 15)
 HubTitle.TextXAlignment = Enum.TextXAlignment.Left
 HubTitle.BackgroundTransparency = 1
@@ -100,26 +109,42 @@ SubTitle.Text = "Grow A Garden 2"
 SubTitle.Font = Enum.Font.Gotham
 SubTitle.TextColor3 = Color3.fromRGB(130, 130, 130)
 SubTitle.TextSize = 9
-SubTitle.Position = UDim2.new(0, 15, 0, 23)
+SubTitle.Position = UDim2.new(0, 44, 0, 23)
 SubTitle.Size = UDim2.new(0, 95, 0, 13)
 SubTitle.TextXAlignment = Enum.TextXAlignment.Left
 SubTitle.BackgroundTransparency = 1
 SubTitle.ZIndex = 5
 
--- Встроенная кнопка сворачивания (только для режима свёрнутого GUI, как на 3384.jpg)
-local EmbeddedMinBtn = Instance.new("TextButton", HeaderBg)
-EmbeddedMinBtn.Name = "EmbeddedMinBtn"
-EmbeddedMinBtn.Size = UDim2.new(0, 20, 0, 20)
-EmbeddedMinBtn.Position = UDim2.new(1, -30, 0, 13)
-EmbeddedMinBtn.Text = "—"
-EmbeddedMinBtn.Font = Enum.Font.GothamBold
-EmbeddedMinBtn.TextSize = 12
-EmbeddedMinBtn.TextColor3 = Color3.fromRGB(180, 180, 180)
-EmbeddedMinBtn.BackgroundTransparency = 1
-EmbeddedMinBtn.ZIndex = 6
-EmbeddedMinBtn.Visible = false
+-- Встроенные кнопки управления (для свёрнутого режима, как на 3386.jpg)
+local EmbeddedControls = Instance.new("Frame", HeaderBg)
+EmbeddedControls.Name = "EmbeddedControls"
+EmbeddedControls.Size = UDim2.new(0, 50, 0, 30)
+EmbeddedControls.Position = UDim2.new(1, -55, 0, 8)
+EmbeddedControls.BackgroundTransparency = 1
+EmbeddedControls.ZIndex = 6
+EmbeddedControls.Visible = false
 
--- НАВИГАЦИЯ
+local EmbMinBtn = Instance.new("TextButton", EmbeddedControls)
+EmbMinBtn.Size = UDim2.new(0, 20, 0, 20)
+EmbMinBtn.Position = UDim2.new(0, 0, 0, 5)
+EmbMinBtn.Text = "—"
+EmbMinBtn.Font = Enum.Font.GothamBold
+EmbMinBtn.TextSize = 11
+EmbMinBtn.TextColor3 = Color3.fromRGB(180, 180, 180)
+EmbMinBtn.BackgroundTransparency = 1
+EmbMinBtn.ZIndex = 7
+
+local EmbCloseBtn = Instance.new("TextButton", EmbeddedControls)
+EmbCloseBtn.Size = UDim2.new(0, 20, 0, 20)
+EmbCloseBtn.Position = UDim2.new(0, 25, 0, 2)
+EmbCloseBtn.Text = "×"
+EmbCloseBtn.Font = Enum.Font.Arial
+EmbCloseBtn.TextSize = 20
+EmbCloseBtn.TextColor3 = Color3.fromRGB(180, 180, 180)
+EmbCloseBtn.BackgroundTransparency = 1
+EmbCloseBtn.ZIndex = 7
+
+-- НАВИГАЦИЯ В ВКЛАДКАХ
 local Navigation = Instance.new("ScrollingFrame", SidebarContainer)
 Navigation.Size = UDim2.new(1, -20, 1, -135)
 Navigation.Position = UDim2.new(0, 10, 0, 65)
@@ -129,7 +154,7 @@ Navigation.ScrollBarThickness = 0
 local NavLayout = Instance.new("UIListLayout", Navigation)
 NavLayout.Padding = UDim.new(0, 5)
 
--- [[ ВОЗВРАЩЕННЫЙ ПОДВАЛ (ДИСКОРД И FPS) ]] --
+-- ПОДВАЛ
 local FooterBg = Instance.new("Frame", SidebarContainer)
 FooterBg.Name = "FooterBg"
 FooterBg.Size = UDim2.new(0, 150, 0, 46)
@@ -170,7 +195,7 @@ RunService.RenderStepped:Connect(function()
     StatsLabel.Text = "FPS: " .. #FrameUpdateTable
 end)
 
--- [[ КОНТЕНТ СТРАНИЦ ]] --
+-- КОНТЕНТ СТРАНИЦ
 local PagesContainer = Instance.new("Frame", MainFrame)
 PagesContainer.Name = "PagesContainer"
 PagesContainer.Size = UDim2.new(1, -185, 1, -70)
@@ -187,28 +212,24 @@ TabTitle.Size = UDim2.new(0, 150, 0, 20)
 TabTitle.TextXAlignment = Enum.TextXAlignment.Left
 TabTitle.BackgroundTransparency = 1
 
--- [[ ИСПРАВЛЕННАЯ АНИМАЦИЯ ВОЛНЫ (RIPPLE EFFECT) ]] --
-local function CreateRipple(button)
-    local mousePos = UserInputService:GetMouseLocation()
-    local buttonPos = button.AbsolutePosition
-    
+-- [[ ЖЕЛЕЗОБЕТОННЫЙ RIPPLE EFFECT ПО СЕТКЕ КЛИКА ]] --
+local function CreateRipple(button, clickX, clickY)
     local Ripple = Instance.new("ImageLabel")
     Ripple.Name = "Ripple"
     Ripple.Parent = button
     Ripple.BackgroundTransparency = 1
     Ripple.Image = "rbxassetid://4012975932"
     Ripple.ImageColor3 = Color3.fromRGB(255, 255, 255)
-    Ripple.ImageTransparency = 0.65
+    Ripple.ImageTransparency = 0.6
     Ripple.ZIndex = button.ZIndex + 1
     Ripple.AnchorPoint = Vector2.new(0.5, 0.5)
     
-    local relativeX = mousePos.X - buttonPos.X
-    local relativeY = (mousePos.Y - 36) - buttonPos.Y -- Учитываем верхнюю плашку Roblox
-    Ripple.Position = UDim2.new(0, relativeX, 0, relativeY)
+    -- Получаем локальные координаты внутри кнопки напрямую из клика мыши
+    Ripple.Position = UDim2.new(0, clickX, 0, clickY)
     Ripple.Size = UDim2.new(0, 0, 0, 0)
     
-    local maxLength = math.max(button.AbsoluteSize.X, button.AbsoluteSize.Y) * 3
-    local t = TweenService:Create(Ripple, TweenInfo.new(0.4, Enum.EasingStyle.Quad, Enum.EasingDirection.Out), {
+    local maxLength = math.max(button.AbsoluteSize.X, button.AbsoluteSize.Y) * 2.5
+    local t = TweenService:Create(Ripple, TweenInfo.new(0.45, Enum.EasingStyle.Quad, Enum.EasingDirection.Out), {
         Size = UDim2.new(0, maxLength, 0, maxLength),
         ImageTransparency = 1
     })
@@ -216,7 +237,7 @@ local function CreateRipple(button)
     t.Completed:Connect(function() Ripple:Destroy() end)
 end
 
--- [[ ИСПРАВЛЕННАЯ ЛОГИКА СВОРАЧИВАНИЯ ПО СКРИНШОТУ 3384.jpg ]] --
+-- [[ ИСПРАВЛЕННОЕ СВОРАЧИВАНИЕ С КРЕСТИКОМ (ПО СКРИНШОТУ 3386.jpg) ]] --
 local isMinimized = false
 local function ToggleMinimize()
     isMinimized = not isMinimized
@@ -224,19 +245,22 @@ local function ToggleMinimize()
         PagesContainer.Visible = false
         TabTitle.Visible = false
         Navigation.Visible = false
-        FooterBg.Visible = false -- Подвал скрывается вместе с остальным GUI
+        FooterBg.Visible = false
         ControlsContainer.Visible = false
         
         MainStroke.Enabled = false
         MainFrame.BackgroundTransparency = 1
         
         HeaderBg.Position = UDim2.new(0, 0, 0, 0)
-        EmbeddedMinBtn.Visible = true -- Появляется встроенная полосочка
+        -- Делаем плашку чуть шире, чтобы влезли и полоска, и крестик из 3386.jpg
+        HeaderBg.Size = UDim2.new(0, 175, 0, 46) 
+        EmbeddedControls.Visible = true 
         
-        tween(MainFrame, {Size = UDim2.new(0, 150, 0, 46)})
+        tween(MainFrame, {Size = UDim2.new(0, 175, 0, 46)})
     else
-        EmbeddedMinBtn.Visible = false
+        EmbeddedControls.Visible = false
         HeaderBg.Position = UDim2.new(0, 10, 0, 10)
+        HeaderBg.Size = UDim2.new(0, 150, 0, 46)
         
         MainStroke.Enabled = true
         MainFrame.BackgroundTransparency = 0.15
@@ -246,7 +270,7 @@ local function ToggleMinimize()
                 PagesContainer.Visible = true
                 TabTitle.Visible = true
                 Navigation.Visible = true
-                FooterBg.Visible = true -- Подвал плавно возвращается обратно
+                FooterBg.Visible = true
                 ControlsContainer.Visible = true
             end
         end)
@@ -254,10 +278,23 @@ local function ToggleMinimize()
 end
 
 MinBtn.MouseButton1Click:Connect(ToggleMinimize)
-EmbeddedMinBtn.MouseButton1Click:Connect(ToggleMinimize)
-CloseBtn.MouseButton1Click:Connect(function() PulseHub:Destroy() end)
+EmbMinBtn.MouseButton1Click:Connect(ToggleMinimize)
 
--- [[ DRAG ]] --
+local function CloseGui() PulseHub:Destroy() end
+CloseBtn.MouseButton1Click:Connect(CloseGui)
+EmbCloseBtn.MouseButton1Click:Connect(CloseGui)
+
+-- Подсветка кнопок
+local function applyHover(btn, normalColor, hoverColor)
+    btn.MouseEnter:Connect(function() tween(btn, {TextColor3 = hoverColor}) end)
+    btn.MouseLeave:Connect(function() tween(btn, {TextColor3 = normalColor}) end)
+end
+applyHover(MinBtn, Color3.fromRGB(180,180,180), Color3.fromRGB(255,255,255))
+applyHover(EmbMinBtn, Color3.fromRGB(180,180,180), Color3.fromRGB(255,255,255))
+applyHover(CloseBtn, Color3.fromRGB(180,180,180), Color3.fromRGB(255,70,70))
+applyHover(EmbCloseBtn, Color3.fromRGB(180,180,180), Color3.fromRGB(255,70,70))
+
+-- DRAG
 local dragToggle, dragInput, dragStart, startPos
 MainFrame.InputBegan:Connect(function(input)
     if (input.UserInputType == Enum.UserInputType.MouseButton1 or input.UserInputType == Enum.UserInputType.Touch) then
@@ -279,7 +316,7 @@ UserInputService.InputChanged:Connect(function(input)
     end
 end)
 
--- [[ СИСТЕМА ВКЛАДОК ]] --
+-- СИСТЕМА СТРАНИЦ И ВКЛАДОК
 local allTabs = {}
 local allPages = {}
 
@@ -312,9 +349,16 @@ local function CreatePage(name)
     allTabs[name] = TabBtn
     allPages[name] = PageFrame
     
+    -- Получаем точные локальные координаты внутри кнопки при клике
+    TabBtn.InputBegan:Connect(function(input)
+        if input.UserInputType == Enum.UserInputType.MouseButton1 or input.UserInputType == Enum.UserInputType.Touch then
+            local localX = input.Position.X - TabBtn.AbsolutePosition.X
+            local localY = input.Position.Y - TabBtn.AbsolutePosition.Y
+            CreateRipple(TabBtn, localX, localY)
+        end
+    end)
+    
     TabBtn.MouseButton1Click:Connect(function()
-        CreateRipple(TabBtn)
-        
         for tName, tBtn in pairs(allTabs) do
             tween(tBtn, {BackgroundTransparency = 1, TextColor3 = Color3.fromRGB(140, 140, 140)})
             tBtn.UIStroke.Enabled = false
@@ -329,58 +373,11 @@ local function CreatePage(name)
     return PageFrame
 end
 
-local function CreateToggle(parentPage, name, default, callback)
-    local ToggleFrame = Instance.new("Frame", parentPage)
-    ToggleFrame.BackgroundColor3 = Color3.fromRGB(22, 22, 22)
-    ToggleFrame.Size = UDim2.new(1, -10, 0, 40)
-    Instance.new("UICorner", ToggleFrame).CornerRadius = UDim.new(0, 6)
-    Instance.new("UIStroke", ToggleFrame).Color = Color3.fromRGB(35, 35, 35)
-    
-    local ToggleTitle = Instance.new("TextLabel", ToggleFrame)
-    ToggleTitle.Text = name
-    ToggleTitle.Font = Enum.Font.GothamMedium
-    ToggleTitle.TextColor3 = Color3.fromRGB(230, 230, 230)
-    ToggleTitle.TextSize = 13
-    ToggleTitle.Position = UDim2.new(0, 12, 0, 0)
-    ToggleTitle.Size = UDim2.new(1, -60, 1, 0)
-    ToggleTitle.TextXAlignment = Enum.TextXAlignment.Left
-    ToggleTitle.BackgroundTransparency = 1
-    
-    local ToggleBG = Instance.new("TextButton", ToggleFrame)
-    ToggleBG.BackgroundColor3 = default and Color3.fromRGB(255, 90, 30) or Color3.fromRGB(45, 45, 45)
-    ToggleBG.Position = UDim2.new(1, -45, 0, 11)
-    ToggleBG.Size = UDim2.new(0, 32, 0, 18)
-    ToggleBG.Text = ""
-    Instance.new("UICorner", ToggleBG).CornerRadius = UDim.new(1, 0)
-    
-    local ToggleCircle = Instance.new("Frame", ToggleBG)
-    ToggleCircle.BackgroundColor3 = Color3.new(1,1,1)
-    ToggleCircle.Position = default and UDim2.new(1, -15, 0, 2) or UDim2.new(0, 2, 0, 2)
-    ToggleCircle.Size = UDim2.new(0, 14, 0, 14)
-    Instance.new("UICorner", ToggleCircle).CornerRadius = UDim.new(1, 0)
-    
-    local enabled = default
-    ToggleBG.MouseButton1Click:Connect(function()
-        enabled = not enabled
-        if enabled then
-            tween(ToggleBG, {BackgroundColor3 = Color3.fromRGB(255, 90, 30)})
-            tween(ToggleCircle, {Position = UDim2.new(1, -15, 0, 2)})
-        else
-            tween(ToggleBG, {BackgroundColor3 = Color3.fromRGB(45, 45, 45)})
-            tween(ToggleCircle, {Position = UDim2.new(0, 2, 0, 2)})
-        end
-        if callback then callback(enabled) end
-    end)
-end
-
--- [[ ИНИЦИАЛИЗАЦИЯ ]] --
+-- ИНИЦИАЛИЗАЦИЯ
 local MainPage = CreatePage("Main")
 local AutoPage = CreatePage("Auto")
 local AutoBuyPage = CreatePage("Auto Buy")
 local PlayersPage = CreatePage("Players")
-
-CreateToggle(MainPage, "Anti-AFK System", true)
-CreateToggle(AutoPage, "Auto Farm Coins (Max Speed: 25)", false)
 
 allTabs["Main"].BackgroundTransparency = 0
 allTabs["Main"].TextColor3 = Color3.new(1,1,1)
