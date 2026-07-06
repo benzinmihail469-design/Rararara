@@ -1,4 +1,4 @@
--- [[ Pulse Hub GUI — Идеальное сворачивание, фикс Drag и оригинальные вкладки ]] --
+-- [[ Pulse Hub GUI — Фикс кнопок, сплошной фон и анимация волн ]] --
 local TweenService = game:GetService("TweenService")
 local UserInputService = game:GetService("UserInputService")
 local RunService = game:GetService("RunService")
@@ -21,7 +21,6 @@ end
 local MainFrame = Instance.new("Frame", PulseHub)
 MainFrame.Name = "MainFrame"
 MainFrame.BackgroundColor3 = Color3.fromRGB(14, 14, 14)
-MainFrame.BackgroundTransparency = 0.15
 MainFrame.Position = UDim2.new(0.5, -275, 0.5, -175)
 MainFrame.Size = UDim2.new(0, 550, 0, 350)
 MainFrame.ClipsDescendants = true 
@@ -55,7 +54,7 @@ local HeaderStroke = Instance.new("UIStroke", HeaderBg)
 HeaderStroke.Color = Color3.fromRGB(45, 45, 45)
 HeaderStroke.Thickness = 1.2
 
--- Иконка Pulse Hub
+-- Иконка и тексты
 local HubIcon = Instance.new("ImageLabel", HeaderBg)
 HubIcon.Size = UDim2.new(0, 26, 0, 26)
 HubIcon.Position = UDim2.new(0, 10, 0, 10)
@@ -85,6 +84,29 @@ SubTitle.TextXAlignment = Enum.TextXAlignment.Left
 SubTitle.BackgroundTransparency = 1
 SubTitle.ZIndex = 5
 
+-- [[ КНОПКИ УПРАВЛЕНИЯ ВНУТРИ ПЛАШКИ ЗАГОЛОВКА (Никогда не сломаются) ]] --
+local MinBtn = Instance.new("TextButton", HeaderBg)
+MinBtn.Name = "MinBtn"
+MinBtn.Size = UDim2.new(0, 20, 0, 20)
+MinBtn.Position = UDim2.new(1, -45, 0, 13)
+MinBtn.Text = "—"
+MinBtn.Font = Enum.Font.GothamBold
+MinBtn.TextSize = 12
+MinBtn.TextColor3 = Color3.fromRGB(180, 180, 180)
+MinBtn.BackgroundTransparency = 1
+MinBtn.ZIndex = 6
+
+local CloseBtn = Instance.new("TextButton", HeaderBg)
+CloseBtn.Name = "CloseBtn"
+CloseBtn.Size = UDim2.new(0, 20, 0, 20)
+CloseBtn.Position = UDim2.new(1, -25, 0, 13)
+CloseBtn.Text = "×"
+CloseBtn.Font = Enum.Font.Arial
+CloseBtn.TextSize = 20
+CloseBtn.TextColor3 = Color3.fromRGB(180, 180, 180)
+CloseBtn.BackgroundTransparency = 1
+CloseBtn.ZIndex = 6
+
 -- [[ НАВИГАЦИЯ (ВКЛАДКИ) ]] --
 local Navigation = Instance.new("ScrollingFrame", SidebarContainer)
 Navigation.Size = UDim2.new(1, -20, 1, -135)
@@ -96,7 +118,7 @@ local NavLayout = Instance.new("UIListLayout", Navigation)
 NavLayout.Padding = UDim.new(0, 5)
 NavLayout.SortOrder = Enum.SortOrder.LayoutOrder
 
--- [[ ВЫДЕЛЕННЫЙ ПОДВАЛ (DISCORD) ]] --
+-- [[ ВЫДЕЛЕННЫЙ ПОДВАЛ ]] --
 local FooterBg = Instance.new("Frame", SidebarContainer)
 FooterBg.Name = "FooterBg"
 FooterBg.Size = UDim2.new(0, 150, 0, 46)
@@ -139,47 +161,6 @@ RunService.RenderStepped:Connect(function()
     StatsLabel.Text = "FPS: " .. #FrameUpdateTable
 end)
 
--- [[ ВЕРХНЯЯ ПАНЕЛЬ С СИСТЕМОЙ УПРАВЛЕНИЯ ]] --
-local TopBar = Instance.new("Frame", MainFrame)
-TopBar.Name = "TopBar"
-TopBar.Size = UDim2.new(1, 0, 0, 60)
-TopBar.BackgroundTransparency = 1
-TopBar.ZIndex = 5
-
-local TabTitle = Instance.new("TextLabel", TopBar)
-TabTitle.Text = "Auto"
-TabTitle.Font = Enum.Font.GothamBold
-TabTitle.TextColor3 = Color3.fromRGB(255, 255, 255)
-TabTitle.TextSize = 16
-TabTitle.Position = UDim2.new(0, 185, 0, 18)
-TabTitle.Size = UDim2.new(0, 150, 0, 20)
-TabTitle.TextXAlignment = Enum.TextXAlignment.Left
-TabTitle.BackgroundTransparency = 1
-
--- Кнопки Свернуть / Закрыть (Справа на TopBar)
-local ButtonHolder = Instance.new("Frame", TopBar)
-ButtonHolder.Name = "ButtonHolder"
-ButtonHolder.Size = UDim2.new(0, 70, 0, 30)
-ButtonHolder.Position = UDim2.new(1, -80, 0, 15)
-ButtonHolder.BackgroundTransparency = 1
-
-local MinBtn = Instance.new("TextButton", ButtonHolder)
-MinBtn.Size = UDim2.new(0, 30, 0, 30)
-MinBtn.Text = "—"
-MinBtn.Font = Enum.Font.GothamBold
-MinBtn.TextSize = 14
-MinBtn.TextColor3 = Color3.fromRGB(180, 180, 180)
-MinBtn.BackgroundTransparency = 1
-
-local CloseBtn = Instance.new("TextButton", ButtonHolder)
-CloseBtn.Size = UDim2.new(0, 30, 0, 30)
-CloseBtn.Position = UDim2.new(0, 35, 0, 0)
-CloseBtn.Text = "×"
-CloseBtn.Font = Enum.Font.Arial
-CloseBtn.TextSize = 24
-CloseBtn.TextColor3 = Color3.fromRGB(180, 180, 180)
-CloseBtn.BackgroundTransparency = 1
-
 -- [[ КОНТЕНТ СТРАНИЦ ]] --
 local PagesContainer = Instance.new("Frame", MainFrame)
 PagesContainer.Name = "PagesContainer"
@@ -188,7 +169,49 @@ PagesContainer.Position = UDim2.new(0, 175, 0, 60)
 PagesContainer.BackgroundTransparency = 1
 PagesContainer.ZIndex = 2
 
--- [[ ЖЕЛЕЗНОЕ СВОРАЧИВАНИЕ (Строго как на скриншоте 3377.jpg) ]] --
+local TabTitle = Instance.new("TextLabel", MainFrame)
+TabTitle.Text = "Auto"
+TabTitle.Font = Enum.Font.GothamBold
+TabTitle.TextColor3 = Color3.fromRGB(255, 255, 255)
+TabTitle.TextSize = 16
+TabTitle.Position = UDim2.new(0, 185, 0, 18)
+TabTitle.Size = UDim2.new(0, 150, 0, 20)
+TabTitle.TextXAlignment = Enum.TextXAlignment.Left
+TabTitle.BackgroundTransparency = 1
+TabTitle.ZIndex = 5
+
+-- [[ ФУНКЦИЯ ДЛЯ ЭФФЕКТА ВОЛНЫ (RIPPLE EFFECT) ]] --
+local function CreateRipple(button, mouseX, mouseY)
+    local Ripple = Instance.new("ImageLabel")
+    Ripple.Name = "Ripple"
+    Ripple.Parent = button
+    Ripple.BackgroundColor3 = Color3.new(1, 1, 1)
+    Ripple.BackgroundTransparency = 1
+    Ripple.Image = "rbxassetid://4012975932"
+    Ripple.ImageColor3 = Color3.fromRGB(255, 255, 255)
+    Ripple.ImageTransparency = 0.7
+    Ripple.ZIndex = button.ZIndex + 1
+    
+    local topLeft = button.AbsolutePosition
+    local size = button.AbsoluteSize
+    local offset = Vector2.new(mouseX - topLeft.X, mouseY - topLeft.Y)
+    
+    Ripple.Position = UDim2.new(0, offset.X, 0, offset.Y)
+    Ripple.Size = UDim2.new(0, 0, 0, 0)
+    Ripple.AnchorPoint = Vector2.new(0.5, 0.5)
+    
+    local maxLength = math.max(size.X, size.Y) * 2
+    
+    local tweenInfo = TweenInfo.new(0.4, Enum.EasingStyle.Quad, Enum.EasingDirection.Out)
+    local t1 = TweenService:Create(Ripple, tweenInfo, {
+        Size = UDim2.new(0, maxLength, 0, maxLength),
+        ImageTransparency = 1
+    })
+    t1:Play()
+    t1.Completed:Connect(function() Ripple:Destroy() end)
+end
+
+-- [[ ЛОГИКА ИДЕАЛЬНОГО СВОРАЧИВАНИЯ (Строго по скриншоту 3380.jpg) ]] --
 local isMinimized = false
 MinBtn.MouseButton1Click:Connect(function()
     isMinimized = not isMinimized
@@ -197,11 +220,13 @@ MinBtn.MouseButton1Click:Connect(function()
         TabTitle.Visible = false
         Navigation.Visible = false
         FooterBg.Visible = false
+        CloseBtn.Visible = false -- Скрываем крестик
         
-        ButtonHolder.Position = UDim2.new(0, 120, 0, 15) -- Смещаем кнопки управления внутрь плашки
-        tween(MainFrame, {Size = UDim2.new(0, 170, 0, 66)}) -- Сжимаем окно ровно под размер плашки заголовка
+        MinBtn.Position = UDim2.new(1, -25, 0, 13) -- Перемещаем черточку в правый край плашки заголовка
+        tween(MainFrame, {Size = UDim2.new(0, 170, 0, 66)})
     else
-        ButtonHolder.Position = UDim2.new(1, -80, 0, 15)
+        MinBtn.Position = UDim2.new(1, -45, 0, 13)
+        CloseBtn.Visible = true
         Navigation.Visible = true
         FooterBg.Visible = true
         
@@ -221,7 +246,7 @@ local dragToggle, dragInput, dragStart, startPos
 local function updateInput(input)
     local delta = input.Position - dragStart
     local position = UDim2.new(startPos.X.Scale, startPos.X.Offset + delta.X, startPos.Y.Scale, startPos.Y.Offset + delta.Y)
-    game:GetService("TweenService"):Create(MainFrame, TweenInfo.new(0.1, Enum.EasingStyle.Quad, Enum.EasingDirection.Out), {Position = position}):Play()
+    TweenService:Create(MainFrame, TweenInfo.new(0.08, Enum.EasingStyle.Quad, Enum.EasingDirection.Out), {Position = position}):Play()
 end
 
 MainFrame.InputBegan:Connect(function(input)
@@ -266,8 +291,10 @@ local function CreatePage(name)
     TabBtn.Font = Enum.Font.GothamMedium
     TabBtn.TextSize = 13
     TabBtn.TextColor3 = Color3.fromRGB(150, 150, 150)
-    TabBtn.BackgroundTransparency = 1 -- Вкладки прозрачные по дефолту
+    TabBtn.BackgroundColor3 = Color3.fromRGB(24, 24, 24)
+    TabBtn.BackgroundTransparency = 1 -- Полностью сплошные
     TabBtn.TextXAlignment = Enum.TextXAlignment.Left
+    TabBtn.ClipsDescendants = true
     Instance.new("UICorner", TabBtn).CornerRadius = UDim.new(0, 6)
     
     local TabStroke = Instance.new("UIStroke", TabBtn)
@@ -278,17 +305,19 @@ local function CreatePage(name)
     allTabs[name] = TabBtn
     allPages[name] = PageFrame
     
-    TabBtn.MouseButton1Click:Connect(function()
+    TabBtn.MouseButton1Click:Connect(function(x, y)
+        -- Вызов эффекта волны
+        local mousePos = UserInputService:GetMouseLocation()
+        CreateRipple(TabBtn, mousePos.X, mousePos.Y - 36)
+        
         for tName, tBtn in pairs(allTabs) do
-            tween(tBtn, {BackgroundTransparency = 1, TextColor3 = Color3.fromRGB(150, 150, 150), BackgroundColor3 = Color3.fromRGB(0,0,0)})
+            tween(tBtn, {BackgroundTransparency = 1, TextColor3 = Color3.fromRGB(150, 150, 150)})
             tBtn.UIStroke.Enabled = false
             allPages[tName].Visible = false
         end
         TabTitle.Text = name
         PageFrame.Visible = true
         TabStroke.Enabled = true
-        -- Серо-черный цвет при выборе (как просил)
-        TabBtn.BackgroundColor3 = Color3.fromRGB(24, 24, 24)
         tween(TabBtn, {BackgroundTransparency = 0, TextColor3 = Color3.new(1,1,1)})
     end)
     
@@ -349,9 +378,8 @@ CreateToggle(MainPage, "Anti-AFK System", true)
 CreateToggle(AutoPage, "Auto Farm Grass", true)
 CreateToggle(AutoPage, "Anti-Fling Bypass", true)
 
--- Выбор дефолтной вкладки (Auto)
-allTabs["Auto"].BackgroundColor3 = Color3.fromRGB(24, 24, 24)
-allTabs["Auto"].BackgroundTransparency = 0
-allTabs["Auto"].TextColor3 = Color3.new(1,1,1)
-allTabs["Auto"].UIStroke.Enabled = true
-allPages["Auto"].Visible = true
+-- Выбор дефолтной вкладки (Main — как на скрине 3379.jpg)
+allTabs["Main"].BackgroundTransparency = 0
+allTabs["Main"].TextColor3 = Color3.new(1,1,1)
+allTabs["Main"].UIStroke.Enabled = true
+allPages["Main"].Visible = true
