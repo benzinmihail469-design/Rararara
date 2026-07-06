@@ -1,6 +1,5 @@
--- [[ Dark Hub GUI — Полный скрипт ]] --
--- НАСТРОЙКА ИКОНКИ: Загрузи коня из "3391.jpg" в Roblox Asset Manager и вставь ID ниже
-local HorseIconID = "rbxassetid://93790908316981" -- Замени этот ID на свой, когда загрузишь
+-- [[ Dark Hub GUI — Полный скрипт с иконкой коня ]] --
+local HorseIconID = "rbxassetid://93790908316981" -- Твой ID для коня успешно добавлен!
 
 local TweenService = game:GetService("TweenService")
 local UserInputService = game:GetService("UserInputService")
@@ -112,7 +111,7 @@ HubIcon.Size = UDim2.new(0, 28, 0, 28)
 HubIcon.Position = UDim2.new(0, 9, 0, 9)
 HubIcon.Image = HorseIconID
 HubIcon.BackgroundTransparency = 1
-HubIcon.ScaleType = Enum.ScaleType.Fit -- Чтобы конь поместился идеально и без искажений
+HubIcon.ScaleType = Enum.ScaleType.Fit -- Конь встанет ровно и красиво без косяков
 HubIcon.ZIndex = 5
 
 local HubTitle = Instance.new("TextLabel", HeaderBg)
@@ -361,7 +360,7 @@ function Library:CreateToggle(parentPage, text, default, callback)
     local Checkbox = Instance.new("TextButton", TglFrame)
     Checkbox.Size = UDim2.new(0, 34, 0, 18)
     Checkbox.Position = UDim2.new(1, -44, 0.5, -9)
-    -- ТЕПЕРЬ ОРАНЖЕВЫЙ ЦВЕТ ПРИ ВКЛЮЧЕНИИ ИЗНАЧАЛЬНО
+    -- Оранжевый цвет по умолчанию, если активен
     Checkbox.BackgroundColor3 = default and Color3.fromRGB(240, 110, 20) or Color3.fromRGB(40, 40, 40)
     Checkbox.Text = ""
     Checkbox.ZIndex = 7
@@ -378,7 +377,7 @@ function Library:CreateToggle(parentPage, text, default, callback)
     Checkbox.MouseButton1Click:Connect(function()
         enabled = not enabled
         if enabled then
-            -- ТЕПЕРЬ ОРАНЖЕВЫЙ ЦВЕТ ПРИ КЛИКЕ
+            -- Переключение в сочный оранжевый
             tween(Checkbox, {BackgroundColor3 = Color3.fromRGB(240, 110, 20)}, 0.2)
             tween(Indicator, {Position = UDim2.new(1, -16, 0.5, -7)}, 0.2)
         else
@@ -458,7 +457,6 @@ local AutoBuyPage = CreatePage("Auto Buy")
 local PlayersPage = CreatePage("Players")
 
 -- [[ НАПОЛНЕНИЕ КОНТЕНТОМ ]] --
--- Тестовая кнопка убрана! Остался только тоггл:
 Library:CreateToggle(MainPage, "Авто-Фарм Монет", false, function(state)
     print("Статус автофарма:", state)
 end)
