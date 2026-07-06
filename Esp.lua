@@ -1,4 +1,4 @@
--- [[ Dark Hub GUI — Скрипт с гарантированным контуром и углами вкладок ]] --
+-- [[ Dark Hub GUI — Скрипт со скругленными вкладками без обводки ]] --
 local RawAssetID = 93790908316981 
 
 local TweenService = game:GetService("TweenService")
@@ -416,7 +416,7 @@ local function CreatePage(name)
     
     Instance.new("UIPadding", PageFrame).PaddingTop = UDim.new(0, 2)
     
-    -- Контейнер для вкладки (гарантирует идеальное закругление и контур)
+    -- Контейнер для вкладки (гарантирует идеальное закругление)
     local TabContainer = Instance.new("Frame", Navigation)
     TabContainer.Name = name .. "_Tab"
     TabContainer.Size = UDim2.new(1, 0, 0, 34)
@@ -427,11 +427,6 @@ local function CreatePage(name)
     
     local TabCorner = Instance.new("UICorner", TabContainer)
     TabCorner.CornerRadius = UDim.new(0, 8) -- Скругленные углы
-    
-    local TabStroke = Instance.new("UIStroke", TabContainer)
-    TabStroke.Color = Color3.fromRGB(240, 110, 20) -- Цвет контура при активации (оранжевый)
-    TabStroke.Thickness = 1.2
-    TabStroke.Enabled = false
     
     -- Сама кнопка внутри контейнера
     local TabBtn = Instance.new("TextButton", TabContainer)
@@ -451,13 +446,11 @@ local function CreatePage(name)
     TabBtn.MouseButton1Down:Connect(function()
         local mousePos = UserInputService:GetMouseLocation()
         local inset = GuiService:GetGuiInset()
-        -- Волна создается строго внутри скругленного контейнера TabContainer
         CreateRipple(TabContainer, mousePos.X - TabContainer.AbsolutePosition.X, (mousePos.Y - inset.Y) - TabContainer.AbsolutePosition.Y)
     end)
     
     TabBtn.MouseButton1Click:Connect(function()
         for tName, tContainer in pairs(allTabs) do
-            tContainer.UIStroke.Enabled = false
             tween(tContainer, {BackgroundTransparency = 1}, 0.2)
             tween(tContainer.TextButton, {TextColor3 = Color3.fromRGB(140, 140, 140)}, 0.2)
             allPages[tName].Visible = false
@@ -465,7 +458,6 @@ local function CreatePage(name)
         TabTitle.Text = name
         PageFrame.Visible = true
         
-        TabStroke.Enabled = true
         tween(TabContainer, {BackgroundTransparency = 0}, 0.2)
         tween(TabBtn, {TextColor3 = Color3.fromRGB(255, 255, 255)}, 0.2)
     end)
@@ -486,6 +478,5 @@ end)
 
 -- Настройки дефолтной активной страницы (Main) при запуске скрипта
 allTabs["Main"].BackgroundTransparency = 0
-allTabs["Main"].UIStroke.Enabled = true
 allTabs["Main"].TextButton.TextColor3 = Color3.fromRGB(255, 255, 255)
 allPages["Main"].Visible = true
