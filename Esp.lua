@@ -1,4 +1,4 @@
--- [[ Dark Hub GUI — Исправленная загрузка иконок и без обводки ]] --
+-- [[ Dark Hub GUI — Исправленная загрузка иконок и логика табов ]] --
 local RawAssetID = 93790908316981 
 
 local TweenService = game:GetService("TweenService")
@@ -114,14 +114,7 @@ HubIcon.ScaleType = Enum.ScaleType.Fit
 HubIcon.ZIndex = 5
 
 -- НАДЁЖНЫЙ МЕТОД ЗАГРУЗКИ ИКОНКИ (Исправлено)
-task.spawn(function()
-    local success = pcall(function()
-        HubIcon.Image = "rbxassetid://" .. tostring(RawAssetID)
-    end)
-    if not success or HubIcon.ContentImageSize == Vector2.new(0,0) then
-        HubIcon.Image = "rbxthumb://type=Asset&id=" .. tostring(RawAssetID) .. "&w=150&h=150"
-    end
-end)
+HubIcon.Image = "rbxassetid://" .. tostring(RawAssetID)
 
 local HubTitle = Instance.new("TextLabel", HeaderBg)
 HubTitle.Text = "Pulse Hub"
@@ -429,6 +422,7 @@ local function CreatePage(name)
     
     -- Сама кнопка внутри контейнера
     local TabBtn = Instance.new("TextButton", TabContainer)
+    TabBtn.Name = "TabBtn" -- Присваиваем имя, чтобы к ней можно было обратиться по названию!
     TabBtn.Size = UDim2.new(1, 0, 1, 0)
     TabBtn.Text = "   " .. name
     TabBtn.Font = Enum.Font.GothamMedium
@@ -451,7 +445,7 @@ local function CreatePage(name)
     TabBtn.MouseButton1Click:Connect(function()
         for tName, tContainer in pairs(allTabs) do
             tween(tContainer, {BackgroundTransparency = 1}, 0.2)
-            tween(tContainer.TextButton, {TextColor3 = Color3.fromRGB(140, 140, 140)}, 0.2)
+            tween(tContainer.TabBtn, {TextColor3 = Color3.fromRGB(140, 140, 140)}, 0.2)
             allPages[tName].Visible = false
         end
         TabTitle.Text = name
@@ -475,7 +469,7 @@ Library:CreateToggle(MainPage, "Авто-Фарм Монет", false, function(s
     print("Статус автофарма:", state)
 end)
 
--- Настройки дефолтной активной страницы (Main) при запуске скрипта
+-- Настройки дефолтной активной страницы (Исправлено)
 allTabs["Main"].BackgroundTransparency = 0
-allTabs["Main"].TextButton.TextColor3 = Color3.fromRGB(255, 255, 255)
+allTabs["Main"].TabBtn.TextColor3 = Color3.fromRGB(255, 255, 255)
 allPages["Main"].Visible = true  
