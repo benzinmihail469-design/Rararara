@@ -389,10 +389,9 @@ end
 
 local allTabs = {}
 local allTabButtons = {} 
-local allTabIcons = {} -- Сохраняем иконки для их анимации
+local allTabIcons = {} 
 local allPages = {}
 
--- Добавили поддержку второго аргумента (iconId) для создания иконки
 local function CreatePage(name, iconId)
     local PageFrame = Instance.new("ScrollingFrame", PagesContainer)
     PageFrame.Size = UDim2.new(1, 0, 1, 0)
@@ -423,7 +422,7 @@ local function CreatePage(name, iconId)
     local TabBtn = Instance.new("TextButton", TabContainer)
     TabBtn.Name = "TabBtn" 
     TabBtn.Size = UDim2.new(1, 0, 1, 0)
-    TabBtn.Text = name -- Текст без пробелов, теперь используем UIPadding
+    TabBtn.Text = name 
     TabBtn.Font = Enum.Font.GothamMedium
     TabBtn.TextSize = 13
     TabBtn.TextColor3 = Color3.fromRGB(140, 140, 140)
@@ -431,19 +430,19 @@ local function CreatePage(name, iconId)
     TabBtn.TextXAlignment = Enum.TextXAlignment.Left
     TabBtn.ZIndex = 7
     
-    -- Динамический отступ для текста в зависимости от того, есть ли иконка
     local Padding = Instance.new("UIPadding", TabBtn)
     Padding.PaddingLeft = UDim.new(0, iconId and 36 or 12)
     
-    -- Если передали ID иконки, создаем её
+    -- ИСПОЛЬЗУЕМ ФОРМАТ КАК В ЗАГОЛОВКЕ
     if iconId then
         local TabIcon = Instance.new("ImageLabel", TabContainer)
         TabIcon.Name = "TabIcon"
         TabIcon.Size = UDim2.new(0, 18, 0, 18)
-        TabIcon.Position = UDim2.new(0, 10, 0.5, -9) -- По центру вертикально, слева
+        TabIcon.Position = UDim2.new(0, 10, 0.5, -9) 
         TabIcon.BackgroundTransparency = 1
-        TabIcon.Image = "rbxassetid://" .. iconId
-        TabIcon.ImageColor3 = Color3.fromRGB(140, 140, 140) -- Цвет по умолчанию (серый)
+        -- ВОТ ЗДЕСЬ ИЗМЕНЕНИЯ:
+        TabIcon.Image = "rbxthumb://type=Asset&id=" .. iconId .. "&w=150&h=150"
+        TabIcon.ImageTransparency = 0.4 -- Тусклая, если вкладка не выбрана
         TabIcon.ZIndex = 7
         allTabIcons[name] = TabIcon
     end
@@ -460,29 +459,27 @@ local function CreatePage(name, iconId)
     
     TabBtn.MouseButton1Click:Connect(function()
         for tName, tContainer in pairs(allTabs) do
-            -- Выключаем все вкладки
             tween(tContainer, {BackgroundTransparency = 1}, 0.2)
             tween(allTabButtons[tName], {TextColor3 = Color3.fromRGB(140, 140, 140)}, 0.2)
             if allTabIcons[tName] then
-                tween(allTabIcons[tName], {ImageColor3 = Color3.fromRGB(140, 140, 140)}, 0.2)
+                tween(allTabIcons[tName], {ImageTransparency = 0.4}, 0.2) -- Делаем тусклой
             end
             allPages[tName].Visible = false
         end
         TabTitle.Text = name 
         PageFrame.Visible = true
         
-        -- Включаем нажатую вкладку
         tween(TabContainer, {BackgroundTransparency = 0}, 0.2)
         tween(TabBtn, {TextColor3 = Color3.fromRGB(255, 255, 255)}, 0.2)
         if allTabIcons[name] then
-            tween(allTabIcons[name], {ImageColor3 = Color3.fromRGB(255, 255, 255)}, 0.2)
+            tween(allTabIcons[name], {ImageTransparency = 0}, 0.2) -- Делаем яркой при выборе
         end
     end)
     
     return PageFrame
 end
 
--- Создание страниц. Для Settings передаём ID твоей иконки!
+-- Создание страниц
 local MainPage     = CreatePage("Main")
 local AutoPage     = CreatePage("Auto")
 local AutoBuyPage  = CreatePage("Auto Buy")
@@ -499,7 +496,7 @@ if allTabs["Main"] and allTabButtons["Main"] then
     allTabs["Main"].BackgroundTransparency = 0
     allTabButtons["Main"].TextColor3 = Color3.fromRGB(255, 255, 255)
     if allTabIcons["Main"] then
-        allTabIcons["Main"].ImageColor3 = Color3.fromRGB(255, 255, 255)
+        allTabIcons["Main"].ImageTransparency = 0
     end
     allPages["Main"].Visible = true  
     TabTitle.Text = "Main"
