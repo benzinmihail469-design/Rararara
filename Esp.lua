@@ -180,7 +180,7 @@ Navigation.ScrollBarThickness = 0
 
 local NavLayout = Instance.new("UIListLayout", Navigation)
 NavLayout.Padding = UDim.new(0, 5)
-NavLayout.SortOrder = Enum.SortOrder.LayoutOrder -- Включаем сортировку по LayoutOrder
+NavLayout.SortOrder = Enum.SortOrder.LayoutOrder
 
 local FooterBg = Instance.new("Frame", SidebarContainer)
 FooterBg.Name = "FooterBg"
@@ -394,7 +394,6 @@ local allTabButtons = {}
 local allTabIcons = {} 
 local allPages = {}
 
--- Добавил третий аргумент layoutOrder для фиксации позиции
 local function CreatePage(name, iconId, layoutOrder)
     local PageFrame = Instance.new("ScrollingFrame", PagesContainer)
     PageFrame.Size = UDim2.new(1, 0, 1, 0)
@@ -418,7 +417,7 @@ local function CreatePage(name, iconId, layoutOrder)
     TabContainer.BackgroundTransparency = 1
     TabContainer.ClipsDescendants = true
     TabContainer.ZIndex = 6
-    TabContainer.LayoutOrder = layoutOrder or 0 -- Ставим порядок отображения
+    TabContainer.LayoutOrder = layoutOrder or 0
     
     local TabCorner = Instance.new("UICorner", TabContainer)
     TabCorner.CornerRadius = UDim.new(0, 8)
@@ -481,14 +480,13 @@ local function CreatePage(name, iconId, layoutOrder)
     return PageFrame
 end
 
--- Создание страниц с указанием их веса (третий аргумент). 
--- Settings получил 99, поэтому всегда будет в конце.
+-- Создание страниц
 local MainPage     = CreatePage("Main", nil, 1)
 local TeleportPage = CreatePage("Teleport", "94373592263020", 2)
 local MurderPage   = CreatePage("Murder", nil, 3)
-local SheriffPage  = CreatePage("Sheriff", "99904215381150", 4)  -- Создана так же, как и Players
+local SheriffPage  = CreatePage("Sheriff", "77487634679354", 4)  -- Твоя новая картинка установлена сюда
 local PlayersPage  = CreatePage("Players", "99904215381150", 5)
-local SettingsPage = CreatePage("Settings", "117996761927034", 99) -- Всегда в самом низу
+local SettingsPage = CreatePage("Settings", "117996761927034", 99) -- Settings в самом низу
 
 -- Наполнение (Пример):
 Library:CreateToggle(MainPage, "Авто-Фарм Монет", false, function(state)
