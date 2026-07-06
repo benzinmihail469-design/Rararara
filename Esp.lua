@@ -1,12 +1,9 @@
--- [[ Dark Hub GUI — Ультра-стабильная версия под любые эксплоиты ]] --
-local CustomIconID = 76579925188009 
-
+local CustomIconID = "76579925188009"
 local TweenService = game:GetService("TweenService")
 local UserInputService = game:GetService("UserInputService")
 local RunService = game:GetService("RunService")
 local GuiService = game:GetService("GuiService")
 
--- Автоматический обход блокировки CoreGui (Исправлено)
 local SafeParent = nil
 if gethui then
     SafeParent = gethui()
@@ -32,7 +29,6 @@ local function tween(obj, props, dur)
     return t
 end
 
--- [[ ГЛАВНОЕ ОКНО ]] --
 local MainFrame = Instance.new("Frame", PulseHub)
 MainFrame.Name = "MainFrame"
 MainFrame.BackgroundColor3 = Color3.fromRGB(14, 14, 14)
@@ -47,7 +43,6 @@ local MainStroke = Instance.new("UIStroke", MainFrame)
 MainStroke.Color = Color3.fromRGB(40, 40, 40)
 MainStroke.Thickness = 1.5
 
--- [[ КОНТЕЙНЕР СТРАНИЦ ]] --
 local PagesContainer = Instance.new("Frame", MainFrame)
 PagesContainer.Name = "PagesContainer"
 PagesContainer.Size = UDim2.new(1, -185, 1, -70)
@@ -65,7 +60,6 @@ TabTitle.Size = UDim2.new(0, 150, 0, 20)
 TabTitle.TextXAlignment = Enum.TextXAlignment.Left
 TabTitle.BackgroundTransparency = 1
 
--- [[ КОНТЕЙНЕР КНОПОК УПРАВЛЕНИЯ ]] --
 local ControlsContainer = Instance.new("Frame", MainFrame)
 ControlsContainer.Name = "ControlsContainer"
 ControlsContainer.Size = UDim2.new(0, 60, 0, 30)
@@ -95,14 +89,12 @@ CloseBtn.TextColor3 = Color3.fromRGB(180, 180, 180)
 CloseBtn.BackgroundTransparency = 1
 CloseBtn.ZIndex = 11
 
--- [[ САЙДБАР ]] --
 local SidebarContainer = Instance.new("Frame", MainFrame)
 SidebarContainer.Name = "SidebarContainer"
 SidebarContainer.Size = UDim2.new(0, 170, 1, 0)
 SidebarContainer.BackgroundTransparency = 1
 SidebarContainer.ZIndex = 3
 
--- ПЛАШКА ЗАГОЛОВКА
 local HeaderBg = Instance.new("Frame", SidebarContainer)
 HeaderBg.Name = "HeaderBg"
 HeaderBg.Size = UDim2.new(0, 150, 0, 46)
@@ -125,8 +117,7 @@ HubIcon.BackgroundTransparency = 1
 HubIcon.ScaleType = Enum.ScaleType.Fit 
 HubIcon.ZIndex = 5
 
--- Гарантированное отображение твоей иконки по ID через миниатюры
-HubIcon.Image = "rbxthumb://type=Asset&id=" .. tostring(CustomIconID) .. "&w=150&h=150"
+HubIcon.Image = "rbxthumb://type=Asset&id=" .. CustomIconID .. "&w=150&h=150"
 
 local HubTitle = Instance.new("TextLabel", HeaderBg)
 HubTitle.Text = "Pulse Hub"
@@ -150,7 +141,6 @@ SubTitle.TextXAlignment = Enum.TextXAlignment.Left
 SubTitle.BackgroundTransparency = 1
 SubTitle.ZIndex = 5
 
--- Свёрнутые контролы
 local EmbeddedControls = Instance.new("Frame", HeaderBg)
 EmbeddedControls.Name = "EmbeddedControls"
 EmbeddedControls.Size = UDim2.new(0, 50, 0, 30)
@@ -179,7 +169,6 @@ EmbCloseBtn.TextColor3 = Color3.fromRGB(180, 180, 180)
 EmbCloseBtn.BackgroundTransparency = 1
 EmbCloseBtn.ZIndex = 7
 
--- НАВИГАЦИЯ
 local Navigation = Instance.new("ScrollingFrame", SidebarContainer)
 Navigation.Size = UDim2.new(1, -20, 1, -135)
 Navigation.Position = UDim2.new(0, 10, 0, 65)
@@ -188,7 +177,6 @@ Navigation.ScrollBarThickness = 0
 local NavLayout = Instance.new("UIListLayout", Navigation)
 NavLayout.Padding = UDim.new(0, 5)
 
--- ПОДВАЛ (DISCORD)
 local FooterBg = Instance.new("Frame", SidebarContainer)
 FooterBg.Name = "FooterBg"
 FooterBg.Size = UDim2.new(0, 150, 0, 46)
@@ -229,7 +217,6 @@ RunService.RenderStepped:Connect(function()
     StatsLabel.Text = "FPS: " .. #FrameUpdateTable
 end)
 
--- [[ ЭФФЕКТ ВОЛНЫ (RIPPLE) ]] --
 local function CreateRipple(button, clickX, clickY)
     local Ripple = Instance.new("ImageLabel")
     Ripple.Name = "Ripple"
@@ -252,7 +239,6 @@ local function CreateRipple(button, clickX, clickY)
     t.Completed:Connect(function() Ripple:Destroy() end)
 end
 
--- ЛОГИКА СВОРАЧИВАНИЯ
 local isMinimized = false
 local function ToggleMinimize()
     isMinimized = not isMinimized
@@ -302,7 +288,6 @@ applyHover(EmbMinBtn, Color3.fromRGB(180,180,180), Color3.fromRGB(255,255,255))
 applyHover(CloseBtn, Color3.fromRGB(180,180,180), Color3.fromRGB(255,70,70))
 applyHover(EmbCloseBtn, Color3.fromRGB(180,180,180), Color3.fromRGB(255,70,70))
 
--- DRAG СИСТЕМА
 local dragToggle, dragInput, dragStart, startPos
 MainFrame.InputBegan:Connect(function(input)
     if (input.UserInputType == Enum.UserInputType.MouseButton1 or input.UserInputType == Enum.UserInputType.Touch) then
@@ -324,7 +309,6 @@ UserInputService.InputChanged:Connect(function(input)
     end
 end)
 
--- [[ КОНСТРУКТОР ЭЛЕМЕНТОВ ]] --
 local Library = {}
 
 function Library:CreateButton(parentPage, text, callback)
@@ -400,9 +384,8 @@ function Library:CreateToggle(parentPage, text, default, callback)
     end)
 end
 
--- [[ СИСТЕМА СТРАНИЦ ]] --
 local allTabs = {}
-local allTabButtons = {} -- Защита от ошибок поиска дочерних элементов (Исправлено)
+local allTabButtons = {} 
 local allPages = {}
 
 local function CreatePage(name)
@@ -421,7 +404,6 @@ local function CreatePage(name)
     
     Instance.new("UIPadding", PageFrame).PaddingTop = UDim.new(0, 2)
     
-    -- Контейнер для вкладки
     local TabContainer = Instance.new("Frame", Navigation)
     TabContainer.Name = name .. "_Tab"
     TabContainer.Size = UDim2.new(1, 0, 0, 34)
@@ -433,7 +415,6 @@ local function CreatePage(name)
     local TabCorner = Instance.new("UICorner", TabContainer)
     TabCorner.CornerRadius = UDim.new(0, 8)
     
-    -- Сама кнопка внутри контейнера
     local TabBtn = Instance.new("TextButton", TabContainer)
     TabBtn.Name = "TabBtn" 
     TabBtn.Size = UDim2.new(1, 0, 1, 0)
@@ -446,10 +427,9 @@ local function CreatePage(name)
     TabBtn.ZIndex = 7
     
     allTabs[name] = TabContainer
-    allTabButtons[name] = TabBtn -- Прямое кэширование
+    allTabButtons[name] = TabBtn 
     allPages[name] = PageFrame
     
-    -- Клик (Анимация волны + переключение страниц)
     TabBtn.MouseButton1Down:Connect(function()
         local mousePos = UserInputService:GetMouseLocation()
         local inset = GuiService:GetGuiInset()
@@ -472,22 +452,17 @@ local function CreatePage(name)
     return PageFrame
 end
 
--- [[ ИНИЦИАЛИЗАЦИЯ ВКЛАДОК ]] --
 local MainPage = CreatePage("Main")
 local AutoPage = CreatePage("Auto")
 local AutoBuyPage = CreatePage("Auto Buy")
 local PlayersPage = CreatePage("Players")
 
--- [[ НАПОЛНЕНИЕ КОНТЕНТОМ ]] --
 Library:CreateToggle(MainPage, "Авто-Фарм Монет", false, function(state)
     print("Статус автофарма:", state)
 end)
 
--- Настройки дефолтной активной страницы без риска краша скрипта
 if allTabs["Main"] and allTabButtons["Main"] then
     allTabs["Main"].BackgroundTransparency = 0
     allTabButtons["Main"].TextColor3 = Color3.fromRGB(255, 255, 255)
     allPages["Main"].Visible = true  
 end
-
-print("[Pulse Hub]: Успешно загружен!")
