@@ -117,6 +117,10 @@ HubIcon.BackgroundTransparency = 1
 HubIcon.ScaleType = Enum.ScaleType.Fit 
 HubIcon.ZIndex = 5
 
+-- Закругление углов для иконки (Добавлено)
+local HubIconCorner = Instance.new("UICorner", HubIcon)
+HubIconCorner.CornerRadius = UDim.new(0, 6)
+
 HubIcon.Image = "rbxthumb://type=Asset&id=" .. CustomIconID .. "&w=150&h=150"
 
 local HubTitle = Instance.new("TextLabel", HeaderBg)
