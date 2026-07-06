@@ -1,4 +1,4 @@
--- [[ Pulse Hub GUI — Идеальное сворачивание по 3383.jpg + Точный Ripple ]] --
+-- [[ Pulse Hub GUI — Фикс подвала и крестика по скриншоту 3384.jpg ]] --
 local TweenService = game:GetService("TweenService")
 local UserInputService = game:GetService("UserInputService")
 local RunService = game:GetService("RunService")
@@ -32,7 +32,7 @@ local MainStroke = Instance.new("UIStroke", MainFrame)
 MainStroke.Color = Color3.fromRGB(40, 40, 40)
 MainStroke.Thickness = 1.5
 
--- [[ КОНТЕЙНЕР КНОПОК (КОГДА РАЗВЕРНУТ) ]] --
+-- [[ КОНТЕЙНЕР КНОПОК УПРАВЛЕНИЯ (ВЕРХНИЙ ПРАВЫЙ УГОЛ) ]] --
 local ControlsContainer = Instance.new("Frame", MainFrame)
 ControlsContainer.Name = "ControlsContainer"
 ControlsContainer.Size = UDim2.new(0, 60, 0, 30)
@@ -55,20 +55,21 @@ local CloseBtn = Instance.new("TextButton", ControlsContainer)
 CloseBtn.Name = "CloseBtn"
 CloseBtn.Size = UDim2.new(0, 24, 0, 24)
 CloseBtn.Position = UDim2.new(0, 30, 0, 0)
-CloseBtn.Text = "×"
+CloseBtn.Text = "×" -- Четкий крестик
 CloseBtn.Font = Enum.Font.Arial
 CloseBtn.TextSize = 22
 CloseBtn.TextColor3 = Color3.fromRGB(180, 180, 180)
 CloseBtn.BackgroundTransparency = 1
 CloseBtn.ZIndex = 11
 
--- [[ САЙДБАР И ПЛАШКИ ]] --
+-- [[ САЙДБАР ]] --
 local SidebarContainer = Instance.new("Frame", MainFrame)
 SidebarContainer.Name = "SidebarContainer"
 SidebarContainer.Size = UDim2.new(0, 170, 1, 0)
 SidebarContainer.BackgroundTransparency = 1
 SidebarContainer.ZIndex = 3
 
+-- ПЛАШКА ЗАГОЛОВКА
 local HeaderBg = Instance.new("Frame", SidebarContainer)
 HeaderBg.Name = "HeaderBg"
 HeaderBg.Size = UDim2.new(0, 150, 0, 46)
@@ -83,13 +84,12 @@ local HeaderStroke = Instance.new("UIStroke", HeaderBg)
 HeaderStroke.Color = Color3.fromRGB(45, 45, 45)
 HeaderStroke.Thickness = 1.2
 
--- Тексты
 local HubTitle = Instance.new("TextLabel", HeaderBg)
 HubTitle.Text = "Pulse Hub"
 HubTitle.Font = Enum.Font.GothamBold
 HubTitle.TextColor3 = Color3.fromRGB(255, 255, 255)
 HubTitle.TextSize = 13
-HubTitle.Position = UDim2.new(0, 44, 0, 7)
+HubTitle.Position = UDim2.new(0, 15, 0, 7)
 HubTitle.Size = UDim2.new(0, 95, 0, 15)
 HubTitle.TextXAlignment = Enum.TextXAlignment.Left
 HubTitle.BackgroundTransparency = 1
@@ -100,13 +100,13 @@ SubTitle.Text = "Grow A Garden 2"
 SubTitle.Font = Enum.Font.Gotham
 SubTitle.TextColor3 = Color3.fromRGB(130, 130, 130)
 SubTitle.TextSize = 9
-SubTitle.Position = UDim2.new(0, 44, 0, 23)
+SubTitle.Position = UDim2.new(0, 15, 0, 23)
 SubTitle.Size = UDim2.new(0, 95, 0, 13)
 SubTitle.TextXAlignment = Enum.TextXAlignment.Left
 SubTitle.BackgroundTransparency = 1
 SubTitle.ZIndex = 5
 
--- Кнопка сворачивания дублируется внутрь плашки для красивого вида на 3383.jpg
+-- Встроенная кнопка сворачивания (только для режима свёрнутого GUI, как на 3384.jpg)
 local EmbeddedMinBtn = Instance.new("TextButton", HeaderBg)
 EmbeddedMinBtn.Name = "EmbeddedMinBtn"
 EmbeddedMinBtn.Size = UDim2.new(0, 20, 0, 20)
@@ -119,6 +119,7 @@ EmbeddedMinBtn.BackgroundTransparency = 1
 EmbeddedMinBtn.ZIndex = 6
 EmbeddedMinBtn.Visible = false
 
+-- НАВИГАЦИЯ
 local Navigation = Instance.new("ScrollingFrame", SidebarContainer)
 Navigation.Size = UDim2.new(1, -20, 1, -135)
 Navigation.Position = UDim2.new(0, 10, 0, 65)
@@ -128,6 +129,7 @@ Navigation.ScrollBarThickness = 0
 local NavLayout = Instance.new("UIListLayout", Navigation)
 NavLayout.Padding = UDim.new(0, 5)
 
+-- [[ ВОЗВРАЩЕННЫЙ ПОДВАЛ (ДИСКОРД И FPS) ]] --
 local FooterBg = Instance.new("Frame", SidebarContainer)
 FooterBg.Name = "FooterBg"
 FooterBg.Size = UDim2.new(0, 150, 0, 46)
@@ -135,10 +137,40 @@ FooterBg.Position = UDim2.new(0, 10, 1, -56)
 FooterBg.BackgroundColor3 = Color3.fromRGB(22, 22, 22)
 FooterBg.ZIndex = 4
 Instance.new("UICorner", FooterBg).CornerRadius = UDim.new(0, 10)
+
 local FooterStroke = Instance.new("UIStroke", FooterBg)
 FooterStroke.Color = Color3.fromRGB(45, 45, 45)
 FooterStroke.Thickness = 1.2
 
+local DiscordLabel = Instance.new("TextLabel", FooterBg)
+DiscordLabel.Position = UDim2.new(0, 10, 0, 7)
+DiscordLabel.Size = UDim2.new(1, -20, 0, 15)
+DiscordLabel.Font = Enum.Font.GothamMedium
+DiscordLabel.Text = "discord.gg/pulsezone"
+DiscordLabel.TextColor3 = Color3.fromRGB(255, 255, 255)
+DiscordLabel.TextSize = 10
+DiscordLabel.TextXAlignment = Enum.TextXAlignment.Left
+DiscordLabel.BackgroundTransparency = 1
+
+local StatsLabel = Instance.new("TextLabel", FooterBg)
+StatsLabel.Position = UDim2.new(0, 10, 0, 23)
+StatsLabel.Size = UDim2.new(1, -20, 0, 15)
+StatsLabel.Font = Enum.Font.Gotham
+StatsLabel.Text = "FPS: ..."
+StatsLabel.TextColor3 = Color3.fromRGB(130, 130, 130)
+StatsLabel.TextSize = 10
+StatsLabel.TextXAlignment = Enum.TextXAlignment.Left
+StatsLabel.BackgroundTransparency = 1
+
+local FrameUpdateTable = {}
+RunService.RenderStepped:Connect(function()
+    local CurrentTime = os.clock()
+    table.insert(FrameUpdateTable, CurrentTime)
+    while FrameUpdateTable[1] < CurrentTime - 1 do table.remove(FrameUpdateTable, 1) end
+    StatsLabel.Text = "FPS: " .. #FrameUpdateTable
+end)
+
+-- [[ КОНТЕНТ СТРАНИЦ ]] --
 local PagesContainer = Instance.new("Frame", MainFrame)
 PagesContainer.Name = "PagesContainer"
 PagesContainer.Size = UDim2.new(1, -185, 1, -70)
@@ -170,14 +202,13 @@ local function CreateRipple(button)
     Ripple.ZIndex = button.ZIndex + 1
     Ripple.AnchorPoint = Vector2.new(0.5, 0.5)
     
-    -- Идеальный расчет точки клика с учетом CoreGui топ-бара (36px)
     local relativeX = mousePos.X - buttonPos.X
-    local relativeY = (mousePos.Y - 36) - buttonPos.Y
+    local relativeY = (mousePos.Y - 36) - buttonPos.Y -- Учитываем верхнюю плашку Roblox
     Ripple.Position = UDim2.new(0, relativeX, 0, relativeY)
     Ripple.Size = UDim2.new(0, 0, 0, 0)
     
     local maxLength = math.max(button.AbsoluteSize.X, button.AbsoluteSize.Y) * 3
-    local t = TweenService:Create(Ripple, TweenInfo.new(0.5, Enum.EasingStyle.Quad, Enum.EasingDirection.Out), {
+    local t = TweenService:Create(Ripple, TweenInfo.new(0.4, Enum.EasingStyle.Quad, Enum.EasingDirection.Out), {
         Size = UDim2.new(0, maxLength, 0, maxLength),
         ImageTransparency = 1
     })
@@ -185,29 +216,23 @@ local function CreateRipple(button)
     t.Completed:Connect(function() Ripple:Destroy() end)
 end
 
--- [[ ИДЕАЛЬНОЕ СВОРАЧИВАНИЕ ПО КЛИКУ ПО СКРИНШОТУ 3383.jpg ]] --
+-- [[ ИСПРАВЛЕННАЯ ЛОГИКА СВОРАЧИВАНИЯ ПО СКРИНШОТУ 3384.jpg ]] --
 local isMinimized = false
-local originalMainPos
-
 local function ToggleMinimize()
     isMinimized = not isMinimized
     if isMinimized then
-        -- Скрываем всё лишнее мгновенно, чтобы не ломать анимацию размеров
         PagesContainer.Visible = false
         TabTitle.Visible = false
         Navigation.Visible = false
-        FooterBg.Visible = false
+        FooterBg.Visible = false -- Подвал скрывается вместе с остальным GUI
         ControlsContainer.Visible = false
         
-        -- Скрываем рамку и фон главного окна — делаем полную невидимость основы
         MainStroke.Enabled = false
         MainFrame.BackgroundTransparency = 1
         
-        -- Переносим плашку HeaderBg в верхний левый угол экрана относительно MainFrame
         HeaderBg.Position = UDim2.new(0, 0, 0, 0)
-        EmbeddedMinBtn.Visible = true -- Показываем черточку внутри плашки
+        EmbeddedMinBtn.Visible = true -- Появляется встроенная полосочка
         
-        -- Уменьшаем окно ровно до размеров плашки заголовка
         tween(MainFrame, {Size = UDim2.new(0, 150, 0, 46)})
     else
         EmbeddedMinBtn.Visible = false
@@ -221,7 +246,7 @@ local function ToggleMinimize()
                 PagesContainer.Visible = true
                 TabTitle.Visible = true
                 Navigation.Visible = true
-                FooterBg.Visible = true
+                FooterBg.Visible = true -- Подвал плавно возвращается обратно
                 ControlsContainer.Visible = true
             end
         end)
@@ -254,7 +279,7 @@ UserInputService.InputChanged:Connect(function(input)
     end
 end)
 
--- [[ СТРАНИЦЫ ]] --
+-- [[ СИСТЕМА ВКЛАДОК ]] --
 local allTabs = {}
 local allPages = {}
 
@@ -288,7 +313,7 @@ local function CreatePage(name)
     allPages[name] = PageFrame
     
     TabBtn.MouseButton1Click:Connect(function()
-        CreateRipple(TabBtn) -- Анимация запускается мгновенно!
+        CreateRipple(TabBtn)
         
         for tName, tBtn in pairs(allTabs) do
             tween(tBtn, {BackgroundTransparency = 1, TextColor3 = Color3.fromRGB(140, 140, 140)})
@@ -304,11 +329,58 @@ local function CreatePage(name)
     return PageFrame
 end
 
+local function CreateToggle(parentPage, name, default, callback)
+    local ToggleFrame = Instance.new("Frame", parentPage)
+    ToggleFrame.BackgroundColor3 = Color3.fromRGB(22, 22, 22)
+    ToggleFrame.Size = UDim2.new(1, -10, 0, 40)
+    Instance.new("UICorner", ToggleFrame).CornerRadius = UDim.new(0, 6)
+    Instance.new("UIStroke", ToggleFrame).Color = Color3.fromRGB(35, 35, 35)
+    
+    local ToggleTitle = Instance.new("TextLabel", ToggleFrame)
+    ToggleTitle.Text = name
+    ToggleTitle.Font = Enum.Font.GothamMedium
+    ToggleTitle.TextColor3 = Color3.fromRGB(230, 230, 230)
+    ToggleTitle.TextSize = 13
+    ToggleTitle.Position = UDim2.new(0, 12, 0, 0)
+    ToggleTitle.Size = UDim2.new(1, -60, 1, 0)
+    ToggleTitle.TextXAlignment = Enum.TextXAlignment.Left
+    ToggleTitle.BackgroundTransparency = 1
+    
+    local ToggleBG = Instance.new("TextButton", ToggleFrame)
+    ToggleBG.BackgroundColor3 = default and Color3.fromRGB(255, 90, 30) or Color3.fromRGB(45, 45, 45)
+    ToggleBG.Position = UDim2.new(1, -45, 0, 11)
+    ToggleBG.Size = UDim2.new(0, 32, 0, 18)
+    ToggleBG.Text = ""
+    Instance.new("UICorner", ToggleBG).CornerRadius = UDim.new(1, 0)
+    
+    local ToggleCircle = Instance.new("Frame", ToggleBG)
+    ToggleCircle.BackgroundColor3 = Color3.new(1,1,1)
+    ToggleCircle.Position = default and UDim2.new(1, -15, 0, 2) or UDim2.new(0, 2, 0, 2)
+    ToggleCircle.Size = UDim2.new(0, 14, 0, 14)
+    Instance.new("UICorner", ToggleCircle).CornerRadius = UDim.new(1, 0)
+    
+    local enabled = default
+    ToggleBG.MouseButton1Click:Connect(function()
+        enabled = not enabled
+        if enabled then
+            tween(ToggleBG, {BackgroundColor3 = Color3.fromRGB(255, 90, 30)})
+            tween(ToggleCircle, {Position = UDim2.new(1, -15, 0, 2)})
+        else
+            tween(ToggleBG, {BackgroundColor3 = Color3.fromRGB(45, 45, 45)})
+            tween(ToggleCircle, {Position = UDim2.new(0, 2, 0, 2)})
+        end
+        if callback then callback(enabled) end
+    end)
+end
+
 -- [[ ИНИЦИАЛИЗАЦИЯ ]] --
 local MainPage = CreatePage("Main")
 local AutoPage = CreatePage("Auto")
 local AutoBuyPage = CreatePage("Auto Buy")
 local PlayersPage = CreatePage("Players")
+
+CreateToggle(MainPage, "Anti-AFK System", true)
+CreateToggle(AutoPage, "Auto Farm Coins (Max Speed: 25)", false)
 
 allTabs["Main"].BackgroundTransparency = 0
 allTabs["Main"].TextColor3 = Color3.new(1,1,1)
