@@ -1,4 +1,4 @@
--- [[ Pulse Hub GUI — Полупрозрачная основа, фикс кнопок по скриншоту 3381.jpg и волны ]] --
+-- [[ Pulse Hub GUI — Полная Монолитная Версия ]] --
 local TweenService = game:GetService("TweenService")
 local UserInputService = game:GetService("UserInputService")
 local RunService = game:GetService("RunService")
@@ -21,7 +21,7 @@ end
 local MainFrame = Instance.new("Frame", PulseHub)
 MainFrame.Name = "MainFrame"
 MainFrame.BackgroundColor3 = Color3.fromRGB(14, 14, 14)
-MainFrame.BackgroundTransparency = 0.15 -- Прозрачность основы для сочетания с фоном
+MainFrame.BackgroundTransparency = 0.15 -- Прозрачная основа
 MainFrame.Position = UDim2.new(0.5, -275, 0.5, -175)
 MainFrame.Size = UDim2.new(0, 550, 0, 350)
 MainFrame.ClipsDescendants = true 
@@ -46,7 +46,7 @@ HeaderBg.Name = "HeaderBg"
 HeaderBg.Size = UDim2.new(0, 150, 0, 46)
 HeaderBg.Position = UDim2.new(0, 10, 0, 10)
 HeaderBg.BackgroundColor3 = Color3.fromRGB(22, 22, 22)
-HeaderBg.BackgroundTransparency = 0 -- Сплошная
+HeaderBg.BackgroundTransparency = 0 -- Сплошной цвет
 HeaderBg.ZIndex = 4
 
 local HeaderCorner = Instance.new("UICorner", HeaderBg)
@@ -56,7 +56,7 @@ local HeaderStroke = Instance.new("UIStroke", HeaderBg)
 HeaderStroke.Color = Color3.fromRGB(45, 45, 45)
 HeaderStroke.Thickness = 1.2
 
--- Иконка и тексты хаба
+-- Тексты и иконка
 local HubIcon = Instance.new("ImageLabel", HeaderBg)
 HubIcon.Size = UDim2.new(0, 26, 0, 26)
 HubIcon.Position = UDim2.new(0, 10, 0, 10)
@@ -86,7 +86,7 @@ SubTitle.TextXAlignment = Enum.TextXAlignment.Left
 SubTitle.BackgroundTransparency = 1
 SubTitle.ZIndex = 5
 
--- [[ КНОПКИ СВЕРНУТЬ / ЗАКРЫТЬ (Строго на позициях как на скриншоте 3381.jpg) ]] --
+-- [[ КНОПКИ УПРАВЛЕНИЯ (СТРОГО ПО СКРИНШОТУ 3381.jpg) ]] --
 local MinBtn = Instance.new("TextButton", HeaderBg)
 MinBtn.Name = "MinBtn"
 MinBtn.Size = UDim2.new(0, 16, 0, 16)
@@ -101,7 +101,7 @@ MinBtn.ZIndex = 6
 local CloseBtn = Instance.new("TextButton", HeaderBg)
 CloseBtn.Name = "CloseBtn"
 CloseBtn.Size = UDim2.new(0, 16, 0, 16)
-CloseBtn.Position = UDim2.new(1, -20, 1, -22) -- Рядом с черточкой справа
+CloseBtn.Position = UDim2.new(1, -20, 1, -22) -- Правее от черточки
 CloseBtn.Text = "×"
 CloseBtn.Font = Enum.Font.Arial
 CloseBtn.TextSize = 18
@@ -109,7 +109,7 @@ CloseBtn.TextColor3 = Color3.fromRGB(160, 160, 160)
 CloseBtn.BackgroundTransparency = 1
 CloseBtn.ZIndex = 6
 
--- [[ НАВИГАЦИЯ ДЛЯ ВКЛАДОК ]] --
+-- [[ НАВИГАЦИЯ (ВКЛАДКИ) ]] --
 local Navigation = Instance.new("ScrollingFrame", SidebarContainer)
 Navigation.Size = UDim2.new(1, -20, 1, -135)
 Navigation.Position = UDim2.new(0, 10, 0, 65)
@@ -183,7 +183,7 @@ TabTitle.TextXAlignment = Enum.TextXAlignment.Left
 TabTitle.BackgroundTransparency = 1
 TabTitle.ZIndex = 5
 
--- [[ ФУНКЦИЯ ЭФФЕКТА ВОЛНЫ (RIPPLE EFFECT) ]] --
+-- [[ ЭФФЕКТ ВОЛНЫ (RIPPLE EFFECT) ]] --
 local function CreateRipple(button, mouseX, mouseY)
     local Ripple = Instance.new("ImageLabel")
     Ripple.Name = "Ripple"
@@ -212,7 +212,7 @@ local function CreateRipple(button, mouseX, mouseY)
     t1.Completed:Connect(function() Ripple:Destroy() end)
 end
 
--- [[ ЛОГИКА СВОРАЧИВАНИЯ ]] --
+-- [[ ЛОГИКА ИДЕАЛЬНОГО СВОРАЧИВАНИЯ ]] --
 local isMinimized = false
 MinBtn.MouseButton1Click:Connect(function()
     isMinimized = not isMinimized
@@ -223,7 +223,7 @@ MinBtn.MouseButton1Click:Connect(function()
         FooterBg.Visible = false
         CloseBtn.Visible = false
         
-        MinBtn.Position = UDim2.new(1, -22, 1, -22) -- Центрируем черточку при закрытом окне
+        MinBtn.Position = UDim2.new(1, -22, 1, -22) -- Центрируем черточку при сворачивании
         tween(MainFrame, {Size = UDim2.new(0, 170, 0, 66)})
     else
         MinBtn.Position = UDim2.new(1, -38, 1, -22)
@@ -293,7 +293,7 @@ local function CreatePage(name)
     TabBtn.TextSize = 13
     TabBtn.TextColor3 = Color3.fromRGB(150, 150, 150)
     TabBtn.BackgroundColor3 = Color3.fromRGB(24, 24, 24)
-    TabBtn.BackgroundTransparency = 1 -- Сплошной серо-черный при выборе
+    TabBtn.BackgroundTransparency = 1 -- Сплошной серо-черный при нажатии
     TabBtn.TextXAlignment = Enum.TextXAlignment.Left
     TabBtn.ClipsDescendants = true
     TabBtn.ZIndex = 5
@@ -369,17 +369,18 @@ local function CreateToggle(parentPage, name, default, callback)
     end)
 end
 
--- [[ ИНИЦИАЛИЗАЦИЯ ]] --
+-- [[ ИНИЦИАЛИЗАЦИЯ СТРАНИЦ ]] --
 local MainPage = CreatePage("Main")
 local AutoPage = CreatePage("Auto")
 local AutoBuyPage = CreatePage("Auto Buy")
 local PlayersPage = CreatePage("Players")
 
+-- Элементы управления внутри страниц
 CreateToggle(MainPage, "Anti-AFK System", true)
 CreateToggle(AutoPage, "Auto Farm Grass", true)
 CreateToggle(AutoPage, "Anti-Fling Bypass", true)
 
--- Активация дефолтной вкладки Auto (как на скриншоте 3381.jpg)
+-- Выбор дефолтной страницы по скриншоту 3381.jpg (Страница Auto)
 allTabs["Auto"].BackgroundTransparency = 0
 allTabs["Auto"].TextColor3 = Color3.new(1,1,1)
 allTabs["Auto"].UIStroke.Enabled = true
