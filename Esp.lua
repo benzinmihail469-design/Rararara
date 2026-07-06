@@ -1,4 +1,4 @@
--- [[ Pulse Hub GUI — Полный скрипт со всем контентом и кнопками ]] --
+-- [[ Dark Hub GUI — Полный и финальный скрипт ]] --
 local TweenService = game:GetService("TweenService")
 local UserInputService = game:GetService("UserInputService")
 local RunService = game:GetService("RunService")
@@ -33,12 +33,13 @@ local MainStroke = Instance.new("UIStroke", MainFrame)
 MainStroke.Color = Color3.fromRGB(40, 40, 40)
 MainStroke.Thickness = 1.5
 
--- [[ КОНТЕНТ СТРАНИЦ ]] --
+-- [[ КОНТЕЙНЕР СТРАНИЦ ]] --
 local PagesContainer = Instance.new("Frame", MainFrame)
 PagesContainer.Name = "PagesContainer"
 PagesContainer.Size = UDim2.new(1, -185, 1, -70)
 PagesContainer.Position = UDim2.new(0, 175, 0, 60)
 PagesContainer.BackgroundTransparency = 1
+PagesContainer.ZIndex = 5
 
 local TabTitle = Instance.new("TextLabel", MainFrame)
 TabTitle.Text = "Main"
@@ -50,7 +51,7 @@ TabTitle.Size = UDim2.new(0, 150, 0, 20)
 TabTitle.TextXAlignment = Enum.TextXAlignment.Left
 TabTitle.BackgroundTransparency = 1
 
--- [[ КОНТЕЙНЕР КНОПОК УПРАВЛЕНИЯ GUI ]] --
+-- [[ КОНТЕЙНЕР КНОПОК УПРАВЛЕНИЯ ]] --
 local ControlsContainer = Instance.new("Frame", MainFrame)
 ControlsContainer.Name = "ControlsContainer"
 ControlsContainer.Size = UDim2.new(0, 60, 0, 30)
@@ -87,18 +88,23 @@ SidebarContainer.Size = UDim2.new(0, 170, 1, 0)
 SidebarContainer.BackgroundTransparency = 1
 SidebarContainer.ZIndex = 3
 
+-- ПЛАШКА ЗАГОЛОВКА
 local HeaderBg = Instance.new("Frame", SidebarContainer)
 HeaderBg.Name = "HeaderBg"
 HeaderBg.Size = UDim2.new(0, 150, 0, 46)
 HeaderBg.Position = UDim2.new(0, 10, 0, 10)
 HeaderBg.BackgroundColor3 = Color3.fromRGB(22, 22, 22)
 HeaderBg.ZIndex = 4
-Instance.new("UICorner", HeaderBg).CornerRadius = UDim.new(0, 10)
+
+local HeaderCorner = Instance.new("UICorner", HeaderBg)
+HeaderCorner.CornerRadius = UDim.new(0, 10)
+
 local HeaderStroke = Instance.new("UIStroke", HeaderBg)
 HeaderStroke.Color = Color3.fromRGB(45, 45, 45)
 HeaderStroke.Thickness = 1.2
 
 local HubIcon = Instance.new("ImageLabel", HeaderBg)
+HubIcon.Name = "HubIcon"
 HubIcon.Size = UDim2.new(0, 26, 0, 26)
 HubIcon.Position = UDim2.new(0, 10, 0, 10)
 HubIcon.Image = "rbxassetid://10840212450"
@@ -127,7 +133,9 @@ SubTitle.TextXAlignment = Enum.TextXAlignment.Left
 SubTitle.BackgroundTransparency = 1
 SubTitle.ZIndex = 5
 
+-- Кнопки управления для свёрнутого режима
 local EmbeddedControls = Instance.new("Frame", HeaderBg)
+EmbeddedControls.Name = "EmbeddedControls"
 EmbeddedControls.Size = UDim2.new(0, 50, 0, 30)
 EmbeddedControls.Position = UDim2.new(1, -55, 0, 8)
 EmbeddedControls.BackgroundTransparency = 1
@@ -154,6 +162,7 @@ EmbCloseBtn.TextColor3 = Color3.fromRGB(180, 180, 180)
 EmbCloseBtn.BackgroundTransparency = 1
 EmbCloseBtn.ZIndex = 7
 
+-- НАВИГАЦИЯ
 local Navigation = Instance.new("ScrollingFrame", SidebarContainer)
 Navigation.Size = UDim2.new(1, -20, 1, -135)
 Navigation.Position = UDim2.new(0, 10, 0, 65)
@@ -162,12 +171,15 @@ Navigation.ScrollBarThickness = 0
 local NavLayout = Instance.new("UIListLayout", Navigation)
 NavLayout.Padding = UDim.new(0, 5)
 
+-- ПОДВАЛ (DISCORD)
 local FooterBg = Instance.new("Frame", SidebarContainer)
+FooterBg.Name = "FooterBg"
 FooterBg.Size = UDim2.new(0, 150, 0, 46)
 FooterBg.Position = UDim2.new(0, 10, 1, -56)
 FooterBg.BackgroundColor3 = Color3.fromRGB(22, 22, 22)
 FooterBg.ZIndex = 4
 Instance.new("UICorner", FooterBg).CornerRadius = UDim.new(0, 10)
+
 local FooterStroke = Instance.new("UIStroke", FooterBg)
 FooterStroke.Color = Color3.fromRGB(45, 45, 45)
 FooterStroke.Thickness = 1.2
@@ -200,7 +212,7 @@ RunService.RenderStepped:Connect(function()
     StatsLabel.Text = "FPS: " .. #FrameUpdateTable
 end)
 
--- [[ ЭФФЕКТ ВОЛНЫ ]] --
+-- [[ ЭФФЕКТ ВОЛНЫ (RIPPLE) ]] --
 local function CreateRipple(button, clickX, clickY)
     local Ripple = Instance.new("ImageLabel")
     Ripple.Name = "Ripple"
@@ -223,7 +235,7 @@ local function CreateRipple(button, clickX, clickY)
     t.Completed:Connect(function() Ripple:Destroy() end)
 end
 
--- ЛОГИКА СВОРАЧИВАНИЯ
+-- ЛОГИКА СВОРАЧИВАНИЯ (С ПОДВАЛОМ)
 local isMinimized = false
 local function ToggleMinimize()
     isMinimized = not isMinimized
@@ -233,18 +245,23 @@ local function ToggleMinimize()
         Navigation.Visible = false
         FooterBg.Visible = false
         ControlsContainer.Visible = false
+        
         MainStroke.Enabled = false
         MainFrame.BackgroundTransparency = 1
+        
         HeaderBg.Position = UDim2.new(0, 0, 0, 0)
         HeaderBg.Size = UDim2.new(0, 175, 0, 46) 
         EmbeddedControls.Visible = true 
+        
         tween(MainFrame, {Size = UDim2.new(0, 175, 0, 46)})
     else
         EmbeddedControls.Visible = false
         HeaderBg.Position = UDim2.new(0, 10, 0, 10)
         HeaderBg.Size = UDim2.new(0, 150, 0, 46)
+        
         MainStroke.Enabled = true
         MainFrame.BackgroundTransparency = 0.15
+        
         tween(MainFrame, {Size = UDim2.new(0, 550, 0, 350)}).Completed:Connect(function()
             if not isMinimized then
                 PagesContainer.Visible = true
@@ -259,6 +276,7 @@ end
 
 MinBtn.MouseButton1Click:Connect(ToggleMinimize)
 EmbMinBtn.MouseButton1Click:Connect(ToggleMinimize)
+
 local function CloseGui() PulseHub:Destroy() end
 CloseBtn.MouseButton1Click:Connect(CloseGui)
 EmbCloseBtn.MouseButton1Click:Connect(CloseGui)
@@ -272,7 +290,7 @@ applyHover(EmbMinBtn, Color3.fromRGB(180,180,180), Color3.fromRGB(255,255,255))
 applyHover(CloseBtn, Color3.fromRGB(180,180,180), Color3.fromRGB(255,70,70))
 applyHover(EmbCloseBtn, Color3.fromRGB(180,180,180), Color3.fromRGB(255,70,70))
 
--- ДРАГ ОКНА
+-- DRAG СИСТЕМА
 local dragToggle, dragInput, dragStart, startPos
 MainFrame.InputBegan:Connect(function(input)
     if (input.UserInputType == Enum.UserInputType.MouseButton1 or input.UserInputType == Enum.UserInputType.Touch) then
@@ -294,18 +312,19 @@ UserInputService.InputChanged:Connect(function(input)
     end
 end)
 
--- [[ КОНСТРУКТОР ЭЛЕМЕНТОВ (КНОПКИ И ТОГГЛЫ) ]] --
+-- [[ КОНСТРУКТОР ЭЛЕМЕНТОВ (КНОПКИ/ТОГГЛЫ) ]] --
 local Library = {}
 
 function Library:CreateButton(parentPage, text, callback)
     local Btn = Instance.new("TextButton", parentPage)
-    Btn.Size = UDim2.new(1, -10, 0, 36)
+    Btn.Size = UDim2.new(1, -20, 0, 36)
     Btn.BackgroundColor3 = Color3.fromRGB(22, 22, 22)
     Btn.Text = text
     Btn.Font = Enum.Font.GothamMedium
     Btn.TextColor3 = Color3.fromRGB(230, 230, 230)
     Btn.TextSize = 13
     Btn.ClipsDescendants = true
+    Btn.ZIndex = 6
     
     Instance.new("UICorner", Btn).CornerRadius = UDim.new(0, 6)
     local stroke = Instance.new("UIStroke", Btn)
@@ -322,8 +341,9 @@ end
 
 function Library:CreateToggle(parentPage, text, default, callback)
     local TglFrame = Instance.new("Frame", parentPage)
-    TglFrame.Size = UDim2.new(1, -10, 0, 36)
+    TglFrame.Size = UDim2.new(1, -20, 0, 36)
     TglFrame.BackgroundColor3 = Color3.fromRGB(22, 22, 22)
+    TglFrame.ZIndex = 6
     Instance.new("UICorner", TglFrame).CornerRadius = UDim.new(0, 6)
     local stroke = Instance.new("UIStroke", TglFrame)
     stroke.Color = Color3.fromRGB(40, 40, 40)
@@ -337,18 +357,21 @@ function Library:CreateToggle(parentPage, text, default, callback)
     TglLabel.TextSize = 13
     TglLabel.TextXAlignment = Enum.TextXAlignment.Left
     TglLabel.BackgroundTransparency = 1
+    TglLabel.ZIndex = 7
     
     local Checkbox = Instance.new("TextButton", TglFrame)
     Checkbox.Size = UDim2.new(0, 34, 0, 18)
     Checkbox.Position = UDim2.new(1, -44, 0.5, -9)
     Checkbox.BackgroundColor3 = default and Color3.fromRGB(50, 150, 50) or Color3.fromRGB(40, 40, 40)
     Checkbox.Text = ""
+    Checkbox.ZIndex = 7
     Instance.new("UICorner", Checkbox).CornerRadius = UDim.new(0, 9)
     
     local Indicator = Instance.new("Frame", Checkbox)
     Indicator.Size = UDim2.new(0, 14, 0, 14)
     Indicator.Position = default and UDim2.new(1, -16, 0.5, -7) or UDim2.new(0, 2, 0.5, -7)
     Indicator.BackgroundColor3 = Color3.new(1, 1, 1)
+    Indicator.ZIndex = 8
     Instance.new("UICorner", Indicator).CornerRadius = UDim.new(1, 0)
     
     local enabled = default
@@ -365,7 +388,7 @@ function Library:CreateToggle(parentPage, text, default, callback)
     end)
 end
 
--- СИСТЕМА СТРАНИЦ
+-- [[ СИСТЕМА СТРАНИЦ ]] --
 local allTabs = {}
 local allPages = {}
 
@@ -376,10 +399,14 @@ local function CreatePage(name)
     PageFrame.Visible = false
     PageFrame.ScrollBarThickness = 2
     PageFrame.ScrollBarImageColor3 = Color3.fromRGB(50, 50, 50)
+    PageFrame.AutomaticCanvasSize = Enum.AutomaticSize.Y
+    PageFrame.ZIndex = 5
     
     local layout = Instance.new("UIListLayout", PageFrame)
-    layout.Padding = UDim.new(0, 6)
+    layout.Padding = UDim.new(0, 8)
     layout.HorizontalAlignment = Enum.HorizontalAlignment.Center
+    
+    Instance.new("UIPadding", PageFrame).PaddingTop = UDim.new(0, 2)
     
     local TabBtn = Instance.new("TextButton", Navigation)
     TabBtn.Size = UDim2.new(1, 0, 0, 34)
@@ -387,7 +414,7 @@ local function CreatePage(name)
     TabBtn.Font = Enum.Font.GothamMedium
     TabBtn.TextSize = 13
     TabBtn.TextColor3 = Color3.fromRGB(140, 140, 140)
-    TabBtn.BackgroundColor3 = Color3.fromRGB(24, 24, 24)
+    TabBtn.BackgroundColor3 = Color3.fromRGB(28, 28, 30) -- Серо-черный фон по умолчанию
     TabBtn.BackgroundTransparency = 1
     TabBtn.TextXAlignment = Enum.TextXAlignment.Left
     TabBtn.ClipsDescendants = true
@@ -395,7 +422,7 @@ local function CreatePage(name)
     Instance.new("UICorner", TabBtn).CornerRadius = UDim.new(0, 6)
     
     local TabStroke = Instance.new("UIStroke", TabBtn)
-    TabStroke.Color = Color3.fromRGB(45, 45, 45)
+    TabStroke.Color = Color3.fromRGB(60, 60, 62) -- Контур
     TabStroke.Thickness = 1.2
     TabStroke.Enabled = false
     
@@ -417,29 +444,29 @@ local function CreatePage(name)
         TabTitle.Text = name
         PageFrame.Visible = true
         TabStroke.Enabled = true
-        tween(TabBtn, {BackgroundTransparency = 0, TextColor3 = Color3.new(1, 1, 1)})
+        tween(TabBtn, {BackgroundTransparency = 0, TextColor3 = Color3.fromRGB(220, 220, 220)})
     end)
     
     return PageFrame
 end
 
--- ИНИЦИАЛИЗАЦИЯ ВКЛАДОК
+-- [[ ИНИЦИАЛИЗАЦИЯ ВКЛАДОК ]] --
 local MainPage = CreatePage("Main")
 local AutoPage = CreatePage("Auto")
 local AutoBuyPage = CreatePage("Auto Buy")
 local PlayersPage = CreatePage("Players")
 
--- [[ НАПОЛНЕНИЕ КНОПКАМИ ]] --
-Library:CreateButton(MainPage, "Пример Функции (Button)", function()
-    print("Кнопка нажата!")
+-- [[ НАПОЛНЕНИЕ КОНТЕНТОМ ]] --
+Library:CreateButton(MainPage, "Тестовая Кнопка (Проверка)", function()
+    print("Кнопка отлично нажимается!")
 end)
 
-Library:CreateToggle(MainPage, "Авто-Фарм Монет (Toggle)", false, function(state)
-    print("Состояние чита:", state)
+Library:CreateToggle(MainPage, "Авто-Фарм Монет", false, function(state)
+    print("Статус автофарма:", state)
 end)
 
--- Настройки активной по умолчанию страницы
+-- Настройки активной страницы
 allTabs["Main"].BackgroundTransparency = 0
-allTabs["Main"].TextColor3 = Color3.new(1, 1, 1)
+allTabs["Main"].TextColor3 = Color3.fromRGB(220, 220, 220)
 allTabs["Main"].UIStroke.Enabled = true
 allPages["Main"].Visible = true
