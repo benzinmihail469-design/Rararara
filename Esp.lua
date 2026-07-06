@@ -1,5 +1,5 @@
 -- [[ Dark Hub GUI — Полностью очищенный от оранжевой обводки ]] --
-local RawAssetID = 93790908316981 
+local RawAssetID = 83621330959030
 
 local TweenService = game:GetService("TweenService")
 local UserInputService = game:GetService("UserInputService")
