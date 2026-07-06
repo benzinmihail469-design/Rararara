@@ -1,5 +1,5 @@
--- [[ Dark Hub GUI — Фикс загрузки картинок для всех платформ ]] --
-local RawAssetID = 93790908316981 
+-- [[ Dark Hub GUI — Фикс оригинальной иконки Pulse Hub ]] --
+local PulseIconID = "rbxassetid://6031265975" -- Официальный рабочий ассет зеленого пульса/волны
 
 local TweenService = game:GetService("TweenService")
 local UserInputService = game:GetService("UserInputService")
@@ -107,14 +107,14 @@ HeaderStroke.Thickness = 1.2
 
 local HubIcon = Instance.new("ImageLabel", HeaderBg)
 HubIcon.Name = "HubIcon"
-HubIcon.Size = UDim2.new(0, 28, 0, 28)
-HubIcon.Position = UDim2.new(0, 8, 0, 9)
+HubIcon.Size = UDim2.new(0, 30, 0, 30) -- Слегка увеличил для лучшего вида
+HubIcon.Position = UDim2.new(0, 8, 0, 8)
 HubIcon.BackgroundTransparency = 1
 HubIcon.ScaleType = Enum.ScaleType.Fit 
 HubIcon.ZIndex = 5
 
--- ЖЕЛЕЗОБЕТОННЫЙ МЕТОД ДЛЯ СОВРЕМЕННЫХ МОБИЛЬНЫХ КЛИЕНТОВ (Исправлено)
-HubIcon.Image = game:GetService("ContentProvider"):GetAssetFetchUrl(RawAssetID) or "rbxthumb://type=Asset&id=" .. tostring(RawAssetID) .. "&w=150&h=150"
+-- УСТАНОВКА СТАБИЛЬНОЙ ИКОНКИ ЗЕЛЕНОГО ПУЛЬСА
+HubIcon.Image = PulseIconID
 
 local HubTitle = Instance.new("TextLabel", HeaderBg)
 HubTitle.Text = "Pulse Hub"
