@@ -1,4 +1,4 @@
--- [[ Dark Hub GUI — Исправленное выделение вкладок ]] --
+-- [[ Dark Hub GUI — Скрипт с гарантированным контуром вкладок ]] --
 local RawAssetID = 93790908316981 
 
 local TweenService = game:GetService("TweenService")
@@ -422,16 +422,18 @@ local function CreatePage(name)
     TabBtn.Font = Enum.Font.GothamMedium
     TabBtn.TextSize = 13
     TabBtn.TextColor3 = Color3.fromRGB(140, 140, 140)
-    TabBtn.BackgroundColor3 = Color3.fromRGB(22, 22, 22) -- Тот же цвет, что и у плашек
+    TabBtn.BackgroundColor3 = Color3.fromRGB(22, 22, 22)
     TabBtn.BackgroundTransparency = 1
     TabBtn.TextXAlignment = Enum.TextXAlignment.Left
     TabBtn.ClipsDescendants = true
-    TabBtn.ZIndex = 5
+    TabBtn.ZIndex = 6 -- Подняли ZIndex, чтобы элемент рендерился поверх
     Instance.new("UICorner", TabBtn).CornerRadius = UDim.new(0, 6)
     
     local TabStroke = Instance.new("UIStroke", TabBtn)
-    TabStroke.Color = Color3.fromRGB(45, 45, 45) -- Контур, идентичный кнопкам
+    TabStroke.Color = Color3.fromRGB(45, 45, 45) -- Контур серо-черный
     TabStroke.Thickness = 1.2
+    TabStroke.ApplyStrokeMode = Enum.ApplyStrokeMode.Border -- Принудительный режим внешних границ
+    TabStroke.LineJoinMode = Enum.LineJoinMode.Round
     TabStroke.Enabled = false
     
     allTabs[name] = TabBtn
@@ -445,15 +447,13 @@ local function CreatePage(name)
     
     TabBtn.MouseButton1Click:Connect(function()
         for tName, tBtn in pairs(allTabs) do
-            -- Выключаем подсветку и контуры у остальных
             tween(tBtn, {BackgroundTransparency = 1, TextColor3 = Color3.fromRGB(140, 140, 140)})
             tBtn.UIStroke.Enabled = false
             allPages[tName].Visible = false
         end
-        -- Активируем выбранную
         TabTitle.Text = name
         PageFrame.Visible = true
-        TabStroke.Enabled = true
+        TabStroke.Enabled = true -- Включаем контур при активации
         tween(TabBtn, {BackgroundTransparency = 0, TextColor3 = Color3.fromRGB(255, 255, 255)})
     end)
     
