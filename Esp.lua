@@ -1,5 +1,5 @@
 -- [[ Dark Hub GUI — Фикс оригинальной иконки Pulse Hub ]] --
-local PulseIconID = "rbxassetid://138322696698202" -- Официальный рабочий ассет зеленого пульса/волны
+local PulseIconID = "rbxassetid://76579925188009" -- Официальный рабочий ассет зеленого пульса/волны
 
 local TweenService = game:GetService("TweenService")
 local UserInputService = game:GetService("UserInputService")
