@@ -1,11 +1,10 @@
--- [[ Dark Hub GUI — Полностью очищенный от оранжевой обводки ]] --
-local RawAssetID = 83621330959030
+-- [[ Dark Hub GUI — Исправленная загрузка иконок и без обводки ]] --
+local RawAssetID = 93790908316981 
 
 local TweenService = game:GetService("TweenService")
 local UserInputService = game:GetService("UserInputService")
 local RunService = game:GetService("RunService")
 local GuiService = game:GetService("GuiService")
-local MarketplaceService = game:GetService("MarketplaceService")
 
 local PulseHub = Instance.new("ScreenGui")
 if game:GetService("CoreGui"):FindFirstChild("PulseHub") then 
@@ -114,14 +113,14 @@ HubIcon.BackgroundTransparency = 1
 HubIcon.ScaleType = Enum.ScaleType.Fit 
 HubIcon.ZIndex = 5
 
+-- НАДЁЖНЫЙ МЕТОД ЗАГРУЗКИ ИКОНКИ (Исправлено)
 task.spawn(function()
-    HubIcon.Image = "rbxthumb://type=Asset&id=" .. RawAssetID .. "&w=150&h=150"
-    pcall(function()
-        local assetInfo = MarketplaceService:GetProductInfo(RawAssetID)
-        if assetInfo and assetInfo.AssetTypeId == 13 then
-            HubIcon.Image = "http://www.roblox.com/asset/?id=" .. tostring(RawAssetID)
-        end
+    local success = pcall(function()
+        HubIcon.Image = "rbxassetid://" .. tostring(RawAssetID)
     end)
+    if not success or HubIcon.ContentImageSize == Vector2.new(0,0) then
+        HubIcon.Image = "rbxthumb://type=Asset&id=" .. tostring(RawAssetID) .. "&w=150&h=150"
+    end
 end)
 
 local HubTitle = Instance.new("TextLabel", HeaderBg)
@@ -416,11 +415,11 @@ local function CreatePage(name)
     
     Instance.new("UIPadding", PageFrame).PaddingTop = UDim.new(0, 2)
     
-    -- Контейнер для вкладки (гарантирует закругление)
+    -- Контейнер для вкладки
     local TabContainer = Instance.new("Frame", Navigation)
     TabContainer.Name = name .. "_Tab"
     TabContainer.Size = UDim2.new(1, 0, 0, 34)
-    TabContainer.BackgroundColor3 = Color3.fromRGB(28, 28, 28) -- Цвет для активной вкладки
+    TabContainer.BackgroundColor3 = Color3.fromRGB(28, 28, 28)
     TabContainer.BackgroundTransparency = 1
     TabContainer.ClipsDescendants = true
     TabContainer.ZIndex = 6
@@ -479,4 +478,4 @@ end)
 -- Настройки дефолтной активной страницы (Main) при запуске скрипта
 allTabs["Main"].BackgroundTransparency = 0
 allTabs["Main"].TextButton.TextColor3 = Color3.fromRGB(255, 255, 255)
-allPages["Main"].Visible = true
+allPages["Main"].Visible = true  
