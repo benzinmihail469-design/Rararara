@@ -1,4 +1,4 @@
--- [[ Pulse Hub GUI — Полное исправление иконок, крестика и Ripple эффекта ]] --
+-- [[ Pulse Hub GUI — Фикс видимости анимации волны ]] --
 local TweenService = game:GetService("TweenService")
 local UserInputService = game:GetService("UserInputService")
 local RunService = game:GetService("RunService")
@@ -84,7 +84,7 @@ local HeaderStroke = Instance.new("UIStroke", HeaderBg)
 HeaderStroke.Color = Color3.fromRGB(45, 45, 45)
 HeaderStroke.Thickness = 1.2
 
--- Иконка (Возвращена на место)
+-- Иконка возле Pulse Hub
 local HubIcon = Instance.new("ImageLabel", HeaderBg)
 HubIcon.Name = "HubIcon"
 HubIcon.Size = UDim2.new(0, 26, 0, 26)
@@ -115,7 +115,7 @@ SubTitle.TextXAlignment = Enum.TextXAlignment.Left
 SubTitle.BackgroundTransparency = 1
 SubTitle.ZIndex = 5
 
--- Встроенные кнопки управления (для свёрнутого режима, как на 3386.jpg)
+-- Встроенные кнопки управления (для свёрнутого режима)
 local EmbeddedControls = Instance.new("Frame", HeaderBg)
 EmbeddedControls.Name = "EmbeddedControls"
 EmbeddedControls.Size = UDim2.new(0, 50, 0, 30)
@@ -212,7 +212,7 @@ TabTitle.Size = UDim2.new(0, 150, 0, 20)
 TabTitle.TextXAlignment = Enum.TextXAlignment.Left
 TabTitle.BackgroundTransparency = 1
 
--- [[ ЖЕЛЕЗОБЕТОННЫЙ RIPPLE EFFECT ПО СЕТКЕ КЛИКА ]] --
+-- [[ НАДЕЖНАЯ ФУНКЦИЯ ВОЛНЫ С КОРРЕКТНЫМ НАЛОЖЕНИЕМ Z-INDEX ]] --
 local function CreateRipple(button, clickX, clickY)
     local Ripple = Instance.new("ImageLabel")
     Ripple.Name = "Ripple"
@@ -220,16 +220,15 @@ local function CreateRipple(button, clickX, clickY)
     Ripple.BackgroundTransparency = 1
     Ripple.Image = "rbxassetid://4012975932"
     Ripple.ImageColor3 = Color3.fromRGB(255, 255, 255)
-    Ripple.ImageTransparency = 0.6
-    Ripple.ZIndex = button.ZIndex + 1
+    Ripple.ImageTransparency = 0.5 -- Сделали ярче, чтобы было отлично видно на тёмном фоне
+    Ripple.ZIndex = 15 -- Принудительный вывод поверх подложки вкладки
     Ripple.AnchorPoint = Vector2.new(0.5, 0.5)
     
-    -- Получаем локальные координаты внутри кнопки напрямую из клика мыши
     Ripple.Position = UDim2.new(0, clickX, 0, clickY)
     Ripple.Size = UDim2.new(0, 0, 0, 0)
     
     local maxLength = math.max(button.AbsoluteSize.X, button.AbsoluteSize.Y) * 2.5
-    local t = TweenService:Create(Ripple, TweenInfo.new(0.45, Enum.EasingStyle.Quad, Enum.EasingDirection.Out), {
+    local t = TweenService:Create(Ripple, TweenInfo.new(0.4, Enum.EasingStyle.Quad, Enum.EasingDirection.Out), {
         Size = UDim2.new(0, maxLength, 0, maxLength),
         ImageTransparency = 1
     })
@@ -237,7 +236,7 @@ local function CreateRipple(button, clickX, clickY)
     t.Completed:Connect(function() Ripple:Destroy() end)
 end
 
--- [[ ИСПРАВЛЕННОЕ СВОРАЧИВАНИЕ С КРЕСТИКОМ (ПО СКРИНШОТУ 3386.jpg) ]] --
+-- ЛОГИКА СВОРАЧИВАНИЯ
 local isMinimized = false
 local function ToggleMinimize()
     isMinimized = not isMinimized
@@ -252,7 +251,6 @@ local function ToggleMinimize()
         MainFrame.BackgroundTransparency = 1
         
         HeaderBg.Position = UDim2.new(0, 0, 0, 0)
-        -- Делаем плашку чуть шире, чтобы влезли и полоска, и крестик из 3386.jpg
         HeaderBg.Size = UDim2.new(0, 175, 0, 46) 
         EmbeddedControls.Visible = true 
         
@@ -349,9 +347,9 @@ local function CreatePage(name)
     allTabs[name] = TabBtn
     allPages[name] = PageFrame
     
-    -- Получаем точные локальные координаты внутри кнопки при клике
+    -- Перехватываем координаты клика ДО основного переключения состояний
     TabBtn.InputBegan:Connect(function(input)
-        if input.UserInputType == Enum.UserInputType.MouseButton1 or input.UserInputType == Enum.UserInputType.Touch then
+        if input.UserInputType == Enum.UserInputType.MouseButton1 or input.UserInputType == Enum.UserInputType.Touch) then
             local localX = input.Position.X - TabBtn.AbsolutePosition.X
             local localY = input.Position.Y - TabBtn.AbsolutePosition.Y
             CreateRipple(TabBtn, localX, localY)
@@ -380,6 +378,6 @@ local AutoBuyPage = CreatePage("Auto Buy")
 local PlayersPage = CreatePage("Players")
 
 allTabs["Main"].BackgroundTransparency = 0
-allTabs["Main"].TextColor3 = Color3.new(1,1,1)
+allTabs["Main"].TextColor3 = Color3.new(1, 1, 1)
 allTabs["Main"].UIStroke.Enabled = true
 allPages["Main"].Visible = true
