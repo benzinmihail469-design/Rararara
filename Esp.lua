@@ -1,4 +1,4 @@
--- [[ Pulse Hub GUI — Идеальные углы, черный заголовок и правильный контур ]] --
+-- [[ Pulse Hub GUI — Выделенный заголовок и белый Discord ]] --
 local TweenService = game:GetService("TweenService")
 local UserInputService = game:GetService("UserInputService")
 local RunService = game:GetService("RunService")
@@ -19,20 +19,20 @@ local function tween(object, properties, duration)
     return t
 end
 
--- [[ ГЛАВНОЕ ОКНО (Теперь оно дает единый черный цвет всему хабу) ]] --
+-- [[ ГЛАВНОЕ ОКНО ]] --
 local MainFrame = Instance.new("Frame")
 MainFrame.Name = "MainFrame"
 MainFrame.Parent = PulseHub
-MainFrame.BackgroundColor3 = Color3.fromRGB(15, 15, 15) -- Сплошной черный фон
+MainFrame.BackgroundColor3 = Color3.fromRGB(14, 14, 14) -- Глубокий темный фон
 MainFrame.BackgroundTransparency = 0.05
 MainFrame.Position = UDim2.new(0.5, -275, 0.5, -175)
 MainFrame.Size = UDim2.new(0, 550, 0, 350)
-MainFrame.ClipsDescendants = true -- Обязательно, чтобы всё обрезалось по углам
+MainFrame.ClipsDescendants = true
 
 local MainCorner = Instance.new("UICorner", MainFrame)
 MainCorner.CornerRadius = UDim.new(0, 12)
 
--- Идеальный контур (Убран багованный ApplyStrokeMode)
+-- Контур всего меню
 local MainStroke = Instance.new("UIStroke", MainFrame)
 MainStroke.Color = Color3.fromRGB(55, 55, 55)
 MainStroke.Thickness = 1.5
@@ -41,7 +41,7 @@ MainStroke.Thickness = 1.5
 MainFrame.Size = UDim2.new(0, 550, 0, 0)
 tween(MainFrame, {Size = UDim2.new(0, 550, 0, 350)}, 0.3)
 
--- Drag (Перетаскивание)
+-- Перетаскивание (Drag)
 local dragging, dragInput, dragStart, startPos
 MainFrame.InputBegan:Connect(function(input)
     if input.UserInputType == Enum.UserInputType.MouseButton1 or input.UserInputType == Enum.UserInputType.Touch then
@@ -68,18 +68,22 @@ UserInputService.InputChanged:Connect(function(input)
     end
 end)
 
--- [[ ФИРМЕННЫЙ ЗАГОЛОВОК (Теперь это просто прозрачный контейнер) ]] --
+-- [[ ВЫДЕЛЕННЫЙ ЗАГОЛОВОК (Слегка светлее для объема) ]] --
 local TopBar = Instance.new("Frame", MainFrame)
 TopBar.Name = "TopBar"
 TopBar.Size = UDim2.new(1, 0, 0, 55)
-TopBar.BackgroundTransparency = 1 
+TopBar.BackgroundColor3 = Color3.fromRGB(22, 22, 22) -- Слегка выделенный тон
+TopBar.BackgroundTransparency = 0.2                  -- Легкая прозрачность для стиля
 TopBar.ZIndex = 5
+
+local TopBarCorner = Instance.new("UICorner", TopBar)
+TopBarCorner.CornerRadius = UDim.new(0, 12)
 
 local HubIcon = Instance.new("ImageLabel", TopBar)
 HubIcon.Size = UDim2.new(0, 34, 0, 34)
 HubIcon.Position = UDim2.new(0, 15, 0, 10)
 HubIcon.Image = "rbxassetid://10840212450"
-HubIcon.BackgroundColor3 = Color3.fromRGB(25, 25, 25)
+HubIcon.BackgroundColor3 = Color3.fromRGB(30, 30, 30)
 HubIcon.BackgroundTransparency = 0
 Instance.new("UICorner", HubIcon).CornerRadius = UDim.new(0, 8)
 
@@ -106,14 +110,14 @@ SubTitle.BackgroundTransparency = 1
 local TabTitle = Instance.new("TextLabel", TopBar)
 TabTitle.Text = "— Auto"
 TabTitle.Font = Enum.Font.GothamMedium
-TabTitle.TextColor3 = Color3.fromRGB(100, 100, 100)
+TabTitle.TextColor3 = Color3.fromRGB(110, 110, 110)
 TabTitle.TextSize = 13
 TabTitle.Position = UDim2.new(0, 165, 0, 11)
 TabTitle.Size = UDim2.new(0, 150, 0, 16)
 TabTitle.TextXAlignment = Enum.TextXAlignment.Left
 TabTitle.BackgroundTransparency = 1
 
--- Контейнер кнопок (привязан к правому краю)
+-- Кнопки управления
 local ButtonHolder = Instance.new("Frame", TopBar)
 ButtonHolder.Name = "ButtonHolder"
 ButtonHolder.Size = UDim2.new(0, 60, 0, 30)
@@ -137,7 +141,7 @@ CloseBtn.TextSize = 22
 CloseBtn.TextColor3 = Color3.fromRGB(150, 150, 150)
 CloseBtn.BackgroundTransparency = 1
 
--- [[ ОСНОВНОЙ КОНТЕНТ (Сдвинут строго вниз, чтобы не ломать цвет шапки) ]] --
+-- [[ ОСНОВНОЙ КОНТЕНТ ]] --
 local BodyContainer = Instance.new("Frame", MainFrame)
 BodyContainer.Size = UDim2.new(1, 0, 1, -55)
 BodyContainer.Position = UDim2.new(0, 0, 0, 55)
@@ -146,8 +150,8 @@ BodyContainer.ZIndex = 2
 
 local Sidebar = Instance.new("Frame", BodyContainer)
 Sidebar.Name = "Sidebar"
-Sidebar.BackgroundColor3 = Color3.fromRGB(20, 20, 20)
-Sidebar.BackgroundTransparency = 0.3
+Sidebar.BackgroundColor3 = Color3.fromRGB(18, 18, 18)
+Sidebar.BackgroundTransparency = 0.4
 Sidebar.Size = UDim2.new(0, 160, 1, 0)
 Instance.new("UICorner", Sidebar).CornerRadius = UDim.new(0, 12)
 
@@ -161,10 +165,10 @@ local NavLayout = Instance.new("UIListLayout", Navigation)
 NavLayout.Padding = UDim.new(0, 4)
 NavLayout.SortOrder = Enum.SortOrder.LayoutOrder
 
--- [[ ПОДВАЛ С FPS ]] --
+-- [[ ПОДВАЛ С СЕРВЕРОМ И FPS ]] --
 local FooterFrame = Instance.new("Frame", Sidebar)
 FooterFrame.Name = "FooterFrame"
-FooterFrame.BackgroundColor3 = Color3.fromRGB(25, 25, 25)
+FooterFrame.BackgroundColor3 = Color3.fromRGB(24, 24, 24)
 FooterFrame.BackgroundTransparency = 0.2
 FooterFrame.Position = UDim2.new(0, 8, 1, -55)
 FooterFrame.Size = UDim2.new(1, -16, 0, 45)
@@ -179,7 +183,7 @@ DiscordLabel.Position = UDim2.new(0, 8, 0, 6)
 DiscordLabel.Size = UDim2.new(1, -16, 0, 15)
 DiscordLabel.Font = Enum.Font.GothamMedium
 DiscordLabel.Text = "discord.gg/pulsezone"
-DiscordLabel.TextColor3 = Color3.fromRGB(140, 140, 255)
+DiscordLabel.TextColor3 = Color3.fromRGB(255, 255, 255) -- Изменено на белый цвет
 DiscordLabel.TextSize = 10
 DiscordLabel.TextXAlignment = Enum.TextXAlignment.Left
 DiscordLabel.BackgroundTransparency = 1
@@ -208,7 +212,7 @@ RunService.RenderStepped:Connect(function()
     StatsLabel.Text = "Performance: " .. GetFPS() .. " FPS"
 end)
 
--- Анимация кнопок окна
+-- Анимация кнопок закрытия
 CloseBtn.MouseEnter:Connect(function() tween(CloseBtn, {TextColor3 = Color3.fromRGB(255, 70, 70)}) end)
 CloseBtn.MouseLeave:Connect(function() tween(CloseBtn, {TextColor3 = Color3.fromRGB(150, 150, 150)}) end)
 CloseBtn.MouseButton1Click:Connect(function()
@@ -216,7 +220,7 @@ CloseBtn.MouseButton1Click:Connect(function()
     t.Completed:Connect(function() PulseHub:Destroy() end)
 end)
 
--- [[ ИДЕАЛЬНОЕ СВОРАЧИВАНИЕ ]] --
+-- [[ СИСТЕМА СВОРАЧИВАНИЯ ]] --
 local isMinimized = false
 MinBtn.MouseEnter:Connect(function() tween(MinBtn, {TextColor3 = Color3.new(1,1,1)}) end)
 MinBtn.MouseLeave:Connect(function() tween(MinBtn, {TextColor3 = Color3.fromRGB(150, 150, 150)}) end)
@@ -226,7 +230,7 @@ MinBtn.MouseButton1Click:Connect(function()
         BodyContainer.Visible = false
         TabTitle.Visible = false
         
-        -- Просто уменьшаем окно! Так как оно само по себе черное, оно сожмется в безупречную капсулу
+        -- Сворачиваем в аккуратную выделенную плашку
         tween(MainFrame, {Size = UDim2.new(0, 240, 0, 55)}, 0.2)
     else
         MainFrame.Position = UDim2.new(0.5, -275, 0.5, -175)
@@ -360,7 +364,7 @@ local function CreateToggle(parentPage, name, default, callback)
     end)
 end
 
--- Вкладки
+-- Инициализация вкладок
 local MainPage = CreatePage("Main")
 local AutoPage = CreatePage("Auto")
 local AutoBuyPage = CreatePage("Auto Buy")
