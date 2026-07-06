@@ -477,9 +477,9 @@ local function CreatePage(name, iconId)
     return PageFrame
 end
 
--- Создание страниц (Добавил твою иконку на вкладку Players)
+-- Создание страниц (Добавил твою новую иконку на вкладку Auto)
 local MainPage     = CreatePage("Main")
-local AutoPage     = CreatePage("Auto")
+local AutoPage     = CreatePage("Auto", "94373592263020")
 local AutoBuyPage  = CreatePage("Auto Buy")
 local PlayersPage  = CreatePage("Players", "99904215381150")
 local SettingsPage = CreatePage("Settings", "117996761927034")
