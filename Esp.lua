@@ -456,7 +456,7 @@ local function CreatePage(name)
     end)
     
     TabBtn.MouseButton1Click:Connect(function()
-        for tName, tContainer do
+        for tName, tContainer in pairs(allTabs) do
             tContainer.UIStroke.Enabled = false
             tween(tContainer, {BackgroundTransparency = 1}, 0.2)
             tween(tContainer.TextButton, {TextColor3 = Color3.fromRGB(140, 140, 140)}, 0.2)
