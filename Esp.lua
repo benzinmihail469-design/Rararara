@@ -1,4 +1,4 @@
--- [[ Dark Hub GUI — Исправленная загрузка иконок и логика табов ]] --
+-- [[ Dark Hub GUI — Фикс загрузки картинок для всех платформ ]] --
 local RawAssetID = 93790908316981 
 
 local TweenService = game:GetService("TweenService")
@@ -113,8 +113,8 @@ HubIcon.BackgroundTransparency = 1
 HubIcon.ScaleType = Enum.ScaleType.Fit 
 HubIcon.ZIndex = 5
 
--- НАДЁЖНЫЙ МЕТОД ЗАГРУЗКИ ИКОНКИ (Исправлено)
-HubIcon.Image = "rbxassetid://" .. tostring(RawAssetID)
+-- ЖЕЛЕЗОБЕТОННЫЙ МЕТОД ДЛЯ СОВРЕМЕННЫХ МОБИЛЬНЫХ КЛИЕНТОВ (Исправлено)
+HubIcon.Image = game:GetService("ContentProvider"):GetAssetFetchUrl(RawAssetID) or "rbxthumb://type=Asset&id=" .. tostring(RawAssetID) .. "&w=150&h=150"
 
 local HubTitle = Instance.new("TextLabel", HeaderBg)
 HubTitle.Text = "Pulse Hub"
@@ -422,7 +422,7 @@ local function CreatePage(name)
     
     -- Сама кнопка внутри контейнера
     local TabBtn = Instance.new("TextButton", TabContainer)
-    TabBtn.Name = "TabBtn" -- Присваиваем имя, чтобы к ней можно было обратиться по названию!
+    TabBtn.Name = "TabBtn" 
     TabBtn.Size = UDim2.new(1, 0, 1, 0)
     TabBtn.Text = "   " .. name
     TabBtn.Font = Enum.Font.GothamMedium
@@ -469,7 +469,7 @@ Library:CreateToggle(MainPage, "Авто-Фарм Монет", false, function(s
     print("Статус автофарма:", state)
 end)
 
--- Настройки дефолтной активной страницы (Исправлено)
+-- Настройки дефолтной активной страницы
 allTabs["Main"].BackgroundTransparency = 0
 allTabs["Main"].TabBtn.TextColor3 = Color3.fromRGB(255, 255, 255)
 allPages["Main"].Visible = true  
