@@ -1,6 +1,6 @@
 -- [[ Dark Hub GUI — Полный скрипт ]] --
 -- НАСТРОЙКА ИКОНКИ: Загрузи коня из "3391.jpg" в Roblox Asset Manager и вставь ID ниже
-local HorseIconID = "rbxassetid://10840212450" -- Замени этот ID на свой, когда загрузишь
+local HorseIconID = "rbxassetid://93790908316981" -- Замени этот ID на свой, когда загрузишь
 
 local TweenService = game:GetService("TweenService")
 local UserInputService = game:GetService("UserInputService")
