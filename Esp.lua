@@ -1,4 +1,4 @@
--- [[ Dark Hub GUI — Скрипт с гарантированным контуром вкладок ]] --
+-- [[ Dark Hub GUI — Скрипт с гарантированным контуром и углами вкладок ]] --
 local RawAssetID = 93790908316981 
 
 local TweenService = game:GetService("TweenService")
@@ -233,14 +233,14 @@ local function CreateRipple(button, clickX, clickY)
     Ripple.BackgroundTransparency = 1
     Ripple.Image = "rbxassetid://4012975932"
     Ripple.ImageColor3 = Color3.fromRGB(255, 255, 255)
-    Ripple.ImageTransparency = 0.4
-    Ripple.ZIndex = 20
+    Ripple.ImageTransparency = 0.5
+    Ripple.ZIndex = 25
     Ripple.AnchorPoint = Vector2.new(0.5, 0.5)
     Ripple.Position = UDim2.new(0, clickX, 0, clickY)
     Ripple.Size = UDim2.new(0, 0, 0, 0)
     
     local maxLength = math.max(button.AbsoluteSize.X, button.AbsoluteSize.Y) * 3
-    local t = TweenService:Create(Ripple, TweenInfo.new(0.4, Enum.EasingStyle.Quad, Enum.EasingDirection.Out), {
+    local t = TweenService:Create(Ripple, TweenInfo.new(0.5, Enum.EasingStyle.Quad, Enum.EasingDirection.Out), {
         Size = UDim2.new(0, maxLength, 0, maxLength),
         ImageTransparency = 1
     })
@@ -416,45 +416,58 @@ local function CreatePage(name)
     
     Instance.new("UIPadding", PageFrame).PaddingTop = UDim.new(0, 2)
     
-    local TabBtn = Instance.new("TextButton", Navigation)
-    TabBtn.Size = UDim2.new(1, 0, 0, 34)
+    -- Контейнер для вкладки (гарантирует идеальное закругление и контур)
+    local TabContainer = Instance.new("Frame", Navigation)
+    TabContainer.Name = name .. "_Tab"
+    TabContainer.Size = UDim2.new(1, 0, 0, 34)
+    TabContainer.BackgroundColor3 = Color3.fromRGB(22, 22, 22)
+    TabContainer.BackgroundTransparency = 1
+    TabContainer.ClipsDescendants = true
+    TabContainer.ZIndex = 6
+    
+    local TabCorner = Instance.new("UICorner", TabContainer)
+    TabCorner.CornerRadius = UDim.new(0, 8) -- Скругленные углы
+    
+    local TabStroke = Instance.new("UIStroke", TabContainer)
+    TabStroke.Color = Color3.fromRGB(240, 110, 20) -- Цвет контура при активации (оранжевый)
+    TabStroke.Thickness = 1.2
+    TabStroke.Enabled = false
+    
+    -- Сама кнопка внутри контейнера
+    local TabBtn = Instance.new("TextButton", TabContainer)
+    TabBtn.Size = UDim2.new(1, 0, 1, 0)
     TabBtn.Text = "   " .. name
     TabBtn.Font = Enum.Font.GothamMedium
     TabBtn.TextSize = 13
     TabBtn.TextColor3 = Color3.fromRGB(140, 140, 140)
-    TabBtn.BackgroundColor3 = Color3.fromRGB(22, 22, 22)
     TabBtn.BackgroundTransparency = 1
     TabBtn.TextXAlignment = Enum.TextXAlignment.Left
-    TabBtn.ClipsDescendants = true
-    TabBtn.ZIndex = 6 -- Подняли ZIndex, чтобы элемент рендерился поверх
-    Instance.new("UICorner", TabBtn).CornerRadius = UDim.new(0, 6)
+    TabBtn.ZIndex = 7
     
-    local TabStroke = Instance.new("UIStroke", TabBtn)
-    TabStroke.Color = Color3.fromRGB(45, 45, 45) -- Контур серо-черный
-    TabStroke.Thickness = 1.2
-    TabStroke.ApplyStrokeMode = Enum.ApplyStrokeMode.Border -- Принудительный режим внешних границ
-    TabStroke.LineJoinMode = Enum.LineJoinMode.Round
-    TabStroke.Enabled = false
-    
-    allTabs[name] = TabBtn
+    allTabs[name] = TabContainer
     allPages[name] = PageFrame
     
+    -- Клик (Анимация волны + переключение)
     TabBtn.MouseButton1Down:Connect(function()
         local mousePos = UserInputService:GetMouseLocation()
         local inset = GuiService:GetGuiInset()
-        CreateRipple(TabBtn, mousePos.X - TabBtn.AbsolutePosition.X, (mousePos.Y - inset.Y) - TabBtn.AbsolutePosition.Y)
+        -- Волна создается строго внутри скругленного контейнера TabContainer
+        CreateRipple(TabContainer, mousePos.X - TabContainer.AbsolutePosition.X, (mousePos.Y - inset.Y) - TabContainer.AbsolutePosition.Y)
     end)
     
     TabBtn.MouseButton1Click:Connect(function()
-        for tName, tBtn in pairs(allTabs) do
-            tween(tBtn, {BackgroundTransparency = 1, TextColor3 = Color3.fromRGB(140, 140, 140)})
-            tBtn.UIStroke.Enabled = false
+        for tName, tContainer do
+            tContainer.UIStroke.Enabled = false
+            tween(tContainer, {BackgroundTransparency = 1}, 0.2)
+            tween(tContainer.TextButton, {TextColor3 = Color3.fromRGB(140, 140, 140)}, 0.2)
             allPages[tName].Visible = false
         end
         TabTitle.Text = name
         PageFrame.Visible = true
-        TabStroke.Enabled = true -- Включаем контур при активации
-        tween(TabBtn, {BackgroundTransparency = 0, TextColor3 = Color3.fromRGB(255, 255, 255)})
+        
+        TabStroke.Enabled = true
+        tween(TabContainer, {BackgroundTransparency = 0}, 0.2)
+        tween(TabBtn, {TextColor3 = Color3.fromRGB(255, 255, 255)}, 0.2)
     end)
     
     return PageFrame
@@ -473,6 +486,6 @@ end)
 
 -- Настройки дефолтной активной страницы (Main) при запуске скрипта
 allTabs["Main"].BackgroundTransparency = 0
-allTabs["Main"].TextColor3 = Color3.fromRGB(255, 255, 255)
 allTabs["Main"].UIStroke.Enabled = true
+allTabs["Main"].TextButton.TextColor3 = Color3.fromRGB(255, 255, 255)
 allPages["Main"].Visible = true
