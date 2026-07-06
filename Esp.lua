@@ -51,7 +51,7 @@ PagesContainer.BackgroundTransparency = 1
 PagesContainer.ZIndex = 5
 
 local TabTitle = Instance.new("TextLabel", MainFrame)
-TabTitle.Text = "Main" -- Убрал отсюда большой Dark Hub, теперь тут пишется название вкладки
+TabTitle.Text = "Main" -- ТУТ ТЕПЕРЬ СТРОГО "Main", НИКАКИХ ДУБЛИКАТОВ DARK HUB
 TabTitle.Font = Enum.Font.GothamBold
 TabTitle.TextColor3 = Color3.fromRGB(255, 255, 255)
 TabTitle.TextSize = 16
@@ -123,7 +123,7 @@ HubIconCorner.CornerRadius = UDim.new(0, 6)
 HubIcon.Image = "rbxthumb://type=Asset&id=" .. CustomIconID .. "&w=150&h=150"
 
 local HubTitle = Instance.new("TextLabel", HeaderBg)
-HubTitle.Text = "Dark Hub" -- Маленький заголовок остался на месте
+HubTitle.Text = "Dark Hub" -- Один единственный маленький заголовок слева
 HubTitle.Font = Enum.Font.GothamBold
 HubTitle.TextColor3 = Color3.fromRGB(255, 255, 255)
 HubTitle.TextSize = 13
@@ -445,7 +445,7 @@ local function CreatePage(name)
             tween(allTabButtons[tName], {TextColor3 = Color3.fromRGB(140, 140, 140)}, 0.2)
             allPages[tName].Visible = false
         end
-        TabTitle.Text = name -- Теперь здесь при клике красиво пишется имя активной вкладки
+        TabTitle.Text = name -- Здесь всегда ставится точное имя вкладки
         PageFrame.Visible = true
         
         tween(TabContainer, {BackgroundTransparency = 0}, 0.2)
@@ -468,4 +468,5 @@ if allTabs["Main"] and allTabButtons["Main"] then
     allTabs["Main"].BackgroundTransparency = 0
     allTabButtons["Main"].TextColor3 = Color3.fromRGB(255, 255, 255)
     allPages["Main"].Visible = true  
+    TabTitle.Text = "Main" -- Принудительно ставим "Main" на старте, чтобы не вылезал дубликат
 end
