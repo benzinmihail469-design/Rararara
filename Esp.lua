@@ -480,10 +480,10 @@ local function CreatePage(name, iconId)
 end
 
 -- Создание страниц
-local MainPage     = CreatePage("Main")
-local AutoPage     = CreatePage("Auto")
-local AutoBuyPage  = CreatePage("Auto Buy")
-local PlayersPage  = CreatePage("Players")
+local MainPage     = CreatePage("Main", "117996761927034")
+local AutoPage     = CreatePage("Auto", "117996761927034")
+local AutoBuyPage  = CreatePage("Auto Buy", "117996761927034")
+local PlayersPage  = CreatePage("Players", "117996761927034")
 local SettingsPage = CreatePage("Settings", "117996761927034")
 
 -- Наполнение (Пример):
