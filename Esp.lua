@@ -1,5 +1,5 @@
--- [[ Dark Hub GUI — Исправленная загрузка иконки ]] --
-local RawAssetID = 93790908316981 -- Твой ID
+-- [[ Dark Hub GUI — Исправленное выделение вкладок ]] --
+local RawAssetID = 93790908316981 
 
 local TweenService = game:GetService("TweenService")
 local UserInputService = game:GetService("UserInputService")
@@ -114,16 +114,11 @@ HubIcon.BackgroundTransparency = 1
 HubIcon.ScaleType = Enum.ScaleType.Fit 
 HubIcon.ZIndex = 5
 
--- Умная подгрузка иконки (проверяет все возможные форматы Roblox)
 task.spawn(function()
-    -- Вариант 1: Быстрая подгрузка через миниатюры (работает в 95% случаев для кастомных ID)
     HubIcon.Image = "rbxthumb://type=Asset&id=" .. RawAssetID .. "&w=150&h=150"
-    
-    -- Вариант 2: Попытка конвертации Decal -> Image ID в реальном времени, если первый способ забагался
     pcall(function()
         local assetInfo = MarketplaceService:GetProductInfo(RawAssetID)
-        if assetInfo and assetInfo.AssetTypeId == 13 then -- Если это Декаль
-            -- Используем альтернативный рабочий линк
+        if assetInfo and assetInfo.AssetTypeId == 13 then
             HubIcon.Image = "http://www.roblox.com/asset/?id=" .. tostring(RawAssetID)
         end
     end)
@@ -427,7 +422,7 @@ local function CreatePage(name)
     TabBtn.Font = Enum.Font.GothamMedium
     TabBtn.TextSize = 13
     TabBtn.TextColor3 = Color3.fromRGB(140, 140, 140)
-    TabBtn.BackgroundColor3 = Color3.fromRGB(28, 28, 30)
+    TabBtn.BackgroundColor3 = Color3.fromRGB(22, 22, 22) -- Тот же цвет, что и у плашек
     TabBtn.BackgroundTransparency = 1
     TabBtn.TextXAlignment = Enum.TextXAlignment.Left
     TabBtn.ClipsDescendants = true
@@ -435,7 +430,7 @@ local function CreatePage(name)
     Instance.new("UICorner", TabBtn).CornerRadius = UDim.new(0, 6)
     
     local TabStroke = Instance.new("UIStroke", TabBtn)
-    TabStroke.Color = Color3.fromRGB(60, 60, 62)
+    TabStroke.Color = Color3.fromRGB(45, 45, 45) -- Контур, идентичный кнопкам
     TabStroke.Thickness = 1.2
     TabStroke.Enabled = false
     
@@ -450,14 +445,16 @@ local function CreatePage(name)
     
     TabBtn.MouseButton1Click:Connect(function()
         for tName, tBtn in pairs(allTabs) do
+            -- Выключаем подсветку и контуры у остальных
             tween(tBtn, {BackgroundTransparency = 1, TextColor3 = Color3.fromRGB(140, 140, 140)})
             tBtn.UIStroke.Enabled = false
             allPages[tName].Visible = false
         end
+        -- Активируем выбранную
         TabTitle.Text = name
         PageFrame.Visible = true
         TabStroke.Enabled = true
-        tween(TabBtn, {BackgroundTransparency = 0, TextColor3 = Color3.fromRGB(220, 220, 220)})
+        tween(TabBtn, {BackgroundTransparency = 0, TextColor3 = Color3.fromRGB(255, 255, 255)})
     end)
     
     return PageFrame
@@ -474,8 +471,8 @@ Library:CreateToggle(MainPage, "Авто-Фарм Монет", false, function(s
     print("Статус автофарма:", state)
 end)
 
--- Настройки активной страницы
+-- Настройки дефолтной активной страницы (Main) при запуске скрипта
 allTabs["Main"].BackgroundTransparency = 0
-allTabs["Main"].TextColor3 = Color3.fromRGB(220, 220, 220)
+allTabs["Main"].TextColor3 = Color3.fromRGB(255, 255, 255)
 allTabs["Main"].UIStroke.Enabled = true
 allPages["Main"].Visible = true
