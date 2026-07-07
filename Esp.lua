@@ -60,6 +60,7 @@ local function NormalizeText(str)
 
     return string.gsub(finalStr, "[%p%s%c]", "")
 end
+-- =========================
 
 local MainFrame = Instance.new("Frame", DarkHub) 
 MainFrame.Name = "MainFrame" 
@@ -119,6 +120,7 @@ CloseBtn.TextColor3 = Color3.fromRGB(180, 180, 180)
 CloseBtn.BackgroundTransparency = 1 
 CloseBtn.ZIndex = 11 
 
+-- === Интерфейс поиска === 
 local SearchContainer = Instance.new("Frame", MainFrame) 
 SearchContainer.Size = UDim2.new(0, 160, 0, 30) 
 SearchContainer.Position = UDim2.new(1, -240, 0, 12) 
@@ -161,6 +163,7 @@ SearchBox.TextColor3 = Color3.fromRGB(230, 230, 230)
 SearchBox.PlaceholderColor3 = Color3.fromRGB(130, 130, 130) 
 SearchBox.TextXAlignment = Enum.TextXAlignment.Left 
 SearchBox.ZIndex = 7 
+-- ======================== 
 
 local SidebarContainer = Instance.new("Frame", MainFrame) 
 SidebarContainer.Size = UDim2.new(0, 170, 1, 0) 
@@ -358,7 +361,6 @@ local SearchableElements = {}
 local allTabs = {} 
 local allTabButtons = {} 
 local allTabIcons = {} 
-local allTabStrokes = {} -- Таблица обводок для вкладок
 local allPages = {} 
 
 local SearchResultsPage = Instance.new("ScrollingFrame", PagesContainer) 
@@ -449,8 +451,7 @@ function Library:CreateToggle(parentPage, text, default, callback)
     local Checkbox = Instance.new("TextButton", TglFrame) 
     Checkbox.Size = UDim2.new(0, 34, 0, 18) 
     Checkbox.Position = UDim2.new(1, -44, 0.5, -9) 
-    -- Поменяли дефолтный цвет активного тоггла на розовый (как на фото)
-    Checkbox.BackgroundColor3 = default and Color3.fromRGB(219, 48, 105) or Color3.fromRGB(40, 40, 40) 
+    Checkbox.BackgroundColor3 = default and Color3.fromRGB(255, 0, 150) or Color3.fromRGB(40, 40, 40) 
     Checkbox.Text = "" 
     Checkbox.ZIndex = 7 
     Instance.new("UICorner", Checkbox).CornerRadius = UDim.new(0, 9) 
@@ -466,7 +467,7 @@ function Library:CreateToggle(parentPage, text, default, callback)
     Checkbox.MouseButton1Click:Connect(function() 
         enabled = not enabled 
         if enabled then 
-            tween(Checkbox, {BackgroundColor3 = Color3.fromRGB(219, 48, 105)}, 0.2); tween(Indicator, {Position = UDim2.new(1, -16, 0.5, -7)}, 0.2) 
+            tween(Checkbox, {BackgroundColor3 = Color3.fromRGB(255, 0, 150)}, 0.2); tween(Indicator, {Position = UDim2.new(1, -16, 0.5, -7)}, 0.2) 
         else 
             tween(Checkbox, {BackgroundColor3 = Color3.fromRGB(40, 40, 40)}, 0.2); tween(Indicator, {Position = UDim2.new(0, 2, 0.5, -7)}, 0.2) 
         end 
@@ -475,6 +476,79 @@ function Library:CreateToggle(parentPage, text, default, callback)
     
     table.insert(SearchableElements, {Instance = TglFrame, SearchText = NormalizeText(text), OriginalParent = parentPage}) 
 end 
+
+-- === НОВАЯ ФУНКЦИЯ ДЛЯ ВЛОЖЕННЫХ ВКЛАДОК (САБ-ТАБОВ) С РОЗОВОЙ ОБВОДКОЙ ===
+function Library:CreateSubTabs(parentPage, tabsList)
+    local SubTabContainer = Instance.new("Frame", parentPage)
+    SubTabContainer.Size = UDim2.new(1, -20, 0, 32)
+    SubTabContainer.BackgroundTransparency = 1
+    
+    local ListLayout = Instance.new("UIListLayout", SubTabContainer)
+    ListLayout.FillDirection = Enum.FillDirection.Horizontal
+    ListLayout.Padding = UDim.new(0, 10)
+    ListLayout.SortOrder = Enum.SortOrder.LayoutOrder
+    
+    local ContentContainer = Instance.new("Frame", parentPage)
+    ContentContainer.Size = UDim2.new(1, 0, 0, 0)
+    ContentContainer.BackgroundTransparency = 1
+    ContentContainer.AutomaticSize = Enum.AutomaticSize.Y
+    
+    local subPages = {}
+    local subButtons = {}
+    local subStrokes = {}
+    
+    for i, tabName in ipairs(tabsList) do
+        local Btn = Instance.new("TextButton", SubTabContainer)
+        Btn.Size = UDim2.new(0, 110, 1, 0) -- Ширина кнопки
+        Btn.BackgroundColor3 = Color3.fromRGB(22, 22, 22)
+        Btn.Text = tabName
+        Btn.Font = Enum.Font.GothamMedium
+        Btn.TextColor3 = Color3.fromRGB(130, 130, 130)
+        Btn.TextSize = 13
+        Instance.new("UICorner", Btn).CornerRadius = UDim.new(0, 6)
+        
+        -- Та самая обводка, которая будет загораться розовым
+        local Stroke = Instance.new("UIStroke", Btn)
+        Stroke.Color = Color3.fromRGB(255, 0, 150) -- Неоновый розовый
+        Stroke.Thickness = 1.5
+        Stroke.Enabled = false
+        
+        local Page = Instance.new("Frame", ContentContainer)
+        Page.Size = UDim2.new(1, 0, 0, 0)
+        Page.BackgroundTransparency = 1
+        Page.AutomaticSize = Enum.AutomaticSize.Y
+        Page.Visible = false
+        
+        local PageLayout = Instance.new("UIListLayout", Page)
+        PageLayout.Padding = UDim.new(0, 8)
+        PageLayout.HorizontalAlignment = Enum.HorizontalAlignment.Center
+        
+        subPages[tabName] = Page
+        subButtons[tabName] = Btn
+        subStrokes[tabName] = Stroke
+        
+        Btn.MouseButton1Click:Connect(function()
+            for name, p in pairs(subPages) do
+                p.Visible = false
+                subButtons[name].TextColor3 = Color3.fromRGB(130, 130, 130)
+                subStrokes[name].Enabled = false
+            end
+            Page.Visible = true
+            Btn.TextColor3 = Color3.fromRGB(255, 255, 255)
+            Stroke.Enabled = true
+        end)
+        
+        -- По умолчанию открываем первую саб-вкладку
+        if i == 1 then
+            Page.Visible = true
+            Btn.TextColor3 = Color3.fromRGB(255, 255, 255)
+            Stroke.Enabled = true
+        end
+    end
+    
+    return subPages
+end
+-- =========================================================================
 
 local function CreatePage(name, iconId, layoutOrder) 
     local PageFrame = Instance.new("ScrollingFrame", PagesContainer) 
@@ -493,18 +567,12 @@ local function CreatePage(name, iconId, layoutOrder)
     
     local TabContainer = Instance.new("Frame", Navigation) 
     TabContainer.Size = UDim2.new(1, 0, 0, 34) 
-    TabContainer.BackgroundColor3 = Color3.fromRGB(22, 22, 22) 
+    TabContainer.BackgroundColor3 = Color3.fromRGB(28, 28, 28) 
     TabContainer.BackgroundTransparency = 1 
     TabContainer.ClipsDescendants = true 
     TabContainer.ZIndex = 6 
     TabContainer.LayoutOrder = layoutOrder or 0 
     Instance.new("UICorner", TabContainer).CornerRadius = UDim.new(0, 8) 
-    
-    -- Добавляем обводку UIStroke для эффекта розового контура
-    local TabStroke = Instance.new("UIStroke", TabContainer)
-    TabStroke.Thickness = 1.2
-    TabStroke.Color = Color3.fromRGB(219, 48, 105) -- Наш стильный розовый цвет
-    TabStroke.Enabled = false -- Изначально выключен
     
     local TabBtn = Instance.new("TextButton", TabContainer) 
     TabBtn.Size = UDim2.new(1, 0, 1, 0) 
@@ -533,7 +601,6 @@ local function CreatePage(name, iconId, layoutOrder)
     allTabs[name] = TabContainer 
     allTabButtons[name] = TabBtn 
     allPages[name] = PageFrame 
-    allTabStrokes[name] = TabStroke -- Записали в таблицу обводок
     
     TabBtn.MouseButton1Down:Connect(function() 
         local mousePos = UserInputService:GetMouseLocation() 
@@ -544,28 +611,24 @@ local function CreatePage(name, iconId, layoutOrder)
     TabBtn.MouseButton1Click:Connect(function() 
         if SearchBox.Text ~= "" then SearchBox.Text = "" end 
 
-        -- Сбрасываем все вкладки
         for tName, tContainer in pairs(allTabs) do 
             tween(tContainer, {BackgroundTransparency = 1}, 0.2) 
             tween(allTabButtons[tName], {TextColor3 = Color3.fromRGB(140, 140, 140)}, 0.2) 
             if allTabIcons[tName] then tween(allTabIcons[tName], {ImageTransparency = 0.25}, 0.2) end 
-            allTabStrokes[tName].Enabled = false -- Отключаем обводку у неактивных
             allPages[tName].Visible = false 
         end 
         
-        -- Активируем выбранную вкладку (Включая Settings)
         TabTitle.Text = name 
         PageFrame.Visible = true 
         tween(TabContainer, {BackgroundTransparency = 0}, 0.2) 
         tween(TabBtn, {TextColor3 = Color3.fromRGB(255, 255, 255)}, 0.2) 
         if allTabIcons[name] then tween(allTabIcons[name], {ImageTransparency = 0}, 0.2) end 
-        TabStroke.Enabled = true -- Включаем красивую розовую обводку!
     end) 
     
     return PageFrame 
 end 
 
--- Создание страниц 
+-- 1. Создание всех страниц (с оригинальными иконками)
 local MainPage = CreatePage("Main", "103980564128710", 1) 
 local TeleportPage = CreatePage("Teleport", "94373592263020", 2) 
 local MurderPage = CreatePage("Murder", "85278865249050", 3) 
@@ -574,21 +637,28 @@ local PlayersPage = CreatePage("Players", "99904215381150", 5)
 local VisualPage = CreatePage("Visual", "78910169210318", 6) 
 local SettingsPage = CreatePage("Settings", "117996761927034", 99) 
 
--- === НАПОЛНЕНИЕ ВКЛАДКИ SETTINGS (И ДРУГИХ) === 
-Library:CreateToggle(SettingsPage, "Розовая тема интерфейса", true, function(state) print("Розовый UI:", state) end)
-Library:CreateButton(SettingsPage, "Очистить Конфигурацию", function() print("Конфиг очищен") end)
-Library:CreateButton(SettingsPage, "Сохранить Настройки", function() print("Конфиг сохранен") end)
-
+-- 2. Наполнение обычных страниц (Для примера)
 Library:CreateToggle(MainPage, "Авто-Фарм Монет", false, function(state) print("Статус автофарма:", state) end)
 Library:CreateToggle(VisualPage, "ESP Игроков", false, function(state) print("ESP статус:", state) end)
 Library:CreateButton(TeleportPage, "Телепорт на спавн", function() print("Телепорт...") end)
+
+-- 3. СОЗДАНИЕ САБ-ТАБОВ В НАСТРОЙКАХ (UI и Theme)
+local SettingSections = Library:CreateSubTabs(SettingsPage, {"UI", "Theme"})
+
+-- 4. Наполняем саб-таб "UI"
+Library:CreateToggle(SettingSections["UI"], "Toggle Menu (UI)", true, function(state) print("Меню", state) end)
+Library:CreateButton(SettingSections["UI"], "Language", function() print("Язык") end)
+
+-- 5. Наполняем саб-таб "Theme"
+Library:CreateButton(SettingSections["Theme"], "Red Theme", function() print("Красная тема") end)
+Library:CreateButton(SettingSections["Theme"], "Blue Theme", function() print("Синяя тема") end)
+
 
 -- Инициализация первой вкладки (Main) 
 if allTabs["Main"] and allTabButtons["Main"] then 
     allTabs["Main"].BackgroundTransparency = 0 
     allTabButtons["Main"].TextColor3 = Color3.fromRGB(255, 255, 255) 
     if allTabIcons["Main"] then allTabIcons["Main"].ImageTransparency = 0 end 
-    if allTabStrokes["Main"] then allTabStrokes["Main"].Enabled = true end -- Main тоже с обводкой на старте
     allPages["Main"].Visible = true 
     TabTitle.Text = "Main" 
 end
