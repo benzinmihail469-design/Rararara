@@ -480,13 +480,13 @@ local function CreatePage(name, iconId, layoutOrder)
     return PageFrame
 end
 
--- Создание страниц
+-- Создание страниц с добавленной иконкой для Murder
 local MainPage     = CreatePage("Main", nil, 1)
 local TeleportPage = CreatePage("Teleport", "94373592263020", 2)
-local MurderPage   = CreatePage("Murder", nil, 3)
-local SheriffPage  = CreatePage("Sheriff", "77487634679354", 4)  -- Твоя новая картинка установлена сюда
+local MurderPage   = CreatePage("Murder", "85278865249050", 3)   -- Твой ID иконки для Murder
+local SheriffPage  = CreatePage("Sheriff", "77487634679354", 4)
 local PlayersPage  = CreatePage("Players", "99904215381150", 5)
-local SettingsPage = CreatePage("Settings", "117996761927034", 99) -- Settings в самом низу
+local SettingsPage = CreatePage("Settings", "117996761927034", 99)
 
 -- Наполнение (Пример):
 Library:CreateToggle(MainPage, "Авто-Фарм Монет", false, function(state)
