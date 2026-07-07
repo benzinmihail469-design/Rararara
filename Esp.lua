@@ -645,11 +645,7 @@ Library:CreateButton(TeleportPage, "Телепорт на спавн", function(
 -- 3. СОЗДАНИЕ САБ-ТАБОВ В НАСТРОЙКАХ (UI и Theme)
 local SettingSections = Library:CreateSubTabs(SettingsPage, {"UI", "Theme"})
 
--- Вкладка UI сейчас пустая (кнопки Language и Toggle Menu удалены по твоей просьбе)
-
--- 4. Наполняем саб-таб "Theme"
-Library:CreateButton(SettingSections["Theme"], "Red Theme", function() print("Красная тема") end)
-Library:CreateButton(SettingSections["Theme"], "Blue Theme", function() print("Синяя тема") end)
+-- Вкладки UI и Theme теперь пустые (кнопки удалены)
 
 
 -- Инициализация первой вкладки (Main) 
