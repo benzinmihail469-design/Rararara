@@ -29,27 +29,34 @@ local function tween(obj, props, dur)
     return t
 end
 
--- === Улучшенный нормализатор текста (для русского и английского + игнор символов) ===
-local function utf8Lower(str)
-    local res = ""
-    for _, c in utf8.codes(str) do
-        if c >= 1040 and c <= 1071 then -- Заглавные русские (А-Я)
-            res = res .. utf8.char(c + 32)
-        elseif c == 1025 then -- Ё
-            res = res .. utf8.char(1105)
-        else
-            res = res .. string.lower(utf8.char(c)) -- Английские и символы
+-- === УЛЬТРА-ПОИСК (Английский + Русский, без пробелов и символов) ===
+local function NormalizeText(str)
+    local success, res = pcall(function()
+        local normalized = ""
+        for _, c in utf8.codes(str) do
+            -- Русские заглавные (А-Я) -> строчные (а-я)
+            if c >= 1040 and c <= 1071 then
+                normalized = normalized .. utf8.char(c + 32)
+            -- Ё -> ё
+            elseif c == 1025 then
+                normalized = normalized .. utf8.char(1105)
+            -- Английские заглавные (A-Z) -> строчные (a-z)
+            elseif c >= 65 and c <= 90 then
+                normalized = normalized .. string.char(c + 32)
+            else
+                normalized = normalized .. utf8.char(c)
+            end
         end
-    end
-    return res
+        return normalized
+    end)
+    
+    -- Если попался сломанный символ, используем дефолтный lower, иначе наш идеальный результат
+    local finalStr = success and res or string.lower(str)
+    
+    -- Удаляем ВСЮ пунктуацию (тире, подчеркивания и т.д.), пробелы и управляющие символы
+    return string.gsub(finalStr, "[%p%s%c]", "")
 end
-
-local function NormalizeForSearch(str)
-    local lowerStr = utf8Lower(str)
-    -- Удаляем пробелы, тире и нижние подчеркивания
-    return string.gsub(lowerStr, "[%-%s_]", "")
-end
--- ====================================================================================
+-- ====================================================================
 
 local MainFrame = Instance.new("Frame", DarkHub)
 MainFrame.Name = "MainFrame"
@@ -111,7 +118,7 @@ CloseBtn.TextColor3 = Color3.fromRGB(180, 180, 180)
 CloseBtn.BackgroundTransparency = 1
 CloseBtn.ZIndex = 11
 
--- === Система поиска ===
+-- === Интерфейс поиска ===
 local SearchContainer = Instance.new("Frame", MainFrame)
 SearchContainer.Name = "SearchContainer"
 SearchContainer.Size = UDim2.new(0, 160, 0, 30)
@@ -155,7 +162,7 @@ SearchBox.TextColor3 = Color3.fromRGB(230, 230, 230)
 SearchBox.PlaceholderColor3 = Color3.fromRGB(130, 130, 130)
 SearchBox.TextXAlignment = Enum.TextXAlignment.Left
 SearchBox.ZIndex = 7
--- ====================
+-- ========================
 
 local SidebarContainer = Instance.new("Frame", MainFrame)
 SidebarContainer.Name = "SidebarContainer"
@@ -187,7 +194,6 @@ HubIcon.ZIndex = 5
 
 local HubIconCorner = Instance.new("UICorner", HubIcon)
 HubIconCorner.CornerRadius = UDim.new(0, 6)
-
 HubIcon.Image = "rbxthumb://type=Asset&id=" .. CustomIconID .. "&w=150&h=150"
 
 local HubTitle = Instance.new("TextLabel", HeaderBg)
@@ -390,13 +396,12 @@ end)
 local Library = {}
 local SearchableElements = {}
 
--- Обновлённая логика фильтрации поиска
+-- Новая логика поиска
 SearchBox:GetPropertyChangedSignal("Text"):Connect(function()
-    local query = NormalizeForSearch(SearchBox.Text)
+    local query = NormalizeText(SearchBox.Text)
     ClearSearchBtn.Visible = (SearchBox.Text ~= "")
     
     for _, item in ipairs(SearchableElements) do
-        -- Ищем совпадения в нормализованном тексте
         if query == "" or string.find(item.SearchText, query, 1, true) then
             item.Instance.Visible = true
         else
@@ -433,7 +438,7 @@ function Library:CreateButton(parentPage, text, callback)
     Btn.MouseButton1Click:Connect(callback)
     
     -- Сохраняем элемент с нормализованным текстом
-    table.insert(SearchableElements, {Instance = Btn, SearchText = NormalizeForSearch(text)})
+    table.insert(SearchableElements, {Instance = Btn, SearchText = NormalizeText(text)})
 end
 
 function Library:CreateToggle(parentPage, text, default, callback)
@@ -485,7 +490,7 @@ function Library:CreateToggle(parentPage, text, default, callback)
     end)
     
     -- Сохраняем элемент с нормализованным текстом
-    table.insert(SearchableElements, {Instance = TglFrame, SearchText = NormalizeForSearch(text)})
+    table.insert(SearchableElements, {Instance = TglFrame, SearchText = NormalizeText(text)})
 end
 
 local allTabs = {}
@@ -588,7 +593,7 @@ local PlayersPage  = CreatePage("Players", "99904215381150", 5)
 local VisualPage   = CreatePage("Visual", "78910169210318", 6) 
 local SettingsPage = CreatePage("Settings", "117996761927034", 99)
 
--- Наполнение (Кнопка "Собрать дроп" удалена)
+-- Пример наполнения:
 Library:CreateToggle(MainPage, "Авто-Фарм Монет", false, function(state)
     print("Статус автофарма:", state)
 end)
