@@ -480,17 +480,22 @@ local function CreatePage(name, iconId, layoutOrder)
     return PageFrame
 end
 
--- Создание страниц с добавленной иконкой для Murder
+-- Создание страниц с добавленной вкладкой Visual
 local MainPage     = CreatePage("Main", nil, 1)
 local TeleportPage = CreatePage("Teleport", "94373592263020", 2)
-local MurderPage   = CreatePage("Murder", "85278865249050", 3)   -- Твой ID иконки для Murder
+local MurderPage   = CreatePage("Murder", "85278865249050", 3)
 local SheriffPage  = CreatePage("Sheriff", "77487634679354", 4)
 local PlayersPage  = CreatePage("Players", "99904215381150", 5)
-local SettingsPage = CreatePage("Settings", "117996761927034", 99)
+local VisualPage   = CreatePage("Visual", "78910169210318", 6)   -- Новая вкладка Visual (иконка добавлена)
+local SettingsPage = CreatePage("Settings", "117996761927034", 99) -- Settings будет ниже, т.к. 99 > 6
 
 -- Наполнение (Пример):
 Library:CreateToggle(MainPage, "Авто-Фарм Монет", false, function(state)
     print("Статус автофарма:", state)
+end)
+
+Library:CreateToggle(VisualPage, "ESP Игроков", false, function(state)
+    print("ESP статус:", state)
 end)
 
 -- Инициализация первой вкладки
