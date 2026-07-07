@@ -177,6 +177,9 @@ Navigation.Size = UDim2.new(1, -20, 1, -135)
 Navigation.Position = UDim2.new(0, 10, 0, 65)
 Navigation.BackgroundTransparency = 1
 Navigation.ScrollBarThickness = 0
+-- Включаем автоматический размер скролла и обнуляем стандартный холст
+Navigation.CanvasSize = UDim2.new(0, 0, 0, 0)
+Navigation.AutomaticCanvasSize = Enum.AutomaticSize.Y 
 
 local NavLayout = Instance.new("UIListLayout", Navigation)
 NavLayout.Padding = UDim.new(0, 5)
@@ -480,7 +483,7 @@ local function CreatePage(name, iconId, layoutOrder)
     return PageFrame
 end
 
--- Создание страниц. Теперь у всех есть свои иконки!
+-- Создание страниц
 local MainPage     = CreatePage("Main", "103980564128710", 1)
 local TeleportPage = CreatePage("Teleport", "94373592263020", 2)
 local MurderPage   = CreatePage("Murder", "85278865249050", 3)
