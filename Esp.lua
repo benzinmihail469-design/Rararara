@@ -33,7 +33,7 @@ local function tween(obj, props, dur)
     return t 
 end 
 
--- === УЛЬТРА-ПОИСК V2 ===
+-- === УЛЬТРА-ПОИСК V2 (Двуязычный + Умный) ===
 local function NormalizeText(str)
     local success, res = pcall(function()
         local normalized = ""
@@ -60,7 +60,7 @@ local function NormalizeText(str)
 
     return string.gsub(finalStr, "[%p%s%c]", "")
 end
--- =========================
+-- =============================================
 
 local MainFrame = Instance.new("Frame", DarkHub) 
 MainFrame.Name = "MainFrame" 
@@ -236,7 +236,7 @@ EmbCloseBtn.TextColor3 = Color3.fromRGB(180, 180, 180)
 EmbCloseBtn.BackgroundTransparency = 1 
 EmbCloseBtn.ZIndex = 7 
 
--- === НАДЕЖНЫЙ СКРОЛЛ ДЛЯ САЙДБАРА ===
+-- === Скролл для сайдбара ===
 local Navigation = Instance.new("ScrollingFrame", SidebarContainer) 
 Navigation.Size = UDim2.new(1, -20, 1, -125) 
 Navigation.Position = UDim2.new(0, 10, 0, 65) 
@@ -250,7 +250,6 @@ NavLayout.SortOrder = Enum.SortOrder.LayoutOrder
 NavLayout:GetPropertyChangedSignal("AbsoluteContentSize"):Connect(function()
     Navigation.CanvasSize = UDim2.new(0, 0, 0, NavLayout.AbsoluteContentSize.Y + 15)
 end)
--- =====================================
 
 local FooterBg = Instance.new("Frame", SidebarContainer) 
 FooterBg.Size = UDim2.new(0, 150, 0, 46) 
@@ -334,7 +333,7 @@ EmbMinBtn.MouseButton1Click:Connect(ToggleMinimize)
 
 local function CloseGui() DarkHub:Destroy() end 
 CloseBtn.MouseButton1Click:Connect(CloseGui) 
-EmbCloseBtn.MouseButton1Click:Connect(CloseGui) 
+EmbCloseBtn.MouseButton1Connect:Connect(CloseGui) 
 
 local function applyHover(btn, normalColor, hoverColor) 
     btn.MouseEnter:Connect(function() tween(btn, {TextColor3 = hoverColor}) end) 
@@ -381,7 +380,6 @@ searchLayout.Padding = UDim.new(0, 8)
 searchLayout.HorizontalAlignment = Enum.HorizontalAlignment.Center 
 Instance.new("UIPadding", SearchResultsPage).PaddingTop = UDim.new(0, 2)
 
--- Фикс скролла для страницы поиска
 searchLayout:GetPropertyChangedSignal("AbsoluteContentSize"):Connect(function()
     SearchResultsPage.CanvasSize = UDim2.new(0, 0, 0, searchLayout.AbsoluteContentSize.Y + 15)
 end)
@@ -487,7 +485,7 @@ function Library:CreateToggle(parentPage, text, default, callback)
     table.insert(SearchableElements, {Instance = TglFrame, SearchText = NormalizeText(text), OriginalParent = parentPage}) 
 end 
 
--- === ОБНОВЛЕННАЯ ФУНКЦИЯ ДЛЯ САБ-ТАБОВ (С ИКОНКАМИ И СВЕЧЕНИЕМ) ===
+-- === СТИЛЬНАЯ СИСТЕМА САБ-ТАБОВ (ПО КАРТИНКЕ 3438.jpg) ===
 function Library:CreateSubTabs(parentPage, tabsList)
     local SubTabContainer = Instance.new("Frame", parentPage)
     SubTabContainer.Size = UDim2.new(1, -20, 0, 32)
@@ -495,8 +493,9 @@ function Library:CreateSubTabs(parentPage, tabsList)
     
     local ListLayout = Instance.new("UIListLayout", SubTabContainer)
     ListLayout.FillDirection = Enum.FillDirection.Horizontal
-    ListLayout.Padding = UDim.new(0, 10)
+    ListLayout.Padding = UDim.new(0, 15) 
     ListLayout.SortOrder = Enum.SortOrder.LayoutOrder
+    ListLayout.HorizontalAlignment = Enum.HorizontalAlignment.Center 
     
     local ContentContainer = Instance.new("Frame", parentPage)
     ContentContainer.Size = UDim2.new(1, 0, 0, 0)
@@ -508,38 +507,39 @@ function Library:CreateSubTabs(parentPage, tabsList)
     local subStrokes = {}
     local subIcons = {}
     
+    local colorOrange = Color3.fromRGB(255, 115, 0) 
+    local colorGray = Color3.fromRGB(130, 130, 130) 
+    
     for i, tabData in ipairs(tabsList) do
         local tabName = tabData.Name
         local iconId = tabData.Icon
         
         local Btn = Instance.new("TextButton", SubTabContainer)
-        Btn.Size = UDim2.new(0, 110, 1, 0) 
-        Btn.BackgroundColor3 = Color3.fromRGB(22, 22, 22)
+        Btn.Size = UDim2.new(0, 105, 1, 0) 
+        Btn.BackgroundColor3 = Color3.fromRGB(24, 24, 24)
+        Btn.BackgroundTransparency = 1 -- Неактивный саб-таб прозрачен (как на фото)
         Btn.Text = tabName
         Btn.Font = Enum.Font.GothamMedium
-        Btn.TextColor3 = Color3.fromRGB(130, 130, 130)
+        Btn.TextColor3 = colorGray
         Btn.TextSize = 13
         Instance.new("UICorner", Btn).CornerRadius = UDim.new(0, 6)
         
-        -- Оранжевая обводка
         local Stroke = Instance.new("UIStroke", Btn)
-        Stroke.Color = Color3.fromRGB(255, 115, 0)
-        Stroke.Thickness = 1.5
-        Stroke.Enabled = false
+        Stroke.Color = colorOrange
+        Stroke.Thickness = 1.2
+        Stroke.Enabled = false 
         
-        -- Добавляем иконку
         if iconId and iconId ~= "" then
             local Icon = Instance.new("ImageLabel", Btn)
-            Icon.Size = UDim2.new(0, 24, 0, 24) -- Размер ровно как в Main
-            Icon.Position = UDim2.new(0, 10, 0.5, -12)
+            Icon.Size = UDim2.new(0, 20, 0, 20)
+            Icon.Position = UDim2.new(0, 12, 0.5, -10) -- Сдвинуто левее для красоты
             Icon.BackgroundTransparency = 1
             Icon.Image = "rbxthumb://type=Asset&id=" .. iconId .. "&w=150&h=150"
-            Icon.ImageColor3 = Color3.fromRGB(130, 130, 130)
+            Icon.ImageColor3 = colorGray
             subIcons[tabName] = Icon
             
-            -- Сдвигаем текст, чтобы не наезжал на иконку
             local Padding = Instance.new("UIPadding", Btn)
-            Padding.PaddingLeft = UDim.new(0, 28)
+            Padding.PaddingLeft = UDim.new(0, 24)
         end
         
         local Page = Instance.new("Frame", ContentContainer)
@@ -559,29 +559,29 @@ function Library:CreateSubTabs(parentPage, tabsList)
         Btn.MouseButton1Click:Connect(function()
             for name, p in pairs(subPages) do
                 p.Visible = false
-                tween(subButtons[name], {BackgroundColor3 = Color3.fromRGB(22, 22, 22), TextColor3 = Color3.fromRGB(130, 130, 130)}, 0.2)
+                tween(subButtons[name], {BackgroundTransparency = 1, TextColor3 = colorGray}, 0.2)
                 subStrokes[name].Enabled = false
                 if subIcons[name] then
-                    tween(subIcons[name], {ImageColor3 = Color3.fromRGB(130, 130, 130)}, 0.2)
+                    tween(subIcons[name], {ImageColor3 = colorGray}, 0.2)
                 end
             end
+            
             Page.Visible = true
-            -- Включаем свет (темно-оранжевый фон) и яркий текст
-            tween(Btn, {BackgroundColor3 = Color3.fromRGB(45, 25, 10), TextColor3 = Color3.fromRGB(255, 255, 255)}, 0.2)
+            -- Включаем полупрозрачность фона, контур и оранжевое свечение элементов
+            tween(Btn, {BackgroundTransparency = 0.5, TextColor3 = colorOrange}, 0.2)
             Stroke.Enabled = true
             if subIcons[tabName] then
-                tween(subIcons[tabName], {ImageColor3 = Color3.fromRGB(255, 255, 255)}, 0.2)
+                tween(subIcons[tabName], {ImageColor3 = colorOrange}, 0.2)
             end
         end)
         
-        -- Активация первой вкладки по умолчанию
         if i == 1 then
             Page.Visible = true
-            Btn.BackgroundColor3 = Color3.fromRGB(45, 25, 10) -- Свет сразу включен
-            Btn.TextColor3 = Color3.fromRGB(255, 255, 255)
-            Stroke.Enabled = true
+            Btn.BackgroundTransparency = 0.5 
+            Btn.TextColor3 = colorOrange      
+            Stroke.Enabled = true             
             if subIcons[tabName] then
-                subIcons[tabName].ImageColor3 = Color3.fromRGB(255, 255, 255)
+                subIcons[tabName].ImageColor3 = colorOrange
             end
         end
     end
@@ -604,7 +604,6 @@ local function CreatePage(name, iconId, layoutOrder)
     layout.HorizontalAlignment = Enum.HorizontalAlignment.Center 
     Instance.new("UIPadding", PageFrame).PaddingTop = UDim.new(0, 2) 
     
-    -- Фикс скролла для страниц с функционалом
     layout:GetPropertyChangedSignal("AbsoluteContentSize"):Connect(function()
         PageFrame.CanvasSize = UDim2.new(0, 0, 0, layout.AbsoluteContentSize.Y + 15)
     end)
@@ -681,17 +680,19 @@ local PlayersPage = CreatePage("Players", "99904215381150", 5)
 local VisualPage = CreatePage("Visual", "78910169210318", 6) 
 local SettingsPage = CreatePage("Settings", "117996761927034", 99) 
 
--- 2. Наполнение обычных страниц
+-- 2. Наполнение обычных страниц элементов
 Library:CreateToggle(MainPage, "Авто-Фарм Монет", false, function(state) print("Статус автофарма:", state) end)
 Library:CreateToggle(VisualPage, "ESP Игроков", false, function(state) print("ESP статус:", state) end)
 Library:CreateButton(TeleportPage, "Телепорт на спавн", function() print("Телепорт...") end)
 
 -- 3. СОЗДАНИЕ САБ-ТАБОВ В НАСТРОЙКАХ (UI и Theme)
--- ЗАМЕНИ ID "117996761927034" НА СВОЙ КОГДА БУДЕТ ГОТОВ!
 local SettingSections = Library:CreateSubTabs(SettingsPage, {
     {Name = "UI", Icon = "117996761927034"}, 
     {Name = "Theme", Icon = ""} 
 })
+
+-- Пример наполнения контента саб-таба UI
+Library:CreateToggle(SettingSections["UI"], "UI Размер", false, function(state) end)
 
 -- Инициализация первой вкладки (Main) 
 if allTabs["Main"] and allTabButtons["Main"] then 
