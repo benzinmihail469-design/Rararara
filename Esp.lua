@@ -33,59 +33,34 @@ local function tween(obj, props, dur)
     return t 
 end 
 
--- === УЛЬТРА-ПОИСК V2 (Швейцарские часы с переводчиком) ===
+-- === УЛЬТРА-ПОИСК V2 ===
 local function NormalizeText(str)
     local success, res = pcall(function()
         local normalized = ""
         for _, c in utf8.codes(str) do
-            -- Русские заглавные (А-Я) -> строчные (а-я)
-            if c >= 1040 and c <= 1071 then
-                normalized = normalized .. utf8.char(c + 32)
-            -- Ё -> ё
-            elseif c == 1025 then
-                normalized = normalized .. utf8.char(1105)
-            -- Английские заглавные (A-Z) -> строчные (a-z)
-            elseif c >= 65 and c <= 90 then
-                normalized = normalized .. string.char(c + 32)
-            else
-                normalized = normalized .. utf8.char(c)
-            end
+            if c >= 1040 and c <= 1071 then normalized = normalized .. utf8.char(c + 32)
+            elseif c == 1025 then normalized = normalized .. utf8.char(1105)
+            elseif c >= 65 and c <= 90 then normalized = normalized .. string.char(c + 32)
+            else normalized = normalized .. utf8.char(c) end
         end
         return normalized
     end)
 
-    -- Если попался сломанный символ, используем дефолтный lower, иначе наш результат
     local finalStr = success and res or string.lower(str)
 
-    -- 1. СЛОВАРЬ СИНОНИМОВ (Железобетонно связываем языки)
     local synonyms = {
-        ["авто"] = "auto",
-        ["фарм"] = "farm",
-        ["есп"] = "esp",
-        ["монет"] = "coins",
-        ["монеты"] = "coins",
-        ["игроков"] = "players",
-        ["игрок"] = "player",
-        ["визуал"] = "visual",
-        ["телепорт"] = "teleport",
-        ["настройки"] = "settings"
+        ["авто"] = "auto", ["фарм"] = "farm", ["есп"] = "esp", ["монет"] = "coins", 
+        ["монеты"] = "coins", ["игроков"] = "players", ["игрок"] = "player", 
+        ["визуал"] = "visual", ["телепорт"] = "teleport", ["настройки"] = "settings"
     }
-    for ru, en in pairs(synonyms) do
-        finalStr = string.gsub(finalStr, ru, en)
-    end
+    for ru, en in pairs(synonyms) do finalStr = string.gsub(finalStr, ru, en) end
 
-    -- 2. ЗАЩИТА ОТ ГОМОГЛИФОВ (Опечатки разработчика/юзера)
-    local homoglyphs = {
-        ["а"] = "a", ["о"] = "o", ["с"] = "c", ["е"] = "e", ["р"] = "p", ["х"] = "x", ["у"] = "y"
-    }
-    for ru, en in pairs(homoglyphs) do
-        finalStr = string.gsub(finalStr, ru, en)
-    end
+    local homoglyphs = {["а"] = "a", ["о"] = "o", ["с"] = "c", ["е"] = "e", ["р"] = "p", ["х"] = "x", ["у"] = "y"}
+    for ru, en in pairs(homoglyphs) do finalStr = string.gsub(finalStr, ru, en) end
 
-    -- 3. Тотально удаляем ВСЮ пунктуацию, пробелы и управляющие символы
     return string.gsub(finalStr, "[%p%s%c]", "")
 end
--- ====================================================================
+-- =========================
 
 local MainFrame = Instance.new("Frame", DarkHub) 
 MainFrame.Name = "MainFrame" 
@@ -126,7 +101,6 @@ ControlsContainer.BackgroundTransparency = 1
 ControlsContainer.ZIndex = 10 
 
 local MinBtn = Instance.new("TextButton", ControlsContainer) 
-MinBtn.Name = "MinBtn" 
 MinBtn.Size = UDim2.new(0, 24, 0, 24) 
 MinBtn.Position = UDim2.new(0, 0, 0, 3) 
 MinBtn.Text = "—" 
@@ -137,7 +111,6 @@ MinBtn.BackgroundTransparency = 1
 MinBtn.ZIndex = 11 
 
 local CloseBtn = Instance.new("TextButton", ControlsContainer) 
-CloseBtn.Name = "CloseBtn" 
 CloseBtn.Size = UDim2.new(0, 24, 0, 24) 
 CloseBtn.Position = UDim2.new(0, 30, 0, 0) 
 CloseBtn.Text = "×" 
@@ -149,7 +122,6 @@ CloseBtn.ZIndex = 11
 
 -- === Интерфейс поиска === 
 local SearchContainer = Instance.new("Frame", MainFrame) 
-SearchContainer.Name = "SearchContainer" 
 SearchContainer.Size = UDim2.new(0, 160, 0, 30) 
 SearchContainer.Position = UDim2.new(1, -240, 0, 12) 
 SearchContainer.BackgroundColor3 = Color3.fromRGB(22, 22, 22) 
@@ -194,32 +166,25 @@ SearchBox.ZIndex = 7
 -- ======================== 
 
 local SidebarContainer = Instance.new("Frame", MainFrame) 
-SidebarContainer.Name = "SidebarContainer" 
 SidebarContainer.Size = UDim2.new(0, 170, 1, 0) 
 SidebarContainer.BackgroundTransparency = 1 
 SidebarContainer.ZIndex = 3 
 
 local HeaderBg = Instance.new("Frame", SidebarContainer) 
-HeaderBg.Name = "HeaderBg" 
 HeaderBg.Size = UDim2.new(0, 150, 0, 46) 
 HeaderBg.Position = UDim2.new(0, 10, 0, 10) 
 HeaderBg.BackgroundColor3 = Color3.fromRGB(22, 22, 22) 
 HeaderBg.ZIndex = 4 
-local HeaderCorner = Instance.new("UICorner", HeaderBg) 
-HeaderCorner.CornerRadius = UDim.new(0, 10) 
-local HeaderStroke = Instance.new("UIStroke", HeaderBg) 
-HeaderStroke.Color = Color3.fromRGB(45, 45, 45) 
-HeaderStroke.Thickness = 1.2 
+Instance.new("UICorner", HeaderBg).CornerRadius = UDim.new(0, 10) 
+Instance.new("UIStroke", HeaderBg).Color = Color3.fromRGB(45, 45, 45) 
 
 local HubIcon = Instance.new("ImageLabel", HeaderBg) 
-HubIcon.Name = "HubIcon" 
 HubIcon.Size = UDim2.new(0, 28, 0, 28) 
 HubIcon.Position = UDim2.new(0, 8, 0, 9) 
 HubIcon.BackgroundTransparency = 1 
 HubIcon.ScaleType = Enum.ScaleType.Fit 
 HubIcon.ZIndex = 5 
-local HubIconCorner = Instance.new("UICorner", HubIcon) 
-HubIconCorner.CornerRadius = UDim.new(0, 6) 
+Instance.new("UICorner", HubIcon).CornerRadius = UDim.new(0, 6) 
 HubIcon.Image = "rbxthumb://type=Asset&id=" .. CustomIconID .. "&w=150&h=150" 
 
 local HubTitle = Instance.new("TextLabel", HeaderBg) 
@@ -245,7 +210,6 @@ SubTitle.BackgroundTransparency = 1
 SubTitle.ZIndex = 5 
 
 local EmbeddedControls = Instance.new("Frame", HeaderBg) 
-EmbeddedControls.Name = "EmbeddedControls" 
 EmbeddedControls.Size = UDim2.new(0, 50, 0, 30) 
 EmbeddedControls.Position = UDim2.new(1, -55, 0, 8) 
 EmbeddedControls.BackgroundTransparency = 1 
@@ -277,22 +241,18 @@ Navigation.Size = UDim2.new(1, -20, 1, -135)
 Navigation.Position = UDim2.new(0, 10, 0, 65) 
 Navigation.BackgroundTransparency = 1 
 Navigation.ScrollBarThickness = 0 
-Navigation.CanvasSize = UDim2.new(0, 0, 0, 0) 
 Navigation.AutomaticCanvasSize = Enum.AutomaticSize.Y 
 local NavLayout = Instance.new("UIListLayout", Navigation) 
 NavLayout.Padding = UDim.new(0, 5) 
 NavLayout.SortOrder = Enum.SortOrder.LayoutOrder 
 
 local FooterBg = Instance.new("Frame", SidebarContainer) 
-FooterBg.Name = "FooterBg" 
 FooterBg.Size = UDim2.new(0, 150, 0, 46) 
 FooterBg.Position = UDim2.new(0, 10, 1, -56) 
 FooterBg.BackgroundColor3 = Color3.fromRGB(22, 22, 22) 
 FooterBg.ZIndex = 4 
 Instance.new("UICorner", FooterBg).CornerRadius = UDim.new(0, 10) 
-local FooterStroke = Instance.new("UIStroke", FooterBg) 
-FooterStroke.Color = Color3.fromRGB(45, 45, 45) 
-FooterStroke.Thickness = 1.2 
+Instance.new("UIStroke", FooterBg).Color = Color3.fromRGB(45, 45, 45) 
 
 local DiscordLabel = Instance.new("TextLabel", FooterBg) 
 DiscordLabel.Position = UDim2.new(0, 10, 0, 7) 
@@ -318,15 +278,12 @@ local FrameUpdateTable = {}
 RunService.RenderStepped:Connect(function() 
     local CurrentTime = os.clock() 
     table.insert(FrameUpdateTable, CurrentTime) 
-    while FrameUpdateTable[1] < CurrentTime - 1 do 
-        table.remove(FrameUpdateTable, 1) 
-    end 
+    while FrameUpdateTable[1] < CurrentTime - 1 do table.remove(FrameUpdateTable, 1) end 
     StatsLabel.Text = "FPS: " .. #FrameUpdateTable 
 end) 
 
 local function CreateRipple(button, clickX, clickY) 
     local Ripple = Instance.new("ImageLabel") 
-    Ripple.Name = "Ripple" 
     Ripple.Parent = button 
     Ripple.BackgroundTransparency = 1 
     Ripple.Image = "rbxassetid://4012975932" 
@@ -338,26 +295,16 @@ local function CreateRipple(button, clickX, clickY)
     Ripple.Size = UDim2.new(0, 0, 0, 0) 
     
     local maxLength = math.max(button.AbsoluteSize.X, button.AbsoluteSize.Y) * 3 
-    local t = TweenService:Create(Ripple, TweenInfo.new(0.5, Enum.EasingStyle.Quad, Enum.EasingDirection.Out), { 
-        Size = UDim2.new(0, maxLength, 0, maxLength), 
-        ImageTransparency = 1 
-    }) 
+    local t = TweenService:Create(Ripple, TweenInfo.new(0.5, Enum.EasingStyle.Quad, Enum.EasingDirection.Out), {Size = UDim2.new(0, maxLength, 0, maxLength), ImageTransparency = 1}) 
     t:Play() 
-    t.Completed:Connect(function() 
-        Ripple:Destroy() 
-    end) 
+    t.Completed:Connect(function() Ripple:Destroy() end) 
 end 
 
 local isMinimized = false 
 local function ToggleMinimize() 
     isMinimized = not isMinimized 
     if isMinimized then 
-        PagesContainer.Visible = false 
-        TabTitle.Visible = false 
-        SearchContainer.Visible = false 
-        Navigation.Visible = false 
-        FooterBg.Visible = false 
-        ControlsContainer.Visible = false 
+        PagesContainer.Visible, TabTitle.Visible, SearchContainer.Visible, Navigation.Visible, FooterBg.Visible, ControlsContainer.Visible = false, false, false, false, false, false 
         MainStroke.Enabled = false 
         MainFrame.BackgroundTransparency = 1 
         HeaderBg.Position = UDim2.new(0, 0, 0, 0) 
@@ -371,14 +318,7 @@ local function ToggleMinimize()
         MainStroke.Enabled = true 
         MainFrame.BackgroundTransparency = 0.15 
         tween(MainFrame, {Size = UDim2.new(0, 550, 0, 350)}).Completed:Connect(function() 
-            if not isMinimized then 
-                PagesContainer.Visible = true 
-                TabTitle.Visible = true 
-                SearchContainer.Visible = true 
-                Navigation.Visible = true 
-                FooterBg.Visible = true 
-                ControlsContainer.Visible = true 
-            end 
+            if not isMinimized then PagesContainer.Visible, TabTitle.Visible, SearchContainer.Visible, Navigation.Visible, FooterBg.Visible, ControlsContainer.Visible = true, true, true, true, true, true end 
         end) 
     end 
 end 
@@ -386,19 +326,13 @@ end
 MinBtn.MouseButton1Click:Connect(ToggleMinimize) 
 EmbMinBtn.MouseButton1Click:Connect(ToggleMinimize) 
 
-local function CloseGui() 
-    DarkHub:Destroy() 
-end 
+local function CloseGui() DarkHub:Destroy() end 
 CloseBtn.MouseButton1Click:Connect(CloseGui) 
 EmbCloseBtn.MouseButton1Click:Connect(CloseGui) 
 
 local function applyHover(btn, normalColor, hoverColor) 
-    btn.MouseEnter:Connect(function() 
-        tween(btn, {TextColor3 = hoverColor}) 
-    end) 
-    btn.MouseLeave:Connect(function() 
-        tween(btn, {TextColor3 = normalColor}) 
-    end) 
+    btn.MouseEnter:Connect(function() tween(btn, {TextColor3 = hoverColor}) end) 
+    btn.MouseLeave:Connect(function() tween(btn, {TextColor3 = normalColor}) end) 
 end 
 applyHover(MinBtn, Color3.fromRGB(180,180,180), Color3.fromRGB(255,255,255)) 
 applyHover(EmbMinBtn, Color3.fromRGB(180,180,180), Color3.fromRGB(255,255,255)) 
@@ -409,23 +343,11 @@ applyHover(ClearSearchBtn, Color3.fromRGB(150,150,150), Color3.fromRGB(255,255,2
 local dragToggle, dragInput, dragStart, startPos 
 MainFrame.InputBegan:Connect(function(input) 
     if (input.UserInputType == Enum.UserInputType.MouseButton1 or input.UserInputType == Enum.UserInputType.Touch) then 
-        dragToggle = true 
-        dragStart = input.Position 
-        startPos = MainFrame.Position 
-        input.Changed:Connect(function() 
-            if input.UserInputState == Enum.UserInputState.End then 
-                dragToggle = false 
-            end 
-        end) 
+        dragToggle = true; dragStart = input.Position; startPos = MainFrame.Position 
+        input.Changed:Connect(function() if input.UserInputState == Enum.UserInputState.End then dragToggle = false end end) 
     end 
 end) 
-
-MainFrame.InputChanged:Connect(function(input) 
-    if input.UserInputType == Enum.UserInputType.MouseMovement or input.UserInputType == Enum.UserInputType.Touch then 
-        dragInput = input 
-    end 
-end) 
-
+MainFrame.InputChanged:Connect(function(input) if input.UserInputType == Enum.UserInputType.MouseMovement or input.UserInputType == Enum.UserInputType.Touch then dragInput = input end end) 
 UserInputService.InputChanged:Connect(function(input) 
     if input == dragInput and dragToggle then 
         local delta = input.Position - dragStart 
@@ -433,25 +355,61 @@ UserInputService.InputChanged:Connect(function(input)
     end 
 end) 
 
+-- === ГЛОБАЛЬНЫЙ ПОИСК ПО ВСЕМ ВКЛАДКАМ ===
 local Library = {} 
 local SearchableElements = {} 
+local allTabs = {} 
+local allTabButtons = {} 
+local allTabIcons = {} 
+local allPages = {} 
 
--- Логика поиска 
+-- Создаем скрытую страницу для вывода результатов поиска
+local SearchResultsPage = Instance.new("ScrollingFrame", PagesContainer) 
+SearchResultsPage.Size = UDim2.new(1, 0, 1, 0) 
+SearchResultsPage.BackgroundTransparency = 1 
+SearchResultsPage.Visible = false 
+SearchResultsPage.ScrollBarThickness = 2 
+SearchResultsPage.ScrollBarImageColor3 = Color3.fromRGB(50, 50, 50) 
+SearchResultsPage.AutomaticCanvasSize = Enum.AutomaticSize.Y 
+SearchResultsPage.ZIndex = 5 
+local searchLayout = Instance.new("UIListLayout", SearchResultsPage) 
+searchLayout.Padding = UDim.new(0, 8) 
+searchLayout.HorizontalAlignment = Enum.HorizontalAlignment.Center 
+Instance.new("UIPadding", SearchResultsPage).PaddingTop = UDim.new(0, 2)
+
 SearchBox:GetPropertyChangedSignal("Text"):Connect(function() 
-    local query = NormalizeText(SearchBox.Text) 
-    ClearSearchBtn.Visible = (SearchBox.Text ~= "") 
-    for _, item in ipairs(SearchableElements) do 
-        if query == "" or string.find(item.SearchText, query, 1, true) then 
-            item.Instance.Visible = true 
-        else 
-            item.Instance.Visible = false 
+    local rawText = SearchBox.Text
+    local query = NormalizeText(rawText) 
+    ClearSearchBtn.Visible = (rawText ~= "") 
+
+    if rawText == "" then
+        -- Возвращаем всё по своим вкладкам, если поиск пуст
+        SearchResultsPage.Visible = false
+        for _, item in ipairs(SearchableElements) do
+            item.Instance.Parent = item.OriginalParent
+            item.Instance.Visible = true
+        end
+        -- Показываем активную вкладку
+        if allPages[TabTitle.Text] then allPages[TabTitle.Text].Visible = true end
+    else
+        -- Скрываем обычные вкладки и показываем страницу поиска
+        for _, page in pairs(allPages) do page.Visible = false end
+        SearchResultsPage.Visible = true
+
+        -- Фильтруем элементы и переносим найденные на страницу результатов
+        for _, item in ipairs(SearchableElements) do 
+            if string.find(item.SearchText, query, 1, true) then 
+                item.Instance.Parent = SearchResultsPage
+                item.Instance.Visible = true 
+            else 
+                item.Instance.Visible = false 
+            end 
         end 
-    end 
+    end
 end) 
 
-ClearSearchBtn.MouseButton1Click:Connect(function() 
-    SearchBox.Text = "" 
-end) 
+ClearSearchBtn.MouseButton1Click:Connect(function() SearchBox.Text = "" end) 
+-- =========================================
 
 function Library:CreateButton(parentPage, text, callback) 
     local Btn = Instance.new("TextButton", parentPage) 
@@ -464,20 +422,17 @@ function Library:CreateButton(parentPage, text, callback)
     Btn.ClipsDescendants = true 
     Btn.ZIndex = 6 
     Instance.new("UICorner", Btn).CornerRadius = UDim.new(0, 6) 
-    
-    local stroke = Instance.new("UIStroke", Btn) 
-    stroke.Color = Color3.fromRGB(40, 40, 40) 
+    Instance.new("UIStroke", Btn).Color = Color3.fromRGB(40, 40, 40) 
     
     Btn.MouseButton1Down:Connect(function() 
         local mousePos = UserInputService:GetMouseLocation() 
         local inset = GuiService:GetGuiInset() 
         CreateRipple(Btn, mousePos.X - Btn.AbsolutePosition.X, (mousePos.Y - inset.Y) - Btn.AbsolutePosition.Y) 
     end) 
-    
     Btn.MouseButton1Click:Connect(callback) 
     
-    -- Сохраняем элемент с нормализованным текстом 
-    table.insert(SearchableElements, {Instance = Btn, SearchText = NormalizeText(text)}) 
+    -- Сохраняем не только элемент, но и его "родную" вкладку
+    table.insert(SearchableElements, {Instance = Btn, SearchText = NormalizeText(text), OriginalParent = parentPage}) 
 end 
 
 function Library:CreateToggle(parentPage, text, default, callback) 
@@ -486,9 +441,7 @@ function Library:CreateToggle(parentPage, text, default, callback)
     TglFrame.BackgroundColor3 = Color3.fromRGB(22, 22, 22) 
     TglFrame.ZIndex = 6 
     Instance.new("UICorner", TglFrame).CornerRadius = UDim.new(0, 6) 
-    
-    local stroke = Instance.new("UIStroke", TglFrame) 
-    stroke.Color = Color3.fromRGB(40, 40, 40) 
+    Instance.new("UIStroke", TglFrame).Color = Color3.fromRGB(40, 40, 40) 
     
     local TglLabel = Instance.new("TextLabel", TglFrame) 
     TglLabel.Size = UDim2.new(1, -60, 1, 0) 
@@ -520,23 +473,16 @@ function Library:CreateToggle(parentPage, text, default, callback)
     Checkbox.MouseButton1Click:Connect(function() 
         enabled = not enabled 
         if enabled then 
-            tween(Checkbox, {BackgroundColor3 = Color3.fromRGB(240, 110, 20)}, 0.2) 
-            tween(Indicator, {Position = UDim2.new(1, -16, 0.5, -7)}, 0.2) 
+            tween(Checkbox, {BackgroundColor3 = Color3.fromRGB(240, 110, 20)}, 0.2); tween(Indicator, {Position = UDim2.new(1, -16, 0.5, -7)}, 0.2) 
         else 
-            tween(Checkbox, {BackgroundColor3 = Color3.fromRGB(40, 40, 40)}, 0.2) 
-            tween(Indicator, {Position = UDim2.new(0, 2, 0.5, -7)}, 0.2) 
+            tween(Checkbox, {BackgroundColor3 = Color3.fromRGB(40, 40, 40)}, 0.2); tween(Indicator, {Position = UDim2.new(0, 2, 0.5, -7)}, 0.2) 
         end 
         callback(enabled) 
     end) 
     
-    -- Сохраняем элемент с нормализованным текстом 
-    table.insert(SearchableElements, {Instance = TglFrame, SearchText = NormalizeText(text)}) 
+    -- Сохраняем не только элемент, но и его "родную" вкладку
+    table.insert(SearchableElements, {Instance = TglFrame, SearchText = NormalizeText(text), OriginalParent = parentPage}) 
 end 
-
-local allTabs = {} 
-local allTabButtons = {} 
-local allTabIcons = {} 
-local allPages = {} 
 
 local function CreatePage(name, iconId, layoutOrder) 
     local PageFrame = Instance.new("ScrollingFrame", PagesContainer) 
@@ -554,19 +500,15 @@ local function CreatePage(name, iconId, layoutOrder)
     Instance.new("UIPadding", PageFrame).PaddingTop = UDim.new(0, 2) 
     
     local TabContainer = Instance.new("Frame", Navigation) 
-    TabContainer.Name = name .. "_Tab" 
     TabContainer.Size = UDim2.new(1, 0, 0, 34) 
     TabContainer.BackgroundColor3 = Color3.fromRGB(28, 28, 28) 
     TabContainer.BackgroundTransparency = 1 
     TabContainer.ClipsDescendants = true 
     TabContainer.ZIndex = 6 
     TabContainer.LayoutOrder = layoutOrder or 0 
-    
-    local TabCorner = Instance.new("UICorner", TabContainer) 
-    TabCorner.CornerRadius = UDim.new(0, 8) 
+    Instance.new("UICorner", TabContainer).CornerRadius = UDim.new(0, 8) 
     
     local TabBtn = Instance.new("TextButton", TabContainer) 
-    TabBtn.Name = "TabBtn" 
     TabBtn.Size = UDim2.new(1, 0, 1, 0) 
     TabBtn.Text = name 
     TabBtn.Font = Enum.Font.GothamBold 
@@ -581,7 +523,6 @@ local function CreatePage(name, iconId, layoutOrder)
     
     if iconId then 
         local TabIcon = Instance.new("ImageLabel", TabContainer) 
-        TabIcon.Name = "TabIcon" 
         TabIcon.Size = UDim2.new(0, 24, 0, 24) 
         TabIcon.Position = UDim2.new(0, 10, 0.5, -12) 
         TabIcon.BackgroundTransparency = 1 
@@ -602,12 +543,13 @@ local function CreatePage(name, iconId, layoutOrder)
     end) 
     
     TabBtn.MouseButton1Click:Connect(function() 
+        -- Очищаем поиск при клике на любую вкладку, чтобы вернуть интерфейс в обычный вид
+        if SearchBox.Text ~= "" then SearchBox.Text = "" end 
+
         for tName, tContainer in pairs(allTabs) do 
             tween(tContainer, {BackgroundTransparency = 1}, 0.2) 
             tween(allTabButtons[tName], {TextColor3 = Color3.fromRGB(140, 140, 140)}, 0.2) 
-            if allTabIcons[tName] then 
-                tween(allTabIcons[tName], {ImageTransparency = 0.25}, 0.2) 
-            end 
+            if allTabIcons[tName] then tween(allTabIcons[tName], {ImageTransparency = 0.25}, 0.2) end 
             allPages[tName].Visible = false 
         end 
         
@@ -615,9 +557,7 @@ local function CreatePage(name, iconId, layoutOrder)
         PageFrame.Visible = true 
         tween(TabContainer, {BackgroundTransparency = 0}, 0.2) 
         tween(TabBtn, {TextColor3 = Color3.fromRGB(255, 255, 255)}, 0.2) 
-        if allTabIcons[name] then 
-            tween(allTabIcons[name], {ImageTransparency = 0}, 0.2) 
-        end 
+        if allTabIcons[name] then tween(allTabIcons[name], {ImageTransparency = 0}, 0.2) end 
     end) 
     
     return PageFrame 
@@ -633,20 +573,16 @@ local VisualPage = CreatePage("Visual", "78910169210318", 6)
 local SettingsPage = CreatePage("Settings", "117996761927034", 99) 
 
 -- Пример наполнения: 
-Library:CreateToggle(MainPage, "Авто-Фарм Монет", false, function(state) 
-    print("Статус автофарма:", state) 
-end) 
-Library:CreateToggle(VisualPage, "ESP Игроков", false, function(state) 
-    print("ESP статус:", state) 
-end) 
+Library:CreateToggle(MainPage, "Авто-Фарм Монет", false, function(state) print("Статус автофарма:", state) end)
+Library:CreateToggle(VisualPage, "ESP Игроков", false, function(state) print("ESP статус:", state) end)
+Library:CreateButton(SettingsPage, "Сохранить конфиг", function() print("Конфиг сохранен") end)
+Library:CreateButton(TeleportPage, "Телепорт на спавн", function() print("Телепорт...") end)
 
 -- Инициализация первой вкладки (Main) 
 if allTabs["Main"] and allTabButtons["Main"] then 
     allTabs["Main"].BackgroundTransparency = 0 
     allTabButtons["Main"].TextColor3 = Color3.fromRGB(255, 255, 255) 
-    if allTabIcons["Main"] then 
-        allTabIcons["Main"].ImageTransparency = 0 
-    end 
+    if allTabIcons["Main"] then allTabIcons["Main"].ImageTransparency = 0 end 
     allPages["Main"].Visible = true 
     TabTitle.Text = "Main" 
 end
