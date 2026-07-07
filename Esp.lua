@@ -56,7 +56,7 @@ TabTitle.Font = Enum.Font.GothamBold
 TabTitle.TextColor3 = Color3.fromRGB(255, 255, 255)
 TabTitle.TextSize = 16
 TabTitle.Position = UDim2.new(0, 185, 0, 18)
-TabTitle.Size = UDim2.new(0, 150, 0, 20)
+TabTitle.Size = UDim2.new(0, 100, 0, 20)
 TabTitle.TextXAlignment = Enum.TextXAlignment.Left
 TabTitle.BackgroundTransparency = 1
 
@@ -88,6 +88,52 @@ CloseBtn.TextSize = 22
 CloseBtn.TextColor3 = Color3.fromRGB(180, 180, 180)
 CloseBtn.BackgroundTransparency = 1
 CloseBtn.ZIndex = 11
+
+-- === Система поиска ===
+local SearchContainer = Instance.new("Frame", MainFrame)
+SearchContainer.Name = "SearchContainer"
+SearchContainer.Size = UDim2.new(0, 160, 0, 30)
+SearchContainer.Position = UDim2.new(1, -240, 0, 12)
+SearchContainer.BackgroundColor3 = Color3.fromRGB(22, 22, 22)
+SearchContainer.ZIndex = 6
+
+Instance.new("UICorner", SearchContainer).CornerRadius = UDim.new(0, 8)
+local SearchStroke = Instance.new("UIStroke", SearchContainer)
+SearchStroke.Color = Color3.fromRGB(45, 45, 45)
+SearchStroke.Thickness = 1.2
+
+local SearchIcon = Instance.new("ImageLabel", SearchContainer)
+SearchIcon.Size = UDim2.new(0, 14, 0, 14)
+SearchIcon.Position = UDim2.new(0, 10, 0.5, -7)
+SearchIcon.BackgroundTransparency = 1
+SearchIcon.Image = "rbxassetid://6031154871" -- Иконка лупы
+SearchIcon.ImageColor3 = Color3.fromRGB(150, 150, 150)
+SearchIcon.ZIndex = 7
+
+local ClearSearchBtn = Instance.new("TextButton", SearchContainer)
+ClearSearchBtn.Size = UDim2.new(0, 16, 0, 16)
+ClearSearchBtn.Position = UDim2.new(1, -22, 0.5, -8)
+ClearSearchBtn.BackgroundTransparency = 1
+ClearSearchBtn.Text = "×"
+ClearSearchBtn.Font = Enum.Font.Gotham
+ClearSearchBtn.TextSize = 16
+ClearSearchBtn.TextColor3 = Color3.fromRGB(150, 150, 150)
+ClearSearchBtn.Visible = false
+ClearSearchBtn.ZIndex = 8
+
+local SearchBox = Instance.new("TextBox", SearchContainer)
+SearchBox.Size = UDim2.new(1, -55, 1, 0)
+SearchBox.Position = UDim2.new(0, 30, 0, 0)
+SearchBox.BackgroundTransparency = 1
+SearchBox.Text = ""
+SearchBox.PlaceholderText = "Search..."
+SearchBox.Font = Enum.Font.Gotham
+SearchBox.TextSize = 12
+SearchBox.TextColor3 = Color3.fromRGB(230, 230, 230)
+SearchBox.PlaceholderColor3 = Color3.fromRGB(130, 130, 130)
+SearchBox.TextXAlignment = Enum.TextXAlignment.Left
+SearchBox.ZIndex = 7
+-- ====================
 
 local SidebarContainer = Instance.new("Frame", MainFrame)
 SidebarContainer.Name = "SidebarContainer"
@@ -177,7 +223,6 @@ Navigation.Size = UDim2.new(1, -20, 1, -135)
 Navigation.Position = UDim2.new(0, 10, 0, 65)
 Navigation.BackgroundTransparency = 1
 Navigation.ScrollBarThickness = 0
--- Включаем автоматический размер скролла и обнуляем стандартный холст
 Navigation.CanvasSize = UDim2.new(0, 0, 0, 0)
 Navigation.AutomaticCanvasSize = Enum.AutomaticSize.Y 
 
@@ -253,6 +298,7 @@ local function ToggleMinimize()
     if isMinimized then
         PagesContainer.Visible = false
         TabTitle.Visible = false
+        SearchContainer.Visible = false
         Navigation.Visible = false
         FooterBg.Visible = false
         ControlsContainer.Visible = false
@@ -272,6 +318,7 @@ local function ToggleMinimize()
             if not isMinimized then
                 PagesContainer.Visible = true
                 TabTitle.Visible = true
+                SearchContainer.Visible = true
                 Navigation.Visible = true
                 FooterBg.Visible = true
                 ControlsContainer.Visible = true
@@ -295,6 +342,7 @@ applyHover(MinBtn, Color3.fromRGB(180,180,180), Color3.fromRGB(255,255,255))
 applyHover(EmbMinBtn, Color3.fromRGB(180,180,180), Color3.fromRGB(255,255,255))
 applyHover(CloseBtn, Color3.fromRGB(180,180,180), Color3.fromRGB(255,70,70))
 applyHover(EmbCloseBtn, Color3.fromRGB(180,180,180), Color3.fromRGB(255,70,70))
+applyHover(ClearSearchBtn, Color3.fromRGB(150,150,150), Color3.fromRGB(255,255,255))
 
 local dragToggle, dragInput, dragStart, startPos
 MainFrame.InputBegan:Connect(function(input)
@@ -318,6 +366,25 @@ UserInputService.InputChanged:Connect(function(input)
 end)
 
 local Library = {}
+local SearchableElements = {} -- Массив всех созданных элементов для поиска
+
+-- Логика самого поиска
+SearchBox:GetPropertyChangedSignal("Text"):Connect(function()
+    local query = string.lower(SearchBox.Text)
+    ClearSearchBtn.Visible = (query ~= "")
+    
+    for _, item in ipairs(SearchableElements) do
+        if query == "" or string.find(item.Text, query) then
+            item.Instance.Visible = true
+        else
+            item.Instance.Visible = false
+        end
+    end
+end)
+
+ClearSearchBtn.MouseButton1Click:Connect(function()
+    SearchBox.Text = ""
+end)
 
 function Library:CreateButton(parentPage, text, callback)
     local Btn = Instance.new("TextButton", parentPage)
@@ -341,6 +408,9 @@ function Library:CreateButton(parentPage, text, callback)
     end)
     
     Btn.MouseButton1Click:Connect(callback)
+    
+    -- Добавляем в поисковик
+    table.insert(SearchableElements, {Instance = Btn, Text = string.lower(text)})
 end
 
 function Library:CreateToggle(parentPage, text, default, callback)
@@ -390,6 +460,9 @@ function Library:CreateToggle(parentPage, text, default, callback)
         end
         callback(enabled)
     end)
+    
+    -- Добавляем в поисковик
+    table.insert(SearchableElements, {Instance = TglFrame, Text = string.lower(text)})
 end
 
 local allTabs = {}
@@ -495,6 +568,10 @@ local SettingsPage = CreatePage("Settings", "117996761927034", 99)
 -- Наполнение (Пример):
 Library:CreateToggle(MainPage, "Авто-Фарм Монет", false, function(state)
     print("Статус автофарма:", state)
+end)
+
+Library:CreateButton(MainPage, "Собрать дроп", function()
+    print("Дроп собран")
 end)
 
 Library:CreateToggle(VisualPage, "ESP Игроков", false, function(state)
