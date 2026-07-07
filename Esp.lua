@@ -645,7 +645,7 @@ Library:CreateButton(TeleportPage, "Телепорт на спавн", function(
 -- 3. СОЗДАНИЕ САБ-ТАБОВ В НАСТРОЙКАХ (UI и Theme)
 local SettingSections = Library:CreateSubTabs(SettingsPage, {"UI", "Theme"})
 
--- Вкладки UI и Theme теперь пустые (кнопки удалены)
+-- Вкладки UI и Theme абсолютно пустые, кнопок Theme больше нет.
 
 
 -- Инициализация первой вкладки (Main) 
