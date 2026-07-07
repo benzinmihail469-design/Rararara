@@ -480,14 +480,14 @@ local function CreatePage(name, iconId, layoutOrder)
     return PageFrame
 end
 
--- Создание страниц с добавленной вкладкой Visual
-local MainPage     = CreatePage("Main", nil, 1)
+-- Создание страниц. Теперь у всех есть свои иконки!
+local MainPage     = CreatePage("Main", "103980564128710", 1)
 local TeleportPage = CreatePage("Teleport", "94373592263020", 2)
 local MurderPage   = CreatePage("Murder", "85278865249050", 3)
 local SheriffPage  = CreatePage("Sheriff", "77487634679354", 4)
 local PlayersPage  = CreatePage("Players", "99904215381150", 5)
-local VisualPage   = CreatePage("Visual", "78910169210318", 6)   -- Новая вкладка Visual (иконка добавлена)
-local SettingsPage = CreatePage("Settings", "117996761927034", 99) -- Settings будет ниже, т.к. 99 > 6
+local VisualPage   = CreatePage("Visual", "78910169210318", 6) 
+local SettingsPage = CreatePage("Settings", "117996761927034", 99)
 
 -- Наполнение (Пример):
 Library:CreateToggle(MainPage, "Авто-Фарм Монет", false, function(state)
@@ -498,7 +498,7 @@ Library:CreateToggle(VisualPage, "ESP Игроков", false, function(state)
     print("ESP статус:", state)
 end)
 
--- Инициализация первой вкладки
+-- Инициализация первой вкладки (Main)
 if allTabs["Main"] and allTabButtons["Main"] then
     allTabs["Main"].BackgroundTransparency = 0
     allTabButtons["Main"].TextColor3 = Color3.fromRGB(255, 255, 255)
