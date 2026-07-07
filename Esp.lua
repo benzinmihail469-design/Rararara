@@ -60,7 +60,6 @@ local function NormalizeText(str)
 
     return string.gsub(finalStr, "[%p%s%c]", "")
 end
--- =========================
 
 local MainFrame = Instance.new("Frame", DarkHub) 
 MainFrame.Name = "MainFrame" 
@@ -120,7 +119,6 @@ CloseBtn.TextColor3 = Color3.fromRGB(180, 180, 180)
 CloseBtn.BackgroundTransparency = 1 
 CloseBtn.ZIndex = 11 
 
--- === Интерфейс поиска === 
 local SearchContainer = Instance.new("Frame", MainFrame) 
 SearchContainer.Size = UDim2.new(0, 160, 0, 30) 
 SearchContainer.Position = UDim2.new(1, -240, 0, 12) 
@@ -163,7 +161,6 @@ SearchBox.TextColor3 = Color3.fromRGB(230, 230, 230)
 SearchBox.PlaceholderColor3 = Color3.fromRGB(130, 130, 130) 
 SearchBox.TextXAlignment = Enum.TextXAlignment.Left 
 SearchBox.ZIndex = 7 
--- ======================== 
 
 local SidebarContainer = Instance.new("Frame", MainFrame) 
 SidebarContainer.Size = UDim2.new(0, 170, 1, 0) 
@@ -361,9 +358,9 @@ local SearchableElements = {}
 local allTabs = {} 
 local allTabButtons = {} 
 local allTabIcons = {} 
+local allTabStrokes = {} -- Таблица обводок для вкладок
 local allPages = {} 
 
--- Создаем скрытую страницу для вывода результатов поиска
 local SearchResultsPage = Instance.new("ScrollingFrame", PagesContainer) 
 SearchResultsPage.Size = UDim2.new(1, 0, 1, 0) 
 SearchResultsPage.BackgroundTransparency = 1 
@@ -383,20 +380,16 @@ SearchBox:GetPropertyChangedSignal("Text"):Connect(function()
     ClearSearchBtn.Visible = (rawText ~= "") 
 
     if rawText == "" then
-        -- Возвращаем всё по своим вкладкам, если поиск пуст
         SearchResultsPage.Visible = false
         for _, item in ipairs(SearchableElements) do
             item.Instance.Parent = item.OriginalParent
             item.Instance.Visible = true
         end
-        -- Показываем активную вкладку
         if allPages[TabTitle.Text] then allPages[TabTitle.Text].Visible = true end
     else
-        -- Скрываем обычные вкладки и показываем страницу поиска
         for _, page in pairs(allPages) do page.Visible = false end
         SearchResultsPage.Visible = true
 
-        -- Фильтруем элементы и переносим найденные на страницу результатов
         for _, item in ipairs(SearchableElements) do 
             if string.find(item.SearchText, query, 1, true) then 
                 item.Instance.Parent = SearchResultsPage
@@ -431,7 +424,6 @@ function Library:CreateButton(parentPage, text, callback)
     end) 
     Btn.MouseButton1Click:Connect(callback) 
     
-    -- Сохраняем не только элемент, но и его "родную" вкладку
     table.insert(SearchableElements, {Instance = Btn, SearchText = NormalizeText(text), OriginalParent = parentPage}) 
 end 
 
@@ -457,7 +449,8 @@ function Library:CreateToggle(parentPage, text, default, callback)
     local Checkbox = Instance.new("TextButton", TglFrame) 
     Checkbox.Size = UDim2.new(0, 34, 0, 18) 
     Checkbox.Position = UDim2.new(1, -44, 0.5, -9) 
-    Checkbox.BackgroundColor3 = default and Color3.fromRGB(240, 110, 20) or Color3.fromRGB(40, 40, 40) 
+    -- Поменяли дефолтный цвет активного тоггла на розовый (как на фото)
+    Checkbox.BackgroundColor3 = default and Color3.fromRGB(219, 48, 105) or Color3.fromRGB(40, 40, 40) 
     Checkbox.Text = "" 
     Checkbox.ZIndex = 7 
     Instance.new("UICorner", Checkbox).CornerRadius = UDim.new(0, 9) 
@@ -473,14 +466,13 @@ function Library:CreateToggle(parentPage, text, default, callback)
     Checkbox.MouseButton1Click:Connect(function() 
         enabled = not enabled 
         if enabled then 
-            tween(Checkbox, {BackgroundColor3 = Color3.fromRGB(240, 110, 20)}, 0.2); tween(Indicator, {Position = UDim2.new(1, -16, 0.5, -7)}, 0.2) 
+            tween(Checkbox, {BackgroundColor3 = Color3.fromRGB(219, 48, 105)}, 0.2); tween(Indicator, {Position = UDim2.new(1, -16, 0.5, -7)}, 0.2) 
         else 
             tween(Checkbox, {BackgroundColor3 = Color3.fromRGB(40, 40, 40)}, 0.2); tween(Indicator, {Position = UDim2.new(0, 2, 0.5, -7)}, 0.2) 
         end 
         callback(enabled) 
     end) 
     
-    -- Сохраняем не только элемент, но и его "родную" вкладку
     table.insert(SearchableElements, {Instance = TglFrame, SearchText = NormalizeText(text), OriginalParent = parentPage}) 
 end 
 
@@ -501,12 +493,18 @@ local function CreatePage(name, iconId, layoutOrder)
     
     local TabContainer = Instance.new("Frame", Navigation) 
     TabContainer.Size = UDim2.new(1, 0, 0, 34) 
-    TabContainer.BackgroundColor3 = Color3.fromRGB(28, 28, 28) 
+    TabContainer.BackgroundColor3 = Color3.fromRGB(22, 22, 22) 
     TabContainer.BackgroundTransparency = 1 
     TabContainer.ClipsDescendants = true 
     TabContainer.ZIndex = 6 
     TabContainer.LayoutOrder = layoutOrder or 0 
     Instance.new("UICorner", TabContainer).CornerRadius = UDim.new(0, 8) 
+    
+    -- Добавляем обводку UIStroke для эффекта розового контура
+    local TabStroke = Instance.new("UIStroke", TabContainer)
+    TabStroke.Thickness = 1.2
+    TabStroke.Color = Color3.fromRGB(219, 48, 105) -- Наш стильный розовый цвет
+    TabStroke.Enabled = false -- Изначально выключен
     
     local TabBtn = Instance.new("TextButton", TabContainer) 
     TabBtn.Size = UDim2.new(1, 0, 1, 0) 
@@ -535,6 +533,7 @@ local function CreatePage(name, iconId, layoutOrder)
     allTabs[name] = TabContainer 
     allTabButtons[name] = TabBtn 
     allPages[name] = PageFrame 
+    allTabStrokes[name] = TabStroke -- Записали в таблицу обводок
     
     TabBtn.MouseButton1Down:Connect(function() 
         local mousePos = UserInputService:GetMouseLocation() 
@@ -543,21 +542,24 @@ local function CreatePage(name, iconId, layoutOrder)
     end) 
     
     TabBtn.MouseButton1Click:Connect(function() 
-        -- Очищаем поиск при клике на любую вкладку, чтобы вернуть интерфейс в обычный вид
         if SearchBox.Text ~= "" then SearchBox.Text = "" end 
 
+        -- Сбрасываем все вкладки
         for tName, tContainer in pairs(allTabs) do 
             tween(tContainer, {BackgroundTransparency = 1}, 0.2) 
             tween(allTabButtons[tName], {TextColor3 = Color3.fromRGB(140, 140, 140)}, 0.2) 
             if allTabIcons[tName] then tween(allTabIcons[tName], {ImageTransparency = 0.25}, 0.2) end 
+            allTabStrokes[tName].Enabled = false -- Отключаем обводку у неактивных
             allPages[tName].Visible = false 
         end 
         
+        -- Активируем выбранную вкладку (Включая Settings)
         TabTitle.Text = name 
         PageFrame.Visible = true 
         tween(TabContainer, {BackgroundTransparency = 0}, 0.2) 
         tween(TabBtn, {TextColor3 = Color3.fromRGB(255, 255, 255)}, 0.2) 
         if allTabIcons[name] then tween(allTabIcons[name], {ImageTransparency = 0}, 0.2) end 
+        TabStroke.Enabled = true -- Включаем красивую розовую обводку!
     end) 
     
     return PageFrame 
@@ -572,10 +574,13 @@ local PlayersPage = CreatePage("Players", "99904215381150", 5)
 local VisualPage = CreatePage("Visual", "78910169210318", 6) 
 local SettingsPage = CreatePage("Settings", "117996761927034", 99) 
 
--- Пример наполнения: 
+-- === НАПОЛНЕНИЕ ВКЛАДКИ SETTINGS (И ДРУГИХ) === 
+Library:CreateToggle(SettingsPage, "Розовая тема интерфейса", true, function(state) print("Розовый UI:", state) end)
+Library:CreateButton(SettingsPage, "Очистить Конфигурацию", function() print("Конфиг очищен") end)
+Library:CreateButton(SettingsPage, "Сохранить Настройки", function() print("Конфиг сохранен") end)
+
 Library:CreateToggle(MainPage, "Авто-Фарм Монет", false, function(state) print("Статус автофарма:", state) end)
 Library:CreateToggle(VisualPage, "ESP Игроков", false, function(state) print("ESP статус:", state) end)
-Library:CreateButton(SettingsPage, "Сохранить конфиг", function() print("Конфиг сохранен") end)
 Library:CreateButton(TeleportPage, "Телепорт на спавн", function() print("Телепорт...") end)
 
 -- Инициализация первой вкладки (Main) 
@@ -583,6 +588,7 @@ if allTabs["Main"] and allTabButtons["Main"] then
     allTabs["Main"].BackgroundTransparency = 0 
     allTabButtons["Main"].TextColor3 = Color3.fromRGB(255, 255, 255) 
     if allTabIcons["Main"] then allTabIcons["Main"].ImageTransparency = 0 end 
+    if allTabStrokes["Main"] then allTabStrokes["Main"].Enabled = true end -- Main тоже с обводкой на старте
     allPages["Main"].Visible = true 
     TabTitle.Text = "Main" 
 end
