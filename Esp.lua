@@ -451,7 +451,7 @@ function Library:CreateToggle(parentPage, text, default, callback)
     local Checkbox = Instance.new("TextButton", TglFrame) 
     Checkbox.Size = UDim2.new(0, 34, 0, 18) 
     Checkbox.Position = UDim2.new(1, -44, 0.5, -9) 
-    Checkbox.BackgroundColor3 = default and Color3.fromRGB(255, 0, 150) or Color3.fromRGB(40, 40, 40) 
+    Checkbox.BackgroundColor3 = default and Color3.fromRGB(255, 115, 0) or Color3.fromRGB(40, 40, 40) 
     Checkbox.Text = "" 
     Checkbox.ZIndex = 7 
     Instance.new("UICorner", Checkbox).CornerRadius = UDim.new(0, 9) 
@@ -467,7 +467,7 @@ function Library:CreateToggle(parentPage, text, default, callback)
     Checkbox.MouseButton1Click:Connect(function() 
         enabled = not enabled 
         if enabled then 
-            tween(Checkbox, {BackgroundColor3 = Color3.fromRGB(255, 0, 150)}, 0.2); tween(Indicator, {Position = UDim2.new(1, -16, 0.5, -7)}, 0.2) 
+            tween(Checkbox, {BackgroundColor3 = Color3.fromRGB(255, 115, 0)}, 0.2); tween(Indicator, {Position = UDim2.new(1, -16, 0.5, -7)}, 0.2) 
         else 
             tween(Checkbox, {BackgroundColor3 = Color3.fromRGB(40, 40, 40)}, 0.2); tween(Indicator, {Position = UDim2.new(0, 2, 0.5, -7)}, 0.2) 
         end 
@@ -477,7 +477,7 @@ function Library:CreateToggle(parentPage, text, default, callback)
     table.insert(SearchableElements, {Instance = TglFrame, SearchText = NormalizeText(text), OriginalParent = parentPage}) 
 end 
 
--- === НОВАЯ ФУНКЦИЯ ДЛЯ ВЛОЖЕННЫХ ВКЛАДОК (САБ-ТАБОВ) С РОЗОВОЙ ОБВОДКОЙ ===
+-- === ФУНКЦИЯ ДЛЯ ВЛОЖЕННЫХ ВКЛАДОК (САБ-ТАБОВ) С ОРАНЖЕВОЙ ОБВОДКОЙ ===
 function Library:CreateSubTabs(parentPage, tabsList)
     local SubTabContainer = Instance.new("Frame", parentPage)
     SubTabContainer.Size = UDim2.new(1, -20, 0, 32)
@@ -507,9 +507,9 @@ function Library:CreateSubTabs(parentPage, tabsList)
         Btn.TextSize = 13
         Instance.new("UICorner", Btn).CornerRadius = UDim.new(0, 6)
         
-        -- Та самая обводка, которая будет загораться розовым
+        -- Оранжевая обводка активной вкладки
         local Stroke = Instance.new("UIStroke", Btn)
-        Stroke.Color = Color3.fromRGB(255, 0, 150) -- Неоновый розовый
+        Stroke.Color = Color3.fromRGB(255, 115, 0)
         Stroke.Thickness = 1.5
         Stroke.Enabled = false
         
@@ -645,11 +645,9 @@ Library:CreateButton(TeleportPage, "Телепорт на спавн", function(
 -- 3. СОЗДАНИЕ САБ-ТАБОВ В НАСТРОЙКАХ (UI и Theme)
 local SettingSections = Library:CreateSubTabs(SettingsPage, {"UI", "Theme"})
 
--- 4. Наполняем саб-таб "UI"
-Library:CreateToggle(SettingSections["UI"], "Toggle Menu (UI)", true, function(state) print("Меню", state) end)
-Library:CreateButton(SettingSections["UI"], "Language", function() print("Язык") end)
+-- Вкладка UI сейчас пустая (кнопки Language и Toggle Menu удалены по твоей просьбе)
 
--- 5. Наполняем саб-таб "Theme"
+-- 4. Наполняем саб-таб "Theme"
 Library:CreateButton(SettingSections["Theme"], "Red Theme", function() print("Красная тема") end)
 Library:CreateButton(SettingSections["Theme"], "Blue Theme", function() print("Синяя тема") end)
 
