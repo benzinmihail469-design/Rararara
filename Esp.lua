@@ -29,6 +29,28 @@ local function tween(obj, props, dur)
     return t
 end
 
+-- === Улучшенный нормализатор текста (для русского и английского + игнор символов) ===
+local function utf8Lower(str)
+    local res = ""
+    for _, c in utf8.codes(str) do
+        if c >= 1040 and c <= 1071 then -- Заглавные русские (А-Я)
+            res = res .. utf8.char(c + 32)
+        elseif c == 1025 then -- Ё
+            res = res .. utf8.char(1105)
+        else
+            res = res .. string.lower(utf8.char(c)) -- Английские и символы
+        end
+    end
+    return res
+end
+
+local function NormalizeForSearch(str)
+    local lowerStr = utf8Lower(str)
+    -- Удаляем пробелы, тире и нижние подчеркивания
+    return string.gsub(lowerStr, "[%-%s_]", "")
+end
+-- ====================================================================================
+
 local MainFrame = Instance.new("Frame", DarkHub)
 MainFrame.Name = "MainFrame"
 MainFrame.BackgroundColor3 = Color3.fromRGB(14, 14, 14)
@@ -106,7 +128,7 @@ local SearchIcon = Instance.new("ImageLabel", SearchContainer)
 SearchIcon.Size = UDim2.new(0, 14, 0, 14)
 SearchIcon.Position = UDim2.new(0, 10, 0.5, -7)
 SearchIcon.BackgroundTransparency = 1
-SearchIcon.Image = "rbxassetid://6031154871" -- Иконка лупы
+SearchIcon.Image = "rbxassetid://6031154871"
 SearchIcon.ImageColor3 = Color3.fromRGB(150, 150, 150)
 SearchIcon.ZIndex = 7
 
@@ -366,15 +388,16 @@ UserInputService.InputChanged:Connect(function(input)
 end)
 
 local Library = {}
-local SearchableElements = {} -- Массив всех созданных элементов для поиска
+local SearchableElements = {}
 
--- Логика самого поиска
+-- Обновлённая логика фильтрации поиска
 SearchBox:GetPropertyChangedSignal("Text"):Connect(function()
-    local query = string.lower(SearchBox.Text)
-    ClearSearchBtn.Visible = (query ~= "")
+    local query = NormalizeForSearch(SearchBox.Text)
+    ClearSearchBtn.Visible = (SearchBox.Text ~= "")
     
     for _, item in ipairs(SearchableElements) do
-        if query == "" or string.find(item.Text, query) then
+        -- Ищем совпадения в нормализованном тексте
+        if query == "" or string.find(item.SearchText, query, 1, true) then
             item.Instance.Visible = true
         else
             item.Instance.Visible = false
@@ -409,8 +432,8 @@ function Library:CreateButton(parentPage, text, callback)
     
     Btn.MouseButton1Click:Connect(callback)
     
-    -- Добавляем в поисковик
-    table.insert(SearchableElements, {Instance = Btn, Text = string.lower(text)})
+    -- Сохраняем элемент с нормализованным текстом
+    table.insert(SearchableElements, {Instance = Btn, SearchText = NormalizeForSearch(text)})
 end
 
 function Library:CreateToggle(parentPage, text, default, callback)
@@ -461,8 +484,8 @@ function Library:CreateToggle(parentPage, text, default, callback)
         callback(enabled)
     end)
     
-    -- Добавляем в поисковик
-    table.insert(SearchableElements, {Instance = TglFrame, Text = string.lower(text)})
+    -- Сохраняем элемент с нормализованным текстом
+    table.insert(SearchableElements, {Instance = TglFrame, SearchText = NormalizeForSearch(text)})
 end
 
 local allTabs = {}
@@ -565,13 +588,9 @@ local PlayersPage  = CreatePage("Players", "99904215381150", 5)
 local VisualPage   = CreatePage("Visual", "78910169210318", 6) 
 local SettingsPage = CreatePage("Settings", "117996761927034", 99)
 
--- Наполнение (Пример):
+-- Наполнение (Кнопка "Собрать дроп" удалена)
 Library:CreateToggle(MainPage, "Авто-Фарм Монет", false, function(state)
     print("Статус автофарма:", state)
-end)
-
-Library:CreateButton(MainPage, "Собрать дроп", function()
-    print("Дроп собран")
 end)
 
 Library:CreateToggle(VisualPage, "ESP Игроков", false, function(state)
