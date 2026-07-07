@@ -236,15 +236,21 @@ EmbCloseBtn.TextColor3 = Color3.fromRGB(180, 180, 180)
 EmbCloseBtn.BackgroundTransparency = 1 
 EmbCloseBtn.ZIndex = 7 
 
+-- === НАДЕЖНЫЙ СКРОЛЛ ДЛЯ САЙДБАРА ===
 local Navigation = Instance.new("ScrollingFrame", SidebarContainer) 
-Navigation.Size = UDim2.new(1, -20, 1, -135) 
+Navigation.Size = UDim2.new(1, -20, 1, -125) 
 Navigation.Position = UDim2.new(0, 10, 0, 65) 
 Navigation.BackgroundTransparency = 1 
 Navigation.ScrollBarThickness = 0 
-Navigation.AutomaticCanvasSize = Enum.AutomaticSize.Y 
+Navigation.BorderSizePixel = 0
 local NavLayout = Instance.new("UIListLayout", Navigation) 
 NavLayout.Padding = UDim.new(0, 5) 
 NavLayout.SortOrder = Enum.SortOrder.LayoutOrder 
+
+NavLayout:GetPropertyChangedSignal("AbsoluteContentSize"):Connect(function()
+    Navigation.CanvasSize = UDim2.new(0, 0, 0, NavLayout.AbsoluteContentSize.Y + 15)
+end)
+-- =====================================
 
 local FooterBg = Instance.new("Frame", SidebarContainer) 
 FooterBg.Size = UDim2.new(0, 150, 0, 46) 
@@ -369,12 +375,16 @@ SearchResultsPage.BackgroundTransparency = 1
 SearchResultsPage.Visible = false 
 SearchResultsPage.ScrollBarThickness = 2 
 SearchResultsPage.ScrollBarImageColor3 = Color3.fromRGB(50, 50, 50) 
-SearchResultsPage.AutomaticCanvasSize = Enum.AutomaticSize.Y 
 SearchResultsPage.ZIndex = 5 
 local searchLayout = Instance.new("UIListLayout", SearchResultsPage) 
 searchLayout.Padding = UDim.new(0, 8) 
 searchLayout.HorizontalAlignment = Enum.HorizontalAlignment.Center 
 Instance.new("UIPadding", SearchResultsPage).PaddingTop = UDim.new(0, 2)
+
+-- Фикс скролла для страницы поиска
+searchLayout:GetPropertyChangedSignal("AbsoluteContentSize"):Connect(function()
+    SearchResultsPage.CanvasSize = UDim2.new(0, 0, 0, searchLayout.AbsoluteContentSize.Y + 15)
+end)
 
 SearchBox:GetPropertyChangedSignal("Text"):Connect(function() 
     local rawText = SearchBox.Text
@@ -477,7 +487,7 @@ function Library:CreateToggle(parentPage, text, default, callback)
     table.insert(SearchableElements, {Instance = TglFrame, SearchText = NormalizeText(text), OriginalParent = parentPage}) 
 end 
 
--- === ФУНКЦИЯ ДЛЯ ВЛОЖЕННЫХ ВКЛАДОК (САБ-ТАБОВ) С ОРАНЖЕВОЙ ОБВОДКОЙ ===
+-- === ОБНОВЛЕННАЯ ФУНКЦИЯ ДЛЯ САБ-ТАБОВ (С ИКОНКАМИ И СВЕЧЕНИЕМ) ===
 function Library:CreateSubTabs(parentPage, tabsList)
     local SubTabContainer = Instance.new("Frame", parentPage)
     SubTabContainer.Size = UDim2.new(1, -20, 0, 32)
@@ -496,10 +506,14 @@ function Library:CreateSubTabs(parentPage, tabsList)
     local subPages = {}
     local subButtons = {}
     local subStrokes = {}
+    local subIcons = {}
     
-    for i, tabName in ipairs(tabsList) do
+    for i, tabData in ipairs(tabsList) do
+        local tabName = tabData.Name
+        local iconId = tabData.Icon
+        
         local Btn = Instance.new("TextButton", SubTabContainer)
-        Btn.Size = UDim2.new(0, 110, 1, 0) -- Ширина кнопки
+        Btn.Size = UDim2.new(0, 110, 1, 0) 
         Btn.BackgroundColor3 = Color3.fromRGB(22, 22, 22)
         Btn.Text = tabName
         Btn.Font = Enum.Font.GothamMedium
@@ -507,11 +521,26 @@ function Library:CreateSubTabs(parentPage, tabsList)
         Btn.TextSize = 13
         Instance.new("UICorner", Btn).CornerRadius = UDim.new(0, 6)
         
-        -- Оранжевая обводка активной вкладки
+        -- Оранжевая обводка
         local Stroke = Instance.new("UIStroke", Btn)
         Stroke.Color = Color3.fromRGB(255, 115, 0)
         Stroke.Thickness = 1.5
         Stroke.Enabled = false
+        
+        -- Добавляем иконку
+        if iconId and iconId ~= "" then
+            local Icon = Instance.new("ImageLabel", Btn)
+            Icon.Size = UDim2.new(0, 24, 0, 24) -- Размер ровно как в Main
+            Icon.Position = UDim2.new(0, 10, 0.5, -12)
+            Icon.BackgroundTransparency = 1
+            Icon.Image = "rbxthumb://type=Asset&id=" .. iconId .. "&w=150&h=150"
+            Icon.ImageColor3 = Color3.fromRGB(130, 130, 130)
+            subIcons[tabName] = Icon
+            
+            -- Сдвигаем текст, чтобы не наезжал на иконку
+            local Padding = Instance.new("UIPadding", Btn)
+            Padding.PaddingLeft = UDim.new(0, 28)
+        end
         
         local Page = Instance.new("Frame", ContentContainer)
         Page.Size = UDim2.new(1, 0, 0, 0)
@@ -530,25 +559,36 @@ function Library:CreateSubTabs(parentPage, tabsList)
         Btn.MouseButton1Click:Connect(function()
             for name, p in pairs(subPages) do
                 p.Visible = false
-                subButtons[name].TextColor3 = Color3.fromRGB(130, 130, 130)
+                tween(subButtons[name], {BackgroundColor3 = Color3.fromRGB(22, 22, 22), TextColor3 = Color3.fromRGB(130, 130, 130)}, 0.2)
                 subStrokes[name].Enabled = false
+                if subIcons[name] then
+                    tween(subIcons[name], {ImageColor3 = Color3.fromRGB(130, 130, 130)}, 0.2)
+                end
             end
             Page.Visible = true
-            Btn.TextColor3 = Color3.fromRGB(255, 255, 255)
+            -- Включаем свет (темно-оранжевый фон) и яркий текст
+            tween(Btn, {BackgroundColor3 = Color3.fromRGB(45, 25, 10), TextColor3 = Color3.fromRGB(255, 255, 255)}, 0.2)
             Stroke.Enabled = true
+            if subIcons[tabName] then
+                tween(subIcons[tabName], {ImageColor3 = Color3.fromRGB(255, 255, 255)}, 0.2)
+            end
         end)
         
-        -- По умолчанию открываем первую саб-вкладку
+        -- Активация первой вкладки по умолчанию
         if i == 1 then
             Page.Visible = true
+            Btn.BackgroundColor3 = Color3.fromRGB(45, 25, 10) -- Свет сразу включен
             Btn.TextColor3 = Color3.fromRGB(255, 255, 255)
             Stroke.Enabled = true
+            if subIcons[tabName] then
+                subIcons[tabName].ImageColor3 = Color3.fromRGB(255, 255, 255)
+            end
         end
     end
     
     return subPages
 end
--- =========================================================================
+-- =======================================================================
 
 local function CreatePage(name, iconId, layoutOrder) 
     local PageFrame = Instance.new("ScrollingFrame", PagesContainer) 
@@ -557,13 +597,17 @@ local function CreatePage(name, iconId, layoutOrder)
     PageFrame.Visible = false 
     PageFrame.ScrollBarThickness = 2 
     PageFrame.ScrollBarImageColor3 = Color3.fromRGB(50, 50, 50) 
-    PageFrame.AutomaticCanvasSize = Enum.AutomaticSize.Y 
     PageFrame.ZIndex = 5 
     
     local layout = Instance.new("UIListLayout", PageFrame) 
     layout.Padding = UDim.new(0, 8) 
     layout.HorizontalAlignment = Enum.HorizontalAlignment.Center 
     Instance.new("UIPadding", PageFrame).PaddingTop = UDim.new(0, 2) 
+    
+    -- Фикс скролла для страниц с функционалом
+    layout:GetPropertyChangedSignal("AbsoluteContentSize"):Connect(function()
+        PageFrame.CanvasSize = UDim2.new(0, 0, 0, layout.AbsoluteContentSize.Y + 15)
+    end)
     
     local TabContainer = Instance.new("Frame", Navigation) 
     TabContainer.Size = UDim2.new(1, 0, 0, 34) 
@@ -628,7 +672,7 @@ local function CreatePage(name, iconId, layoutOrder)
     return PageFrame 
 end 
 
--- 1. Создание всех страниц (с оригинальными иконками)
+-- 1. Создание всех страниц
 local MainPage = CreatePage("Main", "103980564128710", 1) 
 local TeleportPage = CreatePage("Teleport", "94373592263020", 2) 
 local MurderPage = CreatePage("Murder", "85278865249050", 3) 
@@ -637,16 +681,17 @@ local PlayersPage = CreatePage("Players", "99904215381150", 5)
 local VisualPage = CreatePage("Visual", "78910169210318", 6) 
 local SettingsPage = CreatePage("Settings", "117996761927034", 99) 
 
--- 2. Наполнение обычных страниц (Для примера)
+-- 2. Наполнение обычных страниц
 Library:CreateToggle(MainPage, "Авто-Фарм Монет", false, function(state) print("Статус автофарма:", state) end)
 Library:CreateToggle(VisualPage, "ESP Игроков", false, function(state) print("ESP статус:", state) end)
 Library:CreateButton(TeleportPage, "Телепорт на спавн", function() print("Телепорт...") end)
 
 -- 3. СОЗДАНИЕ САБ-ТАБОВ В НАСТРОЙКАХ (UI и Theme)
-local SettingSections = Library:CreateSubTabs(SettingsPage, {"UI", "Theme"})
-
--- Вкладки UI и Theme абсолютно пустые, кнопок Theme больше нет.
-
+-- ЗАМЕНИ ID "117996761927034" НА СВОЙ КОГДА БУДЕТ ГОТОВ!
+local SettingSections = Library:CreateSubTabs(SettingsPage, {
+    {Name = "UI", Icon = "117996761927034"}, 
+    {Name = "Theme", Icon = ""} 
+})
 
 -- Инициализация первой вкладки (Main) 
 if allTabs["Main"] and allTabButtons["Main"] then 
