@@ -43,9 +43,7 @@ local function NormalizeText(str)
         ["Ъ"]="ъ", ["Ы"]="ы", ["Ь"]="ь", ["Э"]="э", ["Ю"]="ю", ["Я"]="я"
     }
     
-    for u, l in pairs(upperToLower) do
-        lowerStr = string.gsub(lowerStr, u, l)
-    end
+    for u, l in pairs(upperToLower) do lowerStr = string.gsub(lowerStr, u, l) end
     
     local synonyms = {
         ["авто"] = "auto", ["фарм"] = "farm", ["есп"] = "esp", ["монет"] = "coins",
@@ -92,7 +90,7 @@ TabTitle.Font = Enum.Font.GothamBold
 TabTitle.TextColor3 = Color3.fromRGB(255, 255, 255)
 TabTitle.TextSize = 16
 TabTitle.Position = UDim2.new(0, 185, 0, 18)
-TabTitle.Size = UDim2.new(0, 100, 0, 20)
+TabTitle.Size = UDim2.new(0, 200, 0, 20)
 TabTitle.TextXAlignment = Enum.TextXAlignment.Left
 TabTitle.BackgroundTransparency = 1
 
@@ -187,7 +185,6 @@ HubIcon.ZIndex = 5
 Instance.new("UICorner", HubIcon).CornerRadius = UDim.new(0, 6)
 HubIcon.Image = "rbxthumb://type=Asset&id=" .. CustomIconID .. "&w=150&h=150"
 
--- Название скрипта (Всегда статичное, не переводится)
 local HubTitle = Instance.new("TextLabel", HeaderBg)
 HubTitle.Text = "Dark Hub"
 HubTitle.Font = Enum.Font.GothamBold
@@ -306,9 +303,7 @@ local function CreateRipple(button, clickX, clickY)
     local maxLength = math.max(button.AbsoluteSize.X, button.AbsoluteSize.Y) * 3
     local t = TweenService:Create(Ripple, TweenInfo.new(0.5, Enum.EasingStyle.Quad, Enum.EasingDirection.Out), {Size = UDim2.new(0, maxLength, 0, maxLength), ImageTransparency = 1})
     t:Play()
-    t.Completed:Connect(function()
-        Ripple:Destroy()
-    end)
+    t.Completed:Connect(function() Ripple:Destroy() end)
 end
 
 local isMinimized = false
@@ -323,24 +318,15 @@ local function ToggleMinimize()
         HeaderBg.Position = UDim2.new(0, 0, 0, 0)
         HeaderBg.Size = UDim2.new(0, 175, 0, 46)
         EmbeddedControls.Visible = true
-        
-        tween(MainFrame, {
-            Size = UDim2.new(0, 175, 0, 46),
-            Position = LastMinimizedPos
-        })
+        tween(MainFrame, {Size = UDim2.new(0, 175, 0, 46), Position = LastMinimizedPos})
     else
         LastMinimizedPos = MainFrame.Position
-        
         EmbeddedControls.Visible = false
         HeaderBg.Position = UDim2.new(0, 10, 0, 10)
         HeaderBg.Size = UDim2.new(0, 150, 0, 46)
         MainStroke.Enabled = true
         MainFrame.BackgroundTransparency = 0.15
-        
-        tween(MainFrame, {
-            Size = UDim2.new(0, 550, 0, 350),
-            Position = UDim2.new(0.5, 0, 0.5, 0)
-        }).Completed:Connect(function()
+        tween(MainFrame, {Size = UDim2.new(0, 550, 0, 350), Position = UDim2.new(0.5, 0, 0.5, 0)}).Completed:Connect(function()
             if not isMinimized then
                 PagesContainer.Visible, TabTitle.Visible, SearchContainer.Visible, Navigation.Visible, FooterBg.Visible, ControlsContainer.Visible = true, true, true, true, true, true
             end
@@ -351,9 +337,7 @@ end
 MinBtn.Activated:Connect(ToggleMinimize)
 EmbMinBtn.Activated:Connect(ToggleMinimize)
 
-local function CloseGui()
-    DarkHub:Destroy()
-end
+local function CloseGui() DarkHub:Destroy() end
 CloseBtn.Activated:Connect(CloseGui)
 EmbCloseBtn.Activated:Connect(CloseGui)
 
@@ -395,6 +379,7 @@ end)
 local Library = {}
 Library.CurrentFont = Enum.Font.Gotham
 Library.CurrentLanguage = "English"
+Library.CurrentTabKey = "Main"
 
 local SearchableElements = {}
 local LocaleObjects = {}
@@ -403,9 +388,21 @@ local allTabButtons = {}
 local allTabIcons = {}
 local allPages = {}
 
--- ПОЛНАЯ БАЗА ПЕРЕВОДОВ (Language теперь тоже переводится!)
+-- ПОЛНАЯ БАЗА ЛОКАЛИЗАЦИИ (Включая боковое меню, вкладки и заголовки)
 local Localization = {
     ["English"] = {
+        -- Вкладки бокового меню
+        ["Main"] = "Main",
+        ["Teleport"] = "Teleport",
+        ["Murder"] = "Murder",
+        ["Sheriff"] = "Sheriff",
+        ["Players"] = "Players",
+        ["Visual"] = "Visual",
+        ["Settings"] = "Settings",
+        -- Подкатегории настроек
+        ["UI"] = "UI",
+        ["Theme"] = "Theme",
+        -- Элементы внутри страниц
         ["AutoFarmCoins"] = "Auto-Farm Coins",
         ["PlayerESP"] = "Player ESP",
         ["UISize"] = "UI Size",
@@ -415,6 +412,18 @@ local Localization = {
         ["Language"] = "Language"
     },
     ["Русский"] = {
+        -- Вкладки бокового меню
+        ["Main"] = "Главная",
+        ["Teleport"] = "Телепорт",
+        ["Murder"] = "Убийца",
+        ["Sheriff"] = "Шериф",
+        ["Players"] = "Игроки",
+        ["Visual"] = "Визуалы",
+        ["Settings"] = "Настройки",
+        -- Подкатегории настроек
+        ["UI"] = "Интерфейс",
+        ["Theme"] = "Тема",
+        -- Элементы внутри страниц
         ["AutoFarmCoins"] = "Авто-Фарм Монет",
         ["PlayerESP"] = "ESP Игроков",
         ["UISize"] = "Размер интерфейса",
@@ -452,13 +461,11 @@ SearchBox:GetPropertyChangedSignal("Text"):Connect(function()
             item.Instance.Parent = item.OriginalParent
             item.Instance.Visible = true
         end
-        if allPages[TabTitle.Text] then
-            allPages[TabTitle.Text].Visible = true
+        if allPages[Library.CurrentTabKey] then
+            allPages[Library.CurrentTabKey].Visible = true
         end
     else
-        for _, page in pairs(allPages) do
-            page.Visible = false
-        end
+        for _, page in pairs(allPages) do page.Visible = false end
         SearchResultsPage.Visible = true
         for _, item in ipairs(SearchableElements) do
             if string.find(item.SearchText, query, 1, true) then
@@ -471,26 +478,18 @@ SearchBox:GetPropertyChangedSignal("Text"):Connect(function()
     end
 end)
 
-ClearSearchBtn.Activated:Connect(function()
-    SearchBox.Text = ""
-end)
+ClearSearchBtn.Activated:Connect(function() SearchBox.Text = "" end)
 
 local FontMapping = {
-    ["Gotham"] = Enum.Font.Gotham,
-    ["Gotham Bold"] = Enum.Font.GothamBold,
-    ["Source Sans"] = Enum.Font.SourceSans,
-    ["Roboto"] = Enum.Font.Roboto,
-    ["Roboto Mono"] = Enum.Font.RobotoMono,
-    ["Ubuntu"] = Enum.Font.Ubuntu,
-    ["Michroma"] = Enum.Font.Michroma,
-    ["Code"] = Enum.Font.Code,
-    ["Fantasy"] = Enum.Font.Fantasy,
-    ["Fredoka One"] = Enum.Font.FredokaOne
+    ["Gotham"] = Enum.Font.Gotham, ["Gotham Bold"] = Enum.Font.GothamBold,
+    ["Source Sans"] = Enum.Font.SourceSans, ["Roboto"] = Enum.Font.Roboto,
+    ["Roboto Mono"] = Enum.Font.RobotoMono, ["Ubuntu"] = Enum.Font.Ubuntu,
+    ["Michroma"] = Enum.Font.Michroma, ["Code"] = Enum.Font.Code,
+    ["Fantasy"] = Enum.Font.Fantasy, ["Fredoka One"] = Enum.Font.FredokaOne
 }
 
 function Library:CreateDropdown(parentPage, textKey, options, default, callback)
     local initialText = Localization[Library.CurrentLanguage][textKey] or textKey
-
     local DropdownFrame = Instance.new("Frame", parentPage)
     DropdownFrame.Size = UDim2.new(1, -20, 0, 36)
     DropdownFrame.BackgroundColor3 = Color3.fromRGB(22, 22, 22)
@@ -544,7 +543,6 @@ function Library:CreateDropdown(parentPage, textKey, options, default, callback)
     OptionsContainer.Position = UDim2.new(0, 0, 0, 36)
     OptionsContainer.BackgroundTransparency = 1
     OptionsContainer.ZIndex = 7
-    
     local ListLayout = Instance.new("UIListLayout", OptionsContainer)
     ListLayout.SortOrder = Enum.SortOrder.LayoutOrder
     
@@ -557,7 +555,6 @@ function Library:CreateDropdown(parentPage, textKey, options, default, callback)
         tween(DropdownFrame, {Size = UDim2.new(1, -20, 0, targetHeight)}, 0.2)
         Arrow.Text = isExpanded and "▲" or "▼"
     end
-    
     HeaderBtn.Activated:Connect(toggleDropdown)
     
     for i, option in ipairs(options) do
@@ -632,7 +629,6 @@ function Library:CreateButton(parentPage, textKey, callback)
         local inset = GuiService:GetGuiInset()
         CreateRipple(Btn, mousePos.X - Btn.AbsolutePosition.X, (mousePos.Y - inset.Y) - Btn.AbsolutePosition.Y)
     end)
-    
     Btn.Activated:Connect(callback)
     
     local searchItem = {Instance = Btn, SearchText = NormalizeText(initialText), OriginalParent = parentPage}
@@ -782,7 +778,7 @@ function Library:CreateSlider(parentPage, textKey, min, max, default, callback)
     end
     
     SliderBtn.InputBegan:Connect(function(input)
-        if input.UserInputType == Enum.UserInputType.MouseButton1 or input.UserInputType == Enum.UserInputType.Touch then
+        if input.UserInputType == Enum.UserInputType.MouseButton1 or input.UserInputType == Enum.UserInputType.Touch) then
             dragging = true
             startX = input.Position.X
             cachedTrackWidth = SliderTrack.AbsoluteSize.X
@@ -854,11 +850,12 @@ function Library:CreateSubTabs(parentPage, tabsList)
     local colorGrayInactive = Color3.fromRGB(140, 140, 140)
     
     for i, tabData in ipairs(tabsList) do
-        local tabName = tabData.Name
+        local textKey = tabData.Name
         local iconId = tabData.Icon
+        local initialText = Localization[Library.CurrentLanguage][textKey] or textKey
         
         local activeColor = Color3.fromRGB(108, 176, 214)
-        local lowName = string.lower(string.gsub(tabName, "%s+", ""))
+        local lowName = string.lower(string.gsub(textKey, "%s+", ""))
         if tabData.Color then
             activeColor = tabData.Color
         elseif string.find(lowName, "theme") or string.find(lowName, "тема") then
@@ -909,7 +906,7 @@ function Library:CreateSubTabs(parentPage, tabsList)
         
         local Label = Instance.new("TextLabel", ContentFrame)
         Label.BackgroundTransparency = 1
-        Label.Text = tabName
+        Label.Text = initialText
         Label.Font = Library.CurrentFont
         Label.TextColor3 = colorGrayInactive
         Label.TextSize = 12
@@ -927,14 +924,10 @@ function Library:CreateSubTabs(parentPage, tabsList)
         PageLayout.Padding = UDim.new(0, 8)
         PageLayout.HorizontalAlignment = Enum.HorizontalAlignment.Center
         
-        subPages[tabName] = Page
-        registry[tabName] = {
-            Page = Page,
-            Visual = VisualFrame,
-            Stroke = Stroke,
-            Label = Label,
-            Icon = Icon,
-            TargetColor = activeColor
+        subPages[textKey] = Page
+        registry[textKey] = {
+            Page = Page, Visual = VisualFrame, Stroke = Stroke,
+            Label = Label, Icon = Icon, TargetColor = activeColor
         }
         
         local ClickBtn = Instance.new("TextButton", BtnContainer)
@@ -959,8 +952,9 @@ function Library:CreateSubTabs(parentPage, tabsList)
             Label.TextColor3 = activeColor
             if Icon then Icon.ImageColor3 = activeColor end
         end
-        
         ClickBtn.Activated:Connect(activateTab)
+        
+        table.insert(LocaleObjects, {Object = Label, Key = textKey})
     end
     
     local firstTab = tabsList[1] and tabsList[1].Name
@@ -977,7 +971,8 @@ function Library:CreateSubTabs(parentPage, tabsList)
     return subPages
 end
 
-function CreatePage(name, iconId, layoutOrder)
+function CreatePage(textKey, iconId, layoutOrder)
+    local initialText = Localization[Library.CurrentLanguage][textKey] or textKey
     local PageFrame = Instance.new("ScrollingFrame", PagesContainer)
     PageFrame.Size = UDim2.new(1, 0, 1, 0)
     PageFrame.BackgroundTransparency = 1
@@ -1006,7 +1001,7 @@ function CreatePage(name, iconId, layoutOrder)
     
     local TabBtn = Instance.new("TextButton", TabContainer)
     TabBtn.Size = UDim2.new(1, 0, 1, 0)
-    TabBtn.Text = name
+    TabBtn.Text = initialText
     TabBtn.Font = Library.CurrentFont
     TabBtn.TextSize = 13
     TabBtn.TextColor3 = Color3.fromRGB(140, 140, 140)
@@ -1029,12 +1024,12 @@ function CreatePage(name, iconId, layoutOrder)
         end
         TabIcon.ImageTransparency = 0.25
         TabIcon.ZIndex = 7
-        allTabIcons[name] = TabIcon
+        allTabIcons[textKey] = TabIcon
     end
     
-    allTabs[name] = TabContainer
-    allTabButtons[name] = TabBtn
-    allPages[name] = PageFrame
+    allTabs[textKey] = TabContainer
+    allTabButtons[textKey] = TabBtn
+    allPages[textKey] = PageFrame
     
     TabBtn.MouseButton1Down:Connect(function()
         local mousePos = UserInputService:GetMouseLocation()
@@ -1047,20 +1042,18 @@ function CreatePage(name, iconId, layoutOrder)
         for tName, tContainer in pairs(allTabs) do
             tween(tContainer, {BackgroundTransparency = 1}, 0.2)
             tween(allTabButtons[tName], {TextColor3 = Color3.fromRGB(140, 140, 140)}, 0.2)
-            if allTabIcons[tName] then
-                tween(allTabIcons[tName], {ImageTransparency = 0.25}, 0.2)
-            end
+            if allTabIcons[tName] then tween(allTabIcons[tName], {ImageTransparency = 0.25}, 0.2) end
             allPages[tName].Visible = false
         end
-        TabTitle.Text = name
+        Library.CurrentTabKey = textKey
+        TabTitle.Text = Localization[Library.CurrentLanguage][textKey] or textKey
         PageFrame.Visible = true
         tween(TabContainer, {BackgroundTransparency = 0}, 0.2)
         tween(TabBtn, {TextColor3 = Color3.fromRGB(255, 255, 255)}, 0.2)
-        if allTabIcons[name] then
-            tween(allTabIcons[name], {ImageTransparency = 0}, 0.2)
-        end
+        if allTabIcons[textKey] then tween(allTabIcons[textKey], {ImageTransparency = 0}, 0.2) end
     end)
     
+    table.insert(LocaleObjects, {Object = TabBtn, Key = textKey})
     UpdateNavCanvas()
     return PageFrame
 end
@@ -1102,18 +1095,23 @@ Library:CreateDropdown(SettingSections["UI"], "MenuFont", {"Gotham", "Gotham Bol
     end
 end)
 
--- ВЫПАДАЮЩИЙ СПИСОК СМЕНЫ ЯЗЫКА (Теперь сам переводится на "Язык")
+-- ВЫПАДАЮЩИЙ СПИСОК СМЕНЫ ЯЗЫКА (Полная синхронизация всего интерфейса)
 Library:CreateDropdown(SettingSections["UI"], "Language", {"English", "Русский"}, "English", function(selectedLang)
     Library.CurrentLanguage = selectedLang
     
-    -- Динамическое обновление всех текстовых элементов интерфейса при клике
+    -- Динамически обновляем вообще все тексты, включая меню и табы
     for _, item in ipairs(LocaleObjects) do
         local translatedText = Localization[selectedLang][item.Key]
         if translatedText then
             item.Object.Text = translatedText
-            item.SearchItem.SearchText = NormalizeText(translatedText)
+            if item.SearchItem then
+                item.SearchItem.SearchText = NormalizeText(translatedText)
+            end
         end
     end
+    
+    -- Отдельно обновляем верхний главный заголовок текущей страницы
+    TabTitle.Text = Localization[selectedLang][Library.CurrentTabKey] or Library.CurrentTabKey
 end)
 
 Library:CreateButton(SettingSections["Theme"], "SwitchTheme", function() end)
@@ -1121,9 +1119,8 @@ Library:CreateButton(SettingSections["Theme"], "SwitchTheme", function() end)
 if allTabs["Main"] and allTabButtons["Main"] then
     allTabs["Main"].BackgroundTransparency = 0
     allTabButtons["Main"].TextColor3 = Color3.fromRGB(255, 255, 255)
-    if allTabIcons["Main"] then
-        allTabIcons["Main"].ImageTransparency = 0
-    end
+    if allTabIcons["Main"] then allTabIcons["Main"].ImageTransparency = 0 end
     allPages["Main"].Visible = true
-    TabTitle.Text = "Main"
+    Library.CurrentTabKey = "Main"
+    TabTitle.Text = Localization[Library.CurrentLanguage]["Main"] or "Main"
 end
