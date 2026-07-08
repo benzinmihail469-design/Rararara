@@ -552,7 +552,7 @@ function Library:CreateSubTabs(parentPage, tabsList)
         end
         
         local BtnContainer = Instance.new("Frame", SubTabContainer)
-        BtnContainer.Size = UDim2.new(0, 0, 1, 0) -- Включаем автоматическую ширину
+        BtnContainer.Size = UDim2.new(0, 0, 1, 0)
         BtnContainer.AutomaticSize = Enum.AutomaticSize.X
         BtnContainer.BackgroundTransparency = 1
         BtnContainer.LayoutOrder = i
@@ -574,7 +574,6 @@ function Library:CreateSubTabs(parentPage, tabsList)
         ContentFrame.BackgroundTransparency = 1
         ContentFrame.ZIndex = 2
         
-        -- Внутренние отступы, чтобы кнопки с большими иконками выглядели гармонично
         local BtnPadding = Instance.new("UIPadding", ContentFrame)
         BtnPadding.PaddingLeft = UDim.new(0, 10)
         BtnPadding.PaddingRight = UDim.new(0, 10)
@@ -588,7 +587,7 @@ function Library:CreateSubTabs(parentPage, tabsList)
         local Icon
         if iconId and iconId ~= "" then
             Icon = Instance.new("ImageLabel", ContentFrame)
-            Icon.Size = UDim2.new(0, 24, 0, 24) -- РАЗМЕР ИКОНКИ: 24x24 как просил
+            Icon.Size = UDim2.new(0, 18, 0, 18) -- РАЗМЕР ИКОНКИ: Чутка увеличили до аккуратных 18x18
             Icon.BackgroundTransparency = 1
             if tonumber(iconId) then
                 Icon.Image = "rbxthumb://type=Asset&id=" .. iconId .. "&w=150&h=150"
