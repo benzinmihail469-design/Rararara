@@ -1,8 +1,10 @@
-local CustomIconID = "76579925188009" 
+local CustomIconID = "117996761927034" -- Твой икон-айди для настроек/хаба
 local TweenService = game:GetService("TweenService") 
 local UserInputService = game:GetService("UserInputService") 
 local RunService = game:GetService("RunService") 
 local GuiService = game:GetService("GuiService") 
+local Players = game:GetService("Players")
+local LocalPlayer = Players.LocalPlayer
 
 local SafeParent = nil 
 if gethui then 
@@ -15,7 +17,7 @@ elseif game:GetService("CoreGui") then
 end 
 
 if not SafeParent then 
-    SafeParent = game:GetService("Players").LocalPlayer:WaitForChild("PlayerGui") 
+    SafeParent = LocalPlayer:WaitForChild("PlayerGui") 
 end 
 
 local DarkHub = Instance.new("ScreenGui") 
@@ -33,7 +35,7 @@ local function tween(obj, props, dur)
     return t 
 end 
 
--- === УЛЬТРА-ПОИСК V2 === 
+-- === УЛЬТРА-ПОИСК V2 (Индексирует абсолютно всё) === 
 local function NormalizeText(str) 
     local success, res = pcall(function() 
         local normalized = "" 
@@ -43,7 +45,7 @@ local function NormalizeText(str)
             elseif c == 1025 then 
                 normalized = normalized .. utf8.char(1105) 
             elseif c >= 65 and c <= 90 then 
-                normalized = normalized .. string.char(c + 32) 
+                normalized = string.char(c + 32) 
             else 
                 normalized = normalized .. utf8.char(c) 
             end 
@@ -55,7 +57,8 @@ local function NormalizeText(str)
     local synonyms = { 
         ["авто"] = "auto", ["фарм"] = "farm", ["есп"] = "esp", ["монет"] = "coins", 
         ["монеты"] = "coins", ["игроков"] = "players", ["игрок"] = "player", 
-        ["визуал"] = "visual", ["телепорт"] = "teleport", ["настройки"] = "settings" 
+        ["визуал"] = "visual", ["телепорт"] = "teleport", ["настройки"] = "settings",
+        ["полет"] = "fly", ["флай"] = "fly", ["скорость"] = "speed", ["быстро"] = "speed"
     } 
     for ru, en in pairs(synonyms) do 
         finalStr = string.gsub(finalStr, ru, en) 
@@ -69,6 +72,7 @@ local function NormalizeText(str)
     return string.gsub(finalStr, "[%p%s%c]", "") 
 end 
 
+-- === ГЛАВНЫЙ ИНТЕРФЕЙС ===
 local MainFrame = Instance.new("Frame", DarkHub) 
 MainFrame.Name = "MainFrame" 
 MainFrame.BackgroundColor3 = Color3.fromRGB(14, 14, 14) 
@@ -79,6 +83,7 @@ MainFrame.Size = UDim2.new(0, 550, 0, 350)
 local MainCorner = Instance.new("UICorner", MainFrame) 
 MainCorner.CornerRadius = UDim.new(0, 14) 
 
+-- Черно-серая обводка (без оранжевого)
 local MainStroke = Instance.new("UIStroke", MainFrame) 
 MainStroke.Color = Color3.fromRGB(40, 40, 40) 
 MainStroke.Thickness = 1.5 
@@ -100,6 +105,7 @@ TabTitle.Size = UDim2.new(0, 100, 0, 20)
 TabTitle.TextXAlignment = Enum.TextXAlignment.Left 
 TabTitle.BackgroundTransparency = 1 
 
+-- Кнопки управления перемещены строго в верхний правый угол
 local ControlsContainer = Instance.new("Frame", MainFrame) 
 ControlsContainer.Name = "ControlsContainer" 
 ControlsContainer.Size = UDim2.new(0, 60, 0, 30) 
@@ -127,6 +133,7 @@ CloseBtn.TextColor3 = Color3.fromRGB(180, 180, 180)
 CloseBtn.BackgroundTransparency = 1 
 CloseBtn.ZIndex = 11 
 
+-- Поиск
 local SearchContainer = Instance.new("Frame", MainFrame) 
 SearchContainer.Size = UDim2.new(0, 160, 0, 30) 
 SearchContainer.Position = UDim2.new(1, -240, 0, 12) 
@@ -170,6 +177,7 @@ SearchBox.PlaceholderColor3 = Color3.fromRGB(130, 130, 130)
 SearchBox.TextXAlignment = Enum.TextXAlignment.Left 
 SearchBox.ZIndex = 7 
 
+-- Боковое меню (Sidebar)
 local SidebarContainer = Instance.new("Frame", MainFrame) 
 SidebarContainer.Size = UDim2.new(0, 170, 1, 0) 
 SidebarContainer.BackgroundTransparency = 1 
@@ -190,10 +198,10 @@ HubIcon.BackgroundTransparency = 1
 HubIcon.ScaleType = Enum.ScaleType.Fit 
 HubIcon.ZIndex = 5 
 Instance.new("UICorner", HubIcon).CornerRadius = UDim.new(0, 6) 
-HubIcon.Image = "rbxthumb://type=Asset&id=" .. CustomIconID .. "&w=150&h=150" 
+HubIcon.Image = "rbxthumb://type=Asset&id=93790908316981&w=150&h=150" 
 
 local HubTitle = Instance.new("TextLabel", HeaderBg) 
-HubTitle.Text = "Dark Hub" 
+HubTitle.Text = "Pulse Hub" 
 HubTitle.Font = Enum.Font.GothamBold 
 HubTitle.TextColor3 = Color3.fromRGB(255, 255, 255) 
 HubTitle.TextSize = 13 
@@ -204,7 +212,7 @@ HubTitle.BackgroundTransparency = 1
 HubTitle.ZIndex = 5 
 
 local SubTitle = Instance.new("TextLabel", HeaderBg) 
-SubTitle.Text = "Grow A Garden 2" 
+SubTitle.Text = "Premium Edition" 
 SubTitle.Font = Enum.Font.Gotham 
 SubTitle.TextColor3 = Color3.fromRGB(130, 130, 130) 
 SubTitle.TextSize = 9 
@@ -214,6 +222,7 @@ SubTitle.TextXAlignment = Enum.TextXAlignment.Left
 SubTitle.BackgroundTransparency = 1 
 SubTitle.ZIndex = 5 
 
+-- Кнопки управления при сворачивании
 local EmbeddedControls = Instance.new("Frame", HeaderBg) 
 EmbeddedControls.Size = UDim2.new(0, 50, 0, 30) 
 EmbeddedControls.Position = UDim2.new(1, -55, 0, 8) 
@@ -257,6 +266,7 @@ local function UpdateNavCanvas()
 end 
 NavLayout:GetPropertyChangedSignal("AbsoluteContentSize"):Connect(UpdateNavCanvas) 
 
+-- Футер
 local FooterBg = Instance.new("Frame", SidebarContainer) 
 FooterBg.Size = UDim2.new(0, 150, 0, 46) 
 FooterBg.Position = UDim2.new(0, 10, 1, -56) 
@@ -295,6 +305,7 @@ RunService.RenderStepped:Connect(function()
     StatsLabel.Text = "FPS: " .. #FrameUpdateTable 
 end) 
 
+-- Анимация клика (Волна/Ripple)
 local function CreateRipple(button, clickX, clickY) 
     local Ripple = Instance.new("ImageLabel") 
     Ripple.Parent = button 
@@ -313,6 +324,7 @@ local function CreateRipple(button, clickX, clickY)
     t.Completed:Connect(function() Ripple:Destroy() end) 
 end 
 
+-- Логика сворачивания
 local isMinimized = false 
 local function ToggleMinimize() 
     isMinimized = not isMinimized 
@@ -355,6 +367,7 @@ applyHover(CloseBtn, Color3.fromRGB(180,180,180), Color3.fromRGB(255,70,70))
 applyHover(EmbCloseBtn, Color3.fromRGB(180,180,180), Color3.fromRGB(255,70,70)) 
 applyHover(ClearSearchBtn, Color3.fromRGB(150,150,150), Color3.fromRGB(255,255,255)) 
 
+-- Перетаскивание
 local dragToggle, dragInput, dragStart, startPos 
 MainFrame.InputBegan:Connect(function(input) 
     if (input.UserInputType == Enum.UserInputType.MouseButton1 or input.UserInputType == Enum.UserInputType.Touch) then 
@@ -398,6 +411,7 @@ searchLayout:GetPropertyChangedSignal("AbsoluteContentSize"):Connect(function()
     SearchResultsPage.CanvasSize = UDim2.new(0, 0, 0, searchLayout.AbsoluteContentSize.Y + 15) 
 end) 
 
+-- Логика Поиска
 SearchBox:GetPropertyChangedSignal("Text"):Connect(function() 
     local rawText = SearchBox.Text 
     local query = NormalizeText(rawText) 
@@ -424,6 +438,8 @@ SearchBox:GetPropertyChangedSignal("Text"):Connect(function()
 end) 
 
 ClearSearchBtn.Activated:Connect(function() SearchBox.Text = "" end) 
+
+-- === ЭЛЕМЕНТЫ КОНСТРУКТОРА UI ===
 
 function Library:CreateButton(parentPage, text, callback) 
     local Btn = Instance.new("TextButton", parentPage) 
@@ -469,7 +485,7 @@ function Library:CreateToggle(parentPage, text, default, callback)
     local Checkbox = Instance.new("TextButton", TglFrame) 
     Checkbox.Size = UDim2.new(0, 34, 0, 18) 
     Checkbox.Position = UDim2.new(1, -44, 0.5, -9) 
-    Checkbox.BackgroundColor3 = default and Color3.fromRGB(255, 115, 0) or Color3.fromRGB(40, 40, 40) 
+    Checkbox.BackgroundColor3 = default and Color3.fromRGB(255, 115, 0) or Color3.fromRGB(40, 40, 40) -- Оранжевый тоггл
     Checkbox.Text = "" 
     Checkbox.ZIndex = 7 
     Instance.new("UICorner", Checkbox).CornerRadius = UDim.new(0, 9) 
@@ -496,6 +512,85 @@ function Library:CreateToggle(parentPage, text, default, callback)
     table.insert(SearchableElements, {Instance = TglFrame, SearchText = NormalizeText(text), OriginalParent = parentPage}) 
 end 
 
+function Library:CreateSlider(parentPage, text, min, max, default, callback)
+    local SldFrame = Instance.new("Frame", parentPage)
+    SldFrame.Size = UDim2.new(1, -20, 0, 44)
+    SldFrame.BackgroundColor3 = Color3.fromRGB(22, 22, 22)
+    SldFrame.ZIndex = 6
+    Instance.new("UICorner", SldFrame).CornerRadius = UDim.new(0, 6)
+    Instance.new("UIStroke", SldFrame).Color = Color3.fromRGB(40, 40, 40)
+
+    local SldLabel = Instance.new("TextLabel", SldFrame)
+    SldLabel.Size = UDim2.new(1, -80, 0, 20)
+    SldLabel.Position = UDim2.new(0, 12, 0, 4)
+    SldLabel.Text = text
+    SldLabel.Font = Enum.Font.GothamMedium
+    SldLabel.TextColor3 = Color3.fromRGB(230, 230, 230)
+    SldLabel.TextSize = 12
+    SldLabel.TextXAlignment = Enum.TextXAlignment.Left
+    SldLabel.BackgroundTransparency = 1
+    SldLabel.ZIndex = 7
+
+    local ValueLabel = Instance.new("TextLabel", SldFrame)
+    ValueLabel.Size = UDim2.new(0, 60, 0, 20)
+    ValueLabel.Position = UDim2.new(1, -72, 0, 4)
+    ValueLabel.Text = tostring(default)
+    ValueLabel.Font = Enum.Font.GothamBold
+    ValueLabel.TextColor3 = Color3.fromRGB(255, 115, 0)
+    ValueLabel.TextSize = 12
+    ValueLabel.TextXAlignment = Enum.TextXAlignment.Right
+    ValueLabel.BackgroundTransparency = 1
+    ValueLabel.ZIndex = 7
+
+    local SliderTrack = Instance.new("TextButton", SldFrame)
+    SliderTrack.Size = UDim2.new(1, -24, 0, 6)
+    SliderTrack.Position = UDim2.new(0, 12, 1, -14)
+    SliderTrack.BackgroundColor3 = Color3.fromRGB(45, 45, 45)
+    SliderTrack.Text = ""
+    SliderTrack.ZIndex = 7
+    Instance.new("UICorner", SliderTrack).CornerRadius = UDim.new(0, 3)
+
+    local SliderFill = Instance.new("Frame", SliderTrack)
+    SliderFill.Size = UDim2.new((default - min) / (max - min), 0, 1, 0)
+    SliderFill.BackgroundColor3 = Color3.fromRGB(255, 115, 0)
+    SliderFill.ZIndex = 8
+    Instance.new("UICorner", SliderFill).CornerRadius = UDim.new(0, 3)
+
+    local isSliding = false
+    local function updateSlider(input)
+        local inputX = input.Position.X
+        local trackWidth = SliderTrack.AbsoluteSize.X
+        local trackPos = SliderTrack.AbsolutePosition.X
+        local percentage = math.clamp((inputX - trackPos) / trackWidth, 0, 1)
+        local value = math.floor(min + (max - min) * percentage)
+        
+        ValueLabel.Text = tostring(value)
+        SliderFill.Size = UDim2.new(percentage, 0, 1, 0)
+        callback(value)
+    end
+
+    SliderTrack.InputBegan:Connect(function(input)
+        if input.UserInputType == Enum.UserInputType.MouseButton1 or input.UserInputType == Enum.UserInputType.Touch then
+            isSliding = true
+            updateSlider(input)
+        end
+    end)
+
+    UserInputService.InputChanged:Connect(function(input)
+        if isSliding and (input.UserInputType == Enum.UserInputType.MouseMovement or input.UserInputType == Enum.UserInputType.Touch) then
+            updateSlider(input)
+        end
+    end)
+
+    UserInputService.InputEnded:Connect(function(input)
+        if input.UserInputType == Enum.UserInputType.MouseButton1 or input.UserInputType == Enum.UserInputType.Touch then
+            isSliding = false
+        end
+    end)
+
+    table.insert(SearchableElements, {Instance = SldFrame, SearchText = NormalizeText(text), OriginalParent = parentPage})
+end
+
 function Library:CreateSubTabs(parentPage, tabsList) 
     local SubTabContainer = Instance.new("Frame", parentPage) 
     SubTabContainer.Size = UDim2.new(1, 0, 0, 32) 
@@ -505,11 +600,11 @@ function Library:CreateSubTabs(parentPage, tabsList)
     ListLayout.FillDirection = Enum.FillDirection.Horizontal 
     ListLayout.Padding = UDim.new(0, 10) 
     ListLayout.SortOrder = Enum.SortOrder.LayoutOrder 
-    ListLayout.HorizontalAlignment = Enum.HorizontalAlignment.Left -- Выравнивание по левому краю
+    ListLayout.HorizontalAlignment = Enum.HorizontalAlignment.Left -- Выровнено влево!
     ListLayout.VerticalAlignment = Enum.VerticalAlignment.Center 
     
-    local SubTabPadding = Instance.new("UIPadding", SubTabContainer)
-    SubTabPadding.PaddingLeft = UDim.new(0, 10) -- Ровный отступ в один ряд с кнопками
+    local SubTabPadding = Instance.new("UIPadding", SubTabContainer) 
+    SubTabPadding.PaddingLeft = UDim.new(0, 10) -- Ровный отступ слева
     
     local ContentContainer = Instance.new("Frame", parentPage) 
     ContentContainer.Size = UDim2.new(1, 0, 0, 0) 
@@ -523,14 +618,7 @@ function Library:CreateSubTabs(parentPage, tabsList)
     for i, tabData in ipairs(tabsList) do 
         local tabName = tabData.Name 
         local iconId = tabData.Icon 
-        
-        local activeColor = Color3.fromRGB(108, 176, 214) 
-        local lowName = string.lower(string.gsub(tabName, "%s+", "")) 
-        if tabData.Color then 
-            activeColor = tabData.Color 
-        elseif string.find(lowName, "theme") or string.find(lowName, "тема") then 
-            activeColor = Color3.fromRGB(235, 94, 153) 
-        end 
+        local activeColor = tabData.Color or Color3.fromRGB(108, 176, 214) 
         
         local BtnContainer = Instance.new("Frame", SubTabContainer) 
         BtnContainer.Size = UDim2.new(0, 95, 1, 0) 
@@ -624,11 +712,6 @@ function Library:CreateSubTabs(parentPage, tabsList)
         end 
         
         ClickBtn.Activated:Connect(activateTab) 
-        ClickBtn.InputBegan:Connect(function(input) 
-            if input.UserInputType == Enum.UserInputType.MouseButton1 or input.UserInputType == Enum.UserInputType.Touch then 
-                activateTab() 
-            end 
-        end) 
     end 
     
     local firstTab = tabsList[1] and tabsList[1].Name 
@@ -726,6 +809,8 @@ function CreatePage(name, iconId, layoutOrder)
     return PageFrame 
 end 
 
+-- === НАПОЛНЕНИЕ СТРАНИЦ ХАБА ===
+
 local MainPage = CreatePage("Main", "103980564128710", 1) 
 local TeleportPage = CreatePage("Teleport", "94373592263020", 2) 
 local MurderPage = CreatePage("Murder", "85278865249050", 3) 
@@ -734,17 +819,73 @@ local PlayersPage = CreatePage("Players", "99904215381150", 5)
 local VisualPage = CreatePage("Visual", "78910169210318", 6) 
 local SettingsPage = CreatePage("Settings", "117996761927034", 99) 
 
-Library:CreateToggle(MainPage, "Авто-Фарм Монет", false, function(state) end) 
-Library:CreateToggle(VisualPage, "ESP Игроков", false, function(state) end) 
+-- [СТРАНИЦА MAIN: Фарм, Скорость и Полет]
+local AutoFarmEnabled = false
+local AutoFarmSpeed = 16
 
+Library:CreateToggle(MainPage, "Авто-Фарм Монет", false, function(state) 
+    AutoFarmEnabled = state
+    print("Auto-Farm Status:", AutoFarmEnabled)
+end) 
+
+-- Слайдер Авто-фарма с ограничением макс. скорости до 25
+Library:CreateSlider(MainPage, "Макс. Скорость Авто-Фарма (Max 25)", 1, 25, 16, function(value)
+    AutoFarmSpeed = math.clamp(value, 1, 25)
+    print("Auto-Farm Speed set to:", AutoFarmSpeed)
+end)
+
+-- Управление персонажем (Fly / WalkSpeed)
+local FlyEnabled = false
+local FlySpeed = 20
+
+Library:CreateToggle(MainPage, "Включить Fly (Полет)", false, function(state)
+    FlyEnabled = state
+    print("Fly Status:", FlyEnabled)
+    -- Здесь твоя логика флая
+end)
+
+Library:CreateSlider(MainPage, "Скорость Полета (Fly Speed)", 10, 100, 20, function(value)
+    FlySpeed = value
+end)
+
+Library:CreateButton(MainPage, "Сбросить Скорость Персонажа", function()
+    if LocalPlayer.Character and LocalPlayer.Character:FindFirstChildOfClass("Humanoid") then
+        LocalPlayer.Character:FindFirstChildOfClass("Humanoid").WalkSpeed = 16
+    end
+end)
+
+-- [ДРУГИЕ СТРАНИЦЫ ДЛЯ ПОЛНОТЫ ХАБА]
+Library:CreateButton(TeleportPage, "Телепорт на Карту", function() print("Teleporting to map...") end)
+Library:CreateButton(TeleportPage, "Телепорт в Лобби", function() print("Teleporting to lobby...") end)
+
+Library:CreateToggle(MurderPage, "Подсвечивать Нож", false, function(state) end)
+Library:CreateToggle(SheriffPage, "Подсвечивать Пистолет", false, function(state) end)
+
+Library:CreateToggle(PlayersPage, "Бесконечный Прыжок", false, function(state) end)
+Library:CreateSlider(PlayersPage, "WalkSpeed Игрока", 16, 100, 16, function(value)
+    if LocalPlayer.Character and LocalPlayer.Character:FindFirstChildOfClass("Humanoid") then
+        LocalPlayer.Character:FindFirstChildOfClass("Humanoid").WalkSpeed = value
+    end
+end)
+
+Library:CreateToggle(VisualPage, "ESP Игроков", false, function(state) end) 
+Library:CreateToggle(VisualPage, "Трейсеры к Игрокам", false, function(state) end) 
+
+-- [СТРАНИЦА НАСТРОЕК С САБ-ТАБАМИ (Выровненными влево!)]
 local SettingSections = Library:CreateSubTabs(SettingsPage, { 
     {Name = "UI", Icon = "rbxassetid://6034289132", Color = Color3.fromRGB(108, 176, 214)}, 
     {Name = "Theme", Icon = "rbxassetid://6034289317", Color = Color3.fromRGB(235, 94, 153)} 
 }) 
 
-Library:CreateToggle(SettingSections["UI"], "UI Размер", false, function(state) end) 
-Library:CreateButton(SettingSections["Theme"], "Переключить тему", function() end) 
+Library:CreateToggle(SettingSections["UI"], "Отображать FPS", true, function(state) 
+    StatsLabel.Visible = state
+end) 
 
+Library:CreateButton(SettingSections["Theme"], "Сбросить тему на Dark Gray", function() 
+    MainFrame.BackgroundColor3 = Color3.fromRGB(14, 14, 14)
+end) 
+
+-- Установка активной страницы при старте
 if allTabs["Main"] and allTabButtons["Main"] then 
     allTabs["Main"].BackgroundTransparency = 0 
     allTabButtons["Main"].TextColor3 = Color3.fromRGB(255, 255, 255) 
