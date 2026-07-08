@@ -50,7 +50,8 @@ local function NormalizeText(str)
     local synonyms = {
         ["авто"] = "auto", ["фарм"] = "farm", ["есп"] = "esp", ["монет"] = "coins",
         ["монеты"] = "coins", ["игроков"] = "players", ["игрок"] = "player",
-        ["визуал"] = "visual", ["телепорт"] = "teleport", ["настройки"] = "settings"
+        ["визуал"] = "visual", ["телепорт"] = "teleport", ["настройки"] = "settings",
+        ["язык"] = "language"
     }
     for ru, en in pairs(synonyms) do lowerStr = string.gsub(lowerStr, ru, en) end
     
@@ -186,6 +187,7 @@ HubIcon.ZIndex = 5
 Instance.new("UICorner", HubIcon).CornerRadius = UDim.new(0, 6)
 HubIcon.Image = "rbxthumb://type=Asset&id=" .. CustomIconID .. "&w=150&h=150"
 
+-- Название скрипта (Всегда статичное, не переводится)
 local HubTitle = Instance.new("TextLabel", HeaderBg)
 HubTitle.Text = "Dark Hub"
 HubTitle.Font = Enum.Font.GothamBold
@@ -401,7 +403,7 @@ local allTabButtons = {}
 local allTabIcons = {}
 local allPages = {}
 
--- БАЗА ДАННЫХ ЛОКАЛИЗАЦИИ И ПЕРЕВОДОВ
+-- ПОЛНАЯ БАЗА ПЕРЕВОДОВ (Language теперь тоже переводится!)
 local Localization = {
     ["English"] = {
         ["AutoFarmCoins"] = "Auto-Farm Coins",
@@ -409,7 +411,8 @@ local Localization = {
         ["UISize"] = "UI Size",
         ["UITransparency"] = "UI Transparency",
         ["MenuFont"] = "Menu Font",
-        ["SwitchTheme"] = "Switch Theme"
+        ["SwitchTheme"] = "Switch Theme",
+        ["Language"] = "Language"
     },
     ["Русский"] = {
         ["AutoFarmCoins"] = "Авто-Фарм Монет",
@@ -417,7 +420,8 @@ local Localization = {
         ["UISize"] = "Размер интерфейса",
         ["UITransparency"] = "Прозрачность меню",
         ["MenuFont"] = "Шрифт меню",
-        ["SwitchTheme"] = "Переключить тему"
+        ["SwitchTheme"] = "Переключить тему",
+        ["Language"] = "Язык"
     }
 }
 
@@ -485,8 +489,7 @@ local FontMapping = {
 }
 
 function Library:CreateDropdown(parentPage, textKey, options, default, callback)
-    local isStaticTitle = (textKey == "Language") -- Отключаем перевод для самого заголовка "Language"
-    local initialText = isStaticTitle and textKey or (Localization[Library.CurrentLanguage][textKey] or textKey)
+    local initialText = Localization[Library.CurrentLanguage][textKey] or textKey
 
     local DropdownFrame = Instance.new("Frame", parentPage)
     DropdownFrame.Size = UDim2.new(1, -20, 0, 36)
@@ -607,10 +610,7 @@ function Library:CreateDropdown(parentPage, textKey, options, default, callback)
     
     local searchItem = {Instance = DropdownFrame, SearchText = NormalizeText(initialText), OriginalParent = parentPage}
     table.insert(SearchableElements, searchItem)
-    
-    if not isStaticTitle then
-        table.insert(LocaleObjects, {Object = TitleLabel, Key = textKey, SearchItem = searchItem})
-    end
+    table.insert(LocaleObjects, {Object = TitleLabel, Key = textKey, SearchItem = searchItem})
 end
 
 function Library:CreateButton(parentPage, textKey, callback)
@@ -1073,7 +1073,6 @@ local PlayersPage = CreatePage("Players", "99904215381150", 5)
 local VisualPage = CreatePage("Visual", "78910169210318", 6)
 local SettingsPage = CreatePage("Settings", "117996761927034", 99)
 
--- Использование ключей вместо сырого текста для поддержки локализации
 Library:CreateToggle(MainPage, "AutoFarmCoins", false, function(state) end)
 Library:CreateToggle(VisualPage, "PlayerESP", false, function(state) end)
 
@@ -1103,11 +1102,11 @@ Library:CreateDropdown(SettingSections["UI"], "MenuFont", {"Gotham", "Gotham Bol
     end
 end)
 
--- НОВЫЙ ВЫПАДАЮЩИЙ СПИСОК СМЕНЫ ЯЗЫКА СМ. СКРИНШОТ 3435_2.jpg
+-- ВЫПАДАЮЩИЙ СПИСОК СМЕНЫ ЯЗЫКА (Теперь сам переводится на "Язык")
 Library:CreateDropdown(SettingSections["UI"], "Language", {"English", "Русский"}, "English", function(selectedLang)
     Library.CurrentLanguage = selectedLang
     
-    -- Динамическое обновление всех зарегистрированных текстовых элементов интерфейса
+    -- Динамическое обновление всех текстовых элементов интерфейса при клике
     for _, item in ipairs(LocaleObjects) do
         local translatedText = Localization[selectedLang][item.Key]
         if translatedText then
