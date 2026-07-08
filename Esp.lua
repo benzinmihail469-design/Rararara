@@ -1,10 +1,8 @@
-local CustomIconID = "117996761927034" -- Твой икон-айди для настроек/хаба
+local CustomIconID = "76579925188009" 
 local TweenService = game:GetService("TweenService") 
 local UserInputService = game:GetService("UserInputService") 
 local RunService = game:GetService("RunService") 
 local GuiService = game:GetService("GuiService") 
-local Players = game:GetService("Players")
-local LocalPlayer = Players.LocalPlayer
 
 local SafeParent = nil 
 if gethui then 
@@ -17,7 +15,7 @@ elseif game:GetService("CoreGui") then
 end 
 
 if not SafeParent then 
-    SafeParent = LocalPlayer:WaitForChild("PlayerGui") 
+    SafeParent = game:GetService("Players").LocalPlayer:WaitForChild("PlayerGui") 
 end 
 
 local DarkHub = Instance.new("ScreenGui") 
@@ -35,44 +33,30 @@ local function tween(obj, props, dur)
     return t 
 end 
 
--- === УЛЬТРА-ПОИСК V2 (Индексирует абсолютно всё) === 
+-- === УЛЬТРА-ПОИСК V2 === 
 local function NormalizeText(str) 
     local success, res = pcall(function() 
         local normalized = "" 
         for _, c in utf8.codes(str) do 
-            if c >= 1040 and c <= 1071 then 
-                normalized = normalized .. utf8.char(c + 32) 
-            elseif c == 1025 then 
-                normalized = normalized .. utf8.char(1105) 
-            elseif c >= 65 and c <= 90 then 
-                normalized = string.char(c + 32) 
-            else 
-                normalized = normalized .. utf8.char(c) 
-            end 
+            if c >= 1040 and c <= 1071 then normalized = normalized .. utf8.char(c + 32) 
+            elseif c == 1025 then normalized = normalized .. utf8.char(1105) 
+            elseif c >= 65 and c <= 90 then normalized = normalized .. string.char(c + 32) 
+            else normalized = normalized .. utf8.char(c) end 
         end 
         return normalized 
     end) 
-
     local finalStr = success and res or string.lower(str) 
     local synonyms = { 
         ["авто"] = "auto", ["фарм"] = "farm", ["есп"] = "esp", ["монет"] = "coins", 
         ["монеты"] = "coins", ["игроков"] = "players", ["игрок"] = "player", 
-        ["визуал"] = "visual", ["телепорт"] = "teleport", ["настройки"] = "settings",
-        ["полет"] = "fly", ["флай"] = "fly", ["скорость"] = "speed", ["быстро"] = "speed"
+        ["визуал"] = "visual", ["телепорт"] = "teleport", ["настройки"] = "settings" 
     } 
-    for ru, en in pairs(synonyms) do 
-        finalStr = string.gsub(finalStr, ru, en) 
-    end 
-
+    for ru, en in pairs(synonyms) do finalStr = string.gsub(finalStr, ru, en) end 
     local homoglyphs = {["а"] = "a", ["о"] = "o", ["с"] = "c", ["е"] = "e", ["р"] = "p", ["х"] = "x", ["у"] = "y"} 
-    for ru, en in pairs(homoglyphs) do 
-        finalStr = string.gsub(finalStr, ru, en) 
-    end 
-
+    for ru, en in pairs(homoglyphs) do finalStr = string.gsub(finalStr, ru, en) end 
     return string.gsub(finalStr, "[%p%s%c]", "") 
 end 
 
--- === ГЛАВНЫЙ ИНТЕРФЕЙС ===
 local MainFrame = Instance.new("Frame", DarkHub) 
 MainFrame.Name = "MainFrame" 
 MainFrame.BackgroundColor3 = Color3.fromRGB(14, 14, 14) 
@@ -83,7 +67,6 @@ MainFrame.Size = UDim2.new(0, 550, 0, 350)
 local MainCorner = Instance.new("UICorner", MainFrame) 
 MainCorner.CornerRadius = UDim.new(0, 14) 
 
--- Черно-серая обводка (без оранжевого)
 local MainStroke = Instance.new("UIStroke", MainFrame) 
 MainStroke.Color = Color3.fromRGB(40, 40, 40) 
 MainStroke.Thickness = 1.5 
@@ -105,7 +88,6 @@ TabTitle.Size = UDim2.new(0, 100, 0, 20)
 TabTitle.TextXAlignment = Enum.TextXAlignment.Left 
 TabTitle.BackgroundTransparency = 1 
 
--- Кнопки управления перемещены строго в верхний правый угол
 local ControlsContainer = Instance.new("Frame", MainFrame) 
 ControlsContainer.Name = "ControlsContainer" 
 ControlsContainer.Size = UDim2.new(0, 60, 0, 30) 
@@ -133,7 +115,6 @@ CloseBtn.TextColor3 = Color3.fromRGB(180, 180, 180)
 CloseBtn.BackgroundTransparency = 1 
 CloseBtn.ZIndex = 11 
 
--- Поиск
 local SearchContainer = Instance.new("Frame", MainFrame) 
 SearchContainer.Size = UDim2.new(0, 160, 0, 30) 
 SearchContainer.Position = UDim2.new(1, -240, 0, 12) 
@@ -177,7 +158,6 @@ SearchBox.PlaceholderColor3 = Color3.fromRGB(130, 130, 130)
 SearchBox.TextXAlignment = Enum.TextXAlignment.Left 
 SearchBox.ZIndex = 7 
 
--- Боковое меню (Sidebar)
 local SidebarContainer = Instance.new("Frame", MainFrame) 
 SidebarContainer.Size = UDim2.new(0, 170, 1, 0) 
 SidebarContainer.BackgroundTransparency = 1 
@@ -198,10 +178,10 @@ HubIcon.BackgroundTransparency = 1
 HubIcon.ScaleType = Enum.ScaleType.Fit 
 HubIcon.ZIndex = 5 
 Instance.new("UICorner", HubIcon).CornerRadius = UDim.new(0, 6) 
-HubIcon.Image = "rbxthumb://type=Asset&id=93790908316981&w=150&h=150" 
+HubIcon.Image = "rbxthumb://type=Asset&id=" .. CustomIconID .. "&w=150&h=150" 
 
 local HubTitle = Instance.new("TextLabel", HeaderBg) 
-HubTitle.Text = "Pulse Hub" 
+HubTitle.Text = "Dark Hub" 
 HubTitle.Font = Enum.Font.GothamBold 
 HubTitle.TextColor3 = Color3.fromRGB(255, 255, 255) 
 HubTitle.TextSize = 13 
@@ -212,7 +192,7 @@ HubTitle.BackgroundTransparency = 1
 HubTitle.ZIndex = 5 
 
 local SubTitle = Instance.new("TextLabel", HeaderBg) 
-SubTitle.Text = "Premium Edition" 
+SubTitle.Text = "Grow A Garden 2" 
 SubTitle.Font = Enum.Font.Gotham 
 SubTitle.TextColor3 = Color3.fromRGB(130, 130, 130) 
 SubTitle.TextSize = 9 
@@ -222,7 +202,6 @@ SubTitle.TextXAlignment = Enum.TextXAlignment.Left
 SubTitle.BackgroundTransparency = 1 
 SubTitle.ZIndex = 5 
 
--- Кнопки управления при сворачивании
 local EmbeddedControls = Instance.new("Frame", HeaderBg) 
 EmbeddedControls.Size = UDim2.new(0, 50, 0, 30) 
 EmbeddedControls.Position = UDim2.new(1, -55, 0, 8) 
@@ -256,7 +235,6 @@ Navigation.Position = UDim2.new(0, 10, 0, 65)
 Navigation.BackgroundTransparency = 1 
 Navigation.ScrollBarThickness = 0 
 Navigation.BorderSizePixel = 0 
-
 local NavLayout = Instance.new("UIListLayout", Navigation) 
 NavLayout.Padding = UDim.new(0, 5) 
 NavLayout.SortOrder = Enum.SortOrder.LayoutOrder 
@@ -266,7 +244,6 @@ local function UpdateNavCanvas()
 end 
 NavLayout:GetPropertyChangedSignal("AbsoluteContentSize"):Connect(UpdateNavCanvas) 
 
--- Футер
 local FooterBg = Instance.new("Frame", SidebarContainer) 
 FooterBg.Size = UDim2.new(0, 150, 0, 46) 
 FooterBg.Position = UDim2.new(0, 10, 1, -56) 
@@ -299,13 +276,10 @@ local FrameUpdateTable = {}
 RunService.RenderStepped:Connect(function() 
     local CurrentTime = os.clock() 
     table.insert(FrameUpdateTable, CurrentTime) 
-    while FrameUpdateTable[1] < CurrentTime - 1 do 
-        table.remove(FrameUpdateTable, 1) 
-    end 
+    while FrameUpdateTable[1] < CurrentTime - 1 do table.remove(FrameUpdateTable, 1) end 
     StatsLabel.Text = "FPS: " .. #FrameUpdateTable 
 end) 
 
--- Анимация клика (Волна/Ripple)
 local function CreateRipple(button, clickX, clickY) 
     local Ripple = Instance.new("ImageLabel") 
     Ripple.Parent = button 
@@ -317,14 +291,12 @@ local function CreateRipple(button, clickX, clickY)
     Ripple.AnchorPoint = Vector2.new(0.5, 0.5) 
     Ripple.Position = UDim2.new(0, clickX, 0, clickY) 
     Ripple.Size = UDim2.new(0, 0, 0, 0) 
-    
     local maxLength = math.max(button.AbsoluteSize.X, button.AbsoluteSize.Y) * 3 
     local t = TweenService:Create(Ripple, TweenInfo.new(0.5, Enum.EasingStyle.Quad, Enum.EasingDirection.Out), {Size = UDim2.new(0, maxLength, 0, maxLength), ImageTransparency = 1}) 
     t:Play() 
     t.Completed:Connect(function() Ripple:Destroy() end) 
 end 
 
--- Логика сворачивания
 local isMinimized = false 
 local function ToggleMinimize() 
     isMinimized = not isMinimized 
@@ -343,9 +315,7 @@ local function ToggleMinimize()
         MainStroke.Enabled = true 
         MainFrame.BackgroundTransparency = 0.15 
         tween(MainFrame, {Size = UDim2.new(0, 550, 0, 350)}).Completed:Connect(function() 
-            if not isMinimized then 
-                PagesContainer.Visible, TabTitle.Visible, SearchContainer.Visible, Navigation.Visible, FooterBg.Visible, ControlsContainer.Visible = true, true, true, true, true, true 
-            end 
+            if not isMinimized then PagesContainer.Visible, TabTitle.Visible, SearchContainer.Visible, Navigation.Visible, FooterBg.Visible, ControlsContainer.Visible = true, true, true, true, true, true end 
         end) 
     end 
 end 
@@ -367,7 +337,6 @@ applyHover(CloseBtn, Color3.fromRGB(180,180,180), Color3.fromRGB(255,70,70))
 applyHover(EmbCloseBtn, Color3.fromRGB(180,180,180), Color3.fromRGB(255,70,70)) 
 applyHover(ClearSearchBtn, Color3.fromRGB(150,150,150), Color3.fromRGB(255,255,255)) 
 
--- Перетаскивание
 local dragToggle, dragInput, dragStart, startPos 
 MainFrame.InputBegan:Connect(function(input) 
     if (input.UserInputType == Enum.UserInputType.MouseButton1 or input.UserInputType == Enum.UserInputType.Touch) then 
@@ -375,11 +344,7 @@ MainFrame.InputBegan:Connect(function(input)
         input.Changed:Connect(function() if input.UserInputState == Enum.UserInputState.End then dragToggle = false end end) 
     end 
 end) 
-MainFrame.InputChanged:Connect(function(input) 
-    if input.UserInputType == Enum.UserInputType.MouseMovement or input.UserInputType == Enum.UserInputType.Touch then 
-        dragInput = input 
-    end 
-end) 
+MainFrame.InputChanged:Connect(function(input) if input.UserInputType == Enum.UserInputType.MouseMovement or input.UserInputType == Enum.UserInputType.Touch then dragInput = input end end) 
 UserInputService.InputChanged:Connect(function(input) 
     if input == dragInput and dragToggle then 
         local delta = input.Position - dragStart 
@@ -401,7 +366,6 @@ SearchResultsPage.Visible = false
 SearchResultsPage.ScrollBarThickness = 2 
 SearchResultsPage.ScrollBarImageColor3 = Color3.fromRGB(50, 50, 50) 
 SearchResultsPage.ZIndex = 5 
-
 local searchLayout = Instance.new("UIListLayout", SearchResultsPage) 
 searchLayout.Padding = UDim.new(0, 8) 
 searchLayout.HorizontalAlignment = Enum.HorizontalAlignment.Center 
@@ -411,7 +375,6 @@ searchLayout:GetPropertyChangedSignal("AbsoluteContentSize"):Connect(function()
     SearchResultsPage.CanvasSize = UDim2.new(0, 0, 0, searchLayout.AbsoluteContentSize.Y + 15) 
 end) 
 
--- Логика Поиска
 SearchBox:GetPropertyChangedSignal("Text"):Connect(function() 
     local rawText = SearchBox.Text 
     local query = NormalizeText(rawText) 
@@ -439,8 +402,6 @@ end)
 
 ClearSearchBtn.Activated:Connect(function() SearchBox.Text = "" end) 
 
--- === ЭЛЕМЕНТЫ КОНСТРУКТОРА UI ===
-
 function Library:CreateButton(parentPage, text, callback) 
     local Btn = Instance.new("TextButton", parentPage) 
     Btn.Size = UDim2.new(1, -20, 0, 36) 
@@ -453,7 +414,6 @@ function Library:CreateButton(parentPage, text, callback)
     Btn.ZIndex = 6 
     Instance.new("UICorner", Btn).CornerRadius = UDim.new(0, 6) 
     Instance.new("UIStroke", Btn).Color = Color3.fromRGB(40, 40, 40) 
-    
     Btn.MouseButton1Down:Connect(function() 
         local mousePos = UserInputService:GetMouseLocation() 
         local inset = GuiService:GetGuiInset() 
@@ -470,7 +430,6 @@ function Library:CreateToggle(parentPage, text, default, callback)
     TglFrame.ZIndex = 6 
     Instance.new("UICorner", TglFrame).CornerRadius = UDim.new(0, 6) 
     Instance.new("UIStroke", TglFrame).Color = Color3.fromRGB(40, 40, 40) 
-    
     local TglLabel = Instance.new("TextLabel", TglFrame) 
     TglLabel.Size = UDim2.new(1, -60, 1, 0) 
     TglLabel.Position = UDim2.new(0, 12, 0, 0) 
@@ -481,173 +440,83 @@ function Library:CreateToggle(parentPage, text, default, callback)
     TglLabel.TextXAlignment = Enum.TextXAlignment.Left 
     TglLabel.BackgroundTransparency = 1 
     TglLabel.ZIndex = 7 
-    
     local Checkbox = Instance.new("TextButton", TglFrame) 
     Checkbox.Size = UDim2.new(0, 34, 0, 18) 
     Checkbox.Position = UDim2.new(1, -44, 0.5, -9) 
-    Checkbox.BackgroundColor3 = default and Color3.fromRGB(255, 115, 0) or Color3.fromRGB(40, 40, 40) -- Оранжевый тоггл
+    Checkbox.BackgroundColor3 = default and Color3.fromRGB(255, 115, 0) or Color3.fromRGB(40, 40, 40) 
     Checkbox.Text = "" 
     Checkbox.ZIndex = 7 
     Instance.new("UICorner", Checkbox).CornerRadius = UDim.new(0, 9) 
-    
     local Indicator = Instance.new("Frame", Checkbox) 
     Indicator.Size = UDim2.new(0, 14, 0, 14) 
     Indicator.Position = default and UDim2.new(1, -16, 0.5, -7) or UDim2.new(0, 2, 0.5, -7) 
     Indicator.BackgroundColor3 = Color3.new(1, 1, 1) 
     Indicator.ZIndex = 8 
     Instance.new("UICorner", Indicator).CornerRadius = UDim.new(1, 0) 
-    
     local enabled = default 
     Checkbox.Activated:Connect(function() 
         enabled = not enabled 
         if enabled then 
-            tween(Checkbox, {BackgroundColor3 = Color3.fromRGB(255, 115, 0)}, 0.2) 
-            tween(Indicator, {Position = UDim2.new(1, -16, 0.5, -7)}, 0.2) 
+            tween(Checkbox, {BackgroundColor3 = Color3.fromRGB(255, 115, 0)}, 0.2); tween(Indicator, {Position = UDim2.new(1, -16, 0.5, -7)}, 0.2) 
         else 
-            tween(Checkbox, {BackgroundColor3 = Color3.fromRGB(40, 40, 40)}, 0.2) 
-            tween(Indicator, {Position = UDim2.new(0, 2, 0.5, -7)}, 0.2) 
+            tween(Checkbox, {BackgroundColor3 = Color3.fromRGB(40, 40, 40)}, 0.2); tween(Indicator, {Position = UDim2.new(0, 2, 0.5, -7)}, 0.2) 
         end 
         callback(enabled) 
     end) 
     table.insert(SearchableElements, {Instance = TglFrame, SearchText = NormalizeText(text), OriginalParent = parentPage}) 
 end 
 
-function Library:CreateSlider(parentPage, text, min, max, default, callback)
-    local SldFrame = Instance.new("Frame", parentPage)
-    SldFrame.Size = UDim2.new(1, -20, 0, 44)
-    SldFrame.BackgroundColor3 = Color3.fromRGB(22, 22, 22)
-    SldFrame.ZIndex = 6
-    Instance.new("UICorner", SldFrame).CornerRadius = UDim.new(0, 6)
-    Instance.new("UIStroke", SldFrame).Color = Color3.fromRGB(40, 40, 40)
-
-    local SldLabel = Instance.new("TextLabel", SldFrame)
-    SldLabel.Size = UDim2.new(1, -80, 0, 20)
-    SldLabel.Position = UDim2.new(0, 12, 0, 4)
-    SldLabel.Text = text
-    SldLabel.Font = Enum.Font.GothamMedium
-    SldLabel.TextColor3 = Color3.fromRGB(230, 230, 230)
-    SldLabel.TextSize = 12
-    SldLabel.TextXAlignment = Enum.TextXAlignment.Left
-    SldLabel.BackgroundTransparency = 1
-    SldLabel.ZIndex = 7
-
-    local ValueLabel = Instance.new("TextLabel", SldFrame)
-    ValueLabel.Size = UDim2.new(0, 60, 0, 20)
-    ValueLabel.Position = UDim2.new(1, -72, 0, 4)
-    ValueLabel.Text = tostring(default)
-    ValueLabel.Font = Enum.Font.GothamBold
-    ValueLabel.TextColor3 = Color3.fromRGB(255, 115, 0)
-    ValueLabel.TextSize = 12
-    ValueLabel.TextXAlignment = Enum.TextXAlignment.Right
-    ValueLabel.BackgroundTransparency = 1
-    ValueLabel.ZIndex = 7
-
-    local SliderTrack = Instance.new("TextButton", SldFrame)
-    SliderTrack.Size = UDim2.new(1, -24, 0, 6)
-    SliderTrack.Position = UDim2.new(0, 12, 1, -14)
-    SliderTrack.BackgroundColor3 = Color3.fromRGB(45, 45, 45)
-    SliderTrack.Text = ""
-    SliderTrack.ZIndex = 7
-    Instance.new("UICorner", SliderTrack).CornerRadius = UDim.new(0, 3)
-
-    local SliderFill = Instance.new("Frame", SliderTrack)
-    SliderFill.Size = UDim2.new((default - min) / (max - min), 0, 1, 0)
-    SliderFill.BackgroundColor3 = Color3.fromRGB(255, 115, 0)
-    SliderFill.ZIndex = 8
-    Instance.new("UICorner", SliderFill).CornerRadius = UDim.new(0, 3)
-
-    local isSliding = false
-    local function updateSlider(input)
-        local inputX = input.Position.X
-        local trackWidth = SliderTrack.AbsoluteSize.X
-        local trackPos = SliderTrack.AbsolutePosition.X
-        local percentage = math.clamp((inputX - trackPos) / trackWidth, 0, 1)
-        local value = math.floor(min + (max - min) * percentage)
-        
-        ValueLabel.Text = tostring(value)
-        SliderFill.Size = UDim2.new(percentage, 0, 1, 0)
-        callback(value)
-    end
-
-    SliderTrack.InputBegan:Connect(function(input)
-        if input.UserInputType == Enum.UserInputType.MouseButton1 or input.UserInputType == Enum.UserInputType.Touch then
-            isSliding = true
-            updateSlider(input)
-        end
-    end)
-
-    UserInputService.InputChanged:Connect(function(input)
-        if isSliding and (input.UserInputType == Enum.UserInputType.MouseMovement or input.UserInputType == Enum.UserInputType.Touch) then
-            updateSlider(input)
-        end
-    end)
-
-    UserInputService.InputEnded:Connect(function(input)
-        if input.UserInputType == Enum.UserInputType.MouseButton1 or input.UserInputType == Enum.UserInputType.Touch then
-            isSliding = false
-        end
-    end)
-
-    table.insert(SearchableElements, {Instance = SldFrame, SearchText = NormalizeText(text), OriginalParent = parentPage})
-end
-
+-- === НАДЁЖНАЯ СИСТЕМА СУБ-ВКЛАДОК С ИНДИВИДУАЛЬНЫМ ОКРАШИВАНИЕМ === 
 function Library:CreateSubTabs(parentPage, tabsList) 
     local SubTabContainer = Instance.new("Frame", parentPage) 
     SubTabContainer.Size = UDim2.new(1, 0, 0, 32) 
     SubTabContainer.BackgroundTransparency = 1 
-    
     local ListLayout = Instance.new("UIListLayout", SubTabContainer) 
     ListLayout.FillDirection = Enum.FillDirection.Horizontal 
     ListLayout.Padding = UDim.new(0, 10) 
     ListLayout.SortOrder = Enum.SortOrder.LayoutOrder 
-    ListLayout.HorizontalAlignment = Enum.HorizontalAlignment.Left -- Выровнено влево!
+    ListLayout.HorizontalAlignment = Enum.HorizontalAlignment.Center 
     ListLayout.VerticalAlignment = Enum.VerticalAlignment.Center 
-    
-    local SubTabPadding = Instance.new("UIPadding", SubTabContainer) 
-    SubTabPadding.PaddingLeft = UDim.new(0, 10) -- Ровный отступ слева
-    
     local ContentContainer = Instance.new("Frame", parentPage) 
     ContentContainer.Size = UDim2.new(1, 0, 0, 0) 
     ContentContainer.BackgroundTransparency = 1 
     ContentContainer.AutomaticSize = Enum.AutomaticSize.Y 
-    
     local subPages = {} 
     local registry = {} 
     local colorGrayInactive = Color3.fromRGB(140, 140, 140) 
-    
     for i, tabData in ipairs(tabsList) do 
         local tabName = tabData.Name 
         local iconId = tabData.Icon 
-        local activeColor = tabData.Color or Color3.fromRGB(108, 176, 214) 
-        
+        local activeColor = Color3.fromRGB(108, 176, 214) 
+        local lowName = string.lower(string.gsub(tabName, "%s+", "")) 
+        if tabData.Color then 
+            activeColor = tabData.Color 
+        elseif string.find(lowName, "theme") or string.find(lowName, "тема") then 
+            activeColor = Color3.fromRGB(235, 94, 153) 
+        end 
         local BtnContainer = Instance.new("Frame", SubTabContainer) 
         BtnContainer.Size = UDim2.new(0, 95, 1, 0) 
         BtnContainer.BackgroundTransparency = 1 
         BtnContainer.LayoutOrder = i 
-        
         local VisualFrame = Instance.new("Frame", BtnContainer) 
         VisualFrame.Size = UDim2.new(1, 0, 1, 0) 
         VisualFrame.BackgroundColor3 = activeColor 
         VisualFrame.BackgroundTransparency = 1 
         Instance.new("UICorner", VisualFrame).CornerRadius = UDim.new(0, 7) 
-        
         local Stroke = Instance.new("UIStroke", VisualFrame) 
         Stroke.Color = activeColor 
         Stroke.Thickness = 1.6 
         Stroke.ApplyStrokeMode = Enum.ApplyStrokeMode.Border 
         Stroke.Enabled = false 
-        
         local ContentFrame = Instance.new("Frame", BtnContainer) 
         ContentFrame.Size = UDim2.new(1, 0, 1, 0) 
         ContentFrame.BackgroundTransparency = 1 
         ContentFrame.ZIndex = 2 
-        
         local BtnLayout = Instance.new("UIListLayout", ContentFrame) 
         BtnLayout.FillDirection = Enum.FillDirection.Horizontal 
         BtnLayout.HorizontalAlignment = Enum.HorizontalAlignment.Center 
         BtnLayout.VerticalAlignment = Enum.VerticalAlignment.Center 
         BtnLayout.Padding = UDim.new(0, 6) 
-        
         local Icon 
         if iconId and iconId ~= "" then 
             Icon = Instance.new("ImageLabel", ContentFrame) 
@@ -657,7 +526,6 @@ function Library:CreateSubTabs(parentPage, tabsList)
             Icon.ImageColor3 = colorGrayInactive 
             Icon.ZIndex = 3 
         end 
-        
         local Label = Instance.new("TextLabel", ContentFrame) 
         Label.BackgroundTransparency = 1 
         Label.Text = tabName 
@@ -667,33 +535,23 @@ function Library:CreateSubTabs(parentPage, tabsList)
         Label.AutomaticSize = Enum.AutomaticSize.X 
         Label.Size = UDim2.new(0, 0, 1, 0) 
         Label.ZIndex = 3 
-        
         local Page = Instance.new("Frame", ContentContainer) 
         Page.Size = UDim2.new(1, 0, 0, 0) 
         Page.BackgroundTransparency = 1 
         Page.AutomaticSize = Enum.AutomaticSize.Y 
         Page.Visible = false 
-        
         local PageLayout = Instance.new("UIListLayout", Page) 
         PageLayout.Padding = UDim.new(0, 8) 
         PageLayout.HorizontalAlignment = Enum.HorizontalAlignment.Center 
-        
         subPages[tabName] = Page 
         registry[tabName] = { 
-            Page = Page, 
-            Visual = VisualFrame, 
-            Stroke = Stroke, 
-            Label = Label, 
-            Icon = Icon, 
-            TargetColor = activeColor 
+            Page = Page, Visual = VisualFrame, Stroke = Stroke, Label = Label, Icon = Icon, TargetColor = activeColor 
         } 
-        
         local ClickBtn = Instance.new("TextButton", BtnContainer) 
         ClickBtn.Size = UDim2.new(1, 0, 1, 0) 
         ClickBtn.BackgroundTransparency = 1 
         ClickBtn.Text = "" 
         ClickBtn.ZIndex = 10 
-        
         local function activateTab() 
             for _, data in pairs(registry) do 
                 data.Page.Visible = false 
@@ -710,10 +568,13 @@ function Library:CreateSubTabs(parentPage, tabsList)
             Label.TextColor3 = activeColor 
             if Icon then Icon.ImageColor3 = activeColor end 
         end 
-        
         ClickBtn.Activated:Connect(activateTab) 
+        ClickBtn.InputBegan:Connect(function(input) 
+            if input.UserInputType == Enum.UserInputType.MouseButton1 or input.UserInputType == Enum.UserInputType.Touch) then 
+                activateTab() 
+            end 
+        end) 
     end 
-    
     local firstTab = tabsList[1] and tabsList[1].Name 
     if firstTab and registry[firstTab] then 
         local data = registry[firstTab] 
@@ -725,7 +586,6 @@ function Library:CreateSubTabs(parentPage, tabsList)
         data.Label.TextColor3 = data.TargetColor 
         if data.Icon then data.Icon.ImageColor3 = data.TargetColor end 
     end 
-    
     return subPages 
 end 
 
@@ -737,16 +597,13 @@ function CreatePage(name, iconId, layoutOrder)
     PageFrame.ScrollBarThickness = 2 
     PageFrame.ScrollBarImageColor3 = Color3.fromRGB(50, 50, 50) 
     PageFrame.ZIndex = 5 
-    
     local layout = Instance.new("UIListLayout", PageFrame) 
     layout.Padding = UDim.new(0, 8) 
     layout.HorizontalAlignment = Enum.HorizontalAlignment.Center 
     Instance.new("UIPadding", PageFrame).PaddingTop = UDim.new(0, 2) 
-    
     layout:GetPropertyChangedSignal("AbsoluteContentSize"):Connect(function() 
         PageFrame.CanvasSize = UDim2.new(0, 0, 0, layout.AbsoluteContentSize.Y + 15) 
-    end) 
-    
+end) 
     local TabContainer = Instance.new("Frame", Navigation) 
     TabContainer.Size = UDim2.new(1, 0, 0, 34) 
     TabContainer.BackgroundColor3 = Color3.fromRGB(28, 28, 28) 
@@ -755,7 +612,6 @@ function CreatePage(name, iconId, layoutOrder)
     TabContainer.ZIndex = 6 
     TabContainer.LayoutOrder = layoutOrder or 0 
     Instance.new("UICorner", TabContainer).CornerRadius = UDim.new(0, 8) 
-    
     local TabBtn = Instance.new("TextButton", TabContainer) 
     TabBtn.Size = UDim2.new(1, 0, 1, 0) 
     TabBtn.Text = name 
@@ -765,31 +621,26 @@ function CreatePage(name, iconId, layoutOrder)
     TabBtn.BackgroundTransparency = 1 
     TabBtn.TextXAlignment = Enum.TextXAlignment.Left 
     TabBtn.ZIndex = 7 
-    
     local Padding = Instance.new("UIPadding", TabBtn) 
     Padding.PaddingLeft = UDim.new(0, iconId and 42 or 12) 
-    
     if iconId then 
         local TabIcon = Instance.new("ImageLabel", TabContainer) 
         TabIcon.Size = UDim2.new(0, 24, 0, 24) 
         TabIcon.Position = UDim2.new(0, 10, 0.5, -12) 
         TabIcon.BackgroundTransparency = 1 
-        TabIcon.Image = "rbxthumb://type=Asset&id=" .. iconId .. "&w=150&h=150" 
+        TabIcon.Image = "rbxassetid://103980564128710" 
         TabIcon.ImageTransparency = 0.25 
         TabIcon.ZIndex = 7 
         allTabIcons[name] = TabIcon 
     end 
-    
     allTabs[name] = TabContainer 
     allTabButtons[name] = TabBtn 
     allPages[name] = PageFrame 
-    
     TabBtn.MouseButton1Down:Connect(function() 
         local mousePos = UserInputService:GetMouseLocation() 
         local inset = GuiService:GetGuiInset() 
         CreateRipple(TabContainer, mousePos.X - TabContainer.AbsolutePosition.X, (mousePos.Y - inset.Y) - TabContainer.AbsolutePosition.Y) 
     end) 
-    
     TabBtn.Activated:Connect(function() 
         if SearchBox.Text ~= "" then SearchBox.Text = "" end 
         for tName, tContainer in pairs(allTabs) do 
@@ -804,12 +655,9 @@ function CreatePage(name, iconId, layoutOrder)
         tween(TabBtn, {TextColor3 = Color3.fromRGB(255, 255, 255)}, 0.2) 
         if allTabIcons[name] then tween(allTabIcons[name], {ImageTransparency = 0}, 0.2) end 
     end) 
-    
     UpdateNavCanvas() 
     return PageFrame 
 end 
-
--- === НАПОЛНЕНИЕ СТРАНИЦ ХАБА ===
 
 local MainPage = CreatePage("Main", "103980564128710", 1) 
 local TeleportPage = CreatePage("Teleport", "94373592263020", 2) 
@@ -819,73 +667,17 @@ local PlayersPage = CreatePage("Players", "99904215381150", 5)
 local VisualPage = CreatePage("Visual", "78910169210318", 6) 
 local SettingsPage = CreatePage("Settings", "117996761927034", 99) 
 
--- [СТРАНИЦА MAIN: Фарм, Скорость и Полет]
-local AutoFarmEnabled = false
-local AutoFarmSpeed = 16
-
-Library:CreateToggle(MainPage, "Авто-Фарм Монет", false, function(state) 
-    AutoFarmEnabled = state
-    print("Auto-Farm Status:", AutoFarmEnabled)
-end) 
-
--- Слайдер Авто-фарма с ограничением макс. скорости до 25
-Library:CreateSlider(MainPage, "Макс. Скорость Авто-Фарма (Max 25)", 1, 25, 16, function(value)
-    AutoFarmSpeed = math.clamp(value, 1, 25)
-    print("Auto-Farm Speed set to:", AutoFarmSpeed)
-end)
-
--- Управление персонажем (Fly / WalkSpeed)
-local FlyEnabled = false
-local FlySpeed = 20
-
-Library:CreateToggle(MainPage, "Включить Fly (Полет)", false, function(state)
-    FlyEnabled = state
-    print("Fly Status:", FlyEnabled)
-    -- Здесь твоя логика флая
-end)
-
-Library:CreateSlider(MainPage, "Скорость Полета (Fly Speed)", 10, 100, 20, function(value)
-    FlySpeed = value
-end)
-
-Library:CreateButton(MainPage, "Сбросить Скорость Персонажа", function()
-    if LocalPlayer.Character and LocalPlayer.Character:FindFirstChildOfClass("Humanoid") then
-        LocalPlayer.Character:FindFirstChildOfClass("Humanoid").WalkSpeed = 16
-    end
-end)
-
--- [ДРУГИЕ СТРАНИЦЫ ДЛЯ ПОЛНОТЫ ХАБА]
-Library:CreateButton(TeleportPage, "Телепорт на Карту", function() print("Teleporting to map...") end)
-Library:CreateButton(TeleportPage, "Телепорт в Лобби", function() print("Teleporting to lobby...") end)
-
-Library:CreateToggle(MurderPage, "Подсвечивать Нож", false, function(state) end)
-Library:CreateToggle(SheriffPage, "Подсвечивать Пистолет", false, function(state) end)
-
-Library:CreateToggle(PlayersPage, "Бесконечный Прыжок", false, function(state) end)
-Library:CreateSlider(PlayersPage, "WalkSpeed Игрока", 16, 100, 16, function(value)
-    if LocalPlayer.Character and LocalPlayer.Character:FindFirstChildOfClass("Humanoid") then
-        LocalPlayer.Character:FindFirstChildOfClass("Humanoid").WalkSpeed = value
-    end
-end)
-
+Library:CreateToggle(MainPage, "Авто-Фарм Монет", false, function(state) end) 
 Library:CreateToggle(VisualPage, "ESP Игроков", false, function(state) end) 
-Library:CreateToggle(VisualPage, "Трейсеры к Игрокам", false, function(state) end) 
 
--- [СТРАНИЦА НАСТРОЕК С САБ-ТАБАМИ (Выровненными влево!)]
 local SettingSections = Library:CreateSubTabs(SettingsPage, { 
     {Name = "UI", Icon = "rbxassetid://6034289132", Color = Color3.fromRGB(108, 176, 214)}, 
     {Name = "Theme", Icon = "rbxassetid://6034289317", Color = Color3.fromRGB(235, 94, 153)} 
 }) 
 
-Library:CreateToggle(SettingSections["UI"], "Отображать FPS", true, function(state) 
-    StatsLabel.Visible = state
-end) 
+Library:CreateToggle(SettingSections["UI"], "UI Размер", false, function(state) end) 
+Library:CreateButton(SettingSections["Theme"], "Переключить тему", function() end) 
 
-Library:CreateButton(SettingSections["Theme"], "Сбросить тему на Dark Gray", function() 
-    MainFrame.BackgroundColor3 = Color3.fromRGB(14, 14, 14)
-end) 
-
--- Установка активной страницы при старте
 if allTabs["Main"] and allTabButtons["Main"] then 
     allTabs["Main"].BackgroundTransparency = 0 
     allTabButtons["Main"].TextColor3 = Color3.fromRGB(255, 255, 255) 
