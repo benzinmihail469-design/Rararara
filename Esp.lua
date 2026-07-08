@@ -391,7 +391,7 @@ UserInputService.InputChanged:Connect(function(input)
 end)
 
 local Library = {}
-Library.CurrentFont = Enum.Font.Gotham -- Дефолтный глобальный шрифт
+Library.CurrentFont = Enum.Font.Gotham
 
 local SearchableElements = {}
 local allTabs = {}
@@ -449,14 +449,18 @@ ClearSearchBtn.Activated:Connect(function()
     SearchBox.Text = ""
 end)
 
--- Кастомный Дропдаун (Выпадающий список) для настроек
+-- ОБНОВЛЕННАЯ ТАБЛИЦА ШРИФТОВ СО СКРИНШОТА 3472.jpg
 local FontMapping = {
     ["Gotham"] = Enum.Font.Gotham,
     ["Gotham Bold"] = Enum.Font.GothamBold,
     ["Source Sans"] = Enum.Font.SourceSans,
     ["Roboto"] = Enum.Font.Roboto,
     ["Roboto Mono"] = Enum.Font.RobotoMono,
-    ["Ubuntu"] = Enum.Font.Ubuntu
+    ["Ubuntu"] = Enum.Font.Ubuntu,
+    ["Michroma"] = Enum.Font.Michroma,
+    ["Code"] = Enum.Font.Code,
+    ["Fantasy"] = Enum.Font.Fantasy,
+    ["Fredoka One"] = Enum.Font.FredokaOne
 }
 
 function Library:CreateDropdown(parentPage, text, options, default, callback)
@@ -1038,7 +1042,6 @@ local SettingSections = Library:CreateSubTabs(SettingsPage, {
     {Name = "Theme", Icon = "78640980615320", Color = Color3.fromRGB(235, 94, 153)}
 })
 
--- Настройки во вкладке UI
 Library:CreateSlider(SettingSections["UI"], "UI Size", 0.5, 1.5, 1.00, function(value)
     MainScale.Scale = value
 end)
@@ -1047,15 +1050,13 @@ Library:CreateSlider(SettingSections["UI"], "UI Transparency", 0, 100, 15, funct
     MainFrame.BackgroundTransparency = value / 100
 end)
 
--- ДОБАВЛЕННЫЙ ДРОПДАУН ВЫБОРА ШРИФТОВ (MENU FONT) СО СКРИНШОТА 3471.jpg
-Library:CreateDropdown(SettingSections["UI"], "Menu Font", {"Gotham", "Gotham Bold", "Source Sans", "Roboto", "Roboto Mono", "Ubuntu"}, "Gotham", function(selectedFont)
+-- ВЫПАДАЮЩИЙ СПИСОК С ПОЛНЫМ НАБОРОМ ШРИФТОВ С ОБЕИХ КАРТИНОК
+Library:CreateDropdown(SettingSections["UI"], "Menu Font", {"Gotham", "Gotham Bold", "Source Sans", "Roboto", "Roboto Mono", "Ubuntu", "Michroma", "Code", "Fantasy", "Fredoka One"}, "Gotham", function(selectedFont)
     local targetFont = FontMapping[selectedFont] or Enum.Font.Gotham
     Library.CurrentFont = targetFont
     
-    -- Глобальное динамическое обновление шрифта у всех элементов UI в реальном времени
     for _, obj in ipairs(DarkHub:GetDescendants()) do
         if obj:IsA("TextLabel") or obj:IsA("TextButton") or obj:IsA("TextBox") then
-            -- Исключаем мелкие значки кнопок сворачивания/закрытия, чтобы не ломался их вид
             if obj.Text ~= "—" and obj.Text ~= "×" and obj.Text ~= "▼" and obj.Text ~= "▲" and obj.Text ~= "✓" then
                 obj.Font = targetFont
             end
