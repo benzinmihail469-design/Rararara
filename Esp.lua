@@ -648,7 +648,8 @@ function Library:CreateSubTabs(parentPage, tabsList)
         
         ClickBtn.Activated:Connect(activateTab)
         ClickBtn.InputBegan:Connect(function(input)
-            if input.UserInputType == Enum.UserInputType.MouseButton1 or input.UserInputType == Enum.UserInputType.Touch) then
+            -- ОШИБКА ИСПРАВЛЕНА: Лишняя закрывающая скобка убрана
+            if input.UserInputType == Enum.UserInputType.MouseButton1 or input.UserInputType == Enum.UserInputType.Touch then
                 activateTab()
             end
         end)
@@ -767,7 +768,6 @@ local SettingsPage = CreatePage("Settings", "117996761927034", 99)
 Library:CreateToggle(MainPage, "Авто-Фарм Монет", false, function(state) end)
 Library:CreateToggle(VisualPage, "ESP Игроков", false, function(state) end)
 
--- ИКОНКА ТЕМЫ ИЗМЕНЕНА НА 78640980615320
 local SettingSections = Library:CreateSubTabs(SettingsPage, {
     {Name = "UI", Icon = "85203682050945", Color = Color3.fromRGB(108, 176, 214)},
     {Name = "Theme", Icon = "78640980615320", Color = Color3.fromRGB(235, 94, 153)}
