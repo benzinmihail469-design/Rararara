@@ -37,7 +37,7 @@ local function NormalizeText(str)
     local lowerStr = string.lower(str)
     
     local upperToLower = {
-        ["А"]="а", ["Б"]="б", ["В"]="в", ["Г"]="г", ["Д"]="д", ["Е"]="е", ["Ё"]="ё", ["Ж"]="ж", ["З"]="з",
+        ["А"]="а", ["Б"]="б", ["Вв"]="в", ["Г"]="г", ["Д"]="д", ["Е"]="е", ["Ё"]="ё", ["Ж"]="ж", ["З"]="з",
         ["И"]="и", ["Й"]="й", ["К"]="к", ["Л"]="л", ["М"]="м", ["Н"]="н", ["О"]="о", ["П"]="п", ["Р"]="р",
         ["С"]="с", ["Т"]="т", ["У"]="у", ["Ф"]="ф", ["Х"]="х", ["Ц"]="ц", ["Ч"]="ч", ["Ш"]="ш", ["Щ"]="щ",
         ["Ъ"]="ъ", ["Ы"]="ы", ["Ь"]="ь", ["Э"]="э", ["Ю"]="ю", ["Я"]="я"
@@ -67,7 +67,6 @@ MainFrame.BackgroundTransparency = 0.15
 MainFrame.Position = UDim2.new(0.5, -275, 0.5, -175)
 MainFrame.Size = UDim2.new(0, 550, 0, 350)
 
--- Добавляем UIScale для плавного и красивого ресайза всего интерфейса
 local MainScale = Instance.new("UIScale", MainFrame)
 MainScale.Scale = 1
 
@@ -506,19 +505,20 @@ function Library:CreateToggle(parentPage, text, default, callback)
     table.insert(SearchableElements, {Instance = TglFrame, SearchText = NormalizeText(text), OriginalParent = parentPage})
 end
 
--- НОВАЯ ФУНКЦИЯ: Создание Слайдера со светофорным плавным переливом
+-- ИСПРАВЛЕННЫЙ СЛАЙДЕР: Точно как на 3435.jpg с фиксом дёрганья при ресайзе
 function Library:CreateSlider(parentPage, text, min, max, default, callback)
     local SliderFrame = Instance.new("Frame", parentPage)
-    SliderFrame.Size = UDim2.new(1, -20, 0, 40)
+    SliderFrame.Size = UDim2.new(1, -20, 0, 52)
     SliderFrame.BackgroundColor3 = Color3.fromRGB(22, 22, 22)
     SliderFrame.ZIndex = 6
-    Instance.new("UICorner", SliderFrame).CornerRadius = UDim.new(0, 6)
+    Instance.new("UICorner", SliderFrame).CornerRadius = UDim.new(0, 8)
     Instance.new("UIStroke", SliderFrame).Color = Color3.fromRGB(40, 40, 40)
     
+    -- Название слева сверху
     local SliderLabel = Instance.new("TextLabel", SliderFrame)
-    SliderLabel.Size = UDim2.new(0, 130, 1, 0)
-    SliderLabel.Position = UDim2.new(0, 12, 0, 0)
-    SliderLabel.Text = text .. ": " .. tostring(default)
+    SliderLabel.Size = UDim2.new(0.5, -12, 0, 22)
+    SliderLabel.Position = UDim2.new(0, 12, 0, 6)
+    SliderLabel.Text = text
     SliderLabel.Font = Enum.Font.GothamMedium
     SliderLabel.TextColor3 = Color3.fromRGB(230, 230, 230)
     SliderLabel.TextSize = 13
@@ -526,13 +526,33 @@ function Library:CreateSlider(parentPage, text, min, max, default, callback)
     SliderLabel.BackgroundTransparency = 1
     SliderLabel.ZIndex = 7
     
-    local SliderTrack = Instance.new("TextButton", SliderFrame)
-    SliderTrack.Size = UDim2.new(1, -165, 0, 6)
-    SliderTrack.Position = UDim2.new(0, 150, 0.5, -3)
-    SliderTrack.BackgroundColor3 = Color3.fromRGB(40, 40, 40)
-    SliderTrack.Text = ""
+    -- Значение справа сверху
+    local ValueLabel = Instance.new("TextLabel", SliderFrame)
+    ValueLabel.Size = UDim2.new(0.5, -12, 0, 22)
+    ValueLabel.Position = UDim2.new(0.5, 0, 0, 6)
+    ValueLabel.Text = string.format("%.2f", default)
+    ValueLabel.Font = Enum.Font.GothamMedium
+    ValueLabel.TextColor3 = Color3.fromRGB(160, 160, 160)
+    ValueLabel.TextSize = 13
+    ValueLabel.TextXAlignment = Enum.TextXAlignment.Right
+    ValueLabel.BackgroundTransparency = 1
+    ValueLabel.ZIndex = 7
+    
+    -- Трек во всю ширину снизу
+    local SliderTrack = Instance.new("Frame", SliderFrame)
+    SliderTrack.Size = UDim2.new(1, -24, 0, 5)
+    SliderTrack.Position = UDim2.new(0, 12, 0, 34)
+    SliderTrack.BackgroundColor3 = Color3.fromRGB(42, 42, 42)
     SliderTrack.ZIndex = 7
     Instance.new("UICorner", SliderTrack).CornerRadius = UDim.new(0, 3)
+    
+    -- Кнопка поверх трека для удобного зажатия на телефонах
+    local SliderBtn = Instance.new("TextButton", SliderTrack)
+    SliderBtn.Size = UDim2.new(1, 0, 1, 16)
+    SliderBtn.Position = UDim2.new(0, 0, 0, -8)
+    SliderBtn.BackgroundTransparency = 1
+    SliderBtn.Text = ""
+    SliderBtn.ZIndex = 10
     
     local SliderFill = Instance.new("Frame", SliderTrack)
     SliderFill.Size = UDim2.new(0, 0, 1, 0)
@@ -540,29 +560,29 @@ function Library:CreateSlider(parentPage, text, min, max, default, callback)
     Instance.new("UICorner", SliderFill).CornerRadius = UDim.new(0, 3)
     
     local SliderHandle = Instance.new("Frame", SliderTrack)
-    SliderHandle.Size = UDim2.new(0, 12, 0, 12)
+    SliderHandle.Size = UDim2.new(0, 14, 0, 14)
     SliderHandle.AnchorPoint = Vector2.new(0.5, 0.5)
     SliderHandle.Position = UDim2.new(0, 0, 0.5, 0)
     SliderHandle.BackgroundColor3 = Color3.fromRGB(255, 255, 255)
     SliderHandle.ZIndex = 9
     Instance.new("UICorner", SliderHandle).CornerRadius = UDim.new(1, 0)
-    Instance.new("UIStroke", SliderHandle).Color = Color3.fromRGB(20, 20, 20)
+    Instance.new("UIStroke", SliderHandle).Color = Color3.fromRGB(25, 25, 25)
     
     local dragging = false
+    local currentPercent = (default - min) / (max - min)
     
-    local function update(input)
-        local trackWidth = SliderTrack.AbsoluteSize.X
-        local trackPos = SliderTrack.AbsolutePosition.X
-        local percentage = math.clamp((input.Position.X - trackPos) / trackWidth, 0, 1)
-        
-        -- Светофорный плавный цвет (Красный -> Оранжевый -> Зеленый)
+    -- Переменные "снимка" для защиты от искажений UIScale во время перетаскивания
+    local startX = 0
+    local startPercent = 0
+    local cachedTrackWidth = 0
+    
+    local function updateVisuals(percentage)
+        -- Светофорный перелив полосы
         local currentColor
         if percentage < 0.5 then
-            -- Перелив от Красного к Оранжевому
-            currentColor = Color3.fromRGB(255, 60, 60):Lerp(Color3.fromRGB(255, 150, 0), percentage * 2)
+            currentColor = Color3.fromRGB(255, 60, 60):Lerp(Color3.fromRGB(255, 145, 0), percentage * 2)
         else
-            -- Перелив от Оранжевого к Зеленому
-            currentColor = Color3.fromRGB(255, 150, 0):Lerp(Color3.fromRGB(60, 255, 60), (percentage - 0.5) * 2)
+            currentColor = Color3.fromRGB(255, 145, 0):Lerp(Color3.fromRGB(65, 255, 65), (percentage - 0.5) * 2)
         end
         
         SliderFill.Size = UDim2.new(percentage, 0, 1, 0)
@@ -570,22 +590,34 @@ function Library:CreateSlider(parentPage, text, min, max, default, callback)
         SliderHandle.Position = UDim2.new(percentage, 0, 0.5, 0)
         
         local rawValue = min + (max - min) * percentage
-        local roundedValue = math.round(rawValue * 100) / 100
-        SliderLabel.Text = text .. ": " .. string.format("%.2f", roundedValue)
-        
-        callback(roundedValue)
+        ValueLabel.Text = string.format("%.2f", rawValue)
+        callback(rawValue)
     end
     
-    SliderTrack.InputBegan:Connect(function(input)
+    SliderBtn.InputBegan:Connect(function(input)
         if input.UserInputType == Enum.UserInputType.MouseButton1 or input.UserInputType == Enum.UserInputType.Touch then
             dragging = true
-            update(input)
+            startX = input.Position.X
+            cachedTrackWidth = SliderTrack.AbsoluteSize.X
+            
+            -- Рассчитываем стартовый процент в месте тача
+            local clickOffset = input.Position.X - SliderTrack.AbsolutePosition.X
+            currentPercent = math.clamp(clickOffset / cachedTrackWidth, 0, 1)
+            startPercent = currentPercent
+            
+            updateVisuals(currentPercent)
         end
     end)
     
     UserInputService.InputChanged:Connect(function(input)
         if dragging and (input.UserInputType == Enum.UserInputType.MouseMovement or input.UserInputType == Enum.UserInputType.Touch) then
-            update(input)
+            -- Вычисляем сдвиг в пикселях glass-экрана относительно начальной точки зажатия.
+            -- Это полностью избавляет от бага "бешеного ресайза"
+            local deltaX = input.Position.X - startX
+            local deltaPercent = deltaX / cachedTrackWidth
+            
+            currentPercent = math.clamp(startPercent + deltaPercent, 0, 1)
+            updateVisuals(currentPercent)
         end
     end)
     
@@ -595,12 +627,9 @@ function Library:CreateSlider(parentPage, text, min, max, default, callback)
         end
     end)
     
-    -- Инициализация дефолтного значения при загрузке скрипта
     task.spawn(function()
         while SliderTrack.AbsoluteSize.X == 0 do task.wait() end
-        local startPercent = (default - min) / (max - min)
-        local mockInput = {Position = Vector3.new(SliderTrack.AbsolutePosition.X + (SliderTrack.AbsoluteSize.X * startPercent), 0, 0)}
-        update(mockInput)
+        updateVisuals(currentPercent)
     end)
     
     table.insert(SearchableElements, {Instance = SliderFrame, SearchText = NormalizeText(text), OriginalParent = parentPage})
@@ -874,8 +903,8 @@ local SettingSections = Library:CreateSubTabs(SettingsPage, {
     {Name = "Theme", Icon = "78640980615320", Color = Color3.fromRGB(235, 94, 153)}
 })
 
--- Заменили Toggle на Slider. Диапазон: от 0.5 (уменьшено вдвое) до 1.5 (увеличено в полтора раза). Дефолт: 1.0
-Library:CreateSlider(SettingSections["UI"], "UI size", 0.5, 1.5, 1.0, function(value)
+-- Обновленный Слайдер "UI Size". Диапазон: от 0.5 (уменьшенный) до 1.5 (увеличенный). Дефолт: 1.00
+Library:CreateSlider(SettingSections["UI"], "UI Size", 0.5, 1.5, 1.00, function(value)
     MainScale.Scale = value
 end)
 
