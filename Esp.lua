@@ -1,4 +1,3 @@
--- ТЕСТ ЗАПУСКА
 local CustomIconID = "76579925188009"
 local TweenService = game:GetService("TweenService")
 local UserInputService = game:GetService("UserInputService")
@@ -34,32 +33,31 @@ local function tween(obj, props, dur)
 end
 
 local function NormalizeText(str)
-    local success, res = pcall(function()
-        local normalized = ""
-        for _, c in utf8.codes(str) do
-            if c >= 1040 and c <= 1071 then
-                normalized = normalized .. utf8.char(c + 32)
-            elseif c == 1025 then
-                normalized = normalized .. utf8.char(1105)
-            elseif c >= 65 and c <= 90 then
-                normalized = normalized .. string.char(c + 32)
-            else
-                normalized = normalized .. utf8.char(c)
-            end
-        end
-        return normalized
-    end)
+    if type(str) ~= "string" then return "" end
+    local lowerStr = string.lower(str)
     
-    local finalStr = success and res or string.lower(str)
+    local upperToLower = {
+        ["А"]="а", ["Б"]="б", ["В"]="в", ["Г"]="г", ["Д"]="д", ["Е"]="е", ["Ё"]="ё", ["Ж"]="ж", ["З"]="з",
+        ["И"]="и", ["Й"]="й", ["К"]="к", ["Л"]="л", ["М"]="м", ["Н"]="н", ["О"]="о", ["П"]="п", ["Р"]="р",
+        ["С"]="с", ["Т"]="т", ["У"]="у", ["Ф"]="ф", ["Х"]="х", ["Ц"]="ц", ["Ч"]="ч", ["Ш"]="ш", ["Щ"]="щ",
+        ["Ъ"]="ъ", ["Ы"]="ы", ["Ь"]="ь", ["Э"]="э", ["Ю"]="ю", ["Я"]="я"
+    }
+    
+    for u, l in pairs(upperToLower) do
+        lowerStr = string.gsub(lowerStr, u, l)
+    end
+    
     local synonyms = {
         ["авто"] = "auto", ["фарм"] = "farm", ["есп"] = "esp", ["монет"] = "coins",
         ["монеты"] = "coins", ["игроков"] = "players", ["игрок"] = "player",
         ["визуал"] = "visual", ["телепорт"] = "teleport", ["настройки"] = "settings"
     }
-    for ru, en in pairs(synonyms) do finalStr = string.gsub(finalStr, ru, en) end
+    for ru, en in pairs(synonyms) do lowerStr = string.gsub(lowerStr, ru, en) end
+    
     local homoglyphs = {["а"] = "a", ["о"] = "o", ["с"] = "c", ["е"] = "e", ["р"] = "p", ["х"] = "x", ["у"] = "y"}
-    for ru, en in pairs(homoglyphs) do finalStr = string.gsub(finalStr, ru, en) end
-    return string.gsub(finalStr, "[%p%s%c]", "")
+    for ru, en in pairs(homoglyphs) do lowerStr = string.gsub(lowerStr, ru, en) end
+    
+    return string.gsub(lowerStr, "[%p%s%c]", "")
 end
 
 local MainFrame = Instance.new("Frame", DarkHub)
@@ -281,7 +279,7 @@ local FrameUpdateTable = {}
 RunService.RenderStepped:Connect(function()
     local CurrentTime = os.clock()
     table.insert(FrameUpdateTable, CurrentTime)
-    while FrameUpdateTable[1] < CurrentTime - 1 do
+    while #FrameUpdateTable > 0 and FrameUpdateTable[1] < CurrentTime - 1 do
         table.remove(FrameUpdateTable, 1)
     end
     StatsLabel.Text = "FPS: " .. #FrameUpdateTable
@@ -648,7 +646,6 @@ function Library:CreateSubTabs(parentPage, tabsList)
         
         ClickBtn.Activated:Connect(activateTab)
         ClickBtn.InputBegan:Connect(function(input)
-            -- ОШИБКА ИСПРАВЛЕНА: Лишняя закрывающая скобка убрана
             if input.UserInputType == Enum.UserInputType.MouseButton1 or input.UserInputType == Enum.UserInputType.Touch then
                 activateTab()
             end
