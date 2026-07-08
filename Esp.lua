@@ -52,24 +52,13 @@ local function NormalizeText(str)
     
     local finalStr = success and res or string.lower(str)
     local synonyms = {
-        ["авто"] = "auto",
-        ["фарм"] = "farm",
-        ["есп"] = "esp",
-        ["монет"] = "coins",
-        ["монеты"] = "coins",
-        ["игроков"] = "players",
-        ["игрок"] = "player",
-        ["визуал"] = "visual",
-        ["телепорт"] = "teleport",
-        ["настройки"] = "settings"
+        ["авто"] = "auto", ["фарм"] = "farm", ["есп"] = "esp", ["монет"] = "coins",
+        ["монеты"] = "coins", ["игроков"] = "players", ["игрок"] = "player",
+        ["визуал"] = "visual", ["телепорт"] = "teleport", ["настройки"] = "settings"
     }
-    for ru, en in pairs(synonyms) do
-        finalStr = string.gsub(finalStr, ru, en)
-    end
+    for ru, en in pairs(synonyms) do finalStr = string.gsub(finalStr, ru, en) end
     local homoglyphs = {["а"] = "a", ["о"] = "o", ["с"] = "c", ["е"] = "e", ["р"] = "p", ["х"] = "x", ["у"] = "y"}
-    for ru, en in pairs(homoglyphs) do
-        finalStr = string.gsub(finalStr, ru, en)
-    end
+    for ru, en in pairs(homoglyphs) do finalStr = string.gsub(finalStr, ru, en) end
     return string.gsub(finalStr, "[%p%s%c]", "")
 end
 
@@ -137,7 +126,6 @@ SearchContainer.Position = UDim2.new(1, -240, 0, 12)
 SearchContainer.BackgroundColor3 = Color3.fromRGB(22, 22, 22)
 SearchContainer.ZIndex = 6
 Instance.new("UICorner", SearchContainer).CornerRadius = UDim.new(0, 8)
-
 local SearchStroke = Instance.new("UIStroke", SearchContainer)
 SearchStroke.Color = Color3.fromRGB(45, 45, 45)
 SearchStroke.Thickness = 1.2
@@ -520,8 +508,11 @@ function Library:CreateImage(parentPage, imageId)
     local Img = Instance.new("ImageLabel", parentPage)
     Img.Size = UDim2.new(1, -20, 0, 130)
     Img.BackgroundTransparency = 1
-    -- Используем rbxthumb метод, как на основных вкладках, чтобы обойти лок ассета
-    Img.Image = "rbxthumb://type=Asset&id=" .. tostring(imageId) .. "&w=420&h=420"
+    if tonumber(imageId) then
+        Img.Image = "rbxthumb://type=Asset&id=" .. tostring(imageId) .. "&w=420&h=420"
+    else
+        Img.Image = imageId
+    end
     Img.ScaleType = Enum.ScaleType.Fit
     Img.ZIndex = 6
     return Img
@@ -593,7 +584,12 @@ function Library:CreateSubTabs(parentPage, tabsList)
             Icon = Instance.new("ImageLabel", ContentFrame)
             Icon.Size = UDim2.new(0, 14, 0, 14)
             Icon.BackgroundTransparency = 1
-            Icon.Image = iconId
+            -- Умная загрузка через rbxthumb, спасает от сломанных декалей
+            if tonumber(iconId) then
+                Icon.Image = "rbxthumb://type=Asset&id=" .. iconId .. "&w=150&h=150"
+            else
+                Icon.Image = iconId
+            end
             Icon.ImageColor3 = colorGrayInactive
             Icon.ZIndex = 3
         end
@@ -718,7 +714,11 @@ function CreatePage(name, iconId, layoutOrder)
         TabIcon.Size = UDim2.new(0, 24, 0, 24)
         TabIcon.Position = UDim2.new(0, 10, 0.5, -12)
         TabIcon.BackgroundTransparency = 1
-        TabIcon.Image = "rbxthumb://type=Asset&id=" .. iconId .. "&w=150&h=150"
+        if tonumber(iconId) then
+            TabIcon.Image = "rbxthumb://type=Asset&id=" .. iconId .. "&w=150&h=150"
+        else
+            TabIcon.Image = iconId
+        end
         TabIcon.ImageTransparency = 0.25
         TabIcon.ZIndex = 7
         allTabIcons[name] = TabIcon
@@ -769,12 +769,12 @@ Library:CreateToggle(MainPage, "Авто-Фарм Монет", false, function(s
 Library:CreateToggle(VisualPage, "ESP Игроков", false, function(state) end)
 
 local SettingSections = Library:CreateSubTabs(SettingsPage, {
-    {Name = "UI", Icon = "rbxassetid://6034289132", Color = Color3.fromRGB(108, 176, 214)},
-    {Name = "Theme", Icon = "rbxassetid://6034289317", Color = Color3.fromRGB(235, 94, 153)}
+    -- Передаём чистый ID, скрипт сам загрузит его как надо
+    {Name = "UI", Icon = "85203682050945", Color = Color3.fromRGB(108, 176, 214)},
+    {Name = "Theme", Icon = "6034289317", Color = Color3.fromRGB(235, 94, 153)}
 })
 
 Library:CreateToggle(SettingSections["UI"], "UI Размер", false, function(state) end)
-Library:CreateImage(SettingSections["UI"], "85203682050945") -- Наша картинка с фиксом rbxthumb загрузки
 Library:CreateButton(SettingSections["Theme"], "Переключить тему", function() end)
 
 if allTabs["Main"] and allTabButtons["Main"] then
