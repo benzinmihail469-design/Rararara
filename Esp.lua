@@ -64,7 +64,6 @@ local MainFrame = Instance.new("Frame", DarkHub)
 MainFrame.Name = "MainFrame"
 MainFrame.BackgroundColor3 = Color3.fromRGB(14, 14, 14)
 MainFrame.BackgroundTransparency = 0.15
--- Фиксация строго по центру экрана (работает на всех устройствах)
 MainFrame.AnchorPoint = Vector2.new(0.5, 0.5)
 MainFrame.Position = UDim2.new(0.5, 0, 0.5, 0)
 MainFrame.Size = UDim2.new(0, 550, 0, 350)
@@ -327,7 +326,12 @@ local function ToggleMinimize()
         HeaderBg.Size = UDim2.new(0, 150, 0, 46)
         MainStroke.Enabled = true
         MainFrame.BackgroundTransparency = 0.15
-        tween(MainFrame, {Size = UDim2.new(0, 550, 0, 350)}).Completed:Connect(function()
+        
+        -- ЖЕЛЕЗНОЕ ВОЗВРАЩЕНИЕ В ЦЕНТР ЭКРАНА ПРИ РАЗВОРAЧИВАНИИ
+        tween(MainFrame, {
+            Size = UDim2.new(0, 550, 0, 350),
+            Position = UDim2.new(0.5, 0, 0.5, 0)
+        }).Completed:Connect(function()
             if not isMinimized then
                 PagesContainer.Visible, TabTitle.Visible, SearchContainer.Visible, Navigation.Visible, FooterBg.Visible, ControlsContainer.Visible = true, true, true, true, true, true
             end
