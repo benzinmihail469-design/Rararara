@@ -247,9 +247,11 @@ local NavLayout = Instance.new("UIListLayout", Navigation)
 NavLayout.Padding = UDim.new(0, 5) 
 NavLayout.SortOrder = Enum.SortOrder.LayoutOrder 
 
-NavLayout:GetPropertyChangedSignal("AbsoluteContentSize"):Connect(function()
+-- Функция для авто-расширения скролла вкладок
+local function UpdateNavCanvas()
     Navigation.CanvasSize = UDim2.new(0, 0, 0, NavLayout.AbsoluteContentSize.Y + 15)
-end)
+end
+NavLayout:GetPropertyChangedSignal("AbsoluteContentSize"):Connect(UpdateNavCanvas)
 
 local FooterBg = Instance.new("Frame", SidebarContainer) 
 FooterBg.Size = UDim2.new(0, 150, 0, 46) 
@@ -333,7 +335,7 @@ EmbMinBtn.MouseButton1Click:Connect(ToggleMinimize)
 
 local function CloseGui() DarkHub:Destroy() end 
 CloseBtn.MouseButton1Click:Connect(CloseGui) 
-EmbCloseBtn.MouseButton1Connect:Connect(CloseGui) 
+EmbCloseBtn.MouseButton1Click:Connect(CloseGui) -- ИСПРАВЛЕНО ТУТ! Теперь работает коррект
 
 local function applyHover(btn, normalColor, hoverColor) 
     btn.MouseEnter:Connect(function() tween(btn, {TextColor3 = hoverColor}) end) 
@@ -517,7 +519,7 @@ function Library:CreateSubTabs(parentPage, tabsList)
         local Btn = Instance.new("TextButton", SubTabContainer)
         Btn.Size = UDim2.new(0, 105, 1, 0) 
         Btn.BackgroundColor3 = Color3.fromRGB(24, 24, 24)
-        Btn.BackgroundTransparency = 1 -- Неактивный саб-таб прозрачен (как на фото)
+        Btn.BackgroundTransparency = 1 
         Btn.Text = tabName
         Btn.Font = Enum.Font.GothamMedium
         Btn.TextColor3 = colorGray
@@ -532,7 +534,7 @@ function Library:CreateSubTabs(parentPage, tabsList)
         if iconId and iconId ~= "" then
             local Icon = Instance.new("ImageLabel", Btn)
             Icon.Size = UDim2.new(0, 20, 0, 20)
-            Icon.Position = UDim2.new(0, 12, 0.5, -10) -- Сдвинуто левее для красоты
+            Icon.Position = UDim2.new(0, 12, 0.5, -10) 
             Icon.BackgroundTransparency = 1
             Icon.Image = "rbxthumb://type=Asset&id=" .. iconId .. "&w=150&h=150"
             Icon.ImageColor3 = colorGray
@@ -567,7 +569,6 @@ function Library:CreateSubTabs(parentPage, tabsList)
             end
             
             Page.Visible = true
-            -- Включаем полупрозрачность фона, контур и оранжевое свечение элементов
             tween(Btn, {BackgroundTransparency = 0.5, TextColor3 = colorOrange}, 0.2)
             Stroke.Enabled = true
             if subIcons[tabName] then
@@ -590,7 +591,7 @@ function Library:CreateSubTabs(parentPage, tabsList)
 end
 -- =======================================================================
 
-local function CreatePage(name, iconId, layoutOrder) 
+function CreatePage(name, iconId, layoutOrder) 
     local PageFrame = Instance.new("ScrollingFrame", PagesContainer) 
     PageFrame.Size = UDim2.new(1, 0, 1, 0) 
     PageFrame.BackgroundTransparency = 1 
@@ -668,6 +669,7 @@ local function CreatePage(name, iconId, layoutOrder)
         if allTabIcons[name] then tween(allTabIcons[name], {ImageTransparency = 0}, 0.2) end 
     end) 
     
+    UpdateNavCanvas() -- Обновляем размеры навигации
     return PageFrame 
 end 
 
