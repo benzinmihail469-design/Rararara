@@ -309,7 +309,10 @@ local function CreateRipple(button, clickX, clickY)
     end)
 end
 
+-- Переменные для контроля состояний и запоминания позиции заголовка
 local isMinimized = false
+local LastMinimizedPos = UDim2.new(0.5, 0, 0.5, 0)
+
 local function ToggleMinimize()
     isMinimized = not isMinimized
     if isMinimized then
@@ -319,15 +322,23 @@ local function ToggleMinimize()
         HeaderBg.Position = UDim2.new(0, 0, 0, 0)
         HeaderBg.Size = UDim2.new(0, 175, 0, 46)
         EmbeddedControls.Visible = true
-        tween(MainFrame, {Size = UDim2.new(0, 175, 0, 46)})
+        
+        -- Сворачиваем интерфейс ровно в ту точку, где его оставил игрок
+        tween(MainFrame, {
+            Size = UDim2.new(0, 175, 0, 46),
+            Position = LastMinimizedPos
+        })
     else
+        -- Перед принудительным центрированием сохраняем текущее положение заголовка на экране
+        LastMinimizedPos = MainFrame.Position
+        
         EmbeddedControls.Visible = false
         HeaderBg.Position = UDim2.new(0, 10, 0, 10)
         HeaderBg.Size = UDim2.new(0, 150, 0, 46)
         MainStroke.Enabled = true
         MainFrame.BackgroundTransparency = 0.15
         
-        -- ЖЕЛЕЗНОЕ ВОЗВРАЩЕНИЕ В ЦЕНТР ЭКРАНА ПРИ РАЗВОРAЧИВАНИИ
+        -- Разворачиваем всегда строго по центру экрана
         tween(MainFrame, {
             Size = UDim2.new(0, 550, 0, 350),
             Position = UDim2.new(0.5, 0, 0.5, 0)
@@ -377,7 +388,9 @@ end)
 UserInputService.InputChanged:Connect(function(input)
     if input == dragInput and dragToggle then
         local delta = input.Position - dragStart
-        MainFrame.Position = UDim2.new(startPos.X.Scale, startPos.X.Offset + delta.X, startPos.Y.Scale, startPos.Y.Offset + delta.Y)
+        local newPos = UDim2.new(startPos.X.Scale, startPos.X.Offset + delta.X, startPos.Y.Scale, startPos.Y.Offset + delta.Y)
+        MainFrame.Position = newPos
+        LastMinimizedPos = newPos -- Обновляем сохраненную точку при каждом ручном перемещении
     end
 end)
 
