@@ -64,7 +64,9 @@ local MainFrame = Instance.new("Frame", DarkHub)
 MainFrame.Name = "MainFrame"
 MainFrame.BackgroundColor3 = Color3.fromRGB(14, 14, 14)
 MainFrame.BackgroundTransparency = 0.15
-MainFrame.Position = UDim2.new(0.5, -275, 0.5, -175)
+-- Фиксация строго по центру экрана (работает на всех устройствах)
+MainFrame.AnchorPoint = Vector2.new(0.5, 0.5)
+MainFrame.Position = UDim2.new(0.5, 0, 0.5, 0)
 MainFrame.Size = UDim2.new(0, 550, 0, 350)
 
 local MainScale = Instance.new("UIScale", MainFrame)
@@ -505,7 +507,6 @@ function Library:CreateToggle(parentPage, text, default, callback)
     table.insert(SearchableElements, {Instance = TglFrame, SearchText = NormalizeText(text), OriginalParent = parentPage})
 end
 
--- ИСПРАВЛЕННЫЙ СЛАЙДЕР: Работает идеально плавно на ПК и Телефонах
 function Library:CreateSlider(parentPage, text, min, max, default, callback)
     local SliderFrame = Instance.new("Frame", parentPage)
     SliderFrame.Size = UDim2.new(1, -20, 0, 52)
@@ -570,7 +571,6 @@ function Library:CreateSlider(parentPage, text, min, max, default, callback)
     local startPercent = 0
     local cachedTrackWidth = 0
     
-    -- Авто-определение типа вывода (целое число или сотые)
     local isIntegerSlider = (max - min) > 5
     
     local function updateVisuals(percentage)
@@ -903,14 +903,11 @@ local SettingSections = Library:CreateSubTabs(SettingsPage, {
     {Name = "Theme", Icon = "78640980615320", Color = Color3.fromRGB(235, 94, 153)}
 })
 
--- Слайдер размера интерфейса
 Library:CreateSlider(SettingSections["UI"], "UI Size", 0.5, 1.5, 1.00, function(value)
     MainScale.Scale = value
 end)
 
--- НОВЫЙ СЛАЙДЕР: UI Transparency (Диапазон 0-100%, дефолтная прозрачность 15%)
 Library:CreateSlider(SettingSections["UI"], "UI Transparency", 0, 100, 15, function(value)
-    -- Превращаем проценты 0-100 в дробное значение 0-1 для прозрачности Roblox
     MainFrame.BackgroundTransparency = value / 100
 end)
 
