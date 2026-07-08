@@ -388,10 +388,8 @@ local allTabButtons = {}
 local allTabIcons = {}
 local allPages = {}
 
--- ПОЛНАЯ БАЗА ЛОКАЛИЗАЦИИ (Включая боковое меню, вкладки и заголовки)
 local Localization = {
     ["English"] = {
-        -- Вкладки бокового меню
         ["Main"] = "Main",
         ["Teleport"] = "Teleport",
         ["Murder"] = "Murder",
@@ -399,10 +397,8 @@ local Localization = {
         ["Players"] = "Players",
         ["Visual"] = "Visual",
         ["Settings"] = "Settings",
-        -- Подкатегории настроек
         ["UI"] = "UI",
         ["Theme"] = "Theme",
-        -- Элементы внутри страниц
         ["AutoFarmCoins"] = "Auto-Farm Coins",
         ["PlayerESP"] = "Player ESP",
         ["UISize"] = "UI Size",
@@ -412,7 +408,6 @@ local Localization = {
         ["Language"] = "Language"
     },
     ["Русский"] = {
-        -- Вкладки бокового меню
         ["Main"] = "Главная",
         ["Teleport"] = "Телепорт",
         ["Murder"] = "Убийца",
@@ -420,10 +415,8 @@ local Localization = {
         ["Players"] = "Игроки",
         ["Visual"] = "Визуалы",
         ["Settings"] = "Настройки",
-        -- Подкатегории настроек
         ["UI"] = "Интерфейс",
         ["Theme"] = "Тема",
-        -- Элементы внутри страниц
         ["AutoFarmCoins"] = "Авто-Фарм Монет",
         ["PlayerESP"] = "ESP Игроков",
         ["UISize"] = "Размер интерфейса",
@@ -778,7 +771,7 @@ function Library:CreateSlider(parentPage, textKey, min, max, default, callback)
     end
     
     SliderBtn.InputBegan:Connect(function(input)
-        if input.UserInputType == Enum.UserInputType.MouseButton1 or input.UserInputType == Enum.UserInputType.Touch) then
+        if (input.UserInputType == Enum.UserInputType.MouseButton1 or input.UserInputType == Enum.UserInputType.Touch) then
             dragging = true
             startX = input.Position.X
             cachedTrackWidth = SliderTrack.AbsoluteSize.X
@@ -1095,11 +1088,9 @@ Library:CreateDropdown(SettingSections["UI"], "MenuFont", {"Gotham", "Gotham Bol
     end
 end)
 
--- ВЫПАДАЮЩИЙ СПИСОК СМЕНЫ ЯЗЫКА (Полная синхронизация всего интерфейса)
 Library:CreateDropdown(SettingSections["UI"], "Language", {"English", "Русский"}, "English", function(selectedLang)
     Library.CurrentLanguage = selectedLang
     
-    -- Динамически обновляем вообще все тексты, включая меню и табы
     for _, item in ipairs(LocaleObjects) do
         local translatedText = Localization[selectedLang][item.Key]
         if translatedText then
@@ -1110,7 +1101,6 @@ Library:CreateDropdown(SettingSections["UI"], "Language", {"English", "Русс�
         end
     end
     
-    -- Отдельно обновляем верхний главный заголовок текущей страницы
     TabTitle.Text = Localization[selectedLang][Library.CurrentTabKey] or Library.CurrentTabKey
 end)
 
