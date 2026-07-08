@@ -392,12 +392,34 @@ end)
 
 local Library = {}
 Library.CurrentFont = Enum.Font.Gotham
+Library.CurrentLanguage = "English"
 
 local SearchableElements = {}
+local LocaleObjects = {}
 local allTabs = {}
 local allTabButtons = {}
 local allTabIcons = {}
 local allPages = {}
+
+-- БАЗА ДАННЫХ ЛОКАЛИЗАЦИИ И ПЕРЕВОДОВ
+local Localization = {
+    ["English"] = {
+        ["AutoFarmCoins"] = "Auto-Farm Coins",
+        ["PlayerESP"] = "Player ESP",
+        ["UISize"] = "UI Size",
+        ["UITransparency"] = "UI Transparency",
+        ["MenuFont"] = "Menu Font",
+        ["SwitchTheme"] = "Switch Theme"
+    },
+    ["Русский"] = {
+        ["AutoFarmCoins"] = "Авто-Фарм Монет",
+        ["PlayerESP"] = "ESP Игроков",
+        ["UISize"] = "Размер интерфейса",
+        ["UITransparency"] = "Прозрачность меню",
+        ["MenuFont"] = "Шрифт меню",
+        ["SwitchTheme"] = "Переключить тему"
+    }
+}
 
 local SearchResultsPage = Instance.new("ScrollingFrame", PagesContainer)
 SearchResultsPage.Size = UDim2.new(1, 0, 1, 0)
@@ -449,7 +471,6 @@ ClearSearchBtn.Activated:Connect(function()
     SearchBox.Text = ""
 end)
 
--- ОБНОВЛЕННАЯ ТАБЛИЦА ШРИФТОВ СО СКРИНШОТА 3472.jpg
 local FontMapping = {
     ["Gotham"] = Enum.Font.Gotham,
     ["Gotham Bold"] = Enum.Font.GothamBold,
@@ -463,7 +484,10 @@ local FontMapping = {
     ["Fredoka One"] = Enum.Font.FredokaOne
 }
 
-function Library:CreateDropdown(parentPage, text, options, default, callback)
+function Library:CreateDropdown(parentPage, textKey, options, default, callback)
+    local isStaticTitle = (textKey == "Language") -- Отключаем перевод для самого заголовка "Language"
+    local initialText = isStaticTitle and textKey or (Localization[Library.CurrentLanguage][textKey] or textKey)
+
     local DropdownFrame = Instance.new("Frame", parentPage)
     DropdownFrame.Size = UDim2.new(1, -20, 0, 36)
     DropdownFrame.BackgroundColor3 = Color3.fromRGB(22, 22, 22)
@@ -483,7 +507,7 @@ function Library:CreateDropdown(parentPage, text, options, default, callback)
     local TitleLabel = Instance.new("TextLabel", HeaderBtn)
     TitleLabel.Size = UDim2.new(0.5, 0, 1, 0)
     TitleLabel.Position = UDim2.new(0, 12, 0, 0)
-    TitleLabel.Text = text
+    TitleLabel.Text = initialText
     TitleLabel.Font = Library.CurrentFont
     TitleLabel.TextColor3 = Color3.fromRGB(230, 230, 230)
     TitleLabel.TextSize = 13
@@ -581,14 +605,20 @@ function Library:CreateDropdown(parentPage, text, options, default, callback)
         end)
     end
     
-    table.insert(SearchableElements, {Instance = DropdownFrame, SearchText = NormalizeText(text), OriginalParent = parentPage})
+    local searchItem = {Instance = DropdownFrame, SearchText = NormalizeText(initialText), OriginalParent = parentPage}
+    table.insert(SearchableElements, searchItem)
+    
+    if not isStaticTitle then
+        table.insert(LocaleObjects, {Object = TitleLabel, Key = textKey, SearchItem = searchItem})
+    end
 end
 
-function Library:CreateButton(parentPage, text, callback)
+function Library:CreateButton(parentPage, textKey, callback)
+    local initialText = Localization[Library.CurrentLanguage][textKey] or textKey
     local Btn = Instance.new("TextButton", parentPage)
     Btn.Size = UDim2.new(1, -20, 0, 36)
     Btn.BackgroundColor3 = Color3.fromRGB(22, 22, 22)
-    Btn.Text = text
+    Btn.Text = initialText
     Btn.Font = Library.CurrentFont
     Btn.TextColor3 = Color3.fromRGB(230, 230, 230)
     Btn.TextSize = 13
@@ -604,10 +634,14 @@ function Library:CreateButton(parentPage, text, callback)
     end)
     
     Btn.Activated:Connect(callback)
-    table.insert(SearchableElements, {Instance = Btn, SearchText = NormalizeText(text), OriginalParent = parentPage})
+    
+    local searchItem = {Instance = Btn, SearchText = NormalizeText(initialText), OriginalParent = parentPage}
+    table.insert(SearchableElements, searchItem)
+    table.insert(LocaleObjects, {Object = Btn, Key = textKey, SearchItem = searchItem})
 end
 
-function Library:CreateToggle(parentPage, text, default, callback)
+function Library:CreateToggle(parentPage, textKey, default, callback)
+    local initialText = Localization[Library.CurrentLanguage][textKey] or textKey
     local TglFrame = Instance.new("Frame", parentPage)
     TglFrame.Size = UDim2.new(1, -20, 0, 36)
     TglFrame.BackgroundColor3 = Color3.fromRGB(22, 22, 22)
@@ -618,7 +652,7 @@ function Library:CreateToggle(parentPage, text, default, callback)
     local TglLabel = Instance.new("TextLabel", TglFrame)
     TglLabel.Size = UDim2.new(1, -60, 1, 0)
     TglLabel.Position = UDim2.new(0, 12, 0, 0)
-    TglLabel.Text = text
+    TglLabel.Text = initialText
     TglLabel.Font = Library.CurrentFont
     TglLabel.TextColor3 = Color3.fromRGB(230, 230, 230)
     TglLabel.TextSize = 13
@@ -654,10 +688,13 @@ function Library:CreateToggle(parentPage, text, default, callback)
         callback(enabled)
     end)
     
-    table.insert(SearchableElements, {Instance = TglFrame, SearchText = NormalizeText(text), OriginalParent = parentPage})
+    local searchItem = {Instance = TglFrame, SearchText = NormalizeText(initialText), OriginalParent = parentPage}
+    table.insert(SearchableElements, searchItem)
+    table.insert(LocaleObjects, {Object = TglLabel, Key = textKey, SearchItem = searchItem})
 end
 
-function Library:CreateSlider(parentPage, text, min, max, default, callback)
+function Library:CreateSlider(parentPage, textKey, min, max, default, callback)
+    local initialText = Localization[Library.CurrentLanguage][textKey] or textKey
     local SliderFrame = Instance.new("Frame", parentPage)
     SliderFrame.Size = UDim2.new(1, -20, 0, 52)
     SliderFrame.BackgroundColor3 = Color3.fromRGB(22, 22, 22)
@@ -668,7 +705,7 @@ function Library:CreateSlider(parentPage, text, min, max, default, callback)
     local SliderLabel = Instance.new("TextLabel", SliderFrame)
     SliderLabel.Size = UDim2.new(0.5, -12, 0, 22)
     SliderLabel.Position = UDim2.new(0, 12, 0, 6)
-    SliderLabel.Text = text
+    SliderLabel.Text = initialText
     SliderLabel.Font = Library.CurrentFont
     SliderLabel.TextColor3 = Color3.fromRGB(230, 230, 230)
     SliderLabel.TextSize = 13
@@ -776,7 +813,9 @@ function Library:CreateSlider(parentPage, text, min, max, default, callback)
         updateVisuals(currentPercent)
     end)
     
-    table.insert(SearchableElements, {Instance = SliderFrame, SearchText = NormalizeText(text), OriginalParent = parentPage})
+    local searchItem = {Instance = SliderFrame, SearchText = NormalizeText(initialText), OriginalParent = parentPage}
+    table.insert(SearchableElements, searchItem)
+    table.insert(LocaleObjects, {Object = SliderLabel, Key = textKey, SearchItem = searchItem})
 end
 
 function Library:CreateImage(parentPage, imageId)
@@ -1034,24 +1073,24 @@ local PlayersPage = CreatePage("Players", "99904215381150", 5)
 local VisualPage = CreatePage("Visual", "78910169210318", 6)
 local SettingsPage = CreatePage("Settings", "117996761927034", 99)
 
-Library:CreateToggle(MainPage, "Авто-Фарм Монет", false, function(state) end)
-Library:CreateToggle(VisualPage, "ESP Игроков", false, function(state) end)
+-- Использование ключей вместо сырого текста для поддержки локализации
+Library:CreateToggle(MainPage, "AutoFarmCoins", false, function(state) end)
+Library:CreateToggle(VisualPage, "PlayerESP", false, function(state) end)
 
 local SettingSections = Library:CreateSubTabs(SettingsPage, {
     {Name = "UI", Icon = "85203682050945", Color = Color3.fromRGB(108, 176, 214)},
     {Name = "Theme", Icon = "78640980615320", Color = Color3.fromRGB(235, 94, 153)}
 })
 
-Library:CreateSlider(SettingSections["UI"], "UI Size", 0.5, 1.5, 1.00, function(value)
+Library:CreateSlider(SettingSections["UI"], "UISize", 0.5, 1.5, 1.00, function(value)
     MainScale.Scale = value
 end)
 
-Library:CreateSlider(SettingSections["UI"], "UI Transparency", 0, 100, 15, function(value)
+Library:CreateSlider(SettingSections["UI"], "UITransparency", 0, 100, 15, function(value)
     MainFrame.BackgroundTransparency = value / 100
 end)
 
--- ВЫПАДАЮЩИЙ СПИСОК С ПОЛНЫМ НАБОРОМ ШРИФТОВ С ОБЕИХ КАРТИНОК
-Library:CreateDropdown(SettingSections["UI"], "Menu Font", {"Gotham", "Gotham Bold", "Source Sans", "Roboto", "Roboto Mono", "Ubuntu", "Michroma", "Code", "Fantasy", "Fredoka One"}, "Gotham", function(selectedFont)
+Library:CreateDropdown(SettingSections["UI"], "MenuFont", {"Gotham", "Gotham Bold", "Source Sans", "Roboto", "Roboto Mono", "Ubuntu", "Michroma", "Code", "Fantasy", "Fredoka One"}, "Gotham", function(selectedFont)
     local targetFont = FontMapping[selectedFont] or Enum.Font.Gotham
     Library.CurrentFont = targetFont
     
@@ -1064,7 +1103,21 @@ Library:CreateDropdown(SettingSections["UI"], "Menu Font", {"Gotham", "Gotham Bo
     end
 end)
 
-Library:CreateButton(SettingSections["Theme"], "Переключить тему", function() end)
+-- НОВЫЙ ВЫПАДАЮЩИЙ СПИСОК СМЕНЫ ЯЗЫКА СМ. СКРИНШОТ 3435_2.jpg
+Library:CreateDropdown(SettingSections["UI"], "Language", {"English", "Русский"}, "English", function(selectedLang)
+    Library.CurrentLanguage = selectedLang
+    
+    -- Динамическое обновление всех зарегистрированных текстовых элементов интерфейса
+    for _, item in ipairs(LocaleObjects) do
+        local translatedText = Localization[selectedLang][item.Key]
+        if translatedText then
+            item.Object.Text = translatedText
+            item.SearchItem.SearchText = NormalizeText(translatedText)
+        end
+    end
+end)
+
+Library:CreateButton(SettingSections["Theme"], "SwitchTheme", function() end)
 
 if allTabs["Main"] and allTabButtons["Main"] then
     allTabs["Main"].BackgroundTransparency = 0
