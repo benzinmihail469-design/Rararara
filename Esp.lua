@@ -505,8 +505,11 @@ function Library:CreateSubTabs(parentPage, tabsList)
     ListLayout.FillDirection = Enum.FillDirection.Horizontal 
     ListLayout.Padding = UDim.new(0, 10) 
     ListLayout.SortOrder = Enum.SortOrder.LayoutOrder 
-    ListLayout.HorizontalAlignment = Enum.HorizontalAlignment.Center 
+    ListLayout.HorizontalAlignment = Enum.HorizontalAlignment.Left -- Выравнивание по левому краю
     ListLayout.VerticalAlignment = Enum.VerticalAlignment.Center 
+    
+    local SubTabPadding = Instance.new("UIPadding", SubTabContainer)
+    SubTabPadding.PaddingLeft = UDim.new(0, 10) -- Ровный отступ в один ряд с кнопками
     
     local ContentContainer = Instance.new("Frame", parentPage) 
     ContentContainer.Size = UDim2.new(1, 0, 0, 0) 
