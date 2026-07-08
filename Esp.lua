@@ -518,11 +518,8 @@ end
 
 function Library:CreateSubTabs(parentPage, tabsList)
     local SubTabContainer = Instance.new("Frame", parentPage)
-    SubTabContainer.Size = UDim2.new(1, 0, 0, 32)
+    SubTabContainer.Size = UDim2.new(1, -20, 0, 32)
     SubTabContainer.BackgroundTransparency = 1
-    
-    local SubTabPadding = Instance.new("UIPadding", SubTabContainer)
-    SubTabPadding.PaddingLeft = UDim.new(0, 10)
     
     local ListLayout = Instance.new("UIListLayout", SubTabContainer)
     ListLayout.FillDirection = Enum.FillDirection.Horizontal
