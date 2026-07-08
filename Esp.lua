@@ -33,7 +33,7 @@ local function tween(obj, props, dur)
     return t 
 end 
 
--- === УЛЬТРА-ПОИСК V2 (Двуязычный + Умный) ===
+-- === УЛЬТРА-ПОИСК V2 ===
 local function NormalizeText(str)
     local success, res = pcall(function()
         local normalized = ""
@@ -60,7 +60,6 @@ local function NormalizeText(str)
 
     return string.gsub(finalStr, "[%p%s%c]", "")
 end
--- =============================================
 
 local MainFrame = Instance.new("Frame", DarkHub) 
 MainFrame.Name = "MainFrame" 
@@ -120,7 +119,6 @@ CloseBtn.TextColor3 = Color3.fromRGB(180, 180, 180)
 CloseBtn.BackgroundTransparency = 1 
 CloseBtn.ZIndex = 11 
 
--- === Интерфейс поиска === 
 local SearchContainer = Instance.new("Frame", MainFrame) 
 SearchContainer.Size = UDim2.new(0, 160, 0, 30) 
 SearchContainer.Position = UDim2.new(1, -240, 0, 12) 
@@ -163,7 +161,6 @@ SearchBox.TextColor3 = Color3.fromRGB(230, 230, 230)
 SearchBox.PlaceholderColor3 = Color3.fromRGB(130, 130, 130) 
 SearchBox.TextXAlignment = Enum.TextXAlignment.Left 
 SearchBox.ZIndex = 7 
--- ======================== 
 
 local SidebarContainer = Instance.new("Frame", MainFrame) 
 SidebarContainer.Size = UDim2.new(0, 170, 1, 0) 
@@ -236,7 +233,6 @@ EmbCloseBtn.TextColor3 = Color3.fromRGB(180, 180, 180)
 EmbCloseBtn.BackgroundTransparency = 1 
 EmbCloseBtn.ZIndex = 7 
 
--- === Скролл для сайдбара ===
 local Navigation = Instance.new("ScrollingFrame", SidebarContainer) 
 Navigation.Size = UDim2.new(1, -20, 1, -125) 
 Navigation.Position = UDim2.new(0, 10, 0, 65) 
@@ -361,7 +357,6 @@ UserInputService.InputChanged:Connect(function(input)
     end 
 end) 
 
--- === ГЛОБАЛЬНЫЙ ПОИСК ПО ВСЕМ ВКЛАДКАМ ===
 local Library = {} 
 local SearchableElements = {} 
 local allTabs = {} 
@@ -413,7 +408,6 @@ SearchBox:GetPropertyChangedSignal("Text"):Connect(function()
 end) 
 
 ClearSearchBtn.Activated:Connect(function() SearchBox.Text = "" end) 
--- =========================================
 
 function Library:CreateButton(parentPage, text, callback) 
     local Btn = Instance.new("TextButton", parentPage) 
@@ -486,20 +480,18 @@ function Library:CreateToggle(parentPage, text, default, callback)
     table.insert(SearchableElements, {Instance = TglFrame, SearchText = NormalizeText(text), OriginalParent = parentPage}) 
 end 
 
--- === МНОГОСЛОЙНАЯ СИСТЕМА САБ-ТАБОВ (С ДИНАМИЧЕСКИМИ ЦВЕТАМИ) ===
+-- === НАДЁЖНАЯ СИСТЕМА СУБ-ВКЛАДОК С ИНДИВИДУАЛЬНЫМ ОКРАШИВАНИЕМ ===
 function Library:CreateSubTabs(parentPage, tabsList)
     local SubTabContainer = Instance.new("Frame", parentPage)
-    SubTabContainer.Size = UDim2.new(1, -20, 0, 32)
+    SubTabContainer.Size = UDim2.new(1, 0, 0, 32) -- 100% ширины для правильного центрирования кнопок
     SubTabContainer.BackgroundTransparency = 1
     
     local ListLayout = Instance.new("UIListLayout", SubTabContainer)
     ListLayout.FillDirection = Enum.FillDirection.Horizontal
     ListLayout.Padding = UDim.new(0, 10) 
     ListLayout.SortOrder = Enum.SortOrder.LayoutOrder
-    ListLayout.HorizontalAlignment = Enum.HorizontalAlignment.Left 
-    
-    local SubTabPadding = Instance.new("UIPadding", SubTabContainer)
-    SubTabPadding.PaddingLeft = UDim.new(0, 6)
+    ListLayout.HorizontalAlignment = Enum.HorizontalAlignment.Center -- Центрируем кнопки
+    ListLayout.VerticalAlignment = Enum.VerticalAlignment.Center
 
     local ContentContainer = Instance.new("Frame", parentPage)
     ContentContainer.Size = UDim2.new(1, 0, 0, 0)
@@ -509,16 +501,20 @@ function Library:CreateSubTabs(parentPage, tabsList)
     local subPages = {}
     local registry = {} 
     
-    local colorGrayInactive = Color3.fromRGB(140, 140, 140) -- Пассивный цвет для всех
+    local colorGrayInactive = Color3.fromRGB(140, 140, 140)
     
     for i, tabData in ipairs(tabsList) do
         local tabName = tabData.Name
         local iconId = tabData.Icon
         
-        -- Динамический выбор цвета на основе названия суб-вкладки
-        local activeColor = Color3.fromRGB(108, 176, 214) -- Голубой по умолчанию (для UI)
-        if tabName == "Theme" then
-            activeColor = Color3.fromRGB(235, 94, 153) -- Красивый неоново-розовый для Theme!
+        -- СВЕРХНАДЁЖНЫЙ ВЫБОР ЦВЕТА
+        local activeColor = Color3.fromRGB(108, 176, 214) -- Голубой дефолт (для UI)
+        local lowName = string.lower(string.gsub(tabName, "%s+", ""))
+        
+        if tabData.Color then
+            activeColor = tabData.Color
+        elseif string.find(lowName, "theme") or string.find(lowName, "тема") then
+            activeColor = Color3.fromRGB(235, 94, 153) -- Настоящий ярко-розовый для Theme!
         end
         
         local BtnContainer = Instance.new("Frame", SubTabContainer)
@@ -526,7 +522,6 @@ function Library:CreateSubTabs(parentPage, tabsList)
         BtnContainer.BackgroundTransparency = 1
         BtnContainer.LayoutOrder = i
         
-        -- Слой Визуала (Задний фон и обводка)
         local VisualFrame = Instance.new("Frame", BtnContainer)
         VisualFrame.Size = UDim2.new(1, 0, 1, 0)
         VisualFrame.BackgroundColor3 = activeColor
@@ -539,7 +534,6 @@ function Library:CreateSubTabs(parentPage, tabsList)
         Stroke.ApplyStrokeMode = Enum.ApplyStrokeMode.Border
         Stroke.Enabled = false
         
-        -- Слой Контента (Иконка и Текст)
         local ContentFrame = Instance.new("Frame", BtnContainer)
         ContentFrame.Size = UDim2.new(1, 0, 1, 0)
         ContentFrame.BackgroundTransparency = 1
@@ -571,7 +565,6 @@ function Library:CreateSubTabs(parentPage, tabsList)
         Label.Size = UDim2.new(0, 0, 1, 0)
         Label.ZIndex = 3
         
-        -- Страница контента
         local Page = Instance.new("Frame", ContentContainer)
         Page.Size = UDim2.new(1, 0, 0, 0)
         Page.BackgroundTransparency = 1
@@ -584,16 +577,16 @@ function Library:CreateSubTabs(parentPage, tabsList)
         
         subPages[tabName] = Page
         
+        -- Записываем все данные, включая целевой цвет вкладки
         registry[tabName] = {
             Page = Page,
             Visual = VisualFrame,
             Stroke = Stroke,
             Label = Label,
             Icon = Icon,
-            CustomColor = activeColor
+            TargetColor = activeColor
         }
         
-        -- Сенсорный невидимый слой для мобильных кликов
         local ClickBtn = Instance.new("TextButton", BtnContainer)
         ClickBtn.Size = UDim2.new(1, 0, 1, 0)
         ClickBtn.BackgroundTransparency = 1
@@ -601,6 +594,7 @@ function Library:CreateSubTabs(parentPage, tabsList)
         ClickBtn.ZIndex = 10
         
         local function activateTab()
+            -- Сбрасываем все вкладки
             for _, data in pairs(registry) do
                 data.Page.Visible = false
                 data.Visual.BackgroundTransparency = 1
@@ -609,11 +603,14 @@ function Library:CreateSubTabs(parentPage, tabsList)
                 if data.Icon then data.Icon.ImageColor3 = colorGrayInactive end
             end
             
+            -- Принудительно выставляем цвета активной вкладки
             Page.Visible = true
-            VisualFrame.BackgroundTransparency = 0.88 -- Мягкое полупрозрачное наполнение
+            VisualFrame.BackgroundColor3 = activeColor
+            VisualFrame.BackgroundTransparency = 0.88
+            Stroke.Color = activeColor
             Stroke.Enabled = true
-            Label.TextColor3 = activeColor -- Надпись окрашивается в цвет контура
-            if Icon then Icon.ImageColor3 = activeColor end -- Иконка окрашивается в цвет контура
+            Label.TextColor3 = activeColor
+            if Icon then Icon.ImageColor3 = activeColor end
         end
         
         ClickBtn.Activated:Connect(activateTab)
@@ -622,20 +619,23 @@ function Library:CreateSubTabs(parentPage, tabsList)
                 activateTab()
             end
         end)
-        
-        -- Настройка дефолтного состояния (первая вкладка по списку)
-        if i == 1 then
-            Page.Visible = true
-            VisualFrame.BackgroundTransparency = 0.88
-            Stroke.Enabled = true
-            Label.TextColor3 = activeColor
-            if Icon then Icon.ImageColor3 = activeColor end
-        end
+    end
+    
+    -- Автоматическая активация ПЕРВОЙ вкладки из списка с правильным цветом
+    local firstTab = tabsList[1] and tabsList[1].Name
+    if firstTab and registry[firstTab] then
+        local data = registry[firstTab]
+        data.Page.Visible = true
+        data.Visual.BackgroundColor3 = data.TargetColor
+        data.Visual.BackgroundTransparency = 0.88
+        data.Stroke.Color = data.TargetColor
+        data.Stroke.Enabled = true
+        data.Label.TextColor3 = data.TargetColor
+        if data.Icon then data.Icon.ImageColor3 = data.TargetColor end
     end
     
     return subPages
 end
--- =======================================================================
 
 function CreatePage(name, iconId, layoutOrder) 
     local PageFrame = Instance.new("ScrollingFrame", PagesContainer) 
@@ -719,7 +719,7 @@ function CreatePage(name, iconId, layoutOrder)
     return PageFrame 
 end 
 
--- 1. Создание всех страниц
+-- 1. Создание страниц
 local MainPage = CreatePage("Main", "103980564128710", 1) 
 local TeleportPage = CreatePage("Teleport", "94373592263020", 2) 
 local MurderPage = CreatePage("Murder", "85278865249050", 3) 
@@ -728,22 +728,21 @@ local PlayersPage = CreatePage("Players", "99904215381150", 5)
 local VisualPage = CreatePage("Visual", "78910169210318", 6) 
 local SettingsPage = CreatePage("Settings", "117996761927034", 99) 
 
--- 2. Наполнение страниц базовыми функциями
-Library:CreateToggle(MainPage, "Авто-Фарм Монет", false, function(state) print("Статус автофарма:", state) end)
-Library:CreateToggle(VisualPage, "ESP Игроков", false, function(state) print("ESP статус:", state) end)
-Library:CreateButton(TeleportPage, "Телепорт на спавн", function() print("Телепорт...") end)
+-- 2. Функции
+Library:CreateToggle(MainPage, "Авто-Фарм Монет", false, function(state) end)
+Library:CreateToggle(VisualPage, "ESP Игроков", false, function(state) end)
 
--- 3. СОЗДАНИЕ СУБ-ВКЛАДОК В НАСТРОЙКАХ (UI — голубая, Theme — розовая)
+-- 3. СОЗДАНИЕ СУБ-ВКЛАДОК С ЯВНЫМ ЦВЕТОМ ДЛЯ КАЖДОЙ
 local SettingSections = Library:CreateSubTabs(SettingsPage, {
-    {Name = "UI", Icon = "rbxassetid://6034289132"}, 
-    {Name = "Theme", Icon = "rbxassetid://6034289317"} -- Иконка палитры
+    {Name = "UI", Icon = "rbxassetid://6034289132", Color = Color3.fromRGB(108, 176, 214)}, -- Голубой
+    {Name = "Theme", Icon = "rbxassetid://6034289317", Color = Color3.fromRGB(235, 94, 153)} -- Розовый
 })
 
--- Наполнение контента суб-вкладок
+-- Контент
 Library:CreateToggle(SettingSections["UI"], "UI Размер", false, function(state) end)
-Library:CreateButton(SettingSections["Theme"], "Переключить на Тёмную тему", function() print("Тема изменена") end)
+Library:CreateButton(SettingSections["Theme"], "Переключить тему", function() end)
 
--- Авто-выбор первой вкладки на старте
+-- Старт
 if allTabs["Main"] and allTabButtons["Main"] then 
     allTabs["Main"].BackgroundTransparency = 0 
     allTabButtons["Main"].TextColor3 = Color3.fromRGB(255, 255, 255) 
