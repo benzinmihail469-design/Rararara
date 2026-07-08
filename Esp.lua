@@ -486,7 +486,7 @@ function Library:CreateToggle(parentPage, text, default, callback)
     table.insert(SearchableElements, {Instance = TglFrame, SearchText = NormalizeText(text), OriginalParent = parentPage}) 
 end 
 
--- === МНОГОСЛОЙНАЯ И СТАБИЛЬНАЯ СИСТЕМА САБ-ТАБОВ (ОБНОВЛЁННЫЙ ЦВЕТ) ===
+-- === МНОГОСЛОЙНАЯ СИСТЕМА САБ-ТАБОВ (С ДИНАМИЧЕСКИМИ ЦВЕТАМИ) ===
 function Library:CreateSubTabs(parentPage, tabsList)
     local SubTabContainer = Instance.new("Frame", parentPage)
     SubTabContainer.Size = UDim2.new(1, -20, 0, 32)
@@ -509,15 +509,17 @@ function Library:CreateSubTabs(parentPage, tabsList)
     local subPages = {}
     local registry = {} 
     
-    -- Синхронизированная палитра под Pulse Hub стиль
-    local colorBlueStroke = Color3.fromRGB(108, 176, 214)   -- Основной голубой
-    local colorActiveBg = Color3.fromRGB(108, 176, 214)     -- Тот же голубой для внутренности
-    local colorTextActive = colorBlueStroke                 -- Текст совпадает с контуром!
-    local colorGrayInactive = Color3.fromRGB(140, 140, 140) -- Пассивный цвет
+    local colorGrayInactive = Color3.fromRGB(140, 140, 140) -- Пассивный цвет для всех
     
     for i, tabData in ipairs(tabsList) do
         local tabName = tabData.Name
         local iconId = tabData.Icon
+        
+        -- Динамический выбор цвета на основе названия суб-вкладки
+        local activeColor = Color3.fromRGB(108, 176, 214) -- Голубой по умолчанию (для UI)
+        if tabName == "Theme" then
+            activeColor = Color3.fromRGB(235, 94, 153) -- Красивый неоново-розовый для Theme!
+        end
         
         local BtnContainer = Instance.new("Frame", SubTabContainer)
         BtnContainer.Size = UDim2.new(0, 95, 1, 0)
@@ -527,12 +529,12 @@ function Library:CreateSubTabs(parentPage, tabsList)
         -- Слой Визуала (Задний фон и обводка)
         local VisualFrame = Instance.new("Frame", BtnContainer)
         VisualFrame.Size = UDim2.new(1, 0, 1, 0)
-        VisualFrame.BackgroundColor3 = colorActiveBg
+        VisualFrame.BackgroundColor3 = activeColor
         VisualFrame.BackgroundTransparency = 1 
         Instance.new("UICorner", VisualFrame).CornerRadius = UDim.new(0, 7)
         
         local Stroke = Instance.new("UIStroke", VisualFrame)
-        Stroke.Color = colorBlueStroke
+        Stroke.Color = activeColor
         Stroke.Thickness = 1.6
         Stroke.ApplyStrokeMode = Enum.ApplyStrokeMode.Border
         Stroke.Enabled = false
@@ -587,7 +589,8 @@ function Library:CreateSubTabs(parentPage, tabsList)
             Visual = VisualFrame,
             Stroke = Stroke,
             Label = Label,
-            Icon = Icon
+            Icon = Icon,
+            CustomColor = activeColor
         }
         
         -- Сенсорный невидимый слой для мобильных кликов
@@ -607,10 +610,10 @@ function Library:CreateSubTabs(parentPage, tabsList)
             end
             
             Page.Visible = true
-            VisualFrame.BackgroundTransparency = 0.88 -- Мягкое полупрозрачное наполнение внутри!
+            VisualFrame.BackgroundTransparency = 0.88 -- Мягкое полупрозрачное наполнение
             Stroke.Enabled = true
-            Label.TextColor3 = colorTextActive
-            if Icon then Icon.ImageColor3 = colorTextActive end
+            Label.TextColor3 = activeColor -- Надпись окрашивается в цвет контура
+            if Icon then Icon.ImageColor3 = activeColor end -- Иконка окрашивается в цвет контура
         end
         
         ClickBtn.Activated:Connect(activateTab)
@@ -620,13 +623,13 @@ function Library:CreateSubTabs(parentPage, tabsList)
             end
         end)
         
-        -- Настройка дефолтного состояния (первая вкладка)
+        -- Настройка дефолтного состояния (первая вкладка по списку)
         if i == 1 then
             Page.Visible = true
             VisualFrame.BackgroundTransparency = 0.88
             Stroke.Enabled = true
-            Label.TextColor3 = colorTextActive
-            if Icon then Icon.ImageColor3 = colorTextActive end
+            Label.TextColor3 = activeColor
+            if Icon then Icon.ImageColor3 = activeColor end
         end
     end
     
@@ -730,14 +733,15 @@ Library:CreateToggle(MainPage, "Авто-Фарм Монет", false, function(s
 Library:CreateToggle(VisualPage, "ESP Игроков", false, function(state) print("ESP статус:", state) end)
 Library:CreateButton(TeleportPage, "Телепорт на спавн", function() print("Телепорт...") end)
 
--- 3. СОЗДАНИЕ СУБ-ВКЛАДОК В НАСТРОЙКАХ (UI и Theme)
+-- 3. СОЗДАНИЕ СУБ-ВКЛАДОК В НАСТРОЙКАХ (UI — голубая, Theme — розовая)
 local SettingSections = Library:CreateSubTabs(SettingsPage, {
-    {Name = "UI", Icon = "rbxassetid://6034289132"}, -- Иконка монитора из Pulse Hub
-    {Name = "Theme", Icon = ""} 
+    {Name = "UI", Icon = "rbxassetid://6034289132"}, 
+    {Name = "Theme", Icon = "rbxassetid://6034289317"} -- Иконка палитры
 })
 
--- Наполнение контента суб-вкладки UI
+-- Наполнение контента суб-вкладок
 Library:CreateToggle(SettingSections["UI"], "UI Размер", false, function(state) end)
+Library:CreateButton(SettingSections["Theme"], "Переключить на Тёмную тему", function() print("Тема изменена") end)
 
 -- Авто-выбор первой вкладки на старте
 if allTabs["Main"] and allTabButtons["Main"] then 
