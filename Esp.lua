@@ -486,7 +486,7 @@ function Library:CreateToggle(parentPage, text, default, callback)
     table.insert(SearchableElements, {Instance = TglFrame, SearchText = NormalizeText(text), OriginalParent = parentPage}) 
 end 
 
--- === МНОГОСЛОЙНАЯ И СТАБИЛЬНАЯ СИСТЕМА САБ-ТАБОВ (ДЛЯ МОБИЛЬНЫХ УСТРОЙСТВ) ===
+-- === МНОГОСЛОЙНАЯ И СТАБИЛЬНАЯ СИСТЕМА САБ-ТАБОВ (ОБНОВЛЁННЫЙ ЦВЕТ) ===
 function Library:CreateSubTabs(parentPage, tabsList)
     local SubTabContainer = Instance.new("Frame", parentPage)
     SubTabContainer.Size = UDim2.new(1, -20, 0, 32)
@@ -507,28 +507,28 @@ function Library:CreateSubTabs(parentPage, tabsList)
     ContentContainer.AutomaticSize = Enum.AutomaticSize.Y
     
     local subPages = {}
-    local registry = {} -- Хранилище всех элементов для сброса стилей
+    local registry = {} 
     
-    local colorBlueStroke = Color3.fromRGB(108, 176, 214)   
-    local colorActiveBg = Color3.fromRGB(32, 38, 46)       
-    local colorTextActive = Color3.fromRGB(255, 255, 255)   
-    local colorGrayInactive = Color3.fromRGB(140, 140, 140) 
+    -- Синхронизированная палитра под Pulse Hub стиль
+    local colorBlueStroke = Color3.fromRGB(108, 176, 214)   -- Основной голубой
+    local colorActiveBg = Color3.fromRGB(108, 176, 214)     -- Тот же голубой для внутренности
+    local colorTextActive = colorBlueStroke                 -- Текст совпадает с контуром!
+    local colorGrayInactive = Color3.fromRGB(140, 140, 140) -- Пассивный цвет
     
     for i, tabData in ipairs(tabsList) do
         local tabName = tabData.Name
         local iconId = tabData.Icon
         
-        -- Главный контейнер кнопки
         local BtnContainer = Instance.new("Frame", SubTabContainer)
         BtnContainer.Size = UDim2.new(0, 95, 1, 0)
         BtnContainer.BackgroundTransparency = 1
         BtnContainer.LayoutOrder = i
         
-        -- Слой Визуала (Задний фон и обводка) - теперь рендерится идеально
+        -- Слой Визуала (Задний фон и обводка)
         local VisualFrame = Instance.new("Frame", BtnContainer)
         VisualFrame.Size = UDim2.new(1, 0, 1, 0)
         VisualFrame.BackgroundColor3 = colorActiveBg
-        VisualFrame.BackgroundTransparency = 1 -- По умолчанию скрыт
+        VisualFrame.BackgroundTransparency = 1 
         Instance.new("UICorner", VisualFrame).CornerRadius = UDim.new(0, 7)
         
         local Stroke = Instance.new("UIStroke", VisualFrame)
@@ -582,7 +582,6 @@ function Library:CreateSubTabs(parentPage, tabsList)
         
         subPages[tabName] = Page
         
-        -- Сохраняем ссылки для переключения состояний
         registry[tabName] = {
             Page = Page,
             Visual = VisualFrame,
@@ -591,14 +590,13 @@ function Library:CreateSubTabs(parentPage, tabsList)
             Icon = Icon
         }
         
-        -- Сенсорный невидимый слой (Ловит клики поверх всего)
+        -- Сенсорный невидимый слой для мобильных кликов
         local ClickBtn = Instance.new("TextButton", BtnContainer)
         ClickBtn.Size = UDim2.new(1, 0, 1, 0)
         ClickBtn.BackgroundTransparency = 1
         ClickBtn.Text = ""
         ClickBtn.ZIndex = 10
         
-        -- Функция активации вкладки
         local function activateTab()
             for _, data in pairs(registry) do
                 data.Page.Visible = false
@@ -609,13 +607,12 @@ function Library:CreateSubTabs(parentPage, tabsList)
             end
             
             Page.Visible = true
-            VisualFrame.BackgroundTransparency = 0.5 -- 3435.jpg / Pulse Hub стиль
+            VisualFrame.BackgroundTransparency = 0.88 -- Мягкое полупрозрачное наполнение внутри!
             Stroke.Enabled = true
             Label.TextColor3 = colorTextActive
             if Icon then Icon.ImageColor3 = colorTextActive end
         end
         
-        -- Два метода отслеживания для 100% срабатывания на ПК и телефонах
         ClickBtn.Activated:Connect(activateTab)
         ClickBtn.InputBegan:Connect(function(input)
             if input.UserInputType == Enum.UserInputType.MouseButton1 or input.UserInputType == Enum.UserInputType.Touch then
@@ -623,10 +620,10 @@ function Library:CreateSubTabs(parentPage, tabsList)
             end
         end)
         
-        -- Настройка первой вкладки при старте скрипта
+        -- Настройка дефолтного состояния (первая вкладка)
         if i == 1 then
             Page.Visible = true
-            VisualFrame.BackgroundTransparency = 0.5
+            VisualFrame.BackgroundTransparency = 0.88
             Stroke.Enabled = true
             Label.TextColor3 = colorTextActive
             if Icon then Icon.ImageColor3 = colorTextActive end
@@ -735,7 +732,7 @@ Library:CreateButton(TeleportPage, "Телепорт на спавн", function(
 
 -- 3. СОЗДАНИЕ СУБ-ВКЛАДОК В НАСТРОЙКАХ (UI и Theme)
 local SettingSections = Library:CreateSubTabs(SettingsPage, {
-    {Name = "UI", Icon = "rbxassetid://6034289132"}, -- Иконка монитора/шестеренки
+    {Name = "UI", Icon = "rbxassetid://6034289132"}, -- Иконка монитора из Pulse Hub
     {Name = "Theme", Icon = ""} 
 })
 
