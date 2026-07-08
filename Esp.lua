@@ -309,7 +309,6 @@ local function CreateRipple(button, clickX, clickY)
     end)
 end
 
--- Переменные для контроля состояний и запоминания позиции заголовка
 local isMinimized = false
 local LastMinimizedPos = UDim2.new(0.5, 0, 0.5, 0)
 
@@ -323,13 +322,11 @@ local function ToggleMinimize()
         HeaderBg.Size = UDim2.new(0, 175, 0, 46)
         EmbeddedControls.Visible = true
         
-        -- Сворачиваем интерфейс ровно в ту точку, где его оставил игрок
         tween(MainFrame, {
             Size = UDim2.new(0, 175, 0, 46),
             Position = LastMinimizedPos
         })
     else
-        -- Перед принудительным центрированием сохраняем текущее положение заголовка на экране
         LastMinimizedPos = MainFrame.Position
         
         EmbeddedControls.Visible = false
@@ -338,7 +335,6 @@ local function ToggleMinimize()
         MainStroke.Enabled = true
         MainFrame.BackgroundTransparency = 0.15
         
-        -- Разворачиваем всегда строго по центру экрана
         tween(MainFrame, {
             Size = UDim2.new(0, 550, 0, 350),
             Position = UDim2.new(0.5, 0, 0.5, 0)
@@ -390,11 +386,13 @@ UserInputService.InputChanged:Connect(function(input)
         local delta = input.Position - dragStart
         local newPos = UDim2.new(startPos.X.Scale, startPos.X.Offset + delta.X, startPos.Y.Scale, startPos.Y.Offset + delta.Y)
         MainFrame.Position = newPos
-        LastMinimizedPos = newPos -- Обновляем сохраненную точку при каждом ручном перемещении
+        LastMinimizedPos = newPos
     end
 end)
 
 local Library = {}
+Library.CurrentFont = Enum.Font.Gotham -- Дефолтный глобальный шрифт
+
 local SearchableElements = {}
 local allTabs = {}
 local allTabButtons = {}
@@ -451,12 +449,143 @@ ClearSearchBtn.Activated:Connect(function()
     SearchBox.Text = ""
 end)
 
+-- Кастомный Дропдаун (Выпадающий список) для настроек
+local FontMapping = {
+    ["Gotham"] = Enum.Font.Gotham,
+    ["Gotham Bold"] = Enum.Font.GothamBold,
+    ["Source Sans"] = Enum.Font.SourceSans,
+    ["Roboto"] = Enum.Font.Roboto,
+    ["Roboto Mono"] = Enum.Font.RobotoMono,
+    ["Ubuntu"] = Enum.Font.Ubuntu
+}
+
+function Library:CreateDropdown(parentPage, text, options, default, callback)
+    local DropdownFrame = Instance.new("Frame", parentPage)
+    DropdownFrame.Size = UDim2.new(1, -20, 0, 36)
+    DropdownFrame.BackgroundColor3 = Color3.fromRGB(22, 22, 22)
+    DropdownFrame.ClipsDescendants = true
+    DropdownFrame.ZIndex = 6
+    Instance.new("UICorner", DropdownFrame).CornerRadius = UDim.new(0, 6)
+    local DropdownStroke = Instance.new("UIStroke", DropdownFrame)
+    DropdownStroke.Color = Color3.fromRGB(40, 40, 40)
+    DropdownStroke.Thickness = 1
+    
+    local HeaderBtn = Instance.new("TextButton", DropdownFrame)
+    HeaderBtn.Size = UDim2.new(1, 0, 0, 36)
+    HeaderBtn.BackgroundTransparency = 1
+    HeaderBtn.Text = ""
+    HeaderBtn.ZIndex = 7
+    
+    local TitleLabel = Instance.new("TextLabel", HeaderBtn)
+    TitleLabel.Size = UDim2.new(0.5, 0, 1, 0)
+    TitleLabel.Position = UDim2.new(0, 12, 0, 0)
+    TitleLabel.Text = text
+    TitleLabel.Font = Library.CurrentFont
+    TitleLabel.TextColor3 = Color3.fromRGB(230, 230, 230)
+    TitleLabel.TextSize = 13
+    TitleLabel.TextXAlignment = Enum.TextXAlignment.Left
+    TitleLabel.BackgroundTransparency = 1
+    TitleLabel.ZIndex = 8
+    
+    local SelectedLabel = Instance.new("TextLabel", HeaderBtn)
+    SelectedLabel.Size = UDim2.new(0.5, -30, 1, 0)
+    SelectedLabel.Position = UDim2.new(0.5, 0, 0, 0)
+    SelectedLabel.Text = default
+    SelectedLabel.Font = Library.CurrentFont
+    SelectedLabel.TextColor3 = Color3.fromRGB(150, 150, 150)
+    SelectedLabel.TextSize = 13
+    SelectedLabel.TextXAlignment = Enum.TextXAlignment.Right
+    SelectedLabel.BackgroundTransparency = 1
+    SelectedLabel.ZIndex = 8
+    
+    local Arrow = Instance.new("TextLabel", HeaderBtn)
+    Arrow.Size = UDim2.new(0, 20, 1, 0)
+    Arrow.Position = UDim2.new(1, -26, 0, 0)
+    Arrow.Text = "▼"
+    Arrow.Font = Enum.Font.GothamBold
+    Arrow.TextColor3 = Color3.fromRGB(150, 150, 150)
+    Arrow.TextSize = 10
+    Arrow.BackgroundTransparency = 1
+    Arrow.ZIndex = 8
+    
+    local OptionsContainer = Instance.new("Frame", DropdownFrame)
+    OptionsContainer.Size = UDim2.new(1, 0, 0, #options * 32)
+    OptionsContainer.Position = UDim2.new(0, 0, 0, 36)
+    OptionsContainer.BackgroundTransparency = 1
+    OptionsContainer.ZIndex = 7
+    
+    local ListLayout = Instance.new("UIListLayout", OptionsContainer)
+    ListLayout.SortOrder = Enum.SortOrder.LayoutOrder
+    
+    local isExpanded = false
+    local optionButtons = {}
+    
+    local function toggleDropdown()
+        isExpanded = not isExpanded
+        local targetHeight = isExpanded and (36 + (#options * 32) + 4) or 36
+        tween(DropdownFrame, {Size = UDim2.new(1, -20, 0, targetHeight)}, 0.2)
+        Arrow.Text = isExpanded and "▲" or "▼"
+    end
+    
+    HeaderBtn.Activated:Connect(toggleDropdown)
+    
+    for i, option in ipairs(options) do
+        local OptBtn = Instance.new("TextButton", OptionsContainer)
+        OptBtn.Size = UDim2.new(1, 0, 0, 32)
+        OptBtn.BackgroundTransparency = 1
+        OptBtn.Text = ""
+        OptBtn.LayoutOrder = i
+        OptBtn.ZIndex = 8
+        
+        local OptLabel = Instance.new("TextLabel", OptBtn)
+        OptLabel.Size = UDim2.new(1, -40, 1, 0)
+        OptLabel.Position = UDim2.new(0, 16, 0, 0)
+        OptLabel.Text = option
+        OptLabel.Font = Library.CurrentFont
+        OptLabel.TextColor3 = (option == default) and Color3.fromRGB(255, 115, 0) or Color3.fromRGB(180, 180, 180)
+        OptLabel.TextSize = 12
+        OptLabel.TextXAlignment = Enum.TextXAlignment.Left
+        OptLabel.BackgroundTransparency = 1
+        OptLabel.ZIndex = 9
+        
+        local Checkmark = Instance.new("TextLabel", OptBtn)
+        Checkmark.Size = UDim2.new(0, 20, 1, 0)
+        Checkmark.Position = UDim2.new(1, -30, 0, 0)
+        Checkmark.Text = "✓"
+        Checkmark.Font = Enum.Font.GothamBold
+        Checkmark.TextColor3 = Color3.fromRGB(255, 115, 0)
+        Checkmark.TextSize = 12
+        Checkmark.BackgroundTransparency = 1
+        Checkmark.Visible = (option == default)
+        Checkmark.ZIndex = 9
+        
+        optionButtons[option] = {Button = OptBtn, Label = OptLabel, Check = Checkmark}
+        
+        OptBtn.Activated:Connect(function()
+            SelectedLabel.Text = option
+            for optName, optData in pairs(optionButtons) do
+                if optName == option then
+                    optData.Label.TextColor3 = Color3.fromRGB(255, 115, 0)
+                    optData.Check.Visible = true
+                else
+                    optData.Label.TextColor3 = Color3.fromRGB(180, 180, 180)
+                    optData.Check.Visible = false
+                end
+            end
+            toggleDropdown()
+            callback(option)
+        end)
+    end
+    
+    table.insert(SearchableElements, {Instance = DropdownFrame, SearchText = NormalizeText(text), OriginalParent = parentPage})
+end
+
 function Library:CreateButton(parentPage, text, callback)
     local Btn = Instance.new("TextButton", parentPage)
     Btn.Size = UDim2.new(1, -20, 0, 36)
     Btn.BackgroundColor3 = Color3.fromRGB(22, 22, 22)
     Btn.Text = text
-    Btn.Font = Enum.Font.GothamMedium
+    Btn.Font = Library.CurrentFont
     Btn.TextColor3 = Color3.fromRGB(230, 230, 230)
     Btn.TextSize = 13
     Btn.ClipsDescendants = true
@@ -486,7 +615,7 @@ function Library:CreateToggle(parentPage, text, default, callback)
     TglLabel.Size = UDim2.new(1, -60, 1, 0)
     TglLabel.Position = UDim2.new(0, 12, 0, 0)
     TglLabel.Text = text
-    TglLabel.Font = Enum.Font.GothamMedium
+    TglLabel.Font = Library.CurrentFont
     TglLabel.TextColor3 = Color3.fromRGB(230, 230, 230)
     TglLabel.TextSize = 13
     TglLabel.TextXAlignment = Enum.TextXAlignment.Left
@@ -536,7 +665,7 @@ function Library:CreateSlider(parentPage, text, min, max, default, callback)
     SliderLabel.Size = UDim2.new(0.5, -12, 0, 22)
     SliderLabel.Position = UDim2.new(0, 12, 0, 6)
     SliderLabel.Text = text
-    SliderLabel.Font = Enum.Font.GothamMedium
+    SliderLabel.Font = Library.CurrentFont
     SliderLabel.TextColor3 = Color3.fromRGB(230, 230, 230)
     SliderLabel.TextSize = 13
     SliderLabel.TextXAlignment = Enum.TextXAlignment.Left
@@ -546,7 +675,7 @@ function Library:CreateSlider(parentPage, text, min, max, default, callback)
     local ValueLabel = Instance.new("TextLabel", SliderFrame)
     ValueLabel.Size = UDim2.new(0.5, -12, 0, 22)
     ValueLabel.Position = UDim2.new(0.5, 0, 0, 6)
-    ValueLabel.Font = Enum.Font.GothamMedium
+    ValueLabel.Font = Library.CurrentFont
     ValueLabel.TextColor3 = Color3.fromRGB(160, 160, 160)
     ValueLabel.TextSize = 13
     ValueLabel.TextXAlignment = Enum.TextXAlignment.Right
@@ -583,11 +712,9 @@ function Library:CreateSlider(parentPage, text, min, max, default, callback)
     
     local dragging = false
     local currentPercent = (default - min) / (max - min)
-    
     local startX = 0
     local startPercent = 0
     local cachedTrackWidth = 0
-    
     local isIntegerSlider = (max - min) > 5
     
     local function updateVisuals(percentage)
@@ -603,7 +730,6 @@ function Library:CreateSlider(parentPage, text, min, max, default, callback)
         SliderHandle.Position = UDim2.new(percentage, 0, 0.5, 0)
         
         local rawValue = min + (max - min) * percentage
-        
         if isIntegerSlider then
             local roundedValue = math.round(rawValue)
             ValueLabel.Text = string.format("%d", roundedValue)
@@ -619,11 +745,9 @@ function Library:CreateSlider(parentPage, text, min, max, default, callback)
             dragging = true
             startX = input.Position.X
             cachedTrackWidth = SliderTrack.AbsoluteSize.X
-            
             local clickOffset = input.Position.X - SliderTrack.AbsolutePosition.X
             currentPercent = math.clamp(clickOffset / cachedTrackWidth, 0, 1)
             startPercent = currentPercent
-            
             updateVisuals(currentPercent)
         end
     end)
@@ -632,7 +756,6 @@ function Library:CreateSlider(parentPage, text, min, max, default, callback)
         if dragging and (input.UserInputType == Enum.UserInputType.MouseMovement or input.UserInputType == Enum.UserInputType.Touch) then
             local deltaX = input.Position.X - startX
             local deltaPercent = deltaX / cachedTrackWidth
-            
             currentPercent = math.clamp(startPercent + deltaPercent, 0, 1)
             updateVisuals(currentPercent)
         end
@@ -744,7 +867,7 @@ function Library:CreateSubTabs(parentPage, tabsList)
         local Label = Instance.new("TextLabel", ContentFrame)
         Label.BackgroundTransparency = 1
         Label.Text = tabName
-        Label.Font = Enum.Font.GothamBold
+        Label.Font = Library.CurrentFont
         Label.TextColor3 = colorGrayInactive
         Label.TextSize = 12
         Label.Size = UDim2.new(0, 0, 1, 0)
@@ -795,11 +918,6 @@ function Library:CreateSubTabs(parentPage, tabsList)
         end
         
         ClickBtn.Activated:Connect(activateTab)
-        ClickBtn.InputBegan:Connect(function(input)
-            if input.UserInputType == Enum.UserInputType.MouseButton1 or input.UserInputType == Enum.UserInputType.Touch then
-                activateTab()
-            end
-        end)
     end
     
     local firstTab = tabsList[1] and tabsList[1].Name
@@ -846,7 +964,7 @@ function CreatePage(name, iconId, layoutOrder)
     local TabBtn = Instance.new("TextButton", TabContainer)
     TabBtn.Size = UDim2.new(1, 0, 1, 0)
     TabBtn.Text = name
-    TabBtn.Font = Enum.Font.GothamBold
+    TabBtn.Font = Library.CurrentFont
     TabBtn.TextSize = 13
     TabBtn.TextColor3 = Color3.fromRGB(140, 140, 140)
     TabBtn.BackgroundTransparency = 1
@@ -920,12 +1038,29 @@ local SettingSections = Library:CreateSubTabs(SettingsPage, {
     {Name = "Theme", Icon = "78640980615320", Color = Color3.fromRGB(235, 94, 153)}
 })
 
+-- Настройки во вкладке UI
 Library:CreateSlider(SettingSections["UI"], "UI Size", 0.5, 1.5, 1.00, function(value)
     MainScale.Scale = value
 end)
 
 Library:CreateSlider(SettingSections["UI"], "UI Transparency", 0, 100, 15, function(value)
     MainFrame.BackgroundTransparency = value / 100
+end)
+
+-- ДОБАВЛЕННЫЙ ДРОПДАУН ВЫБОРА ШРИФТОВ (MENU FONT) СО СКРИНШОТА 3471.jpg
+Library:CreateDropdown(SettingSections["UI"], "Menu Font", {"Gotham", "Gotham Bold", "Source Sans", "Roboto", "Roboto Mono", "Ubuntu"}, "Gotham", function(selectedFont)
+    local targetFont = FontMapping[selectedFont] or Enum.Font.Gotham
+    Library.CurrentFont = targetFont
+    
+    -- Глобальное динамическое обновление шрифта у всех элементов UI в реальном времени
+    for _, obj in ipairs(DarkHub:GetDescendants()) do
+        if obj:IsA("TextLabel") or obj:IsA("TextButton") or obj:IsA("TextBox") then
+            -- Исключаем мелкие значки кнопок сворачивания/закрытия, чтобы не ломался их вид
+            if obj.Text ~= "—" and obj.Text ~= "×" and obj.Text ~= "▼" and obj.Text ~= "▲" and obj.Text ~= "✓" then
+                obj.Font = targetFont
+            end
+        end
+    end
 end)
 
 Library:CreateButton(SettingSections["Theme"], "Переключить тему", function() end)
