@@ -552,8 +552,7 @@ function Library:CreateSubTabs(parentPage, tabsList)
         end
         
         local BtnContainer = Instance.new("Frame", SubTabContainer)
-        BtnContainer.Size = UDim2.new(0, 0, 1, 0)
-        BtnContainer.AutomaticSize = Enum.AutomaticSize.X
+        BtnContainer.Size = UDim2.new(0, 95, 1, 0) -- ДЛИНА КНОПКИ: Фиксированная длина 95 пикселей (UI и Theme теперь полностью одинаковые)
         BtnContainer.BackgroundTransparency = 1
         BtnContainer.LayoutOrder = i
         
@@ -574,10 +573,6 @@ function Library:CreateSubTabs(parentPage, tabsList)
         ContentFrame.BackgroundTransparency = 1
         ContentFrame.ZIndex = 2
         
-        local BtnPadding = Instance.new("UIPadding", ContentFrame)
-        BtnPadding.PaddingLeft = UDim.new(0, 10)
-        BtnPadding.PaddingRight = UDim.new(0, 10)
-        
         local BtnLayout = Instance.new("UIListLayout", ContentFrame)
         BtnLayout.FillDirection = Enum.FillDirection.Horizontal
         BtnLayout.HorizontalAlignment = Enum.HorizontalAlignment.Center
@@ -587,7 +582,7 @@ function Library:CreateSubTabs(parentPage, tabsList)
         local Icon
         if iconId and iconId ~= "" then
             Icon = Instance.new("ImageLabel", ContentFrame)
-            Icon.Size = UDim2.new(0, 18, 0, 18) -- РАЗМЕР ИКОНКИ: Чутка увеличили до аккуратных 18x18
+            Icon.Size = UDim2.new(0, 24, 0, 24) -- РАЗМЕР ИКОНКИ: Вернул обратно на 24x24
             Icon.BackgroundTransparency = 1
             if tonumber(iconId) then
                 Icon.Image = "rbxthumb://type=Asset&id=" .. iconId .. "&w=150&h=150"
@@ -601,11 +596,11 @@ function Library:CreateSubTabs(parentPage, tabsList)
         local Label = Instance.new("TextLabel", ContentFrame)
         Label.BackgroundTransparency = 1
         Label.Text = tabName
-        Label.Font = Enum.Font.GothamMedium
+        Label.Font = Enum.Font.GothamBold -- ШРИФТ: Сделал GothamBold (жирный как у вкладки Main)
         Label.TextColor3 = colorGrayInactive
         Label.TextSize = 12
-        Label.AutomaticSize = Enum.AutomaticSize.X
         Label.Size = UDim2.new(0, 0, 1, 0)
+        Label.AutomaticSize = Enum.AutomaticSize.X
         Label.ZIndex = 3
         
         local Page = Instance.new("Frame", ContentContainer)
