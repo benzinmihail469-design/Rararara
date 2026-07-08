@@ -552,7 +552,7 @@ function Library:CreateSubTabs(parentPage, tabsList)
         end
         
         local BtnContainer = Instance.new("Frame", SubTabContainer)
-        BtnContainer.Size = UDim2.new(0, 95, 1, 0) -- ДЛИНА КНОПКИ: Фиксированная длина 95 пикселей (UI и Theme теперь полностью одинаковые)
+        BtnContainer.Size = UDim2.new(0, 95, 1, 0)
         BtnContainer.BackgroundTransparency = 1
         BtnContainer.LayoutOrder = i
         
@@ -582,7 +582,7 @@ function Library:CreateSubTabs(parentPage, tabsList)
         local Icon
         if iconId and iconId ~= "" then
             Icon = Instance.new("ImageLabel", ContentFrame)
-            Icon.Size = UDim2.new(0, 24, 0, 24) -- РАЗМЕР ИКОНКИ: Вернул обратно на 24x24
+            Icon.Size = UDim2.new(0, 24, 0, 24)
             Icon.BackgroundTransparency = 1
             if tonumber(iconId) then
                 Icon.Image = "rbxthumb://type=Asset&id=" .. iconId .. "&w=150&h=150"
@@ -596,7 +596,7 @@ function Library:CreateSubTabs(parentPage, tabsList)
         local Label = Instance.new("TextLabel", ContentFrame)
         Label.BackgroundTransparency = 1
         Label.Text = tabName
-        Label.Font = Enum.Font.GothamBold -- ШРИФТ: Сделал GothamBold (жирный как у вкладки Main)
+        Label.Font = Enum.Font.GothamBold
         Label.TextColor3 = colorGrayInactive
         Label.TextSize = 12
         Label.Size = UDim2.new(0, 0, 1, 0)
@@ -648,7 +648,7 @@ function Library:CreateSubTabs(parentPage, tabsList)
         
         ClickBtn.Activated:Connect(activateTab)
         ClickBtn.InputBegan:Connect(function(input)
-            if input.UserInputType == Enum.UserInputType.MouseButton1 or input.UserInputType == Enum.UserInputType.Touch then
+            if input.UserInputType == Enum.UserInputType.MouseButton1 or input.UserInputType == Enum.UserInputType.Touch) then
                 activateTab()
             end
         end)
@@ -767,9 +767,10 @@ local SettingsPage = CreatePage("Settings", "117996761927034", 99)
 Library:CreateToggle(MainPage, "Авто-Фарм Монет", false, function(state) end)
 Library:CreateToggle(VisualPage, "ESP Игроков", false, function(state) end)
 
+-- ИКОНКА ТЕМЫ ИЗМЕНЕНА НА 78640980615320
 local SettingSections = Library:CreateSubTabs(SettingsPage, {
     {Name = "UI", Icon = "85203682050945", Color = Color3.fromRGB(108, 176, 214)},
-    {Name = "Theme", Icon = "6034289317", Color = Color3.fromRGB(235, 94, 153)}
+    {Name = "Theme", Icon = "78640980615320", Color = Color3.fromRGB(235, 94, 153)}
 })
 
 Library:CreateToggle(SettingSections["UI"], "UI Размер", false, function(state) end)
