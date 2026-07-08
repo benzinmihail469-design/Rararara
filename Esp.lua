@@ -580,7 +580,7 @@ function Library:CreateSubTabs(parentPage, tabsList)
         local Icon
         if iconId and iconId ~= "" then
             Icon = Instance.new("ImageLabel", ContentFrame)
-            Icon.Size = UDim2.new(0, 24, 0, 24)
+            Icon.Size = UDim2.new(0, 18, 0, 18) -- Изменено с 24, 24 на 18, 18
             Icon.BackgroundTransparency = 1
             if tonumber(iconId) then
                 Icon.Image = "rbxthumb://type=Asset&id=" .. iconId .. "&w=150&h=150"
