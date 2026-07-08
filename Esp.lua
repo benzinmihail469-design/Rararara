@@ -22,7 +22,6 @@ local DarkHub = Instance.new("ScreenGui")
 if SafeParent:FindFirstChild("DarkHub") then 
     SafeParent.DarkHub:Destroy() 
 end 
-
 DarkHub.Name = "DarkHub" 
 DarkHub.Parent = SafeParent 
 DarkHub.ZIndexBehavior = Enum.ZIndexBehavior.Sibling 
@@ -38,22 +37,39 @@ local function NormalizeText(str)
     local success, res = pcall(function() 
         local normalized = "" 
         for _, c in utf8.codes(str) do 
-            if c >= 1040 and c <= 1071 then normalized = normalized .. utf8.char(c + 32) 
-            elseif c == 1025 then normalized = normalized .. utf8.char(1105) 
-            elseif c >= 65 and c <= 90 then normalized = normalized .. string.char(c + 32) 
-            else normalized = normalized .. utf8.char(c) end 
+            if c >= 1040 and c <= 1071 then 
+                normalized = normalized .. utf8.char(c + 32) 
+            elseif c == 1025 then 
+                normalized = normalized .. utf8.char(1105) 
+            elseif c >= 65 and c <= 90 then 
+                normalized = normalized .. string.char(c + 32) 
+            else 
+                normalized = normalized .. utf8.char(c) 
+            end 
         end 
         return normalized 
     end) 
+    
     local finalStr = success and res or string.lower(str) 
     local synonyms = { 
-        ["авто"] = "auto", ["фарм"] = "farm", ["есп"] = "esp", ["монет"] = "coins", 
-        ["монеты"] = "coins", ["игроков"] = "players", ["игрок"] = "player", 
-        ["визуал"] = "visual", ["телепорт"] = "teleport", ["настройки"] = "settings" 
+        ["авто"] = "auto", 
+        ["фарм"] = "farm", 
+        ["есп"] = "esp", 
+        ["монет"] = "coins", 
+        ["монеты"] = "coins", 
+        ["игроков"] = "players", 
+        ["игрок"] = "player", 
+        ["визуал"] = "visual", 
+        ["телепорт"] = "teleport", 
+        ["настройки"] = "settings" 
     } 
-    for ru, en in pairs(synonyms) do finalStr = string.gsub(finalStr, ru, en) end 
+    for ru, en in pairs(synonyms) do 
+        finalStr = string.gsub(finalStr, ru, en) 
+    end 
     local homoglyphs = {["а"] = "a", ["о"] = "o", ["с"] = "c", ["е"] = "e", ["р"] = "p", ["х"] = "x", ["у"] = "y"} 
-    for ru, en in pairs(homoglyphs) do finalStr = string.gsub(finalStr, ru, en) end 
+    for ru, en in pairs(homoglyphs) do 
+        finalStr = string.gsub(finalStr, ru, en) 
+    end 
     return string.gsub(finalStr, "[%p%s%c]", "") 
 end 
 
@@ -235,6 +251,7 @@ Navigation.Position = UDim2.new(0, 10, 0, 65)
 Navigation.BackgroundTransparency = 1 
 Navigation.ScrollBarThickness = 0 
 Navigation.BorderSizePixel = 0 
+
 local NavLayout = Instance.new("UIListLayout", Navigation) 
 NavLayout.Padding = UDim.new(0, 5) 
 NavLayout.SortOrder = Enum.SortOrder.LayoutOrder 
@@ -276,7 +293,9 @@ local FrameUpdateTable = {}
 RunService.RenderStepped:Connect(function() 
     local CurrentTime = os.clock() 
     table.insert(FrameUpdateTable, CurrentTime) 
-    while FrameUpdateTable[1] < CurrentTime - 1 do table.remove(FrameUpdateTable, 1) end 
+    while FrameUpdateTable[1] < CurrentTime - 1 do 
+        table.remove(FrameUpdateTable, 1) 
+    end 
     StatsLabel.Text = "FPS: " .. #FrameUpdateTable 
 end) 
 
@@ -291,10 +310,13 @@ local function CreateRipple(button, clickX, clickY)
     Ripple.AnchorPoint = Vector2.new(0.5, 0.5) 
     Ripple.Position = UDim2.new(0, clickX, 0, clickY) 
     Ripple.Size = UDim2.new(0, 0, 0, 0) 
+    
     local maxLength = math.max(button.AbsoluteSize.X, button.AbsoluteSize.Y) * 3 
     local t = TweenService:Create(Ripple, TweenInfo.new(0.5, Enum.EasingStyle.Quad, Enum.EasingDirection.Out), {Size = UDim2.new(0, maxLength, 0, maxLength), ImageTransparency = 1}) 
     t:Play() 
-    t.Completed:Connect(function() Ripple:Destroy() end) 
+    t.Completed:Connect(function() 
+        Ripple:Destroy() 
+    end) 
 end 
 
 local isMinimized = false 
@@ -315,7 +337,9 @@ local function ToggleMinimize()
         MainStroke.Enabled = true 
         MainFrame.BackgroundTransparency = 0.15 
         tween(MainFrame, {Size = UDim2.new(0, 550, 0, 350)}).Completed:Connect(function() 
-            if not isMinimized then PagesContainer.Visible, TabTitle.Visible, SearchContainer.Visible, Navigation.Visible, FooterBg.Visible, ControlsContainer.Visible = true, true, true, true, true, true end 
+            if not isMinimized then 
+                PagesContainer.Visible, TabTitle.Visible, SearchContainer.Visible, Navigation.Visible, FooterBg.Visible, ControlsContainer.Visible = true, true, true, true, true, true 
+            end 
         end) 
     end 
 end 
@@ -323,7 +347,9 @@ end
 MinBtn.Activated:Connect(ToggleMinimize) 
 EmbMinBtn.Activated:Connect(ToggleMinimize) 
 
-local function CloseGui() DarkHub:Destroy() end 
+local function CloseGui() 
+    DarkHub:Destroy() 
+end 
 CloseBtn.Activated:Connect(CloseGui) 
 EmbCloseBtn.Activated:Connect(CloseGui) 
 
@@ -341,10 +367,18 @@ local dragToggle, dragInput, dragStart, startPos
 MainFrame.InputBegan:Connect(function(input) 
     if (input.UserInputType == Enum.UserInputType.MouseButton1 or input.UserInputType == Enum.UserInputType.Touch) then 
         dragToggle = true; dragStart = input.Position; startPos = MainFrame.Position 
-        input.Changed:Connect(function() if input.UserInputState == Enum.UserInputState.End then dragToggle = false end end) 
+        input.Changed:Connect(function() 
+            if input.UserInputState == Enum.UserInputState.End then dragToggle = false end 
+        end) 
     end 
 end) 
-MainFrame.InputChanged:Connect(function(input) if input.UserInputType == Enum.UserInputType.MouseMovement or input.UserInputType == Enum.UserInputType.Touch then dragInput = input end end) 
+
+MainFrame.InputChanged:Connect(function(input) 
+    if input.UserInputType == Enum.UserInputType.MouseMovement or input.UserInputType == Enum.UserInputType.Touch then 
+        dragInput = input 
+    end 
+end) 
+
 UserInputService.InputChanged:Connect(function(input) 
     if input == dragInput and dragToggle then 
         local delta = input.Position - dragStart 
@@ -366,6 +400,7 @@ SearchResultsPage.Visible = false
 SearchResultsPage.ScrollBarThickness = 2 
 SearchResultsPage.ScrollBarImageColor3 = Color3.fromRGB(50, 50, 50) 
 SearchResultsPage.ZIndex = 5 
+
 local searchLayout = Instance.new("UIListLayout", SearchResultsPage) 
 searchLayout.Padding = UDim.new(0, 8) 
 searchLayout.HorizontalAlignment = Enum.HorizontalAlignment.Center 
@@ -385,9 +420,13 @@ SearchBox:GetPropertyChangedSignal("Text"):Connect(function()
             item.Instance.Parent = item.OriginalParent 
             item.Instance.Visible = true 
         end 
-        if allPages[TabTitle.Text] then allPages[TabTitle.Text].Visible = true end 
+        if allPages[TabTitle.Text] then 
+            allPages[TabTitle.Text].Visible = true 
+        end 
     else 
-        for _, page in pairs(allPages) do page.Visible = false end 
+        for _, page in pairs(allPages) do 
+            page.Visible = false 
+        end 
         SearchResultsPage.Visible = true 
         for _, item in ipairs(SearchableElements) do 
             if string.find(item.SearchText, query, 1, true) then 
@@ -400,7 +439,9 @@ SearchBox:GetPropertyChangedSignal("Text"):Connect(function()
     end 
 end) 
 
-ClearSearchBtn.Activated:Connect(function() SearchBox.Text = "" end) 
+ClearSearchBtn.Activated:Connect(function() 
+    SearchBox.Text = "" 
+end) 
 
 function Library:CreateButton(parentPage, text, callback) 
     local Btn = Instance.new("TextButton", parentPage) 
@@ -414,11 +455,13 @@ function Library:CreateButton(parentPage, text, callback)
     Btn.ZIndex = 6 
     Instance.new("UICorner", Btn).CornerRadius = UDim.new(0, 6) 
     Instance.new("UIStroke", Btn).Color = Color3.fromRGB(40, 40, 40) 
+    
     Btn.MouseButton1Down:Connect(function() 
         local mousePos = UserInputService:GetMouseLocation() 
         local inset = GuiService:GetGuiInset() 
         CreateRipple(Btn, mousePos.X - Btn.AbsolutePosition.X, (mousePos.Y - inset.Y) - Btn.AbsolutePosition.Y) 
     end) 
+    
     Btn.Activated:Connect(callback) 
     table.insert(SearchableElements, {Instance = Btn, SearchText = NormalizeText(text), OriginalParent = parentPage}) 
 end 
@@ -430,6 +473,7 @@ function Library:CreateToggle(parentPage, text, default, callback)
     TglFrame.ZIndex = 6 
     Instance.new("UICorner", TglFrame).CornerRadius = UDim.new(0, 6) 
     Instance.new("UIStroke", TglFrame).Color = Color3.fromRGB(40, 40, 40) 
+    
     local TglLabel = Instance.new("TextLabel", TglFrame) 
     TglLabel.Size = UDim2.new(1, -60, 1, 0) 
     TglLabel.Position = UDim2.new(0, 12, 0, 0) 
@@ -440,6 +484,7 @@ function Library:CreateToggle(parentPage, text, default, callback)
     TglLabel.TextXAlignment = Enum.TextXAlignment.Left 
     TglLabel.BackgroundTransparency = 1 
     TglLabel.ZIndex = 7 
+    
     local Checkbox = Instance.new("TextButton", TglFrame) 
     Checkbox.Size = UDim2.new(0, 34, 0, 18) 
     Checkbox.Position = UDim2.new(1, -44, 0.5, -9) 
@@ -447,22 +492,27 @@ function Library:CreateToggle(parentPage, text, default, callback)
     Checkbox.Text = "" 
     Checkbox.ZIndex = 7 
     Instance.new("UICorner", Checkbox).CornerRadius = UDim.new(0, 9) 
+    
     local Indicator = Instance.new("Frame", Checkbox) 
     Indicator.Size = UDim2.new(0, 14, 0, 14) 
     Indicator.Position = default and UDim2.new(1, -16, 0.5, -7) or UDim2.new(0, 2, 0.5, -7) 
     Indicator.BackgroundColor3 = Color3.new(1, 1, 1) 
     Indicator.ZIndex = 8 
     Instance.new("UICorner", Indicator).CornerRadius = UDim.new(1, 0) 
+    
     local enabled = default 
     Checkbox.Activated:Connect(function() 
         enabled = not enabled 
         if enabled then 
-            tween(Checkbox, {BackgroundColor3 = Color3.fromRGB(255, 115, 0)}, 0.2); tween(Indicator, {Position = UDim2.new(1, -16, 0.5, -7)}, 0.2) 
+            tween(Checkbox, {BackgroundColor3 = Color3.fromRGB(255, 115, 0)}, 0.2) 
+            tween(Indicator, {Position = UDim2.new(1, -16, 0.5, -7)}, 0.2) 
         else 
-            tween(Checkbox, {BackgroundColor3 = Color3.fromRGB(40, 40, 40)}, 0.2); tween(Indicator, {Position = UDim2.new(0, 2, 0.5, -7)}, 0.2) 
+            tween(Checkbox, {BackgroundColor3 = Color3.fromRGB(40, 40, 40)}, 0.2) 
+            tween(Indicator, {Position = UDim2.new(0, 2, 0.5, -7)}, 0.2) 
         end 
         callback(enabled) 
     end) 
+    
     table.insert(SearchableElements, {Instance = TglFrame, SearchText = NormalizeText(text), OriginalParent = parentPage}) 
 end 
 
@@ -471,22 +521,28 @@ function Library:CreateSubTabs(parentPage, tabsList)
     local SubTabContainer = Instance.new("Frame", parentPage) 
     SubTabContainer.Size = UDim2.new(1, 0, 0, 32) 
     SubTabContainer.BackgroundTransparency = 1 
+    
     local ListLayout = Instance.new("UIListLayout", SubTabContainer) 
     ListLayout.FillDirection = Enum.FillDirection.Horizontal 
     ListLayout.Padding = UDim.new(0, 10) 
     ListLayout.SortOrder = Enum.SortOrder.LayoutOrder 
     ListLayout.HorizontalAlignment = Enum.HorizontalAlignment.Center 
     ListLayout.VerticalAlignment = Enum.VerticalAlignment.Center 
+    
     local ContentContainer = Instance.new("Frame", parentPage) 
     ContentContainer.Size = UDim2.new(1, 0, 0, 0) 
     ContentContainer.BackgroundTransparency = 1 
     ContentContainer.AutomaticSize = Enum.AutomaticSize.Y 
+    
     local subPages = {} 
     local registry = {} 
     local colorGrayInactive = Color3.fromRGB(140, 140, 140) 
+    
     for i, tabData in ipairs(tabsList) do 
         local tabName = tabData.Name 
         local iconId = tabData.Icon 
+        
+        -- СВЕРХНАДЁЖНЫЙ ВЫБОР ЦВЕТА 
         local activeColor = Color3.fromRGB(108, 176, 214) 
         local lowName = string.lower(string.gsub(tabName, "%s+", "")) 
         if tabData.Color then 
@@ -494,29 +550,35 @@ function Library:CreateSubTabs(parentPage, tabsList)
         elseif string.find(lowName, "theme") or string.find(lowName, "тема") then 
             activeColor = Color3.fromRGB(235, 94, 153) 
         end 
+        
         local BtnContainer = Instance.new("Frame", SubTabContainer) 
         BtnContainer.Size = UDim2.new(0, 95, 1, 0) 
         BtnContainer.BackgroundTransparency = 1 
         BtnContainer.LayoutOrder = i 
+        
         local VisualFrame = Instance.new("Frame", BtnContainer) 
         VisualFrame.Size = UDim2.new(1, 0, 1, 0) 
         VisualFrame.BackgroundColor3 = activeColor 
         VisualFrame.BackgroundTransparency = 1 
         Instance.new("UICorner", VisualFrame).CornerRadius = UDim.new(0, 7) 
+        
         local Stroke = Instance.new("UIStroke", VisualFrame) 
         Stroke.Color = activeColor 
         Stroke.Thickness = 1.6 
         Stroke.ApplyStrokeMode = Enum.ApplyStrokeMode.Border 
         Stroke.Enabled = false 
+        
         local ContentFrame = Instance.new("Frame", BtnContainer) 
         ContentFrame.Size = UDim2.new(1, 0, 1, 0) 
         ContentFrame.BackgroundTransparency = 1 
         ContentFrame.ZIndex = 2 
+        
         local BtnLayout = Instance.new("UIListLayout", ContentFrame) 
         BtnLayout.FillDirection = Enum.FillDirection.Horizontal 
         BtnLayout.HorizontalAlignment = Enum.HorizontalAlignment.Center 
         BtnLayout.VerticalAlignment = Enum.VerticalAlignment.Center 
         BtnLayout.Padding = UDim.new(0, 6) 
+        
         local Icon 
         if iconId and iconId ~= "" then 
             Icon = Instance.new("ImageLabel", ContentFrame) 
@@ -526,6 +588,7 @@ function Library:CreateSubTabs(parentPage, tabsList)
             Icon.ImageColor3 = colorGrayInactive 
             Icon.ZIndex = 3 
         end 
+        
         local Label = Instance.new("TextLabel", ContentFrame) 
         Label.BackgroundTransparency = 1 
         Label.Text = tabName 
@@ -535,23 +598,33 @@ function Library:CreateSubTabs(parentPage, tabsList)
         Label.AutomaticSize = Enum.AutomaticSize.X 
         Label.Size = UDim2.new(0, 0, 1, 0) 
         Label.ZIndex = 3 
+        
         local Page = Instance.new("Frame", ContentContainer) 
         Page.Size = UDim2.new(1, 0, 0, 0) 
         Page.BackgroundTransparency = 1 
         Page.AutomaticSize = Enum.AutomaticSize.Y 
         Page.Visible = false 
+        
         local PageLayout = Instance.new("UIListLayout", Page) 
         PageLayout.Padding = UDim.new(0, 8) 
         PageLayout.HorizontalAlignment = Enum.HorizontalAlignment.Center 
+        
         subPages[tabName] = Page 
         registry[tabName] = { 
-            Page = Page, Visual = VisualFrame, Stroke = Stroke, Label = Label, Icon = Icon, TargetColor = activeColor 
+            Page = Page, 
+            Visual = VisualFrame, 
+            Stroke = Stroke, 
+            Label = Label, 
+            Icon = Icon, 
+            TargetColor = activeColor 
         } 
+        
         local ClickBtn = Instance.new("TextButton", BtnContainer) 
         ClickBtn.Size = UDim2.new(1, 0, 1, 0) 
         ClickBtn.BackgroundTransparency = 1 
         ClickBtn.Text = "" 
         ClickBtn.ZIndex = 10 
+        
         local function activateTab() 
             for _, data in pairs(registry) do 
                 data.Page.Visible = false 
@@ -568,13 +641,15 @@ function Library:CreateSubTabs(parentPage, tabsList)
             Label.TextColor3 = activeColor 
             if Icon then Icon.ImageColor3 = activeColor end 
         end 
+        
         ClickBtn.Activated:Connect(activateTab) 
         ClickBtn.InputBegan:Connect(function(input) 
-            if input.UserInputType == Enum.UserInputType.MouseButton1 or input.UserInputType == Enum.UserInputType.Touch) then 
+            if input.UserInputType == Enum.UserInputType.MouseButton1 or input.UserInputType == Enum.UserInputType.Touch then 
                 activateTab() 
             end 
         end) 
     end 
+    
     local firstTab = tabsList[1] and tabsList[1].Name 
     if firstTab and registry[firstTab] then 
         local data = registry[firstTab] 
@@ -597,13 +672,16 @@ function CreatePage(name, iconId, layoutOrder)
     PageFrame.ScrollBarThickness = 2 
     PageFrame.ScrollBarImageColor3 = Color3.fromRGB(50, 50, 50) 
     PageFrame.ZIndex = 5 
+    
     local layout = Instance.new("UIListLayout", PageFrame) 
     layout.Padding = UDim.new(0, 8) 
     layout.HorizontalAlignment = Enum.HorizontalAlignment.Center 
     Instance.new("UIPadding", PageFrame).PaddingTop = UDim.new(0, 2) 
+    
     layout:GetPropertyChangedSignal("AbsoluteContentSize"):Connect(function() 
         PageFrame.CanvasSize = UDim2.new(0, 0, 0, layout.AbsoluteContentSize.Y + 15) 
-end) 
+    end) 
+    
     local TabContainer = Instance.new("Frame", Navigation) 
     TabContainer.Size = UDim2.new(1, 0, 0, 34) 
     TabContainer.BackgroundColor3 = Color3.fromRGB(28, 28, 28) 
@@ -612,6 +690,7 @@ end)
     TabContainer.ZIndex = 6 
     TabContainer.LayoutOrder = layoutOrder or 0 
     Instance.new("UICorner", TabContainer).CornerRadius = UDim.new(0, 8) 
+    
     local TabBtn = Instance.new("TextButton", TabContainer) 
     TabBtn.Size = UDim2.new(1, 0, 1, 0) 
     TabBtn.Text = name 
@@ -621,44 +700,55 @@ end)
     TabBtn.BackgroundTransparency = 1 
     TabBtn.TextXAlignment = Enum.TextXAlignment.Left 
     TabBtn.ZIndex = 7 
+    
     local Padding = Instance.new("UIPadding", TabBtn) 
     Padding.PaddingLeft = UDim.new(0, iconId and 42 or 12) 
+    
     if iconId then 
         local TabIcon = Instance.new("ImageLabel", TabContainer) 
         TabIcon.Size = UDim2.new(0, 24, 0, 24) 
         TabIcon.Position = UDim2.new(0, 10, 0.5, -12) 
         TabIcon.BackgroundTransparency = 1 
-        TabIcon.Image = "rbxassetid://103980564128710" 
+        TabIcon.Image = "rbxthumb://type=Asset&id=" .. iconId .. "&w=150&h=150" 
         TabIcon.ImageTransparency = 0.25 
         TabIcon.ZIndex = 7 
         allTabIcons[name] = TabIcon 
     end 
+    
     allTabs[name] = TabContainer 
     allTabButtons[name] = TabBtn 
     allPages[name] = PageFrame 
+    
     TabBtn.MouseButton1Down:Connect(function() 
         local mousePos = UserInputService:GetMouseLocation() 
         local inset = GuiService:GetGuiInset() 
         CreateRipple(TabContainer, mousePos.X - TabContainer.AbsolutePosition.X, (mousePos.Y - inset.Y) - TabContainer.AbsolutePosition.Y) 
     end) 
+    
     TabBtn.Activated:Connect(function() 
         if SearchBox.Text ~= "" then SearchBox.Text = "" end 
         for tName, tContainer in pairs(allTabs) do 
             tween(tContainer, {BackgroundTransparency = 1}, 0.2) 
             tween(allTabButtons[tName], {TextColor3 = Color3.fromRGB(140, 140, 140)}, 0.2) 
-            if allTabIcons[tName] then tween(allTabIcons[tName], {ImageTransparency = 0.25}, 0.2) end 
+            if allTabIcons[tName] then 
+                tween(allTabIcons[tName], {ImageTransparency = 0.25}, 0.2) 
+            end 
             allPages[tName].Visible = false 
         end 
         TabTitle.Text = name 
         PageFrame.Visible = true 
         tween(TabContainer, {BackgroundTransparency = 0}, 0.2) 
         tween(TabBtn, {TextColor3 = Color3.fromRGB(255, 255, 255)}, 0.2) 
-        if allTabIcons[name] then tween(allTabIcons[name], {ImageTransparency = 0}, 0.2) end 
+        if allTabIcons[name] then 
+            tween(allTabIcons[name], {ImageTransparency = 0}, 0.2) 
+        end 
     end) 
+    
     UpdateNavCanvas() 
     return PageFrame 
 end 
 
+-- 1. Создание страниц 
 local MainPage = CreatePage("Main", "103980564128710", 1) 
 local TeleportPage = CreatePage("Teleport", "94373592263020", 2) 
 local MurderPage = CreatePage("Murder", "85278865249050", 3) 
@@ -667,21 +757,27 @@ local PlayersPage = CreatePage("Players", "99904215381150", 5)
 local VisualPage = CreatePage("Visual", "78910169210318", 6) 
 local SettingsPage = CreatePage("Settings", "117996761927034", 99) 
 
+-- 2. Функции 
 Library:CreateToggle(MainPage, "Авто-Фарм Монет", false, function(state) end) 
 Library:CreateToggle(VisualPage, "ESP Игроков", false, function(state) end) 
 
+-- 3. СОЗДАНИЕ СУБ-ВКЛАДОК С ЯВНЫМ ЦВЕТОМ ДЛЯ КАЖДОЙ 
 local SettingSections = Library:CreateSubTabs(SettingsPage, { 
     {Name = "UI", Icon = "rbxassetid://6034289132", Color = Color3.fromRGB(108, 176, 214)}, 
     {Name = "Theme", Icon = "rbxassetid://6034289317", Color = Color3.fromRGB(235, 94, 153)} 
 }) 
 
+-- Контент 
 Library:CreateToggle(SettingSections["UI"], "UI Размер", false, function(state) end) 
 Library:CreateButton(SettingSections["Theme"], "Переключить тему", function() end) 
 
+-- Старт 
 if allTabs["Main"] and allTabButtons["Main"] then 
     allTabs["Main"].BackgroundTransparency = 0 
     allTabButtons["Main"].TextColor3 = Color3.fromRGB(255, 255, 255) 
-    if allTabIcons["Main"] then allTabIcons["Main"].ImageTransparency = 0 end 
+    if allTabIcons["Main"] then 
+        allTabIcons["Main"].ImageTransparency = 0 
+    end 
     allPages["Main"].Visible = true 
     TabTitle.Text = "Main" 
 end
