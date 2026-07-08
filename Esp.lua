@@ -247,7 +247,6 @@ local NavLayout = Instance.new("UIListLayout", Navigation)
 NavLayout.Padding = UDim.new(0, 5) 
 NavLayout.SortOrder = Enum.SortOrder.LayoutOrder 
 
--- Функция для авто-расширения скролла вкладок
 local function UpdateNavCanvas()
     Navigation.CanvasSize = UDim2.new(0, 0, 0, NavLayout.AbsoluteContentSize.Y + 15)
 end
@@ -335,7 +334,7 @@ EmbMinBtn.MouseButton1Click:Connect(ToggleMinimize)
 
 local function CloseGui() DarkHub:Destroy() end 
 CloseBtn.MouseButton1Click:Connect(CloseGui) 
-EmbCloseBtn.MouseButton1Click:Connect(CloseGui) -- ИСПРАВЛЕНО ТУТ! Теперь работает коррект
+EmbCloseBtn.MouseButton1Click:Connect(CloseGui) 
 
 local function applyHover(btn, normalColor, hoverColor) 
     btn.MouseEnter:Connect(function() tween(btn, {TextColor3 = hoverColor}) end) 
@@ -487,7 +486,7 @@ function Library:CreateToggle(parentPage, text, default, callback)
     table.insert(SearchableElements, {Instance = TglFrame, SearchText = NormalizeText(text), OriginalParent = parentPage}) 
 end 
 
--- === СТИЛЬНАЯ СИСТЕМА САБ-ТАБОВ (ПО КАРТИНКЕ 3438.jpg) ===
+-- === СТИЛЬНАЯ СИСТЕМА САБ-ТАБОВ (ПО КАРТИНКАМ 3435.jpg / 3438_2.jpg) ===
 function Library:CreateSubTabs(parentPage, tabsList)
     local SubTabContainer = Instance.new("Frame", parentPage)
     SubTabContainer.Size = UDim2.new(1, -20, 0, 32)
@@ -495,10 +494,13 @@ function Library:CreateSubTabs(parentPage, tabsList)
     
     local ListLayout = Instance.new("UIListLayout", SubTabContainer)
     ListLayout.FillDirection = Enum.FillDirection.Horizontal
-    ListLayout.Padding = UDim.new(0, 15) 
+    ListLayout.Padding = UDim.new(0, 10) 
     ListLayout.SortOrder = Enum.SortOrder.LayoutOrder
-    ListLayout.HorizontalAlignment = Enum.HorizontalAlignment.Center 
+    ListLayout.HorizontalAlignment = Enum.HorizontalAlignment.Left 
     
+    local SubTabPadding = Instance.new("UIPadding", SubTabContainer)
+    SubTabPadding.PaddingLeft = UDim.new(0, 6)
+
     local ContentContainer = Instance.new("Frame", parentPage)
     ContentContainer.Size = UDim2.new(1, 0, 0, 0)
     ContentContainer.BackgroundTransparency = 1
@@ -508,41 +510,58 @@ function Library:CreateSubTabs(parentPage, tabsList)
     local subButtons = {}
     local subStrokes = {}
     local subIcons = {}
+    local subLabels = {}
     
-    local colorOrange = Color3.fromRGB(255, 115, 0) 
-    local colorGray = Color3.fromRGB(130, 130, 130) 
+    -- Палитра точь-в-точь по дизайну Pulse Hub
+    local colorBlueStroke = Color3.fromRGB(108, 176, 214)   -- Нежно-голубой контур
+    local colorActiveBg = Color3.fromRGB(32, 38, 46)       -- Матовый темно-серый фон
+    local colorTextActive = Color3.fromRGB(255, 255, 255)   -- Белый цвет элементов
+    local colorGrayInactive = Color3.fromRGB(140, 140, 140) -- Серый неактивный цвет
     
     for i, tabData in ipairs(tabsList) do
         local tabName = tabData.Name
         local iconId = tabData.Icon
         
         local Btn = Instance.new("TextButton", SubTabContainer)
-        Btn.Size = UDim2.new(0, 105, 1, 0) 
-        Btn.BackgroundColor3 = Color3.fromRGB(24, 24, 24)
+        Btn.Size = UDim2.new(0, 95, 1, 0) 
+        Btn.BackgroundColor3 = colorActiveBg
         Btn.BackgroundTransparency = 1 
-        Btn.Text = tabName
-        Btn.Font = Enum.Font.GothamMedium
-        Btn.TextColor3 = colorGray
-        Btn.TextSize = 13
-        Instance.new("UICorner", Btn).CornerRadius = UDim.new(0, 6)
+        Btn.Text = "" 
+        Btn.AutoButtonColor = false
+        Btn.LayoutOrder = i
+        Instance.new("UICorner", Btn).CornerRadius = UDim.new(0, 7)
         
         local Stroke = Instance.new("UIStroke", Btn)
-        Stroke.Color = colorOrange
+        Stroke.Color = colorBlueStroke
         Stroke.Thickness = 1.2
         Stroke.Enabled = false 
         
+        -- Умный макет для автоматического центрирования пары "Иконка + Текст"
+        local BtnLayout = Instance.new("UIListLayout", Btn)
+        BtnLayout.FillDirection = Enum.FillDirection.Horizontal
+        BtnLayout.HorizontalAlignment = Enum.HorizontalAlignment.Center
+        BtnLayout.VerticalAlignment = Enum.VerticalAlignment.Center
+        BtnLayout.Padding = UDim.new(0, 6)
+        
+        local Icon
         if iconId and iconId ~= "" then
-            local Icon = Instance.new("ImageLabel", Btn)
-            Icon.Size = UDim2.new(0, 20, 0, 20)
-            Icon.Position = UDim2.new(0, 12, 0.5, -10) 
+            Icon = Instance.new("ImageLabel", Btn)
+            Icon.Size = UDim2.new(0, 16, 0, 16)
             Icon.BackgroundTransparency = 1
             Icon.Image = "rbxthumb://type=Asset&id=" .. iconId .. "&w=150&h=150"
-            Icon.ImageColor3 = colorGray
+            Icon.ImageColor3 = colorGrayInactive
             subIcons[tabName] = Icon
-            
-            local Padding = Instance.new("UIPadding", Btn)
-            Padding.PaddingLeft = UDim.new(0, 24)
         end
+        
+        local Label = Instance.new("TextLabel", Btn)
+        Label.BackgroundTransparency = 1
+        Label.Text = tabName
+        Label.Font = Enum.Font.GothamMedium
+        Label.TextColor3 = colorGrayInactive
+        Label.TextSize = 12
+        Label.AutomaticSize = Enum.AutomaticSize.X
+        Label.Size = UDim2.new(0, 0, 1, 0)
+        subLabels[tabName] = Label
         
         local Page = Instance.new("Frame", ContentContainer)
         Page.Size = UDim2.new(1, 0, 0, 0)
@@ -561,28 +580,30 @@ function Library:CreateSubTabs(parentPage, tabsList)
         Btn.MouseButton1Click:Connect(function()
             for name, p in pairs(subPages) do
                 p.Visible = false
-                tween(subButtons[name], {BackgroundTransparency = 1, TextColor3 = colorGray}, 0.2)
+                tween(subButtons[name], {BackgroundTransparency = 1}, 0.15)
                 subStrokes[name].Enabled = false
+                tween(subLabels[name], {TextColor3 = colorGrayInactive}, 0.15)
                 if subIcons[name] then
-                    tween(subIcons[name], {ImageColor3 = colorGray}, 0.2)
+                    tween(subIcons[name], {ImageColor3 = colorGrayInactive}, 0.15)
                 end
             end
             
             Page.Visible = true
-            tween(Btn, {BackgroundTransparency = 0.5, TextColor3 = colorOrange}, 0.2)
-            Stroke.Enabled = true
-            if subIcons[tabName] then
-                tween(subIcons[tabName], {ImageColor3 = colorOrange}, 0.2)
+            tween(Btn, {BackgroundTransparency = 0.5}, 0.15) 
+            Stroke.Enabled = true 
+            tween(Label, {TextColor3 = colorTextActive}, 0.15) 
+            if Icon then
+                tween(Icon, {ImageColor3 = colorTextActive}, 0.15) 
             end
         end)
         
         if i == 1 then
             Page.Visible = true
             Btn.BackgroundTransparency = 0.5 
-            Btn.TextColor3 = colorOrange      
             Stroke.Enabled = true             
-            if subIcons[tabName] then
-                subIcons[tabName].ImageColor3 = colorOrange
+            Label.TextColor3 = colorTextActive
+            if Icon then
+                Icon.ImageColor3 = colorTextActive
             end
         end
     end
@@ -669,7 +690,7 @@ function CreatePage(name, iconId, layoutOrder)
         if allTabIcons[name] then tween(allTabIcons[name], {ImageTransparency = 0}, 0.2) end 
     end) 
     
-    UpdateNavCanvas() -- Обновляем размеры навигации
+    UpdateNavCanvas() 
     return PageFrame 
 end 
 
