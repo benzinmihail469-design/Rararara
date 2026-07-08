@@ -518,9 +518,10 @@ end
 
 function Library:CreateImage(parentPage, imageId)
     local Img = Instance.new("ImageLabel", parentPage)
-    Img.Size = UDim2.new(1, -20, 0, 120)
+    Img.Size = UDim2.new(1, -20, 0, 130)
     Img.BackgroundTransparency = 1
-    Img.Image = "rbxassetid://" .. tostring(imageId)
+    -- Используем rbxthumb метод, как на основных вкладках, чтобы обойти лок ассета
+    Img.Image = "rbxthumb://type=Asset&id=" .. tostring(imageId) .. "&w=420&h=420"
     Img.ScaleType = Enum.ScaleType.Fit
     Img.ZIndex = 6
     return Img
@@ -773,7 +774,7 @@ local SettingSections = Library:CreateSubTabs(SettingsPage, {
 })
 
 Library:CreateToggle(SettingSections["UI"], "UI Размер", false, function(state) end)
-Library:CreateImage(SettingSections["UI"], "85203682050945") -- Вот здесь вставил твою картинку
+Library:CreateImage(SettingSections["UI"], "85203682050945") -- Наша картинка с фиксом rbxthumb загрузки
 Library:CreateButton(SettingSections["Theme"], "Переключить тему", function() end)
 
 if allTabs["Main"] and allTabButtons["Main"] then
