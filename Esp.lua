@@ -567,16 +567,54 @@ local Localization = {
         ["Players"] = "Players", ["Visual"] = "Visual", ["Settings"] = "Settings", ["UI"] = "UI", 
         ["Theme"] = "Theme", ["AutoFarmCoins"] = "Auto-Farm Coins", ["PlayerESP"] = "Player ESP", 
         ["UISize"] = "UI Size", ["UITransparency"] = "UI Transparency", ["MenuFont"] = "Menu Font", 
-        ["Language"] = "Language", ["AntiAFK"] = "Anti-AFK", ["UITheme"] = "UI Theme"
+        ["Language"] = "Language", ["AntiAFK"] = "Anti-AFK", ["UITheme"] = "UI Theme",
+        ["AnimatedWindow"] = "Animated Window"
     }, 
     ["Русский"] = { 
         ["Main"] = "Главная", ["Teleport"] = "Телепорт", ["Murder"] = "Убийца", ["Sheriff"] = "Шериф", 
         ["Players"] = "Игроки", ["Visual"] = "Визуалы", ["Settings"] = "Настройки", ["UI"] = "Интерфейс", 
         ["Theme"] = "Тема", ["AutoFarmCoins"] = "Авто-Фарм Монет", ["PlayerESP"] = "ESP Игроков", 
         ["UISize"] = "Размер интерфейса", ["UITransparency"] = "Прозрачность меню", ["MenuFont"] = "Шрифт меню", 
-        ["Language"] = "Язык", ["AntiAFK"] = "Анти-АФК", ["UITheme"] = "Тема UI"
+        ["Language"] = "Язык", ["AntiAFK"] = "Анти-АФК", ["UITheme"] = "Тема UI",
+        ["AnimatedWindow"] = "Анимированное окно"
     } 
 } 
+
+-- Логика Animated Window
+local animatedWindowConnection = nil
+local function toggleAnimatedWindow(state)
+    if state then
+        if not animatedWindowConnection then
+            animatedWindowConnection = RunService.RenderStepped:Connect(function()
+                -- os.clock() * 0.15 задает скорость переливания
+                local hue = (os.clock() * 0.15) % 1 
+                -- 0.6 насыщенность, чтобы не резало глаза в темных темах
+                local rainbowColor = Color3.fromHSV(hue, 0.6, 1) 
+                
+                for _, stroke in ipairs(Library.TrackedStrokes) do
+                    if stroke and stroke.Parent then
+                        stroke.Color = rainbowColor
+                    end
+                end
+            end)
+        end
+    else
+        if animatedWindowConnection then
+            animatedWindowConnection:Disconnect()
+            animatedWindowConnection = nil
+            
+            -- Возвращаем цвет обводки обратно в зависимость от текущей темы
+            local bgL = (Library.CurrentThemeData.MainBg.R * 0.299 + Library.CurrentThemeData.MainBg.G * 0.587 + Library.CurrentThemeData.MainBg.B * 0.114)
+            local defaultStrokeColor = (bgL > 0.5) and Color3.fromRGB(190, 190, 190) or Color3.fromRGB(45, 45, 45)
+            
+            for _, stroke in ipairs(Library.TrackedStrokes) do
+                if stroke and stroke.Parent then
+                    stroke.Color = defaultStrokeColor
+                end
+            end
+        end
+    end
+end
 
 local SearchResultsPage = Instance.new("ScrollingFrame", PagesContainer) 
 SearchResultsPage.Size = UDim2.new(1, 0, 1, 0) 
@@ -1094,7 +1132,7 @@ function Library:CreateSubTabs(parentPage, tabsList)
         Label.Font = Library.CurrentFont 
         Label.TextColor3 = colorGrayInactive 
         Label.Size = UDim2.new(0, 0, 1, 0) 
-        Label.TextSize = 13 -- ИСПРАВЛЕНО: Возвращен правильный размер шрифта суб-вкладок!
+        Label.TextSize = 13
         Label.AutomaticSize = Enum.AutomaticSize.X 
         Label.ZIndex = 3 
         
@@ -1294,6 +1332,11 @@ end)
 
 Library:CreateDropdown(SettingSections["Theme"], "UITheme", ThemeNamesList, "Deep Ocean", function(selectedTheme)
     Library:UpdateTheme(selectedTheme)
+end)
+
+-- Новая кнопка Animated Window добавлена здесь
+Library:CreateToggle(SettingSections["Theme"], "AnimatedWindow", false, function(state)
+    toggleAnimatedWindow(state)
 end)
 
 if allTabs["Main"] and allTabButtons["Main"] then 
