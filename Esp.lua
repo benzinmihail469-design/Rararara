@@ -1094,6 +1094,7 @@ function Library:CreateSubTabs(parentPage, tabsList)
         Label.Font = Library.CurrentFont 
         Label.TextColor3 = colorGrayInactive 
         Label.Size = UDim2.new(0, 0, 1, 0) 
+        Label.TextSize = 13 -- ИСПРАВЛЕНО: Возвращен правильный размер шрифта суб-вкладок!
         Label.AutomaticSize = Enum.AutomaticSize.X 
         Label.ZIndex = 3 
         
