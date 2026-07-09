@@ -3,6 +3,26 @@ local TweenService = game:GetService("TweenService")
 local UserInputService = game:GetService("UserInputService") 
 local RunService = game:GetService("RunService") 
 local GuiService = game:GetService("GuiService") 
+local Players = game:GetService("Players")
+local VirtualUser = game:GetService("VirtualUser")
+
+-- Логика Anti-AFK
+local antiAfkConnection = nil
+local function toggleAntiAFK(state)
+    if state then
+        if not antiAfkConnection then
+            antiAfkConnection = Players.LocalPlayer.Idled:Connect(function()
+                VirtualUser:CaptureController()
+                VirtualUser:ClickButton2(Vector2.new(0, 0))
+            end)
+        end
+    else
+        if antiAfkConnection then
+            antiAfkConnection:Disconnect()
+            antiAfkConnection = nil
+        end
+    end
+end
 
 -- Безопасное определение родительского контейнера для GUI
 local SafeParent = nil 
@@ -16,7 +36,7 @@ elseif game:GetService("CoreGui") then
 end 
 
 if not SafeParent then 
-    SafeParent = game:GetService("Players").LocalPlayer:WaitForChild("PlayerGui") 
+    SafeParent = Players.LocalPlayer:WaitForChild("PlayerGui") 
 end 
 
 local DarkHub = Instance.new("ScreenGui") 
@@ -395,14 +415,16 @@ local Localization = {
         ["Players"] = "Players", ["Visual"] = "Visual", ["Settings"] = "Settings", ["UI"] = "UI", 
         ["Theme"] = "Theme", ["AutoFarmCoins"] = "Auto-Farm Coins", ["PlayerESP"] = "Player ESP", 
         ["UISize"] = "UI Size", ["UITransparency"] = "UI Transparency", ["MenuFont"] = "Menu Font", 
-        ["SwitchTheme"] = "Switch Theme", ["Language"] = "Language" 
+        ["SwitchTheme"] = "Switch Theme", ["Language"] = "Language",
+        ["AntiAFK"] = "Anti-AFK" -- Перевод добавлен
     }, 
     ["Русский"] = { 
         ["Main"] = "Главная", ["Teleport"] = "Телепорт", ["Murder"] = "Убийца", ["Sheriff"] = "Шериф", 
         ["Players"] = "Игроки", ["Visual"] = "Визуалы", ["Settings"] = "Настройки", ["UI"] = "Интерфейс", 
         ["Theme"] = "Тема", ["AutoFarmCoins"] = "Авто-Фарм Монет", ["PlayerESP"] = "ESP Игроков", 
         ["UISize"] = "Размер интерфейса", ["UITransparency"] = "Прозрачность меню", ["MenuFont"] = "Шрифт меню", 
-        ["SwitchTheme"] = "Переключить тему", ["Language"] = "Язык" 
+        ["SwitchTheme"] = "Переключить тему", ["Language"] = "Язык",
+        ["AntiAFK"] = "Анти-АФК" -- Перевод добавлен
     } 
 } 
 
@@ -1045,6 +1067,11 @@ Library:CreateDropdown(SettingSections["UI"], "Language", {"English", "Русс�
     end 
     TabTitle.Text = Localization[selectedLang][Library.CurrentTabKey] or Library.CurrentTabKey 
 end) 
+
+-- Кнопка Anti AFK добавлена в суб-вкладку UI
+Library:CreateToggle(SettingSections["UI"], "AntiAFK", false, function(state)
+    toggleAntiAFK(state)
+end)
 
 Library:CreateButton(SettingSections["Theme"], "SwitchTheme", function() end) 
 
