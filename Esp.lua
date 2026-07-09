@@ -312,16 +312,37 @@ StatsLabel.TextSize = 10
 StatsLabel.TextXAlignment = Enum.TextXAlignment.Left 
 StatsLabel.BackgroundTransparency = 1 
 
-local FrameUpdateTable = {} 
-RunService.RenderStepped:Connect(function() 
+-- МОДИФИЦИРОВАННАЯ ЛОГИКА ПЛАВНОГО FPS
+local fpsBuffer = {}
+local maxSamples = 30         -- Буфер сглаживания микрофризов
+local updateInterval = 0.15   -- Задержка обновления текста (150 мс для идеальной плавности)
+local lastUpdateTime = 0
+
+RunService.RenderStepped:Connect(function(dt) 
     local CurrentTime = os.clock() 
-    table.insert(FrameUpdateTable, CurrentTime) 
-    while #FrameUpdateTable > 0 and FrameUpdateTable[1] < CurrentTime - 1 do 
-        table.remove(FrameUpdateTable, 1) 
-    end 
     
-    local passedTime = CurrentTime - startTime
-    StatsLabel.Text = "FPS: " .. #FrameUpdateTable .. "  |  Session: " .. formatSessionTime(passedTime)
+    -- Считаем FPS для текущего кадра и загоняем в буфер
+    local currentFps = 1 / dt
+    table.insert(fpsBuffer, currentFps)
+    if #fpsBuffer > maxSamples then
+        table.remove(fpsBuffer, 1)
+    end
+    
+    -- Обновляем UI строго по интервалу
+    lastUpdateTime = lastUpdateTime + dt
+    if lastUpdateTime >= updateInterval then
+        lastUpdateTime = 0
+        
+        -- Высчитываем среднее значение
+        local sum = 0
+        for _, fps in ipairs(fpsBuffer) do
+            sum = sum + fps
+        end
+        local averageFps = sum / #fpsBuffer
+        
+        local passedTime = CurrentTime - startTime
+        StatsLabel.Text = string.format("FPS: %d  |  Session: %s", math.round(averageFps), formatSessionTime(passedTime))
+    end
 end) 
 
 local function CreateRipple(button, clickX, clickY) 
@@ -658,7 +679,7 @@ SearchResultsPage.ZIndex = 5
 local searchLayout = Instance.new("UIListLayout", SearchResultsPage) 
 searchLayout.Padding = UDim.new(0, 8) 
 searchLayout.HorizontalAlignment = Enum.HorizontalAlignment.Center 
-searchLayout.SortOrder = Enum.SortOrder.LayoutOrder -- Включаем жесткий порядок для результатов поиска
+searchLayout.SortOrder = Enum.SortOrder.LayoutOrder 
 Instance.new("UIPadding", SearchResultsPage).PaddingTop = UDim.new(0, 2) 
 
 searchLayout:GetPropertyChangedSignal("AbsoluteContentSize"):Connect(function() 
@@ -706,7 +727,7 @@ function Library:CreateDropdown(parentPage, textKey, options, default, callback)
     DropdownFrame.BackgroundColor3 = Library.CurrentThemeData.ElementBg 
     DropdownFrame.ClipsDescendants = true 
     DropdownFrame.ZIndex = 6 
-    DropdownFrame.LayoutOrder = #parentPage:GetChildren() -- Запоминаем строгий порядок создания
+    DropdownFrame.LayoutOrder = #parentPage:GetChildren() 
     Instance.new("UICorner", DropdownFrame).CornerRadius = UDim.new(0, 6) 
     local DropdownStroke = Instance.new("UIStroke", DropdownFrame) 
     DropdownStroke.Color = Color3.fromRGB(40, 40, 40) 
@@ -847,7 +868,7 @@ function Library:CreateButton(parentPage, textKey, callback)
     Btn.TextSize = 13 
     Btn.ClipsDescendants = true 
     Btn.ZIndex = 6 
-    Btn.LayoutOrder = #parentPage:GetChildren() -- Запоминаем строгий порядок создания
+    Btn.LayoutOrder = #parentPage:GetChildren() 
     Instance.new("UICorner", Btn).CornerRadius = UDim.new(0, 6) 
     local BtnStroke = Instance.new("UIStroke", Btn)
     BtnStroke.Color = Color3.fromRGB(40, 40, 40) 
@@ -873,7 +894,7 @@ function Library:CreateToggle(parentPage, textKey, default, callback)
     TglFrame.Size = UDim2.new(1, -20, 0, 36) 
     TglFrame.BackgroundColor3 = Library.CurrentThemeData.ElementBg 
     TglFrame.ZIndex = 6 
-    TglFrame.LayoutOrder = #parentPage:GetChildren() -- Запоминаем строгий порядок создания
+    TglFrame.LayoutOrder = #parentPage:GetChildren() 
     Instance.new("UICorner", TglFrame).CornerRadius = UDim.new(0, 6) 
     local TglStroke = Instance.new("UIStroke", TglFrame)
     TglStroke.Color = Color3.fromRGB(40, 40, 40) 
@@ -946,7 +967,7 @@ function Library:CreateSlider(parentPage, textKey, min, max, default, callback)
     SliderFrame.Size = UDim2.new(1, -20, 0, 52) 
     SliderFrame.BackgroundColor3 = Library.CurrentThemeData.ElementBg 
     SliderFrame.ZIndex = 6 
-    SliderFrame.LayoutOrder = #parentPage:GetChildren() -- Запоминаем строгий порядок создания
+    SliderFrame.LayoutOrder = #parentPage:GetChildren() 
     Instance.new("UICorner", SliderFrame).CornerRadius = UDim.new(0, 8) 
     local SliderStroke = Instance.new("UIStroke", SliderFrame)
     SliderStroke.Color = Color3.fromRGB(40, 40, 40) 
@@ -1081,7 +1102,7 @@ function Library:CreateImage(parentPage, imageId)
     local Img = Instance.new("ImageLabel", parentPage) 
     Img.Size = UDim2.new(1, -20, 0, 130) 
     Img.BackgroundTransparency = 1 
-    Img.LayoutOrder = #parentPage:GetChildren() -- Запоминаем строгий порядок создания
+    Img.LayoutOrder = #parentPage:GetChildren() 
     if tonumber(imageId) then 
         Img.Image = "rbxassetid://" .. tostring(imageId) .. "&w=420&h=420" 
     else 
@@ -1181,7 +1202,7 @@ function Library:CreateSubTabs(parentPage, tabsList)
         local PageLayout = Instance.new("UIListLayout", Page) 
         PageLayout.Padding = UDim.new(0, 8) 
         PageLayout.HorizontalAlignment = Enum.HorizontalAlignment.Center 
-        PageLayout.SortOrder = Enum.SortOrder.LayoutOrder -- ВКЛЮЧЕНО: Элементы внутри саб-вкладок не будут скакать по имени
+        PageLayout.SortOrder = Enum.SortOrder.LayoutOrder 
         
         subPages[textKey] = Page 
         registry[textKey] = { Page = Page, Visual = VisualFrame, Stroke = Stroke, Label = Label, Icon = Icon, TargetColor = activeColor } 
@@ -1242,7 +1263,7 @@ function CreatePage(textKey, iconId, layoutOrder)
     local layout = Instance.new("UIListLayout", PageFrame) 
     layout.Padding = UDim.new(0, 8) 
     layout.HorizontalAlignment = Enum.HorizontalAlignment.Center 
-    layout.SortOrder = Enum.SortOrder.LayoutOrder -- ВКЛЮЧЕНО: Главные страницы тоже используют строгий порядок создания
+    layout.SortOrder = Enum.SortOrder.LayoutOrder 
     Instance.new("UIPadding", PageFrame).PaddingTop = UDim.new(0, 2) 
     
     layout:GetPropertyChangedSignal("AbsoluteContentSize"):Connect(function() 
@@ -1340,7 +1361,6 @@ local SettingSections = Library:CreateSubTabs(SettingsPage, {
     {Name = "Theme", Icon = "78640980615320", Color = Color3.fromRGB(235, 94, 153)} 
 }) 
 
--- Элементы создаются строго по порядку и никуда не сдвинутся:
 Library:CreateSlider(SettingSections["UI"], "UISize", 0.5, 1.5, 1.00, function(value) MainScale.Scale = value end) 
 Library:CreateSlider(SettingSections["UI"], "UITransparency", 0, 100, 15, function(value) MainFrame.BackgroundTransparency = value / 100 end) 
 
