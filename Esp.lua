@@ -1,13 +1,12 @@
-Local CustomIconID = "76579925188009" 
+local CustomIconID = "76579925188009" 
 local TweenService = game:GetService("TweenService") 
 local UserInputService = game:GetService("UserInputService") 
 local RunService = game:GetService("RunService") 
 local GuiService = game:GetService("GuiService") 
 local Players = game:GetService("Players")
 local VirtualUser = game:GetService("VirtualUser")
-local Lighting = game:GetService("Lighting") 
+local Lighting = game:GetService("Lighting")
 
--- Логика подсчета времени сессии
 local startTime = os.clock() 
 local function formatSessionTime(seconds)
     local hours = math.floor(seconds / 3600)
@@ -16,7 +15,6 @@ local function formatSessionTime(seconds)
     return string.format("%02d:%02d:%02d", hours, minutes, secs)
 end
 
--- Логика Anti-AFK
 local antiAfkConnection = nil
 local function toggleAntiAFK(state)
     if state then
@@ -34,7 +32,6 @@ local function toggleAntiAFK(state)
     end
 end
 
--- Функция для управления шейдерами (создание / удаление эффектов)
 local function toggleShader(name, state, instanceClass, properties)
     local storageName = "DarkHub_" .. name
     local existing = Lighting:FindFirstChild(storageName)
@@ -54,7 +51,6 @@ local function toggleShader(name, state, instanceClass, properties)
     end
 end
 
--- Безопасное определение родительского контейнера для GUI
 local SafeParent = nil 
 if typeof(gethui) == "function" then 
     SafeParent = gethui() 
@@ -149,7 +145,7 @@ TabTitle.BackgroundTransparency = 1
 local ControlsContainer = Instance.new("Frame", MainFrame) 
 ControlsContainer.Name = "ControlsContainer" 
 ControlsContainer.Size = UDim2.new(0, 60, 0, 30) 
-ControlsContainer.Position = UDim2.new(1, -70, 0, 15) 
+ControlsContainer.Position = UDim2.new(1, -65, 0, 10) 
 ControlsContainer.BackgroundTransparency = 1 
 ControlsContainer.ZIndex = 10 
 
@@ -263,7 +259,7 @@ SubTitle.ZIndex = 5
 
 local EmbeddedControls = Instance.new("Frame", HeaderBg) 
 EmbeddedControls.Size = UDim2.new(0, 50, 0, 30) 
-EmbeddedControls.Position = UDim2.new(1, -55, 0, 8) 
+EmbeddedControls.Position = UDim2.new(1, -50, 0, 8) 
 EmbeddedControls.BackgroundTransparency = 1 
 EmbeddedControls.ZIndex = 6 
 EmbeddedControls.Visible = false 
@@ -333,7 +329,6 @@ StatsLabel.TextSize = 10
 StatsLabel.TextXAlignment = Enum.TextXAlignment.Left 
 StatsLabel.BackgroundTransparency = 1 
 
--- ЛОГИКА ПЛАВНОГО FPS
 local fpsBuffer = {}
 local maxSamples = 30         
 local updateInterval = 0.15   
@@ -549,7 +544,7 @@ function Library:UpdateTheme(themeName)
     for _, data in ipairs(Library.TrackedAccents) do
         if data.Type == "Toggle" then
             if data.IsEnabled() then
-                tween(data.Checkbox, {BackgroundColor3 = theme.Accent})
+                tween(data.Checkbox, {BackgroundColor3 = Color3.fromRGB(255, 140, 0)})
                 local brightness = (theme.Accent.R + theme.Accent.G + theme.Accent.B)
                 if brightness > 2.5 then
                     tween(data.Indicator, {BackgroundColor3 = Color3.fromRGB(30, 30, 30)})
@@ -601,14 +596,13 @@ table.insert(Library.TrackedMainText, EmbCloseBtn)
 local SearchableElements = {} 
 local LocaleObjects = {} 
 
--- ОБНОВЛЕННАЯ ЛОКАЛИЗАЦИЯ (ДОБАВЛЕНЫ КЛЮЧИ ДЛЯ ДРОПДАУНОВ)
 local Localization = { 
     ["English"] = { 
         ["Main"] = "Main", ["Teleport"] = "Teleport", ["Murder"] = "Murder", ["Sheriff"] = "Sheriff", 
         ["Players"] = "Players", ["Visual"] = "Visual", ["Settings"] = "Settings", ["UI"] = "UI", 
         ["Theme"] = "Theme", ["AutoFarmCoins"] = "Auto-Farm Coins",
         ["CinematicShader"] = "Cinematic Shaders", ["BloomShader"] = "Bloom Glow FX", ["BlurShader"] = "Screen Blur Effect",
-        ["ShaderPreset"] = "Shader Preset", ["SkyboxChanger"] = "Skybox Changer", -- Английские ключи
+        ["ShaderPreset"] = "Shader Preset", ["SkyboxChanger"] = "Skybox Changer",
         ["UISize"] = "UI Size", ["UITransparency"] = "UI Transparency", ["MenuFont"] = "Menu Font", 
         ["Language"] = "Language", ["AntiAFK"] = "Anti-AFK", ["UITheme"] = "UI Theme",
         ["AnimatedWindow"] = "Animated Window", ["Gradient"] = "Gradient Background"
@@ -618,14 +612,13 @@ local Localization = {
         ["Players"] = "Игроки", ["Visual"] = "Визуалы", ["Settings"] = "Настройки", ["UI"] = "Интерфейс", 
         ["Theme"] = "Тема", ["AutoFarmCoins"] = "Авто-Фарм Монет",
         ["CinematicShader"] = "Кинематографичные Шейдеры", ["BloomShader"] = "Эффект Свечения", ["BlurShader"] = "Размытие Экрана",
-        ["ShaderPreset"] = "Пресет Шейдеров", ["SkyboxChanger"] = "Смена Неба", -- Русские ключи
+        ["ShaderPreset"] = "Пресет Шейдеров", ["SkyboxChanger"] = "Смена Неба",
         ["UISize"] = "Размер интерфейса", ["UITransparency"] = "Прозрачность меню", ["MenuFont"] = "Шрифт меню", 
         ["Language"] = "Язык", ["AntiAFK"] = "Анти-АФК", ["UITheme"] = "Тема UI",
         ["AnimatedWindow"] = "Анимированное окно", ["Gradient"] = "Градиентный фон"
     } 
 } 
 
--- Логика Animated Window
 local animatedWindowConnection = nil
 local function toggleAnimatedWindow(state)
     if state then
@@ -658,7 +651,6 @@ local function toggleAnimatedWindow(state)
     end
 end
 
--- Логика Градиентного Фона (Gradient)
 local uiGradientInstance = nil
 local gradientRotateConnection = nil
 local function toggleGradientEffect(state)
@@ -743,7 +735,6 @@ local FontMapping = {
     ["Fredoka One"] = Enum.Font.FredokaOne 
 } 
 
--- ИНТЕГРИРОВАННЫЙ ДРОПДАУН С ПОДДЕРЖКОЙ СКРОЛЛА
 function Library:CreateDropdown(parentPage, textKey, options, default, callback) 
     local initialText = Localization[Library.CurrentLanguage][textKey] or textKey 
     local DropdownFrame = Instance.new("Frame", parentPage) 
@@ -965,7 +956,7 @@ function Library:CreateToggle(parentPage, textKey, default, callback)
     local Checkbox = Instance.new("TextButton", TglFrame) 
     Checkbox.Size = UDim2.new(0, 34, 0, 18) 
     Checkbox.Position = UDim2.new(1, -44, 0.5, -9) 
-    Checkbox.BackgroundColor3 = default and Library.CurrentThemeData.Accent or Color3.fromRGB(40, 40, 40) 
+    Checkbox.BackgroundColor3 = default and Color3.fromRGB(255, 140, 0) or Color3.fromRGB(40, 40, 40) 
     Checkbox.Text = "" 
     Checkbox.ZIndex = 7 
     Instance.new("UICorner", Checkbox).CornerRadius = UDim.new(0, 9) 
@@ -985,7 +976,7 @@ function Library:CreateToggle(parentPage, textKey, default, callback)
         local activeIndicatorColor = brightness > 2.5 and Color3.fromRGB(30, 30, 30) or Color3.fromRGB(255, 255, 255)
 
         if enabled then 
-            tween(Checkbox, {BackgroundColor3 = Library.CurrentThemeData.Accent}, 0.2) 
+            tween(Checkbox, {BackgroundColor3 = Color3.fromRGB(255, 140, 0)}, 0.2) 
             tween(Indicator, {Position = UDim2.new(1, -16, 0.5, -7), BackgroundColor3 = activeIndicatorColor}, 0.2) 
         else 
             local bgL = (Library.CurrentThemeData.MainBg.R * 0.299 + Library.CurrentThemeData.MainBg.G * 0.587 + Library.CurrentThemeData.MainBg.B * 0.114)
@@ -1213,7 +1204,7 @@ function Library:CreateSubTabs(parentPage, tabsList)
         ContentFrame.ZIndex = 2 
         local BtnLayout = Instance.new("UIListLayout", ContentFrame) 
         BtnLayout.FillDirection = Enum.FillDirection.Horizontal 
-        BtnLayout.HorizontalAlignment = Enum.HorizontalAlignment.Center 
+        BtnLayout.HorizontalAlignment = Enum.HorizontalAlignment.Left 
         BtnLayout.VerticalAlignment = Enum.VerticalAlignment.Center 
         BtnLayout.Padding = UDim.new(0, 6) 
         
@@ -1402,7 +1393,6 @@ local SettingsPage = CreatePage("Settings", "117996761927034", 99)
 
 Library:CreateToggle(MainPage, "AutoFarmCoins", false, function(state) end) 
 
--- СЮДА ДОБАВЛЕНЫ РАБОЧИЕ ШЕЙДЕРЫ
 Library:CreateToggle(VisualPage, "CinematicShader", false, function(state)
     toggleShader("Cinematic", state, "ColorCorrectionEffect", {
         Contrast = 0.25, 
@@ -1425,17 +1415,13 @@ Library:CreateToggle(VisualPage, "BlurShader", false, function(state)
     })
 end) 
 
--- === СЮДА УСПЕШНО ДОБАВЛЕНЫ ДРОПДАУНЫ В ВКЛАДКУ ВИЗУАЛ ===
 Library:CreateDropdown(VisualPage, "ShaderPreset", {"Default", "Low End", "Ultra RTX", "Vibrant", "Nocturnal"}, "Default", function(selectedPreset)
     print("Выбран пресет шейдеров: " .. selectedPreset)
-    -- Сюда можно добавить логику переключения пресетов
 end)
 
 Library:CreateDropdown(VisualPage, "SkyboxChanger", {"Default", "Purple Nebula", "Custom Night", "Anime Sunset"}, "Default", function(selectedSkybox)
     print("Выбран скайбокс: " .. selectedSkybox)
-    -- Сюда можно добавить логику смены скайбоксов игры
 end)
--- =======================================================
 
 local SettingSections = Library:CreateSubTabs(SettingsPage, { 
     {Name = "UI", Icon = "85203682050945", Color = Color3.fromRGB(108, 176, 214)}, 
