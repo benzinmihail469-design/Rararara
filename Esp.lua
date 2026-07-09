@@ -407,21 +407,27 @@ Library.TrackedMainBg = {}
 Library.TrackedElementBg = {}
 Library.TrackedAccents = {}
 
--- Полный список тем с ваших скриншотов
+-- Полный список из 19 уникальных тем
 local ThemeConfig = {
-    ["Black"] = { Accent = Color3.fromRGB(180, 180, 180), MainBg = Color3.fromRGB(12, 12, 12), ElementBg = Color3.fromRGB(22, 22, 22) },
-    ["White"] = { Accent = Color3.fromRGB(255, 255, 255), MainBg = Color3.fromRGB(20, 20, 20), ElementBg = Color3.fromRGB(30, 30, 30) },
-    ["Pink"] = { Accent = Color3.fromRGB(255, 105, 180), MainBg = Color3.fromRGB(18, 14, 16), ElementBg = Color3.fromRGB(28, 22, 25) },
-    ["Red"] = { Accent = Color3.fromRGB(255, 50, 50), MainBg = Color3.fromRGB(18, 12, 12), ElementBg = Color3.fromRGB(28, 18, 18) },
-    ["Green"] = { Accent = Color3.fromRGB(50, 255, 80), MainBg = Color3.fromRGB(12, 18, 12), ElementBg = Color3.fromRGB(18, 28, 18) },
-    ["Blue"] = { Accent = Color3.fromRGB(50, 150, 255), MainBg = Color3.fromRGB(12, 14, 20), ElementBg = Color3.fromRGB(18, 22, 30) },
-    ["Ash Gray"] = { Accent = Color3.fromRGB(178, 190, 181), MainBg = Color3.fromRGB(20, 22, 21), ElementBg = Color3.fromRGB(30, 33, 31) },
-    ["Deep Ocean"] = { Accent = Color3.fromRGB(0, 105, 148), MainBg = Color3.fromRGB(10, 16, 22), ElementBg = Color3.fromRGB(15, 24, 32) },
-    ["Royal Blue"] = { Accent = Color3.fromRGB(65, 105, 225), MainBg = Color3.fromRGB(12, 14, 24), ElementBg = Color3.fromRGB(18, 22, 34) },
-    ["Midnight Blue"] = { Accent = Color3.fromRGB(25, 25, 112), MainBg = Color3.fromRGB(8, 10, 18), ElementBg = Color3.fromRGB(14, 16, 26) },
-    ["Galaxy Purple"] = { Accent = Color3.fromRGB(138, 43, 226), MainBg = Color3.fromRGB(16, 12, 22), ElementBg = Color3.fromRGB(24, 18, 32) },
-    ["Neon Purple"] = { Accent = Color3.fromRGB(191, 0, 255), MainBg = Color3.fromRGB(18, 10, 24), ElementBg = Color3.fromRGB(26, 15, 34) },
-    ["Neon Cyber"] = { Accent = Color3.fromRGB(0, 255, 255), MainBg = Color3.fromRGB(10, 18, 18), ElementBg = Color3.fromRGB(15, 26, 26) }
+    ["Black"]         = { Accent = Color3.fromRGB(180, 180, 180), MainBg = Color3.fromRGB(12, 12, 12), ElementBg = Color3.fromRGB(22, 22, 22) },
+    ["White"]         = { Accent = Color3.fromRGB(0, 122, 255),   MainBg = Color3.fromRGB(240, 240, 240), ElementBg = Color3.fromRGB(255, 255, 255) },
+    ["Pink"]          = { Accent = Color3.fromRGB(255, 105, 180), MainBg = Color3.fromRGB(25, 15, 20),   ElementBg = Color3.fromRGB(40, 25, 35) },
+    ["Red"]           = { Accent = Color3.fromRGB(255, 50, 50),   MainBg = Color3.fromRGB(20, 10, 10),   ElementBg = Color3.fromRGB(35, 15, 15) },
+    ["Green"]         = { Accent = Color3.fromRGB(50, 255, 50),   MainBg = Color3.fromRGB(10, 20, 10),   ElementBg = Color3.fromRGB(15, 35, 15) },
+    ["Blue"]          = { Accent = Color3.fromRGB(0, 150, 255),   MainBg = Color3.fromRGB(10, 15, 25),   ElementBg = Color3.fromRGB(20, 25, 40) },
+    ["Ash Gray"]      = { Accent = Color3.fromRGB(112, 128, 144), MainBg = Color3.fromRGB(28, 30, 33),   ElementBg = Color3.fromRGB(40, 42, 46) },
+    ["Deep Ocean"]    = { Accent = Color3.fromRGB(0, 206, 209),   MainBg = Color3.fromRGB(10, 20, 30),   ElementBg = Color3.fromRGB(15, 30, 45) },
+    ["Royal Blue"]    = { Accent = Color3.fromRGB(65, 105, 225),  MainBg = Color3.fromRGB(12, 18, 34),   ElementBg = Color3.fromRGB(22, 32, 60) },
+    ["Midnight Blue"] = { Accent = Color3.fromRGB(30, 144, 255),  MainBg = Color3.fromRGB(6, 10, 18),    ElementBg = Color3.fromRGB(12, 20, 35) },
+    ["Galaxy Purple"] = { Accent = Color3.fromRGB(138, 43, 226),  MainBg = Color3.fromRGB(15, 10, 25),   ElementBg = Color3.fromRGB(28, 18, 46) },
+    ["Neon Purple"]   = { Accent = Color3.fromRGB(224, 32, 255),  MainBg = Color3.fromRGB(18, 8, 28),    ElementBg = Color3.fromRGB(32, 12, 51) },
+    ["Neon Cyber"]    = { Accent = Color3.fromRGB(0, 255, 255),   MainBg = Color3.fromRGB(10, 10, 12),   ElementBg = Color3.fromRGB(20, 20, 25) },
+    ["Amber Glow"]    = { Accent = Color3.fromRGB(255, 165, 0),   MainBg = Color3.fromRGB(20, 16, 10),   ElementBg = Color3.fromRGB(36, 28, 18) },
+    ["Anime"]         = { Accent = Color3.fromRGB(255, 111, 207), MainBg = Color3.fromRGB(24, 20, 26),   ElementBg = Color3.fromRGB(43, 35, 48) },
+    ["Deep Violet"]   = { Accent = Color3.fromRGB(102, 51, 153),  MainBg = Color3.fromRGB(13, 11, 20),   ElementBg = Color3.fromRGB(23, 19, 36) },
+    ["Cyanic"]        = { Accent = Color3.fromRGB(0, 255, 200),   MainBg = Color3.fromRGB(10, 22, 26),   ElementBg = Color3.fromRGB(18, 38, 46) },
+    ["Blood Red"]     = { Accent = Color3.fromRGB(170, 0, 0),     MainBg = Color3.fromRGB(14, 4, 4),     ElementBg = Color3.fromRGB(28, 8, 8) },
+    ["AMOLED"]        = { Accent = Color3.fromRGB(100, 100, 100), MainBg = Color3.fromRGB(0, 0, 0),      ElementBg = Color3.fromRGB(15, 15, 15) }
 }
 
 -- Создаем отсортированный массив имен тем
@@ -475,7 +481,6 @@ function Library:UpdateTheme(themeName)
                 end
             end
         end
-        -- Заметьте, Type == "Slider" убран, чтобы тема не переписывала цвета светофора!
     end
 end
 
@@ -769,7 +774,7 @@ function Library:CreateToggle(parentPage, textKey, default, callback)
         callback(enabled) 
     end) 
     
-    -- Добавляем в систему отслеживания и чекбокс, и сам индикатор
+    -- Добавляем в систему отслеживания
     table.insert(Library.TrackedAccents, {
         Type = "Toggle",
         Checkbox = Checkbox,
@@ -830,7 +835,7 @@ function Library:CreateSlider(parentPage, textKey, min, max, default, callback)
     
     local SliderFill = Instance.new("Frame", SliderTrack) 
     SliderFill.Size = UDim2.new(0, 0, 1, 0) 
-    SliderFill.BackgroundColor3 = Color3.fromRGB(255, 60, 60) -- Красный старт
+    SliderFill.BackgroundColor3 = Color3.fromRGB(255, 60, 60) 
     SliderFill.ZIndex = 8 
     Instance.new("UICorner", SliderFill).CornerRadius = UDim.new(0, 3) 
     
@@ -864,7 +869,6 @@ function Library:CreateSlider(parentPage, textKey, min, max, default, callback)
     end
     
     local function updateVisuals(percentage) 
-        -- Устанавливаем цвет независимо от UI Theme
         SliderFill.BackgroundColor3 = getTrafficLightColor(percentage)
         SliderFill.Size = UDim2.new(percentage, 0, 1, 0) 
         SliderHandle.Position = UDim2.new(percentage, 0, 0.5, 0) 
@@ -908,9 +912,6 @@ function Library:CreateSlider(parentPage, textKey, min, max, default, callback)
         while SliderTrack.AbsoluteSize.X == 0 do task.wait() end 
         updateVisuals(currentPercent) 
     end) 
-    
-    -- Слайдеры УДАЛЕНЫ из Library.TrackedAccents, 
-    -- теперь их не сбивает глобальная тема (UI Theme)
     
     local searchItem = {Instance = SliderFrame, SearchText = NormalizeText(initialText), OriginalParent = parentPage} 
     table.insert(SearchableElements, searchItem) 
@@ -1197,7 +1198,7 @@ Library:CreateToggle(SettingSections["UI"], "AntiAFK", false, function(state)
     toggleAntiAFK(state)
 end)
 
--- ThemeNamesList используется для отображения полного списка
+-- ThemeNamesList автоматически подхватит все 19 тем из ThemeConfig
 Library:CreateDropdown(SettingSections["Theme"], "UITheme", ThemeNamesList, "Deep Ocean", function(selectedTheme)
     Library:UpdateTheme(selectedTheme)
 end)
