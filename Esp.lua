@@ -1,4 +1,4 @@
-local CustomIconID = "76579925188009" 
+Local CustomIconID = "76579925188009" 
 local TweenService = game:GetService("TweenService") 
 local UserInputService = game:GetService("UserInputService") 
 local RunService = game:GetService("RunService") 
@@ -333,7 +333,7 @@ StatsLabel.TextSize = 10
 StatsLabel.TextXAlignment = Enum.TextXAlignment.Left 
 StatsLabel.BackgroundTransparency = 1 
 
--- МОДИФИЦИРОВАННАЯ ЛОГИКА ПЛАВНОГО FPS
+-- ЛОГИКА ПЛАВНОГО FPS
 local fpsBuffer = {}
 local maxSamples = 30         
 local updateInterval = 0.15   
@@ -601,12 +601,14 @@ table.insert(Library.TrackedMainText, EmbCloseBtn)
 local SearchableElements = {} 
 local LocaleObjects = {} 
 
+-- ОБНОВЛЕННАЯ ЛОКАЛИЗАЦИЯ (ДОБАВЛЕНЫ КЛЮЧИ ДЛЯ ДРОПДАУНОВ)
 local Localization = { 
     ["English"] = { 
         ["Main"] = "Main", ["Teleport"] = "Teleport", ["Murder"] = "Murder", ["Sheriff"] = "Sheriff", 
         ["Players"] = "Players", ["Visual"] = "Visual", ["Settings"] = "Settings", ["UI"] = "UI", 
         ["Theme"] = "Theme", ["AutoFarmCoins"] = "Auto-Farm Coins",
         ["CinematicShader"] = "Cinematic Shaders", ["BloomShader"] = "Bloom Glow FX", ["BlurShader"] = "Screen Blur Effect",
+        ["ShaderPreset"] = "Shader Preset", ["SkyboxChanger"] = "Skybox Changer", -- Английские ключи
         ["UISize"] = "UI Size", ["UITransparency"] = "UI Transparency", ["MenuFont"] = "Menu Font", 
         ["Language"] = "Language", ["AntiAFK"] = "Anti-AFK", ["UITheme"] = "UI Theme",
         ["AnimatedWindow"] = "Animated Window", ["Gradient"] = "Gradient Background"
@@ -616,6 +618,7 @@ local Localization = {
         ["Players"] = "Игроки", ["Visual"] = "Визуалы", ["Settings"] = "Настройки", ["UI"] = "Интерфейс", 
         ["Theme"] = "Тема", ["AutoFarmCoins"] = "Авто-Фарм Монет",
         ["CinematicShader"] = "Кинематографичные Шейдеры", ["BloomShader"] = "Эффект Свечения", ["BlurShader"] = "Размытие Экрана",
+        ["ShaderPreset"] = "Пресет Шейдеров", ["SkyboxChanger"] = "Смена Неба", -- Русские ключи
         ["UISize"] = "Размер интерфейса", ["UITransparency"] = "Прозрачность меню", ["MenuFont"] = "Шрифт меню", 
         ["Language"] = "Язык", ["AntiAFK"] = "Анти-АФК", ["UITheme"] = "Тема UI",
         ["AnimatedWindow"] = "Анимированное окно", ["Gradient"] = "Градиентный фон"
@@ -740,7 +743,7 @@ local FontMapping = {
     ["Fredoka One"] = Enum.Font.FredokaOne 
 } 
 
--- ИНТЕГРИРОВАННЫЙ ОБНОВЛЕННЫЙ ДРОПДАУН С ПОДДЕРЖКОЙ СКРОЛЛА
+-- ИНТЕГРИРОВАННЫЙ ДРОПДАУН С ПОДДЕРЖКОЙ СКРОЛЛА
 function Library:CreateDropdown(parentPage, textKey, options, default, callback) 
     local initialText = Localization[Library.CurrentLanguage][textKey] or textKey 
     local DropdownFrame = Instance.new("Frame", parentPage) 
@@ -803,7 +806,6 @@ function Library:CreateDropdown(parentPage, textKey, options, default, callback)
     
     table.insert(Library.TrackedSubText, Arrow)
     
-    -- Заменили контейнер на ScrollingFrame для обработки длинных списков (например тем оформления)
     local OptionsContainer = Instance.new("ScrollingFrame", DropdownFrame) 
     OptionsContainer.Size = UDim2.new(1, 0, 0, 0) 
     OptionsContainer.Position = UDim2.new(0, 0, 0, 36) 
@@ -825,13 +827,12 @@ function Library:CreateDropdown(parentPage, textKey, options, default, callback)
     
     local function toggleDropdown() 
         isExpanded = not isExpanded 
-        -- Ограничиваем максимальный размер раскрытия в 140 пикселей, дальше работает скроллбар
         local contentHeight = math.min(#options * 32, 140)
         local targetFrameHeight = isExpanded and (36 + contentHeight + 4) or 36
         
         tween(DropdownFrame, {Size = UDim2.new(1, -20, 0, targetFrameHeight)}, 0.2) 
         tween(OptionsContainer, {Size = UDim2.new(1, 0, 0, isExpanded and contentHeight or 0)}, 0.2)
-        tween(Arrow, {Rotation = isExpanded and 180 or 0}, 0.2) -- Плавный поворот стрелки
+        tween(Arrow, {Rotation = isExpanded and 180 or 0}, 0.2) 
     end 
     HeaderBtn.Activated:Connect(toggleDropdown) 
     
@@ -851,7 +852,7 @@ function Library:CreateDropdown(parentPage, textKey, options, default, callback)
         OptLabel.Font = Library.CurrentFont 
         OptLabel.TextColor3 = (option == default) and Library.CurrentThemeData.Accent or Color3.fromRGB(180, 180, 180) 
         OptLabel.TextSize = 12 
-        OptLabel.TextXAlignment = Enum.TextXAlignment.Left -- Строго влево
+        OptLabel.TextXAlignment = Enum.TextXAlignment.Left 
         OptLabel.BackgroundTransparency = 1 
         OptLabel.ZIndex = 9 
         
@@ -866,7 +867,6 @@ function Library:CreateDropdown(parentPage, textKey, options, default, callback)
         Checkmark.Visible = (option == default) 
         Checkmark.ZIndex = 9 
         
-        -- Плавное подсвечивание элементов при наведении мыши
         OptBtn.MouseEnter:Connect(function()
             tween(OptBtn, {BackgroundTransparency = 0.96}, 0.15)
         end)
@@ -1424,6 +1424,18 @@ Library:CreateToggle(VisualPage, "BlurShader", false, function(state)
         Size = 10
     })
 end) 
+
+-- === СЮДА УСПЕШНО ДОБАВЛЕНЫ ДРОПДАУНЫ В ВКЛАДКУ ВИЗУАЛ ===
+Library:CreateDropdown(VisualPage, "ShaderPreset", {"Default", "Low End", "Ultra RTX", "Vibrant", "Nocturnal"}, "Default", function(selectedPreset)
+    print("Выбран пресет шейдеров: " .. selectedPreset)
+    -- Сюда можно добавить логику переключения пресетов
+end)
+
+Library:CreateDropdown(VisualPage, "SkyboxChanger", {"Default", "Purple Nebula", "Custom Night", "Anime Sunset"}, "Default", function(selectedSkybox)
+    print("Выбран скайбокс: " .. selectedSkybox)
+    -- Сюда можно добавить логику смены скайбоксов игры
+end)
+-- =======================================================
 
 local SettingSections = Library:CreateSubTabs(SettingsPage, { 
     {Name = "UI", Icon = "85203682050945", Color = Color3.fromRGB(108, 176, 214)}, 
