@@ -397,55 +397,39 @@ UserInputService.InputChanged:Connect(function(input)
     end 
 end) 
 
-local Library = {} 
+Library = {} 
 Library.CurrentFont = Enum.Font.Gotham 
 Library.CurrentLanguage = "English" 
 Library.CurrentTabKey = "Main" 
 
--- Таблицы для динамического отслеживания элементов UI при смене тем
+-- Таблицы для динамического отслеживания
 Library.TrackedMainBg = {}
 Library.TrackedElementBg = {}
 Library.TrackedAccents = {}
 
+-- Полный список тем с ваших скриншотов
 local ThemeConfig = {
-    ["Deep Violet"] = {
-        Accent = Color3.fromRGB(130, 90, 230),
-        MainBg = Color3.fromRGB(15, 13, 20),
-        ElementBg = Color3.fromRGB(24, 20, 32)
-    },
-    ["Amber Glow"] = {
-        Accent = Color3.fromRGB(255, 115, 0),
-        MainBg = Color3.fromRGB(16, 14, 12),
-        ElementBg = Color3.fromRGB(26, 22, 18)
-    },
-    ["Anime"] = {
-        Accent = Color3.fromRGB(235, 94, 153),
-        MainBg = Color3.fromRGB(20, 15, 18),
-        ElementBg = Color3.fromRGB(30, 22, 26)
-    },
-    ["Cyanic"] = {
-        Accent = Color3.fromRGB(0, 180, 255),
-        MainBg = Color3.fromRGB(10, 15, 18),
-        ElementBg = Color3.fromRGB(18, 24, 30)
-    },
-    ["Blood Red"] = {
-        Accent = Color3.fromRGB(220, 40, 40),
-        MainBg = Color3.fromRGB(16, 10, 10),
-        ElementBg = Color3.fromRGB(26, 16, 16)
-    },
-    ["AMOLED"] = {
-        Accent = Color3.fromRGB(255, 255, 255),
-        MainBg = Color3.fromRGB(0, 0, 0),
-        ElementBg = Color3.fromRGB(12, 12, 12)
-    },
-    ["Black"] = {
-        Accent = Color3.fromRGB(140, 140, 140),
-        MainBg = Color3.fromRGB(8, 8, 8),
-        ElementBg = Color3.fromRGB(18, 18, 18)
-    }
+    ["Black"] = { Accent = Color3.fromRGB(180, 180, 180), MainBg = Color3.fromRGB(12, 12, 12), ElementBg = Color3.fromRGB(22, 22, 22) },
+    ["White"] = { Accent = Color3.fromRGB(255, 255, 255), MainBg = Color3.fromRGB(20, 20, 20), ElementBg = Color3.fromRGB(30, 30, 30) },
+    ["Pink"] = { Accent = Color3.fromRGB(255, 105, 180), MainBg = Color3.fromRGB(18, 14, 16), ElementBg = Color3.fromRGB(28, 22, 25) },
+    ["Red"] = { Accent = Color3.fromRGB(255, 50, 50), MainBg = Color3.fromRGB(18, 12, 12), ElementBg = Color3.fromRGB(28, 18, 18) },
+    ["Green"] = { Accent = Color3.fromRGB(50, 255, 80), MainBg = Color3.fromRGB(12, 18, 12), ElementBg = Color3.fromRGB(18, 28, 18) },
+    ["Blue"] = { Accent = Color3.fromRGB(50, 150, 255), MainBg = Color3.fromRGB(12, 14, 20), ElementBg = Color3.fromRGB(18, 22, 30) },
+    ["Ash Gray"] = { Accent = Color3.fromRGB(178, 190, 181), MainBg = Color3.fromRGB(20, 22, 21), ElementBg = Color3.fromRGB(30, 33, 31) },
+    ["Deep Ocean"] = { Accent = Color3.fromRGB(0, 105, 148), MainBg = Color3.fromRGB(10, 16, 22), ElementBg = Color3.fromRGB(15, 24, 32) },
+    ["Royal Blue"] = { Accent = Color3.fromRGB(65, 105, 225), MainBg = Color3.fromRGB(12, 14, 24), ElementBg = Color3.fromRGB(18, 22, 34) },
+    ["Midnight Blue"] = { Accent = Color3.fromRGB(25, 25, 112), MainBg = Color3.fromRGB(8, 10, 18), ElementBg = Color3.fromRGB(14, 16, 26) },
+    ["Galaxy Purple"] = { Accent = Color3.fromRGB(138, 43, 226), MainBg = Color3.fromRGB(16, 12, 22), ElementBg = Color3.fromRGB(24, 18, 32) },
+    ["Neon Purple"] = { Accent = Color3.fromRGB(191, 0, 255), MainBg = Color3.fromRGB(18, 10, 24), ElementBg = Color3.fromRGB(26, 15, 34) },
+    ["Neon Cyber"] = { Accent = Color3.fromRGB(0, 255, 255), MainBg = Color3.fromRGB(10, 18, 18), ElementBg = Color3.fromRGB(15, 26, 26) }
 }
 
-Library.CurrentThemeData = ThemeConfig["Deep Violet"]
+-- Создаем отсортированный массив имен тем
+local ThemeNamesList = {}
+for name, _ in pairs(ThemeConfig) do table.insert(ThemeNamesList, name) end
+table.sort(ThemeNamesList)
+
+Library.CurrentThemeData = ThemeConfig["Deep Ocean"]
 
 function Library:UpdateTheme(themeName)
     local theme = ThemeConfig[themeName]
@@ -474,6 +458,13 @@ function Library:UpdateTheme(themeName)
         if data.Type == "Toggle" then
             if data.IsEnabled() then
                 tween(data.Checkbox, {BackgroundColor3 = theme.Accent})
+                -- Фикс видимости кружка для белых/светлых тем
+                local brightness = (theme.Accent.R + theme.Accent.G + theme.Accent.B)
+                if brightness > 2.5 then
+                    tween(data.Indicator, {BackgroundColor3 = Color3.fromRGB(30, 30, 30)})
+                else
+                    tween(data.Indicator, {BackgroundColor3 = Color3.fromRGB(255, 255, 255)})
+                end
             end
         elseif data.Type == "Dropdown" then
             local currentSelection = data.GetDefault()
@@ -483,9 +474,8 @@ function Library:UpdateTheme(themeName)
                     tween(optData.Label, {TextColor3 = theme.Accent})
                 end
             end
-        elseif data.Type == "Slider" then
-            tween(data.Fill, {BackgroundColor3 = theme.Accent})
         end
+        -- Заметьте, Type == "Slider" убран, чтобы тема не переписывала цвета светофора!
     end
 end
 
@@ -764,19 +754,26 @@ function Library:CreateToggle(parentPage, textKey, default, callback)
     local enabled = default 
     Checkbox.Activated:Connect(function() 
         enabled = not enabled 
+        
+        -- Вычисляем контрастный цвет для кружка, если тема белая/светлая
+        local brightness = (Library.CurrentThemeData.Accent.R + Library.CurrentThemeData.Accent.G + Library.CurrentThemeData.Accent.B)
+        local activeIndicatorColor = brightness > 2.5 and Color3.fromRGB(30, 30, 30) or Color3.fromRGB(255, 255, 255)
+
         if enabled then 
             tween(Checkbox, {BackgroundColor3 = Library.CurrentThemeData.Accent}, 0.2) 
-            tween(Indicator, {Position = UDim2.new(1, -16, 0.5, -7)}, 0.2) 
+            tween(Indicator, {Position = UDim2.new(1, -16, 0.5, -7), BackgroundColor3 = activeIndicatorColor}, 0.2) 
         else 
             tween(Checkbox, {BackgroundColor3 = Color3.fromRGB(40, 40, 40)}, 0.2) 
-            tween(Indicator, {Position = UDim2.new(0, 2, 0.5, -7)}, 0.2) 
+            tween(Indicator, {Position = UDim2.new(0, 2, 0.5, -7), BackgroundColor3 = Color3.fromRGB(255, 255, 255)}, 0.2) 
         end 
         callback(enabled) 
     end) 
     
+    -- Добавляем в систему отслеживания и чекбокс, и сам индикатор
     table.insert(Library.TrackedAccents, {
         Type = "Toggle",
         Checkbox = Checkbox,
+        Indicator = Indicator,
         IsEnabled = function() return enabled end
     })
     
@@ -833,7 +830,7 @@ function Library:CreateSlider(parentPage, textKey, min, max, default, callback)
     
     local SliderFill = Instance.new("Frame", SliderTrack) 
     SliderFill.Size = UDim2.new(0, 0, 1, 0) 
-    SliderFill.BackgroundColor3 = Library.CurrentThemeData.Accent
+    SliderFill.BackgroundColor3 = Color3.fromRGB(255, 60, 60) -- Красный старт
     SliderFill.ZIndex = 8 
     Instance.new("UICorner", SliderFill).CornerRadius = UDim.new(0, 3) 
     
@@ -853,9 +850,23 @@ function Library:CreateSlider(parentPage, textKey, min, max, default, callback)
     local cachedTrackWidth = 0 
     local isIntegerSlider = (max - min) > 5 
     
+    -- Функция плавной генерации цвета Светофора
+    local function getTrafficLightColor(pct)
+        local red = Color3.fromRGB(255, 60, 60)
+        local yellow = Color3.fromRGB(255, 210, 40)
+        local green = Color3.fromRGB(60, 255, 90)
+
+        if pct < 0.5 then
+            return red:Lerp(yellow, pct * 2)
+        else
+            return yellow:Lerp(green, (pct - 0.5) * 2)
+        end
+    end
+    
     local function updateVisuals(percentage) 
+        -- Устанавливаем цвет независимо от UI Theme
+        SliderFill.BackgroundColor3 = getTrafficLightColor(percentage)
         SliderFill.Size = UDim2.new(percentage, 0, 1, 0) 
-        SliderFill.BackgroundColor3 = Library.CurrentThemeData.Accent 
         SliderHandle.Position = UDim2.new(percentage, 0, 0.5, 0) 
         local rawValue = min + (max - min) * percentage 
         if isIntegerSlider then 
@@ -898,10 +909,8 @@ function Library:CreateSlider(parentPage, textKey, min, max, default, callback)
         updateVisuals(currentPercent) 
     end) 
     
-    table.insert(Library.TrackedAccents, {
-        Type = "Slider",
-        Fill = SliderFill
-    })
+    -- Слайдеры УДАЛЕНЫ из Library.TrackedAccents, 
+    -- теперь их не сбивает глобальная тема (UI Theme)
     
     local searchItem = {Instance = SliderFrame, SearchText = NormalizeText(initialText), OriginalParent = parentPage} 
     table.insert(SearchableElements, searchItem) 
@@ -1184,13 +1193,12 @@ Library:CreateDropdown(SettingSections["UI"], "Language", {"English", "Русс�
     TabTitle.Text = Localization[selectedLang][Library.CurrentTabKey] or Library.CurrentTabKey 
 end) 
 
--- Кнопка Anti AFK добавлена в суб-вкладку UI
 Library:CreateToggle(SettingSections["UI"], "AntiAFK", false, function(state)
     toggleAntiAFK(state)
 end)
 
--- Выпадающий список UI Theme добавлен в суб-вкладку Theme
-Library:CreateDropdown(SettingSections["Theme"], "UITheme", {"Amber Glow", "Anime", "Deep Violet", "Cyanic", "Blood Red", "AMOLED", "Black"}, "Deep Violet", function(selectedTheme)
+-- ThemeNamesList используется для отображения полного списка
+Library:CreateDropdown(SettingSections["Theme"], "UITheme", ThemeNamesList, "Deep Ocean", function(selectedTheme)
     Library:UpdateTheme(selectedTheme)
 end)
 
@@ -1203,5 +1211,4 @@ if allTabs["Main"] and allTabButtons["Main"] then
     TabTitle.Text = Localization[Library.CurrentLanguage]["Main"] or "Main" 
 end
 
--- Установка дефолтной темы при запуске
-Library:UpdateTheme("Deep Violet")
+Library:UpdateTheme("Deep Ocean")
