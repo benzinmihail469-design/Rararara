@@ -320,7 +320,6 @@ RunService.RenderStepped:Connect(function()
         table.remove(FrameUpdateTable, 1) 
     end 
     
-    -- Вычисляем прошедшее время и форматируем строку
     local passedTime = CurrentTime - startTime
     StatsLabel.Text = "FPS: " .. #FrameUpdateTable .. "  |  Session: " .. formatSessionTime(passedTime)
 end) 
@@ -416,7 +415,6 @@ Library.CurrentFont = Enum.Font.Gotham
 Library.CurrentLanguage = "English" 
 Library.CurrentTabKey = "Main" 
 
--- Таблицы для динамического отслеживания стилей
 Library.TrackedMainBg = {}
 Library.TrackedElementBg = {}
 Library.TrackedAccents = {}
@@ -424,7 +422,6 @@ Library.TrackedMainText = {}
 Library.TrackedSubText = {}
 Library.TrackedStrokes = {}
 
--- Полный список из 19 уникальных тем
 local ThemeConfig = {
     ["Black"]         = { Accent = Color3.fromRGB(180, 180, 180), MainBg = Color3.fromRGB(12, 12, 12), ElementBg = Color3.fromRGB(22, 22, 22) },
     ["White"]         = { Accent = Color3.fromRGB(0, 122, 255),   MainBg = Color3.fromRGB(240, 240, 240), ElementBg = Color3.fromRGB(255, 255, 255) },
@@ -463,16 +460,13 @@ function Library:UpdateTheme(themeName)
     if not theme then return end
     Library.CurrentThemeData = theme
     
-    -- Вычисляем люминесценцию (яркость) фона
     local bgLuminance = (theme.MainBg.R * 0.299 + theme.MainBg.G * 0.587 + theme.MainBg.B * 0.114)
     local isLightMode = bgLuminance > 0.5
     
-    -- Адаптивные палитры текстов и контуров
     local mainTextColor = isLightMode and Color3.fromRGB(35, 35, 35) or Color3.fromRGB(255, 255, 255)
     local subTextColor = isLightMode and Color3.fromRGB(110, 110, 110) or Color3.fromRGB(140, 140, 140)
     local strokeColor = isLightMode and Color3.fromRGB(190, 190, 190) or Color3.fromRGB(45, 45, 45)
     
-    -- Обновляем фоны фреймов
     for _, obj in ipairs(Library.TrackedMainBg) do
         if obj and obj.Parent then tween(obj, {BackgroundColor3 = theme.MainBg}) end
     end
@@ -491,12 +485,10 @@ function Library:UpdateTheme(themeName)
         end
     end
     
-    -- Адаптация линий/обводок UIStroke
     for _, obj in ipairs(Library.TrackedStrokes) do
         if obj and obj.Parent then tween(obj, {Color = strokeColor}) end
     end
     
-    -- Обновляем заголовки и главные надписи функций
     for _, obj in ipairs(Library.TrackedMainText) do
         if obj and obj.Parent then 
             tween(obj, {TextColor3 = mainTextColor}) 
@@ -506,12 +498,10 @@ function Library:UpdateTheme(themeName)
         end
     end
     
-    -- Обновляем подписи, FPS и дискорд
     for _, obj in ipairs(Library.TrackedSubText) do
         if obj and obj.Parent then tween(obj, {TextColor3 = subTextColor}) end
     end
     
-    -- Обновляем цвета боковых вкладок
     for tName, tBtn in pairs(allTabButtons) do
         if tName == Library.CurrentTabKey then
             tBtn.TextColor3 = mainTextColor
@@ -520,7 +510,6 @@ function Library:UpdateTheme(themeName)
         end
     end
     
-    -- Корректируем чекбоксы и выпадающие списки
     for _, data in ipairs(Library.TrackedAccents) do
         if data.Type == "Toggle" then
             if data.IsEnabled() then
@@ -669,6 +658,7 @@ SearchResultsPage.ZIndex = 5
 local searchLayout = Instance.new("UIListLayout", SearchResultsPage) 
 searchLayout.Padding = UDim.new(0, 8) 
 searchLayout.HorizontalAlignment = Enum.HorizontalAlignment.Center 
+searchLayout.SortOrder = Enum.SortOrder.LayoutOrder -- Включаем жесткий порядок для результатов поиска
 Instance.new("UIPadding", SearchResultsPage).PaddingTop = UDim.new(0, 2) 
 
 searchLayout:GetPropertyChangedSignal("AbsoluteContentSize"):Connect(function() 
@@ -716,6 +706,7 @@ function Library:CreateDropdown(parentPage, textKey, options, default, callback)
     DropdownFrame.BackgroundColor3 = Library.CurrentThemeData.ElementBg 
     DropdownFrame.ClipsDescendants = true 
     DropdownFrame.ZIndex = 6 
+    DropdownFrame.LayoutOrder = #parentPage:GetChildren() -- Запоминаем строгий порядок создания
     Instance.new("UICorner", DropdownFrame).CornerRadius = UDim.new(0, 6) 
     local DropdownStroke = Instance.new("UIStroke", DropdownFrame) 
     DropdownStroke.Color = Color3.fromRGB(40, 40, 40) 
@@ -856,6 +847,7 @@ function Library:CreateButton(parentPage, textKey, callback)
     Btn.TextSize = 13 
     Btn.ClipsDescendants = true 
     Btn.ZIndex = 6 
+    Btn.LayoutOrder = #parentPage:GetChildren() -- Запоминаем строгий порядок создания
     Instance.new("UICorner", Btn).CornerRadius = UDim.new(0, 6) 
     local BtnStroke = Instance.new("UIStroke", Btn)
     BtnStroke.Color = Color3.fromRGB(40, 40, 40) 
@@ -881,6 +873,7 @@ function Library:CreateToggle(parentPage, textKey, default, callback)
     TglFrame.Size = UDim2.new(1, -20, 0, 36) 
     TglFrame.BackgroundColor3 = Library.CurrentThemeData.ElementBg 
     TglFrame.ZIndex = 6 
+    TglFrame.LayoutOrder = #parentPage:GetChildren() -- Запоминаем строгий порядок создания
     Instance.new("UICorner", TglFrame).CornerRadius = UDim.new(0, 6) 
     local TglStroke = Instance.new("UIStroke", TglFrame)
     TglStroke.Color = Color3.fromRGB(40, 40, 40) 
@@ -953,6 +946,7 @@ function Library:CreateSlider(parentPage, textKey, min, max, default, callback)
     SliderFrame.Size = UDim2.new(1, -20, 0, 52) 
     SliderFrame.BackgroundColor3 = Library.CurrentThemeData.ElementBg 
     SliderFrame.ZIndex = 6 
+    SliderFrame.LayoutOrder = #parentPage:GetChildren() -- Запоминаем строгий порядок создания
     Instance.new("UICorner", SliderFrame).CornerRadius = UDim.new(0, 8) 
     local SliderStroke = Instance.new("UIStroke", SliderFrame)
     SliderStroke.Color = Color3.fromRGB(40, 40, 40) 
@@ -1087,6 +1081,7 @@ function Library:CreateImage(parentPage, imageId)
     local Img = Instance.new("ImageLabel", parentPage) 
     Img.Size = UDim2.new(1, -20, 0, 130) 
     Img.BackgroundTransparency = 1 
+    Img.LayoutOrder = #parentPage:GetChildren() -- Запоминаем строгий порядок создания
     if tonumber(imageId) then 
         Img.Image = "rbxassetid://" .. tostring(imageId) .. "&w=420&h=420" 
     else 
@@ -1186,6 +1181,7 @@ function Library:CreateSubTabs(parentPage, tabsList)
         local PageLayout = Instance.new("UIListLayout", Page) 
         PageLayout.Padding = UDim.new(0, 8) 
         PageLayout.HorizontalAlignment = Enum.HorizontalAlignment.Center 
+        PageLayout.SortOrder = Enum.SortOrder.LayoutOrder -- ВКЛЮЧЕНО: Элементы внутри саб-вкладок не будут скакать по имени
         
         subPages[textKey] = Page 
         registry[textKey] = { Page = Page, Visual = VisualFrame, Stroke = Stroke, Label = Label, Icon = Icon, TargetColor = activeColor } 
@@ -1246,6 +1242,7 @@ function CreatePage(textKey, iconId, layoutOrder)
     local layout = Instance.new("UIListLayout", PageFrame) 
     layout.Padding = UDim.new(0, 8) 
     layout.HorizontalAlignment = Enum.HorizontalAlignment.Center 
+    layout.SortOrder = Enum.SortOrder.LayoutOrder -- ВКЛЮЧЕНО: Главные страницы тоже используют строгий порядок создания
     Instance.new("UIPadding", PageFrame).PaddingTop = UDim.new(0, 2) 
     
     layout:GetPropertyChangedSignal("AbsoluteContentSize"):Connect(function() 
@@ -1343,6 +1340,7 @@ local SettingSections = Library:CreateSubTabs(SettingsPage, {
     {Name = "Theme", Icon = "78640980615320", Color = Color3.fromRGB(235, 94, 153)} 
 }) 
 
+-- Элементы создаются строго по порядку и никуда не сдвинутся:
 Library:CreateSlider(SettingSections["UI"], "UISize", 0.5, 1.5, 1.00, function(value) MainScale.Scale = value end) 
 Library:CreateSlider(SettingSections["UI"], "UITransparency", 0, 100, 15, function(value) MainFrame.BackgroundTransparency = value / 100 end) 
 
@@ -1380,7 +1378,6 @@ Library:CreateToggle(SettingSections["Theme"], "AnimatedWindow", false, function
     toggleAnimatedWindow(state)
 end)
 
--- Новая рабочая кнопка Gradient добавлена здесь
 Library:CreateToggle(SettingSections["Theme"], "Gradient", false, function(state)
     toggleGradientEffect(state)
 end)
@@ -1394,5 +1391,4 @@ if allTabs["Main"] and allTabButtons["Main"] then
     TabTitle.Text = Localization[Library.CurrentLanguage]["Main"] or "Main" 
 end
 
--- Стартовая инициализация темы
 Library:UpdateTheme("Deep Ocean")
