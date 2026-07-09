@@ -5,7 +5,7 @@ local RunService = game:GetService("RunService")
 local GuiService = game:GetService("GuiService") 
 local Players = game:GetService("Players")
 local VirtualUser = game:GetService("VirtualUser")
-local Lighting = game:GetService("Lighting") -- Добавили сервис освещения для шейдеров
+local Lighting = game:GetService("Lighting") 
 
 -- Логика подсчета времени сессии
 local startTime = os.clock() 
