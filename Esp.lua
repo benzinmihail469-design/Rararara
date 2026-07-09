@@ -477,7 +477,7 @@ local ThemeConfig = {
     ["Deep Violet"]   = { Accent = Color3.fromRGB(102, 51, 153),  MainBg = Color3.fromRGB(13, 11, 20),   ElementBg = Color3.fromRGB(23, 19, 36) },
     ["Cyanic"]        = { Accent = Color3.fromRGB(0, 255, 200),   MainBg = Color3.fromRGB(10, 22, 26),   ElementBg = Color3.fromRGB(18, 38, 46) },
     ["Blood Red"]     = { Accent = Color3.fromRGB(170, 0, 0),     MainBg = Color3.fromRGB(14, 4, 4),     ElementBg = Color3.fromRGB(28, 8, 8) },
-    ["AMOLED"]        = { Accent = Color3.fromRGB(100, 100, 100), MainBg = Color3.fromRGB(0, 0, 0),      ElementBg = Color3.fromRGB(15, 15, 15) }
+    ["AMOLED"]        = { Accent = Color3.fromRGB(0, 0, 0),       MainBg = Color3.fromRGB(0, 0, 0),      ElementBg = Color3.fromRGB(15, 15, 15) }
 }
 
 local ThemeNamesList = {}
@@ -562,6 +562,9 @@ function Library:UpdateTheme(themeName)
             end
         elseif data.Type == "Dropdown" then
             local currentSelection = data.GetDefault()
+            if data.Container and data.Container.Parent then
+                data.Container.ScrollBarImageColor3 = theme.Accent
+            end
             for optName, optData in pairs(data.Options) do
                 optData.Check.TextColor3 = theme.Accent
                 if optName == currentSelection then
@@ -598,7 +601,6 @@ table.insert(Library.TrackedMainText, EmbCloseBtn)
 local SearchableElements = {} 
 local LocaleObjects = {} 
 
--- Добавили новые локализационные ключи для шейдеров
 local Localization = { 
     ["English"] = { 
         ["Main"] = "Main", ["Teleport"] = "Teleport", ["Murder"] = "Murder", ["Sheriff"] = "Sheriff", 
@@ -738,6 +740,7 @@ local FontMapping = {
     ["Fredoka One"] = Enum.Font.FredokaOne 
 } 
 
+-- ИНТЕГРИРОВАННЫЙ ОБНОВЛЕННЫЙ ДРОПДАУН С ПОДДЕРЖКОЙ СКРОЛЛА
 function Library:CreateDropdown(parentPage, textKey, options, default, callback) 
     local initialText = Localization[Library.CurrentLanguage][textKey] or textKey 
     local DropdownFrame = Instance.new("Frame", parentPage) 
@@ -794,25 +797,41 @@ function Library:CreateDropdown(parentPage, textKey, options, default, callback)
     Arrow.TextColor3 = Color3.fromRGB(150, 150, 150) 
     Arrow.TextSize = 10 
     Arrow.BackgroundTransparency = 1 
+    Arrow.AnchorPoint = Vector2.new(0.5, 0.5)
+    Arrow.Position = UDim2.new(1, -16, 0.5, 0)
     Arrow.ZIndex = 8 
     
     table.insert(Library.TrackedSubText, Arrow)
     
-    local OptionsContainer = Instance.new("Frame", DropdownFrame) 
-    OptionsContainer.Size = UDim2.new(1, 0, 0, #options * 32) 
+    -- Заменили контейнер на ScrollingFrame для обработки длинных списков (например тем оформления)
+    local OptionsContainer = Instance.new("ScrollingFrame", DropdownFrame) 
+    OptionsContainer.Size = UDim2.new(1, 0, 0, 0) 
     OptionsContainer.Position = UDim2.new(0, 0, 0, 36) 
     OptionsContainer.BackgroundTransparency = 1 
+    OptionsContainer.BorderSizePixel = 0
+    OptionsContainer.ScrollBarThickness = 3
+    OptionsContainer.ScrollBarImageColor3 = Library.CurrentThemeData.Accent
     OptionsContainer.ZIndex = 7 
+    
     local ListLayout = Instance.new("UIListLayout", OptionsContainer) 
     ListLayout.SortOrder = Enum.SortOrder.LayoutOrder 
     
+    ListLayout:GetPropertyChangedSignal("AbsoluteContentSize"):Connect(function()
+        OptionsContainer.CanvasSize = UDim2.new(0, 0, 0, ListLayout.AbsoluteContentSize.Y)
+    end)
+    
     local isExpanded = false 
     local optionButtons = {} 
+    
     local function toggleDropdown() 
         isExpanded = not isExpanded 
-        local targetHeight = isExpanded and (36 + (#options * 32) + 4) or 36 
-        tween(DropdownFrame, {Size = UDim2.new(1, -20, 0, targetHeight)}, 0.2) 
-        Arrow.Text = isExpanded and "▲" or "▼" 
+        -- Ограничиваем максимальный размер раскрытия в 140 пикселей, дальше работает скроллбар
+        local contentHeight = math.min(#options * 32, 140)
+        local targetFrameHeight = isExpanded and (36 + contentHeight + 4) or 36
+        
+        tween(DropdownFrame, {Size = UDim2.new(1, -20, 0, targetFrameHeight)}, 0.2) 
+        tween(OptionsContainer, {Size = UDim2.new(1, 0, 0, isExpanded and contentHeight or 0)}, 0.2)
+        tween(Arrow, {Rotation = isExpanded and 180 or 0}, 0.2) -- Плавный поворот стрелки
     end 
     HeaderBtn.Activated:Connect(toggleDropdown) 
     
@@ -820,6 +839,7 @@ function Library:CreateDropdown(parentPage, textKey, options, default, callback)
         local OptBtn = Instance.new("TextButton", OptionsContainer) 
         OptBtn.Size = UDim2.new(1, 0, 0, 32) 
         OptBtn.BackgroundTransparency = 1 
+        OptBtn.BackgroundColor3 = Color3.fromRGB(255, 255, 255)
         OptBtn.Text = "" 
         OptBtn.LayoutOrder = i 
         OptBtn.ZIndex = 8 
@@ -831,7 +851,7 @@ function Library:CreateDropdown(parentPage, textKey, options, default, callback)
         OptLabel.Font = Library.CurrentFont 
         OptLabel.TextColor3 = (option == default) and Library.CurrentThemeData.Accent or Color3.fromRGB(180, 180, 180) 
         OptLabel.TextSize = 12 
-        OptLabel.TextXAlignment = Enum.TextXAlignment.Left 
+        OptLabel.TextXAlignment = Enum.TextXAlignment.Left -- Строго влево
         OptLabel.BackgroundTransparency = 1 
         OptLabel.ZIndex = 9 
         
@@ -845,6 +865,14 @@ function Library:CreateDropdown(parentPage, textKey, options, default, callback)
         Checkmark.BackgroundTransparency = 1 
         Checkmark.Visible = (option == default) 
         Checkmark.ZIndex = 9 
+        
+        -- Плавное подсвечивание элементов при наведении мыши
+        OptBtn.MouseEnter:Connect(function()
+            tween(OptBtn, {BackgroundTransparency = 0.96}, 0.15)
+        end)
+        OptBtn.MouseLeave:Connect(function()
+            tween(OptBtn, {BackgroundTransparency = 1}, 0.15)
+        end)
         
         optionButtons[option] = {Button = OptBtn, Label = OptLabel, Check = Checkmark} 
         OptBtn.Activated:Connect(function() 
@@ -867,6 +895,7 @@ function Library:CreateDropdown(parentPage, textKey, options, default, callback)
     table.insert(Library.TrackedAccents, {
         Type = "Dropdown",
         Options = optionButtons,
+        Container = OptionsContainer,
         GetDefault = function() return SelectedLabel.Text end
     })
     
@@ -1373,9 +1402,8 @@ local SettingsPage = CreatePage("Settings", "117996761927034", 99)
 
 Library:CreateToggle(MainPage, "AutoFarmCoins", false, function(state) end) 
 
--- СЮДА ДОБАВЛЕНЫ РАБОЧИЕ ШЕЙДЕРЫ (ВМЕСТО PLAYER ESP)
+-- СЮДА ДОБАВЛЕНЫ РАБОЧИЕ ШЕЙДЕРЫ
 Library:CreateToggle(VisualPage, "CinematicShader", false, function(state)
-    -- Настройки насыщенности, контраста и теплого тона (типичный красивый Cinematic фильтр)
     toggleShader("Cinematic", state, "ColorCorrectionEffect", {
         Contrast = 0.25, 
         Saturation = 0.35, 
@@ -1384,7 +1412,6 @@ Library:CreateToggle(VisualPage, "CinematicShader", false, function(state)
 end) 
 
 Library:CreateToggle(VisualPage, "BloomShader", false, function(state)
-    -- Неоновое свечение ярких элементов
     toggleShader("Bloom", state, "BloomEffect", {
         Intensity = 1.2, 
         Size = 24, 
@@ -1393,7 +1420,6 @@ Library:CreateToggle(VisualPage, "BloomShader", false, function(state)
 end) 
 
 Library:CreateToggle(VisualPage, "BlurShader", false, function(state)
-    -- Размытие заднего фона / окружения
     toggleShader("Blur", state, "BlurEffect", {
         Size = 10
     })
