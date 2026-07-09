@@ -5,6 +5,7 @@ local RunService = game:GetService("RunService")
 local GuiService = game:GetService("GuiService") 
 local Players = game:GetService("Players")
 local VirtualUser = game:GetService("VirtualUser")
+local Lighting = game:GetService("Lighting") -- Добавили сервис освещения для шейдеров
 
 -- Логика подсчета времени сессии
 local startTime = os.clock() 
@@ -29,6 +30,26 @@ local function toggleAntiAFK(state)
         if antiAfkConnection then
             antiAfkConnection:Disconnect()
             antiAfkConnection = nil
+        end
+    end
+end
+
+-- Функция для управления шейдерами (создание / удаление эффектов)
+local function toggleShader(name, state, instanceClass, properties)
+    local storageName = "DarkHub_" .. name
+    local existing = Lighting:FindFirstChild(storageName)
+    if state then
+        if not existing then
+            local shader = Instance.new(instanceClass)
+            shader.Name = storageName
+            for k, v in pairs(properties) do
+                shader[k] = v
+            end
+            shader.Parent = Lighting
+        end
+    else
+        if existing then
+            existing:Destroy()
         end
     end
 end
@@ -314,32 +335,26 @@ StatsLabel.BackgroundTransparency = 1
 
 -- МОДИФИЦИРОВАННАЯ ЛОГИКА ПЛАВНОГО FPS
 local fpsBuffer = {}
-local maxSamples = 30         -- Буфер сглаживания микрофризов
-local updateInterval = 0.15   -- Задержка обновления текста (150 мс для идеальной плавности)
+local maxSamples = 30         
+local updateInterval = 0.15   
 local lastUpdateTime = 0
 
 RunService.RenderStepped:Connect(function(dt) 
     local CurrentTime = os.clock() 
-    
-    -- Считаем FPS для текущего кадра и загоняем в буфер
     local currentFps = 1 / dt
     table.insert(fpsBuffer, currentFps)
     if #fpsBuffer > maxSamples then
         table.remove(fpsBuffer, 1)
     end
     
-    -- Обновляем UI строго по интервалу
     lastUpdateTime = lastUpdateTime + dt
     if lastUpdateTime >= updateInterval then
         lastUpdateTime = 0
-        
-        -- Высчитываем среднее значение
         local sum = 0
         for _, fps in ipairs(fpsBuffer) do
             sum = sum + fps
         end
         local averageFps = sum / #fpsBuffer
-        
         local passedTime = CurrentTime - startTime
         StatsLabel.Text = string.format("FPS: %d  |  Session: %s", math.round(averageFps), formatSessionTime(passedTime))
     end
@@ -583,11 +598,13 @@ table.insert(Library.TrackedMainText, EmbCloseBtn)
 local SearchableElements = {} 
 local LocaleObjects = {} 
 
+-- Добавили новые локализационные ключи для шейдеров
 local Localization = { 
     ["English"] = { 
         ["Main"] = "Main", ["Teleport"] = "Teleport", ["Murder"] = "Murder", ["Sheriff"] = "Sheriff", 
         ["Players"] = "Players", ["Visual"] = "Visual", ["Settings"] = "Settings", ["UI"] = "UI", 
-        ["Theme"] = "Theme", ["AutoFarmCoins"] = "Auto-Farm Coins", ["PlayerESP"] = "Player ESP", 
+        ["Theme"] = "Theme", ["AutoFarmCoins"] = "Auto-Farm Coins",
+        ["CinematicShader"] = "Cinematic Shaders", ["BloomShader"] = "Bloom Glow FX", ["BlurShader"] = "Screen Blur Effect",
         ["UISize"] = "UI Size", ["UITransparency"] = "UI Transparency", ["MenuFont"] = "Menu Font", 
         ["Language"] = "Language", ["AntiAFK"] = "Anti-AFK", ["UITheme"] = "UI Theme",
         ["AnimatedWindow"] = "Animated Window", ["Gradient"] = "Gradient Background"
@@ -595,7 +612,8 @@ local Localization = {
     ["Русский"] = { 
         ["Main"] = "Главная", ["Teleport"] = "Телепорт", ["Murder"] = "Убийца", ["Sheriff"] = "Шериф", 
         ["Players"] = "Игроки", ["Visual"] = "Визуалы", ["Settings"] = "Настройки", ["UI"] = "Интерфейс", 
-        ["Theme"] = "Тема", ["AutoFarmCoins"] = "Авто-Фарм Монет", ["PlayerESP"] = "ESP Игроков", 
+        ["Theme"] = "Тема", ["AutoFarmCoins"] = "Авто-Фарм Монет",
+        ["CinematicShader"] = "Кинематографичные Шейдеры", ["BloomShader"] = "Эффект Свечения", ["BlurShader"] = "Размытие Экрана",
         ["UISize"] = "Размер интерфейса", ["UITransparency"] = "Прозрачность меню", ["MenuFont"] = "Шрифт меню", 
         ["Language"] = "Язык", ["AntiAFK"] = "Анти-АФК", ["UITheme"] = "Тема UI",
         ["AnimatedWindow"] = "Анимированное окно", ["Gradient"] = "Градиентный фон"
@@ -1354,7 +1372,32 @@ local VisualPage = CreatePage("Visual", "78910169210318", 6)
 local SettingsPage = CreatePage("Settings", "117996761927034", 99) 
 
 Library:CreateToggle(MainPage, "AutoFarmCoins", false, function(state) end) 
-Library:CreateToggle(VisualPage, "PlayerESP", false, function(state) end) 
+
+-- СЮДА ДОБАВЛЕНЫ РАБОЧИЕ ШЕЙДЕРЫ (ВМЕСТО PLAYER ESP)
+Library:CreateToggle(VisualPage, "CinematicShader", false, function(state)
+    -- Настройки насыщенности, контраста и теплого тона (типичный красивый Cinematic фильтр)
+    toggleShader("Cinematic", state, "ColorCorrectionEffect", {
+        Contrast = 0.25, 
+        Saturation = 0.35, 
+        TintColor = Color3.fromRGB(255, 248, 242)
+    })
+end) 
+
+Library:CreateToggle(VisualPage, "BloomShader", false, function(state)
+    -- Неоновое свечение ярких элементов
+    toggleShader("Bloom", state, "BloomEffect", {
+        Intensity = 1.2, 
+        Size = 24, 
+        Threshold = 0.75
+    })
+end) 
+
+Library:CreateToggle(VisualPage, "BlurShader", false, function(state)
+    -- Размытие заднего фона / окружения
+    toggleShader("Blur", state, "BlurEffect", {
+        Size = 10
+    })
+end) 
 
 local SettingSections = Library:CreateSubTabs(SettingsPage, { 
     {Name = "UI", Icon = "85203682050945", Color = Color3.fromRGB(108, 176, 214)}, 
