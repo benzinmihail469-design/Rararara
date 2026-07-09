@@ -81,11 +81,10 @@ local function NormalizeText(str)
     return string.gsub(lowerStr, "[%p%s%c]", "") 
 end 
 
--- Глобальный реестр для динамического обновления темы
+-- Глобальный реестр для динамического обновления темы (без суб-вкладок)
 local ThemeRegistry = {
     Toggles = {},
     Dropdowns = {},
-    SubTabs = {},
     Backgrounds = {}
 }
 
@@ -451,12 +450,12 @@ local Localization = {
         ["Main"] = "Главная", ["Teleport"] = "Телепорт", ["Murder"] = "Убийца", ["Sheriff"] = "Шериф", 
         ["Players"] = "Игроки", ["Visual"] = "Визуалы", ["Settings"] = "Настройки", ["UI"] = "Интерфейс", 
         ["Theme"] = "Тема", ["AutoFarmCoins"] = "Авто-Фарм Монет", ["PlayerESP"] = "ESP Игроков", 
-        ["UISize"] = "Размер интерфейса", ["UITransparency"] = "Прозрачность меню", ["MenuFont"] = "Шрифт меню", 
+        ["UISize"] = "Размер интерфейса", ["Прозрачность меню"] = "Прозрачность меню", ["MenuFont"] = "Шрифт меню", 
         ["Language"] = "Язык", ["AntiAFK"] = "Анти-АФК", ["UITheme"] = "Тема UI"
     } 
 } 
 
--- Функция для обновления всей темы скрипта
+-- Функция для обновления глобальной темы (суб-вкладки теперь ИСКЛЮЧЕНЫ)
 function Library:SetTheme(themeName)
     Library.CurrentTheme = themeName
     local accent = Themes[themeName] or Themes["Deep Violet"]
@@ -483,22 +482,7 @@ function Library:SetTheme(themeName)
         end
     end
     
-    -- 3. Обновляем суб-вкладки (UI / Theme)
-    for _, item in ipairs(ThemeRegistry.SubTabs) do
-        if item.IsActive() then
-            item.Visual.BackgroundColor3 = accent
-            item.Stroke.Color = accent
-            item.Label.TextColor3 = accent
-            if item.Icon then item.Icon.ImageColor3 = accent end
-        else
-            item.Visual.BackgroundTransparency = 1
-            item.Stroke.Enabled = false
-            item.Label.TextColor3 = Color3.fromRGB(140, 140, 140)
-            if item.Icon then item.Icon.ImageColor3 = Color3.fromRGB(140, 140, 140) end
-        end
-    end
-    
-    -- 4. Изменение заднего фона для AMOLED и Black пресетов
+    -- 3. Изменение заднего фона для AMOLED и Black пресетов
     local bgMain = Color3.fromRGB(14, 14, 14)
     local bgCard = Color3.fromRGB(22, 22, 22)
     local strokeColor = Color3.fromRGB(40, 40, 40)
@@ -920,6 +904,7 @@ function Library:CreateImage(parentPage, imageId)
     return Img 
 end 
 
+-- Функция создания суб-вкладок теперь жестко контролирует свои цвета (UI - Синий, Theme - Розовый)
 function Library:CreateSubTabs(parentPage, tabsList) 
     local SubTabContainer = Instance.new("Frame", parentPage) 
     SubTabContainer.Size = UDim2.new(1, -20, 0, 32) 
@@ -1002,23 +987,9 @@ function Library:CreateSubTabs(parentPage, tabsList)
         PageLayout.HorizontalAlignment = Enum.HorizontalAlignment.Center 
         
         subPages[textKey] = Page 
-        registry[textKey] = { Page = Page, Visual = VisualFrame, Stroke = Stroke, Label = Label, Icon = Icon } 
-        
-        table.insert(ThemeRegistry.SubTabs, {
-            Visual = VisualFrame,
-            Stroke = Stroke,
-            Label = Label,
-            Icon = Icon,
-            IsActive = function() return Page.Visible end
-        })
-        
-        local ClickBtn = Instance.new("TextButton", BtnContainer) 
-        ClickBtn.Size = UDim2.new(1, 0, 1, 0) 
-        ClickBtn.BackgroundTransparency = 1 
-        ClickBtn.Text = "" 
-        ClickBtn.ZIndex = 10 
         
         local function activateTab() 
+            -- Сначала сбрасываем всё
             for _, data in pairs(registry) do 
                 data.Page.Visible = false 
                 data.Visual.BackgroundTransparency = 1 
@@ -1026,16 +997,41 @@ function Library:CreateSubTabs(parentPage, tabsList)
                 data.Label.TextColor3 = colorGrayInactive 
                 if data.Icon then data.Icon.ImageColor3 = colorGrayInactive end 
             end 
+            
+            -- Теперь включаем нажатую вкладку
             Page.Visible = true 
-            Library:SetTheme(Library.CurrentTheme)
+            VisualFrame.BackgroundTransparency = 0.85 -- Лёгкая полупрозрачность для фона вкладки
+            Stroke.Enabled = true
+            
+            -- Выдаем вкладке её родной цвет!
+            local activeColor = Color3.fromRGB(255, 255, 255)
+            if textKey == "UI" then
+                activeColor = Color3.fromRGB(0, 120, 255) -- Синий
+            elseif textKey == "Theme" then
+                activeColor = Color3.fromRGB(255, 105, 180) -- Розовый
+            end
+            
+            VisualFrame.BackgroundColor3 = activeColor
+            Stroke.Color = activeColor
+            Label.TextColor3 = activeColor
+            if Icon then Icon.ImageColor3 = activeColor end
         end 
+
+        registry[textKey] = { Page = Page, Visual = VisualFrame, Stroke = Stroke, Label = Label, Icon = Icon, Activate = activateTab } 
+        
+        local ClickBtn = Instance.new("TextButton", BtnContainer) 
+        ClickBtn.Size = UDim2.new(1, 0, 1, 0) 
+        ClickBtn.BackgroundTransparency = 1 
+        ClickBtn.Text = "" 
+        ClickBtn.ZIndex = 10 
+        
         ClickBtn.Activated:Connect(activateTab) 
         table.insert(LocaleObjects, {Object = Label, Key = textKey}) 
     end 
     
     local firstTab = tabsList[1] and tabsList[1].Name 
     if firstTab and registry[firstTab] then 
-        registry[firstTab].Page.Visible = true 
+        registry[firstTab].Activate() -- Симулируем нажатие, чтобы покрасить её при старте
     end 
     return subPages 
 end 
@@ -1172,7 +1168,7 @@ Library:CreateToggle(SettingSections["UI"], "AntiAFK", false, function(state)
     toggleAntiAFK(state)
 end)
 
--- Дропдаун выбора темы (Конфигурация SwitchTheme удалена)
+-- Дропдаун выбора темы
 Library:CreateDropdown(SettingSections["Theme"], "UITheme", {"Amber Glow", "Anime", "Deep Violet", "Cyanic", "Blood Red", "AMOLED", "Black"}, "Deep Violet", function(selectedTheme)
     Library:SetTheme(selectedTheme)
 end)
