@@ -81,23 +81,6 @@ local function NormalizeText(str)
     return string.gsub(lowerStr, "[%p%s%c]", "") 
 end 
 
--- Глобальный реестр для динамического обновления темы (без суб-вкладок)
-local ThemeRegistry = {
-    Toggles = {},
-    Dropdowns = {},
-    Backgrounds = {}
-}
-
-local Themes = {
-    ["Amber Glow"] = Color3.fromRGB(255, 115, 0),
-    ["Anime"]      = Color3.fromRGB(235, 94, 153),
-    ["Deep Violet"]= Color3.fromRGB(140, 80, 250),
-    ["Cyanic"]     = Color3.fromRGB(0, 190, 255),
-    ["Blood Red"]  = Color3.fromRGB(240, 50, 50),
-    ["AMOLED"]     = Color3.fromRGB(255, 255, 255),
-    ["Black"]      = Color3.fromRGB(200, 200, 200)
-}
-
 local MainFrame = Instance.new("Frame", DarkHub) 
 MainFrame.Name = "MainFrame" 
 MainFrame.BackgroundColor3 = Color3.fromRGB(14, 14, 14) 
@@ -105,7 +88,6 @@ MainFrame.BackgroundTransparency = 0.15
 MainFrame.AnchorPoint = Vector2.new(0.5, 0.5) 
 MainFrame.Position = UDim2.new(0.5, 0, 0.5, 0) 
 MainFrame.Size = UDim2.new(0, 550, 0, 350) 
-table.insert(ThemeRegistry.Backgrounds, {Obj = MainFrame, Type = "Main"})
 
 local MainScale = Instance.new("UIScale", MainFrame) 
 MainScale.Scale = 1 
@@ -116,7 +98,6 @@ MainCorner.CornerRadius = UDim.new(0, 14)
 local MainStroke = Instance.new("UIStroke", MainFrame) 
 MainStroke.Color = Color3.fromRGB(40, 40, 40) 
 MainStroke.Thickness = 1.5 
-table.insert(ThemeRegistry.Backgrounds, {Obj = MainStroke, Type = "Stroke"})
 
 local PagesContainer = Instance.new("Frame", MainFrame) 
 PagesContainer.Name = "PagesContainer" 
@@ -168,12 +149,10 @@ SearchContainer.Position = UDim2.new(1, -240, 0, 12)
 SearchContainer.BackgroundColor3 = Color3.fromRGB(22, 22, 22) 
 SearchContainer.ZIndex = 6 
 Instance.new("UICorner", SearchContainer).CornerRadius = UDim.new(0, 8) 
-table.insert(ThemeRegistry.Backgrounds, {Obj = SearchContainer, Type = "Card"})
 
 local SearchStroke = Instance.new("UIStroke", SearchContainer) 
 SearchStroke.Color = Color3.fromRGB(45, 45, 45) 
 SearchStroke.Thickness = 1.2 
-table.insert(ThemeRegistry.Backgrounds, {Obj = SearchStroke, Type = "Stroke"})
 
 local SearchIcon = Instance.new("ImageLabel", SearchContainer) 
 SearchIcon.Size = UDim2.new(0, 14, 0, 14) 
@@ -218,10 +197,7 @@ HeaderBg.Position = UDim2.new(0, 10, 0, 10)
 HeaderBg.BackgroundColor3 = Color3.fromRGB(22, 22, 22) 
 HeaderBg.ZIndex = 4 
 Instance.new("UICorner", HeaderBg).CornerRadius = UDim.new(0, 10) 
-local HeaderStroke = Instance.new("UIStroke", HeaderBg)
-HeaderStroke.Color = Color3.fromRGB(45, 45, 45) 
-table.insert(ThemeRegistry.Backgrounds, {Obj = HeaderBg, Type = "Card"})
-table.insert(ThemeRegistry.Backgrounds, {Obj = HeaderStroke, Type = "Stroke"})
+Instance.new("UIStroke", HeaderBg).Color = Color3.fromRGB(45, 45, 45) 
 
 local HubIcon = Instance.new("ImageLabel", HeaderBg) 
 HubIcon.Size = UDim2.new(0, 28, 0, 28) 
@@ -303,10 +279,7 @@ FooterBg.Position = UDim2.new(0, 10, 1, -56)
 FooterBg.BackgroundColor3 = Color3.fromRGB(22, 22, 22) 
 FooterBg.ZIndex = 4 
 Instance.new("UICorner", FooterBg).CornerRadius = UDim.new(0, 10) 
-local FooterStroke = Instance.new("UIStroke", FooterBg)
-FooterStroke.Color = Color3.fromRGB(45, 45, 45) 
-table.insert(ThemeRegistry.Backgrounds, {Obj = FooterBg, Type = "Card"})
-table.insert(ThemeRegistry.Backgrounds, {Obj = FooterStroke, Type = "Stroke"})
+Instance.new("UIStroke", FooterBg).Color = Color3.fromRGB(45, 45, 45) 
 
 local DiscordLabel = Instance.new("TextLabel", FooterBg) 
 DiscordLabel.Position = UDim2.new(0, 10, 0, 7) 
@@ -428,8 +401,98 @@ local Library = {}
 Library.CurrentFont = Enum.Font.Gotham 
 Library.CurrentLanguage = "English" 
 Library.CurrentTabKey = "Main" 
-Library.CurrentTheme = "Deep Violet"
-Library.CurrentAccentColor = Color3.fromRGB(140, 80, 250)
+
+-- Таблицы для динамического отслеживания элементов UI при смене тем
+Library.TrackedMainBg = {}
+Library.TrackedElementBg = {}
+Library.TrackedAccents = {}
+
+local ThemeConfig = {
+    ["Deep Violet"] = {
+        Accent = Color3.fromRGB(130, 90, 230),
+        MainBg = Color3.fromRGB(15, 13, 20),
+        ElementBg = Color3.fromRGB(24, 20, 32)
+    },
+    ["Amber Glow"] = {
+        Accent = Color3.fromRGB(255, 115, 0),
+        MainBg = Color3.fromRGB(16, 14, 12),
+        ElementBg = Color3.fromRGB(26, 22, 18)
+    },
+    ["Anime"] = {
+        Accent = Color3.fromRGB(235, 94, 153),
+        MainBg = Color3.fromRGB(20, 15, 18),
+        ElementBg = Color3.fromRGB(30, 22, 26)
+    },
+    ["Cyanic"] = {
+        Accent = Color3.fromRGB(0, 180, 255),
+        MainBg = Color3.fromRGB(10, 15, 18),
+        ElementBg = Color3.fromRGB(18, 24, 30)
+    },
+    ["Blood Red"] = {
+        Accent = Color3.fromRGB(220, 40, 40),
+        MainBg = Color3.fromRGB(16, 10, 10),
+        ElementBg = Color3.fromRGB(26, 16, 16)
+    },
+    ["AMOLED"] = {
+        Accent = Color3.fromRGB(255, 255, 255),
+        MainBg = Color3.fromRGB(0, 0, 0),
+        ElementBg = Color3.fromRGB(12, 12, 12)
+    },
+    ["Black"] = {
+        Accent = Color3.fromRGB(140, 140, 140),
+        MainBg = Color3.fromRGB(8, 8, 8),
+        ElementBg = Color3.fromRGB(18, 18, 18)
+    }
+}
+
+Library.CurrentThemeData = ThemeConfig["Deep Violet"]
+
+function Library:UpdateTheme(themeName)
+    local theme = ThemeConfig[themeName]
+    if not theme then return end
+    Library.CurrentThemeData = theme
+    
+    for _, obj in ipairs(Library.TrackedMainBg) do
+        if obj and obj.Parent then tween(obj, {BackgroundColor3 = theme.MainBg}) end
+    end
+    
+    for _, obj in ipairs(Library.TrackedElementBg) do
+        if obj and obj.Parent then
+            if obj.Name == "TabContainer" then
+                tween(obj, {BackgroundColor3 = Color3.fromRGB(
+                    math.clamp(theme.ElementBg.R * 255 + 6, 0, 255),
+                    math.clamp(theme.ElementBg.G * 255 + 6, 0, 255),
+                    math.clamp(theme.ElementBg.B * 255 + 6, 0, 255)
+                )})
+            else
+                tween(obj, {BackgroundColor3 = theme.ElementBg})
+            end
+        end
+    end
+    
+    for _, data in ipairs(Library.TrackedAccents) do
+        if data.Type == "Toggle" then
+            if data.IsEnabled() then
+                tween(data.Checkbox, {BackgroundColor3 = theme.Accent})
+            end
+        elseif data.Type == "Dropdown" then
+            local currentSelection = data.GetDefault()
+            for optName, optData in pairs(data.Options) do
+                optData.Check.TextColor3 = theme.Accent
+                if optName == currentSelection then
+                    tween(optData.Label, {TextColor3 = theme.Accent})
+                end
+            end
+        elseif data.Type == "Slider" then
+            tween(data.Fill, {BackgroundColor3 = theme.Accent})
+        end
+    end
+end
+
+table.insert(Library.TrackedMainBg, MainFrame)
+table.insert(Library.TrackedElementBg, SearchContainer)
+table.insert(Library.TrackedElementBg, HeaderBg)
+table.insert(Library.TrackedElementBg, FooterBg)
 
 local SearchableElements = {} 
 local LocaleObjects = {} 
@@ -450,63 +513,10 @@ local Localization = {
         ["Main"] = "Главная", ["Teleport"] = "Телепорт", ["Murder"] = "Убийца", ["Sheriff"] = "Шериф", 
         ["Players"] = "Игроки", ["Visual"] = "Визуалы", ["Settings"] = "Настройки", ["UI"] = "Интерфейс", 
         ["Theme"] = "Тема", ["AutoFarmCoins"] = "Авто-Фарм Монет", ["PlayerESP"] = "ESP Игроков", 
-        ["UISize"] = "Размер интерфейса", ["Прозрачность меню"] = "Прозрачность меню", ["MenuFont"] = "Шрифт меню", 
+        ["UISize"] = "Размер интерфейса", ["UITransparency"] = "Прозрачность меню", ["MenuFont"] = "Шрифт меню", 
         ["Language"] = "Язык", ["AntiAFK"] = "Анти-АФК", ["UITheme"] = "Тема UI"
     } 
 } 
-
--- Функция для обновления глобальной темы (суб-вкладки теперь ИСКЛЮЧЕНЫ)
-function Library:SetTheme(themeName)
-    Library.CurrentTheme = themeName
-    local accent = Themes[themeName] or Themes["Deep Violet"]
-    Library.CurrentAccentColor = accent
-    
-    -- 1. Обновляем активные чекбоксы toggles
-    for _, item in ipairs(ThemeRegistry.Toggles) do
-        if item.GetEnabled() then
-            item.Checkbox.BackgroundColor3 = accent
-        else
-            item.Checkbox.BackgroundColor3 = Color3.fromRGB(40, 40, 40)
-        end
-    end
-    
-    -- 2. Обновляем элементы дропдаунов
-    for _, item in ipairs(ThemeRegistry.Dropdowns) do
-        if item.GetSelected() then
-            item.Label.TextColor3 = accent
-            item.Checkmark.TextColor3 = accent
-            item.Checkmark.Visible = true
-        else
-            item.Label.TextColor3 = Color3.fromRGB(180, 180, 180)
-            item.Checkmark.Visible = false
-        end
-    end
-    
-    -- 3. Изменение заднего фона для AMOLED и Black пресетов
-    local bgMain = Color3.fromRGB(14, 14, 14)
-    local bgCard = Color3.fromRGB(22, 22, 22)
-    local strokeColor = Color3.fromRGB(40, 40, 40)
-    
-    if themeName == "AMOLED" then
-        bgMain = Color3.fromRGB(0, 0, 0)
-        bgCard = Color3.fromRGB(6, 6, 6)
-        strokeColor = Color3.fromRGB(24, 24, 24)
-    elseif themeName == "Black" then
-        bgMain = Color3.fromRGB(10, 10, 10)
-        bgCard = Color3.fromRGB(16, 16, 16)
-        strokeColor = Color3.fromRGB(32, 32, 32)
-    end
-    
-    for _, item in ipairs(ThemeRegistry.Backgrounds) do
-        if item.Type == "Main" then
-            item.Obj.BackgroundColor3 = bgMain
-        elseif item.Type == "Card" then
-            item.Obj.BackgroundColor3 = bgCard
-        elseif item.Type == "Stroke" then
-            item.Obj.Color = strokeColor
-        end
-    end
-end
 
 local SearchResultsPage = Instance.new("ScrollingFrame", PagesContainer) 
 SearchResultsPage.Size = UDim2.new(1, 0, 1, 0) 
@@ -563,15 +573,15 @@ function Library:CreateDropdown(parentPage, textKey, options, default, callback)
     local initialText = Localization[Library.CurrentLanguage][textKey] or textKey 
     local DropdownFrame = Instance.new("Frame", parentPage) 
     DropdownFrame.Size = UDim2.new(1, -20, 0, 36) 
-    DropdownFrame.BackgroundColor3 = Color3.fromRGB(22, 22, 22) 
+    DropdownFrame.BackgroundColor3 = Library.CurrentThemeData.ElementBg 
     DropdownFrame.ClipsDescendants = true 
     DropdownFrame.ZIndex = 6 
     Instance.new("UICorner", DropdownFrame).CornerRadius = UDim.new(0, 6) 
     local DropdownStroke = Instance.new("UIStroke", DropdownFrame) 
     DropdownStroke.Color = Color3.fromRGB(40, 40, 40) 
     DropdownStroke.Thickness = 1 
-    table.insert(ThemeRegistry.Backgrounds, {Obj = DropdownFrame, Type = "Card"})
-    table.insert(ThemeRegistry.Backgrounds, {Obj = DropdownStroke, Type = "Stroke"})
+    
+    table.insert(Library.TrackedElementBg, DropdownFrame)
     
     local HeaderBtn = Instance.new("TextButton", DropdownFrame) 
     HeaderBtn.Size = UDim2.new(1, 0, 0, 36) 
@@ -642,7 +652,7 @@ function Library:CreateDropdown(parentPage, textKey, options, default, callback)
         OptLabel.Position = UDim2.new(0, 16, 0, 0) 
         OptLabel.Text = option 
         OptLabel.Font = Library.CurrentFont 
-        OptLabel.TextColor3 = (option == default) and Library.CurrentAccentColor or Color3.fromRGB(180, 180, 180) 
+        OptLabel.TextColor3 = (option == default) and Library.CurrentThemeData.Accent or Color3.fromRGB(180, 180, 180) 
         OptLabel.TextSize = 12 
         OptLabel.TextXAlignment = Enum.TextXAlignment.Left 
         OptLabel.BackgroundTransparency = 1 
@@ -653,26 +663,35 @@ function Library:CreateDropdown(parentPage, textKey, options, default, callback)
         Checkmark.Position = UDim2.new(1, -30, 0, 0) 
         Checkmark.Text = "✓" 
         Checkmark.Font = Enum.Font.GothamBold 
-        Checkmark.TextColor3 = Library.CurrentAccentColor 
+        Checkmark.TextColor3 = Library.CurrentThemeData.Accent 
         Checkmark.TextSize = 12 
         Checkmark.BackgroundTransparency = 1 
         Checkmark.Visible = (option == default) 
         Checkmark.ZIndex = 9 
         
-        table.insert(ThemeRegistry.Dropdowns, {
-            Label = OptLabel,
-            Checkmark = Checkmark,
-            GetSelected = function() return SelectedLabel.Text == option end
-        })
-        
         optionButtons[option] = {Button = OptBtn, Label = OptLabel, Check = Checkmark} 
         OptBtn.Activated:Connect(function() 
             SelectedLabel.Text = option 
+            for optName, optData in pairs(optionButtons) do 
+                if optName == option then 
+                    optData.Label.TextColor3 = Library.CurrentThemeData.Accent 
+                    optData.Check.Visible = true 
+                else 
+                    optData.Label.TextColor3 = Color3.fromRGB(180, 180, 180) 
+                    optData.Check.Visible = false 
+                end 
+            end 
             toggleDropdown() 
             callback(option) 
-            Library:SetTheme(Library.CurrentTheme)
         end) 
     end 
+    
+    table.insert(Library.TrackedAccents, {
+        Type = "Dropdown",
+        Options = optionButtons,
+        GetDefault = function() return SelectedLabel.Text end
+    })
+    
     local searchItem = {Instance = DropdownFrame, SearchText = NormalizeText(initialText), OriginalParent = parentPage} 
     table.insert(SearchableElements, searchItem) 
     table.insert(LocaleObjects, {Object = TitleLabel, Key = textKey, SearchItem = searchItem}) 
@@ -682,7 +701,7 @@ function Library:CreateButton(parentPage, textKey, callback)
     local initialText = Localization[Library.CurrentLanguage][textKey] or textKey 
     local Btn = Instance.new("TextButton", parentPage) 
     Btn.Size = UDim2.new(1, -20, 0, 36) 
-    Btn.BackgroundColor3 = Color3.fromRGB(22, 22, 22) 
+    Btn.BackgroundColor3 = Library.CurrentThemeData.ElementBg 
     Btn.Text = initialText 
     Btn.Font = Library.CurrentFont 
     Btn.TextColor3 = Color3.fromRGB(230, 230, 230) 
@@ -690,10 +709,9 @@ function Library:CreateButton(parentPage, textKey, callback)
     Btn.ClipsDescendants = true 
     Btn.ZIndex = 6 
     Instance.new("UICorner", Btn).CornerRadius = UDim.new(0, 6) 
-    local BtnStroke = Instance.new("UIStroke", Btn)
-    BtnStroke.Color = Color3.fromRGB(40, 40, 40) 
-    table.insert(ThemeRegistry.Backgrounds, {Obj = Btn, Type = "Card"})
-    table.insert(ThemeRegistry.Backgrounds, {Obj = BtnStroke, Type = "Stroke"})
+    Instance.new("UIStroke", Btn).Color = Color3.fromRGB(40, 40, 40) 
+    
+    table.insert(Library.TrackedElementBg, Btn)
     
     Btn.MouseButton1Down:Connect(function() 
         local mousePos = UserInputService:GetMouseLocation() 
@@ -710,13 +728,12 @@ function Library:CreateToggle(parentPage, textKey, default, callback)
     local initialText = Localization[Library.CurrentLanguage][textKey] or textKey 
     local TglFrame = Instance.new("Frame", parentPage) 
     TglFrame.Size = UDim2.new(1, -20, 0, 36) 
-    TglFrame.BackgroundColor3 = Color3.fromRGB(22, 22, 22) 
+    TglFrame.BackgroundColor3 = Library.CurrentThemeData.ElementBg 
     TglFrame.ZIndex = 6 
     Instance.new("UICorner", TglFrame).CornerRadius = UDim.new(0, 6) 
-    local TglStroke = Instance.new("UIStroke", TglFrame)
-    TglStroke.Color = Color3.fromRGB(40, 40, 40) 
-    table.insert(ThemeRegistry.Backgrounds, {Obj = TglFrame, Type = "Card"})
-    table.insert(ThemeRegistry.Backgrounds, {Obj = TglStroke, Type = "Stroke"})
+    Instance.new("UIStroke", TglFrame).Color = Color3.fromRGB(40, 40, 40) 
+    
+    table.insert(Library.TrackedElementBg, TglFrame)
     
     local TglLabel = Instance.new("TextLabel", TglFrame) 
     TglLabel.Size = UDim2.new(1, -60, 1, 0) 
@@ -732,7 +749,7 @@ function Library:CreateToggle(parentPage, textKey, default, callback)
     local Checkbox = Instance.new("TextButton", TglFrame) 
     Checkbox.Size = UDim2.new(0, 34, 0, 18) 
     Checkbox.Position = UDim2.new(1, -44, 0.5, -9) 
-    Checkbox.BackgroundColor3 = default and Library.CurrentAccentColor or Color3.fromRGB(40, 40, 40) 
+    Checkbox.BackgroundColor3 = default and Library.CurrentThemeData.Accent or Color3.fromRGB(40, 40, 40) 
     Checkbox.Text = "" 
     Checkbox.ZIndex = 7 
     Instance.new("UICorner", Checkbox).CornerRadius = UDim.new(0, 9) 
@@ -745,16 +762,10 @@ function Library:CreateToggle(parentPage, textKey, default, callback)
     Instance.new("UICorner", Indicator).CornerRadius = UDim.new(1, 0) 
     
     local enabled = default 
-    
-    table.insert(ThemeRegistry.Toggles, {
-        Checkbox = Checkbox,
-        GetEnabled = function() return enabled end
-    })
-    
     Checkbox.Activated:Connect(function() 
         enabled = not enabled 
         if enabled then 
-            tween(Checkbox, {BackgroundColor3 = Library.CurrentAccentColor}, 0.2) 
+            tween(Checkbox, {BackgroundColor3 = Library.CurrentThemeData.Accent}, 0.2) 
             tween(Indicator, {Position = UDim2.new(1, -16, 0.5, -7)}, 0.2) 
         else 
             tween(Checkbox, {BackgroundColor3 = Color3.fromRGB(40, 40, 40)}, 0.2) 
@@ -762,6 +773,13 @@ function Library:CreateToggle(parentPage, textKey, default, callback)
         end 
         callback(enabled) 
     end) 
+    
+    table.insert(Library.TrackedAccents, {
+        Type = "Toggle",
+        Checkbox = Checkbox,
+        IsEnabled = function() return enabled end
+    })
+    
     local searchItem = {Instance = TglFrame, SearchText = NormalizeText(initialText), OriginalParent = parentPage} 
     table.insert(SearchableElements, searchItem) 
     table.insert(LocaleObjects, {Object = TglLabel, Key = textKey, SearchItem = searchItem}) 
@@ -771,13 +789,12 @@ function Library:CreateSlider(parentPage, textKey, min, max, default, callback)
     local initialText = Localization[Library.CurrentLanguage][textKey] or textKey 
     local SliderFrame = Instance.new("Frame", parentPage) 
     SliderFrame.Size = UDim2.new(1, -20, 0, 52) 
-    SliderFrame.BackgroundColor3 = Color3.fromRGB(22, 22, 22) 
+    SliderFrame.BackgroundColor3 = Library.CurrentThemeData.ElementBg 
     SliderFrame.ZIndex = 6 
     Instance.new("UICorner", SliderFrame).CornerRadius = UDim.new(0, 8) 
-    local SliderStroke = Instance.new("UIStroke", SliderFrame)
-    SliderStroke.Color = Color3.fromRGB(40, 40, 40) 
-    table.insert(ThemeRegistry.Backgrounds, {Obj = SliderFrame, Type = "Card"})
-    table.insert(ThemeRegistry.Backgrounds, {Obj = SliderStroke, Type = "Stroke"})
+    Instance.new("UIStroke", SliderFrame).Color = Color3.fromRGB(40, 40, 40) 
+    
+    table.insert(Library.TrackedElementBg, SliderFrame)
     
     local SliderLabel = Instance.new("TextLabel", SliderFrame) 
     SliderLabel.Size = UDim2.new(0.5, -12, 0, 22) 
@@ -816,6 +833,7 @@ function Library:CreateSlider(parentPage, textKey, min, max, default, callback)
     
     local SliderFill = Instance.new("Frame", SliderTrack) 
     SliderFill.Size = UDim2.new(0, 0, 1, 0) 
+    SliderFill.BackgroundColor3 = Library.CurrentThemeData.Accent
     SliderFill.ZIndex = 8 
     Instance.new("UICorner", SliderFill).CornerRadius = UDim.new(0, 3) 
     
@@ -836,14 +854,8 @@ function Library:CreateSlider(parentPage, textKey, min, max, default, callback)
     local isIntegerSlider = (max - min) > 5 
     
     local function updateVisuals(percentage) 
-        local currentColor 
-        if percentage < 0.5 then 
-            currentColor = Color3.fromRGB(255, 60, 60):Lerp(Color3.fromRGB(255, 145, 0), percentage * 2) 
-        else 
-            currentColor = Color3.fromRGB(255, 145, 0):Lerp(Color3.fromRGB(65, 255, 65), (percentage - 0.5) * 2) 
-        end 
         SliderFill.Size = UDim2.new(percentage, 0, 1, 0) 
-        SliderFill.BackgroundColor3 = currentColor 
+        SliderFill.BackgroundColor3 = Library.CurrentThemeData.Accent 
         SliderHandle.Position = UDim2.new(percentage, 0, 0.5, 0) 
         local rawValue = min + (max - min) * percentage 
         if isIntegerSlider then 
@@ -885,6 +897,12 @@ function Library:CreateSlider(parentPage, textKey, min, max, default, callback)
         while SliderTrack.AbsoluteSize.X == 0 do task.wait() end 
         updateVisuals(currentPercent) 
     end) 
+    
+    table.insert(Library.TrackedAccents, {
+        Type = "Slider",
+        Fill = SliderFill
+    })
+    
     local searchItem = {Instance = SliderFrame, SearchText = NormalizeText(initialText), OriginalParent = parentPage} 
     table.insert(SearchableElements, searchItem) 
     table.insert(LocaleObjects, {Object = SliderLabel, Key = textKey, SearchItem = searchItem}) 
@@ -904,7 +922,6 @@ function Library:CreateImage(parentPage, imageId)
     return Img 
 end 
 
--- Функция создания суб-вкладок теперь жестко контролирует свои цвета (UI - Синий, Theme - Розовый)
 function Library:CreateSubTabs(parentPage, tabsList) 
     local SubTabContainer = Instance.new("Frame", parentPage) 
     SubTabContainer.Size = UDim2.new(1, -20, 0, 32) 
@@ -928,6 +945,13 @@ function Library:CreateSubTabs(parentPage, tabsList)
         local textKey = tabData.Name 
         local iconId = tabData.Icon 
         local initialText = Localization[Library.CurrentLanguage][textKey] or textKey 
+        local activeColor = Color3.fromRGB(108, 176, 214) 
+        local lowName = string.lower(string.gsub(textKey, "%s+", "")) 
+        if tabData.Color then 
+            activeColor = tabData.Color 
+        elseif string.find(lowName, "theme") or string.find(lowName, "тема") then 
+            activeColor = Color3.fromRGB(235, 94, 153) 
+        end 
         
         local BtnContainer = Instance.new("Frame", SubTabContainer) 
         BtnContainer.Size = UDim2.new(0, 95, 1, 0) 
@@ -936,9 +960,11 @@ function Library:CreateSubTabs(parentPage, tabsList)
         
         local VisualFrame = Instance.new("Frame", BtnContainer) 
         VisualFrame.Size = UDim2.new(1, 0, 1, 0) 
+        VisualFrame.BackgroundColor3 = activeColor 
         VisualFrame.BackgroundTransparency = 1 
         Instance.new("UICorner", VisualFrame).CornerRadius = UDim.new(0, 7) 
         local Stroke = Instance.new("UIStroke", VisualFrame) 
+        Stroke.Color = activeColor 
         Stroke.Thickness = 1.6 
         Stroke.ApplyStrokeMode = Enum.ApplyStrokeMode.Border 
         Stroke.Enabled = false 
@@ -987,37 +1013,7 @@ function Library:CreateSubTabs(parentPage, tabsList)
         PageLayout.HorizontalAlignment = Enum.HorizontalAlignment.Center 
         
         subPages[textKey] = Page 
-        
-        local function activateTab() 
-            -- Сначала сбрасываем всё
-            for _, data in pairs(registry) do 
-                data.Page.Visible = false 
-                data.Visual.BackgroundTransparency = 1 
-                data.Stroke.Enabled = false 
-                data.Label.TextColor3 = colorGrayInactive 
-                if data.Icon then data.Icon.ImageColor3 = colorGrayInactive end 
-            end 
-            
-            -- Теперь включаем нажатую вкладку
-            Page.Visible = true 
-            VisualFrame.BackgroundTransparency = 0.85 -- Лёгкая полупрозрачность для фона вкладки
-            Stroke.Enabled = true
-            
-            -- Выдаем вкладке её родной цвет!
-            local activeColor = Color3.fromRGB(255, 255, 255)
-            if textKey == "UI" then
-                activeColor = Color3.fromRGB(0, 120, 255) -- Синий
-            elseif textKey == "Theme" then
-                activeColor = Color3.fromRGB(255, 105, 180) -- Розовый
-            end
-            
-            VisualFrame.BackgroundColor3 = activeColor
-            Stroke.Color = activeColor
-            Label.TextColor3 = activeColor
-            if Icon then Icon.ImageColor3 = activeColor end
-        end 
-
-        registry[textKey] = { Page = Page, Visual = VisualFrame, Stroke = Stroke, Label = Label, Icon = Icon, Activate = activateTab } 
+        registry[textKey] = { Page = Page, Visual = VisualFrame, Stroke = Stroke, Label = Label, Icon = Icon, TargetColor = activeColor } 
         
         local ClickBtn = Instance.new("TextButton", BtnContainer) 
         ClickBtn.Size = UDim2.new(1, 0, 1, 0) 
@@ -1025,13 +1021,36 @@ function Library:CreateSubTabs(parentPage, tabsList)
         ClickBtn.Text = "" 
         ClickBtn.ZIndex = 10 
         
+        local function activateTab() 
+            for _, data in pairs(registry) do 
+                data.Page.Visible = false 
+                data.Visual.BackgroundTransparency = 1 
+                data.Stroke.Enabled = false 
+                data.Label.TextColor3 = colorGrayInactive 
+                if data.Icon then data.Icon.ImageColor3 = colorGrayInactive end 
+            end 
+            Page.Visible = true 
+            VisualFrame.BackgroundColor3 = activeColor 
+            VisualFrame.BackgroundTransparency = 0.88 
+            Stroke.Color = activeColor 
+            Stroke.Enabled = true 
+            Label.TextColor3 = activeColor 
+            if Icon then Icon.ImageColor3 = activeColor end 
+        end 
         ClickBtn.Activated:Connect(activateTab) 
         table.insert(LocaleObjects, {Object = Label, Key = textKey}) 
     end 
     
     local firstTab = tabsList[1] and tabsList[1].Name 
     if firstTab and registry[firstTab] then 
-        registry[firstTab].Activate() -- Симулируем нажатие, чтобы покрасить её при старте
+        local data = registry[firstTab] 
+        data.Page.Visible = true 
+        data.Visual.BackgroundColor3 = data.TargetColor 
+        data.Visual.BackgroundTransparency = 0.88 
+        data.Stroke.Color = data.TargetColor 
+        data.Stroke.Enabled = true 
+        data.Label.TextColor3 = data.TargetColor 
+        if data.Icon then data.Icon.ImageColor3 = data.TargetColor end 
     end 
     return subPages 
 end 
@@ -1062,7 +1081,10 @@ function CreatePage(textKey, iconId, layoutOrder)
     TabContainer.ClipsDescendants = true 
     TabContainer.ZIndex = 6 
     TabContainer.LayoutOrder = layoutOrder or 0 
+    TabContainer.Name = "TabContainer"
     Instance.new("UICorner", TabContainer).CornerRadius = UDim.new(0, 8) 
+    
+    table.insert(Library.TrackedElementBg, TabContainer)
     
     local TabBtn = Instance.new("TextButton", TabContainer) 
     TabBtn.Size = UDim2.new(1, 0, 1, 0) 
@@ -1119,8 +1141,7 @@ function CreatePage(textKey, iconId, layoutOrder)
     end) 
     table.insert(LocaleObjects, {Object = TabBtn, Key = textKey}) 
     UpdateNavCanvas() 
-    return PageFrame 
-end 
+    return PageFrame end 
 
 local MainPage = CreatePage("Main", "103980564128710", 1) 
 local TeleportPage = CreatePage("Teleport", "94373592263020", 2) 
@@ -1134,8 +1155,8 @@ Library:CreateToggle(MainPage, "AutoFarmCoins", false, function(state) end)
 Library:CreateToggle(VisualPage, "PlayerESP", false, function(state) end) 
 
 local SettingSections = Library:CreateSubTabs(SettingsPage, { 
-    {Name = "UI", Icon = "85203682050945"}, 
-    {Name = "Theme", Icon = "78640980615320"} 
+    {Name = "UI", Icon = "85203682050945", Color = Color3.fromRGB(108, 176, 214)}, 
+    {Name = "Theme", Icon = "78640980615320", Color = Color3.fromRGB(235, 94, 153)} 
 }) 
 
 Library:CreateSlider(SettingSections["UI"], "UISize", 0.5, 1.5, 1.00, function(value) MainScale.Scale = value end) 
@@ -1163,18 +1184,15 @@ Library:CreateDropdown(SettingSections["UI"], "Language", {"English", "Русс�
     TabTitle.Text = Localization[selectedLang][Library.CurrentTabKey] or Library.CurrentTabKey 
 end) 
 
--- Кнопка Anti AFK
+-- Кнопка Anti AFK добавлена в суб-вкладку UI
 Library:CreateToggle(SettingSections["UI"], "AntiAFK", false, function(state)
     toggleAntiAFK(state)
 end)
 
--- Дропдаун выбора темы
+-- Выпадающий список UI Theme добавлен в суб-вкладку Theme
 Library:CreateDropdown(SettingSections["Theme"], "UITheme", {"Amber Glow", "Anime", "Deep Violet", "Cyanic", "Blood Red", "AMOLED", "Black"}, "Deep Violet", function(selectedTheme)
-    Library:SetTheme(selectedTheme)
+    Library:UpdateTheme(selectedTheme)
 end)
-
--- Принудительная инициализация дефолтных настроек и тем при запуске
-Library:SetTheme("Deep Violet")
 
 if allTabs["Main"] and allTabButtons["Main"] then 
     allTabs["Main"].BackgroundTransparency = 0 
@@ -1184,3 +1202,6 @@ if allTabs["Main"] and allTabButtons["Main"] then
     Library.CurrentTabKey = "Main" 
     TabTitle.Text = Localization[Library.CurrentLanguage]["Main"] or "Main" 
 end
+
+-- Установка дефолтной темы при запуске
+Library:UpdateTheme("Deep Violet")
