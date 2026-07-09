@@ -568,7 +568,7 @@ local Localization = {
         ["Theme"] = "Theme", ["AutoFarmCoins"] = "Auto-Farm Coins", ["PlayerESP"] = "Player ESP", 
         ["UISize"] = "UI Size", ["UITransparency"] = "UI Transparency", ["MenuFont"] = "Menu Font", 
         ["Language"] = "Language", ["AntiAFK"] = "Anti-AFK", ["UITheme"] = "UI Theme",
-        ["AnimatedWindow"] = "Animated Window"
+        ["AnimatedWindow"] = "Animated Window", ["Gradient"] = "Gradient Background"
     }, 
     ["Русский"] = { 
         ["Main"] = "Главная", ["Teleport"] = "Телепорт", ["Murder"] = "Убийца", ["Sheriff"] = "Шериф", 
@@ -576,7 +576,7 @@ local Localization = {
         ["Theme"] = "Тема", ["AutoFarmCoins"] = "Авто-Фарм Монет", ["PlayerESP"] = "ESP Игроков", 
         ["UISize"] = "Размер интерфейса", ["UITransparency"] = "Прозрачность меню", ["MenuFont"] = "Шрифт меню", 
         ["Language"] = "Язык", ["AntiAFK"] = "Анти-АФК", ["UITheme"] = "Тема UI",
-        ["AnimatedWindow"] = "Анимированное окно"
+        ["AnimatedWindow"] = "Анимированное окно", ["Gradient"] = "Градиентный фон"
     } 
 } 
 
@@ -586,9 +586,7 @@ local function toggleAnimatedWindow(state)
     if state then
         if not animatedWindowConnection then
             animatedWindowConnection = RunService.RenderStepped:Connect(function()
-                -- os.clock() * 0.15 задает скорость переливания
                 local hue = (os.clock() * 0.15) % 1 
-                -- 0.6 насыщенность, чтобы не резало глаза в темных темах
                 local rainbowColor = Color3.fromHSV(hue, 0.6, 1) 
                 
                 for _, stroke in ipairs(Library.TrackedStrokes) do
@@ -603,7 +601,6 @@ local function toggleAnimatedWindow(state)
             animatedWindowConnection:Disconnect()
             animatedWindowConnection = nil
             
-            -- Возвращаем цвет обводки обратно в зависимость от текущей темы
             local bgL = (Library.CurrentThemeData.MainBg.R * 0.299 + Library.CurrentThemeData.MainBg.G * 0.587 + Library.CurrentThemeData.MainBg.B * 0.114)
             local defaultStrokeColor = (bgL > 0.5) and Color3.fromRGB(190, 190, 190) or Color3.fromRGB(45, 45, 45)
             
@@ -612,6 +609,39 @@ local function toggleAnimatedWindow(state)
                     stroke.Color = defaultStrokeColor
                 end
             end
+        end
+    end
+end
+
+-- Логика Градиентного Фона (Gradient)
+local uiGradientInstance = nil
+local gradientRotateConnection = nil
+local function toggleGradientEffect(state)
+    if state then
+        if not uiGradientInstance then
+            uiGradientInstance = Instance.new("UIGradient")
+            uiGradientInstance.Color = ColorSequence.new({
+                ColorSequenceKeypoint.new(0, Color3.fromRGB(22, 16, 35)),
+                ColorSequenceKeypoint.new(0.5, Color3.fromRGB(14, 14, 18)),
+                ColorSequenceKeypoint.new(1, Color3.fromRGB(12, 24, 38))
+            })
+            uiGradientInstance.Parent = MainFrame
+        end
+        if not gradientRotateConnection then
+            gradientRotateConnection = RunService.RenderStepped:Connect(function()
+                if uiGradientInstance and uiGradientInstance.Parent then
+                    uiGradientInstance.Rotation = (os.clock() * 25) % 360
+                end
+            end)
+        end
+    else
+        if gradientRotateConnection then
+            gradientRotateConnection:Disconnect()
+            gradientRotateConnection = nil
+        end
+        if uiGradientInstance then
+            uiGradientInstance:Destroy()
+            uiGradientInstance = nil
         end
     end
 end
@@ -1334,9 +1364,13 @@ Library:CreateDropdown(SettingSections["Theme"], "UITheme", ThemeNamesList, "Dee
     Library:UpdateTheme(selectedTheme)
 end)
 
--- Новая кнопка Animated Window добавлена здесь
 Library:CreateToggle(SettingSections["Theme"], "AnimatedWindow", false, function(state)
     toggleAnimatedWindow(state)
+end)
+
+-- Новая рабочая кнопка Gradient добавлена здесь
+Library:CreateToggle(SettingSections["Theme"], "Gradient", false, function(state)
+    toggleGradientEffect(state)
 end)
 
 if allTabs["Main"] and allTabButtons["Main"] then 
