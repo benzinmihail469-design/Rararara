@@ -6,6 +6,15 @@ local GuiService = game:GetService("GuiService")
 local Players = game:GetService("Players")
 local VirtualUser = game:GetService("VirtualUser")
 
+-- Логика подсчета времени сессии
+local startTime = os.clock() 
+local function formatSessionTime(seconds)
+    local hours = math.floor(seconds / 3600)
+    local minutes = math.floor((seconds % 3600) / 60)
+    local secs = math.floor(seconds % 60)
+    return string.format("%02d:%02d:%02d", hours, minutes, secs)
+end
+
 -- Логика Anti-AFK
 local antiAfkConnection = nil
 local function toggleAntiAFK(state)
@@ -297,7 +306,7 @@ local StatsLabel = Instance.new("TextLabel", FooterBg)
 StatsLabel.Position = UDim2.new(0, 10, 0, 23) 
 StatsLabel.Size = UDim2.new(1, -20, 0, 15) 
 StatsLabel.Font = Enum.Font.Gotham 
-StatsLabel.Text = "FPS: ..." 
+StatsLabel.Text = "FPS: ...  |  Session: 00:00:00" 
 StatsLabel.TextColor3 = Color3.fromRGB(130, 130, 130) 
 StatsLabel.TextSize = 10 
 StatsLabel.TextXAlignment = Enum.TextXAlignment.Left 
@@ -310,7 +319,10 @@ RunService.RenderStepped:Connect(function()
     while #FrameUpdateTable > 0 and FrameUpdateTable[1] < CurrentTime - 1 do 
         table.remove(FrameUpdateTable, 1) 
     end 
-    StatsLabel.Text = "FPS: " .. #FrameUpdateTable 
+    
+    -- Вычисляем прошедшее время и форматируем строку
+    local passedTime = CurrentTime - startTime
+    StatsLabel.Text = "FPS: " .. #FrameUpdateTable .. "  |  Session: " .. formatSessionTime(passedTime)
 end) 
 
 local function CreateRipple(button, clickX, clickY) 
@@ -1162,7 +1174,7 @@ function Library:CreateSubTabs(parentPage, tabsList)
         Label.Font = Library.CurrentFont 
         Label.TextColor3 = colorGrayInactive 
         Label.Size = UDim2.new(0, 0, 1, 0) 
-        Label.TextSize = 13
+        Label.TextSize = 13 
         Label.AutomaticSize = Enum.AutomaticSize.X 
         Label.ZIndex = 3 
         
