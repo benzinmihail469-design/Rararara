@@ -415,16 +415,18 @@ local Localization = {
         ["Players"] = "Players", ["Visual"] = "Visual", ["Settings"] = "Settings", ["UI"] = "UI", 
         ["Theme"] = "Theme", ["AutoFarmCoins"] = "Auto-Farm Coins", ["PlayerESP"] = "Player ESP", 
         ["UISize"] = "UI Size", ["UITransparency"] = "UI Transparency", ["MenuFont"] = "Menu Font", 
-        ["SwitchTheme"] = "Switch Theme", ["Language"] = "Language",
-        ["AntiAFK"] = "Anti-AFK" -- Перевод добавлен
+        ["SwitchTheme"] = "Switch Theme", ["Language"] = "Language", 
+        ["AntiAFK"] = "Anti-AFK",
+        ["UITheme"] = "UI Theme" -- Добавлен перевод темы интерфейса
     }, 
     ["Русский"] = { 
         ["Main"] = "Главная", ["Teleport"] = "Телепорт", ["Murder"] = "Убийца", ["Sheriff"] = "Шериф", 
         ["Players"] = "Игроки", ["Visual"] = "Визуалы", ["Settings"] = "Настройки", ["UI"] = "Интерфейс", 
         ["Theme"] = "Тема", ["AutoFarmCoins"] = "Авто-Фарм Монет", ["PlayerESP"] = "ESP Игроков", 
         ["UISize"] = "Размер интерфейса", ["UITransparency"] = "Прозрачность меню", ["MenuFont"] = "Шрифт меню", 
-        ["SwitchTheme"] = "Переключить тему", ["Language"] = "Язык",
-        ["AntiAFK"] = "Анти-АФК" -- Перевод добавлен
+        ["SwitchTheme"] = "Переключить тему", ["Language"] = "Язык", 
+        ["AntiAFK"] = "Анти-АФК",
+        ["UITheme"] = "Тема UI" -- Добавлен перевод темы интерфейса
     } 
 } 
 
@@ -1071,6 +1073,12 @@ end)
 -- Кнопка Anti AFK добавлена в суб-вкладку UI
 Library:CreateToggle(SettingSections["UI"], "AntiAFK", false, function(state)
     toggleAntiAFK(state)
+end)
+
+-- Выпадающий список UI Theme добавлен в суб-вкладку Theme
+Library:CreateDropdown(SettingSections["Theme"], "UITheme", {"Amber Glow", "Anime", "Deep Violet", "Cyanic", "Blood Red", "AMOLED", "Black"}, "Deep Violet", function(selectedTheme)
+    -- Сюда можно будет вставить саму логику перекраски кастомного интерфейса под выбранную тему
+    print("Выбранная тема интерфейса:", selectedTheme)
 end)
 
 Library:CreateButton(SettingSections["Theme"], "SwitchTheme", function() end) 
