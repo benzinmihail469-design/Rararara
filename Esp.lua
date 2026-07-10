@@ -557,7 +557,8 @@ local Localization = {
         ["shader pack"] = "Shader Pack",
         ["Enable"] = "Enable", ["Mode"] = "Mode", ["Bloom"] = "Bloom",
         ["Intensity"] = "Intensity", ["Size"] = "Size", ["Atmosphere"] = "Atmosphere",
-        ["Density"] = "Density", ["Sun Rays"] = "Sun Rays", ["Blur"] = "Blur", ["Strength"] = "Strength"
+        ["Density"] = "Density", ["Sun Rays"] = "Sun Rays", ["Blur"] = "Blur", ["Strength"] = "Strength",
+        ["Language"] = "Language"
     },
     ["Русский"] = {
         ["Main"] = "Главная", ["Teleport"] = "Телепорт", ["Murder"] = "Убийца", ["Sheriff"] = "Шериф",
@@ -571,7 +572,8 @@ local Localization = {
         ["shader pack"] = "Пак шейдеров",
         ["Enable"] = "Включить", ["Mode"] = "Режим", ["Bloom"] = "Блум (Свечение)",
         ["Intensity"] = "Интенсивность", ["Size"] = "Размер", ["Atmosphere"] = "Атмосфера",
-        ["Density"] = "Плотность", ["Sun Rays"] = "Лучи солнца", ["Blur"] = "Размытие", ["Strength"] = "Сила"
+        ["Density"] = "Плотность", ["Sun Rays"] = "Лучи солнца", ["Blur"] = "Размытие", ["Strength"] = "Сила",
+        ["Language"] = "Язык"
     }
 }
 
@@ -1420,9 +1422,6 @@ local SettingSections = Library:CreateSubTabs(SettingsPage, {
     {Name = "Theme", Icon = "78640980615320", Color = Color3.fromRGB(255, 105, 180)} 
 })
 
-----------------------------------------------------
--- КОНФИГУРАЦИЯ И СБОРКА ФУНКЦИЙ ШЕЙДЕРОВ (ОПТИМИЗИРОВАНО)
-----------------------------------------------------
 local originalLightingSettings = {
     TimeOfDay = Lighting.TimeOfDay,
     Ambient = Lighting.Ambient,
@@ -1611,7 +1610,6 @@ Library:CreateSlider(VisualSections["shader pack"], "Strength", 0, 100, 75, func
     local blur = Lighting:FindFirstChild("PulseHub_Blur")
     if blur then blur.Size = (value / 100) * 56 end
 end)
-----------------------------------------------------
 
 Library:CreateSlider(SettingSections["UI"], "UISize", 0.5, 1.5, 1.00, function(value) MainScale.Scale = value end)
 Library:CreateSlider(SettingSections["UI"], "UITransparency", 0, 100, 15, function(value) MainFrame.BackgroundTransparency = value / 100 end)
@@ -1626,6 +1624,21 @@ Library:CreateDropdown(SettingSections["UI"], "MenuFont", {"Gotham", "Gotham Bol
             end
         end
     end
+end)
+
+-- ВОЗВРАЩЕННЫЙ ВЫБОР ЯЗЫКА С ПОЛНЫМ ПЕРЕВОДОМ ИНТЕРФЕЙСА
+Library:CreateDropdown(SettingSections["UI"], "Language", {"English", "Русский"}, Library.CurrentLanguage, function(selectedLang)
+    Library.CurrentLanguage = selectedLang
+    for _, loc in ipairs(LocaleObjects) do
+        if loc.Object and loc.Object.Parent then
+            local translated = Localization[selectedLang][loc.Key] or loc.Key
+            loc.Object.Text = translated
+            if loc.SearchItem then
+                loc.SearchItem.SearchText = NormalizeText(translated)
+            end
+        end
+    end
+    TabTitle.Text = Localization[selectedLang][Library.CurrentTabKey] or Library.CurrentTabKey
 end)
 
 Library:CreateToggle(SettingSections["UI"], "AntiAFK", false, function(state)
