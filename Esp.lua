@@ -608,7 +608,8 @@ local Localization = {
         ["ShaderPreset"] = "Shader Preset", ["SkyboxChanger"] = "Skybox Changer",
         ["UISize"] = "UI Size", ["UITransparency"] = "UI Transparency", ["MenuFont"] = "Menu Font",
         ["Language"] = "Language", ["AntiAFK"] = "Anti-AFK", ["UITheme"] = "UI Theme",
-        ["AnimatedWindow"] = "Animated Window", ["Gradient"] = "Gradient Background"
+        ["AnimatedWindow"] = "Animated Window", ["Gradient"] = "Gradient Background",
+        ["shader pack"] = "Shader Pack"
     },
     ["Русский"] = {
         ["Main"] = "Главная", ["Teleport"] = "Телепорт", ["Murder"] = "Убийца", ["Sheriff"] = "Шериф",
@@ -618,7 +619,8 @@ local Localization = {
         ["ShaderPreset"] = "Пресет Шейдеров", ["SkyboxChanger"] = "Смена Неба",
         ["UISize"] = "Размер интерфейса", ["UITransparency"] = "Прозрачность меню", ["MenuFont"] = "Шрифт меню",
         ["Language"] = "Язык", ["AntiAFK"] = "Анти-АФК", ["UITheme"] = "Тема UI",
-        ["AnimatedWindow"] = "Анимированное окно", ["Gradient"] = "Градиентный фон"
+        ["AnimatedWindow"] = "Анимированное окно", ["Gradient"] = "Градиентный фон",
+        ["shader pack"] = "Пак шейдеров"
     }
 }
 
@@ -882,10 +884,9 @@ function Library:CreateDropdown(parentPage, textKey, options, default, callback,
         OptLabel.BackgroundTransparency = 1
         OptLabel.ZIndex = 9
         
-        -- ИСПРАВЛЕНИЕ: Если опция является шрифтом, рендерим текст именно этим шрифтом
         if FontMapping and FontMapping[option] then
             OptLabel.Font = FontMapping[option]
-            OptLabel.Name = "FontPreviewLabel" -- Защищаем от автоматической перезаписи при смене темы/шрифта
+            OptLabel.Name = "FontPreviewLabel" 
         else
             OptLabel.Font = Library.CurrentFont
         end
@@ -1458,6 +1459,11 @@ local SettingsPage = CreatePage("Settings", "117996761927034", 99)
 
 Library:CreateToggle(MainPage, "AutoFarmCoins", false, function(state) end)
 
+-- Создаем суб-вкладки для вкладки Visual (Зеленого цвета с твоим ID картинки)
+local VisualSections = Library:CreateSubTabs(VisualPage, {
+    {Name = "shader pack", Icon = "80768064990053", Color = Color3.fromRGB(46, 204, 113)}
+})
+
 local SettingSections = Library:CreateSubTabs(SettingsPage, {
     {Name = "UI", Icon = "85203682050945", Color = Color3.fromRGB(108, 176, 214)},
     {Name = "Theme", Icon = "78640980615320", Color = Color3.fromRGB(235, 94, 153)}
@@ -1466,7 +1472,6 @@ local SettingSections = Library:CreateSubTabs(SettingsPage, {
 Library:CreateSlider(SettingSections["UI"], "UISize", 0.5, 1.5, 1.00, function(value) MainScale.Scale = value end)
 Library:CreateSlider(SettingSections["UI"], "UITransparency", 0, 100, 15, function(value) MainFrame.BackgroundTransparency = value / 100 end)
 
--- ИСПРАВЛЕНИЕ: Добавлено исключение (obj.Name ~= "FontPreviewLabel") в цикл изменения шрифтов
 Library:CreateDropdown(SettingSections["UI"], "MenuFont", {"Gotham", "Gotham Bold", "Source Sans", "Roboto", "Roboto Mono", "Ubuntu", "Michroma", "Code", "Fantasy", "Fredoka One"}, "Gotham", function(selectedFont)
     local targetFont = FontMapping[selectedFont] or Enum.Font.Gotham
     Library.CurrentFont = targetFont
