@@ -877,12 +877,18 @@ function Library:CreateDropdown(parentPage, textKey, options, default, callback,
         OptLabel.Size = UDim2.new(1, -40, 1, 0)
         OptLabel.Position = UDim2.new(0, 16, 0, 0)
         OptLabel.Text = option
-        OptLabel.Font = Library.CurrentFont
-        OptLabel.TextColor3 = (option == default) and Library.CurrentThemeData.Accent or Color3.fromRGB(180, 180, 180)
         OptLabel.TextSize = 12
         OptLabel.TextXAlignment = Enum.TextXAlignment.Left
         OptLabel.BackgroundTransparency = 1
         OptLabel.ZIndex = 9
+        
+        -- ИСПРАВЛЕНИЕ: Если опция является шрифтом, рендерим текст именно этим шрифтом
+        if FontMapping and FontMapping[option] then
+            OptLabel.Font = FontMapping[option]
+            OptLabel.Name = "FontPreviewLabel" -- Защищаем от автоматической перезаписи при смене темы/шрифта
+        else
+            OptLabel.Font = Library.CurrentFont
+        end
         
         local Checkmark = Instance.new("TextLabel", OptBtn)
         Checkmark.Size = UDim2.new(0, 20, 1, 0)
@@ -1460,12 +1466,15 @@ local SettingSections = Library:CreateSubTabs(SettingsPage, {
 Library:CreateSlider(SettingSections["UI"], "UISize", 0.5, 1.5, 1.00, function(value) MainScale.Scale = value end)
 Library:CreateSlider(SettingSections["UI"], "UITransparency", 0, 100, 15, function(value) MainFrame.BackgroundTransparency = value / 100 end)
 
+-- ИСПРАВЛЕНИЕ: Добавлено исключение (obj.Name ~= "FontPreviewLabel") в цикл изменения шрифтов
 Library:CreateDropdown(SettingSections["UI"], "MenuFont", {"Gotham", "Gotham Bold", "Source Sans", "Roboto", "Roboto Mono", "Ubuntu", "Michroma", "Code", "Fantasy", "Fredoka One"}, "Gotham", function(selectedFont)
     local targetFont = FontMapping[selectedFont] or Enum.Font.Gotham
     Library.CurrentFont = targetFont
     for _, obj in ipairs(PulseHub:GetDescendants()) do
         if obj:IsA("TextLabel") or obj:IsA("TextButton") or obj:IsA("TextBox") then
-            if obj.Text ~= "—" and obj.Text ~= "×" and obj.Text ~= "▼" and obj.Text ~= "▲" and obj.Text ~= "✓" then obj.Font = targetFont end
+            if obj.Text ~= "—" and obj.Text ~= "×" and obj.Text ~= "▼" and obj.Text ~= "▲" and obj.Text ~= "✓" and obj.Name ~= "FontPreviewLabel" then 
+                obj.Font = targetFont 
+            end
         end
     end
 end)
@@ -1507,5 +1516,4 @@ if allTabs["Main"] and allTabButtons["Main"] then
     TabTitle.Text = Localization[Library.CurrentLanguage]["Main"] or "Main"
 end
 
--- ИСПРАВЛЕНИЕ: Накатываем тему принудительно сразу после инициализации интерфейса
 Library:UpdateTheme("Deep Ocean")
