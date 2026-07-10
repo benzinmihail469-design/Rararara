@@ -544,7 +544,8 @@ function Library:UpdateTheme(themeName)
     for _, data in ipairs(Library.TrackedAccents) do
         if data.Type == "Toggle" then
             if data.IsEnabled() then
-                tween(data.Checkbox, {BackgroundColor3 = Color3.fromRGB(255, 140, 0)})
+                -- ИСПРАВЛЕНИЕ: Теперь активный переключатель окрашивается в цвет Accent выбранной темы
+                tween(data.Checkbox, {BackgroundColor3 = theme.Accent})
                 local brightness = (theme.Accent.R + theme.Accent.G + theme.Accent.B)
                 if brightness > 2.5 then
                     tween(data.Indicator, {BackgroundColor3 = Color3.fromRGB(30, 30, 30)})
@@ -553,12 +554,15 @@ function Library:UpdateTheme(themeName)
                 end
             else
                 tween(data.Checkbox, {BackgroundColor3 = isLightMode and Color3.fromRGB(210, 210, 210) or Color3.fromRGB(40, 40, 40)})
-                tween(data.Indicator, {BackgroundColor3 = isLightMode and Color3.fromRGB(255, 255, 255) or Color3.fromRGB(255, 255, 255)})
+                tween(data.Indicator, {BackgroundColor3 = Color3.fromRGB(255, 255, 255)})
             end
         elseif data.Type == "Dropdown" then
             local currentSelection = data.GetDefault()
             if data.Container and data.Container.Parent then
                 data.Container.ScrollBarImageColor3 = theme.Accent
+            end
+            if data.SelectedLabel and data.SelectedLabel.Parent then
+                tween(data.SelectedLabel, {TextColor3 = theme.Accent})
             end
             for optName, optData in pairs(data.Options) do
                 optData.Check.TextColor3 = theme.Accent
@@ -775,13 +779,11 @@ function Library:CreateDropdown(parentPage, textKey, options, default, callback,
     SelectedLabel.Position = UDim2.new(0.5, 0, 0, 0)
     SelectedLabel.Text = default
     SelectedLabel.Font = Library.CurrentFont
-    SelectedLabel.TextColor3 = Color3.fromRGB(150, 150, 150)
+    SelectedLabel.TextColor3 = Library.CurrentThemeData.Accent -- ИСПРАВЛЕНИЕ: Изначальный цвет по теме
     SelectedLabel.TextSize = 13
     SelectedLabel.TextXAlignment = Enum.TextXAlignment.Right
     SelectedLabel.BackgroundTransparency = 1
     SelectedLabel.ZIndex = 8
-    
-    table.insert(Library.TrackedSubText, SelectedLabel)
     
     local Arrow = Instance.new("TextLabel", HeaderBtn)
     Arrow.Size = UDim2.new(0, 20, 1, 0)
@@ -936,6 +938,7 @@ function Library:CreateDropdown(parentPage, textKey, options, default, callback,
         Type = "Dropdown",
         Options = optionButtons,
         Container = OptionsContainer,
+        SelectedLabel = SelectedLabel, -- Добавлено отслеживание главного текста выбора
         GetDefault = function() return SelectedLabel.Text end
     })
     
@@ -1005,7 +1008,7 @@ function Library:CreateToggle(parentPage, textKey, default, callback)
     local Checkbox = Instance.new("TextButton", TglFrame)
     Checkbox.Size = UDim2.new(0, 34, 0, 18)
     Checkbox.Position = UDim2.new(1, -44, 0.5, -9)
-    Checkbox.BackgroundColor3 = default and Color3.fromRGB(255, 140, 0) or Color3.fromRGB(40, 40, 40)
+    Checkbox.BackgroundColor3 = default and Library.CurrentThemeData.Accent or Color3.fromRGB(40, 40, 40) -- ИСПРАВЛЕНИЕ: Использован Accent вместо оранжевого
     Checkbox.Text = ""
     Checkbox.ZIndex = 7
     Instance.new("UICorner", Checkbox).CornerRadius = UDim.new(0, 9)
@@ -1025,7 +1028,8 @@ function Library:CreateToggle(parentPage, textKey, default, callback)
         local activeIndicatorColor = brightness > 2.5 and Color3.fromRGB(30, 30, 30) or Color3.fromRGB(255, 255, 255)
 
         if enabled then
-            tween(Checkbox, {BackgroundColor3 = Color3.fromRGB(255, 140, 0)}, 0.2)
+            -- ИСПРАВЛЕНИЕ: Динамический цвет из текущей конфигурации темы
+            tween(Checkbox, {BackgroundColor3 = Library.CurrentThemeData.Accent}, 0.2)
             tween(Indicator, {Position = UDim2.new(1, -16, 0.5, -7), BackgroundColor3 = activeIndicatorColor}, 0.2)
         else
             local bgL = (Library.CurrentThemeData.MainBg.R * 0.299 + Library.CurrentThemeData.MainBg.G * 0.587 + Library.CurrentThemeData.MainBg.B * 0.114)
