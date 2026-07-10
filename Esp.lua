@@ -123,7 +123,7 @@ TabTitle.Size = UDim2.new(0, 200, 0, 20)
 TabTitle.TextXAlignment = Enum.TextXAlignment.Left
 TabTitle.BackgroundTransparency = 1
 
--- Контейнер управления кнопками (ВЕРХНИЙ ПРАВЫЙ УГОЛ)
+-- Кнопки управления в верхнем правом углу
 local ControlsContainer = Instance.new("Frame", MainFrame)
 ControlsContainer.Name = "ControlsContainer"
 ControlsContainer.Size = UDim2.new(0, 55, 0, 24)
@@ -151,27 +151,39 @@ CloseBtn.TextColor3 = Color3.fromRGB(180, 180, 180)
 CloseBtn.BackgroundTransparency = 1
 CloseBtn.ZIndex = 11
 
--- Оранжевая кнопка для разворачивания интерфейса (Вместо зеленой)
+-- Оранжевый компактный виджет в свернутом состоянии (с иконкой и заголовком)
 local OpenToggleButton = Instance.new("TextButton", PulseHub)
 OpenToggleButton.Name = "OpenToggleButton"
-OpenToggleButton.Size = UDim2.new(0, 45, 0, 45)
-OpenToggleButton.Position = UDim2.new(0, 20, 1, -65)
+OpenToggleButton.Size = UDim2.new(0, 130, 0, 38)
+OpenToggleButton.Position = UDim2.new(0, 20, 1, -58)
 OpenToggleButton.BackgroundColor3 = Color3.fromRGB(22, 22, 22)
 OpenToggleButton.Visible = false
 OpenToggleButton.ZIndex = 20
-Instance.new("UICorner", OpenToggleButton).CornerRadius = UDim.new(0, 10)
+Instance.new("UICorner", OpenToggleButton).CornerRadius = UDim.new(0, 8)
 
 local ToggleStroke = Instance.new("UIStroke", OpenToggleButton)
 ToggleStroke.Color = Color3.fromRGB(255, 128, 0)
 ToggleStroke.Thickness = 1.5
 
 local ToggleIcon = Instance.new("ImageLabel", OpenToggleButton)
-ToggleIcon.Size = UDim2.new(0, 26, 0, 26)
-ToggleIcon.Position = UDim2.new(0.5, -13, 0.5, -13)
+ToggleIcon.Size = UDim2.new(0, 22, 0, 22)
+ToggleIcon.Position = UDim2.new(0, 10, 0.5, -11)
 ToggleIcon.BackgroundTransparency = 1
 ToggleIcon.Image = "rbxthumb://type=Asset&id=" .. CustomIconID .. "&w=150&h=150"
 ToggleIcon.ZIndex = 21
 Instance.new("UICorner", ToggleIcon).CornerRadius = UDim.new(0, 4)
+
+local ToggleTitle = Instance.new("TextLabel", OpenToggleButton)
+ToggleTitle.Name = "ToggleTitle"
+ToggleTitle.Text = "Pulse Hub"
+ToggleTitle.Font = Enum.Font.GothamBold
+ToggleTitle.TextColor3 = Color3.fromRGB(255, 255, 255)
+ToggleTitle.TextSize = 12
+ToggleTitle.Position = UDim2.new(0, 38, 0, 0)
+ToggleTitle.Size = UDim2.new(1, -48, 1, 0)
+ToggleTitle.TextXAlignment = Enum.TextXAlignment.Left
+ToggleTitle.BackgroundTransparency = 1
+ToggleTitle.ZIndex = 21
 
 local SearchContainer = Instance.new("Frame", MainFrame)
 SearchContainer.Size = UDim2.new(0, 140, 0, 30)
@@ -362,7 +374,7 @@ applyHover(CloseBtn, Color3.fromRGB(180,180,180), Color3.fromRGB(255,70,70))
 applyHover(MinimizeBtn, Color3.fromRGB(180,180,180), Color3.fromRGB(255,150,30))
 applyHover(ClearSearchBtn, Color3.fromRGB(150,150,150), Color3.fromRGB(255,255,255))
 
--- Логика Сворачивания / Разворачивания меню
+-- Исправленная логика Сворачивания без багов UIScale
 local Library = {}
 Library.CurrentScale = 1.00
 local isMinimized = false
@@ -370,7 +382,7 @@ local isMinimized = false
 local function ToggleMinimize()
     isMinimized = not isMinimized
     if isMinimized then
-        local t = tween(MainScale, {Scale = 0}, 0.2)
+        local t = tween(MainScale, {Scale = 0.01}, 0.18) -- Защита от NaN ошибки в Roblox UI
         t.Completed:Connect(function()
             if isMinimized then
                 MainFrame.Visible = false
@@ -379,8 +391,9 @@ local function ToggleMinimize()
         end)
     else
         MainFrame.Visible = true
+        MainScale.Scale = 0.01
         OpenToggleButton.Visible = false
-        tween(MainScale, {Scale = Library.CurrentScale}, 0.2)
+        tween(MainScale, {Scale = Library.CurrentScale}, 0.18)
     end
 end
 
@@ -560,6 +573,7 @@ table.insert(Library.TrackedSubText, StatsLabel)
 table.insert(Library.TrackedMainText, SearchBox)
 table.insert(Library.TrackedMainText, CloseBtn)
 table.insert(Library.TrackedMainText, MinimizeBtn)
+table.insert(Library.TrackedMainText, ToggleTitle)
 
 local SearchableElements = {}
 local LocaleObjects = {}
@@ -1479,15 +1493,14 @@ local shaderStates = {
     BlurStrength = 75
 }
 
--- Усиленные функции шейдеров (Сделать их максимально заметными)
 local function updateBloom()
     local existing = Lighting:FindFirstChild("PulseHub_Bloom")
     if shaderStates.Master and shaderStates.Bloom then
         local bloom = existing or Instance.new("BloomEffect")
         bloom.Name = "PulseHub_Bloom"
-        bloom.Intensity = shaderStates.BloomIntensity * 3.5 -- Множитель для сочного свечения
+        bloom.Intensity = shaderStates.BloomIntensity * 3.5
         bloom.Size = shaderStates.BloomSize
-        bloom.Threshold = 0.1 -- Четкое свечение неоновых элементов
+        bloom.Threshold = 0.1
         bloom.Parent = Lighting
     else
         if existing then existing:Destroy() end
@@ -1500,8 +1513,8 @@ local function updateAtmosphere()
         local atm = existing or Instance.new("Atmosphere")
         atm.Name = "PulseHub_Atmosphere"
         atm.Density = shaderStates.AtmosphereDensity / 100
-        atm.Haze = (shaderStates.AtmosphereDensity / 100) * 8.5 -- Заметная дымка
-        atm.Glare = (shaderStates.AtmosphereDensity / 100) * 4.0 -- Эффект бликов на воздухе
+        atm.Haze = (shaderStates.AtmosphereDensity / 100) * 8.5
+        atm.Glare = (shaderStates.AtmosphereDensity / 100) * 4.0
         atm.Color = Color3.fromRGB(195, 215, 255)
         atm.Parent = Lighting
     else
@@ -1514,11 +1527,9 @@ local function updateSunRays()
     if shaderStates.Master and shaderStates.SunRays then
         local sr = existing or Instance.new("SunRaysEffect")
         sr.Name = "PulseHub_SunRays"
-        sr.Intensity = (shaderStates.SunRaysIntensity / 100) * 6.0 -- Мощные, пробивающиеся лучи
-        sr.Spread = 0.90 -- Широкий охват лучей
+        sr.Intensity = (shaderStates.SunRaysIntensity / 100) * 6.0
+        sr.Spread = 0.90
         sr.Parent = Lighting
-        
-        -- Повышаем глобальную яркость чтобы лучи точно выделились
         if Lighting.Brightness < 3 then Lighting.Brightness = 3.5 end
     else
         if existing then existing:Destroy() end
@@ -1592,10 +1603,8 @@ Library:CreateToggle(VisualSections["shader pack"], "Enable", false, function(st
         if masterCC then masterCC:Destroy() masterCC = nil end
         local existing = Lighting:FindFirstChild("PulseHub_MasterCC")
         if existing then existing:Destroy() end
-        
         restoreOriginalEnvironment()
     end
-    
     updateBloom()
     updateAtmosphere()
     updateSunRays()
@@ -1605,9 +1614,7 @@ end)
 Library:CreateDropdown(VisualSections["shader pack"], "Mode", {"None", "Day", "Sunset", "Midnight"}, "None", function(selected)
     shaderStates.Mode = selected
     if shaderStates.Master then
-        if selected == "None" then
-            restoreOriginalEnvironment()
-        end
+        if selected == "None" then restoreOriginalEnvironment() end
         updateMasterCC()
     end
 end)
@@ -1691,9 +1698,7 @@ Library:CreateDropdown(SettingSections["UI"], "Language", {"English", "Русс�
         if loc.Object and loc.Object.Parent then
             local translated = Localization[selectedLang][loc.Key] or loc.Key
             loc.Object.Text = translated
-            if loc.SearchItem then
-                loc.SearchItem.SearchText = NormalizeText(translated)
-            end
+            if loc.SearchItem then loc.SearchItem.SearchText = NormalizeText(translated) end
         end
     end
     TabTitle.Text = Localization[selectedLang][Library.CurrentTabKey] or Library.CurrentTabKey
