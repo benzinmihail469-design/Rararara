@@ -735,7 +735,6 @@ local FontMapping = {
     ["Fredoka One"] = Enum.Font.FredokaOne 
 } 
 
--- МОДЕРНИЗИРОВАННЫЙ ДРОПДАУН С ОКНОМ ПРЕДПРОСМОТРА КАРТИНОК
 function Library:CreateDropdown(parentPage, textKey, options, default, callback, previews) 
     local initialText = Localization[Library.CurrentLanguage][textKey] or textKey 
     local DropdownFrame = Instance.new("Frame", parentPage) 
@@ -821,7 +820,6 @@ function Library:CreateDropdown(parentPage, textKey, options, default, callback,
     local isExpanded = false 
     local optionButtons = {} 
     
-    -- Окно предпросмотра внутри контейнера опций
     local PreviewImage
     if previews then
         PreviewImage = Instance.new("ImageLabel", OptionsContainer)
@@ -831,7 +829,7 @@ function Library:CreateDropdown(parentPage, textKey, options, default, callback,
         PreviewImage.BackgroundTransparency = 0.3
         PreviewImage.ScaleType = Enum.ScaleType.Crop
         PreviewImage.ZIndex = 8
-        PreviewImage.LayoutOrder = 9999 -- Всегда в самом низу списка
+        PreviewImage.LayoutOrder = 9999 
         Instance.new("UICorner", PreviewImage).CornerRadius = UDim.new(0, 6)
         
         local PreviewStroke = Instance.new("UIStroke", PreviewImage)
@@ -854,7 +852,7 @@ function Library:CreateDropdown(parentPage, textKey, options, default, callback,
         local contentHeight = math.min(baseOptionsHeight, maxVisibleOptionsHeight)
         
         if previews then
-            contentHeight = contentHeight + 122 -- Добавляем место под картинку превью
+            contentHeight = contentHeight + 122 
         end
         
         local targetFrameHeight = isExpanded and (36 + contentHeight + 4) or 36
@@ -898,7 +896,6 @@ function Library:CreateDropdown(parentPage, textKey, options, default, callback,
         
         OptBtn.MouseEnter:Connect(function()
             tween(OptBtn, {BackgroundTransparency = 0.96}, 0.15)
-            -- Динамическое обновление превью при наведении мыши
             if previews and previews[option] then
                 local img = previews[option]
                 PreviewImage.Image = tonumber(img) and ("rbxassetid://" .. tostring(img)) or img
@@ -906,7 +903,6 @@ function Library:CreateDropdown(parentPage, textKey, options, default, callback,
         end)
         OptBtn.MouseLeave:Connect(function()
             tween(OptBtn, {BackgroundTransparency = 1}, 0.15)
-            -- Возвращаем картинку текущего выбранного варианта
             if previews then
                 local currentSelected = SelectedLabel.Text
                 local img = previews[currentSelected] or previews[default] or ""
@@ -1434,7 +1430,8 @@ function CreatePage(textKey, iconId, layoutOrder)
     end) 
     table.insert(LocaleObjects, {Object = TabBtn, Key = textKey}) 
     UpdateNavCanvas() 
-    return PageFrame end 
+    return PageFrame 
+end 
 
 local MainPage = CreatePage("Main", "103980564128710", 1) 
-local TeleportPage = CreatePage("Teleport", "94373592263020", 2
+local TeleportPage = CreatePage("Teleport", "94373592263020", 2)
