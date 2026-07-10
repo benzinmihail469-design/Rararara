@@ -1645,3 +1645,6 @@ if allTabs["Main"] and allTabButtons["Main"] then
     if allTabIcons["Main"] then allTabIcons["Main"].ImageTransparency = 0 end
     allPages["Main"].Visible = true
 end
+
+-- Автоматически применяем дефолтную тему при первом запуске скрипта
+Library:UpdateTheme("Deep Ocean")
