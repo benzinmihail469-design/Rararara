@@ -1476,9 +1476,8 @@ local SettingSections = Library:CreateSubTabs(SettingsPage, {
 })
 
 ----------------------------------------------------
--- КОНФИГУРАЦИЯ И СБОРКА ФУНКЦИЙ ШЕЙДЕРОВ (ИЗ ФОТО)
+-- КОНФИГУРАЦИЯ И СБОРКА ФУНКЦИЙ ШЕЙДЕРОВ (ИСПРАВЛЕНО)
 ----------------------------------------------------
--- Глобальные контейнеры для сохранения родной конфигурации игры
 local originalLightingSettings = {
     TimeOfDay = Lighting.TimeOfDay,
     Ambient = Lighting.Ambient,
@@ -1487,14 +1486,12 @@ local originalLightingSettings = {
 }
 local originalSky = nil
 
--- Вспомогательная функция отката настроек света MM2
 local function restoreOriginalEnvironment()
     Lighting.TimeOfDay = originalLightingSettings.TimeOfDay
     Lighting.Ambient = originalLightingSettings.Ambient
     Lighting.OutdoorAmbient = originalLightingSettings.OutdoorAmbient
     Lighting.Brightness = originalLightingSettings.Brightness
 
-    -- Возвращаем родное небо игры, если оно было сохранено
     local currentSky = Lighting:FindFirstChildOfClass("Sky")
     if originalSky then
         if not currentSky or currentSky.Name ~= originalSky.Name then
@@ -1506,6 +1503,7 @@ end
 
 local shaderStates = {
     Master = false,
+    Mode = "None",
     Bloom = false,
     BloomIntensity = 4,
     BloomSize = 24,
@@ -1517,12 +1515,24 @@ local shaderStates = {
     BlurStrength = 75
 }
 
+-- Постоянный цикл форсирования времени суток (фикс перезаписи игрой)
+RunService.Heartbeat:Connect(function()
+    if shaderStates.Master then
+        if shaderStates.Mode == "Day" then
+            Lighting.ClockTime = 14
+        elseif shaderStates.Mode == "Sunset" then
+            Lighting.ClockTime = 18.5
+        elseif shaderStates.Mode == "Midnight" then
+            Lighting.ClockTime = 0
+        end
+    end
+end)
+
 -- 1. Главный переключатель (Enable)
 local masterCC = nil
 Library:CreateToggle(VisualSections["shader pack"], "Enable", false, function(state)
     shaderStates.Master = state
     if state then
-        -- Запоминаем параметры прямо перед внесением изменений (на случай смены карты)
         originalLightingSettings.TimeOfDay = Lighting.TimeOfDay
         originalLightingSettings.Ambient = Lighting.Ambient
         originalLightingSettings.OutdoorAmbient = Lighting.OutdoorAmbient
@@ -1543,22 +1553,15 @@ Library:CreateToggle(VisualSections["shader pack"], "Enable", false, function(st
         local existing = Lighting:FindFirstChild("PulseHub_MasterCC")
         if existing then existing:Destroy() end
         
-        -- Полный сброс параметров освещения к заводским
         restoreOriginalEnvironment()
     end
 end)
 
 -- 2. Выбор времени суток (Mode Dropdown)
 Library:CreateDropdown(VisualSections["shader pack"], "Mode", {"None", "Day", "Sunset", "Midnight"}, "None", function(selected)
-    if selected == "Day" then
-        Lighting.TimeOfDay = "14:00:00"
-    elseif selected == "Sunset" then
-        Lighting.TimeOfDay = "18:30:00"
-    elseif selected == "Midnight" then
-        Lighting.TimeOfDay = "00:00:00"
-    elseif selected == "None" then
-        -- Возвращаем исходное время суток карты
-        Lighting.TimeOfDay = originalLightingSettings.TimeOfDay
+    shaderStates.Mode = selected
+    if shaderStates.Master and selected == "None" then
+        restoreOriginalEnvironment()
     end
 end)
 
@@ -1715,8 +1718,4 @@ if allTabs["Main"] and allTabButtons["Main"] then
     allTabButtons["Main"].TextColor3 = Color3.fromRGB(255, 255, 255)
     if allTabIcons["Main"] then allTabIcons["Main"].ImageTransparency = 0 end
     allPages["Main"].Visible = true
-    Library.CurrentTabKey = "Main"
-    TabTitle.Text = Localization[Library.CurrentLanguage]["Main"] or "Main"
 end
-
-Library:UpdateTheme("Deep Ocean")
