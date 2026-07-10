@@ -84,7 +84,7 @@ local function NormalizeText(str)
     if type(str) ~= "string" then return "" end
     local lowerStr = string.lower(str)
     local upperToLower = {
-        ["А"]="а", ["Б"]="б", ["Вв"]="в", ["Г"]="г", ["Д"]="д", ["Е"]="е", ["Ё"]="ё", ["Ж"]="ж", ["З"]="з",
+        ["А"]="а", ["Б"]="б", ["В"]="в", ["Г"]="г", ["Д"]="д", ["Е"]="е", ["Ё"]="ё", ["Ж"]="ж", ["З"]="з",
         ["И"]="и", ["Й"]="й", ["К"]="к", ["Л"]="л", ["М"]="м", ["Н"]="н", ["О"]="о", ["П"]="п", ["Р"]="р",
         ["С"]="с", ["Т"]="т", ["У"]="у", ["Ф"]="ф", ["Х"]="х", ["Ц"]="ц", ["Ч"]="ч", ["Ш"]="ш", ["Щ"]="щ",
         ["Ъ"]="ъ", ["Ы"]="ы", ["Ь"]="ь", ["Э"]="э", ["Ю"]="ю", ["Я"]="я"
@@ -1190,7 +1190,7 @@ function Library:CreateSubTabs(parentPage, tabsList)
         if tabData.Color then
             activeColor = tabData.Color
         elseif string.find(lowName, "theme") or string.find(lowName, "тема") then
-            activeColor = Color3.fromRGB(255, 105, 180) 
+            activeColor = Color3.fromRGB(255, 128, 0) -- Красивый оранжевый акцент вместо розового
         end
         
         local BtnContainer = Instance.new("Frame", SubTabContainer)
@@ -1419,7 +1419,7 @@ local VisualSections = Library:CreateSubTabs(VisualPage, {
 
 local SettingSections = Library:CreateSubTabs(SettingsPage, {
     {Name = "UI", Icon = "85203682050945", Color = Color3.fromRGB(108, 176, 214)},
-    {Name = "Theme", Icon = "78640980615320", Color = Color3.fromRGB(255, 105, 180)} 
+    {Name = "Theme", Icon = "78640980615320", Color = Color3.fromRGB(255, 128, 0)} -- Оранжевый для вкладки тем
 })
 
 local originalLightingSettings = {
@@ -1626,7 +1626,7 @@ Library:CreateDropdown(SettingSections["UI"], "MenuFont", {"Gotham", "Gotham Bol
     end
 end)
 
--- ВОЗВРАЩЕННЫЙ ВЫБОР ЯЗЫКА С ПОЛНЫМ ПЕРЕВОДОМ ИНТЕРФЕЙСА
+-- ДРОПДАУН ВЫБОРА ЯЗЫКА С ЗАНЕСЕНИЕМ В СИСТЕМУ СМЕНЫ ЛОКАЛИЗАЦИИ
 Library:CreateDropdown(SettingSections["UI"], "Language", {"English", "Русский"}, Library.CurrentLanguage, function(selectedLang)
     Library.CurrentLanguage = selectedLang
     for _, loc in ipairs(LocaleObjects) do
