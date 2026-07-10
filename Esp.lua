@@ -544,7 +544,6 @@ function Library:UpdateTheme(themeName)
     for _, data in ipairs(Library.TrackedAccents) do
         if data.Type == "Toggle" then
             if data.IsEnabled() then
-                -- ИСПРАВЛЕНИЕ: Теперь активный переключатель окрашивается в цвет Accent выбранной темы
                 tween(data.Checkbox, {BackgroundColor3 = theme.Accent})
                 local brightness = (theme.Accent.R + theme.Accent.G + theme.Accent.B)
                 if brightness > 2.5 then
@@ -779,7 +778,7 @@ function Library:CreateDropdown(parentPage, textKey, options, default, callback,
     SelectedLabel.Position = UDim2.new(0.5, 0, 0, 0)
     SelectedLabel.Text = default
     SelectedLabel.Font = Library.CurrentFont
-    SelectedLabel.TextColor3 = Library.CurrentThemeData.Accent -- ИСПРАВЛЕНИЕ: Изначальный цвет по теме
+    SelectedLabel.TextColor3 = Library.CurrentThemeData.Accent 
     SelectedLabel.TextSize = 13
     SelectedLabel.TextXAlignment = Enum.TextXAlignment.Right
     SelectedLabel.BackgroundTransparency = 1
@@ -938,7 +937,7 @@ function Library:CreateDropdown(parentPage, textKey, options, default, callback,
         Type = "Dropdown",
         Options = optionButtons,
         Container = OptionsContainer,
-        SelectedLabel = SelectedLabel, -- Добавлено отслеживание главного текста выбора
+        SelectedLabel = SelectedLabel, 
         GetDefault = function() return SelectedLabel.Text end
     })
     
@@ -1008,7 +1007,7 @@ function Library:CreateToggle(parentPage, textKey, default, callback)
     local Checkbox = Instance.new("TextButton", TglFrame)
     Checkbox.Size = UDim2.new(0, 34, 0, 18)
     Checkbox.Position = UDim2.new(1, -44, 0.5, -9)
-    Checkbox.BackgroundColor3 = default and Library.CurrentThemeData.Accent or Color3.fromRGB(40, 40, 40) -- ИСПРАВЛЕНИЕ: Использован Accent вместо оранжевого
+    Checkbox.BackgroundColor3 = default and Library.CurrentThemeData.Accent or Color3.fromRGB(40, 40, 40) 
     Checkbox.Text = ""
     Checkbox.ZIndex = 7
     Instance.new("UICorner", Checkbox).CornerRadius = UDim.new(0, 9)
@@ -1028,7 +1027,6 @@ function Library:CreateToggle(parentPage, textKey, default, callback)
         local activeIndicatorColor = brightness > 2.5 and Color3.fromRGB(30, 30, 30) or Color3.fromRGB(255, 255, 255)
 
         if enabled then
-            -- ИСПРАВЛЕНИЕ: Динамический цвет из текущей конфигурации темы
             tween(Checkbox, {BackgroundColor3 = Library.CurrentThemeData.Accent}, 0.2)
             tween(Indicator, {Position = UDim2.new(1, -16, 0.5, -7), BackgroundColor3 = activeIndicatorColor}, 0.2)
         else
@@ -1508,3 +1506,6 @@ if allTabs["Main"] and allTabButtons["Main"] then
     Library.CurrentTabKey = "Main"
     TabTitle.Text = Localization[Library.CurrentLanguage]["Main"] or "Main"
 end
+
+-- ИСПРАВЛЕНИЕ: Накатываем тему принудительно сразу после инициализации интерфейса
+Library:UpdateTheme("Deep Ocean")
