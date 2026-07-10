@@ -735,7 +735,8 @@ local FontMapping = {
     ["Fredoka One"] = Enum.Font.FredokaOne 
 } 
 
-function Library:CreateDropdown(parentPage, textKey, options, default, callback) 
+-- МОДЕРНИЗИРОВАННЫЙ ДРОПДАУН С ОКНОМ ПРЕДПРОСМОТРА КАРТИНОК
+function Library:CreateDropdown(parentPage, textKey, options, default, callback, previews) 
     local initialText = Localization[Library.CurrentLanguage][textKey] or textKey 
     local DropdownFrame = Instance.new("Frame", parentPage) 
     DropdownFrame.Size = UDim2.new(1, -20, 0, 36) 
@@ -785,7 +786,6 @@ function Library:CreateDropdown(parentPage, textKey, options, default, callback)
     
     local Arrow = Instance.new("TextLabel", HeaderBtn) 
     Arrow.Size = UDim2.new(0, 20, 1, 0) 
-    Arrow.Position = UDim2.new(1, -26, 0, 0) 
     Arrow.Text = "▼" 
     Arrow.Font = Enum.Font.GothamBold 
     Arrow.TextColor3 = Color3.fromRGB(150, 150, 150) 
@@ -809,16 +809,54 @@ function Library:CreateDropdown(parentPage, textKey, options, default, callback)
     local ListLayout = Instance.new("UIListLayout", OptionsContainer) 
     ListLayout.SortOrder = Enum.SortOrder.LayoutOrder 
     
+    if previews then
+        local UIPadding = Instance.new("UIPadding", OptionsContainer)
+        UIPadding.PaddingBottom = UDim.new(0, 6)
+    end
+
     ListLayout:GetPropertyChangedSignal("AbsoluteContentSize"):Connect(function()
-        OptionsContainer.CanvasSize = UDim2.new(0, 0, 0, ListLayout.AbsoluteContentSize.Y)
+        OptionsContainer.CanvasSize = UDim2.new(0, 0, 0, ListLayout.AbsoluteContentSize.Y + (previews and 10 or 0))
     end)
     
     local isExpanded = false 
     local optionButtons = {} 
     
+    -- Окно предпросмотра внутри контейнера опций
+    local PreviewImage
+    if previews then
+        PreviewImage = Instance.new("ImageLabel", OptionsContainer)
+        PreviewImage.Size = UDim2.new(1, -24, 0, 110)
+        PreviewImage.Position = UDim2.new(0, 12, 0, 0)
+        PreviewImage.BackgroundColor3 = Color3.fromRGB(18, 18, 18)
+        PreviewImage.BackgroundTransparency = 0.3
+        PreviewImage.ScaleType = Enum.ScaleType.Crop
+        PreviewImage.ZIndex = 8
+        PreviewImage.LayoutOrder = 9999 -- Всегда в самом низу списка
+        Instance.new("UICorner", PreviewImage).CornerRadius = UDim.new(0, 6)
+        
+        local PreviewStroke = Instance.new("UIStroke", PreviewImage)
+        PreviewStroke.Color = Color3.fromRGB(55, 55, 55)
+        PreviewStroke.Thickness = 1
+        table.insert(Library.TrackedStrokes, PreviewStroke)
+
+        local currentImg = previews[default] or ""
+        if tonumber(currentImg) then
+            PreviewImage.Image = "rbxassetid://" .. tostring(currentImg)
+        else
+            PreviewImage.Image = currentImg
+        end
+    end
+    
     local function toggleDropdown() 
         isExpanded = not isExpanded 
-        local contentHeight = math.min(#options * 32, 140)
+        local baseOptionsHeight = #options * 32
+        local maxVisibleOptionsHeight = 140
+        local contentHeight = math.min(baseOptionsHeight, maxVisibleOptionsHeight)
+        
+        if previews then
+            contentHeight = contentHeight + 122 -- Добавляем место под картинку превью
+        end
+        
         local targetFrameHeight = isExpanded and (36 + contentHeight + 4) or 36
         
         tween(DropdownFrame, {Size = UDim2.new(1, -20, 0, targetFrameHeight)}, 0.2) 
@@ -860,9 +898,20 @@ function Library:CreateDropdown(parentPage, textKey, options, default, callback)
         
         OptBtn.MouseEnter:Connect(function()
             tween(OptBtn, {BackgroundTransparency = 0.96}, 0.15)
+            -- Динамическое обновление превью при наведении мыши
+            if previews and previews[option] then
+                local img = previews[option]
+                PreviewImage.Image = tonumber(img) and ("rbxassetid://" .. tostring(img)) or img
+            end
         end)
         OptBtn.MouseLeave:Connect(function()
             tween(OptBtn, {BackgroundTransparency = 1}, 0.15)
+            -- Возвращаем картинку текущего выбранного варианта
+            if previews then
+                local currentSelected = SelectedLabel.Text
+                local img = previews[currentSelected] or previews[default] or ""
+                PreviewImage.Image = tonumber(img) and ("rbxassetid://" .. tostring(img)) or img
+            end
         end)
         
         optionButtons[option] = {Button = OptBtn, Label = OptLabel, Check = Checkmark} 
@@ -878,6 +927,10 @@ function Library:CreateDropdown(parentPage, textKey, options, default, callback)
                     optData.Check.Visible = false 
                 end 
             end 
+            if previews and previews[option] then
+                local img = previews[option]
+                PreviewImage.Image = tonumber(img) and ("rbxassetid://" .. tostring(img)) or img
+            end
             toggleDropdown() 
             callback(option) 
         end) 
@@ -1415,13 +1468,29 @@ Library:CreateToggle(VisualPage, "BlurShader", false, function(state)
     })
 end) 
 
+-- СЛОВАРИ С ID КАРТИНОК ДЛЯ ПРЕДПРОСМОТРА ШЕЙДЕРОВ И СКАЙБОКСОВ
+local ShaderPreviewsList = {
+    ["Default"]   = "10142995058",
+    ["Low End"]   = "6073836792",
+    ["Ultra RTX"] = "11139414595",
+    ["Vibrant"]   = "85203682050945",
+    ["Nocturnal"] = "78640980615320"
+}
+
+local SkyboxPreviewsList = {
+    ["Default"]       = "10142995058",
+    ["Purple Nebula"] = "12104831207",
+    ["Custom Night"]  = "11415849553",
+    ["Anime Sunset"]  = "14454955740"
+}
+
 Library:CreateDropdown(VisualPage, "ShaderPreset", {"Default", "Low End", "Ultra RTX", "Vibrant", "Nocturnal"}, "Default", function(selectedPreset)
     print("Выбран пресет шейдеров: " .. selectedPreset)
-end)
+end, ShaderPreviewsList)
 
 Library:CreateDropdown(VisualPage, "SkyboxChanger", {"Default", "Purple Nebula", "Custom Night", "Anime Sunset"}, "Default", function(selectedSkybox)
     print("Выбран скайбокс: " .. selectedSkybox)
-end)
+end, SkyboxPreviewsList)
 
 local SettingSections = Library:CreateSubTabs(SettingsPage, { 
     {Name = "UI", Icon = "85203682050945", Color = Color3.fromRGB(108, 176, 214)}, 
