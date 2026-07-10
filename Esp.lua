@@ -1502,4 +1502,5 @@ if allTabs["Main"] and allTabButtons["Main"] then
     if allTabIcons["Main"] then allTabIcons["Main"].ImageTransparency = 0 end
     allPages["Main"].Visible = true
     Library.CurrentTabKey = "Main"
-    TabTitle.Text
+    TabTitle.Text = Localization[Library.CurrentLanguage]["Main"] or "Main"
+end
