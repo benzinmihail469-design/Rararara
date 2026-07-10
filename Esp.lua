@@ -32,25 +32,6 @@ local function toggleAntiAFK(state)
     end
 end
 
-local function toggleShader(name, state, instanceClass, properties)
-    local storageName = "PulseHub_" .. name
-    local existing = Lighting:FindFirstChild(storageName)
-    if state then
-        if not existing then
-            local shader = Instance.new(instanceClass)
-            shader.Name = storageName
-            for k, v in pairs(properties) do
-                shader[k] = v
-            end
-            shader.Parent = Lighting
-        end
-    else
-        if existing then
-            existing:Destroy()
-        end
-    end
-end
-
 local SafeParent = nil
 if typeof(gethui) == "function" then
     SafeParent = gethui()
@@ -142,16 +123,27 @@ TabTitle.Size = UDim2.new(0, 200, 0, 20)
 TabTitle.TextXAlignment = Enum.TextXAlignment.Left
 TabTitle.BackgroundTransparency = 1
 
+-- Контейнер управления кнопками (ВЕРХНИЙ ПРАВЫЙ УГОЛ)
 local ControlsContainer = Instance.new("Frame", MainFrame)
 ControlsContainer.Name = "ControlsContainer"
-ControlsContainer.Size = UDim2.new(0, 30, 0, 30)
-ControlsContainer.Position = UDim2.new(1, -35, 0, 10)
+ControlsContainer.Size = UDim2.new(0, 55, 0, 24)
+ControlsContainer.Position = UDim2.new(1, -65, 0, 14)
 ControlsContainer.BackgroundTransparency = 1
 ControlsContainer.ZIndex = 10
 
+local MinimizeBtn = Instance.new("TextButton", ControlsContainer)
+MinimizeBtn.Size = UDim2.new(0, 22, 0, 22)
+MinimizeBtn.Position = UDim2.new(0, 0, 0, 0)
+MinimizeBtn.Text = "—"
+MinimizeBtn.Font = Enum.Font.GothamBold
+MinimizeBtn.TextSize = 12
+MinimizeBtn.TextColor3 = Color3.fromRGB(180, 180, 180)
+MinimizeBtn.BackgroundTransparency = 1
+MinimizeBtn.ZIndex = 11
+
 local CloseBtn = Instance.new("TextButton", ControlsContainer)
-CloseBtn.Size = UDim2.new(0, 24, 0, 24)
-CloseBtn.Position = UDim2.new(0, 0, 0, 0)
+CloseBtn.Size = UDim2.new(0, 22, 0, 22)
+CloseBtn.Position = UDim2.new(0, 26, 0, 0)
 CloseBtn.Text = "×"
 CloseBtn.Font = Enum.Font.Arial
 CloseBtn.TextSize = 22
@@ -159,9 +151,31 @@ CloseBtn.TextColor3 = Color3.fromRGB(180, 180, 180)
 CloseBtn.BackgroundTransparency = 1
 CloseBtn.ZIndex = 11
 
+-- Оранжевая кнопка для разворачивания интерфейса (Вместо зеленой)
+local OpenToggleButton = Instance.new("TextButton", PulseHub)
+OpenToggleButton.Name = "OpenToggleButton"
+OpenToggleButton.Size = UDim2.new(0, 45, 0, 45)
+OpenToggleButton.Position = UDim2.new(0, 20, 1, -65)
+OpenToggleButton.BackgroundColor3 = Color3.fromRGB(22, 22, 22)
+OpenToggleButton.Visible = false
+OpenToggleButton.ZIndex = 20
+Instance.new("UICorner", OpenToggleButton).CornerRadius = UDim.new(0, 10)
+
+local ToggleStroke = Instance.new("UIStroke", OpenToggleButton)
+ToggleStroke.Color = Color3.fromRGB(255, 128, 0)
+ToggleStroke.Thickness = 1.5
+
+local ToggleIcon = Instance.new("ImageLabel", OpenToggleButton)
+ToggleIcon.Size = UDim2.new(0, 26, 0, 26)
+ToggleIcon.Position = UDim2.new(0.5, -13, 0.5, -13)
+ToggleIcon.BackgroundTransparency = 1
+ToggleIcon.Image = "rbxthumb://type=Asset&id=" .. CustomIconID .. "&w=150&h=150"
+ToggleIcon.ZIndex = 21
+Instance.new("UICorner", ToggleIcon).CornerRadius = UDim.new(0, 4)
+
 local SearchContainer = Instance.new("Frame", MainFrame)
-SearchContainer.Size = UDim2.new(0, 160, 0, 30)
-SearchContainer.Position = UDim2.new(1, -210, 0, 12)
+SearchContainer.Size = UDim2.new(0, 140, 0, 30)
+SearchContainer.Position = UDim2.new(1, -215, 0, 12)
 SearchContainer.BackgroundColor3 = Color3.fromRGB(22, 22, 22)
 SearchContainer.ZIndex = 6
 Instance.new("UICorner", SearchContainer).CornerRadius = UDim.new(0, 8)
@@ -246,23 +260,6 @@ SubTitle.Size = UDim2.new(0, 95, 0, 13)
 SubTitle.TextXAlignment = Enum.TextXAlignment.Left
 SubTitle.BackgroundTransparency = 1
 SubTitle.ZIndex = 5
-
-local EmbeddedControls = Instance.new("Frame", HeaderBg)
-EmbeddedControls.Size = UDim2.new(0, 30, 0, 30)
-EmbeddedControls.Position = UDim2.new(1, -35, 0, 8)
-EmbeddedControls.BackgroundTransparency = 1
-EmbeddedControls.ZIndex = 6
-EmbeddedControls.Visible = false
-
-local EmbCloseBtn = Instance.new("TextButton", EmbeddedControls)
-EmbCloseBtn.Size = UDim2.new(0, 20, 0, 20)
-EmbCloseBtn.Position = UDim2.new(0, 0, 0, 2)
-EmbCloseBtn.Text = "×"
-EmbCloseBtn.Font = Enum.Font.Arial
-EmbCloseBtn.TextSize = 20
-EmbCloseBtn.TextColor3 = Color3.fromRGB(180, 180, 180)
-EmbCloseBtn.BackgroundTransparency = 1
-EmbCloseBtn.ZIndex = 7
 
 local Navigation = Instance.new("ScrollingFrame", SidebarContainer)
 Navigation.Size = UDim2.new(1, -20, 1, -125)
@@ -356,15 +353,39 @@ local function CloseGui()
     PulseHub:Destroy()
 end
 CloseBtn.Activated:Connect(CloseGui)
-EmbCloseBtn.Activated:Connect(CloseGui)
 
 local function applyHover(btn, normalColor, hoverColor)
     btn.MouseEnter:Connect(function() tween(btn, {TextColor3 = hoverColor}) end)
     btn.MouseLeave:Connect(function() tween(btn, {TextColor3 = normalColor}) end)
 end
 applyHover(CloseBtn, Color3.fromRGB(180,180,180), Color3.fromRGB(255,70,70))
-applyHover(EmbCloseBtn, Color3.fromRGB(180,180,180), Color3.fromRGB(255,70,70))
+applyHover(MinimizeBtn, Color3.fromRGB(180,180,180), Color3.fromRGB(255,150,30))
 applyHover(ClearSearchBtn, Color3.fromRGB(150,150,150), Color3.fromRGB(255,255,255))
+
+-- Логика Сворачивания / Разворачивания меню
+Library = {}
+Library.CurrentScale = 1.00
+local isMinimized = false
+
+local function ToggleMinimize()
+    isMinimized = not isMinimized
+    if isMinimized then
+        local t = tween(MainScale, {Scale = 0}, 0.2)
+        t.Completed:Connect(function()
+            if isMinimized then
+                MainFrame.Visible = false
+                OpenToggleButton.Visible = true
+            end
+        end)
+    else
+        MainFrame.Visible = true
+        OpenToggleButton.Visible = false
+        tween(MainScale, {Scale = Library.CurrentScale}, 0.2)
+    end
+end
+
+MinimizeBtn.Activated:Connect(ToggleMinimize)
+OpenToggleButton.Activated:Connect(ToggleMinimize)
 
 local dragToggle, dragInput, dragStart, startPos
 MainFrame.InputBegan:Connect(function(input)
@@ -388,7 +409,6 @@ UserInputService.InputChanged:Connect(function(input)
     end
 end)
 
-Library = {}
 Library.CurrentFont = Enum.Font.Gotham
 Library.CurrentLanguage = "English"
 Library.CurrentTabKey = "Main"
@@ -539,7 +559,7 @@ table.insert(Library.TrackedMainText, DiscordLabel)
 table.insert(Library.TrackedSubText, StatsLabel)
 table.insert(Library.TrackedMainText, SearchBox)
 table.insert(Library.TrackedMainText, CloseBtn)
-table.insert(Library.TrackedMainText, EmbCloseBtn)
+table.insert(Library.TrackedMainText, MinimizeBtn)
 
 local SearchableElements = {}
 local LocaleObjects = {}
@@ -991,7 +1011,7 @@ function Library:CreateToggle(parentPage, textKey, default, callback)
             tween(Indicator, {Position = UDim2.new(1, -16, 0.5, -7), BackgroundColor3 = activeIndicatorColor}, 0.2)
         else
             local bgL = (Library.CurrentThemeData.MainBg.R * 0.299 + Library.CurrentThemeData.MainBg.G * 0.587 + Library.CurrentThemeData.MainBg.B * 0.114)
-            local offColor = (bgL > 0.5) and Color3.fromRGB(210, 210, 210) or Color3.fromRGB(40, 40, 40)
+            local offColor = (bgL > 0.5) elder Color3.fromRGB(210, 210, 210) or Color3.fromRGB(40, 40, 40)
             tween(Checkbox, {BackgroundColor3 = offColor}, 0.2)
             tween(Indicator, {Position = UDim2.new(0, 2, 0.5, -7), BackgroundColor3 = Color3.fromRGB(255, 255, 255)}, 0.2)
         end
@@ -1229,7 +1249,7 @@ function Library:CreateSubTabs(parentPage, tabsList)
         local Icon
         if iconId and iconId ~= "" then
             Icon = Instance.new("ImageLabel", ContentFrame)
-            Icon.Size = tabData.IconSize or UDim2.new(0, 18, 0, 18)
+            Icon.Size = UDim2.new(0, 18, 0, 18)
             Icon.BackgroundTransparency = 1
             if tonumber(iconId) then
                 Icon.Image = "rbxthumb://type=Asset&id=" .. iconId .. "&w=150&h=150"
@@ -1459,14 +1479,15 @@ local shaderStates = {
     BlurStrength = 75
 }
 
+-- Усиленные функции шейдеров (Сделать их максимально заметными)
 local function updateBloom()
     local existing = Lighting:FindFirstChild("PulseHub_Bloom")
     if shaderStates.Master and shaderStates.Bloom then
         local bloom = existing or Instance.new("BloomEffect")
         bloom.Name = "PulseHub_Bloom"
-        bloom.Intensity = shaderStates.BloomIntensity
+        bloom.Intensity = shaderStates.BloomIntensity * 3.5 -- Множитель для сочного свечения
         bloom.Size = shaderStates.BloomSize
-        bloom.Threshold = 0.0
+        bloom.Threshold = 0.1 -- Четкое свечение неоновых элементов
         bloom.Parent = Lighting
     else
         if existing then existing:Destroy() end
@@ -1479,8 +1500,9 @@ local function updateAtmosphere()
         local atm = existing or Instance.new("Atmosphere")
         atm.Name = "PulseHub_Atmosphere"
         atm.Density = shaderStates.AtmosphereDensity / 100
-        atm.Haze = 3.0
-        atm.Glare = 2.0
+        atm.Haze = (shaderStates.AtmosphereDensity / 100) * 8.5 -- Заметная дымка
+        atm.Glare = (shaderStates.AtmosphereDensity / 100) * 4.0 -- Эффект бликов на воздухе
+        atm.Color = Color3.fromRGB(195, 215, 255)
         atm.Parent = Lighting
     else
         if existing then existing:Destroy() end
@@ -1492,9 +1514,12 @@ local function updateSunRays()
     if shaderStates.Master and shaderStates.SunRays then
         local sr = existing or Instance.new("SunRaysEffect")
         sr.Name = "PulseHub_SunRays"
-        sr.Intensity = shaderStates.SunRaysIntensity / 100
-        sr.Spread = 0.85
+        sr.Intensity = (shaderStates.SunRaysIntensity / 100) * 6.0 -- Мощные, пробивающиеся лучи
+        sr.Spread = 0.90 -- Широкий охват лучей
         sr.Parent = Lighting
+        
+        -- Повышаем глобальную яркость чтобы лучи точно выделились
+        if Lighting.Brightness < 3 then Lighting.Brightness = 3.5 end
     else
         if existing then existing:Destroy() end
     end
@@ -1595,7 +1620,7 @@ end)
 Library:CreateSlider(VisualSections["shader pack"], "Intensity", 0, 10, 4, function(value)
     shaderStates.BloomIntensity = value
     local bloom = Lighting:FindFirstChild("PulseHub_Bloom")
-    if bloom then bloom.Intensity = value end
+    if bloom then bloom.Intensity = value * 3.5 end
 end)
 
 Library:CreateSlider(VisualSections["shader pack"], "Size", 0, 56, 24, function(value)
@@ -1612,7 +1637,11 @@ end)
 Library:CreateSlider(VisualSections["shader pack"], "Density", 0, 100, 40, function(value)
     shaderStates.AtmosphereDensity = value
     local atm = Lighting:FindFirstChild("PulseHub_Atmosphere")
-    if atm then atm.Density = value / 100 end
+    if atm then 
+        atm.Density = value / 100 
+        atm.Haze = (value / 100) * 8.5
+        atm.Glare = (value / 100) * 4.0
+    end
 end)
 
 Library:CreateToggle(VisualSections["shader pack"], "Sun Rays", false, function(state)
@@ -1623,7 +1652,7 @@ end)
 Library:CreateSlider(VisualSections["shader pack"], "Intensity", 0, 100, 25, function(value)
     shaderStates.SunRaysIntensity = value
     local sr = Lighting:FindFirstChild("PulseHub_SunRays")
-    if sr then sr.Intensity = value / 100 end
+    if sr then sr.Intensity = (value / 100) * 6.0 end
 end)
 
 Library:CreateToggle(VisualSections["shader pack"], "Blur", false, function(state)
@@ -1637,7 +1666,11 @@ Library:CreateSlider(VisualSections["shader pack"], "Strength", 0, 100, 75, func
     if blur then blur.Size = (value / 100) * 35 end
 end)
 
-Library:CreateSlider(SettingSections["UI"], "UISize", 0.5, 1.5, 1.00, function(value) MainScale.Scale = value end)
+Library:CreateSlider(SettingSections["UI"], "UISize", 0.5, 1.5, 1.00, function(value) 
+    Library.CurrentScale = value 
+    if not isMinimized then MainScale.Scale = value end
+end)
+
 Library:CreateSlider(SettingSections["UI"], "UITransparency", 0, 100, 15, function(value) MainFrame.BackgroundTransparency = value / 100 end)
 
 Library:CreateDropdown(SettingSections["UI"], "MenuFont", {"Gotham", "Gotham Bold", "Source Sans", "Roboto", "Roboto Mono", "Ubuntu", "Michroma", "Code", "Fantasy", "Fredoka One"}, "Gotham", function(selectedFont)
