@@ -95,7 +95,7 @@ local function NormalizeText(str)
     local synonyms = {
         ["авто"] = "auto", ["фарм"] = "farm", ["есп"] = "esp", ["монет"] = "coins",
         ["монеты"] = "coins", ["игроков"] = "players", ["игрок"] = "player",
-        ["визуал"] = "visual", ["телепорт"] = "teleport", ["настройки"] = "settings", ["язык"] = "language"
+        ["визуал"] = "visual", ["телепорт"] = "teleport", ["настройки"] = "settings"
     }
     for ru, en in pairs(synonyms) do
         lowerStr = string.gsub(lowerStr, ru, en)
@@ -144,24 +144,14 @@ TabTitle.BackgroundTransparency = 1
 
 local ControlsContainer = Instance.new("Frame", MainFrame)
 ControlsContainer.Name = "ControlsContainer"
-ControlsContainer.Size = UDim2.new(0, 60, 0, 30)
-ControlsContainer.Position = UDim2.new(1, -65, 0, 10)
+ControlsContainer.Size = UDim2.new(0, 30, 0, 30)
+ControlsContainer.Position = UDim2.new(1, -35, 0, 10)
 ControlsContainer.BackgroundTransparency = 1
 ControlsContainer.ZIndex = 10
 
-local MinBtn = Instance.new("TextButton", ControlsContainer)
-MinBtn.Size = UDim2.new(0, 24, 0, 24)
-MinBtn.Position = UDim2.new(0, 0, 0, 3)
-MinBtn.Text = "—"
-MinBtn.Font = Enum.Font.GothamBold
-MinBtn.TextSize = 12
-MinBtn.TextColor3 = Color3.fromRGB(180, 180, 180)
-MinBtn.BackgroundTransparency = 1
-MinBtn.ZIndex = 11
-
 local CloseBtn = Instance.new("TextButton", ControlsContainer)
 CloseBtn.Size = UDim2.new(0, 24, 0, 24)
-CloseBtn.Position = UDim2.new(0, 30, 0, 0)
+CloseBtn.Position = UDim2.new(0, 0, 0, 0)
 CloseBtn.Text = "×"
 CloseBtn.Font = Enum.Font.Arial
 CloseBtn.TextSize = 22
@@ -171,7 +161,7 @@ CloseBtn.ZIndex = 11
 
 local SearchContainer = Instance.new("Frame", MainFrame)
 SearchContainer.Size = UDim2.new(0, 160, 0, 30)
-SearchContainer.Position = UDim2.new(1, -240, 0, 12)
+SearchContainer.Position = UDim2.new(1, -210, 0, 12)
 SearchContainer.BackgroundColor3 = Color3.fromRGB(22, 22, 22)
 SearchContainer.ZIndex = 6
 Instance.new("UICorner", SearchContainer).CornerRadius = UDim.new(0, 8)
@@ -258,25 +248,15 @@ SubTitle.BackgroundTransparency = 1
 SubTitle.ZIndex = 5
 
 local EmbeddedControls = Instance.new("Frame", HeaderBg)
-EmbeddedControls.Size = UDim2.new(0, 50, 0, 30)
-EmbeddedControls.Position = UDim2.new(1, -50, 0, 8)
+EmbeddedControls.Size = UDim2.new(0, 30, 0, 30)
+EmbeddedControls.Position = UDim2.new(1, -35, 0, 8)
 EmbeddedControls.BackgroundTransparency = 1
 EmbeddedControls.ZIndex = 6
 EmbeddedControls.Visible = false
 
-local EmbMinBtn = Instance.new("TextButton", EmbeddedControls)
-EmbMinBtn.Size = UDim2.new(0, 20, 0, 20)
-EmbMinBtn.Position = UDim2.new(0, 0, 0, 5)
-EmbMinBtn.Text = "—"
-EmbMinBtn.Font = Enum.Font.GothamBold
-EmbMinBtn.TextSize = 11
-EmbMinBtn.TextColor3 = Color3.fromRGB(180, 180, 180)
-EmbMinBtn.BackgroundTransparency = 1
-EmbMinBtn.ZIndex = 7
-
 local EmbCloseBtn = Instance.new("TextButton", EmbeddedControls)
 EmbCloseBtn.Size = UDim2.new(0, 20, 0, 20)
-EmbCloseBtn.Position = UDim2.new(0, 25, 0, 2)
+EmbCloseBtn.Position = UDim2.new(0, 0, 0, 2)
 EmbCloseBtn.Text = "×"
 EmbCloseBtn.Font = Enum.Font.Arial
 EmbCloseBtn.TextSize = 20
@@ -372,36 +352,6 @@ local function CreateRipple(button, clickX, clickY)
     t.Completed:Connect(function() Ripple:Destroy() end)
 end
 
-local isMinimized = false
-local LastMinimizedPos = UDim2.new(0.5, 0, 0.5, 0)
-local function ToggleMinimize()
-    isMinimized = not isMinimized
-    if isMinimized then
-        PagesContainer.Visible, TabTitle.Visible, SearchContainer.Visible, Navigation.Visible, FooterBg.Visible, ControlsContainer.Visible = false, false, false, false, false, false
-        MainStroke.Enabled = false
-        MainFrame.BackgroundTransparency = 1
-        HeaderBg.Position = UDim2.new(0, 0, 0, 0)
-        HeaderBg.Size = UDim2.new(0, 175, 0, 46)
-        EmbeddedControls.Visible = true
-        tween(MainFrame, {Size = UDim2.new(0, 175, 0, 46), Position = LastMinimizedPos})
-    else
-        LastMinimizedPos = MainFrame.Position
-        EmbeddedControls.Visible = false
-        HeaderBg.Position = UDim2.new(0, 10, 0, 10)
-        HeaderBg.Size = UDim2.new(0, 150, 0, 46)
-        MainStroke.Enabled = true
-        MainFrame.BackgroundTransparency = 0.15
-        tween(MainFrame, {Size = UDim2.new(0, 550, 0, 350), Position = UDim2.new(0.5, 0, 0.5, 0)}).Completed:Connect(function()
-            if not isMinimized then
-                PagesContainer.Visible, TabTitle.Visible, SearchContainer.Visible, Navigation.Visible, FooterBg.Visible, ControlsContainer.Visible = true, true, true, true, true, true
-            end
-        end)
-    end
-end
-
-MinBtn.Activated:Connect(ToggleMinimize)
-EmbMinBtn.Activated:Connect(ToggleMinimize)
-
 local function CloseGui()
     PulseHub:Destroy()
 end
@@ -412,8 +362,6 @@ local function applyHover(btn, normalColor, hoverColor)
     btn.MouseEnter:Connect(function() tween(btn, {TextColor3 = hoverColor}) end)
     btn.MouseLeave:Connect(function() tween(btn, {TextColor3 = normalColor}) end)
 end
-applyHover(MinBtn, Color3.fromRGB(180,180,180), Color3.fromRGB(255,255,255))
-applyHover(EmbMinBtn, Color3.fromRGB(180,180,180), Color3.fromRGB(255,255,255))
 applyHover(CloseBtn, Color3.fromRGB(180,180,180), Color3.fromRGB(255,70,70))
 applyHover(EmbCloseBtn, Color3.fromRGB(180,180,180), Color3.fromRGB(255,70,70))
 applyHover(ClearSearchBtn, Color3.fromRGB(150,150,150), Color3.fromRGB(255,255,255))
@@ -437,7 +385,6 @@ UserInputService.InputChanged:Connect(function(input)
         local delta = input.Position - dragStart
         local newPos = UDim2.new(startPos.X.Scale, startPos.X.Offset + delta.X, startPos.Y.Scale, startPos.Y.Offset + delta.Y)
         MainFrame.Position = newPos
-        LastMinimizedPos = newPos
     end
 end)
 
@@ -456,7 +403,7 @@ Library.TrackedStrokes = {}
 local ThemeConfig = {
     ["Black"]         = { Accent = Color3.fromRGB(180, 180, 180), MainBg = Color3.fromRGB(12, 12, 12), ElementBg = Color3.fromRGB(22, 22, 22) },
     ["White"]         = { Accent = Color3.fromRGB(0, 122, 255),   MainBg = Color3.fromRGB(240, 240, 240), ElementBg = Color3.fromRGB(255, 255, 255) },
-    ["Pink"]          = { Accent = Color3.fromRGB(255, 105, 180), MainBg = Color3.fromRGB(25, 15, 20),   ElementBg = Color3.fromRGB(40, 25, 35) },
+    ["Orange"]        = { Accent = Color3.fromRGB(255, 128, 0),   MainBg = Color3.fromRGB(25, 18, 15),   ElementBg = Color3.fromRGB(40, 30, 25) },
     ["Red"]           = { Accent = Color3.fromRGB(255, 50, 50),   MainBg = Color3.fromRGB(20, 10, 10),   ElementBg = Color3.fromRGB(35, 15, 15) },
     ["Green"]         = { Accent = Color3.fromRGB(50, 255, 50),   MainBg = Color3.fromRGB(10, 20, 10),   ElementBg = Color3.fromRGB(15, 35, 15) },
     ["Blue"]          = { Accent = Color3.fromRGB(0, 150, 255),   MainBg = Color3.fromRGB(10, 15, 25),   ElementBg = Color3.fromRGB(20, 25, 40) },
@@ -468,7 +415,7 @@ local ThemeConfig = {
     ["Neon Purple"]   = { Accent = Color3.fromRGB(224, 32, 255),  MainBg = Color3.fromRGB(18, 8, 28),    ElementBg = Color3.fromRGB(32, 12, 51) },
     ["Neon Cyber"]    = { Accent = Color3.fromRGB(0, 255, 255),   MainBg = Color3.fromRGB(10, 10, 12),   ElementBg = Color3.fromRGB(20, 20, 25) },
     ["Amber Glow"]    = { Accent = Color3.fromRGB(255, 165, 0),   MainBg = Color3.fromRGB(20, 16, 10),   ElementBg = Color3.fromRGB(36, 28, 18) },
-    ["Anime"]         = { Accent = Color3.fromRGB(255, 111, 207), MainBg = Color3.fromRGB(24, 20, 26),   ElementBg = Color3.fromRGB(43, 35, 48) },
+    ["Anime"]         = { Accent = Color3.fromRGB(255, 128, 0),   MainBg = Color3.fromRGB(24, 20, 26),   ElementBg = Color3.fromRGB(43, 35, 48) },
     ["Deep Violet"]   = { Accent = Color3.fromRGB(102, 51, 153),  MainBg = Color3.fromRGB(13, 11, 20),   ElementBg = Color3.fromRGB(23, 19, 36) },
     ["Cyanic"]        = { Accent = Color3.fromRGB(0, 255, 200),   MainBg = Color3.fromRGB(10, 22, 26),   ElementBg = Color3.fromRGB(18, 38, 46) },
     ["Blood Red"]     = { Accent = Color3.fromRGB(170, 0, 0),     MainBg = Color3.fromRGB(14, 4, 4),     ElementBg = Color3.fromRGB(28, 8, 8) },
@@ -591,9 +538,7 @@ table.insert(Library.TrackedSubText, SubTitle)
 table.insert(Library.TrackedMainText, DiscordLabel)
 table.insert(Library.TrackedSubText, StatsLabel)
 table.insert(Library.TrackedMainText, SearchBox)
-table.insert(Library.TrackedMainText, MinBtn)
 table.insert(Library.TrackedMainText, CloseBtn)
-table.insert(Library.TrackedMainText, EmbMinBtn)
 table.insert(Library.TrackedMainText, EmbCloseBtn)
 
 local SearchableElements = {}
@@ -607,7 +552,7 @@ local Localization = {
         ["CinematicShader"] = "Cinematic Shaders", ["BloomShader"] = "Bloom Glow FX", ["BlurShader"] = "Screen Blur Effect",
         ["ShaderPreset"] = "Shader Preset", ["SkyboxChanger"] = "Skybox Changer",
         ["UISize"] = "UI Size", ["UITransparency"] = "UI Transparency", ["MenuFont"] = "Menu Font",
-        ["Language"] = "Language", ["AntiAFK"] = "Anti-AFK", ["UITheme"] = "UI Theme",
+        ["AntiAFK"] = "Anti-AFK", ["UITheme"] = "UI Theme",
         ["AnimatedWindow"] = "Animated Window", ["Gradient"] = "Gradient Background",
         ["shader pack"] = "Shader Pack",
         ["Enable"] = "Enable", ["Mode"] = "Mode", ["Bloom"] = "Bloom",
@@ -621,7 +566,7 @@ local Localization = {
         ["CinematicShader"] = "Кинематографичные Шейдеры", ["BloomShader"] = "Эффект Свечения", ["BlurShader"] = "Размытие Экрана",
         ["ShaderPreset"] = "Пресет Шейдеров", ["SkyboxChanger"] = "Смена Неба",
         ["UISize"] = "Размер интерфейса", ["UITransparency"] = "Прозрачность меню", ["MenuFont"] = "Шрифт меню",
-        ["Language"] = "Язык", ["AntiAFK"] = "Анти-АФК", ["UITheme"] = "Тема UI",
+        ["AntiAFK"] = "Анти-АФК", ["UITheme"] = "Тема UI",
         ["AnimatedWindow"] = "Анимированное окно", ["Gradient"] = "Градиентный фон",
         ["shader pack"] = "Пак шейдеров",
         ["Enable"] = "Включить", ["Mode"] = "Режим", ["Bloom"] = "Блум (Свечение)",
@@ -1243,7 +1188,7 @@ function Library:CreateSubTabs(parentPage, tabsList)
         if tabData.Color then
             activeColor = tabData.Color
         elseif string.find(lowName, "theme") or string.find(lowName, "тема") then
-            activeColor = Color3.fromRGB(235, 94, 153)
+            activeColor = Color3.fromRGB(255, 128, 0)
         end
         
         local BtnContainer = Instance.new("Frame", SubTabContainer)
@@ -1472,11 +1417,11 @@ local VisualSections = Library:CreateSubTabs(VisualPage, {
 
 local SettingSections = Library:CreateSubTabs(SettingsPage, {
     {Name = "UI", Icon = "85203682050945", Color = Color3.fromRGB(108, 176, 214)},
-    {Name = "Theme", Icon = "78640980615320", Color = Color3.fromRGB(235, 94, 153)}
+    {Name = "Theme", Icon = "78640980615320", Color = Color3.fromRGB(255, 128, 0)}
 })
 
 ----------------------------------------------------
--- КОНФИГУРАЦИЯ И СБОРКА ФУНКЦИЙ ШЕЙДЕРОВ (ИСПРАВЛЕНО)
+-- КОНФИГУРАЦИЯ И СБОРКА ФУНКЦИЙ ШЕЙДЕРОВ
 ----------------------------------------------------
 local originalLightingSettings = {
     TimeOfDay = Lighting.TimeOfDay,
@@ -1515,7 +1460,6 @@ local shaderStates = {
     BlurStrength = 75
 }
 
--- Постоянный цикл форсирования времени суток (фикс перезаписи игрой)
 RunService.Heartbeat:Connect(function()
     if shaderStates.Master then
         if shaderStates.Mode == "Day" then
@@ -1528,7 +1472,6 @@ RunService.Heartbeat:Connect(function()
     end
 end)
 
--- 1. Главный переключатель (Enable)
 local masterCC = nil
 Library:CreateToggle(VisualSections["shader pack"], "Enable", false, function(state)
     shaderStates.Master = state
@@ -1557,7 +1500,6 @@ Library:CreateToggle(VisualSections["shader pack"], "Enable", false, function(st
     end
 end)
 
--- 2. Выбор времени суток (Mode Dropdown)
 Library:CreateDropdown(VisualSections["shader pack"], "Mode", {"None", "Day", "Sunset", "Midnight"}, "None", function(selected)
     shaderStates.Mode = selected
     if shaderStates.Master and selected == "None" then
@@ -1565,7 +1507,6 @@ Library:CreateDropdown(VisualSections["shader pack"], "Mode", {"None", "Day", "S
     end
 end)
 
--- 3. Настройка Блума (Bloom Effect)
 local function updateBloom()
     if shaderStates.Bloom then
         local bloom = Lighting:FindFirstChild("PulseHub_Bloom") or Instance.new("BloomEffect")
@@ -1597,7 +1538,6 @@ Library:CreateSlider(VisualSections["shader pack"], "Size", 0, 56, 24, function(
     if bloom then bloom.Size = value end
 end)
 
--- 4. Настройка Атмосферы (Atmosphere Effect)
 local function updateAtmosphere()
     if shaderStates.Atmosphere then
         local atm = Lighting:FindFirstChild("PulseHub_Atmosphere") or Instance.new("Atmosphere")
@@ -1621,7 +1561,6 @@ Library:CreateSlider(VisualSections["shader pack"], "Density", 0, 100, 40, funct
     if atm then atm.Density = value / 100 end
 end)
 
--- 5. Настройка Лучей Солнца (Sun Rays Effect)
 local function updateSunRays()
     if shaderStates.SunRays then
         local sr = Lighting:FindFirstChild("PulseHub_SunRays") or Instance.new("SunRaysEffect")
@@ -1645,7 +1584,6 @@ Library:CreateSlider(VisualSections["shader pack"], "Intensity", 0, 100, 25, fun
     if sr then sr.Intensity = value / 100 end
 end)
 
--- 6. Настройка Размытия Экрана (Blur Effect)
 local function updateBlur()
     if shaderStates.Blur then
         local blur = Lighting:FindFirstChild("PulseHub_Blur") or Instance.new("BlurEffect")
@@ -1683,18 +1621,6 @@ Library:CreateDropdown(SettingSections["UI"], "MenuFont", {"Gotham", "Gotham Bol
             end
         end
     end
-end)
-
-Library:CreateDropdown(SettingSections["UI"], "Language", {"English", "Русский"}, "English", function(selectedLang)
-    Library.CurrentLanguage = selectedLang
-    for _, item in ipairs(LocaleObjects) do
-        local translatedText = Localization[selectedLang][item.Key]
-        if translatedText then
-            item.Object.Text = translatedText
-            if item.SearchItem then item.SearchItem.SearchText = NormalizeText(translatedText) end
-        end
-    end
-    TabTitle.Text = Localization[selectedLang][Library.CurrentTabKey] or Library.CurrentTabKey
 end)
 
 Library:CreateToggle(SettingSections["UI"], "AntiAFK", false, function(state)
