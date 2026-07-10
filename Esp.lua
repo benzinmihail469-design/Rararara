@@ -415,7 +415,7 @@ local ThemeConfig = {
     ["Neon Purple"]   = { Accent = Color3.fromRGB(224, 32, 255),  MainBg = Color3.fromRGB(18, 8, 28),    ElementBg = Color3.fromRGB(32, 12, 51) },
     ["Neon Cyber"]    = { Accent = Color3.fromRGB(0, 255, 255),   MainBg = Color3.fromRGB(10, 10, 12),   ElementBg = Color3.fromRGB(20, 20, 25) },
     ["Amber Glow"]    = { Accent = Color3.fromRGB(255, 165, 0),   MainBg = Color3.fromRGB(20, 16, 10),   ElementBg = Color3.fromRGB(36, 28, 18) },
-    ["Anime"]         = { Accent = Color3.fromRGB(255, 128, 0),   MainBg = Color3.fromRGB(24, 20, 26),   ElementBg = Color3.fromRGB(43, 35, 48) },
+    ["Anime"]         = { Accent = Color3.fromRGB(255, 105, 180), MainBg = Color3.fromRGB(24, 20, 26),   ElementBg = Color3.fromRGB(43, 35, 48) }, -- Изменено на розовый
     ["Deep Violet"]   = { Accent = Color3.fromRGB(102, 51, 153),  MainBg = Color3.fromRGB(13, 11, 20),   ElementBg = Color3.fromRGB(23, 19, 36) },
     ["Cyanic"]        = { Accent = Color3.fromRGB(0, 255, 200),   MainBg = Color3.fromRGB(10, 22, 26),   ElementBg = Color3.fromRGB(18, 38, 46) },
     ["Blood Red"]     = { Accent = Color3.fromRGB(170, 0, 0),     MainBg = Color3.fromRGB(14, 4, 4),     ElementBg = Color3.fromRGB(28, 8, 8) },
@@ -1188,7 +1188,7 @@ function Library:CreateSubTabs(parentPage, tabsList)
         if tabData.Color then
             activeColor = tabData.Color
         elseif string.find(lowName, "theme") or string.find(lowName, "тема") then
-            activeColor = Color3.fromRGB(255, 128, 0)
+            activeColor = Color3.fromRGB(255, 105, 180) -- Изменено с оранжевого на розовый для суб-вкладки Theme
         end
         
         local BtnContainer = Instance.new("Frame", SubTabContainer)
@@ -1305,7 +1305,7 @@ function Library:CreateSubTabs(parentPage, tabsList)
     return subPages
 end
 
-function CreatePage(textKey, iconId, layoutOrder)
+createPage = function(textKey, iconId, layoutOrder)
     local initialText = Localization[Library.CurrentLanguage][textKey] or textKey
     local PageFrame = Instance.new("ScrollingFrame", PagesContainer)
     PageFrame.Size = UDim2.new(1, 0, 1, 0)
@@ -1401,13 +1401,13 @@ function CreatePage(textKey, iconId, layoutOrder)
     return PageFrame
 end
 
-local MainPage = CreatePage("Main", "103980564128710", 1)
-local TeleportPage = CreatePage("Teleport", "94373592263020", 2)
-local MurderPage = CreatePage("Murder", "85278865249050", 3)
-local SheriffPage = CreatePage("Sheriff", "77487634679354", 4)
-local PlayersPage = CreatePage("Players", "99904215381150", 5)
-local VisualPage = CreatePage("Visual", "78910169210318", 6)
-local SettingsPage = CreatePage("Settings", "117996761927034", 99)
+local MainPage = createPage("Main", "103980564128710", 1)
+local TeleportPage = createPage("Teleport", "94373592263020", 2)
+local MurderPage = createPage("Murder", "85278865249050", 3)
+local SheriffPage = createPage("Sheriff", "77487634679354", 4)
+local PlayersPage = createPage("Players", "99904215381150", 5)
+local VisualPage = createPage("Visual", "78910169210318", 6)
+local SettingsPage = createPage("Settings", "117996761927034", 99)
 
 Library:CreateToggle(MainPage, "AutoFarmCoins", false, function(state) end)
 
@@ -1417,7 +1417,7 @@ local VisualSections = Library:CreateSubTabs(VisualPage, {
 
 local SettingSections = Library:CreateSubTabs(SettingsPage, {
     {Name = "UI", Icon = "85203682050945", Color = Color3.fromRGB(108, 176, 214)},
-    {Name = "Theme", Icon = "78640980615320", Color = Color3.fromRGB(255, 128, 0)}
+    {Name = "Theme", Icon = "78640980615320", Color = Color3.fromRGB(255, 105, 180)} -- Розовый цвет для иконки/кнопки Theme при создании
 })
 
 ----------------------------------------------------
@@ -1646,5 +1646,4 @@ if allTabs["Main"] and allTabButtons["Main"] then
     allPages["Main"].Visible = true
 end
 
--- Автоматически применяем дефолтную тему при первом запуске скрипта
 Library:UpdateTheme("Deep Ocean")
