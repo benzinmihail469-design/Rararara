@@ -1276,13 +1276,15 @@ function Library:CreateSubTabs(parentPage, tabsList)
         local Icon
         if iconId and iconId ~= "" then
             Icon = Instance.new("ImageLabel", ContentFrame)
-            Icon.Size = UDim2.new(0, 18, 0, 18)
+            -- Используем кастомный IconSize из параметров, если он есть, иначе стандартный 18x18
+            Icon.Size = tabData.IconSize or UDim2.new(0, 18, 0, 18)
             Icon.BackgroundTransparency = 1
             if tonumber(iconId) then
                 Icon.Image = "rbxthumb://type=Asset&id=" .. iconId .. "&w=150&h=150"
             else
                 Icon.Image = iconId
             end
+            Icon.ScaleType = Enum.ScaleType.Fit -- Исправляет растягивание и сохраняет пропорции
             Icon.ImageColor3 = colorGrayInactive
             Icon.ZIndex = 3
         end
@@ -1459,7 +1461,7 @@ local SettingsPage = CreatePage("Settings", "117996761927034", 99)
 
 Library:CreateToggle(MainPage, "AutoFarmCoins", false, function(state) end)
 
--- Создаем суб-вкладки для вкладки Visual (Зеленого цвета с твоим ID картинки)
+-- Создаем суб-вкладки для вкладки Visual
 local VisualSections = Library:CreateSubTabs(VisualPage, {
     {Name = "shader pack", Icon = "80768064990053", Color = Color3.fromRGB(46, 204, 113)}
 })
