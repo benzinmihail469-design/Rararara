@@ -609,7 +609,11 @@ local Localization = {
         ["UISize"] = "UI Size", ["UITransparency"] = "UI Transparency", ["MenuFont"] = "Menu Font",
         ["Language"] = "Language", ["AntiAFK"] = "Anti-AFK", ["UITheme"] = "UI Theme",
         ["AnimatedWindow"] = "Animated Window", ["Gradient"] = "Gradient Background",
-        ["shader pack"] = "Shader Pack"
+        ["shader pack"] = "Shader Pack",
+        -- Новая локализация для шейдеров
+        ["Enable"] = "Enable", ["Mode"] = "Mode", ["Bloom"] = "Bloom",
+        ["Intensity"] = "Intensity", ["Size"] = "Size", ["Atmosphere"] = "Atmosphere",
+        ["Density"] = "Density", ["Sun Rays"] = "Sun Rays", ["Blur"] = "Blur", ["Strength"] = "Strength"
     },
     ["Русский"] = {
         ["Main"] = "Главная", ["Teleport"] = "Телепорт", ["Murder"] = "Убийца", ["Sheriff"] = "Шериф",
@@ -620,7 +624,11 @@ local Localization = {
         ["UISize"] = "Размер интерфейса", ["UITransparency"] = "Прозрачность меню", ["MenuFont"] = "Шрифт меню",
         ["Language"] = "Язык", ["AntiAFK"] = "Анти-АФК", ["UITheme"] = "Тема UI",
         ["AnimatedWindow"] = "Анимированное окно", ["Gradient"] = "Градиентный фон",
-        ["shader pack"] = "Пак шейдеров"
+        ["shader pack"] = "Пак шейдеров",
+        -- Новая локализация для шейдеров
+        ["Enable"] = "Включить", ["Mode"] = "Режим", ["Bloom"] = "Блум (Свечение)",
+        ["Intensity"] = "Интенсивность", ["Size"] = "Размер", ["Atmosphere"] = "Атмосфера",
+        ["Density"] = "Плотность", ["Sun Rays"] = "Лучи солнца", ["Blur"] = "Размытие", ["Strength"] = "Сила"
     }
 }
 
@@ -1276,7 +1284,6 @@ function Library:CreateSubTabs(parentPage, tabsList)
         local Icon
         if iconId and iconId ~= "" then
             Icon = Instance.new("ImageLabel", ContentFrame)
-            -- Используем кастомный IconSize из параметров, если он есть, иначе стандартный 18x18
             Icon.Size = tabData.IconSize or UDim2.new(0, 18, 0, 18)
             Icon.BackgroundTransparency = 1
             if tonumber(iconId) then
@@ -1284,7 +1291,7 @@ function Library:CreateSubTabs(parentPage, tabsList)
             else
                 Icon.Image = iconId
             end
-            Icon.ScaleType = Enum.ScaleType.Fit -- Исправляет растягивание и сохраняет пропорции
+            Icon.ScaleType = Enum.ScaleType.Fit
             Icon.ImageColor3 = colorGrayInactive
             Icon.ZIndex = 3
         end
@@ -1470,6 +1477,155 @@ local SettingSections = Library:CreateSubTabs(SettingsPage, {
     {Name = "UI", Icon = "85203682050945", Color = Color3.fromRGB(108, 176, 214)},
     {Name = "Theme", Icon = "78640980615320", Color = Color3.fromRGB(235, 94, 153)}
 })
+
+----------------------------------------------------
+-- КОНФИГУРАЦИЯ И СБОРКА ФУНКЦИЙ ШЕЙДЕРОВ (ИЗ ФОТО)
+----------------------------------------------------
+local shaderStates = {
+    Master = false,
+    Bloom = false,
+    BloomIntensity = 4,
+    BloomSize = 24,
+    Atmosphere = false,
+    AtmosphereDensity = 40,
+    SunRays = false,
+    SunRaysIntensity = 25,
+    Blur = false,
+    BlurStrength = 75
+}
+
+-- 1. Главный переключатель (Enable)
+local masterCC = nil
+Library:CreateToggle(VisualSections["shader pack"], "Enable", false, function(state)
+    shaderStates.Master = state
+    if state then
+        masterCC = Lighting:FindFirstChild("PulseHub_MasterCC") or Instance.new("ColorCorrectionEffect")
+        masterCC.Name = "PulseHub_MasterCC"
+        masterCC.Saturation = 0.15
+        masterCC.Contrast = 0.1
+        masterCC.Parent = Lighting
+    else
+        if masterCC then masterCC:Destroy() masterCC = nil end
+        local existing = Lighting:FindFirstChild("PulseHub_MasterCC")
+        if existing then existing:Destroy() end
+    end
+end)
+
+-- 2. Выбор времени суток (Mode Dropdown)
+Library:CreateDropdown(VisualSections["shader pack"], "Mode", {"None", "Day", "Sunset", "Midnight"}, "None", function(selected)
+    if selected == "Day" then
+        Lighting.TimeOfDay = "14:00:00"
+    elseif selected == "Sunset" then
+        Lighting.TimeOfDay = "18:30:00"
+    elseif selected == "Midnight" then
+        Lighting.TimeOfDay = "00:00:00"
+    end
+end)
+
+-- 3. Настройка Блума (Bloom Effect)
+local function updateBloom()
+    if shaderStates.Bloom then
+        local bloom = Lighting:FindFirstChild("PulseHub_Bloom") or Instance.new("BloomEffect")
+        bloom.Name = "PulseHub_Bloom"
+        bloom.Intensity = shaderStates.BloomIntensity
+        bloom.Size = shaderStates.BloomSize
+        bloom.Threshold = 0.8
+        bloom.Parent = Lighting
+    else
+        local bloom = Lighting:FindFirstChild("PulseHub_Bloom")
+        if bloom then bloom:Destroy() end
+    end
+end
+
+Library:CreateToggle(VisualSections["shader pack"], "Bloom", false, function(state)
+    shaderStates.Bloom = state
+    updateBloom()
+end)
+
+Library:CreateSlider(VisualSections["shader pack"], "Intensity", 0, 10, 4, function(value)
+    shaderStates.BloomIntensity = value
+    local bloom = Lighting:FindFirstChild("PulseHub_Bloom")
+    if bloom then bloom.Intensity = value end
+end)
+
+Library:CreateSlider(VisualSections["shader pack"], "Size", 0, 56, 24, function(value)
+    shaderStates.BloomSize = value
+    local bloom = Lighting:FindFirstChild("PulseHub_Bloom")
+    if bloom then bloom.Size = value end
+end)
+
+-- 4. Настройка Атмосферы (Atmosphere Effect)
+local function updateAtmosphere()
+    if shaderStates.Atmosphere then
+        local atm = Lighting:FindFirstChild("PulseHub_Atmosphere") or Instance.new("Atmosphere")
+        atm.Name = "PulseHub_Atmosphere"
+        atm.Density = shaderStates.AtmosphereDensity / 100
+        atm.Parent = Lighting
+    else
+        local atm = Lighting:FindFirstChild("PulseHub_Atmosphere")
+        if atm then atm:Destroy() end
+    end
+end
+
+Library:CreateToggle(VisualSections["shader pack"], "Atmosphere", false, function(state)
+    shaderStates.Atmosphere = state
+    updateAtmosphere()
+end)
+
+Library:CreateSlider(VisualSections["shader pack"], "Density", 0, 100, 40, function(value)
+    shaderStates.AtmosphereDensity = value
+    local atm = Lighting:FindFirstChild("PulseHub_Atmosphere")
+    if atm then atm.Density = value / 100 end
+end)
+
+-- 5. Настройка Лучей Солнца (Sun Rays Effect)
+local function updateSunRays()
+    if shaderStates.SunRays then
+        local sr = Lighting:FindFirstChild("PulseHub_SunRays") or Instance.new("SunRaysEffect")
+        sr.Name = "PulseHub_SunRays"
+        sr.Intensity = shaderStates.SunRaysIntensity / 100
+        sr.Parent = Lighting
+    else
+        local sr = Lighting:FindFirstChild("PulseHub_SunRays")
+        if sr then sr:Destroy() end
+    end
+end
+
+Library:CreateToggle(VisualSections["shader pack"], "Sun Rays", false, function(state)
+    shaderStates.SunRays = state
+    updateSunRays()
+end)
+
+Library:CreateSlider(VisualSections["shader pack"], "Intensity", 0, 100, 25, function(value)
+    shaderStates.SunRaysIntensity = value
+    local sr = Lighting:FindFirstChild("PulseHub_SunRays")
+    if sr then sr.Intensity = value / 100 end
+end)
+
+-- 6. Настройка Размытия Экрана (Blur Effect)
+local function updateBlur()
+    if shaderStates.Blur then
+        local blur = Lighting:FindFirstChild("PulseHub_Blur") or Instance.new("BlurEffect")
+        blur.Name = "PulseHub_Blur"
+        blur.Size = (shaderStates.BlurStrength / 100) * 56
+        blur.Parent = Lighting
+    else
+        local blur = Lighting:FindFirstChild("PulseHub_Blur")
+        if blur then blur:Destroy() end
+    end
+end
+
+Library:CreateToggle(VisualSections["shader pack"], "Blur", false, function(state)
+    shaderStates.Blur = state
+    updateBlur()
+end)
+
+Library:CreateSlider(VisualSections["shader pack"], "Strength", 0, 100, 75, function(value)
+    shaderStates.BlurStrength = value
+    local blur = Lighting:FindFirstChild("PulseHub_Blur")
+    if blur then blur.Size = (value / 100) * 56 end
+end)
+----------------------------------------------------
 
 Library:CreateSlider(SettingSections["UI"], "UISize", 0.5, 1.5, 1.00, function(value) MainScale.Scale = value end)
 Library:CreateSlider(SettingSections["UI"], "UITransparency", 0, 100, 15, function(value) MainFrame.BackgroundTransparency = value / 100 end)
