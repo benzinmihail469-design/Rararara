@@ -1190,7 +1190,7 @@ function Library:CreateSubTabs(parentPage, tabsList)
         if tabData.Color then
             activeColor = tabData.Color
         elseif string.find(lowName, "theme") or string.find(lowName, "тема") then
-            activeColor = Color3.fromRGB(255, 128, 0) -- Красивый оранжевый акцент вместо розового
+            activeColor = Color3.fromRGB(255, 128, 0)
         end
         
         local BtnContainer = Instance.new("Frame", SubTabContainer)
@@ -1419,7 +1419,7 @@ local VisualSections = Library:CreateSubTabs(VisualPage, {
 
 local SettingSections = Library:CreateSubTabs(SettingsPage, {
     {Name = "UI", Icon = "85203682050945", Color = Color3.fromRGB(108, 176, 214)},
-    {Name = "Theme", Icon = "78640980615320", Color = Color3.fromRGB(255, 128, 0)} -- Оранжевый для вкладки тем
+    {Name = "Theme", Icon = "78640980615320", Color = Color3.fromRGB(255, 128, 0)}
 })
 
 local originalLightingSettings = {
@@ -1466,7 +1466,7 @@ local function updateBloom()
         bloom.Name = "PulseHub_Bloom"
         bloom.Intensity = shaderStates.BloomIntensity
         bloom.Size = shaderStates.BloomSize
-        bloom.Threshold = 0.8
+        bloom.Threshold = 0.0
         bloom.Parent = Lighting
     else
         if existing then existing:Destroy() end
@@ -1479,6 +1479,8 @@ local function updateAtmosphere()
         local atm = existing or Instance.new("Atmosphere")
         atm.Name = "PulseHub_Atmosphere"
         atm.Density = shaderStates.AtmosphereDensity / 100
+        atm.Haze = 3.0
+        atm.Glare = 2.0
         atm.Parent = Lighting
     else
         if existing then existing:Destroy() end
@@ -1491,6 +1493,7 @@ local function updateSunRays()
         local sr = existing or Instance.new("SunRaysEffect")
         sr.Name = "PulseHub_SunRays"
         sr.Intensity = shaderStates.SunRaysIntensity / 100
+        sr.Spread = 0.85
         sr.Parent = Lighting
     else
         if existing then existing:Destroy() end
@@ -1502,10 +1505,32 @@ local function updateBlur()
     if shaderStates.Master and shaderStates.Blur then
         local blur = existing or Instance.new("BlurEffect")
         blur.Name = "PulseHub_Blur"
-        blur.Size = (shaderStates.BlurStrength / 100) * 56
+        blur.Size = (shaderStates.BlurStrength / 100) * 35
         blur.Parent = Lighting
     else
         if existing then existing:Destroy() end
+    end
+end
+
+local masterCC = nil
+local function updateMasterCC()
+    if not masterCC or not masterCC.Parent then return end
+    if shaderStates.Mode == "Day" then
+        masterCC.Saturation = 0.35
+        masterCC.Contrast = 0.18
+        masterCC.TintColor = Color3.fromRGB(255, 255, 255)
+    elseif shaderStates.Mode == "Sunset" then
+        masterCC.Saturation = 0.55
+        masterCC.Contrast = 0.28
+        masterCC.TintColor = Color3.fromRGB(255, 185, 135)
+    elseif shaderStates.Mode == "Midnight" then
+        masterCC.Saturation = -0.05
+        masterCC.Contrast = 0.35
+        masterCC.TintColor = Color3.fromRGB(125, 145, 205)
+    else
+        masterCC.Saturation = 0.25
+        masterCC.Contrast = 0.15
+        masterCC.TintColor = Color3.fromRGB(255, 255, 255)
     end
 end
 
@@ -1521,7 +1546,6 @@ RunService.Heartbeat:Connect(function()
     end
 end)
 
-local masterCC = nil
 Library:CreateToggle(VisualSections["shader pack"], "Enable", false, function(state)
     shaderStates.Master = state
     if state then
@@ -1537,9 +1561,8 @@ Library:CreateToggle(VisualSections["shader pack"], "Enable", false, function(st
 
         masterCC = Lighting:FindFirstChild("PulseHub_MasterCC") or Instance.new("ColorCorrectionEffect")
         masterCC.Name = "PulseHub_MasterCC"
-        masterCC.Saturation = 0.15
-        masterCC.Contrast = 0.1
         masterCC.Parent = Lighting
+        updateMasterCC()
     else
         if masterCC then masterCC:Destroy() masterCC = nil end
         local existing = Lighting:FindFirstChild("PulseHub_MasterCC")
@@ -1556,8 +1579,11 @@ end)
 
 Library:CreateDropdown(VisualSections["shader pack"], "Mode", {"None", "Day", "Sunset", "Midnight"}, "None", function(selected)
     shaderStates.Mode = selected
-    if shaderStates.Master and selected == "None" then
-        restoreOriginalEnvironment()
+    if shaderStates.Master then
+        if selected == "None" then
+            restoreOriginalEnvironment()
+        end
+        updateMasterCC()
     end
 end)
 
@@ -1608,7 +1634,7 @@ end)
 Library:CreateSlider(VisualSections["shader pack"], "Strength", 0, 100, 75, function(value)
     shaderStates.BlurStrength = value
     local blur = Lighting:FindFirstChild("PulseHub_Blur")
-    if blur then blur.Size = (value / 100) * 56 end
+    if blur then blur.Size = (value / 100) * 35 end
 end)
 
 Library:CreateSlider(SettingSections["UI"], "UISize", 0.5, 1.5, 1.00, function(value) MainScale.Scale = value end)
@@ -1626,7 +1652,6 @@ Library:CreateDropdown(SettingSections["UI"], "MenuFont", {"Gotham", "Gotham Bol
     end
 end)
 
--- ДРОПДАУН ВЫБОРА ЯЗЫКА С ЗАНЕСЕНИЕМ В СИСТЕМУ СМЕНЫ ЛОКАЛИЗАЦИИ
 Library:CreateDropdown(SettingSections["UI"], "Language", {"English", "Русский"}, Library.CurrentLanguage, function(selectedLang)
     Library.CurrentLanguage = selectedLang
     for _, loc in ipairs(LocaleObjects) do
