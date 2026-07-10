@@ -1232,7 +1232,8 @@ function Library:CreateSubTabs(parentPage, tabsList)
         end
         
         local BtnContainer = Instance.new("Frame", SubTabContainer)
-        BtnContainer.Size = UDim2.new(0, 95, 1, 0)
+        BtnContainer.Size = UDim2.new(0, 0, 1, 0)
+        BtnContainer.AutomaticSize = Enum.AutomaticSize.X
         BtnContainer.BackgroundTransparency = 1
         BtnContainer.LayoutOrder = i
         
@@ -1248,9 +1249,15 @@ function Library:CreateSubTabs(parentPage, tabsList)
         Stroke.Enabled = false
         
         local ContentFrame = Instance.new("Frame", BtnContainer)
-        ContentFrame.Size = UDim2.new(1, 0, 1, 0)
+        ContentFrame.Size = UDim2.new(0, 0, 1, 0)
+        ContentFrame.AutomaticSize = Enum.AutomaticSize.X
         ContentFrame.BackgroundTransparency = 1
         ContentFrame.ZIndex = 2
+        
+        local ContentPadding = Instance.new("UIPadding", ContentFrame)
+        ContentPadding.PaddingLeft = UDim.new(0, 10)
+        ContentPadding.PaddingRight = UDim.new(0, 10)
+        
         local BtnLayout = Instance.new("UIListLayout", ContentFrame)
         BtnLayout.FillDirection = Enum.FillDirection.Horizontal
         BtnLayout.HorizontalAlignment = Enum.HorizontalAlignment.Left
@@ -1454,7 +1461,7 @@ Library:CreateSlider(SettingSections["UI"], "UITransparency", 0, 100, 15, functi
 Library:CreateDropdown(SettingSections["UI"], "MenuFont", {"Gotham", "Gotham Bold", "Source Sans", "Roboto", "Roboto Mono", "Ubuntu", "Michroma", "Code", "Fantasy", "Fredoka One"}, "Gotham", function(selectedFont)
     local targetFont = FontMapping[selectedFont] or Enum.Font.Gotham
     Library.CurrentFont = targetFont
-    for _, obj in ipairs(DarkHub:GetDescendants()) do
+    for _, obj in ipairs(PulseHub:GetDescendants()) do
         if obj:IsA("TextLabel") or obj:IsA("TextButton") or obj:IsA("TextBox") then
             if obj.Text ~= "—" and obj.Text ~= "×" and obj.Text ~= "▼" and obj.Text ~= "▲" and obj.Text ~= "✓" then obj.Font = targetFont end
         end
@@ -1495,7 +1502,4 @@ if allTabs["Main"] and allTabButtons["Main"] then
     if allTabIcons["Main"] then allTabIcons["Main"].ImageTransparency = 0 end
     allPages["Main"].Visible = true
     Library.CurrentTabKey = "Main"
-    TabTitle.Text = Localization[Library.CurrentLanguage]["Main"] or "Main"
-end
-
-Library:UpdateTheme("Deep Ocean")
+    TabTitle.Text
