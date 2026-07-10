@@ -610,7 +610,6 @@ local Localization = {
         ["Language"] = "Language", ["AntiAFK"] = "Anti-AFK", ["UITheme"] = "UI Theme",
         ["AnimatedWindow"] = "Animated Window", ["Gradient"] = "Gradient Background",
         ["shader pack"] = "Shader Pack",
-        -- Новая локализация для шейдеров
         ["Enable"] = "Enable", ["Mode"] = "Mode", ["Bloom"] = "Bloom",
         ["Intensity"] = "Intensity", ["Size"] = "Size", ["Atmosphere"] = "Atmosphere",
         ["Density"] = "Density", ["Sun Rays"] = "Sun Rays", ["Blur"] = "Blur", ["Strength"] = "Strength"
@@ -625,7 +624,6 @@ local Localization = {
         ["Language"] = "Язык", ["AntiAFK"] = "Анти-АФК", ["UITheme"] = "Тема UI",
         ["AnimatedWindow"] = "Анимированное окно", ["Gradient"] = "Градиентный фон",
         ["shader pack"] = "Пак шейдеров",
-        -- Новая локализация для шейдеров
         ["Enable"] = "Включить", ["Mode"] = "Режим", ["Bloom"] = "Блум (Свечение)",
         ["Intensity"] = "Интенсивность", ["Size"] = "Размер", ["Atmosphere"] = "Атмосфера",
         ["Density"] = "Плотность", ["Sun Rays"] = "Лучи солнца", ["Blur"] = "Размытие", ["Strength"] = "Сила"
@@ -1468,7 +1466,6 @@ local SettingsPage = CreatePage("Settings", "117996761927034", 99)
 
 Library:CreateToggle(MainPage, "AutoFarmCoins", false, function(state) end)
 
--- Создаем суб-вкладки для вкладки Visual
 local VisualSections = Library:CreateSubTabs(VisualPage, {
     {Name = "shader pack", Icon = "80768064990053", Color = Color3.fromRGB(46, 204, 113)}
 })
@@ -1481,6 +1478,32 @@ local SettingSections = Library:CreateSubTabs(SettingsPage, {
 ----------------------------------------------------
 -- КОНФИГУРАЦИЯ И СБОРКА ФУНКЦИЙ ШЕЙДЕРОВ (ИЗ ФОТО)
 ----------------------------------------------------
+-- Глобальные контейнеры для сохранения родной конфигурации игры
+local originalLightingSettings = {
+    TimeOfDay = Lighting.TimeOfDay,
+    Ambient = Lighting.Ambient,
+    OutdoorAmbient = Lighting.OutdoorAmbient,
+    Brightness = Lighting.Brightness
+}
+local originalSky = nil
+
+-- Вспомогательная функция отката настроек света MM2
+local function restoreOriginalEnvironment()
+    Lighting.TimeOfDay = originalLightingSettings.TimeOfDay
+    Lighting.Ambient = originalLightingSettings.Ambient
+    Lighting.OutdoorAmbient = originalLightingSettings.OutdoorAmbient
+    Lighting.Brightness = originalLightingSettings.Brightness
+
+    -- Возвращаем родное небо игры, если оно было сохранено
+    local currentSky = Lighting:FindFirstChildOfClass("Sky")
+    if originalSky then
+        if not currentSky or currentSky.Name ~= originalSky.Name then
+            if currentSky then currentSky:Destroy() end
+            originalSky:Clone().Parent = Lighting
+        end
+    end
+end
+
 local shaderStates = {
     Master = false,
     Bloom = false,
@@ -1499,6 +1522,17 @@ local masterCC = nil
 Library:CreateToggle(VisualSections["shader pack"], "Enable", false, function(state)
     shaderStates.Master = state
     if state then
+        -- Запоминаем параметры прямо перед внесением изменений (на случай смены карты)
+        originalLightingSettings.TimeOfDay = Lighting.TimeOfDay
+        originalLightingSettings.Ambient = Lighting.Ambient
+        originalLightingSettings.OutdoorAmbient = Lighting.OutdoorAmbient
+        originalLightingSettings.Brightness = Lighting.Brightness
+        
+        local nativeSky = Lighting:FindFirstChildOfClass("Sky")
+        if nativeSky and not string.find(nativeSky.Name, "PulseHub") then
+            originalSky = nativeSky:Clone()
+        end
+
         masterCC = Lighting:FindFirstChild("PulseHub_MasterCC") or Instance.new("ColorCorrectionEffect")
         masterCC.Name = "PulseHub_MasterCC"
         masterCC.Saturation = 0.15
@@ -1508,6 +1542,9 @@ Library:CreateToggle(VisualSections["shader pack"], "Enable", false, function(st
         if masterCC then masterCC:Destroy() masterCC = nil end
         local existing = Lighting:FindFirstChild("PulseHub_MasterCC")
         if existing then existing:Destroy() end
+        
+        -- Полный сброс параметров освещения к заводским
+        restoreOriginalEnvironment()
     end
 end)
 
@@ -1519,6 +1556,9 @@ Library:CreateDropdown(VisualSections["shader pack"], "Mode", {"None", "Day", "S
         Lighting.TimeOfDay = "18:30:00"
     elseif selected == "Midnight" then
         Lighting.TimeOfDay = "00:00:00"
+    elseif selected == "None" then
+        -- Возвращаем исходное время суток карты
+        Lighting.TimeOfDay = originalLightingSettings.TimeOfDay
     end
 end)
 
