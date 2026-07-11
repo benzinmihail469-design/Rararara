@@ -1478,7 +1478,6 @@ local SettingSections = Library:CreateSubTabs(SettingsPage, {
 ----------------------------------------------------
 -- КОНФИГУРАЦИЯ И СБОРКА ФУНКЦИЙ ШЕЙДЕРОВ (ИЗ ФОТО)
 ----------------------------------------------------
--- Глобальные контейнеры для сохранения родной конфигурации игры
 local originalLightingSettings = {
     TimeOfDay = Lighting.TimeOfDay,
     Ambient = Lighting.Ambient,
@@ -1487,14 +1486,12 @@ local originalLightingSettings = {
 }
 local originalSky = nil
 
--- Вспомогательная функция отката настроек света MM2
 local function restoreOriginalEnvironment()
     Lighting.TimeOfDay = originalLightingSettings.TimeOfDay
     Lighting.Ambient = originalLightingSettings.Ambient
     Lighting.OutdoorAmbient = originalLightingSettings.OutdoorAmbient
     Lighting.Brightness = originalLightingSettings.Brightness
 
-    -- Возвращаем родное небо игры, если оно было сохранено
     local currentSky = Lighting:FindFirstChildOfClass("Sky")
     if originalSky then
         if not currentSky or currentSky.Name ~= originalSky.Name then
@@ -1506,6 +1503,7 @@ end
 
 local shaderStates = {
     Master = false,
+    Mode = "None",
     Bloom = false,
     BloomIntensity = 4,
     BloomSize = 24,
@@ -1517,12 +1515,34 @@ local shaderStates = {
     BlurStrength = 75
 }
 
--- 1. Главный переключатель (Enable)
+local lightingLoopConnection = nil
+local function startLightingEnforcer()
+    if lightingLoopConnection then lightingLoopConnection:Disconnect() end
+    lightingLoopConnection = RunService.Heartbeat:Connect(function()
+        if not shaderStates.Master then return end
+        if shaderStates.Mode == "Day" and Lighting.TimeOfDay ~= "14:00:00" then
+            Lighting.TimeOfDay = "14:00:00"
+        elseif shaderStates.Mode == "Sunset" and Lighting.TimeOfDay ~= "18:30:00" then
+            Lighting.TimeOfDay = "18:30:00"
+        elseif shaderStates.Mode == "Midnight" and Lighting.TimeOfDay ~= "00:00:00" then
+            Lighting.TimeOfDay = "00:00:00"
+        elseif shaderStates.Mode == "None" and Lighting.TimeOfDay ~= originalLightingSettings.TimeOfDay then
+            Lighting.TimeOfDay = originalLightingSettings.TimeOfDay
+        end
+    end)
+end
+
+local function stopLightingEnforcer()
+    if lightingLoopConnection then
+        lightingLoopConnection:Disconnect()
+        lightingLoopConnection = nil
+    end
+end
+
 local masterCC = nil
 Library:CreateToggle(VisualSections["shader pack"], "Enable", false, function(state)
     shaderStates.Master = state
     if state then
-        -- Запоминаем параметры прямо перед внесением изменений (на случай смены карты)
         originalLightingSettings.TimeOfDay = Lighting.TimeOfDay
         originalLightingSettings.Ambient = Lighting.Ambient
         originalLightingSettings.OutdoorAmbient = Lighting.OutdoorAmbient
@@ -1538,18 +1558,20 @@ Library:CreateToggle(VisualSections["shader pack"], "Enable", false, function(st
         masterCC.Saturation = 0.15
         masterCC.Contrast = 0.1
         masterCC.Parent = Lighting
+        
+        startLightingEnforcer()
     else
+        stopLightingEnforcer()
         if masterCC then masterCC:Destroy() masterCC = nil end
         local existing = Lighting:FindFirstChild("PulseHub_MasterCC")
         if existing then existing:Destroy() end
         
-        -- Полный сброс параметров освещения к заводским
         restoreOriginalEnvironment()
     end
 end)
 
--- 2. Выбор времени суток (Mode Dropdown)
 Library:CreateDropdown(VisualSections["shader pack"], "Mode", {"None", "Day", "Sunset", "Midnight"}, "None", function(selected)
+    shaderStates.Mode = selected
     if selected == "Day" then
         Lighting.TimeOfDay = "14:00:00"
     elseif selected == "Sunset" then
@@ -1557,12 +1579,10 @@ Library:CreateDropdown(VisualSections["shader pack"], "Mode", {"None", "Day", "S
     elseif selected == "Midnight" then
         Lighting.TimeOfDay = "00:00:00"
     elseif selected == "None" then
-        -- Возвращаем исходное время суток карты
         Lighting.TimeOfDay = originalLightingSettings.TimeOfDay
     end
 end)
 
--- 3. Настройка Блума (Bloom Effect)
 local function updateBloom()
     if shaderStates.Bloom then
         local bloom = Lighting:FindFirstChild("PulseHub_Bloom") or Instance.new("BloomEffect")
@@ -1594,7 +1614,6 @@ Library:CreateSlider(VisualSections["shader pack"], "Size", 0, 56, 24, function(
     if bloom then bloom.Size = value end
 end)
 
--- 4. Настройка Атмосферы (Atmosphere Effect)
 local function updateAtmosphere()
     if shaderStates.Atmosphere then
         local atm = Lighting:FindFirstChild("PulseHub_Atmosphere") or Instance.new("Atmosphere")
@@ -1618,7 +1637,6 @@ Library:CreateSlider(VisualSections["shader pack"], "Density", 0, 100, 40, funct
     if atm then atm.Density = value / 100 end
 end)
 
--- 5. Настройка Лучей Солнца (Sun Rays Effect)
 local function updateSunRays()
     if shaderStates.SunRays then
         local sr = Lighting:FindFirstChild("PulseHub_SunRays") or Instance.new("SunRaysEffect")
@@ -1642,7 +1660,6 @@ Library:CreateSlider(VisualSections["shader pack"], "Intensity", 0, 100, 25, fun
     if sr then sr.Intensity = value / 100 end
 end)
 
--- 6. Настройка Размытия Экрана (Blur Effect)
 local function updateBlur()
     if shaderStates.Blur then
         local blur = Lighting:FindFirstChild("PulseHub_Blur") or Instance.new("BlurEffect")
