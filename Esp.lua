@@ -32,25 +32,6 @@ local function toggleAntiAFK(state)
     end
 end
 
-local function toggleShader(name, state, instanceClass, properties)
-    local storageName = "PulseHub_" .. name
-    local existing = Lighting:FindFirstChild(storageName)
-    if state then
-        if not existing then
-            local shader = Instance.new(instanceClass)
-            shader.Name = storageName
-            for k, v in pairs(properties) do
-                shader[k] = v
-            end
-            shader.Parent = Lighting
-        end
-    else
-        if existing then
-            existing:Destroy()
-        end
-    end
-end
-
 local SafeParent = nil
 if typeof(gethui) == "function" then
     SafeParent = gethui()
@@ -1476,7 +1457,7 @@ local SettingSections = Library:CreateSubTabs(SettingsPage, {
 })
 
 ----------------------------------------------------
--- КОНФИГУРАЦИЯ И СБОРКА ФУНКЦИЙ ШЕЙДЕРОВ (ИЗ ФОТО)
+-- ОПТИМИЗИРОВАННАЯ КОНФИГУРАЦИЯ И СБОРКА ФУНКЦИЙ ШЕЙДЕРОВ
 ----------------------------------------------------
 local originalLightingSettings = {
     TimeOfDay = Lighting.TimeOfDay,
@@ -1485,6 +1466,7 @@ local originalLightingSettings = {
     Brightness = Lighting.Brightness
 }
 local originalSky = nil
+local nativeAtmospheres = {} -- Таблица для сохранения дефолтных атмосфер игры
 
 local function restoreOriginalEnvironment()
     Lighting.TimeOfDay = originalLightingSettings.TimeOfDay
@@ -1613,7 +1595,7 @@ local function updateBloom()
         bloom.Name = "PulseHub_Bloom"
         bloom.Intensity = shaderStates.BloomIntensity
         bloom.Size = shaderStates.BloomSize
-        bloom.Threshold = 0.8
+        bloom.Threshold = 0.15 -- Снижено до 0.15 для сочного, заметного и красивого свечения!
         bloom.Parent = Lighting
     else
         local bloom = Lighting:FindFirstChild("PulseHub_Bloom")
@@ -1640,13 +1622,27 @@ end)
 
 local function updateAtmosphere()
     if shaderStates.Atmosphere then
+        -- Нам нужно перенести оригинальные атмосферы плейса, чтобы наша работала без перебивания приоритета
+        for _, child in ipairs(Lighting:GetChildren()) do
+            if child:IsA("Atmosphere") and child.Name ~= "PulseHub_Atmosphere" then
+                nativeAtmospheres[child] = child.Parent
+                child.Parent = game:GetService("Terrain")
+            end
+        end
         local atm = Lighting:FindFirstChild("PulseHub_Atmosphere") or Instance.new("Atmosphere")
         atm.Name = "PulseHub_Atmosphere"
         atm.Density = shaderStates.AtmosphereDensity / 100
+        atm.Haze = 1.5 -- Добавлена глубина дымки
+        atm.Glare = 0.3 -- Добавлены солнечные блики на атмосферу
         atm.Parent = Lighting
     else
         local atm = Lighting:FindFirstChild("PulseHub_Atmosphere")
         if atm then atm:Destroy() end
+        -- Возвращаем оригинальные атмосферы игры на место
+        for child, oldParent in pairs(nativeAtmospheres) do
+            if child then child.Parent = oldParent end
+        end
+        nativeAtmospheres = {}
     end
 end
 
@@ -1666,6 +1662,7 @@ local function updateSunRays()
         local sr = Lighting:FindFirstChild("PulseHub_SunRays") or Instance.new("SunRaysEffect")
         sr.Name = "PulseHub_SunRays"
         sr.Intensity = shaderStates.SunRaysIntensity / 100
+        sr.Threshold = 0.1 -- Порог снижен до 0.1, делая солнечные лучи длинными, яркими и заметными!
         sr.Parent = Lighting
     else
         local sr = Lighting:FindFirstChild("PulseHub_SunRays")
