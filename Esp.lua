@@ -1466,7 +1466,7 @@ local originalLightingSettings = {
     Brightness = Lighting.Brightness
 }
 local originalSky = nil
-local nativeAtmospheres = {} -- Таблица для сохранения дефолтных атмосфер игры
+local nativeAtmospheres = {}
 
 local function restoreOriginalEnvironment()
     Lighting.TimeOfDay = originalLightingSettings.TimeOfDay
@@ -1532,6 +1532,74 @@ local function stopLightingEnforcer()
     end
 end
 
+-- СИНХРОНИЗИРОВАННЫЕ ФУНКЦИИ ОБНОВЛЕНИЯ ЭФФЕКТОВ
+local function updateBloom()
+    if shaderStates.Master and shaderStates.Bloom then
+        local bloom = Lighting:FindFirstChild("PulseHub_Bloom") or Instance.new("BloomEffect")
+        bloom.Name = "PulseHub_Bloom"
+        bloom.Intensity = shaderStates.BloomIntensity
+        bloom.Size = shaderStates.BloomSize
+        bloom.Threshold = 0.05 -- Снижено для глубокого и заметного свечения
+        bloom.Parent = Lighting
+    else
+        local bloom = Lighting:FindFirstChild("PulseHub_Bloom")
+        if bloom then bloom:Destroy() end
+    end
+end
+
+local function updateAtmosphere()
+    if shaderStates.Master and shaderStates.Atmosphere then
+        for _, child in ipairs(Lighting:GetChildren()) do
+            if child:IsA("Atmosphere") and child.Name ~= "PulseHub_Atmosphere" then
+                nativeAtmospheres[child] = child.Parent
+                child.Parent = game:GetService("Terrain")
+            end
+        end
+        local atm = Lighting:FindFirstChild("PulseHub_Atmosphere") or Instance.new("Atmosphere")
+        atm.Name = "PulseHub_Atmosphere"
+        atm.Density = shaderStates.AtmosphereDensity / 100
+        atm.Haze = 2.5 -- Заметная глубина дымки воздуха
+        atm.Glare = 0.6 -- Красивые блики на атмосфере
+        atm.Parent = Lighting
+    else
+        local atm = Lighting:FindFirstChild("PulseHub_Atmosphere")
+        if atm then atm:Destroy() end
+        for child, oldParent in pairs(nativeAtmospheres) do
+            pcall(function()
+                if child and oldParent then child.Parent = oldParent end
+            end)
+        end
+        nativeAtmospheres = {}
+    end
+end
+
+local function updateSunRays()
+    -- Лучи солнца физически не отображаются ночью (Midnight)
+    if shaderStates.Master and shaderStates.SunRays and shaderStates.Mode ~= "Midnight" then
+        local sr = Lighting:FindFirstChild("PulseHub_SunRays") or Instance.new("SunRaysEffect")
+        sr.Name = "PulseHub_SunRays"
+        sr.Intensity = shaderStates.SunRaysIntensity / 100
+        sr.Spread = 0.75 -- Размах и ширина лучей
+        sr.Threshold = 0.05 -- Низкий порог, чтобы лучи были яркими и явными
+        sr.Parent = Lighting
+    else
+        local sr = Lighting:FindFirstChild("PulseHub_SunRays")
+        if sr then sr:Destroy() end
+    end
+end
+
+local function updateBlur()
+    if shaderStates.Master and shaderStates.Blur then
+        local blur = Lighting:FindFirstChild("PulseHub_Blur") or Instance.new("BlurEffect")
+        blur.Name = "PulseHub_Blur"
+        blur.Size = (shaderStates.BlurStrength / 100) * 56
+        blur.Parent = Lighting
+    else
+        local blur = Lighting:FindFirstChild("PulseHub_Blur")
+        if blur then blur:Destroy() end
+    end
+end
+
 local masterCC = nil
 Library:CreateToggle(VisualSections["shader pack"], "Enable", false, function(state)
     shaderStates.Master = state
@@ -1568,6 +1636,12 @@ Library:CreateToggle(VisualSections["shader pack"], "Enable", false, function(st
         
         restoreOriginalEnvironment()
     end
+    
+    -- Синхронное обновление состояний всех дочерних эффектов
+    updateBloom()
+    updateAtmosphere()
+    updateSunRays()
+    updateBlur()
 end)
 
 Library:CreateDropdown(VisualSections["shader pack"], "Mode", {"None", "Day", "Sunset", "Midnight"}, "None", function(selected)
@@ -1587,21 +1661,11 @@ Library:CreateDropdown(VisualSections["shader pack"], "Mode", {"None", "Day", "S
         if masterCC then masterCC.Enabled = false end
         restoreOriginalEnvironment()
     end
+    
+    -- Солнечные лучи и туман зависят от текущего времени суток
+    updateSunRays()
+    updateAtmosphere()
 end)
-
-local function updateBloom()
-    if shaderStates.Bloom then
-        local bloom = Lighting:FindFirstChild("PulseHub_Bloom") or Instance.new("BloomEffect")
-        bloom.Name = "PulseHub_Bloom"
-        bloom.Intensity = shaderStates.BloomIntensity
-        bloom.Size = shaderStates.BloomSize
-        bloom.Threshold = 0.15 -- Снижено до 0.15 для сочного, заметного и красивого свечения!
-        bloom.Parent = Lighting
-    else
-        local bloom = Lighting:FindFirstChild("PulseHub_Bloom")
-        if bloom then bloom:Destroy() end
-    end
-end
 
 Library:CreateToggle(VisualSections["shader pack"], "Bloom", false, function(state)
     shaderStates.Bloom = state
@@ -1620,32 +1684,6 @@ Library:CreateSlider(VisualSections["shader pack"], "Size", 0, 56, 24, function(
     if bloom then bloom.Size = value end
 end)
 
-local function updateAtmosphere()
-    if shaderStates.Atmosphere then
-        -- Нам нужно перенести оригинальные атмосферы плейса, чтобы наша работала без перебивания приоритета
-        for _, child in ipairs(Lighting:GetChildren()) do
-            if child:IsA("Atmosphere") and child.Name ~= "PulseHub_Atmosphere" then
-                nativeAtmospheres[child] = child.Parent
-                child.Parent = game:GetService("Terrain")
-            end
-        end
-        local atm = Lighting:FindFirstChild("PulseHub_Atmosphere") or Instance.new("Atmosphere")
-        atm.Name = "PulseHub_Atmosphere"
-        atm.Density = shaderStates.AtmosphereDensity / 100
-        atm.Haze = 1.5 -- Добавлена глубина дымки
-        atm.Glare = 0.3 -- Добавлены солнечные блики на атмосферу
-        atm.Parent = Lighting
-    else
-        local atm = Lighting:FindFirstChild("PulseHub_Atmosphere")
-        if atm then atm:Destroy() end
-        -- Возвращаем оригинальные атмосферы игры на место
-        for child, oldParent in pairs(nativeAtmospheres) do
-            if child then child.Parent = oldParent end
-        end
-        nativeAtmospheres = {}
-    end
-end
-
 Library:CreateToggle(VisualSections["shader pack"], "Atmosphere", false, function(state)
     shaderStates.Atmosphere = state
     updateAtmosphere()
@@ -1657,19 +1695,6 @@ Library:CreateSlider(VisualSections["shader pack"], "Density", 0, 100, 40, funct
     if atm then atm.Density = value / 100 end
 end)
 
-local function updateSunRays()
-    if shaderStates.SunRays then
-        local sr = Lighting:FindFirstChild("PulseHub_SunRays") or Instance.new("SunRaysEffect")
-        sr.Name = "PulseHub_SunRays"
-        sr.Intensity = shaderStates.SunRaysIntensity / 100
-        sr.Threshold = 0.1 -- Порог снижен до 0.1, делая солнечные лучи длинными, яркими и заметными!
-        sr.Parent = Lighting
-    else
-        local sr = Lighting:FindFirstChild("PulseHub_SunRays")
-        if sr then sr:Destroy() end
-    end
-end
-
 Library:CreateToggle(VisualSections["shader pack"], "Sun Rays", false, function(state)
     shaderStates.SunRays = state
     updateSunRays()
@@ -1680,18 +1705,6 @@ Library:CreateSlider(VisualSections["shader pack"], "Intensity", 0, 100, 25, fun
     local sr = Lighting:FindFirstChild("PulseHub_SunRays")
     if sr then sr.Intensity = value / 100 end
 end)
-
-local function updateBlur()
-    if shaderStates.Blur then
-        local blur = Lighting:FindFirstChild("PulseHub_Blur") or Instance.new("BlurEffect")
-        blur.Name = "PulseHub_Blur"
-        blur.Size = (shaderStates.BlurStrength / 100) * 56
-        blur.Parent = Lighting
-    else
-        local blur = Lighting:FindFirstChild("PulseHub_Blur")
-        if blur then blur:Destroy() end
-    end
-end
 
 Library:CreateToggle(VisualSections["shader pack"], "Blur", false, function(state)
     shaderStates.Blur = state
