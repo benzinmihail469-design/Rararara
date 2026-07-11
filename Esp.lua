@@ -88,6 +88,7 @@ local function NormalizeText(str)
     return string.gsub(lowerStr, "[%p%s%c]", "")
 end
 
+-- Главный фрейм теперь выступает в роли основы
 local MainFrame = Instance.new("Frame", PulseHub)
 MainFrame.Name = "MainFrame"
 MainFrame.BackgroundColor3 = Color3.fromRGB(14, 14, 14)
@@ -106,7 +107,14 @@ local MainStroke = Instance.new("UIStroke", MainFrame)
 MainStroke.Color = Color3.fromRGB(40, 40, 40)
 MainStroke.Thickness = 1.5
 
-local PagesContainer = Instance.new("Frame", MainFrame)
+-- Контент-фрейм (всё, что скрывается при сворачивании, кроме топбара)
+local ContentHolder = Instance.new("Frame", MainFrame)
+ContentHolder.Name = "ContentHolder"
+ContentHolder.Size = UDim2.new(1, 0, 1, 0)
+ContentHolder.BackgroundTransparency = 1
+ContentHolder.ZIndex = 2
+
+local PagesContainer = Instance.new("Frame", ContentHolder)
 PagesContainer.Name = "PagesContainer"
 PagesContainer.Size = UDim2.new(1, -185, 1, -70)
 PagesContainer.Position = UDim2.new(0, 175, 0, 60)
@@ -122,8 +130,9 @@ TabTitle.Position = UDim2.new(0, 185, 0, 18)
 TabTitle.Size = UDim2.new(0, 200, 0, 20)
 TabTitle.TextXAlignment = Enum.TextXAlignment.Left
 TabTitle.BackgroundTransparency = 1
+TabTitle.ZIndex = 10
 
--- Кнопки управления в верхнем правом углу
+-- Кнопки управления (закрытие / разворачивание) вынесены на уровень выше, чтобы не скрывались
 local ControlsContainer = Instance.new("Frame", MainFrame)
 ControlsContainer.Name = "ControlsContainer"
 ControlsContainer.Size = UDim2.new(0, 55, 0, 24)
@@ -151,14 +160,15 @@ CloseBtn.TextColor3 = Color3.fromRGB(180, 180, 180)
 CloseBtn.BackgroundTransparency = 1
 CloseBtn.ZIndex = 11
 
--- Оранжевый компактный виджет в свернутом состоянии (с иконкой и заголовком)
+-- Оранжевая иконка-кнопка (Toggle) без лишнего текста, строго как на оригинальном дизайне
 local OpenToggleButton = Instance.new("TextButton", PulseHub)
 OpenToggleButton.Name = "OpenToggleButton"
-OpenToggleButton.Size = UDim2.new(0, 130, 0, 38)
+OpenToggleButton.Size = UDim2.new(0, 38, 0, 38)
 OpenToggleButton.Position = UDim2.new(0, 20, 1, -58)
 OpenToggleButton.BackgroundColor3 = Color3.fromRGB(22, 22, 22)
 OpenToggleButton.Visible = false
 OpenToggleButton.ZIndex = 20
+OpenToggleButton.Text = ""
 Instance.new("UICorner", OpenToggleButton).CornerRadius = UDim.new(0, 8)
 
 local ToggleStroke = Instance.new("UIStroke", OpenToggleButton)
@@ -166,26 +176,14 @@ ToggleStroke.Color = Color3.fromRGB(255, 128, 0)
 ToggleStroke.Thickness = 1.5
 
 local ToggleIcon = Instance.new("ImageLabel", OpenToggleButton)
-ToggleIcon.Size = UDim2.new(0, 22, 0, 22)
-ToggleIcon.Position = UDim2.new(0, 10, 0.5, -11)
+ToggleIcon.Size = UDim2.new(0, 24, 0, 24)
+ToggleIcon.Position = UDim2.new(0.5, -12, 0.5, -12)
 ToggleIcon.BackgroundTransparency = 1
 ToggleIcon.Image = "rbxthumb://type=Asset&id=" .. CustomIconID .. "&w=150&h=150"
 ToggleIcon.ZIndex = 21
 Instance.new("UICorner", ToggleIcon).CornerRadius = UDim.new(0, 4)
 
-local ToggleTitle = Instance.new("TextLabel", OpenToggleButton)
-ToggleTitle.Name = "ToggleTitle"
-ToggleTitle.Text = "Pulse Hub"
-ToggleTitle.Font = Enum.Font.GothamBold
-ToggleTitle.TextColor3 = Color3.fromRGB(255, 255, 255)
-ToggleTitle.TextSize = 12
-ToggleTitle.Position = UDim2.new(0, 38, 0, 0)
-ToggleTitle.Size = UDim2.new(1, -48, 1, 0)
-ToggleTitle.TextXAlignment = Enum.TextXAlignment.Left
-ToggleTitle.BackgroundTransparency = 1
-ToggleTitle.ZIndex = 21
-
-local SearchContainer = Instance.new("Frame", MainFrame)
+local SearchContainer = Instance.new("Frame", ContentHolder)
 SearchContainer.Size = UDim2.new(0, 140, 0, 30)
 SearchContainer.Position = UDim2.new(1, -215, 0, 12)
 SearchContainer.BackgroundColor3 = Color3.fromRGB(22, 22, 22)
@@ -228,7 +226,7 @@ SearchBox.PlaceholderColor3 = Color3.fromRGB(130, 130, 130)
 SearchBox.TextXAlignment = Enum.TextXAlignment.Left
 SearchBox.ZIndex = 7
 
-local SidebarContainer = Instance.new("Frame", MainFrame)
+local SidebarContainer = Instance.new("Frame", ContentHolder)
 SidebarContainer.Size = UDim2.new(0, 170, 1, 0)
 SidebarContainer.BackgroundTransparency = 1
 SidebarContainer.ZIndex = 3
@@ -374,23 +372,32 @@ applyHover(CloseBtn, Color3.fromRGB(180,180,180), Color3.fromRGB(255,70,70))
 applyHover(MinimizeBtn, Color3.fromRGB(180,180,180), Color3.fromRGB(255,150,30))
 applyHover(ClearSearchBtn, Color3.fromRGB(150,150,150), Color3.fromRGB(255,255,255))
 
--- Исправленная логика Сворачивания без багов UIScale
+-- Логика плавного сворачивания с сохранением позиции окна
 local Library = {}
 Library.CurrentScale = 1.00
 local isMinimized = false
+local savedPosition = MainFrame.Position
 
 local function ToggleMinimize()
     isMinimized = not isMinimized
     if isMinimized then
-        local t = tween(MainScale, {Scale = 0.01}, 0.18) -- Защита от NaN ошибки в Roblox UI
+        savedPosition = MainFrame.Position -- Запоминаем текущее положение перед сворачиванием
+        local t = tween(MainScale, {Scale = 0.01}, 0.18)
         t.Completed:Connect(function()
             if isMinimized then
+                ContentHolder.Visible = false
+                TabTitle.Visible = false
+                ControlsContainer.Visible = false
                 MainFrame.Visible = false
                 OpenToggleButton.Visible = true
             end
         end)
     else
         MainFrame.Visible = true
+        ContentHolder.Visible = true
+        TabTitle.Visible = true
+        ControlsContainer.Visible = true
+        MainFrame.Position = savedPosition -- Возвращаем ровно туда, где оно было
         MainScale.Scale = 0.01
         OpenToggleButton.Visible = false
         tween(MainScale, {Scale = Library.CurrentScale}, 0.18)
@@ -400,12 +407,16 @@ end
 MinimizeBtn.Activated:Connect(ToggleMinimize)
 OpenToggleButton.Activated:Connect(ToggleMinimize)
 
+-- Перетаскивание (Drag) с сохранением позиции в реальном времени
 local dragToggle, dragInput, dragStart, startPos
 MainFrame.InputBegan:Connect(function(input)
     if (input.UserInputType == Enum.UserInputType.MouseButton1 or input.UserInputType == Enum.UserInputType.Touch) then
         dragToggle = true; dragStart = input.Position; startPos = MainFrame.Position
         input.Changed:Connect(function()
-            if input.UserInputState == Enum.UserInputState.End then dragToggle = false end
+            if input.UserInputState == Enum.UserInputState.End then 
+                dragToggle = false 
+                savedPosition = MainFrame.Position -- Фиксируем позицию после отпускания мыши
+            end
         end)
     end
 end)
@@ -573,7 +584,6 @@ table.insert(Library.TrackedSubText, StatsLabel)
 table.insert(Library.TrackedMainText, SearchBox)
 table.insert(Library.TrackedMainText, CloseBtn)
 table.insert(Library.TrackedMainText, MinimizeBtn)
-table.insert(Library.TrackedMainText, ToggleTitle)
 
 local SearchableElements = {}
 local LocaleObjects = {}
