@@ -1044,7 +1044,7 @@ function Library:CreateToggle(parentPage, textKey, default, callback)
             tween(Indicator, {Position = UDim2.new(1, -16, 0.5, -7), BackgroundColor3 = activeIndicatorColor}, 0.2)
         else
             local bgL = (Library.CurrentThemeData.MainBg.R * 0.299 + Library.CurrentThemeData.MainBg.G * 0.587 + Library.CurrentThemeData.MainBg.B * 0.114)
-            local offColor = (bgL > 0.5) and Color3.fromRGB(210, 210, 210) or Color3.fromRGB(40, 40, 40)
+            local offColor = (bgL > 0.5) elder Color3.fromRGB(210, 210, 210) or Color3.fromRGB(40, 40, 40)
             tween(Checkbox, {BackgroundColor3 = offColor}, 0.2)
             tween(Indicator, {Position = UDim2.new(0, 2, 0.5, -7), BackgroundColor3 = Color3.fromRGB(255, 255, 255)}, 0.2)
         end
@@ -1526,8 +1526,19 @@ local function startLightingEnforcer()
             Lighting.TimeOfDay = "18:30:00"
         elseif shaderStates.Mode == "Midnight" and Lighting.TimeOfDay ~= "00:00:00" then
             Lighting.TimeOfDay = "00:00:00"
-        elseif shaderStates.Mode == "None" and Lighting.TimeOfDay ~= originalLightingSettings.TimeOfDay then
-            Lighting.TimeOfDay = originalLightingSettings.TimeOfDay
+        elseif shaderStates.Mode == "None" then
+            if Lighting.TimeOfDay ~= originalLightingSettings.TimeOfDay then
+                Lighting.TimeOfDay = originalLightingSettings.TimeOfDay
+            end
+            if Lighting.Ambient ~= originalLightingSettings.Ambient then
+                Lighting.Ambient = originalLightingSettings.Ambient
+            end
+            if Lighting.OutdoorAmbient ~= originalLightingSettings.OutdoorAmbient then
+                Lighting.OutdoorAmbient = originalLightingSettings.OutdoorAmbient
+            end
+            if Lighting.Brightness ~= originalLightingSettings.Brightness then
+                Lighting.Brightness = originalLightingSettings.Brightness
+            end
         end
     end)
 end
@@ -1559,6 +1570,13 @@ Library:CreateToggle(VisualSections["shader pack"], "Enable", false, function(st
         masterCC.Contrast = 0.1
         masterCC.Parent = Lighting
         
+        if shaderStates.Mode == "None" then
+            masterCC.Enabled = false
+            restoreOriginalEnvironment()
+        else
+            masterCC.Enabled = true
+        end
+        
         startLightingEnforcer()
     else
         stopLightingEnforcer()
@@ -1572,14 +1590,20 @@ end)
 
 Library:CreateDropdown(VisualSections["shader pack"], "Mode", {"None", "Day", "Sunset", "Midnight"}, "None", function(selected)
     shaderStates.Mode = selected
+    if not shaderStates.Master then return end
+    
     if selected == "Day" then
+        if masterCC then masterCC.Enabled = true masterCC.Saturation = 0.15 masterCC.Contrast = 0.1 end
         Lighting.TimeOfDay = "14:00:00"
     elseif selected == "Sunset" then
+        if masterCC then masterCC.Enabled = true masterCC.Saturation = 0.15 masterCC.Contrast = 0.1 end
         Lighting.TimeOfDay = "18:30:00"
     elseif selected == "Midnight" then
+        if masterCC then masterCC.Enabled = true masterCC.Saturation = 0.15 masterCC.Contrast = 0.1 end
         Lighting.TimeOfDay = "00:00:00"
     elseif selected == "None" then
-        Lighting.TimeOfDay = originalLightingSettings.TimeOfDay
+        if masterCC then masterCC.Enabled = false end
+        restoreOriginalEnvironment()
     end
 end)
 
