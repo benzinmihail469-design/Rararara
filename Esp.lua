@@ -1,4 +1,4 @@
-local CustomIconID = "76579925188009"
+Local CustomIconID = "76579925188009"
 local TweenService = game:GetService("TweenService")
 local UserInputService = game:GetService("UserInputService")
 local RunService = game:GetService("RunService")
@@ -32,6 +32,25 @@ local function toggleAntiAFK(state)
     end
 end
 
+local function toggleShader(name, state, instanceClass, properties)
+    local storageName = "PulseHub_" .. name
+    local existing = Lighting:FindFirstChild(storageName)
+    if state then
+        if not existing then
+            local shader = Instance.new(instanceClass)
+            shader.Name = storageName
+            for k, v in pairs(properties) do
+                shader[k] = v
+            end
+            shader.Parent = Lighting
+        end
+    else
+        if existing then
+            existing:Destroy()
+        end
+    end
+end
+
 local SafeParent = nil
 if typeof(gethui) == "function" then
     SafeParent = gethui()
@@ -46,14 +65,14 @@ if not SafeParent then
     SafeParent = Players.LocalPlayer:WaitForChild("PlayerGui")
 end
 
-local DarkHub = Instance.new("ScreenGui")
-if SafeParent:FindFirstChild("DarkHub") then
-    SafeParent.DarkHub:Destroy()
+local PulseHub = Instance.new("ScreenGui")
+if SafeParent:FindFirstChild("PulseHub") then
+    SafeParent.PulseHub:Destroy()
 end
 
-DarkHub.Name = "DarkHub"
-DarkHub.Parent = SafeParent
-DarkHub.ZIndexBehavior = Enum.ZIndexBehavior.Sibling
+PulseHub.Name = "PulseHub"
+PulseHub.Parent = SafeParent
+PulseHub.ZIndexBehavior = Enum.ZIndexBehavior.Sibling
 
 local function tween(obj, props, dur)
     local t = TweenService:Create(obj, TweenInfo.new(dur or 0.25, Enum.EasingStyle.Quart, Enum.EasingDirection.Out), props)
@@ -65,7 +84,7 @@ local function NormalizeText(str)
     if type(str) ~= "string" then return "" end
     local lowerStr = string.lower(str)
     local upperToLower = {
-        ["А"]="а", ["Б"]="б", ["В"]="в", ["Г"]="г", ["Д"]="д", ["Е"]="е", ["Ё"]="ё", ["Ж"]="ж", ["З"]="з",
+        ["А"]="а", ["Б"]="б", ["Вв"]="в", ["Г"]="г", ["Д"]="д", ["Е"]="е", ["Ё"]="ё", ["Ж"]="ж", ["З"]="з",
         ["И"]="и", ["Й"]="й", ["К"]="к", ["Л"]="л", ["М"]="м", ["Н"]="н", ["О"]="о", ["П"]="п", ["Р"]="р",
         ["С"]="с", ["Т"]="т", ["У"]="у", ["Ф"]="ф", ["Х"]="х", ["Ц"]="ц", ["Ч"]="ч", ["Ш"]="ш", ["Щ"]="щ",
         ["Ъ"]="ъ", ["Ы"]="ы", ["Ь"]="ь", ["Э"]="э", ["Ю"]="ю", ["Я"]="я"
@@ -76,7 +95,7 @@ local function NormalizeText(str)
     local synonyms = {
         ["авто"] = "auto", ["фарм"] = "farm", ["есп"] = "esp", ["монет"] = "coins",
         ["монеты"] = "coins", ["игроков"] = "players", ["игрок"] = "player",
-        ["визуал"] = "visual", ["телепорт"] = "teleport", ["настройки"] = "settings"
+        ["визуал"] = "visual", ["телепорт"] = "teleport", ["настройки"] = "settings", ["язык"] = "language"
     }
     for ru, en in pairs(synonyms) do
         lowerStr = string.gsub(lowerStr, ru, en)
@@ -88,7 +107,7 @@ local function NormalizeText(str)
     return string.gsub(lowerStr, "[%p%s%c]", "")
 end
 
-local MainFrame = Instance.new("Frame", DarkHub)
+local MainFrame = Instance.new("Frame", PulseHub)
 MainFrame.Name = "MainFrame"
 MainFrame.BackgroundColor3 = Color3.fromRGB(14, 14, 14)
 MainFrame.BackgroundTransparency = 0.15
@@ -106,13 +125,7 @@ local MainStroke = Instance.new("UIStroke", MainFrame)
 MainStroke.Color = Color3.fromRGB(40, 40, 40)
 MainStroke.Thickness = 1.5
 
-local ContentHolder = Instance.new("Frame", MainFrame)
-ContentHolder.Name = "ContentHolder"
-ContentHolder.Size = UDim2.new(1, 0, 1, 0)
-ContentHolder.BackgroundTransparency = 1
-ContentHolder.ZIndex = 2
-
-local PagesContainer = Instance.new("Frame", ContentHolder)
+local PagesContainer = Instance.new("Frame", MainFrame)
 PagesContainer.Name = "PagesContainer"
 PagesContainer.Size = UDim2.new(1, -185, 1, -70)
 PagesContainer.Position = UDim2.new(0, 175, 0, 60)
@@ -128,28 +141,27 @@ TabTitle.Position = UDim2.new(0, 185, 0, 18)
 TabTitle.Size = UDim2.new(0, 200, 0, 20)
 TabTitle.TextXAlignment = Enum.TextXAlignment.Left
 TabTitle.BackgroundTransparency = 1
-TabTitle.ZIndex = 10
 
 local ControlsContainer = Instance.new("Frame", MainFrame)
 ControlsContainer.Name = "ControlsContainer"
-ControlsContainer.Size = UDim2.new(0, 55, 0, 24)
-ControlsContainer.Position = UDim2.new(1, -65, 0, 14)
+ControlsContainer.Size = UDim2.new(0, 60, 0, 30)
+ControlsContainer.Position = UDim2.new(1, -65, 0, 10)
 ControlsContainer.BackgroundTransparency = 1
 ControlsContainer.ZIndex = 10
 
-local MinimizeBtn = Instance.new("TextButton", ControlsContainer)
-MinimizeBtn.Size = UDim2.new(0, 22, 0, 22)
-MinimizeBtn.Position = UDim2.new(0, 0, 0, 0)
-MinimizeBtn.Text = "—"
-MinimizeBtn.Font = Enum.Font.GothamBold
-MinimizeBtn.TextSize = 12
-MinimizeBtn.TextColor3 = Color3.fromRGB(180, 180, 180)
-MinimizeBtn.BackgroundTransparency = 1
-MinimizeBtn.ZIndex = 11
+local MinBtn = Instance.new("TextButton", ControlsContainer)
+MinBtn.Size = UDim2.new(0, 24, 0, 24)
+MinBtn.Position = UDim2.new(0, 0, 0, 3)
+MinBtn.Text = "—"
+MinBtn.Font = Enum.Font.GothamBold
+MinBtn.TextSize = 12
+MinBtn.TextColor3 = Color3.fromRGB(180, 180, 180)
+MinBtn.BackgroundTransparency = 1
+MinBtn.ZIndex = 11
 
 local CloseBtn = Instance.new("TextButton", ControlsContainer)
-CloseBtn.Size = UDim2.new(0, 22, 0, 22)
-CloseBtn.Position = UDim2.new(0, 26, 0, 0)
+CloseBtn.Size = UDim2.new(0, 24, 0, 24)
+CloseBtn.Position = UDim2.new(0, 30, 0, 0)
 CloseBtn.Text = "×"
 CloseBtn.Font = Enum.Font.Arial
 CloseBtn.TextSize = 22
@@ -157,48 +169,9 @@ CloseBtn.TextColor3 = Color3.fromRGB(180, 180, 180)
 CloseBtn.BackgroundTransparency = 1
 CloseBtn.ZIndex = 11
 
-local OpenToggleButton = Instance.new("TextButton", DarkHub)
-OpenToggleButton.Name = "OpenToggleButton"
-OpenToggleButton.Size = UDim2.new(0, 125, 0, 38)
-OpenToggleButton.Position = UDim2.new(0, 20, 1, -58)
-OpenToggleButton.BackgroundColor3 = Color3.fromRGB(14, 14, 14)
-OpenToggleButton.BackgroundTransparency = 0.15
-OpenToggleButton.Visible = false
-OpenToggleButton.ZIndex = 20
-OpenToggleButton.Text = ""
-Instance.new("UICorner", OpenToggleButton).CornerRadius = UDim.new(0, 10)
-
-local ToggleStroke = Instance.new("UIStroke", OpenToggleButton)
-ToggleStroke.Color = Color3.fromRGB(255, 128, 0)
-ToggleStroke.Thickness = 1.5
-ToggleStroke.ApplyStrokeMode = Enum.ApplyStrokeMode.Border
-
-local ToggleLayout = Instance.new("UIListLayout", OpenToggleButton)
-ToggleLayout.FillDirection = Enum.FillDirection.Horizontal
-ToggleLayout.VerticalAlignment = Enum.VerticalAlignment.Center
-ToggleLayout.HorizontalAlignment = Enum.HorizontalAlignment.Center
-ToggleLayout.Padding = UDim.new(0, 8)
-
-local ToggleIcon = Instance.new("ImageLabel", OpenToggleButton)
-ToggleIcon.Size = UDim2.new(0, 22, 0, 22)
-ToggleIcon.BackgroundTransparency = 1
-ToggleIcon.Image = "rbxthumb://type=Asset&id=" .. CustomIconID .. "&w=150&h=150"
-ToggleIcon.ZIndex = 21
-Instance.new("UICorner", ToggleIcon).CornerRadius = UDim.new(0, 5)
-
-local ToggleText = Instance.new("TextLabel", OpenToggleButton)
-ToggleText.Size = UDim2.new(0, 0, 1, 0)
-ToggleText.AutomaticSize = Enum.AutomaticSize.X
-ToggleText.BackgroundTransparency = 1
-ToggleText.Text = "Dark Hub"
-ToggleText.Font = Enum.Font.GothamBold
-ToggleText.TextColor3 = Color3.fromRGB(255, 255, 255)
-ToggleText.TextSize = 12
-ToggleText.ZIndex = 21
-
-local SearchContainer = Instance.new("Frame", ContentHolder)
-SearchContainer.Size = UDim2.new(0, 140, 0, 30)
-SearchContainer.Position = UDim2.new(1, -215, 0, 12)
+local SearchContainer = Instance.new("Frame", MainFrame)
+SearchContainer.Size = UDim2.new(0, 160, 0, 30)
+SearchContainer.Position = UDim2.new(1, -240, 0, 12)
 SearchContainer.BackgroundColor3 = Color3.fromRGB(22, 22, 22)
 SearchContainer.ZIndex = 6
 Instance.new("UICorner", SearchContainer).CornerRadius = UDim.new(0, 8)
@@ -239,7 +212,7 @@ SearchBox.PlaceholderColor3 = Color3.fromRGB(130, 130, 130)
 SearchBox.TextXAlignment = Enum.TextXAlignment.Left
 SearchBox.ZIndex = 7
 
-local SidebarContainer = Instance.new("Frame", ContentHolder)
+local SidebarContainer = Instance.new("Frame", MainFrame)
 SidebarContainer.Size = UDim2.new(0, 170, 1, 0)
 SidebarContainer.BackgroundTransparency = 1
 SidebarContainer.ZIndex = 3
@@ -263,7 +236,7 @@ Instance.new("UICorner", HubIcon).CornerRadius = UDim.new(0, 6)
 HubIcon.Image = "rbxthumb://type=Asset&id=" .. CustomIconID .. "&w=150&h=150"
 
 local HubTitle = Instance.new("TextLabel", HeaderBg)
-HubTitle.Text = "Dark Hub"
+HubTitle.Text = "Pulse Hub"
 HubTitle.Font = Enum.Font.GothamBold
 HubTitle.TextColor3 = Color3.fromRGB(255, 255, 255)
 HubTitle.TextSize = 13
@@ -283,6 +256,33 @@ SubTitle.Size = UDim2.new(0, 95, 0, 13)
 SubTitle.TextXAlignment = Enum.TextXAlignment.Left
 SubTitle.BackgroundTransparency = 1
 SubTitle.ZIndex = 5
+
+local EmbeddedControls = Instance.new("Frame", HeaderBg)
+EmbeddedControls.Size = UDim2.new(0, 50, 0, 30)
+EmbeddedControls.Position = UDim2.new(1, -50, 0, 8)
+EmbeddedControls.BackgroundTransparency = 1
+EmbeddedControls.ZIndex = 6
+EmbeddedControls.Visible = false
+
+local EmbMinBtn = Instance.new("TextButton", EmbeddedControls)
+EmbMinBtn.Size = UDim2.new(0, 20, 0, 20)
+EmbMinBtn.Position = UDim2.new(0, 0, 0, 5)
+EmbMinBtn.Text = "—"
+EmbMinBtn.Font = Enum.Font.GothamBold
+EmbMinBtn.TextSize = 11
+EmbMinBtn.TextColor3 = Color3.fromRGB(180, 180, 180)
+EmbMinBtn.BackgroundTransparency = 1
+EmbMinBtn.ZIndex = 7
+
+local EmbCloseBtn = Instance.new("TextButton", EmbeddedControls)
+EmbCloseBtn.Size = UDim2.new(0, 20, 0, 20)
+EmbCloseBtn.Position = UDim2.new(0, 25, 0, 2)
+EmbCloseBtn.Text = "×"
+EmbCloseBtn.Font = Enum.Font.Arial
+EmbCloseBtn.TextSize = 20
+EmbCloseBtn.TextColor3 = Color3.fromRGB(180, 180, 180)
+EmbCloseBtn.BackgroundTransparency = 1
+EmbCloseBtn.ZIndex = 7
 
 local Navigation = Instance.new("ScrollingFrame", SidebarContainer)
 Navigation.Size = UDim2.new(1, -20, 1, -125)
@@ -313,7 +313,7 @@ local DiscordLabel = Instance.new("TextLabel", FooterBg)
 DiscordLabel.Position = UDim2.new(0, 10, 0, 7)
 DiscordLabel.Size = UDim2.new(1, -20, 0, 15)
 DiscordLabel.Font = Enum.Font.GothamMedium
-DiscordLabel.Text = "discord.gg/darkhub"
+DiscordLabel.Text = "discord.gg/pulsezone"
 DiscordLabel.TextColor3 = Color3.fromRGB(255, 255, 255)
 DiscordLabel.TextSize = 10
 DiscordLabel.TextXAlignment = Enum.TextXAlignment.Left
@@ -372,62 +372,58 @@ local function CreateRipple(button, clickX, clickY)
     t.Completed:Connect(function() Ripple:Destroy() end)
 end
 
+local isMinimized = false
+local LastMinimizedPos = UDim2.new(0.5, 0, 0.5, 0)
+local function ToggleMinimize()
+    isMinimized = not isMinimized
+    if isMinimized then
+        PagesContainer.Visible, TabTitle.Visible, SearchContainer.Visible, Navigation.Visible, FooterBg.Visible, ControlsContainer.Visible = false, false, false, false, false, false
+        MainStroke.Enabled = false
+        MainFrame.BackgroundTransparency = 1
+        HeaderBg.Position = UDim2.new(0, 0, 0, 0)
+        HeaderBg.Size = UDim2.new(0, 175, 0, 46)
+        EmbeddedControls.Visible = true
+        tween(MainFrame, {Size = UDim2.new(0, 175, 0, 46), Position = LastMinimizedPos})
+    else
+        LastMinimizedPos = MainFrame.Position
+        EmbeddedControls.Visible = false
+        HeaderBg.Position = UDim2.new(0, 10, 0, 10)
+        HeaderBg.Size = UDim2.new(0, 150, 0, 46)
+        MainStroke.Enabled = true
+        MainFrame.BackgroundTransparency = 0.15
+        tween(MainFrame, {Size = UDim2.new(0, 550, 0, 350), Position = UDim2.new(0.5, 0, 0.5, 0)}).Completed:Connect(function()
+            if not isMinimized then
+                PagesContainer.Visible, TabTitle.Visible, SearchContainer.Visible, Navigation.Visible, FooterBg.Visible, ControlsContainer.Visible = true, true, true, true, true, true
+            end
+        end)
+    end
+end
+
+MinBtn.Activated:Connect(ToggleMinimize)
+EmbMinBtn.Activated:Connect(ToggleMinimize)
+
 local function CloseGui()
-    DarkHub:Destroy()
+    PulseHub:Destroy()
 end
 CloseBtn.Activated:Connect(CloseGui)
+EmbCloseBtn.Activated:Connect(CloseGui)
 
 local function applyHover(btn, normalColor, hoverColor)
     btn.MouseEnter:Connect(function() tween(btn, {TextColor3 = hoverColor}) end)
     btn.MouseLeave:Connect(function() tween(btn, {TextColor3 = normalColor}) end)
 end
+applyHover(MinBtn, Color3.fromRGB(180,180,180), Color3.fromRGB(255,255,255))
+applyHover(EmbMinBtn, Color3.fromRGB(180,180,180), Color3.fromRGB(255,255,255))
 applyHover(CloseBtn, Color3.fromRGB(180,180,180), Color3.fromRGB(255,70,70))
-applyHover(MinimizeBtn, Color3.fromRGB(180,180,180), Color3.fromRGB(255,150,30))
+applyHover(EmbCloseBtn, Color3.fromRGB(180,180,180), Color3.fromRGB(255,70,70))
 applyHover(ClearSearchBtn, Color3.fromRGB(150,150,150), Color3.fromRGB(255,255,255))
-
-local Library = {}
-Library.CurrentScale = 1.00
-local isMinimized = false
-local savedPosition = MainFrame.Position
-
-local function ToggleMinimize()
-    isMinimized = not isMinimized
-    if isMinimized then
-        savedPosition = MainFrame.Position
-        local t = tween(MainScale, {Scale = 0.01}, 0.18)
-        t.Completed:Connect(function()
-            if isMinimized then
-                ContentHolder.Visible = false
-                TabTitle.Visible = false
-                ControlsContainer.Visible = false
-                MainFrame.Visible = false
-                OpenToggleButton.Visible = true
-            end
-        end)
-    else
-        MainFrame.Visible = true
-        ContentHolder.Visible = true
-        TabTitle.Visible = true
-        ControlsContainer.Visible = true
-        MainFrame.Position = savedPosition
-        MainScale.Scale = 0.01
-        OpenToggleButton.Visible = false
-        tween(MainScale, {Scale = Library.CurrentScale}, 0.18)
-    end
-end
-
-MinimizeBtn.Activated:Connect(ToggleMinimize)
-OpenToggleButton.Activated:Connect(ToggleMinimize)
 
 local dragToggle, dragInput, dragStart, startPos
 MainFrame.InputBegan:Connect(function(input)
     if (input.UserInputType == Enum.UserInputType.MouseButton1 or input.UserInputType == Enum.UserInputType.Touch) then
         dragToggle = true; dragStart = input.Position; startPos = MainFrame.Position
         input.Changed:Connect(function()
-            if input.UserInputState == Enum.UserInputState.End then 
-                dragToggle = false 
-                savedPosition = MainFrame.Position
-            end
+            if input.UserInputState == Enum.UserInputState.End then dragToggle = false end
         end)
     end
 end)
@@ -441,9 +437,11 @@ UserInputService.InputChanged:Connect(function(input)
         local delta = input.Position - dragStart
         local newPos = UDim2.new(startPos.X.Scale, startPos.X.Offset + delta.X, startPos.Y.Scale, startPos.Y.Offset + delta.Y)
         MainFrame.Position = newPos
+        LastMinimizedPos = newPos
     end
 end)
 
+Library = {}
 Library.CurrentFont = Enum.Font.Gotham
 Library.CurrentLanguage = "English"
 Library.CurrentTabKey = "Main"
@@ -458,7 +456,7 @@ Library.TrackedStrokes = {}
 local ThemeConfig = {
     ["Black"]         = { Accent = Color3.fromRGB(180, 180, 180), MainBg = Color3.fromRGB(12, 12, 12), ElementBg = Color3.fromRGB(22, 22, 22) },
     ["White"]         = { Accent = Color3.fromRGB(0, 122, 255),   MainBg = Color3.fromRGB(240, 240, 240), ElementBg = Color3.fromRGB(255, 255, 255) },
-    ["Orange"]        = { Accent = Color3.fromRGB(255, 128, 0),   MainBg = Color3.fromRGB(25, 18, 15),   ElementBg = Color3.fromRGB(40, 30, 25) },
+    ["Pink"]          = { Accent = Color3.fromRGB(255, 105, 180), MainBg = Color3.fromRGB(25, 15, 20),   ElementBg = Color3.fromRGB(40, 25, 35) },
     ["Red"]           = { Accent = Color3.fromRGB(255, 50, 50),   MainBg = Color3.fromRGB(20, 10, 10),   ElementBg = Color3.fromRGB(35, 15, 15) },
     ["Green"]         = { Accent = Color3.fromRGB(50, 255, 50),   MainBg = Color3.fromRGB(10, 20, 10),   ElementBg = Color3.fromRGB(15, 35, 15) },
     ["Blue"]          = { Accent = Color3.fromRGB(0, 150, 255),   MainBg = Color3.fromRGB(10, 15, 25),   ElementBg = Color3.fromRGB(20, 25, 40) },
@@ -470,7 +468,7 @@ local ThemeConfig = {
     ["Neon Purple"]   = { Accent = Color3.fromRGB(224, 32, 255),  MainBg = Color3.fromRGB(18, 8, 28),    ElementBg = Color3.fromRGB(32, 12, 51) },
     ["Neon Cyber"]    = { Accent = Color3.fromRGB(0, 255, 255),   MainBg = Color3.fromRGB(10, 10, 12),   ElementBg = Color3.fromRGB(20, 20, 25) },
     ["Amber Glow"]    = { Accent = Color3.fromRGB(255, 165, 0),   MainBg = Color3.fromRGB(20, 16, 10),   ElementBg = Color3.fromRGB(36, 28, 18) },
-    ["Anime"]         = { Accent = Color3.fromRGB(255, 105, 180), MainBg = Color3.fromRGB(24, 20, 26),   ElementBg = Color3.fromRGB(43, 35, 48) },
+    ["Anime"]         = { Accent = Color3.fromRGB(255, 111, 207), MainBg = Color3.fromRGB(24, 20, 26),   ElementBg = Color3.fromRGB(43, 35, 48) },
     ["Deep Violet"]   = { Accent = Color3.fromRGB(102, 51, 153),  MainBg = Color3.fromRGB(13, 11, 20),   ElementBg = Color3.fromRGB(23, 19, 36) },
     ["Cyanic"]        = { Accent = Color3.fromRGB(0, 255, 200),   MainBg = Color3.fromRGB(10, 22, 26),   ElementBg = Color3.fromRGB(18, 38, 46) },
     ["Blood Red"]     = { Accent = Color3.fromRGB(170, 0, 0),     MainBg = Color3.fromRGB(14, 4, 4),     ElementBg = Color3.fromRGB(28, 8, 8) },
@@ -593,9 +591,10 @@ table.insert(Library.TrackedSubText, SubTitle)
 table.insert(Library.TrackedMainText, DiscordLabel)
 table.insert(Library.TrackedSubText, StatsLabel)
 table.insert(Library.TrackedMainText, SearchBox)
+table.insert(Library.TrackedMainText, MinBtn)
 table.insert(Library.TrackedMainText, CloseBtn)
-table.insert(Library.TrackedMainText, MinimizeBtn)
-table.insert(Library.TrackedMainText, ToggleText)
+table.insert(Library.TrackedMainText, EmbMinBtn)
+table.insert(Library.TrackedMainText, EmbCloseBtn)
 
 local SearchableElements = {}
 local LocaleObjects = {}
@@ -608,13 +607,12 @@ local Localization = {
         ["CinematicShader"] = "Cinematic Shaders", ["BloomShader"] = "Bloom Glow FX", ["BlurShader"] = "Screen Blur Effect",
         ["ShaderPreset"] = "Shader Preset", ["SkyboxChanger"] = "Skybox Changer",
         ["UISize"] = "UI Size", ["UITransparency"] = "UI Transparency", ["MenuFont"] = "Menu Font",
-        ["AntiAFK"] = "Anti-AFK", ["UITheme"] = "UI Theme",
+        ["Language"] = "Language", ["AntiAFK"] = "Anti-AFK", ["UITheme"] = "UI Theme",
         ["AnimatedWindow"] = "Animated Window", ["Gradient"] = "Gradient Background",
         ["shader pack"] = "Shader Pack",
         ["Enable"] = "Enable", ["Mode"] = "Mode", ["Bloom"] = "Bloom",
         ["Intensity"] = "Intensity", ["Size"] = "Size", ["Atmosphere"] = "Atmosphere",
-        ["Density"] = "Density", ["Sun Rays"] = "Sun Rays", ["Blur"] = "Blur", ["Strength"] = "Strength",
-        ["Language"] = "Language"
+        ["Density"] = "Density", ["Sun Rays"] = "Sun Rays", ["Blur"] = "Blur", ["Strength"] = "Strength"
     },
     ["Русский"] = {
         ["Main"] = "Главная", ["Teleport"] = "Телепорт", ["Murder"] = "Убийца", ["Sheriff"] = "Шериф",
@@ -623,13 +621,12 @@ local Localization = {
         ["CinematicShader"] = "Кинематографичные Шейдеры", ["BloomShader"] = "Эффект Свечения", ["BlurShader"] = "Размытие Экрана",
         ["ShaderPreset"] = "Пресет Шейдеров", ["SkyboxChanger"] = "Смена Неба",
         ["UISize"] = "Размер интерфейса", ["UITransparency"] = "Прозрачность меню", ["MenuFont"] = "Шрифт меню",
-        ["AntiAFK"] = "Анти-АФК", ["UITheme"] = "Тема UI",
+        ["Language"] = "Язык", ["AntiAFK"] = "Анти-АФК", ["UITheme"] = "Тема UI",
         ["AnimatedWindow"] = "Анимированное окно", ["Gradient"] = "Градиентный фон",
         ["shader pack"] = "Пак шейдеров",
         ["Enable"] = "Включить", ["Mode"] = "Режим", ["Bloom"] = "Блум (Свечение)",
         ["Intensity"] = "Интенсивность", ["Size"] = "Размер", ["Atmosphere"] = "Атмосфера",
-        ["Density"] = "Плотность", ["Sun Rays"] = "Лучи солнца", ["Blur"] = "Размытие", ["Strength"] = "Сила",
-        ["Language"] = "Язык"
+        ["Density"] = "Плотность", ["Sun Rays"] = "Лучи солнца", ["Blur"] = "Размытие", ["Strength"] = "Сила"
     }
 }
 
@@ -1246,7 +1243,7 @@ function Library:CreateSubTabs(parentPage, tabsList)
         if tabData.Color then
             activeColor = tabData.Color
         elseif string.find(lowName, "theme") or string.find(lowName, "тема") then
-            activeColor = Color3.fromRGB(255, 128, 0)
+            activeColor = Color3.fromRGB(235, 94, 153)
         end
         
         local BtnContainer = Instance.new("Frame", SubTabContainer)
@@ -1284,13 +1281,16 @@ function Library:CreateSubTabs(parentPage, tabsList)
         
         local Icon
         if iconId and iconId ~= "" then
-            Icon = Instance.new("TextLabel", ContentFrame)
-            Icon.Size = UDim2.new(0, 18, 0, 18)
+            Icon = Instance.new("ImageLabel", ContentFrame)
+            Icon.Size = tabData.IconSize or UDim2.new(0, 18, 0, 18)
             Icon.BackgroundTransparency = 1
-            Icon.Text = iconId
-            Icon.Font = Enum.Font.GothamBold
-            Icon.TextSize = 12
-            Icon.TextColor3 = colorGrayInactive
+            if tonumber(iconId) then
+                Icon.Image = "rbxthumb://type=Asset&id=" .. iconId .. "&w=150&h=150"
+            else
+                Icon.Image = iconId
+            end
+            Icon.ScaleType = Enum.ScaleType.Fit
+            Icon.ImageColor3 = colorGrayInactive
             Icon.ZIndex = 3
         end
         
@@ -1332,7 +1332,7 @@ function Library:CreateSubTabs(parentPage, tabsList)
                 local bgL = (Library.CurrentThemeData.MainBg.R * 0.299 + Library.CurrentThemeData.MainBg.G * 0.587 + Library.CurrentThemeData.MainBg.B * 0.114)
                 local currentInactive = (bgL > 0.5) and Color3.fromRGB(110, 110, 110) or colorGrayInactive
                 data.Label.TextColor3 = currentInactive
-                if data.Icon then data.Icon.TextColor3 = currentInactive end
+                if data.Icon then data.Icon.ImageColor3 = currentInactive end
             end
             Page.Visible = true
             VisualFrame.BackgroundColor3 = activeColor
@@ -1340,7 +1340,7 @@ function Library:CreateSubTabs(parentPage, tabsList)
             Stroke.Color = activeColor
             Stroke.Enabled = true
             Label.TextColor3 = activeColor
-            if Icon then Icon.TextColor3 = activeColor end
+            if Icon then Icon.ImageColor3 = activeColor end
         end
         ClickBtn.Activated:Connect(activateTab)
         table.insert(LocaleObjects, {Object = Label, Key = textKey})
@@ -1355,12 +1355,12 @@ function Library:CreateSubTabs(parentPage, tabsList)
         data.Stroke.Color = data.TargetColor
         data.Stroke.Enabled = true
         data.Label.TextColor3 = data.TargetColor
-        if data.Icon then data.Icon.TextColor3 = data.TargetColor end
+        if data.Icon then data.Icon.ImageColor3 = data.TargetColor end
     end
     return subPages
 end
 
-local function createPage(textKey, iconId, layoutOrder)
+function CreatePage(textKey, iconId, layoutOrder)
     local initialText = Localization[Library.CurrentLanguage][textKey] or textKey
     local PageFrame = Instance.new("ScrollingFrame", PagesContainer)
     PageFrame.Size = UDim2.new(1, 0, 1, 0)
@@ -1406,15 +1406,16 @@ local function createPage(textKey, iconId, layoutOrder)
     Padding.PaddingLeft = UDim.new(0, iconId and 42 or 12)
     
     if iconId then
-        local TabIcon = Instance.new("TextLabel", TabContainer)
+        local TabIcon = Instance.new("ImageLabel", TabContainer)
         TabIcon.Size = UDim2.new(0, 24, 0, 24)
         TabIcon.Position = UDim2.new(0, 10, 0.5, -12)
         TabIcon.BackgroundTransparency = 1
-        TabIcon.Text = iconId
-        TabIcon.Font = Enum.Font.GothamBold
-        TabIcon.TextSize = 16
-        TabIcon.TextTransparency = 0.25
-        TabIcon.TextColor3 = Color3.fromRGB(140, 140, 140)
+        if tonumber(iconId) then
+            TabIcon.Image = "rbxthumb://type=Asset&id=" .. iconId .. "&w=150&h=150"
+        else
+            TabIcon.Image = iconId
+        end
+        TabIcon.ImageTransparency = 0.25
         TabIcon.ZIndex = 7
         allTabIcons[textKey] = TabIcon
     end
@@ -1438,7 +1439,7 @@ local function createPage(textKey, iconId, layoutOrder)
         for tName, tContainer in pairs(allTabs) do
             tween(tContainer, {BackgroundTransparency = 1}, 0.2)
             tween(allTabButtons[tName], {TextColor3 = isL and Color3.fromRGB(110, 110, 110) or Color3.fromRGB(140, 140, 140)}, 0.2)
-            if allTabIcons[tName] then tween(allTabIcons[tName], {TextTransparency = 0.25}, 0.2) end
+            if allTabIcons[tName] then tween(allTabIcons[tName], {ImageTransparency = 0.25}, 0.2) end
             allPages[tName].Visible = false
         end
         Library.CurrentTabKey = textKey
@@ -1448,32 +1449,36 @@ local function createPage(textKey, iconId, layoutOrder)
         local activeTabBg = isL and Color3.fromRGB(215, 215, 215) or Color3.fromRGB(35, 35, 35)
         tween(TabContainer, {BackgroundColor3 = activeTabBg, BackgroundTransparency = 0}, 0.2)
         tween(TabBtn, {TextColor3 = isL and Color3.fromRGB(35, 35, 35) or Color3.fromRGB(255, 255, 255)}, 0.2)
-        if allTabIcons[textKey] then tween(allTabIcons[textKey], {TextTransparency = 0}, 0.2) end
+        if allTabIcons[textKey] then tween(allTabIcons[textKey], {ImageTransparency = 0}, 0.2) end
     end)
     table.insert(LocaleObjects, {Object = TabBtn, Key = textKey})
     UpdateNavCanvas()
     return PageFrame
 end
 
-local MainPage = createPage("Main", "⌂", 1)
-local TeleportPage = createPage("Teleport", "↹", 2)
-local MurderPage = createPage("Murder", "†", 3)
-local SheriffPage = createPage("Sheriff", "★", 4)
-local PlayersPage = createPage("Players", "웃", 5)
-local VisualPage = createPage("Visual", "☀", 6)
-local SettingsPage = createPage("Settings", "⚙", 99)
+local MainPage = CreatePage("Main", "103980564128710", 1)
+local TeleportPage = CreatePage("Teleport", "94373592263020", 2)
+local MurderPage = CreatePage("Murder", "85278865249050", 3)
+local SheriffPage = CreatePage("Sheriff", "77487634679354", 4)
+local PlayersPage = CreatePage("Players", "99904215381150", 5)
+local VisualPage = CreatePage("Visual", "78910169210318", 6)
+local SettingsPage = CreatePage("Settings", "117996761927034", 99)
 
 Library:CreateToggle(MainPage, "AutoFarmCoins", false, function(state) end)
 
 local VisualSections = Library:CreateSubTabs(VisualPage, {
-    {Name = "shader pack", Icon = "❂", Color = Color3.fromRGB(46, 204, 113)}
+    {Name = "shader pack", Icon = "80768064990053", Color = Color3.fromRGB(46, 204, 113)}
 })
 
 local SettingSections = Library:CreateSubTabs(SettingsPage, {
-    {Name = "UI", Icon = "◧", Color = Color3.fromRGB(108, 176, 214)},
-    {Name = "Theme", Icon = "◐", Color = Color3.fromRGB(255, 128, 0)}
+    {Name = "UI", Icon = "85203682050945", Color = Color3.fromRGB(108, 176, 214)},
+    {Name = "Theme", Icon = "78640980615320", Color = Color3.fromRGB(235, 94, 153)}
 })
 
+----------------------------------------------------
+-- КОНФИГУРАЦИЯ И СБОРКА ФУНКЦИЙ ШЕЙДЕРОВ (ИЗ ФОТО)
+----------------------------------------------------
+-- Глобальные контейнеры для сохранения родной конфигурации игры
 local originalLightingSettings = {
     TimeOfDay = Lighting.TimeOfDay,
     Ambient = Lighting.Ambient,
@@ -1482,12 +1487,14 @@ local originalLightingSettings = {
 }
 local originalSky = nil
 
+-- Вспомогательная функция отката настроек света MM2
 local function restoreOriginalEnvironment()
     Lighting.TimeOfDay = originalLightingSettings.TimeOfDay
     Lighting.Ambient = originalLightingSettings.Ambient
     Lighting.OutdoorAmbient = originalLightingSettings.OutdoorAmbient
     Lighting.Brightness = originalLightingSettings.Brightness
 
+    -- Возвращаем родное небо игры, если оно было сохранено
     local currentSky = Lighting:FindFirstChildOfClass("Sky")
     if originalSky then
         if not currentSky or currentSky.Name ~= originalSky.Name then
@@ -1499,7 +1506,6 @@ end
 
 local shaderStates = {
     Master = false,
-    Mode = "None",
     Bloom = false,
     BloomIntensity = 4,
     BloomSize = 24,
@@ -1511,98 +1517,12 @@ local shaderStates = {
     BlurStrength = 75
 }
 
-local function updateBloom()
-    local existing = Lighting:FindFirstChild("PulseHub_Bloom")
-    if shaderStates.Master and shaderStates.Bloom then
-        local bloom = existing or Instance.new("BloomEffect")
-        bloom.Name = "PulseHub_Bloom"
-        bloom.Intensity = shaderStates.BloomIntensity * 3.5
-        bloom.Size = shaderStates.BloomSize
-        bloom.Threshold = 0.1
-        bloom.Parent = Lighting
-    else
-        if existing then existing:Destroy() end
-    end
-end
-
-local function updateAtmosphere()
-    local existing = Lighting:FindFirstChild("PulseHub_Atmosphere")
-    if shaderStates.Master and shaderStates.Atmosphere then
-        local atm = existing or Instance.new("Atmosphere")
-        atm.Name = "PulseHub_Atmosphere"
-        atm.Density = shaderStates.AtmosphereDensity / 100
-        atm.Haze = (shaderStates.AtmosphereDensity / 100) * 8.5
-        atm.Glare = (shaderStates.AtmosphereDensity / 100) * 4.0
-        atm.Color = Color3.fromRGB(195, 215, 255)
-        atm.Parent = Lighting
-    else
-        if existing then existing:Destroy() end
-    end
-end
-
-local function updateSunRays()
-    local existing = Lighting:FindFirstChild("PulseHub_SunRays")
-    if shaderStates.Master and shaderStates.SunRays then
-        local sr = existing or Instance.new("SunRaysEffect")
-        sr.Name = "PulseHub_SunRays"
-        sr.Intensity = (shaderStates.SunRaysIntensity / 100) * 6.0
-        sr.Spread = 0.90
-        sr.Parent = Lighting
-        if Lighting.Brightness < 3 then Lighting.Brightness = 3.5 end
-    else
-        if existing then existing:Destroy() end
-    end
-end
-
-local function updateBlur()
-    local existing = Lighting:FindFirstChild("PulseHub_Blur")
-    if shaderStates.Master and shaderStates.Blur then
-        local blur = existing or Instance.new("BlurEffect")
-        blur.Name = "PulseHub_Blur"
-        blur.Size = (shaderStates.BlurStrength / 100) * 35
-        blur.Parent = Lighting
-    else
-        if existing then existing:Destroy() end
-    end
-end
-
+-- 1. Главный переключатель (Enable)
 local masterCC = nil
-local function updateMasterCC()
-    if not masterCC or not masterCC.Parent then return end
-    if shaderStates.Mode == "Day" then
-        masterCC.Saturation = 0.35
-        masterCC.Contrast = 0.18
-        masterCC.TintColor = Color3.fromRGB(255, 255, 255)
-    elseif shaderStates.Mode == "Sunset" then
-        masterCC.Saturation = 0.55
-        masterCC.Contrast = 0.28
-        masterCC.TintColor = Color3.fromRGB(255, 185, 135)
-    elseif shaderStates.Mode == "Midnight" then
-        masterCC.Saturation = -0.05
-        masterCC.Contrast = 0.35
-        masterCC.TintColor = Color3.fromRGB(125, 145, 205)
-    else
-        masterCC.Saturation = 0.25
-        masterCC.Contrast = 0.15
-        masterCC.TintColor = Color3.fromRGB(255, 255, 255)
-    end
-end
-
-RunService.Heartbeat:Connect(function()
-    if shaderStates.Master then
-        if shaderStates.Mode == "Day" then
-            Lighting.ClockTime = 14
-        elseif shaderStates.Mode == "Sunset" then
-            Lighting.ClockTime = 18.5
-        elseif shaderStates.Mode == "Midnight" then
-            Lighting.ClockTime = 0
-        end
-    end
-end)
-
 Library:CreateToggle(VisualSections["shader pack"], "Enable", false, function(state)
     shaderStates.Master = state
     if state then
+        -- Запоминаем параметры прямо перед внесением изменений (на случай смены карты)
         originalLightingSettings.TimeOfDay = Lighting.TimeOfDay
         originalLightingSettings.Ambient = Lighting.Ambient
         originalLightingSettings.OutdoorAmbient = Lighting.OutdoorAmbient
@@ -1615,27 +1535,47 @@ Library:CreateToggle(VisualSections["shader pack"], "Enable", false, function(st
 
         masterCC = Lighting:FindFirstChild("PulseHub_MasterCC") or Instance.new("ColorCorrectionEffect")
         masterCC.Name = "PulseHub_MasterCC"
+        masterCC.Saturation = 0.15
+        masterCC.Contrast = 0.1
         masterCC.Parent = Lighting
-        updateMasterCC()
     else
         if masterCC then masterCC:Destroy() masterCC = nil end
         local existing = Lighting:FindFirstChild("PulseHub_MasterCC")
         if existing then existing:Destroy() end
+        
+        -- Полный сброс параметров освещения к заводским
         restoreOriginalEnvironment()
     end
-    updateBloom()
-    updateAtmosphere()
-    updateSunRays()
-    updateBlur()
 end)
 
+-- 2. Выбор времени суток (Mode Dropdown)
 Library:CreateDropdown(VisualSections["shader pack"], "Mode", {"None", "Day", "Sunset", "Midnight"}, "None", function(selected)
-    shaderStates.Mode = selected
-    if shaderStates.Master then
-        if selected == "None" then restoreOriginalEnvironment() end
-        updateMasterCC()
+    if selected == "Day" then
+        Lighting.TimeOfDay = "14:00:00"
+    elseif selected == "Sunset" then
+        Lighting.TimeOfDay = "18:30:00"
+    elseif selected == "Midnight" then
+        Lighting.TimeOfDay = "00:00:00"
+    elseif selected == "None" then
+        -- Возвращаем исходное время суток карты
+        Lighting.TimeOfDay = originalLightingSettings.TimeOfDay
     end
 end)
+
+-- 3. Настройка Блума (Bloom Effect)
+local function updateBloom()
+    if shaderStates.Bloom then
+        local bloom = Lighting:FindFirstChild("PulseHub_Bloom") or Instance.new("BloomEffect")
+        bloom.Name = "PulseHub_Bloom"
+        bloom.Intensity = shaderStates.BloomIntensity
+        bloom.Size = shaderStates.BloomSize
+        bloom.Threshold = 0.8
+        bloom.Parent = Lighting
+    else
+        local bloom = Lighting:FindFirstChild("PulseHub_Bloom")
+        if bloom then bloom:Destroy() end
+    end
+end
 
 Library:CreateToggle(VisualSections["shader pack"], "Bloom", false, function(state)
     shaderStates.Bloom = state
@@ -1645,7 +1585,7 @@ end)
 Library:CreateSlider(VisualSections["shader pack"], "Intensity", 0, 10, 4, function(value)
     shaderStates.BloomIntensity = value
     local bloom = Lighting:FindFirstChild("PulseHub_Bloom")
-    if bloom then bloom.Intensity = value * 3.5 end
+    if bloom then bloom.Intensity = value end
 end)
 
 Library:CreateSlider(VisualSections["shader pack"], "Size", 0, 56, 24, function(value)
@@ -1653,6 +1593,19 @@ Library:CreateSlider(VisualSections["shader pack"], "Size", 0, 56, 24, function(
     local bloom = Lighting:FindFirstChild("PulseHub_Bloom")
     if bloom then bloom.Size = value end
 end)
+
+-- 4. Настройка Атмосферы (Atmosphere Effect)
+local function updateAtmosphere()
+    if shaderStates.Atmosphere then
+        local atm = Lighting:FindFirstChild("PulseHub_Atmosphere") or Instance.new("Atmosphere")
+        atm.Name = "PulseHub_Atmosphere"
+        atm.Density = shaderStates.AtmosphereDensity / 100
+        atm.Parent = Lighting
+    else
+        local atm = Lighting:FindFirstChild("PulseHub_Atmosphere")
+        if atm then atm:Destroy() end
+    end
+end
 
 Library:CreateToggle(VisualSections["shader pack"], "Atmosphere", false, function(state)
     shaderStates.Atmosphere = state
@@ -1662,12 +1615,21 @@ end)
 Library:CreateSlider(VisualSections["shader pack"], "Density", 0, 100, 40, function(value)
     shaderStates.AtmosphereDensity = value
     local atm = Lighting:FindFirstChild("PulseHub_Atmosphere")
-    if atm then 
-        atm.Density = value / 100 
-        atm.Haze = (value / 100) * 8.5
-        atm.Glare = (value / 100) * 4.0
-    end
+    if atm then atm.Density = value / 100 end
 end)
+
+-- 5. Настройка Лучей Солнца (Sun Rays Effect)
+local function updateSunRays()
+    if shaderStates.SunRays then
+        local sr = Lighting:FindFirstChild("PulseHub_SunRays") or Instance.new("SunRaysEffect")
+        sr.Name = "PulseHub_SunRays"
+        sr.Intensity = shaderStates.SunRaysIntensity / 100
+        sr.Parent = Lighting
+    else
+        local sr = Lighting:FindFirstChild("PulseHub_SunRays")
+        if sr then sr:Destroy() end
+    end
+end
 
 Library:CreateToggle(VisualSections["shader pack"], "Sun Rays", false, function(state)
     shaderStates.SunRays = state
@@ -1677,8 +1639,21 @@ end)
 Library:CreateSlider(VisualSections["shader pack"], "Intensity", 0, 100, 25, function(value)
     shaderStates.SunRaysIntensity = value
     local sr = Lighting:FindFirstChild("PulseHub_SunRays")
-    if sr then sr.Intensity = (value / 100) * 6.0 end
+    if sr then sr.Intensity = value / 100 end
 end)
+
+-- 6. Настройка Размытия Экрана (Blur Effect)
+local function updateBlur()
+    if shaderStates.Blur then
+        local blur = Lighting:FindFirstChild("PulseHub_Blur") or Instance.new("BlurEffect")
+        blur.Name = "PulseHub_Blur"
+        blur.Size = (shaderStates.BlurStrength / 100) * 56
+        blur.Parent = Lighting
+    else
+        local blur = Lighting:FindFirstChild("PulseHub_Blur")
+        if blur then blur:Destroy() end
+    end
+end
 
 Library:CreateToggle(VisualSections["shader pack"], "Blur", false, function(state)
     shaderStates.Blur = state
@@ -1688,20 +1663,17 @@ end)
 Library:CreateSlider(VisualSections["shader pack"], "Strength", 0, 100, 75, function(value)
     shaderStates.BlurStrength = value
     local blur = Lighting:FindFirstChild("PulseHub_Blur")
-    if blur then blur.Size = (value / 100) * 35 end
+    if blur then blur.Size = (value / 100) * 56 end
 end)
+----------------------------------------------------
 
-Library:CreateSlider(SettingSections["UI"], "UISize", 0.5, 1.5, 1.00, function(value) 
-    Library.CurrentScale = value 
-    if not isMinimized then MainScale.Scale = value end
-end)
-
+Library:CreateSlider(SettingSections["UI"], "UISize", 0.5, 1.5, 1.00, function(value) MainScale.Scale = value end)
 Library:CreateSlider(SettingSections["UI"], "UITransparency", 0, 100, 15, function(value) MainFrame.BackgroundTransparency = value / 100 end)
 
 Library:CreateDropdown(SettingSections["UI"], "MenuFont", {"Gotham", "Gotham Bold", "Source Sans", "Roboto", "Roboto Mono", "Ubuntu", "Michroma", "Code", "Fantasy", "Fredoka One"}, "Gotham", function(selectedFont)
     local targetFont = FontMapping[selectedFont] or Enum.Font.Gotham
     Library.CurrentFont = targetFont
-    for _, obj in ipairs(DarkHub:GetDescendants()) do
+    for _, obj in ipairs(PulseHub:GetDescendants()) do
         if obj:IsA("TextLabel") or obj:IsA("TextButton") or obj:IsA("TextBox") then
             if obj.Text ~= "—" and obj.Text ~= "×" and obj.Text ~= "▼" and obj.Text ~= "▲" and obj.Text ~= "✓" and obj.Name ~= "FontPreviewLabel" then 
                 obj.Font = targetFont 
@@ -1710,13 +1682,13 @@ Library:CreateDropdown(SettingSections["UI"], "MenuFont", {"Gotham", "Gotham Bol
     end
 end)
 
-Library:CreateDropdown(SettingSections["UI"], "Language", {"English", "Русский"}, Library.CurrentLanguage, function(selectedLang)
+Library:CreateDropdown(SettingSections["UI"], "Language", {"English", "Русский"}, "English", function(selectedLang)
     Library.CurrentLanguage = selectedLang
-    for _, loc in ipairs(LocaleObjects) do
-        if loc.Object and loc.Object.Parent then
-            local translated = Localization[selectedLang][loc.Key] or loc.Key
-            loc.Object.Text = translated
-            if loc.SearchItem then loc.SearchItem.SearchText = NormalizeText(translated) end
+    for _, item in ipairs(LocaleObjects) do
+        local translatedText = Localization[selectedLang][item.Key]
+        if translatedText then
+            item.Object.Text = translatedText
+            if item.SearchItem then item.SearchItem.SearchText = NormalizeText(translatedText) end
         end
     end
     TabTitle.Text = Localization[selectedLang][Library.CurrentTabKey] or Library.CurrentTabKey
@@ -1741,8 +1713,11 @@ end)
 if allTabs["Main"] and allTabButtons["Main"] then
     allTabs["Main"].BackgroundTransparency = 0
     allTabButtons["Main"].TextColor3 = Color3.fromRGB(255, 255, 255)
-    if allTabIcons["Main"] then allTabIcons["Main"].TextTransparency = 0 end
+    if allTabIcons["Main"] then allTabIcons["Main"].ImageTransparency = 0 end
     allPages["Main"].Visible = true
+    Library.CurrentTabKey = "Main"
+    TabTitle.Text = Localization[Library.CurrentLanguage]["Main"] or "Main"
 end
 
 Library:UpdateTheme("Deep Ocean")
+На вот 
