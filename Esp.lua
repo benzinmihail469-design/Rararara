@@ -46,14 +46,14 @@ if not SafeParent then
     SafeParent = Players.LocalPlayer:WaitForChild("PlayerGui")
 end
 
-local PulseHub = Instance.new("ScreenGui")
-if SafeParent:FindFirstChild("PulseHub") then
-    SafeParent.PulseHub:Destroy()
+local DarkHub = Instance.new("ScreenGui")
+if SafeParent:FindFirstChild("DarkHub") then
+    SafeParent.DarkHub:Destroy()
 end
 
-PulseHub.Name = "PulseHub"
-PulseHub.Parent = SafeParent
-PulseHub.ZIndexBehavior = Enum.ZIndexBehavior.Sibling
+DarkHub.Name = "DarkHub"
+DarkHub.Parent = SafeParent
+DarkHub.ZIndexBehavior = Enum.ZIndexBehavior.Sibling
 
 local function tween(obj, props, dur)
     local t = TweenService:Create(obj, TweenInfo.new(dur or 0.25, Enum.EasingStyle.Quart, Enum.EasingDirection.Out), props)
@@ -88,8 +88,7 @@ local function NormalizeText(str)
     return string.gsub(lowerStr, "[%p%s%c]", "")
 end
 
--- Главный фрейм
-local MainFrame = Instance.new("Frame", PulseHub)
+local MainFrame = Instance.new("Frame", DarkHub)
 MainFrame.Name = "MainFrame"
 MainFrame.BackgroundColor3 = Color3.fromRGB(14, 14, 14)
 MainFrame.BackgroundTransparency = 0.15
@@ -107,7 +106,6 @@ local MainStroke = Instance.new("UIStroke", MainFrame)
 MainStroke.Color = Color3.fromRGB(40, 40, 40)
 MainStroke.Thickness = 1.5
 
--- Контент-фрейм
 local ContentHolder = Instance.new("Frame", MainFrame)
 ContentHolder.Name = "ContentHolder"
 ContentHolder.Size = UDim2.new(1, 0, 1, 0)
@@ -132,7 +130,6 @@ TabTitle.TextXAlignment = Enum.TextXAlignment.Left
 TabTitle.BackgroundTransparency = 1
 TabTitle.ZIndex = 10
 
--- Кнопки управления верхние
 local ControlsContainer = Instance.new("Frame", MainFrame)
 ControlsContainer.Name = "ControlsContainer"
 ControlsContainer.Size = UDim2.new(0, 55, 0, 24)
@@ -160,8 +157,7 @@ CloseBtn.TextColor3 = Color3.fromRGB(180, 180, 180)
 CloseBtn.BackgroundTransparency = 1
 CloseBtn.ZIndex = 11
 
--- ИСПРАВЛЕНО: Красивая аккуратная кнопка-плашка для разворачивания
-local OpenToggleButton = Instance.new("TextButton", PulseHub)
+local OpenToggleButton = Instance.new("TextButton", DarkHub)
 OpenToggleButton.Name = "OpenToggleButton"
 OpenToggleButton.Size = UDim2.new(0, 125, 0, 38)
 OpenToggleButton.Position = UDim2.new(0, 20, 1, -58)
@@ -194,7 +190,7 @@ local ToggleText = Instance.new("TextLabel", OpenToggleButton)
 ToggleText.Size = UDim2.new(0, 0, 1, 0)
 ToggleText.AutomaticSize = Enum.AutomaticSize.X
 ToggleText.BackgroundTransparency = 1
-ToggleText.Text = "Pulse Hub"
+ToggleText.Text = "Dark Hub"
 ToggleText.Font = Enum.Font.GothamBold
 ToggleText.TextColor3 = Color3.fromRGB(255, 255, 255)
 ToggleText.TextSize = 12
@@ -267,7 +263,7 @@ Instance.new("UICorner", HubIcon).CornerRadius = UDim.new(0, 6)
 HubIcon.Image = "rbxthumb://type=Asset&id=" .. CustomIconID .. "&w=150&h=150"
 
 local HubTitle = Instance.new("TextLabel", HeaderBg)
-HubTitle.Text = "Pulse Hub"
+HubTitle.Text = "Dark Hub"
 HubTitle.Font = Enum.Font.GothamBold
 HubTitle.TextColor3 = Color3.fromRGB(255, 255, 255)
 HubTitle.TextSize = 13
@@ -317,7 +313,7 @@ local DiscordLabel = Instance.new("TextLabel", FooterBg)
 DiscordLabel.Position = UDim2.new(0, 10, 0, 7)
 DiscordLabel.Size = UDim2.new(1, -20, 0, 15)
 DiscordLabel.Font = Enum.Font.GothamMedium
-DiscordLabel.Text = "discord.gg/pulsezone"
+DiscordLabel.Text = "discord.gg/darkhub"
 DiscordLabel.TextColor3 = Color3.fromRGB(255, 255, 255)
 DiscordLabel.TextSize = 10
 DiscordLabel.TextXAlignment = Enum.TextXAlignment.Left
@@ -377,7 +373,7 @@ local function CreateRipple(button, clickX, clickY)
 end
 
 local function CloseGui()
-    PulseHub:Destroy()
+    DarkHub:Destroy()
 end
 CloseBtn.Activated:Connect(CloseGui)
 
@@ -389,7 +385,6 @@ applyHover(CloseBtn, Color3.fromRGB(180,180,180), Color3.fromRGB(255,70,70))
 applyHover(MinimizeBtn, Color3.fromRGB(180,180,180), Color3.fromRGB(255,150,30))
 applyHover(ClearSearchBtn, Color3.fromRGB(150,150,150), Color3.fromRGB(255,255,255))
 
--- Логика сворачивания с сохранением позиции окна
 local Library = {}
 Library.CurrentScale = 1.00
 local isMinimized = false
@@ -424,7 +419,6 @@ end
 MinimizeBtn.Activated:Connect(ToggleMinimize)
 OpenToggleButton.Activated:Connect(ToggleMinimize)
 
--- Перетаскивание (Drag)
 local dragToggle, dragInput, dragStart, startPos
 MainFrame.InputBegan:Connect(function(input)
     if (input.UserInputType == Enum.UserInputType.MouseButton1 or input.UserInputType == Enum.UserInputType.Touch) then
@@ -1290,16 +1284,13 @@ function Library:CreateSubTabs(parentPage, tabsList)
         
         local Icon
         if iconId and iconId ~= "" then
-            Icon = Instance.new("ImageLabel", ContentFrame)
+            Icon = Instance.new("TextLabel", ContentFrame)
             Icon.Size = UDim2.new(0, 18, 0, 18)
             Icon.BackgroundTransparency = 1
-            if tonumber(iconId) then
-                Icon.Image = "rbxthumb://type=Asset&id=" .. iconId .. "&w=150&h=150"
-            else
-                Icon.Image = iconId
-            end
-            Icon.ScaleType = Enum.ScaleType.Fit
-            Icon.ImageColor3 = colorGrayInactive
+            Icon.Text = iconId
+            Icon.Font = Enum.Font.GothamBold
+            Icon.TextSize = 12
+            Icon.TextColor3 = colorGrayInactive
             Icon.ZIndex = 3
         end
         
@@ -1341,7 +1332,7 @@ function Library:CreateSubTabs(parentPage, tabsList)
                 local bgL = (Library.CurrentThemeData.MainBg.R * 0.299 + Library.CurrentThemeData.MainBg.G * 0.587 + Library.CurrentThemeData.MainBg.B * 0.114)
                 local currentInactive = (bgL > 0.5) and Color3.fromRGB(110, 110, 110) or colorGrayInactive
                 data.Label.TextColor3 = currentInactive
-                if data.Icon then data.Icon.ImageColor3 = currentInactive end
+                if data.Icon then data.Icon.TextColor3 = currentInactive end
             end
             Page.Visible = true
             VisualFrame.BackgroundColor3 = activeColor
@@ -1349,7 +1340,7 @@ function Library:CreateSubTabs(parentPage, tabsList)
             Stroke.Color = activeColor
             Stroke.Enabled = true
             Label.TextColor3 = activeColor
-            if Icon then Icon.ImageColor3 = activeColor end
+            if Icon then Icon.TextColor3 = activeColor end
         end
         ClickBtn.Activated:Connect(activateTab)
         table.insert(LocaleObjects, {Object = Label, Key = textKey})
@@ -1364,7 +1355,7 @@ function Library:CreateSubTabs(parentPage, tabsList)
         data.Stroke.Color = data.TargetColor
         data.Stroke.Enabled = true
         data.Label.TextColor3 = data.TargetColor
-        if data.Icon then data.Icon.ImageColor3 = data.TargetColor end
+        if data.Icon then data.Icon.TextColor3 = data.TargetColor end
     end
     return subPages
 end
@@ -1415,16 +1406,15 @@ local function createPage(textKey, iconId, layoutOrder)
     Padding.PaddingLeft = UDim.new(0, iconId and 42 or 12)
     
     if iconId then
-        local TabIcon = Instance.new("ImageLabel", TabContainer)
+        local TabIcon = Instance.new("TextLabel", TabContainer)
         TabIcon.Size = UDim2.new(0, 24, 0, 24)
         TabIcon.Position = UDim2.new(0, 10, 0.5, -12)
         TabIcon.BackgroundTransparency = 1
-        if tonumber(iconId) then
-            TabIcon.Image = "rbxthumb://type=Asset&id=" .. iconId .. "&w=150&h=150"
-        else
-            TabIcon.Image = iconId
-        end
-        TabIcon.ImageTransparency = 0.25
+        TabIcon.Text = iconId
+        TabIcon.Font = Enum.Font.GothamBold
+        TabIcon.TextSize = 16
+        TabIcon.TextTransparency = 0.25
+        TabIcon.TextColor3 = Color3.fromRGB(140, 140, 140)
         TabIcon.ZIndex = 7
         allTabIcons[textKey] = TabIcon
     end
@@ -1448,7 +1438,7 @@ local function createPage(textKey, iconId, layoutOrder)
         for tName, tContainer in pairs(allTabs) do
             tween(tContainer, {BackgroundTransparency = 1}, 0.2)
             tween(allTabButtons[tName], {TextColor3 = isL and Color3.fromRGB(110, 110, 110) or Color3.fromRGB(140, 140, 140)}, 0.2)
-            if allTabIcons[tName] then tween(allTabIcons[tName], {ImageTransparency = 0.25}, 0.2) end
+            if allTabIcons[tName] then tween(allTabIcons[tName], {TextTransparency = 0.25}, 0.2) end
             allPages[tName].Visible = false
         end
         Library.CurrentTabKey = textKey
@@ -1458,30 +1448,30 @@ local function createPage(textKey, iconId, layoutOrder)
         local activeTabBg = isL and Color3.fromRGB(215, 215, 215) or Color3.fromRGB(35, 35, 35)
         tween(TabContainer, {BackgroundColor3 = activeTabBg, BackgroundTransparency = 0}, 0.2)
         tween(TabBtn, {TextColor3 = isL and Color3.fromRGB(35, 35, 35) or Color3.fromRGB(255, 255, 255)}, 0.2)
-        if allTabIcons[textKey] then tween(allTabIcons[textKey], {ImageTransparency = 0}, 0.2) end
+        if allTabIcons[textKey] then tween(allTabIcons[textKey], {TextTransparency = 0}, 0.2) end
     end)
     table.insert(LocaleObjects, {Object = TabBtn, Key = textKey})
     UpdateNavCanvas()
     return PageFrame
 end
 
-local MainPage = createPage("Main", "103980564128710", 1)
-local TeleportPage = createPage("Teleport", "94373592263020", 2)
-local MurderPage = createPage("Murder", "85278865249050", 3)
-local SheriffPage = createPage("Sheriff", "77487634679354", 4)
-local PlayersPage = createPage("Players", "99904215381150", 5)
-local VisualPage = createPage("Visual", "78910169210318", 6)
-local SettingsPage = createPage("Settings", "117996761927034", 99)
+local MainPage = createPage("Main", "⌂", 1)
+local TeleportPage = createPage("Teleport", "↹", 2)
+local MurderPage = createPage("Murder", "†", 3)
+local SheriffPage = createPage("Sheriff", "★", 4)
+local PlayersPage = createPage("Players", "웃", 5)
+local VisualPage = createPage("Visual", "☀", 6)
+local SettingsPage = createPage("Settings", "⚙", 99)
 
 Library:CreateToggle(MainPage, "AutoFarmCoins", false, function(state) end)
 
 local VisualSections = Library:CreateSubTabs(VisualPage, {
-    {Name = "shader pack", Icon = "80768064990053", Color = Color3.fromRGB(46, 204, 113)}
+    {Name = "shader pack", Icon = "❂", Color = Color3.fromRGB(46, 204, 113)}
 })
 
 local SettingSections = Library:CreateSubTabs(SettingsPage, {
-    {Name = "UI", Icon = "85203682050945", Color = Color3.fromRGB(108, 176, 214)},
-    {Name = "Theme", Icon = "78640980615320", Color = Color3.fromRGB(255, 128, 0)}
+    {Name = "UI", Icon = "◧", Color = Color3.fromRGB(108, 176, 214)},
+    {Name = "Theme", Icon = "◐", Color = Color3.fromRGB(255, 128, 0)}
 })
 
 local originalLightingSettings = {
@@ -1711,7 +1701,7 @@ Library:CreateSlider(SettingSections["UI"], "UITransparency", 0, 100, 15, functi
 Library:CreateDropdown(SettingSections["UI"], "MenuFont", {"Gotham", "Gotham Bold", "Source Sans", "Roboto", "Roboto Mono", "Ubuntu", "Michroma", "Code", "Fantasy", "Fredoka One"}, "Gotham", function(selectedFont)
     local targetFont = FontMapping[selectedFont] or Enum.Font.Gotham
     Library.CurrentFont = targetFont
-    for _, obj in ipairs(PulseHub:GetDescendants()) do
+    for _, obj in ipairs(DarkHub:GetDescendants()) do
         if obj:IsA("TextLabel") or obj:IsA("TextButton") or obj:IsA("TextBox") then
             if obj.Text ~= "—" and obj.Text ~= "×" and obj.Text ~= "▼" and obj.Text ~= "▲" and obj.Text ~= "✓" and obj.Name ~= "FontPreviewLabel" then 
                 obj.Font = targetFont 
@@ -1751,7 +1741,7 @@ end)
 if allTabs["Main"] and allTabButtons["Main"] then
     allTabs["Main"].BackgroundTransparency = 0
     allTabButtons["Main"].TextColor3 = Color3.fromRGB(255, 255, 255)
-    if allTabIcons["Main"] then allTabIcons["Main"].ImageTransparency = 0 end
+    if allTabIcons["Main"] then allTabIcons["Main"].TextTransparency = 0 end
     allPages["Main"].Visible = true
 end
 
