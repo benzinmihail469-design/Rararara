@@ -1,4 +1,4 @@
-Local CustomIconID = "76579925188009"
+local CustomIconID = "76579925188009"
 local TweenService = game:GetService("TweenService")
 local UserInputService = game:GetService("UserInputService")
 local RunService = game:GetService("RunService")
@@ -1720,4 +1720,3 @@ if allTabs["Main"] and allTabButtons["Main"] then
 end
 
 Library:UpdateTheme("Deep Ocean")
-На вот 
