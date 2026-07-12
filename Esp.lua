@@ -862,7 +862,8 @@ function Library:CreateDropdown(parentPage, textKey, options, default, callback,
         OptBtn.LayoutOrder = i
         OptBtn.ZIndex = 8
         
-        local OptLabel = Instance.new("TextLabel", OptBtn)
+        local OptLabel = Instance.new("TextLabel", OptionsContainer)
+        OptLabel.Parent = OptBtn
         OptLabel.Size = UDim2.new(1, -40, 1, 0)
         OptLabel.Position = UDim2.new(0, 16, 0, 0)
         OptLabel.Text = option
@@ -1565,6 +1566,8 @@ local function startLightingEnforcer()
             if child:IsA("BlurEffect") and child.Name ~= "PulseHub_Blur" then child:Destroy() end
         end
 
+        local masterCC = Lighting:FindFirstChild("PulseHub_MasterCC")
+
         -- Кастомные конфигурации под конкретные пресеты времени суток
         if shaderStates.Mode == "Day" then
             Lighting.TimeOfDay = "10:30:00" -- Идеальное утреннее солнце для длинных объемных лучей
@@ -1573,20 +1576,24 @@ local function startLightingEnforcer()
             Lighting.Ambient = Color3.fromRGB(60, 60, 60)
             Lighting.GeographicLatitude = 35
             Lighting.ExposureCompensation = 0.4
-        elseif shaderStates.Mode == "Sunset" then
-            Lighting.TimeOfDay = "17:45:00" -- Закат, солнце низко над горизонтом
-            Lighting.Brightness = 4.2
-            Lighting.OutdoorAmbient = Color3.fromRGB(160, 95, 75)
-            Lighting.Ambient = Color3.fromRGB(50, 40, 45)
-            Lighting.GeographicLatitude = 45
-            Lighting.ExposureCompensation = 0.6
-        elseif shaderStates.Mode == "Midnight" then
-            Lighting.TimeOfDay = "00:00:00" -- Глубокая ночь
-            Lighting.Brightness = 1.0
-            Lighting.OutdoorAmbient = Color3.fromRGB(20, 25, 35)
-            Lighting.Ambient = Color3.fromRGB(15, 15, 20)
+            if masterCC then
+                masterCC.Contrast = 0.15
+                masterCC.Saturation = 0.2
+                masterCC.TintColor = Color3.fromRGB(255, 255, 255)
+            end
+        elseif shaderStates.Mode == "Sunset" or shaderStates.Mode == "Midnight" then
+            -- Сброс в нормальное, обычное и чистое состояние
+            Lighting.TimeOfDay = "14:00:00"
+            Lighting.Brightness = 2
+            Lighting.OutdoorAmbient = Color3.fromRGB(128, 128, 128)
+            Lighting.Ambient = Color3.fromRGB(128, 128, 128)
             Lighting.GeographicLatitude = 0
-            Lighting.ExposureCompensation = 0.15
+            Lighting.ExposureCompensation = 0
+            if masterCC then
+                masterCC.Contrast = 0
+                masterCC.Saturation = 0
+                masterCC.TintColor = Color3.fromRGB(255, 255, 255)
+            end
         elseif shaderStates.Mode == "None" then
             restoreOriginalEnvironment()
         end
@@ -1600,17 +1607,8 @@ local function startLightingEnforcer()
                 atm.Decay = Color3.fromRGB(250, 230, 210)
                 atm.Haze = 2.5
                 atm.Glare = 1.8
-            elseif shaderStates.Mode == "Sunset" then
-                atm.Color = Color3.fromRGB(255, 105, 50)
-                atm.Decay = Color3.fromRGB(80, 25, 120)
-                atm.Haze = 4.5
-                atm.Glare = 3.0
-            elseif shaderStates.Mode == "Midnight" then
-                atm.Color = Color3.fromRGB(15, 22, 40)
-                atm.Decay = Color3.fromRGB(5, 5, 12)
-                atm.Haze = 6.0 -- Густой криповый туман для хоррор атмосферы в полуночи
-                atm.Glare = 0.0
             else
+                -- Обычная стандартная атмосфера без фильтров для Sunset/Midnight и дефолтов
                 atm.Color = Color3.fromRGB(200, 200, 200)
                 atm.Decay = Color3.fromRGB(255, 255, 255)
                 atm.Haze = 1.0
@@ -1622,7 +1620,7 @@ local function startLightingEnforcer()
         local sr = Lighting:FindFirstChild("PulseHub_SunRays")
         if sr and shaderStates.SunRays then
             sr.Intensity = shaderStates.SunRaysIntensity / 100
-            sr.Spread = (shaderStates.Mode == "Sunset") and 0.90 or 0.80
+            sr.Spread = 0.80
             sr.Threshold = 0.0 -- Срезаем порог до нуля, чтобы лучи гарантированно рендерились
         end
     end)
