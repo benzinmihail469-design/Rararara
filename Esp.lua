@@ -614,11 +614,8 @@ local function toggleAnimatedWindow(state)
             animatedWindowConnection = RunService.RenderStepped:Connect(function()
                 local hue = (os.clock() * 0.15) % 1
                 local rainbowColor = Color3.fromHSV(hue, 0.6, 1)
-                
                 for _, stroke in ipairs(Library.TrackedStrokes) do
-                    if stroke and stroke.Parent then
-                        stroke.Color = rainbowColor
-                    end
+                    if stroke and stroke.Parent then stroke.Color = rainbowColor end
                 end
             end)
         end
@@ -626,14 +623,10 @@ local function toggleAnimatedWindow(state)
         if animatedWindowConnection then
             animatedWindowConnection:Disconnect()
             animatedWindowConnection = nil
-            
             local bgL = (Library.CurrentThemeData.MainBg.R * 0.299 + Library.CurrentThemeData.MainBg.G * 0.587 + Library.CurrentThemeData.MainBg.B * 0.114)
             local defaultStrokeColor = (bgL > 0.5) and Color3.fromRGB(190, 190, 190) or Color3.fromRGB(45, 45, 45)
-            
             for _, stroke in ipairs(Library.TrackedStrokes) do
-                if stroke and stroke.Parent then
-                    stroke.Color = defaultStrokeColor
-                end
+                if stroke and stroke.Parent then stroke.Color = defaultStrokeColor end
             end
         end
     end
@@ -836,11 +829,7 @@ function Library:CreateDropdown(parentPage, textKey, options, default, callback,
         local baseOptionsHeight = #options * 32
         local maxVisibleOptionsHeight = 140
         local contentHeight = math.min(baseOptionsHeight, maxVisibleOptionsHeight)
-        
-        if previews then
-            contentHeight = contentHeight + 122
-        end
-        
+        if previews then contentHeight = contentHeight + 122 end
         local targetFrameHeight = isExpanded and (36 + contentHeight + 4) or 36
         
         tween(DropdownFrame, {Size = UDim2.new(1, -20, 0, targetFrameHeight)}, 0.2)
@@ -1013,10 +1002,8 @@ function Library:CreateToggle(parentPage, textKey, default, callback)
     local enabled = default
     Checkbox.Activated:Connect(function()
         enabled = not enabled
-        
         local brightness = (Library.CurrentThemeData.Accent.R + Library.CurrentThemeData.Accent.G + Library.CurrentThemeData.Accent.B)
         local activeIndicatorColor = brightness > 2.5 and Color3.fromRGB(30, 30, 30) or Color3.fromRGB(255, 255, 255)
-
         if enabled then
             tween(Checkbox, {BackgroundColor3 = Library.CurrentThemeData.Accent}, 0.2)
             tween(Indicator, {Position = UDim2.new(1, -16, 0.5, -7), BackgroundColor3 = activeIndicatorColor}, 0.2)
@@ -1120,12 +1107,7 @@ function Library:CreateSlider(parentPage, textKey, min, max, default, callback)
         local red = Color3.fromRGB(255, 60, 60)
         local yellow = Color3.fromRGB(255, 210, 40)
         local green = Color3.fromRGB(60, 255, 90)
-
-        if pct < 0.5 then
-            return red:Lerp(yellow, pct * 2)
-        else
-            return yellow:Lerp(green, (pct - 0.5) * 2)
-        end
+        if pct < 0.5 then return red:Lerp(yellow, pct * 2) else return yellow:Lerp(green, (pct - 0.5) * 2) end
     end
     
     local function updateVisuals(percentage)
@@ -1183,11 +1165,7 @@ function Library:CreateImage(parentPage, imageId)
     Img.Size = UDim2.new(1, -20, 0, 130)
     Img.BackgroundTransparency = 1
     Img.LayoutOrder = #parentPage:GetChildren()
-    if tonumber(imageId) then
-        Img.Image = "rbxassetid://" .. tostring(imageId) .. "&w=420&h=420"
-    else
-        Img.Image = imageId
-    end
+    if tonumber(imageId) then Img.Image = "rbxassetid://" .. tostring(imageId) .. "&w=420&h=420" else Img.Image = imageId end
     Img.ScaleType = Enum.ScaleType.Fit
     Img.ZIndex = 6
     return Img
@@ -1218,11 +1196,7 @@ function Library:CreateSubTabs(parentPage, tabsList)
         local initialText = Localization[Library.CurrentLanguage][textKey] or textKey
         local activeColor = Color3.fromRGB(108, 176, 214)
         local lowName = string.lower(string.gsub(textKey, "%s+", ""))
-        if tabData.Color then
-            activeColor = tabData.Color
-        elseif string.find(lowName, "theme") or string.find(lowName, "тема") then
-            activeColor = Color3.fromRGB(235, 94, 153)
-        end
+        if tabData.Color then activeColor = tabData.Color elseif string.find(lowName, "theme") or string.find(lowName, "тема") then activeColor = Color3.fromRGB(235, 94, 153) end
         
         local BtnContainer = Instance.new("Frame", SubTabContainer)
         BtnContainer.Size = UDim2.new(0, 0, 1, 0)
@@ -1262,11 +1236,7 @@ function Library:CreateSubTabs(parentPage, tabsList)
             Icon = Instance.new("ImageLabel", ContentFrame)
             Icon.Size = tabData.IconSize or UDim2.new(0, 18, 0, 18)
             Icon.BackgroundTransparency = 1
-            if tonumber(iconId) then
-                Icon.Image = "rbxthumb://type=Asset&id=" .. iconId .. "&w=150&h=150"
-            else
-                Icon.Image = iconId
-            end
+            if tonumber(iconId) then Icon.Image = "rbxthumb://type=Asset&id=" .. iconId .. "&w=150&h=150" else Icon.Image = iconId end
             Icon.ScaleType = Enum.ScaleType.Fit
             Icon.ImageColor3 = colorGrayInactive
             Icon.ZIndex = 3
@@ -1306,7 +1276,6 @@ function Library:CreateSubTabs(parentPage, tabsList)
                 data.Page.Visible = false
                 data.Visual.BackgroundTransparency = 1
                 data.Stroke.Enabled = false
-                
                 local bgL = (Library.CurrentThemeData.MainBg.R * 0.299 + Library.CurrentThemeData.MainBg.G * 0.587 + Library.CurrentThemeData.MainBg.B * 0.114)
                 local currentInactive = (bgL > 0.5) and Color3.fromRGB(110, 110, 110) or colorGrayInactive
                 data.Label.TextColor3 = currentInactive
@@ -1367,7 +1336,6 @@ function Library:CreatePage(textKey, iconId, layoutOrder)
     TabContainer.LayoutOrder = layoutOrder or 0
     TabContainer.Name = "TabContainer"
     Instance.new("UICorner", TabContainer).CornerRadius = UDim.new(0, 8)
-    
     table.insert(Library.TrackedElementBg, TabContainer)
     
     local TabBtn = Instance.new("TextButton", TabContainer)
@@ -1388,11 +1356,7 @@ function Library:CreatePage(textKey, iconId, layoutOrder)
         TabIcon.Size = UDim2.new(0, 24, 0, 24)
         TabIcon.Position = UDim2.new(0, 10, 0.5, -12)
         TabIcon.BackgroundTransparency = 1
-        if tonumber(iconId) then
-            TabIcon.Image = "rbxthumb://type=Asset&id=" .. iconId .. "&w=150&h=150"
-        else
-            TabIcon.Image = iconId
-        end
+        if tonumber(iconId) then TabIcon.Image = "rbxthumb://type=Asset&id=" .. iconId .. "&w=150&h=150" else TabIcon.Image = iconId end
         TabIcon.ImageTransparency = 0.25
         TabIcon.ZIndex = 7
         allTabIcons[textKey] = TabIcon
@@ -1410,10 +1374,8 @@ function Library:CreatePage(textKey, iconId, layoutOrder)
     
     TabBtn.Activated:Connect(function()
         if SearchBox.Text ~= "" then SearchBox.Text = "" end
-        
         local bgL = (Library.CurrentThemeData.MainBg.R * 0.299 + Library.CurrentThemeData.MainBg.G * 0.587 + Library.CurrentThemeData.MainBg.B * 0.114)
         local isL = bgL > 0.5
-        
         for tName, tContainer in pairs(allTabs) do
             tween(tContainer, {BackgroundTransparency = 1}, 0.2)
             tween(allTabButtons[tName], {TextColor3 = isL and Color3.fromRGB(110, 110, 110) or Color3.fromRGB(140, 140, 140)}, 0.2)
@@ -1423,7 +1385,6 @@ function Library:CreatePage(textKey, iconId, layoutOrder)
         Library.CurrentTabKey = textKey
         TabTitle.Text = Localization[Library.CurrentLanguage][textKey] or textKey
         PageFrame.Visible = true
-        
         local activeTabBg = isL and Color3.fromRGB(215, 215, 215) or Color3.fromRGB(35, 35, 35)
         tween(TabContainer, {BackgroundColor3 = activeTabBg, BackgroundTransparency = 0}, 0.2)
         tween(TabBtn, {TextColor3 = isL and Color3.fromRGB(35, 35, 35) or Color3.fromRGB(255, 255, 255)}, 0.2)
@@ -1442,55 +1403,23 @@ local PlayersPage = Library:CreatePage("Players", "99904215381150", 5)
 local VisualPage = Library:CreatePage("Visual", "78910169210318", 6)
 local SettingsPage = Library:CreatePage("Settings", "117996761927034", 99)
 
--- ============================================================================
--- ЗАПОЛНЕНИЕ ВКЛАДКИ MAIN
--- ============================================================================
 local autoFarmActive = false
 Library:CreateToggle(MainPage, "AutoFarmCoins", false, function(state) 
     autoFarmActive = state
-    if state then
-        task.spawn(function()
-            while autoFarmActive do
-                task.wait(0.5)
-            end
-        end)
-    end
 end)
 
--- ============================================================================
--- ЗАПОЛНЕНИЕ ВКЛАДКИ PLAYERS
--- ============================================================================
 Library:CreateSlider(PlayersPage, "WalkSpeed", 16, 150, 16, function(value)
-    pcall(function()
-        if Players.LocalPlayer.Character and Players.LocalPlayer.Character:FindFirstChildOfClass("Humanoid") then
-            Players.LocalPlayer.Character:FindFirstChildOfClass("Humanoid").WalkSpeed = value
-        end
-    end)
+    pcall(function() if Players.LocalPlayer.Character and Players.LocalPlayer.Character:FindFirstChildOfClass("Humanoid") then Players.LocalPlayer.Character:FindFirstChildOfClass("Humanoid").WalkSpeed = value end end)
 end)
 
 Library:CreateSlider(PlayersPage, "JumpPower", 50, 250, 50, function(value)
-    pcall(function()
-        if Players.LocalPlayer.Character and Players.LocalPlayer.Character:FindFirstChildOfClass("Humanoid") then
-            local hum = Players.LocalPlayer.Character:FindFirstChildOfClass("Humanoid")
-            hum.UseJumpPower = true
-            hum.JumpPower = value
-        end
-    end)
+    pcall(function() if Players.LocalPlayer.Character and Players.LocalPlayer.Character:FindFirstChildOfClass("Humanoid") then local hum = Players.LocalPlayer.Character:FindFirstChildOfClass("Humanoid") hum.UseJumpPower = true hum.JumpPower = value end end)
 end)
 
 Library:CreateButton(PlayersPage, "ResetStats", function()
-    pcall(function()
-        if Players.LocalPlayer.Character and Players.LocalPlayer.Character:FindFirstChildOfClass("Humanoid") then
-            local hum = Players.LocalPlayer.Character:FindFirstChildOfClass("Humanoid")
-            hum.WalkSpeed = 16
-            hum.JumpPower = 50
-        end
-    end)
+    pcall(function() if Players.LocalPlayer.Character and Players.LocalPlayer.Character:FindFirstChildOfClass("Humanoid") then local hum = Players.LocalPlayer.Character:FindFirstChildOfClass("Humanoid") hum.WalkSpeed = 16 hum.JumpPower = 50 end end)
 end)
 
--- ============================================================================
--- ЗАПОЛНЕНИЕ ВКЛАДКИ TELEPORT
--- ============================================================================
 Library:CreateButton(TeleportPage, "TeleportToMap", function()
     pcall(function()
         local targetMap = workspace:FindFirstChild("Map") or workspace:FindFirstChild("Normal") or workspace:FindFirstChild("InGame")
@@ -1504,23 +1433,15 @@ end)
 Library:CreateButton(TeleportPage, "TeleportToLobby", function()
     pcall(function()
         local lobby = workspace:FindFirstChild("Lobby") or workspace:FindFirstChild("LobbySpawn")
-        if lobby and Players.LocalPlayer.Character and Players.LocalPlayer.Character:FindFirstChild("HumanoidRootPart") then
-            Players.LocalPlayer.Character.HumanoidRootPart.CFrame = lobby.CFrame + Vector3.new(0, 3, 0)
-        end
+        if lobby and Players.LocalPlayer.Character and Players.LocalPlayer.Character:FindFirstChild("HumanoidRootPart") then Players.LocalPlayer.Character.HumanoidRootPart.CFrame = lobby.CFrame + Vector3.new(0, 3, 0) end
     end)
 end)
 
--- ============================================================================
--- ЗАПОЛНЕНИЕ ВКЛАДКИ MURDER & SHERIFF
--- ============================================================================
-Library:CreateToggle(MurderPage, "KillAura", false, function(state)
-end)
-
-Library:CreateToggle(SheriffPage, "SilentAim", false, function(state)
-end)
+Library:CreateToggle(MurderPage, "KillAura", false, function(state) end)
+Library:CreateToggle(SheriffPage, "SilentAim", false, function(state) end)
 
 -- ============================================================================
--- СИСТЕМА ESP И НАСТРОЕК UI (ОБНОВЛЕННАЯ С Еarly Reveal)
+-- УЛЬТРА СКОРОСТНАЯ СИСТЕМА ESP И ДЕТЕКТА РОЛЕЙ (БЕЗ ЗАДЕРЖКИ В 10 СЕКУНД)
 -- ============================================================================
 local VisualSections = Library:CreateSubTabs(VisualPage, {
     {Name = "Esp", Icon = "80768064990053", Color = Color3.fromRGB(46, 204, 113)}
@@ -1538,140 +1459,66 @@ local function cleanESP()
     table.clear(activePlayersEsp)
 end
 
--- Автоматический сброс кэша при обновлении раунда (когда загружается новая карта)
-local function onWorkspaceChildAdded(child)
+-- Сброс кэша ролей сразу при начале новой катки (как только грузится карта)
+workspace.ChildAdded:Connect(function(child)
     local childName = string.lower(child.Name)
-    if string.find(childName, "map") or string.find(childName, "normal") or string.find(childName, "hardcore") or child:FindFirstChild("Spawns") or child:FindFirstChild("SpawnLocation") then
+    if string.find(childName, "map") or string.find(childName, "normal") or child:FindFirstChild("Spawns") then
         table.clear(PreRevealedRoles)
         cleanESP()
     end
-end
-workspace.ChildAdded:Connect(onWorkspaceChildAdded)
+end)
 
-local function scanContainer(container)
-    if not container then return nil end
-    for _, item in ipairs(container:GetChildren()) do
-        if item:IsA("Tool") or item:IsA("Model") then
-            local name = string.lower(item.Name)
-            if string.find(name, "knife") or item:FindFirstChild("KnifeScript") or item:FindFirstChild("LocalKnife") or string.find(name, "нож") then
-                return "Murderer"
-            elseif string.find(name, "gun") or string.find(name, "revolver") or item:FindFirstChild("GunScript") or item:FindFirstChild("LocalGun") or string.find(name, "пест") or string.find(name, "револьвер") then
-                return "Sheriff"
-            end
+-- Самая быстрая функция проверки предмета
+local function evaluateItem(item, player)
+    if item:IsA("Tool") then
+        local name = string.lower(item.Name)
+        if string.find(name, "knife") or item:FindFirstChild("KnifeScript") or item:FindFirstChild("LocalKnife") then
+            PreRevealedRoles[player] = "Murderer"
+            return true
+        elseif string.find(name, "gun") or string.find(name, "revolver") or item:FindFirstChild("GunScript") or item:FindFirstChild("LocalGun") then
+            PreRevealedRoles[player] = "Sheriff"
+            return true
         end
     end
-    return nil
-end
-
--- Улучшенная функция раннего поиска ролей
-local function updatePlayerRole(player)
-    -- 1. Проверка встроенных атрибутов (во многих копиях выдается сразу при выборе ролей)
-    for _, attrName in ipairs({"Role", "role", "Team", "team", "Rank"}) do
-        local attr = player:GetAttribute(attrName)
-        if attr then
-            local strAttr = string.lower(tostring(attr))
-            if string.find(strAttr, "murder") or string.find(strAttr, "knif") or string.find(strAttr, "убийц") then 
-                return "Murderer" 
-            end
-            if string.find(strAttr, "sheriff") or string.find(strAttr, "gun") or string.find(strAttr, "hero") or string.find(strAttr, "шериф") then 
-                return "Sheriff" 
-            end
-        end
-    end
-
-    -- 2. Глубокое сканирование папок и StringValue внутри самого объекта Player
-    for _, child in ipairs(player:GetChildren()) do
-        if child:IsA("StringValue") or child:IsA("ObjectValue") or child:IsA("IntValue") then
-            local cName = string.lower(child.Name)
-            if cName == "role" or cName == "team" or cName == "temp`role" then
-                local val = string.lower(tostring(child.Value))
-                if string.find(val, "murder") or string.find(val, "убийц") then return "Murderer" end
-                if string.find(val, "sheriff") or string.find(val, "hero") or string.find(val, "шериф") then return "Sheriff" end
-            end
-        elseif child:IsA("Folder") and (string.lower(child.Name) == "playerdata" or string.lower(child.Name) == "round") then
-            local roleObj = child:FindFirstChild("Role") or child:FindFirstChild("role")
-            if roleObj then
-                local val = string.lower(tostring(roleObj.Value))
-                if string.find(val, "murder") or string.find(val, "убийц") then return "Murderer" end
-                if string.find(val, "sheriff") or string.find(val, "hero") or string.find(val, "шериф") then return "Sheriff" end
-            end
-        end
-    end
-
-    -- 3. Сканирование общих папок данных в ReplicatedStorage / Workspace
-    local repStorage = game:GetService("ReplicatedStorage")
-    local roundPlayers = repStorage:FindFirstChild("RoundPlayers") or repStorage:FindFirstChild("CurrentRound")
-    if roundPlayers then
-        local pFolder = roundPlayers:FindFirstChild(player.Name)
-        if pFolder then
-            local roleObj = pFolder:FindFirstChild("Role") or pFolder:FindFirstChild("role")
-            if roleObj then
-                local val = string.lower(tostring(roleObj.Value))
-                if string.find(val, "murder") then return "Murderer" end
-                if string.find(val, "sheriff") or string.find(val, "hero") then return "Sheriff" end
-            end
-        end
-    end
-
-    -- 4. Проверка команд (Teams)
-    if player.Team then
-        local teamName = string.lower(player.Team.Name)
-        if string.find(teamName, "murder") or string.find(teamName, "убийц") then return "Murderer" end
-        if string.find(teamName, "sheriff") or string.find(teamName, "hero") or string.find(teamName, "шериф") then return "Sheriff" end
-    end
-
-    -- 5. Возврат кэшированного значения, если роль уже была раскрыта ранее
-    if PreRevealedRoles[player] then return PreRevealedRoles[player] end
-    
-    -- 6. Классический метод сканирования инвентаря/рук (сработает через 10 секунд, если методы выше не дали результата)
-    local role = scanContainer(player:FindFirstChild("Backpack")) or scanContainer(player.Character)
-    if role then
-        PreRevealedRoles[player] = role
-        return role
-    end
-    
-    return "Innocent"
+    return false
 end
 
-local function setupPlayerListeners(player)
-    local function onCharacterAdded(char)
-        char.ChildAdded:Connect(function(child)
-            if espActive then 
-                PreRevealedRoles[player] = nil 
-                updatePlayerRole(player) 
-            end
-        end)
-    end
-    
-    if player.Character then onCharacterAdded(player.Character) end
-    player.CharacterAdded:Connect(onCharacterAdded)
-    
-    local function onBackpackAdded(bp)
+-- Ивент-ориентированный перехват в ту же микросекунду
+local function listenToPlayerInventory(player)
+    local function connectBackpack(bp)
         bp.ChildAdded:Connect(function(child)
-            if espActive then 
-                PreRevealedRoles[player] = nil 
-                updatePlayerRole(player) 
-            end
+            evaluateItem(child, player)
         end)
-    end
-    
-    local bp = player:FindFirstChild("Backpack")
-    if bp then onBackpackAdded(bp) end
-    
-    player.ChildAdded:Connect(function(child)
-        if child.Name == "Backpack" then onBackpackAdded(child) end
-    end)
-    
-    player.AttributeChanged:Connect(function(attribute)
-        if (attribute == "Role" or attribute == "role") and espActive then
-            PreRevealedRoles[player] = nil
-            updatePlayerRole(player)
+        for _, item in ipairs(bp:GetChildren()) do
+            evaluateItem(item, player)
         end
+    end
+
+    local function connectCharacter(char)
+        char.ChildAdded:Connect(function(child)
+            evaluateItem(child, player)
+        end)
+        for _, item in ipairs(char:GetChildren()) do
+            evaluateItem(item, player)
+        end
+    end
+
+    player.ChildAdded:Connect(function(child)
+        if child.Name == "Backpack" then connectBackpack(child) end
     end)
+    
+    player.CharacterAdded:Connect(function(char)
+        connectCharacter(char)
+    end)
+
+    if player.Character then connectCharacter(player.Character) end
+    local currentBp = player:FindFirstChild("Backpack")
+    if currentBp then connectBackpack(currentBp) end
 end
 
-for _, p in ipairs(Players:GetPlayers()) do setupPlayerListeners(p) end
-Players.PlayerAdded:Connect(setupPlayerListeners)
+-- Запускаем слежку за всеми текущими и будущими игроками сервера
+for _, p in ipairs(Players:GetPlayers()) do listenToPlayerInventory(p) end
+Players.PlayerAdded:Connect(listenToPlayerInventory)
 
 Players.PlayerRemoving:Connect(function(player)
     if activePlayersEsp[player] then
@@ -1683,6 +1530,7 @@ Players.PlayerRemoving:Connect(function(player)
     PreRevealedRoles[player] = nil
 end)
 
+-- Рендер ESP-боксов (Каждые 0.02 секунды для максимальной плавности)
 task.spawn(function()
     while true do
         if espActive then
@@ -1700,7 +1548,7 @@ task.spawn(function()
                             
                             local highlight = Instance.new("Highlight")
                             highlight.Name = "PulseHub_Highlight"
-                            highlight.FillTransparency = 0.5
+                            highlight.FillTransparency = 0.4
                             highlight.OutlineTransparency = 0
                             highlight.Adornee = char
                             highlight.Parent = char
@@ -1720,25 +1568,21 @@ task.spawn(function()
                             textLabel.TextStrokeTransparency = 0.2
                             textLabel.TextStrokeColor3 = Color3.fromRGB(0, 0, 0)
                             
-                            assets = {
-                                Highlight = highlight,
-                                Billboard = billboard,
-                                TextLabel = textLabel,
-                                Character = char
-                            }
+                            assets = { Highlight = highlight, Billboard = billboard, TextLabel = textLabel, Character = char }
                             activePlayersEsp[player] = assets
                         end
                         
-                        local role = updatePlayerRole(player)
-                        local color = Color3.fromRGB(46, 204, 113) 
-                        local roleName = "Innocent"
+                        -- Определяем текущую роль на основе мгновенного кэша
+                        local detectedRole = PreRevealedRoles[player] or "Innocent"
+                        local color = Color3.fromRGB(46, 204, 113) -- Зеленый для мирных
+                        local roleText = "Innocent"
                         
-                        if role == "Murderer" then
-                            color = Color3.fromRGB(231, 76, 60) 
-                            roleName = "Murderer"
-                        elseif role == "Sheriff" then
-                            color = Color3.fromRGB(52, 152, 219) 
-                            roleName = "Sheriff"
+                        if detectedRole == "Murderer" then
+                            color = Color3.fromRGB(231, 76, 60) -- Красный для Мардера
+                            roleText = "Murderer"
+                        elseif detectedRole == "Sheriff" then
+                            color = Color3.fromRGB(52, 152, 219) -- Синий для Шерифа
+                            roleText = "Sheriff"
                         end
                         
                         if assets.Highlight and assets.Highlight.Parent then
@@ -1748,7 +1592,7 @@ task.spawn(function()
                         
                         if assets.TextLabel and assets.TextLabel.Parent then
                             assets.TextLabel.Font = Library.CurrentFont
-                            assets.TextLabel.Text = string.format("%s\n[%s]", player.DisplayName or player.Name, roleName)
+                            assets.TextLabel.Text = string.format("%s\n[%s]", player.DisplayName or player.Name, roleText)
                             assets.TextLabel.TextColor3 = color
                         end
                     else
@@ -1761,21 +1605,16 @@ task.spawn(function()
                 end
             end
         end
-        task.wait(0.05) 
+        task.wait(0.02)
     end
 end)
-
-local function toggleESP(state)
-    espActive = state
-    if not state then
-        cleanESP()
-    end
-end
 
 Library:CreateToggle(VisualSections["Esp"], "EspToggle", false, function(state)
-    toggleESP(state)
+    espActive = state
+    if not state then cleanESP() end
 end)
 
+-- Настройки графического интерфейса
 local SettingSections = Library:CreateSubTabs(SettingsPage, {
     {Name = "UI", Icon = "85203682050945", Color = Color3.fromRGB(108, 176, 214)},
     {Name = "Theme", Icon = "78640980615320", Color = Color3.fromRGB(235, 94, 153)}
@@ -1789,9 +1628,7 @@ Library:CreateDropdown(SettingSections["UI"], "MenuFont", {"Gotham", "Gotham Bol
     Library.CurrentFont = targetFont
     for _, obj in ipairs(PulseHub:GetDescendants()) do
         if obj:IsA("TextLabel") or obj:IsA("TextButton") or obj:IsA("TextBox") then
-            if obj.Text ~= "—" and obj.Text ~= "×" and obj.Text ~= "▼" and obj.Text ~= "▲" and obj.Text ~= "✓" and obj.Name ~= "FontPreviewLabel" then 
-                obj.Font = targetFont 
-            end
+            if obj.Text ~= "—" and obj.Text ~= "×" and obj.Text ~= "▼" and obj.Text ~= "▲" and obj.Text ~= "✓" and obj.Name ~= "FontPreviewLabel" then obj.Font = targetFont end
         end
     end
 end)
@@ -1808,21 +1645,10 @@ Library:CreateDropdown(SettingSections["UI"], "Language", {"English", "Русс�
     TabTitle.Text = Localization[selectedLang][Library.CurrentTabKey] or Library.CurrentTabKey
 end)
 
-Library:CreateToggle(SettingSections["UI"], "AntiAFK", false, function(state)
-    toggleAntiAFK(state)
-end)
-
-Library:CreateDropdown(SettingSections["Theme"], "UITheme", ThemeNamesList, "Deep Ocean", function(selectedTheme)
-    Library:UpdateTheme(selectedTheme)
-end)
-
-Library:CreateToggle(SettingSections["Theme"], "AnimatedWindow", false, function(state)
-    toggleAnimatedWindow(state)
-end)
-
-Library:CreateToggle(SettingSections["Theme"], "Gradient", false, function(state)
-    toggleGradientEffect(state)
-end)
+Library:CreateToggle(SettingSections["UI"], "AntiAFK", false, function(state) toggleAntiAFK(state) end)
+Library:CreateDropdown(SettingSections["Theme"], "UITheme", ThemeNamesList, "Deep Ocean", function(selectedTheme) Library:UpdateTheme(selectedTheme) end)
+Library:CreateToggle(SettingSections["Theme"], "AnimatedWindow", false, function(state) toggleAnimatedWindow(state) end)
+Library:CreateToggle(SettingSections["Theme"], "Gradient", false, function(state) toggleGradientEffect(state) end)
 
 if allTabs["Main"] and allTabButtons["Main"] then
     allTabs["Main"].BackgroundTransparency = 0
