@@ -585,29 +585,19 @@ local Localization = {
         ["Main"] = "Main", ["Teleport"] = "Teleport", ["Murder"] = "Murder", ["Sheriff"] = "Sheriff",
         ["Players"] = "Players", ["Visual"] = "Visual", ["Settings"] = "Settings", ["UI"] = "UI",
         ["Theme"] = "Theme", ["AutoFarmCoins"] = "Auto-Farm Coins",
-        ["CinematicShader"] = "Cinematic Shaders", ["BloomShader"] = "Bloom Glow FX", ["BlurShader"] = "Screen Blur Effect",
-        ["ShaderPreset"] = "Shader Preset", ["SkyboxChanger"] = "Skybox Changer",
         ["UISize"] = "UI Size", ["UITransparency"] = "UI Transparency", ["MenuFont"] = "Menu Font",
         ["Language"] = "Language", ["AntiAFK"] = "Anti-AFK", ["UITheme"] = "UI Theme",
         ["AnimatedWindow"] = "Animated Window", ["Gradient"] = "Gradient Background",
-        ["shader pack"] = "Shader Pack",
-        ["Enable"] = "Enable", ["Mode"] = "Mode", ["Bloom"] = "Bloom",
-        ["Intensity"] = "Intensity", ["Size"] = "Size", ["Atmosphere"] = "Atmosphere",
-        ["Density"] = "Density", ["Sun Rays"] = "Sun Rays", ["Blur"] = "Blur", ["Strength"] = "Strength"
+        ["Esp"] = "ESP"
     },
     ["Русский"] = {
         ["Main"] = "Главная", ["Teleport"] = "Телепорт", ["Murder"] = "Убийца", ["Sheriff"] = "Шериф",
         ["Players"] = "Игроки", ["Visual"] = "Визуалы", ["Settings"] = "Настройки", ["UI"] = "Интерфейс",
         ["Theme"] = "Тема", ["AutoFarmCoins"] = "Авто-Фарм Монет",
-        ["CinematicShader"] = "Кинематографичные Шейдеры", ["BloomShader"] = "Эффект Свечения", ["BlurShader"] = "Размытие Экрана",
-        ["ShaderPreset"] = "Пресет Шейдеров", ["SkyboxChanger"] = "Смена Неба",
         ["UISize"] = "Размер интерфейса", ["UITransparency"] = "Прозрачность меню", ["MenuFont"] = "Шрифт меню",
         ["Language"] = "Язык", ["AntiAFK"] = "Анти-АФК", ["UITheme"] = "Тема UI",
         ["AnimatedWindow"] = "Анимированное окно", ["Gradient"] = "Градиентный фон",
-        ["shader pack"] = "Пак шейдеров",
-        ["Enable"] = "Включить", ["Mode"] = "Режим", ["Bloom"] = "Блум (Свечение)",
-        ["Intensity"] = "Интенсивность", ["Size"] = "Размер", ["Atmosphere"] = "Атмосфера",
-        ["Density"] = "Плотность", ["Sun Rays"] = "Лучи солнца", ["Blur"] = "Размытие", ["Strength"] = "Сила"
+        ["Esp"] = "ЕСП"
     }
 }
 
@@ -1448,306 +1438,15 @@ local SettingsPage = CreatePage("Settings", "117996761927034", 99)
 
 Library:CreateToggle(MainPage, "AutoFarmCoins", false, function(state) end)
 
+-- Переименованная вкладка под ЕСП в секции Visual
 local VisualSections = Library:CreateSubTabs(VisualPage, {
-    {Name = "shader pack", Icon = "80768064990053", Color = Color3.fromRGB(46, 204, 113)}
+    {Name = "Esp", Icon = "80768064990053", Color = Color3.fromRGB(46, 204, 113)}
 })
 
 local SettingSections = Library:CreateSubTabs(SettingsPage, {
     {Name = "UI", Icon = "85203682050945", Color = Color3.fromRGB(108, 176, 214)},
     {Name = "Theme", Icon = "78640980615320", Color = Color3.fromRGB(235, 94, 153)}
 })
-
-----------------------------------------------------
--- МОДИФИЦИРОВАННАЯ И НАСТРОЕННАЯ СИСТЕМА ШЕЙДЕРОВ ПОД MM2
-----------------------------------------------------
-local originalLightingSettings = {
-    TimeOfDay = Lighting.TimeOfDay,
-    Ambient = Lighting.Ambient,
-    OutdoorAmbient = Lighting.OutdoorAmbient,
-    Brightness = Lighting.Brightness,
-    GeographicLatitude = Lighting.GeographicLatitude,
-    ExposureCompensation = Lighting.ExposureCompensation
-}
-local originalSky = nil
-
-local function restoreOriginalEnvironment()
-    Lighting.TimeOfDay = originalLightingSettings.TimeOfDay
-    Lighting.Ambient = originalLightingSettings.Ambient
-    Lighting.OutdoorAmbient = originalLightingSettings.OutdoorAmbient
-    Lighting.Brightness = originalLightingSettings.Brightness
-    Lighting.GeographicLatitude = originalLightingSettings.GeographicLatitude
-    Lighting.ExposureCompensation = originalLightingSettings.ExposureCompensation
-
-    local currentSky = Lighting:FindFirstChildOfClass("Sky")
-    if originalSky and (not currentSky or currentSky.Name ~= originalSky.Name) then
-        if currentSky then currentSky:Destroy() end
-        originalSky:Clone().Parent = Lighting
-    end
-end
-
-local shaderStates = {
-    Master = false,
-    Mode = "None",
-    Bloom = false,
-    BloomIntensity = 2.2,
-    BloomSize = 16,
-    Atmosphere = false,
-    AtmosphereDensity = 55,
-    SunRays = false,
-    SunRaysIntensity = 45,
-    Blur = false,
-    BlurStrength = 20
-}
-
-local function updateBloom()
-    if shaderStates.Master and shaderStates.Bloom then
-        local bloom = Lighting:FindFirstChild("PulseHub_Bloom") or Instance.new("BloomEffect")
-        bloom.Name = "PulseHub_Bloom"
-        bloom.Intensity = shaderStates.BloomIntensity * 0.7 
-        bloom.Size = shaderStates.BloomSize
-        bloom.Threshold = 1.4 
-        bloom.Parent = Lighting
-    else
-        local bloom = Lighting:FindFirstChild("PulseHub_Bloom")
-        if bloom then bloom:Destroy() end
-    end
-end
-
-local function updateAtmosphere()
-    if shaderStates.Master and shaderStates.Atmosphere then
-        if not Lighting:FindFirstChild("PulseHub_Atmosphere") then
-            local atm = Instance.new("Atmosphere")
-            atm.Name = "PulseHub_Atmosphere"
-            atm.Parent = Lighting
-        end
-    else
-        local atm = Lighting:FindFirstChild("PulseHub_Atmosphere")
-        if atm then atm:Destroy() end
-    end
-end
-
-local function updateSunRays()
-    if shaderStates.Master and shaderStates.SunRays and shaderStates.Mode ~= "Midnight" then
-        if not Lighting:FindFirstChild("PulseHub_SunRays") then
-            local sr = Instance.new("SunRaysEffect")
-            sr.Name = "PulseHub_SunRays"
-            sr.Parent = Lighting
-        end
-    else
-        local sr = Lighting:FindFirstChild("PulseHub_SunRays")
-        if sr then sr:Destroy() end
-    end
-end
-
-local function updateBlur()
-    if shaderStates.Master and shaderStates.Blur then
-        local blur = Lighting:FindFirstChild("PulseHub_Blur") or Instance.new("BlurEffect")
-        blur.Name = "PulseHub_Blur"
-        blur.Size = (shaderStates.BlurStrength / 100) * 56
-        blur.Parent = Lighting
-    else
-        local blur = Lighting:FindFirstChild("PulseHub_Blur")
-        if blur then blur:Destroy() end
-    end
-end
-
-local lightingLoopConnection = nil
-local function startLightingEnforcer()
-    if lightingLoopConnection then lightingLoopConnection:Disconnect() end
-    lightingLoopConnection = RunService.Heartbeat:Connect(function()
-        if not shaderStates.Master then return end
-        
-        for _, child in ipairs(Lighting:GetChildren()) do
-            if child:IsA("Atmosphere") and child.Name ~= "PulseHub_Atmosphere" then child:Destroy() end
-            if child:IsA("SunRaysEffect") and child.Name ~= "PulseHub_SunRays" then child:Destroy() end
-            if child:IsA("BloomEffect") and child.Name ~= "PulseHub_Bloom" then child:Destroy() end
-            if child:IsA("BlurEffect") and child.Name ~= "PulseHub_Blur" then child:Destroy() end
-        end
-
-        local masterCC = Lighting:FindFirstChild("PulseHub_MasterCC")
-
-        if shaderStates.Mode == "Day" then
-            Lighting.TimeOfDay = "10:30:00" 
-            Lighting.Brightness = 2.5 
-            Lighting.OutdoorAmbient = Color3.fromRGB(145, 150, 155)
-            Lighting.Ambient = Color3.fromRGB(60, 60, 60)
-            Lighting.GeographicLatitude = 35
-            Lighting.ExposureCompensation = 0.2
-            if masterCC then
-                masterCC.Contrast = 0.1
-                masterCC.Saturation = 0.15
-                masterCC.TintColor = Color3.fromRGB(255, 255, 255)
-            end
-        elseif shaderStates.Mode == "Sunset" then
-            Lighting.TimeOfDay = "17:45:00"
-            Lighting.Brightness = 2.2
-            Lighting.OutdoorAmbient = Color3.fromRGB(140, 100, 90)
-            Lighting.Ambient = Color3.fromRGB(50, 45, 45)
-            Lighting.GeographicLatitude = 45
-            Lighting.ExposureCompensation = 0.15
-            if masterCC then
-                masterCC.Contrast = 0.12
-                masterCC.Saturation = 0.25
-                masterCC.TintColor = Color3.fromRGB(255, 225, 200)
-            end
-        elseif shaderStates.Mode == "Midnight" then
-            Lighting.TimeOfDay = "00:00:00"
-            Lighting.Brightness = 1.2
-            Lighting.OutdoorAmbient = Color3.fromRGB(25, 30, 50)
-            Lighting.Ambient = Color3.fromRGB(20, 20, 30)
-            Lighting.GeographicLatitude = 15
-            Lighting.ExposureCompensation = -0.1
-            if masterCC then
-                masterCC.Contrast = 0.08
-                masterCC.Saturation = -0.05
-                masterCC.TintColor = Color3.fromRGB(210, 225, 255)
-            end
-        elseif shaderStates.Mode == "None" then
-            restoreOriginalEnvironment()
-        end
-        
-        local atm = Lighting:FindFirstChild("PulseHub_Atmosphere")
-        if atm and shaderStates.Atmosphere then
-            atm.Density = shaderStates.AtmosphereDensity / 100
-            if shaderStates.Mode == "Day" then
-                atm.Color = Color3.fromRGB(185, 215, 255)
-                atm.Decay = Color3.fromRGB(250, 230, 210)
-                atm.Haze = 1.2 
-                atm.Glare = 0.4 
-            elseif shaderStates.Mode == "Sunset" then
-                atm.Color = Color3.fromRGB(245, 150, 110)
-                atm.Decay = Color3.fromRGB(130, 65, 95)
-                atm.Haze = 1.4
-                atm.Glare = 0.3
-            elseif shaderStates.Mode == "Midnight" then
-                atm.Color = Color3.fromRGB(20, 25, 55)
-                atm.Decay = Color3.fromRGB(15, 15, 25)
-                atm.Haze = 0.6
-                atm.Glare = 0.0
-            else
-                atm.Color = Color3.fromRGB(200, 200, 200)
-                atm.Decay = Color3.fromRGB(255, 255, 255)
-                atm.Haze = 0.5
-                atm.Glare = 0.0
-            end
-        end
-
-        local sr = Lighting:FindFirstChild("PulseHub_SunRays")
-        if sr and shaderStates.SunRays then
-            sr.Intensity = (shaderStates.SunRaysIntensity / 100) * 0.6 
-            sr.Spread = 0.75
-            sr.Threshold = 0.35 
-        end
-    end)
-end
-
-local function stopLightingEnforcer()
-    if lightingLoopConnection then
-        lightingLoopConnection:Disconnect()
-        lightingLoopConnection = nil
-    end
-end
-
-local masterCC = nil
-Library:CreateToggle(VisualSections["shader pack"], "Enable", false, function(state)
-    shaderStates.Master = state
-    if state then
-        originalLightingSettings.TimeOfDay = Lighting.TimeOfDay
-        originalLightingSettings.Ambient = Lighting.Ambient
-        originalLightingSettings.OutdoorAmbient = Lighting.OutdoorAmbient
-        originalLightingSettings.Brightness = Lighting.Brightness
-        originalLightingSettings.GeographicLatitude = Lighting.GeographicLatitude
-        originalLightingSettings.ExposureCompensation = Lighting.ExposureCompensation
-        
-        local nativeSky = Lighting:FindFirstChildOfClass("Sky")
-        if nativeSky and not string.find(nativeSky.Name, "PulseHub") then
-            originalSky = nativeSky:Clone()
-        end
-
-        masterCC = Lighting:FindFirstChild("PulseHub_MasterCC") or Instance.new("ColorCorrectionEffect")
-        masterCC.Name = "PulseHub_MasterCC"
-        masterCC.Saturation = 0.15
-        masterCC.Contrast = 0.1
-        masterCC.Parent = Lighting
-        
-        masterCC.Enabled = (shaderStates.Mode ~= "None")
-        
-        updateBloom()
-        updateAtmosphere()
-        updateSunRays()
-        updateBlur()
-        startLightingEnforcer()
-    else
-        stopLightingEnforcer()
-        if masterCC then masterCC:Destroy() masterCC = nil end
-        
-        local b = Lighting:FindFirstChild("PulseHub_Bloom") if b then b:Destroy() end
-        local a = Lighting:FindFirstChild("PulseHub_Atmosphere") if a then a:Destroy() end
-        local s = Lighting:FindFirstChild("PulseHub_SunRays") if s then s:Destroy() end
-        local bl = Lighting:FindFirstChild("PulseHub_Blur") if bl then bl:Destroy() end
-        
-        restoreOriginalEnvironment()
-    end
-end)
-
-Library:CreateDropdown(VisualSections["shader pack"], "Mode", {"None", "Day", "Sunset", "Midnight"}, "None", function(selected)
-    shaderStates.Mode = selected
-    if not shaderStates.Master then return end
-    
-    if masterCC then
-        masterCC.Enabled = (selected ~= "None")
-    end
-    
-    updateSunRays()
-    updateAtmosphere()
-end)
-
-Library:CreateToggle(VisualSections["shader pack"], "Bloom", false, function(state)
-    shaderStates.Bloom = state
-    updateBloom()
-end)
-
-Library:CreateSlider(VisualSections["shader pack"], "Intensity", 0, 10, 2, function(value)
-    shaderStates.BloomIntensity = value
-    local bloom = Lighting:FindFirstChild("PulseHub_Bloom")
-    if bloom then bloom.Intensity = value * 0.7 end
-end)
-
-Library:CreateSlider(VisualSections["shader pack"], "Size", 0, 56, 16, function(value)
-    shaderStates.BloomSize = value
-    local bloom = Lighting:FindFirstChild("PulseHub_Bloom")
-    if bloom then bloom.Size = value end
-end)
-
-Library:CreateToggle(VisualSections["shader pack"], "Atmosphere", false, function(state)
-    shaderStates.Atmosphere = state
-    updateAtmosphere()
-end)
-
-Library:CreateSlider(VisualSections["shader pack"], "Density", 0, 100, 55, function(value)
-    shaderStates.AtmosphereDensity = value
-end)
-
-Library:CreateToggle(VisualSections["shader pack"], "Sun Rays", false, function(state)
-    shaderStates.SunRays = state
-    updateSunRays()
-end)
-
-Library:CreateSlider(VisualSections["shader pack"], "Intensity", 0, 100, 45, function(value)
-    shaderStates.SunRaysIntensity = value
-end)
-
-Library:CreateToggle(VisualSections["shader pack"], "Blur", false, function(state)
-    shaderStates.Blur = state
-    updateBlur()
-end)
-
-Library:CreateSlider(VisualSections["shader pack"], "Strength", 0, 100, 20, function(value)
-    shaderStates.BlurStrength = value
-    local blur = Lighting:FindFirstChild("PulseHub_Blur")
-    if blur then blur.Size = (value / 100) * 56 end
-end)
-----------------------------------------------------
 
 Library:CreateSlider(SettingSections["UI"], "UISize", 0.5, 1.5, 1.00, function(value) MainScale.Scale = value end)
 Library:CreateSlider(SettingSections["UI"], "UITransparency", 0, 100, 15, function(value) MainFrame.BackgroundTransparency = value / 100 end)
