@@ -521,15 +521,6 @@ function Library:UpdateTheme(themeName)
             tBtn.TextColor3 = subTextColor
         end
     end
-
-    -- Фикс тем: Перекрашиваем иконки вкладок в цвет текста при обновлении темы
-    for tName, tIcon in pairs(allTabIcons) do
-        if tName == Library.CurrentTabKey then
-            tIcon.ImageColor3 = mainTextColor
-        else
-            tIcon.ImageColor3 = subTextColor
-        end
-    end
     
     for _, data in ipairs(Library.TrackedAccents) do
         if data.Type == "Toggle" then
@@ -1401,14 +1392,11 @@ function CreatePage(textKey, iconId, layoutOrder)
         TabIcon.Size = UDim2.new(0, 24, 0, 24)
         TabIcon.Position = UDim2.new(0, 10, 0.5, -12)
         TabIcon.BackgroundTransparency = 1
-        
-        -- ФИКС: Для длинных ID вкладок теперь используется современный rbxthumb, как и во всем остальном вашем скрипте.
         if tonumber(iconId) then
             TabIcon.Image = "rbxthumb://type=Asset&id=" .. iconId .. "&w=150&h=150"
         else
             TabIcon.Image = iconId
         end
-        TabIcon.ImageColor3 = Color3.fromRGB(140, 140, 140) -- Дефолтный цвет
         TabIcon.ImageTransparency = 0.25
         TabIcon.ZIndex = 7
         allTabIcons[textKey] = TabIcon
@@ -1430,14 +1418,10 @@ function CreatePage(textKey, iconId, layoutOrder)
         local bgL = (Library.CurrentThemeData.MainBg.R * 0.299 + Library.CurrentThemeData.MainBg.G * 0.587 + Library.CurrentThemeData.MainBg.B * 0.114)
         local isL = bgL > 0.5
         
-        -- Фикс изменения цвета: Перекрашиваем неактивные иконки в соответствии со светлой/темной темой
         for tName, tContainer in pairs(allTabs) do
             tween(tContainer, {BackgroundTransparency = 1}, 0.2)
-            local inactiveColor = isL and Color3.fromRGB(110, 110, 110) or Color3.fromRGB(140, 140, 140)
-            tween(allTabButtons[tName], {TextColor3 = inactiveColor}, 0.2)
-            if allTabIcons[tName] then 
-                tween(allTabIcons[tName], {ImageTransparency = 0.25, ImageColor3 = inactiveColor}, 0.2) 
-            end
+            tween(allTabButtons[tName], {TextColor3 = isL and Color3.fromRGB(110, 110, 110) or Color3.fromRGB(140, 140, 140)}, 0.2)
+            if allTabIcons[tName] then tween(allTabIcons[tName], {ImageTransparency = 0.25}, 0.2) end
             allPages[tName].Visible = false
         end
         Library.CurrentTabKey = textKey
@@ -1445,15 +1429,9 @@ function CreatePage(textKey, iconId, layoutOrder)
         PageFrame.Visible = true
         
         local activeTabBg = isL and Color3.fromRGB(215, 215, 215) or Color3.fromRGB(35, 35, 35)
-        local activeTextColor = isL and Color3.fromRGB(35, 35, 35) or Color3.fromRGB(255, 255, 255)
-        
         tween(TabContainer, {BackgroundColor3 = activeTabBg, BackgroundTransparency = 0}, 0.2)
-        tween(TabBtn, {TextColor3 = activeTextColor}, 0.2)
-        
-        -- Фикс изменения цвета: Перекрашиваем активную иконку при клике
-        if allTabIcons[textKey] then 
-            tween(allTabIcons[textKey], {ImageTransparency = 0, ImageColor3 = activeTextColor}, 0.2) 
-        end
+        tween(TabBtn, {TextColor3 = isL and Color3.fromRGB(35, 35, 35) or Color3.fromRGB(255, 255, 255)}, 0.2)
+        if allTabIcons[textKey] then tween(allTabIcons[textKey], {ImageTransparency = 0}, 0.2) end
     end)
     table.insert(LocaleObjects, {Object = TabBtn, Key = textKey})
     UpdateNavCanvas()
@@ -1480,7 +1458,7 @@ local SettingSections = Library:CreateSubTabs(SettingsPage, {
 })
 
 ----------------------------------------------------
--- МОДИФИЦИРОВАННАЯ И НАСТРОЕННАЯ СИСТЕМА ШЕЙДЕРОВ (ФИКС)
+-- МОДИФИЦИРОВАННАЯ И НАСТРОЕННАЯ СИСТЕМА ШЕЙДЕРОВ ПОД MM2
 ----------------------------------------------------
 local originalLightingSettings = {
     TimeOfDay = Lighting.TimeOfDay,
@@ -1525,6 +1503,9 @@ local function updateBloom()
     if shaderStates.Master and shaderStates.Bloom then
         local bloom = Lighting:FindFirstChild("PulseHub_Bloom") or Instance.new("BloomEffect")
         bloom.Name = "PulseHub_Bloom"
+        bloom.Intensity = shaderStates.BloomIntensity * 0.7 
+        bloom.Size = shaderStates.BloomSize
+        bloom.Threshold = 1.4 
         bloom.Parent = Lighting
     else
         local bloom = Lighting:FindFirstChild("PulseHub_Bloom")
@@ -1546,7 +1527,7 @@ local function updateAtmosphere()
 end
 
 local function updateSunRays()
-    if shaderStates.Master and shaderStates.SunRays then
+    if shaderStates.Master and shaderStates.SunRays and shaderStates.Mode ~= "Midnight" then
         if not Lighting:FindFirstChild("PulseHub_SunRays") then
             local sr = Instance.new("SunRaysEffect")
             sr.Name = "PulseHub_SunRays"
@@ -1560,11 +1541,10 @@ end
 
 local function updateBlur()
     if shaderStates.Master and shaderStates.Blur then
-        if not Lighting:FindFirstChild("PulseHub_Blur") then
-            local blur = Instance.new("BlurEffect")
-            blur.Name = "PulseHub_Blur"
-            blur.Parent = Lighting
-        end
+        local blur = Lighting:FindFirstChild("PulseHub_Blur") or Instance.new("BlurEffect")
+        blur.Name = "PulseHub_Blur"
+        blur.Size = (shaderStates.BlurStrength / 100) * 56
+        blur.Parent = Lighting
     else
         local blur = Lighting:FindFirstChild("PulseHub_Blur")
         if blur then blur:Destroy() end
@@ -1586,12 +1566,11 @@ local function startLightingEnforcer()
 
         local masterCC = Lighting:FindFirstChild("PulseHub_MasterCC")
 
-        -- Настройки базовых пресетов времени суток
         if shaderStates.Mode == "Day" then
             Lighting.TimeOfDay = "10:30:00" 
-            Lighting.Brightness = 2.6 
+            Lighting.Brightness = 2.5 
             Lighting.OutdoorAmbient = Color3.fromRGB(145, 150, 155)
-            Lighting.Ambient = Color3.fromRGB(65, 65, 65)
+            Lighting.Ambient = Color3.fromRGB(60, 60, 60)
             Lighting.GeographicLatitude = 35
             Lighting.ExposureCompensation = 0.2
             if masterCC then
@@ -1600,96 +1579,64 @@ local function startLightingEnforcer()
                 masterCC.TintColor = Color3.fromRGB(255, 255, 255)
             end
         elseif shaderStates.Mode == "Sunset" then
-            Lighting.TimeOfDay = "17:50:00"
-            Lighting.Brightness = 2.3
-            Lighting.OutdoorAmbient = Color3.fromRGB(150, 105, 95)
-            Lighting.Ambient = Color3.fromRGB(55, 45, 45)
+            Lighting.TimeOfDay = "17:45:00"
+            Lighting.Brightness = 2.2
+            Lighting.OutdoorAmbient = Color3.fromRGB(140, 100, 90)
+            Lighting.Ambient = Color3.fromRGB(50, 45, 45)
             Lighting.GeographicLatitude = 45
             Lighting.ExposureCompensation = 0.15
             if masterCC then
                 masterCC.Contrast = 0.12
-                masterCC.Saturation = 0.28
-                masterCC.TintColor = Color3.fromRGB(255, 220, 195)
+                masterCC.Saturation = 0.25
+                masterCC.TintColor = Color3.fromRGB(255, 225, 200)
             end
         elseif shaderStates.Mode == "Midnight" then
             Lighting.TimeOfDay = "00:00:00"
-            Lighting.Brightness = 1.6
-            Lighting.OutdoorAmbient = Color3.fromRGB(60, 70, 95)  
-            Lighting.Ambient = Color3.fromRGB(45, 45, 55)         
+            Lighting.Brightness = 1.2
+            Lighting.OutdoorAmbient = Color3.fromRGB(25, 30, 50)
+            Lighting.Ambient = Color3.fromRGB(20, 20, 30)
             Lighting.GeographicLatitude = 15
-            Lighting.ExposureCompensation = 0.1                 
+            Lighting.ExposureCompensation = -0.1
             if masterCC then
-                masterCC.Contrast = 0.06
-                masterCC.Saturation = 0.05
-                masterCC.TintColor = Color3.fromRGB(220, 230, 255) 
+                masterCC.Contrast = 0.08
+                masterCC.Saturation = -0.05
+                masterCC.TintColor = Color3.fromRGB(210, 225, 255)
             end
         elseif shaderStates.Mode == "None" then
             restoreOriginalEnvironment()
         end
         
-        -- Синхронизация и кастомизация Bloom
-        local bloom = Lighting:FindFirstChild("PulseHub_Bloom")
-        if bloom and shaderStates.Bloom then
-            bloom.Intensity = shaderStates.BloomIntensity * 0.45 
-            bloom.Size = shaderStates.BloomSize
-            if shaderStates.Mode == "Day" then
-                bloom.Threshold = 0.4
-            elseif shaderStates.Mode == "Sunset" then
-                bloom.Threshold = 0.3
-            elseif shaderStates.Mode == "Midnight" then
-                bloom.Threshold = 0.15 
-            else
-                bloom.Threshold = 0.5
-            end
-        end
-
-        -- Фикс Atmosphere
         local atm = Lighting:FindFirstChild("PulseHub_Atmosphere")
         if atm and shaderStates.Atmosphere then
             atm.Density = shaderStates.AtmosphereDensity / 100
             if shaderStates.Mode == "Day" then
-                atm.Color = Color3.fromRGB(190, 215, 255)
-                atm.Decay = Color3.fromRGB(250, 235, 215)
-                atm.Haze = (shaderStates.AtmosphereDensity / 100) * 2.5
-                atm.Glare = 0.6
+                atm.Color = Color3.fromRGB(185, 215, 255)
+                atm.Decay = Color3.fromRGB(250, 230, 210)
+                atm.Haze = 1.2 
+                atm.Glare = 0.4 
             elseif shaderStates.Mode == "Sunset" then
-                atm.Color = Color3.fromRGB(255, 150, 100)
-                atm.Decay = Color3.fromRGB(140, 70, 105)
-                atm.Haze = (shaderStates.AtmosphereDensity / 100) * 3.5
-                atm.Glare = 0.9
+                atm.Color = Color3.fromRGB(245, 150, 110)
+                atm.Decay = Color3.fromRGB(130, 65, 95)
+                atm.Haze = 1.4
+                atm.Glare = 0.3
             elseif shaderStates.Mode == "Midnight" then
-                atm.Color = Color3.fromRGB(30, 35, 65)
-                atm.Decay = Color3.fromRGB(20, 20, 35)
-                atm.Haze = (shaderStates.AtmosphereDensity / 100) * 1.5
-                atm.Glare = 0.1
+                atm.Color = Color3.fromRGB(20, 25, 55)
+                atm.Decay = Color3.fromRGB(15, 15, 25)
+                atm.Haze = 0.6
+                atm.Glare = 0.0
             else
                 atm.Color = Color3.fromRGB(200, 200, 200)
                 atm.Decay = Color3.fromRGB(255, 255, 255)
-                atm.Haze = (shaderStates.AtmosphereDensity / 100) * 1.0
+                atm.Haze = 0.5
                 atm.Glare = 0.0
             end
         end
 
-        -- Фикс Sun Rays
         local sr = Lighting:FindFirstChild("PulseHub_SunRays")
         if sr and shaderStates.SunRays then
-            sr.Intensity = (shaderStates.SunRaysIntensity / 100) * 0.75
-            sr.Spread = 0.82
-            if shaderStates.Mode == "Day" then
-                sr.Threshold = 0.08
-            elseif shaderStates.Mode == "Sunset" then
-                sr.Threshold = 0.04
-            elseif shaderStates.Mode == "Midnight" then
-                sr.Threshold = 0.04 
-            else
-                sr.Threshold = 0.1
-            end
-        end
-
-        -- Динамический Blur
-        local blur = Lighting:FindFirstChild("PulseHub_Blur")
-        if blur and shaderStates.Blur then
-            blur.Size = (shaderStates.BlurStrength / 100) * 56
+            sr.Intensity = (shaderStates.SunRaysIntensity / 100) * 0.6 
+            sr.Spread = 0.75
+            sr.Threshold = 0.35 
         end
     end)
 end
@@ -1762,10 +1709,14 @@ end)
 
 Library:CreateSlider(VisualSections["shader pack"], "Intensity", 0, 10, 2, function(value)
     shaderStates.BloomIntensity = value
+    local bloom = Lighting:FindFirstChild("PulseHub_Bloom")
+    if bloom then bloom.Intensity = value * 0.7 end
 end)
 
 Library:CreateSlider(VisualSections["shader pack"], "Size", 0, 56, 16, function(value)
     shaderStates.BloomSize = value
+    local bloom = Lighting:FindFirstChild("PulseHub_Bloom")
+    if bloom then bloom.Size = value end
 end)
 
 Library:CreateToggle(VisualSections["shader pack"], "Atmosphere", false, function(state)
@@ -1793,6 +1744,8 @@ end)
 
 Library:CreateSlider(VisualSections["shader pack"], "Strength", 0, 100, 20, function(value)
     shaderStates.BlurStrength = value
+    local blur = Lighting:FindFirstChild("PulseHub_Blur")
+    if blur then blur.Size = (value / 100) * 56 end
 end)
 ----------------------------------------------------
 
