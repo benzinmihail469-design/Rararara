@@ -1503,9 +1503,9 @@ local function updateBloom()
     if shaderStates.Master and shaderStates.Bloom then
         local bloom = Lighting:FindFirstChild("PulseHub_Bloom") or Instance.new("BloomEffect")
         bloom.Name = "PulseHub_Bloom"
-        bloom.Intensity = shaderStates.BloomIntensity * 0.7 -- Ограничиваем пиковую силу блума
+        bloom.Intensity = shaderStates.BloomIntensity * 0.7 
         bloom.Size = shaderStates.BloomSize
-        bloom.Threshold = 1.4 -- Поднят порог для более мягкого и аккуратного свечения
+        bloom.Threshold = 1.4 
         bloom.Parent = Lighting
     else
         local bloom = Lighting:FindFirstChild("PulseHub_Bloom")
@@ -1551,14 +1551,12 @@ local function updateBlur()
     end
 end
 
--- Жесткий цикл форсирования настроек каждую миллисекунду (Защита от перезаписи скриптами MM2)
 local lightingLoopConnection = nil
 local function startLightingEnforcer()
     if lightingLoopConnection then lightingLoopConnection:Disconnect() end
     lightingLoopConnection = RunService.Heartbeat:Connect(function()
         if not shaderStates.Master then return end
         
-        -- Вычищаем дефолтные эффекты MM2, которые ломают визуал раунда
         for _, child in ipairs(Lighting:GetChildren()) do
             if child:IsA("Atmosphere") and child.Name ~= "PulseHub_Atmosphere" then child:Destroy() end
             if child:IsA("SunRaysEffect") and child.Name ~= "PulseHub_SunRays" then child:Destroy() end
@@ -1568,10 +1566,9 @@ local function startLightingEnforcer()
 
         local masterCC = Lighting:FindFirstChild("PulseHub_MasterCC")
 
-        -- Кастомные конфигурации под конкретные пресеты времени суток
         if shaderStates.Mode == "Day" then
-            Lighting.TimeOfDay = "10:30:00" -- Идеальное утреннее солнце для длинных объемных лучей
-            Lighting.Brightness = 2.5 -- Оптимальная яркость
+            Lighting.TimeOfDay = "10:30:00" 
+            Lighting.Brightness = 2.5 
             Lighting.OutdoorAmbient = Color3.fromRGB(145, 150, 155)
             Lighting.Ambient = Color3.fromRGB(60, 60, 60)
             Lighting.GeographicLatitude = 35
@@ -1582,7 +1579,6 @@ local function startLightingEnforcer()
                 masterCC.TintColor = Color3.fromRGB(255, 255, 255)
             end
         elseif shaderStates.Mode == "Sunset" then
-            -- Настоящий мягкий и красивый закат
             Lighting.TimeOfDay = "17:45:00"
             Lighting.Brightness = 2.2
             Lighting.OutdoorAmbient = Color3.fromRGB(140, 100, 90)
@@ -1595,7 +1591,6 @@ local function startLightingEnforcer()
                 masterCC.TintColor = Color3.fromRGB(255, 225, 200)
             end
         elseif shaderStates.Mode == "Midnight" then
-            -- Атмосферная, мягкая полночь
             Lighting.TimeOfDay = "00:00:00"
             Lighting.Brightness = 1.2
             Lighting.OutdoorAmbient = Color3.fromRGB(25, 30, 50)
@@ -1611,15 +1606,14 @@ local function startLightingEnforcer()
             restoreOriginalEnvironment()
         end
         
-        -- Насильно прокачиваем свойства Атмосферы, делая её 100% видимой и мягкой
         local atm = Lighting:FindFirstChild("PulseHub_Atmosphere")
         if atm and shaderStates.Atmosphere then
             atm.Density = shaderStates.AtmosphereDensity / 100
             if shaderStates.Mode == "Day" then
                 atm.Color = Color3.fromRGB(185, 215, 255)
                 atm.Decay = Color3.fromRGB(250, 230, 210)
-                atm.Haze = 1.2 -- Снижено для мягкости
-                atm.Glare = 0.4 -- Снижено, чтобы солнце не слепило
+                atm.Haze = 1.2 
+                atm.Glare = 0.4 
             elseif shaderStates.Mode == "Sunset" then
                 atm.Color = Color3.fromRGB(245, 150, 110)
                 atm.Decay = Color3.fromRGB(130, 65, 95)
@@ -1638,12 +1632,11 @@ local function startLightingEnforcer()
             end
         end
 
-        -- Тонкая подстройка лучей солнца, заставляющая их работать мягко и без засветов экрана
         local sr = Lighting:FindFirstChild("PulseHub_SunRays")
         if sr and shaderStates.SunRays then
-            sr.Intensity = (shaderStates.SunRaysIntensity / 100) * 0.6 -- Мягкий коэффициент силы лучей
+            sr.Intensity = (shaderStates.SunRaysIntensity / 100) * 0.6 
             sr.Spread = 0.75
-            sr.Threshold = 0.35 -- Порог изменен с 0.0 до 0.35 для корректной генерации аккуратных лучей
+            sr.Threshold = 0.35 
         end
     end)
 end
