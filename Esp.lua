@@ -588,7 +588,7 @@ local Localization = {
         ["UISize"] = "UI Size", ["UITransparency"] = "UI Transparency", ["MenuFont"] = "Menu Font",
         ["Language"] = "Language", ["AntiAFK"] = "Anti-AFK", ["UITheme"] = "UI Theme",
         ["AnimatedWindow"] = "Animated Window", ["Gradient"] = "Gradient Background",
-        ["Esp"] = "ESP"
+        ["Esp"] = "ESP", ["EspToggle"] = "Enable ESP / Player Roles"
     },
     ["Русский"] = {
         ["Main"] = "Главная", ["Teleport"] = "Телепорт", ["Murder"] = "Убийца", ["Sheriff"] = "Шериф",
@@ -597,7 +597,7 @@ local Localization = {
         ["UISize"] = "Размер интерфейса", ["UITransparency"] = "Прозрачность меню", ["MenuFont"] = "Шрифт меню",
         ["Language"] = "Язык", ["AntiAFK"] = "Анти-АФК", ["UITheme"] = "Тема UI",
         ["AnimatedWindow"] = "Анимированное окно", ["Gradient"] = "Градиентный фон",
-        ["Esp"] = "ЕСП"
+        ["Esp"] = "ЕСП", ["EspToggle"] = "Включить ЕСП / Роли игроков"
     }
 }
 
@@ -1442,6 +1442,156 @@ Library:CreateToggle(MainPage, "AutoFarmCoins", false, function(state) end)
 local VisualSections = Library:CreateSubTabs(VisualPage, {
     {Name = "Esp", Icon = "80768064990053", Color = Color3.fromRGB(46, 204, 113)}
 })
+
+-- ============================================================================
+-- ЛОГИКА РАБОТЫ КРАСИВОГО ММ2 ESP
+-- ============================================================================
+local espActive = false
+local espConnections = {}
+local activePlayersEsp = {}
+
+local function getPlayerRole(player)
+    if not player then return "Innocent" end
+    local char = player.Character
+    local backpack = player:FindFirstChild("Backpack")
+    
+    -- Проверка рюкзака и рук на наличие оружия
+    if (char and char:FindFirstChild("Knife")) or (backpack and backpack:FindFirstChild("Knife")) then
+        return "Murderer"
+    elseif (char and char:FindFirstChild("Gun")) or (backpack and backpack:FindFirstChild("Gun")) then
+        return "Sheriff"
+    end
+    return "Innocent"
+end
+
+local function cleanESP()
+    for player, assets in pairs(activePlayersEsp) do
+        if assets.Highlight then pcall(function() assets.Highlight:Destroy() end) end
+        if assets.Billboard then pcall(function() assets.Billboard:Destroy() end) end
+    end
+    table.clear(activePlayersEsp)
+end
+
+local function createESP(player)
+    if player == Players.LocalPlayer then return end
+    
+    local function handleCharacter(char)
+        task.wait(0.5) -- Безопасное время для загрузки костей/частей персонажа
+        if not espActive then return end
+        
+        if activePlayersEsp[player] then
+            pcall(function() activePlayersEsp[player].Highlight:Destroy() end)
+            pcall(function() activePlayersEsp[player].Billboard:Destroy() end)
+        end
+        
+        -- Создание красивого свечения через нативный Highlight
+        local highlight = Instance.new("Highlight")
+        highlight.Name = "PulseHub_Highlight"
+        highlight.FillTransparency = 0.5
+        highlight.OutlineTransparency = 0
+        highlight.Adornee = char
+        highlight.Parent = char
+        
+        -- СозданиеBillboardGui над головой персонажа для отображения ников и ролей
+        local billboard = Instance.new("BillboardGui")
+        billboard.Name = "PulseHub_Billboard"
+        billboard.AlwaysOnTop = true
+        billboard.Size = UDim2.new(0, 160, 0, 40)
+        billboard.StudsOffset = Vector3.new(0, 3, 0)
+        
+        local textLabel = Instance.new("TextLabel", billboard)
+        textLabel.Size = UDim2.new(1, 0, 1, 0)
+        textLabel.BackgroundTransparency = 1
+        textLabel.Font = Enum.Font.GothamBold
+        textLabel.TextSize = 12
+        textLabel.TextStrokeTransparency = 0.2
+        textLabel.TextStrokeColor3 = Color3.fromRGB(0, 0, 0)
+        
+        local head = char:WaitForChild("Head", 5) or char.PrimaryPart
+        if head then
+            billboard.Parent = head
+        else
+            billboard.Parent = char
+        end
+        
+        activePlayersEsp[player] = {
+            Highlight = highlight,
+            Billboard = billboard,
+            TextLabel = textLabel,
+            Character = char
+        }
+    end
+    
+    if player.Character then
+        task.spawn(handleCharacter, player.Character)
+    end
+    local charAdded = player.CharacterAdded:Connect(handleCharacter)
+    table.insert(espConnections, charAdded)
+end
+
+local function toggleESP(state)
+    espActive = state
+    if state then
+        -- Слушатели на вход и выход игроков
+        for _, p in ipairs(Players:GetPlayers()) do
+            createESP(p)
+        end
+        table.insert(espConnections, Players.PlayerAdded:Connect(createESP))
+        table.insert(espConnections, Players.PlayerRemoving:Connect(function(p)
+            if activePlayersEsp[p] then
+                pcall(function() activePlayersEsp[p].Highlight:Destroy() end)
+                pcall(function() activePlayersEsp[p].Billboard:Destroy() end)
+                activePlayersEsp[p] = nil
+            end
+        end))
+    else
+        for _, c in ipairs(espConnections) do c:Disconnect() end
+        table.clear(espConnections)
+        cleanESP()
+    end
+end
+
+-- Постоянный цикл для динамического обновления ролей и цветов раз в полсекунды
+task.spawn(function()
+    while true do
+        if espActive then
+            for player, assets in pairs(activePlayersEsp) do
+                if player and player.Parent and assets.Character and assets.Character.Parent then
+                    local role = getPlayerRole(player)
+                    local color = Color3.fromRGB(46, 204, 113) -- По умолчанию зеленый мирный
+                    local roleName = "Innocent"
+                    
+                    if role == "Murderer" then
+                        color = Color3.fromRGB(231, 76, 60) -- Красный убийца
+                        roleName = "Murderer"
+                    elseif role == "Sheriff" then
+                        color = Color3.fromRGB(52, 152, 219) -- Синий шериф
+                        roleName = "Sheriff"
+                    end
+                    
+                    if assets.Highlight and assets.Highlight.Parent then
+                        assets.Highlight.FillColor = color
+                        assets.Highlight.OutlineColor = color
+                    end
+                    
+                    if assets.TextLabel and assets.TextLabel.Parent then
+                        assets.TextLabel.Text = string.format("%s\n[%s]", player.DisplayName or player.Name, roleName)
+                        assets.TextLabel.TextColor3 = color
+                    end
+                else
+                    activePlayersEsp[player] = nil
+                end
+            end
+        end
+        task.wait(0.5)
+    end
+end)
+
+-- Создание кнопки ESP внутри подвкладки "Esp"
+Library:CreateToggle(VisualSections["Esp"], "EspToggle", false, function(state)
+    toggleESP(state)
+end)
+-- ============================================================================
 
 local SettingSections = Library:CreateSubTabs(SettingsPage, {
     {Name = "UI", Icon = "85203682050945", Color = Color3.fromRGB(108, 176, 214)},
