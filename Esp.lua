@@ -1,4 +1,4 @@
-local CustomIconID = "76579925188009"
+Local CustomIconID = "76579925188009"
 local TweenService = game:GetService("TweenService")
 local UserInputService = game:GetService("UserInputService")
 local RunService = game:GetService("RunService")
@@ -1443,11 +1443,11 @@ local VisualSections = Library:CreateSubTabs(VisualPage, {
 })
 
 -- ============================================================================
--- МГНОВЕННОЕ ОБНАРУЖЕНИЕ РОЛЕЙ (ЧЕРЕЗ ПРОСЛУШКУ ИНВЕНТАРЯ)
+-- МГНОВЕННОЕ ОБНАРУЖЕНИЕ РОЛЕЙ С БЫСТРЫМ ПРЕДВАРИТЕЛЬНЫМ ПОИСКОМ
 -- ============================================================================
 local espActive = false
 local activePlayersEsp = {}
-local PreRevealedRoles = {} -- Локальная база ролей
+local PreRevealedRoles = {} 
 
 local function cleanESP()
     for player, assets in pairs(activePlayersEsp) do
@@ -1457,7 +1457,6 @@ local function cleanESP()
     table.clear(activePlayersEsp)
 end
 
--- Сброс кэша ролей при переходе в новый раунд (смена карты)
 workspace.ChildAdded:Connect(function(child)
     if child.Name == "Map" or child.Name == "Normal" or child.Name == "Hardcore" or child.Name == "Assassin" or child:FindFirstChild("Spawns") then
         table.clear(PreRevealedRoles)
@@ -1465,7 +1464,6 @@ workspace.ChildAdded:Connect(function(child)
     end
 end)
 
--- Быстрая проверка контейнера (рюкзак или персонаж)
 local function scanContainer(container)
     if not container then return nil end
     for _, item in ipairs(container:GetChildren()) do
@@ -1481,23 +1479,48 @@ local function scanContainer(container)
     return nil
 end
 
--- Обновление роли конкретного игрока
 local function updatePlayerRole(player)
+    -- 1. Сверхраннее определение по внутренним атрибутам и значениям движка раунда
+    if player:GetAttribute("Role") then
+        local attr = string.lower(tostring(player:GetAttribute("Role")))
+        if string.find(attr, "murder") or string.find(attr, "knif") then return "Murderer" end
+        if string.find(attr, "sheriff") or string.find(attr, "gun") or string.find(attr, "hero") then return "Sheriff" end
+    end
+
+    local roleValue = player:FindFirstChild("Role") or player:FindFirstChild("role")
+    if roleValue and (roleValue:IsA("StringValue") or roleValue:IsA("ValueObject")) then
+        local val = string.lower(tostring(roleValue.Value))
+        if string.find(val, "murder") then return "Murderer" end
+        if string.find(val, "sheriff") or string.find(val, "hero") then return "Sheriff" end
+    end
+
+    -- 2. Определение по скрытым командам (Team)
+    if player.Team then
+        local teamName = string.lower(player.Team.Name)
+        if string.find(teamName, "murder") then return "Murderer" end
+        if string.find(teamName, "sheriff") or string.find(teamName, "hero") then return "Sheriff" end
+    end
+
+    -- 3. Если закэшировано ранее — возвращаем сохраненную роль
     if PreRevealedRoles[player] then return PreRevealedRoles[player] end
     
+    -- 4. Стандартный поиск по рюкзаку и инвентарю
     local role = scanContainer(player:FindFirstChild("Backpack")) or scanContainer(player.Character)
     if role then
         PreRevealedRoles[player] = role
+        return role
     end
     
-    return role or "Innocent"
+    return "Innocent"
 end
 
--- Установка "прослушки" для моментального детекта выдачи оружия
 local function setupPlayerListeners(player)
     local function onCharacterAdded(char)
         char.ChildAdded:Connect(function(child)
-            if espActive then updatePlayerRole(player) end
+            if espActive then 
+                PreRevealedRoles[player] = nil -- Сброс кэша для мгновенного обновления
+                updatePlayerRole(player) 
+            end
         end)
     end
     
@@ -1506,7 +1529,10 @@ local function setupPlayerListeners(player)
     
     local function onBackpackAdded(bp)
         bp.ChildAdded:Connect(function(child)
-            if espActive then updatePlayerRole(player) end
+            if espActive then 
+                PreRevealedRoles[player] = nil -- Обнуляем кэш при появлении любого инструмента в рюкзаке
+                updatePlayerRole(player) 
+            end
         end)
     end
     
@@ -1516,12 +1542,19 @@ local function setupPlayerListeners(player)
     player.ChildAdded:Connect(function(child)
         if child.Name == "Backpack" then onBackpackAdded(child) end
     end)
+    
+    -- Отслеживание изменений атрибутов роли
+    player.AttributeChanged:Connect(function(attribute)
+        if attribute == "Role" and espActive then
+            PreRevealedRoles[player] = nil
+            updatePlayerRole(player)
+        end
+    end)
 end
 
 for _, p in ipairs(Players:GetPlayers()) do setupPlayerListeners(p) end
 Players.PlayerAdded:Connect(setupPlayerListeners)
 
--- Цикл отрисовки ESP (без тяжелого сканирования памяти)
 task.spawn(function()
     while true do
         if espActive then
@@ -1531,7 +1564,6 @@ task.spawn(function()
                     if char and char:FindFirstChild("HumanoidRootPart") and char:FindFirstChild("Head") then
                         local assets = activePlayersEsp[player]
                         
-                        -- Пересоздание ESP, если персонаж обновился
                         if not assets or assets.Character ~= char then
                             if assets then
                                 pcall(function() assets.Highlight:Destroy() end)
@@ -1569,20 +1601,18 @@ task.spawn(function()
                             activePlayersEsp[player] = assets
                         end
                         
-                        -- Определяем цвет и текст
                         local role = updatePlayerRole(player)
-                        local color = Color3.fromRGB(46, 204, 113) -- Innocent (Зеленый)
+                        local color = Color3.fromRGB(46, 204, 113) -- Innocent
                         local roleName = "Innocent"
                         
                         if role == "Murderer" then
-                            color = Color3.fromRGB(231, 76, 60) -- Murderer (Красный)
+                            color = Color3.fromRGB(231, 76, 60) -- Murderer
                             roleName = "Murderer"
                         elseif role == "Sheriff" then
-                            color = Color3.fromRGB(52, 152, 219) -- Sheriff (Синий)
+                            color = Color3.fromRGB(52, 152, 219) -- Sheriff
                             roleName = "Sheriff"
                         end
                         
-                        -- Применяем визуал
                         if assets.Highlight and assets.Highlight.Parent then
                             assets.Highlight.FillColor = color
                             assets.Highlight.OutlineColor = color
@@ -1594,7 +1624,6 @@ task.spawn(function()
                             assets.TextLabel.TextColor3 = color
                         end
                     else
-                        -- Удаление ESP, если игрок мертв/вышел
                         if activePlayersEsp[player] then
                             pcall(function() activePlayersEsp[player].Highlight:Destroy() end)
                             pcall(function() activePlayersEsp[player].Billboard:Destroy() end)
@@ -1604,7 +1633,6 @@ task.spawn(function()
                 end
             end
             
-            -- Очистка мусора для отключившихся игроков
             for player, assets in pairs(activePlayersEsp) do
                 if not player or not player.Parent then
                     pcall(function() assets.Highlight:Destroy() end)
@@ -1613,7 +1641,7 @@ task.spawn(function()
                 end
             end
         end
-        task.wait(0.1) -- Оптимальная задержка для UI
+        task.wait(0.05) -- Ускоренная проверка обновлений графики
     end
 end)
 
