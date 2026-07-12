@@ -65,7 +65,7 @@ local function NormalizeText(str)
     if type(str) ~= "string" then return "" end
     local lowerStr = string.lower(str)
     local upperToLower = {
-        ["А"]="а", ["Б"]="б", ["Вв"]="в", ["Г"]="г", ["Д"]="д", ["Е"]="е", ["Ё"]="ё", ["Ж"]="ж", ["З"]="з",
+        ["А"]="а", ["Б"]="б", ["В"]="в", ["Г"]="г", ["Д"]="д", ["Е"]="е", ["Ё"]="ё", ["Ж"]="ж", ["З"]="з",
         ["И"]="и", ["Й"]="й", ["К"]="к", ["Л"]="л", ["М"]="м", ["Н"]="н", ["О"]="о", ["П"]="п", ["Р"]="р",
         ["С"]="с", ["Т"]="т", ["У"]="у", ["Ф"]="ф", ["Х"]="х", ["Ц"]="ц", ["Ч"]="ч", ["Ш"]="ш", ["Щ"]="щ",
         ["Ъ"]="ъ", ["Ы"]="ы", ["Ь"]="ь", ["Э"]="э", ["Ю"]="ю", ["Я"]="я"
@@ -422,7 +422,7 @@ UserInputService.InputChanged:Connect(function(input)
     end
 end)
 
-Library = {}
+local Library = {}
 Library.CurrentFont = Enum.Font.Gotham
 Library.CurrentLanguage = "English"
 Library.CurrentTabKey = "Main"
@@ -1332,7 +1332,7 @@ function Library:CreateSubTabs(parentPage, tabsList)
     return subPages
 end
 
-function CreatePage(textKey, iconId, layoutOrder)
+function Library:CreatePage(textKey, iconId, layoutOrder)
     local initialText = Localization[Library.CurrentLanguage][textKey] or textKey
     local PageFrame = Instance.new("ScrollingFrame", PagesContainer)
     PageFrame.Size = UDim2.new(1, 0, 1, 0)
@@ -1428,13 +1428,13 @@ function CreatePage(textKey, iconId, layoutOrder)
     return PageFrame
 end
 
-local MainPage = CreatePage("Main", "103980564128710", 1)
-local TeleportPage = CreatePage("Teleport", "94373592263020", 2)
-local MurderPage = CreatePage("Murder", "85278865249050", 3)
-local SheriffPage = CreatePage("Sheriff", "77487634679354", 4)
-local PlayersPage = CreatePage("Players", "99904215381150", 5)
-local VisualPage = CreatePage("Visual", "78910169210318", 6)
-local SettingsPage = CreatePage("Settings", "117996761927034", 99)
+local MainPage = Library:CreatePage("Main", "103980564128710", 1)
+local TeleportPage = Library:CreatePage("Teleport", "94373592263020", 2)
+local MurderPage = Library:CreatePage("Murder", "85278865249050", 3)
+local SheriffPage = Library:CreatePage("Sheriff", "77487634679354", 4)
+local PlayersPage = Library:CreatePage("Players", "99904215381150", 5)
+local VisualPage = Library:CreatePage("Visual", "78910169210318", 6)
+local SettingsPage = Library:CreatePage("Settings", "117996761927034", 99)
 
 Library:CreateToggle(MainPage, "AutoFarmCoins", false, function(state) end)
 
@@ -1480,7 +1480,6 @@ local function scanContainer(container)
 end
 
 local function updatePlayerRole(player)
-    -- 1. Сверхраннее определение по внутренним атрибутам и значениям движка раунда
     if player:GetAttribute("Role") then
         local attr = string.lower(tostring(player:GetAttribute("Role")))
         if string.find(attr, "murder") or string.find(attr, "knif") then return "Murderer" end
@@ -1494,17 +1493,14 @@ local function updatePlayerRole(player)
         if string.find(val, "sheriff") or string.find(val, "hero") then return "Sheriff" end
     end
 
-    -- 2. Определение по скрытым командам (Team)
     if player.Team then
         local teamName = string.lower(player.Team.Name)
         if string.find(teamName, "murder") then return "Murderer" end
         if string.find(teamName, "sheriff") or string.find(teamName, "hero") then return "Sheriff" end
     end
 
-    -- 3. Если закэшировано ранее — возвращаем сохраненную роль
     if PreRevealedRoles[player] then return PreRevealedRoles[player] end
     
-    -- 4. Стандартный поиск по рюкзаку и инвентарю
     local role = scanContainer(player:FindFirstChild("Backpack")) or scanContainer(player.Character)
     if role then
         PreRevealedRoles[player] = role
@@ -1518,7 +1514,7 @@ local function setupPlayerListeners(player)
     local function onCharacterAdded(char)
         char.ChildAdded:Connect(function(child)
             if espActive then 
-                PreRevealedRoles[player] = nil -- Сброс кэша для мгновенного обновления
+                PreRevealedRoles[player] = nil 
                 updatePlayerRole(player) 
             end
         end)
@@ -1530,7 +1526,7 @@ local function setupPlayerListeners(player)
     local function onBackpackAdded(bp)
         bp.ChildAdded:Connect(function(child)
             if espActive then 
-                PreRevealedRoles[player] = nil -- Обнуляем кэш при появлении любого инструмента в рюкзаке
+                PreRevealedRoles[player] = nil 
                 updatePlayerRole(player) 
             end
         end)
@@ -1543,7 +1539,6 @@ local function setupPlayerListeners(player)
         if child.Name == "Backpack" then onBackpackAdded(child) end
     end)
     
-    -- Отслеживание изменений атрибутов роли
     player.AttributeChanged:Connect(function(attribute)
         if attribute == "Role" and espActive then
             PreRevealedRoles[player] = nil
@@ -1554,6 +1549,17 @@ end
 
 for _, p in ipairs(Players:GetPlayers()) do setupPlayerListeners(p) end
 Players.PlayerAdded:Connect(setupPlayerListeners)
+
+-- Безопасная очистка элементов при выходе игрока (Фикс утечки памяти)
+Players.PlayerRemoving:Connect(function(player)
+    if activePlayersEsp[player] then
+        local assets = activePlayersEsp[player]
+        pcall(function() if assets.Highlight then assets.Highlight:Destroy() end end)
+        pcall(function() if assets.Billboard then assets.Billboard:Destroy() end end)
+        activePlayersEsp[player] = nil
+    end
+    PreRevealedRoles[player] = nil
+end)
 
 task.spawn(function()
     while true do
@@ -1602,14 +1608,14 @@ task.spawn(function()
                         end
                         
                         local role = updatePlayerRole(player)
-                        local color = Color3.fromRGB(46, 204, 113) -- Innocent
+                        local color = Color3.fromRGB(46, 204, 113) 
                         local roleName = "Innocent"
                         
                         if role == "Murderer" then
-                            color = Color3.fromRGB(231, 76, 60) -- Murderer
+                            color = Color3.fromRGB(231, 76, 60) 
                             roleName = "Murderer"
                         elseif role == "Sheriff" then
-                            color = Color3.fromRGB(52, 152, 219) -- Sheriff
+                            color = Color3.fromRGB(52, 152, 219) 
                             roleName = "Sheriff"
                         end
                         
@@ -1632,16 +1638,8 @@ task.spawn(function()
                     end
                 end
             end
-            
-            for player, assets in pairs(activePlayersEsp) do
-                if not player or not player.Parent then
-                    pcall(function() assets.Highlight:Destroy() end)
-                    pcall(function() assets.Billboard:Destroy() end)
-                    activePlayersEsp[player] = nil
-                end
-            end
         end
-        task.wait(0.05) -- Ускоренная проверка обновлений графики
+        task.wait(0.05) 
     end
 end)
 
