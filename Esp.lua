@@ -228,7 +228,7 @@ HubTitle.BackgroundTransparency = 1
 HubTitle.ZIndex = 5
 
 local SubTitle = Instance.new("TextLabel", HeaderBg)
-SubTitle.Text = "Grow A Garden 2"
+SubTitle.Text = "Murder Mystery 2"
 SubTitle.Font = Enum.Font.Gotham
 SubTitle.TextColor3 = Color3.fromRGB(130, 130, 130)
 SubTitle.TextSize = 9
@@ -1451,7 +1451,6 @@ Library:CreateToggle(MainPage, "AutoFarmCoins", false, function(state)
     if state then
         task.spawn(function()
             while autoFarmActive do
-                -- Здесь располагается твоя логика автоматического сбора монет
                 task.wait(0.5)
             end
         end)
@@ -1515,15 +1514,13 @@ end)
 -- ЗАПОЛНЕНИЕ ВКЛАДКИ MURDER & SHERIFF
 -- ============================================================================
 Library:CreateToggle(MurderPage, "KillAura", false, function(state)
-    -- Сюда добавляется логика автоматического удара ножом для убийцы
 end)
 
 Library:CreateToggle(SheriffPage, "SilentAim", false, function(state)
-    -- Сюда добавляется логика автоматического наведения револьвера для шерифа
 end)
 
 -- ============================================================================
--- ОСТАЛЬНОЙ ФУНКЦИОНАЛ СИСТЕМЫ ESP И НАСТРОЕК UI
+-- СИСТЕМА ESP И НАСТРОЕК UI (ОБНОВЛЕННАЯ С Еarly Reveal)
 -- ============================================================================
 local VisualSections = Library:CreateSubTabs(VisualPage, {
     {Name = "Esp", Icon = "80768064990053", Color = Color3.fromRGB(46, 204, 113)}
@@ -1541,21 +1538,24 @@ local function cleanESP()
     table.clear(activePlayersEsp)
 end
 
-workspace.ChildAdded:Connect(function(child)
-    if child.Name == "Map" or child.Name == "Normal" or child.Name == "Hardcore" or child.Name == "Assassin" or child:FindFirstChild("Spawns") then
+-- Автоматический сброс кэша при обновлении раунда (когда загружается новая карта)
+local function onWorkspaceChildAdded(child)
+    local childName = string.lower(child.Name)
+    if string.find(childName, "map") or string.find(childName, "normal") or string.find(childName, "hardcore") or child:FindFirstChild("Spawns") or child:FindFirstChild("SpawnLocation") then
         table.clear(PreRevealedRoles)
         cleanESP()
     end
-end)
+end
+workspace.ChildAdded:Connect(onWorkspaceChildAdded)
 
 local function scanContainer(container)
     if not container then return nil end
     for _, item in ipairs(container:GetChildren()) do
         if item:IsA("Tool") or item:IsA("Model") then
             local name = string.lower(item.Name)
-            if string.find(name, "knife") or item:FindFirstChild("KnifeScript") or item:FindFirstChild("LocalKnife") then
+            if string.find(name, "knife") or item:FindFirstChild("KnifeScript") or item:FindFirstChild("LocalKnife") or string.find(name, "нож") then
                 return "Murderer"
-            elseif string.find(name, "gun") or string.find(name, "revolver") or item:FindFirstChild("GunScript") or item:FindFirstChild("LocalGun") then
+            elseif string.find(name, "gun") or string.find(name, "revolver") or item:FindFirstChild("GunScript") or item:FindFirstChild("LocalGun") or string.find(name, "пест") or string.find(name, "револьвер") then
                 return "Sheriff"
             end
         end
@@ -1563,28 +1563,67 @@ local function scanContainer(container)
     return nil
 end
 
+-- Улучшенная функция раннего поиска ролей
 local function updatePlayerRole(player)
-    if player:GetAttribute("Role") then
-        local attr = string.lower(tostring(player:GetAttribute("Role")))
-        if string.find(attr, "murder") or string.find(attr, "knif") then return "Murderer" end
-        if string.find(attr, "sheriff") or string.find(attr, "gun") or string.find(attr, "hero") then return "Sheriff" end
+    -- 1. Проверка встроенных атрибутов (во многих копиях выдается сразу при выборе ролей)
+    for _, attrName in ipairs({"Role", "role", "Team", "team", "Rank"}) do
+        local attr = player:GetAttribute(attrName)
+        if attr then
+            local strAttr = string.lower(tostring(attr))
+            if string.find(strAttr, "murder") or string.find(strAttr, "knif") or string.find(strAttr, "убийц") then 
+                return "Murderer" 
+            end
+            if string.find(strAttr, "sheriff") or string.find(strAttr, "gun") or string.find(strAttr, "hero") or string.find(strAttr, "шериф") then 
+                return "Sheriff" 
+            end
+        end
     end
 
-    local roleValue = player:FindFirstChild("Role") or player:FindFirstChild("role")
-    if roleValue and (roleValue:IsA("StringValue") or roleValue:IsA("ValueObject")) then
-        local val = string.lower(tostring(roleValue.Value))
-        if string.find(val, "murder") then return "Murderer" end
-        if string.find(val, "sheriff") or string.find(val, "hero") then return "Sheriff" end
+    -- 2. Глубокое сканирование папок и StringValue внутри самого объекта Player
+    for _, child in ipairs(player:GetChildren()) do
+        if child:IsA("StringValue") or child:IsA("ObjectValue") or child:IsA("IntValue") then
+            local cName = string.lower(child.Name)
+            if cName == "role" or cName == "team" or cName == "temp`role" then
+                local val = string.lower(tostring(child.Value))
+                if string.find(val, "murder") or string.find(val, "убийц") then return "Murderer" end
+                if string.find(val, "sheriff") or string.find(val, "hero") or string.find(val, "шериф") then return "Sheriff" end
+            end
+        elseif child:IsA("Folder") and (string.lower(child.Name) == "playerdata" or string.lower(child.Name) == "round") then
+            local roleObj = child:FindFirstChild("Role") or child:FindFirstChild("role")
+            if roleObj then
+                local val = string.lower(tostring(roleObj.Value))
+                if string.find(val, "murder") or string.find(val, "убийц") then return "Murderer" end
+                if string.find(val, "sheriff") or string.find(val, "hero") or string.find(val, "шериф") then return "Sheriff" end
+            end
+        end
     end
 
+    -- 3. Сканирование общих папок данных в ReplicatedStorage / Workspace
+    local repStorage = game:GetService("ReplicatedStorage")
+    local roundPlayers = repStorage:FindFirstChild("RoundPlayers") or repStorage:FindFirstChild("CurrentRound")
+    if roundPlayers then
+        local pFolder = roundPlayers:FindFirstChild(player.Name)
+        if pFolder then
+            local roleObj = pFolder:FindFirstChild("Role") or pFolder:FindFirstChild("role")
+            if roleObj then
+                local val = string.lower(tostring(roleObj.Value))
+                if string.find(val, "murder") then return "Murderer" end
+                if string.find(val, "sheriff") or string.find(val, "hero") then return "Sheriff" end
+            end
+        end
+    end
+
+    -- 4. Проверка команд (Teams)
     if player.Team then
         local teamName = string.lower(player.Team.Name)
-        if string.find(teamName, "murder") then return "Murderer" end
-        if string.find(teamName, "sheriff") or string.find(teamName, "hero") then return "Sheriff" end
+        if string.find(teamName, "murder") or string.find(teamName, "убийц") then return "Murderer" end
+        if string.find(teamName, "sheriff") or string.find(teamName, "hero") or string.find(teamName, "шериф") then return "Sheriff" end
     end
 
+    -- 5. Возврат кэшированного значения, если роль уже была раскрыта ранее
     if PreRevealedRoles[player] then return PreRevealedRoles[player] end
     
+    -- 6. Классический метод сканирования инвентаря/рук (сработает через 10 секунд, если методы выше не дали результата)
     local role = scanContainer(player:FindFirstChild("Backpack")) or scanContainer(player.Character)
     if role then
         PreRevealedRoles[player] = role
@@ -1624,7 +1663,7 @@ local function setupPlayerListeners(player)
     end)
     
     player.AttributeChanged:Connect(function(attribute)
-        if attribute == "Role" and espActive then
+        if (attribute == "Role" or attribute == "role") and espActive then
             PreRevealedRoles[player] = nil
             updatePlayerRole(player)
         end
