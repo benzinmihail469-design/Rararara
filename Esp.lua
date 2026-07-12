@@ -588,7 +588,10 @@ local Localization = {
         ["UISize"] = "UI Size", ["UITransparency"] = "UI Transparency", ["MenuFont"] = "Menu Font",
         ["Language"] = "Language", ["AntiAFK"] = "Anti-AFK", ["UITheme"] = "UI Theme",
         ["AnimatedWindow"] = "Animated Window", ["Gradient"] = "Gradient Background",
-        ["Esp"] = "ESP", ["EspToggle"] = "Enable ESP / Player Roles"
+        ["Esp"] = "ESP", ["EspToggle"] = "Enable ESP / Player Roles",
+        ["WalkSpeed"] = "WalkSpeed", ["JumpPower"] = "JumpPower", ["ResetStats"] = "Reset Modifiers",
+        ["TeleportToMap"] = "Teleport to Map", ["TeleportToLobby"] = "Teleport to Lobby",
+        ["KillAura"] = "Kill Aura", ["SilentAim"] = "Silent Aim"
     },
     ["Русский"] = {
         ["Main"] = "Главная", ["Teleport"] = "Телепорт", ["Murder"] = "Убийца", ["Sheriff"] = "Шериф",
@@ -597,7 +600,10 @@ local Localization = {
         ["UISize"] = "Размер интерфейса", ["UITransparency"] = "Прозрачность меню", ["MenuFont"] = "Шрифт меню",
         ["Language"] = "Язык", ["AntiAFK"] = "Анти-АФК", ["UITheme"] = "Тема UI",
         ["AnimatedWindow"] = "Анимированное окно", ["Gradient"] = "Градиентный фон",
-        ["Esp"] = "ЕСП", ["EspToggle"] = "Включить ЕСП / Роли игроков"
+        ["Esp"] = "ЕСП", ["EspToggle"] = "Включить ЕСП / Роли игроков",
+        ["WalkSpeed"] = "Скорость ходьбы", ["JumpPower"] = "Сила прыжка", ["ResetStats"] = "Сбросить модификаторы",
+        ["TeleportToMap"] = "Телепортироваться на Карту", ["TeleportToLobby"] = "Телепортироваться в Лобби",
+        ["KillAura"] = "Килл Аура", ["SilentAim"] = "Сайлент Аим"
     }
 }
 
@@ -1436,15 +1442,93 @@ local PlayersPage = Library:CreatePage("Players", "99904215381150", 5)
 local VisualPage = Library:CreatePage("Visual", "78910169210318", 6)
 local SettingsPage = Library:CreatePage("Settings", "117996761927034", 99)
 
-Library:CreateToggle(MainPage, "AutoFarmCoins", false, function(state) end)
+-- ============================================================================
+-- ЗАПОЛНЕНИЕ ВКЛАДКИ MAIN
+-- ============================================================================
+local autoFarmActive = false
+Library:CreateToggle(MainPage, "AutoFarmCoins", false, function(state) 
+    autoFarmActive = state
+    if state then
+        task.spawn(function()
+            while autoFarmActive do
+                -- Здесь располагается твоя логика автоматического сбора монет
+                task.wait(0.5)
+            end
+        end)
+    end
+end)
 
+-- ============================================================================
+-- ЗАПОЛНЕНИЕ ВКЛАДКИ PLAYERS
+-- ============================================================================
+Library:CreateSlider(PlayersPage, "WalkSpeed", 16, 150, 16, function(value)
+    pcall(function()
+        if Players.LocalPlayer.Character and Players.LocalPlayer.Character:FindFirstChildOfClass("Humanoid") then
+            Players.LocalPlayer.Character:FindFirstChildOfClass("Humanoid").WalkSpeed = value
+        end
+    end)
+end)
+
+Library:CreateSlider(PlayersPage, "JumpPower", 50, 250, 50, function(value)
+    pcall(function()
+        if Players.LocalPlayer.Character and Players.LocalPlayer.Character:FindFirstChildOfClass("Humanoid") then
+            local hum = Players.LocalPlayer.Character:FindFirstChildOfClass("Humanoid")
+            hum.UseJumpPower = true
+            hum.JumpPower = value
+        end
+    end)
+end)
+
+Library:CreateButton(PlayersPage, "ResetStats", function()
+    pcall(function()
+        if Players.LocalPlayer.Character and Players.LocalPlayer.Character:FindFirstChildOfClass("Humanoid") then
+            local hum = Players.LocalPlayer.Character:FindFirstChildOfClass("Humanoid")
+            hum.WalkSpeed = 16
+            hum.JumpPower = 50
+        end
+    end)
+end)
+
+-- ============================================================================
+-- ЗАПОЛНЕНИЕ ВКЛАДКИ TELEPORT
+-- ============================================================================
+Library:CreateButton(TeleportPage, "TeleportToMap", function()
+    pcall(function()
+        local targetMap = workspace:FindFirstChild("Map") or workspace:FindFirstChild("Normal") or workspace:FindFirstChild("InGame")
+        if targetMap and Players.LocalPlayer.Character and Players.LocalPlayer.Character:FindFirstChild("HumanoidRootPart") then
+            local spawnPoint = targetMap:FindFirstChildOfClass("SpawnLocation") or targetMap:FindFirstChild("Spawns") or targetMap
+            Players.LocalPlayer.Character.HumanoidRootPart.CFrame = spawnPoint.CFrame + Vector3.new(0, 3, 0)
+        end
+    end)
+end)
+
+Library:CreateButton(TeleportPage, "TeleportToLobby", function()
+    pcall(function()
+        local lobby = workspace:FindFirstChild("Lobby") or workspace:FindFirstChild("LobbySpawn")
+        if lobby and Players.LocalPlayer.Character and Players.LocalPlayer.Character:FindFirstChild("HumanoidRootPart") then
+            Players.LocalPlayer.Character.HumanoidRootPart.CFrame = lobby.CFrame + Vector3.new(0, 3, 0)
+        end
+    end)
+end)
+
+-- ============================================================================
+-- ЗАПОЛНЕНИЕ ВКЛАДКИ MURDER & SHERIFF
+-- ============================================================================
+Library:CreateToggle(MurderPage, "KillAura", false, function(state)
+    -- Сюда добавляется логика автоматического удара ножом для убийцы
+end)
+
+Library:CreateToggle(SheriffPage, "SilentAim", false, function(state)
+    -- Сюда добавляется логика автоматического наведения револьвера для шерифа
+end)
+
+-- ============================================================================
+-- ОСТАЛЬНОЙ ФУНКЦИОНАЛ СИСТЕМЫ ESP И НАСТРОЕК UI
+-- ============================================================================
 local VisualSections = Library:CreateSubTabs(VisualPage, {
     {Name = "Esp", Icon = "80768064990053", Color = Color3.fromRGB(46, 204, 113)}
 })
 
--- ============================================================================
--- МГНОВЕННОЕ ОБНАРУЖЕНИЕ РОЛЕЙ С БЫСТРЫМ ПРЕДВАРИТЕЛЬНЫМ ПОИСКОМ
--- ============================================================================
 local espActive = false
 local activePlayersEsp = {}
 local PreRevealedRoles = {} 
@@ -1550,7 +1634,6 @@ end
 for _, p in ipairs(Players:GetPlayers()) do setupPlayerListeners(p) end
 Players.PlayerAdded:Connect(setupPlayerListeners)
 
--- Безопасная очистка элементов при выходе игрока (Фикс утечки памяти)
 Players.PlayerRemoving:Connect(function(player)
     if activePlayersEsp[player] then
         local assets = activePlayersEsp[player]
@@ -1653,7 +1736,6 @@ end
 Library:CreateToggle(VisualSections["Esp"], "EspToggle", false, function(state)
     toggleESP(state)
 end)
--- ============================================================================
 
 local SettingSections = Library:CreateSubTabs(SettingsPage, {
     {Name = "UI", Icon = "85203682050945", Color = Color3.fromRGB(108, 176, 214)},
