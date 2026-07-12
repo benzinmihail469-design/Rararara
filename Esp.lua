@@ -1503,9 +1503,9 @@ local function updateBloom()
     if shaderStates.Master and shaderStates.Bloom then
         local bloom = Lighting:FindFirstChild("PulseHub_Bloom") or Instance.new("BloomEffect")
         bloom.Name = "PulseHub_Bloom"
-        bloom.Intensity = shaderStates.BloomIntensity
+        bloom.Intensity = shaderStates.BloomIntensity * 0.7 -- Ограничиваем пиковую силу блума
         bloom.Size = shaderStates.BloomSize
-        bloom.Threshold = 1.0
+        bloom.Threshold = 1.4 -- Поднят порог для более мягкого и аккуратного свечения
         bloom.Parent = Lighting
     else
         local bloom = Lighting:FindFirstChild("PulseHub_Bloom")
@@ -1551,12 +1551,14 @@ local function updateBlur()
     end
 end
 
+-- Жесткий цикл форсирования настроек каждую миллисекунду (Защита от перезаписи скриптами MM2)
 local lightingLoopConnection = nil
 local function startLightingEnforcer()
     if lightingLoopConnection then lightingLoopConnection:Disconnect() end
     lightingLoopConnection = RunService.Heartbeat:Connect(function()
         if not shaderStates.Master then return end
         
+        -- Вычищаем дефолтные эффекты MM2, которые ломают визуал раунда
         for _, child in ipairs(Lighting:GetChildren()) do
             if child:IsA("Atmosphere") and child.Name ~= "PulseHub_Atmosphere" then child:Destroy() end
             if child:IsA("SunRaysEffect") and child.Name ~= "PulseHub_SunRays" then child:Destroy() end
@@ -1566,60 +1568,82 @@ local function startLightingEnforcer()
 
         local masterCC = Lighting:FindFirstChild("PulseHub_MasterCC")
 
+        -- Кастомные конфигурации под конкретные пресеты времени суток
         if shaderStates.Mode == "Day" then
-            Lighting.TimeOfDay = "10:30:00"
-            Lighting.Brightness = 3.5
+            Lighting.TimeOfDay = "10:30:00" -- Идеальное утреннее солнце для длинных объемных лучей
+            Lighting.Brightness = 2.5 -- Оптимальная яркость
             Lighting.OutdoorAmbient = Color3.fromRGB(145, 150, 155)
             Lighting.Ambient = Color3.fromRGB(60, 60, 60)
             Lighting.GeographicLatitude = 35
-            Lighting.ExposureCompensation = 0.4
+            Lighting.ExposureCompensation = 0.2
             if masterCC then
-                masterCC.Contrast = 0.15
-                masterCC.Saturation = 0.2
+                masterCC.Contrast = 0.1
+                masterCC.Saturation = 0.15
                 masterCC.TintColor = Color3.fromRGB(255, 255, 255)
             end
-        elseif shaderStates.Mode == "Sunset" or shaderStates.Mode == "Midnight" then
-            Lighting.TimeOfDay = (shaderStates.Mode == "Sunset") and "17:45:00" or "00:00:00"
-            Lighting.Brightness = (shaderStates.Mode == "Sunset") and 2.5 or 0.8
-            Lighting.OutdoorAmbient = (shaderStates.Mode == "Sunset") and Color3.fromRGB(140, 90, 80) or Color3.fromRGB(15, 20, 35)
-            Lighting.Ambient = (shaderStates.Mode == "Sunset") and Color3.fromRGB(50, 40, 45) or Color3.fromRGB(10, 10, 20)
+        elseif shaderStates.Mode == "Sunset" then
+            -- Настоящий мягкий и красивый закат
+            Lighting.TimeOfDay = "17:45:00"
+            Lighting.Brightness = 2.2
+            Lighting.OutdoorAmbient = Color3.fromRGB(140, 100, 90)
+            Lighting.Ambient = Color3.fromRGB(50, 45, 45)
             Lighting.GeographicLatitude = 45
-            Lighting.ExposureCompensation = (shaderStates.Mode == "Sunset") and 0.2 or -0.1
+            Lighting.ExposureCompensation = 0.15
             if masterCC then
-                masterCC.Contrast = (shaderStates.Mode == "Sunset") and 0.2 or 0.3
-                masterCC.Saturation = (shaderStates.Mode == "Sunset") and 0.35 or -0.1
-                masterCC.TintColor = (shaderStates.Mode == "Sunset") and Color3.fromRGB(255, 220, 200) or Color3.fromRGB(200, 220, 255)
+                masterCC.Contrast = 0.12
+                masterCC.Saturation = 0.25
+                masterCC.TintColor = Color3.fromRGB(255, 225, 200)
+            end
+        elseif shaderStates.Mode == "Midnight" then
+            -- Атмосферная, мягкая полночь
+            Lighting.TimeOfDay = "00:00:00"
+            Lighting.Brightness = 1.2
+            Lighting.OutdoorAmbient = Color3.fromRGB(25, 30, 50)
+            Lighting.Ambient = Color3.fromRGB(20, 20, 30)
+            Lighting.GeographicLatitude = 15
+            Lighting.ExposureCompensation = -0.1
+            if masterCC then
+                masterCC.Contrast = 0.08
+                masterCC.Saturation = -0.05
+                masterCC.TintColor = Color3.fromRGB(210, 225, 255)
             end
         elseif shaderStates.Mode == "None" then
             restoreOriginalEnvironment()
         end
         
+        -- Насильно прокачиваем свойства Атмосферы, делая её 100% видимой и мягкой
         local atm = Lighting:FindFirstChild("PulseHub_Atmosphere")
         if atm and shaderStates.Atmosphere then
             atm.Density = shaderStates.AtmosphereDensity / 100
             if shaderStates.Mode == "Day" then
                 atm.Color = Color3.fromRGB(185, 215, 255)
                 atm.Decay = Color3.fromRGB(250, 230, 210)
-                atm.Haze = 2.5
-                atm.Glare = 1.8
+                atm.Haze = 1.2 -- Снижено для мягкости
+                atm.Glare = 0.4 -- Снижено, чтобы солнце не слепило
             elseif shaderStates.Mode == "Sunset" then
-                atm.Color = Color3.fromRGB(255, 150, 100)
-                atm.Decay = Color3.fromRGB(120, 60, 90)
-                atm.Haze = 3.5
-                atm.Glare = 2.5
+                atm.Color = Color3.fromRGB(245, 150, 110)
+                atm.Decay = Color3.fromRGB(130, 65, 95)
+                atm.Haze = 1.4
+                atm.Glare = 0.3
+            elseif shaderStates.Mode == "Midnight" then
+                atm.Color = Color3.fromRGB(20, 25, 55)
+                atm.Decay = Color3.fromRGB(15, 15, 25)
+                atm.Haze = 0.6
+                atm.Glare = 0.0
             else
                 atm.Color = Color3.fromRGB(200, 200, 200)
                 atm.Decay = Color3.fromRGB(255, 255, 255)
-                atm.Haze = 1.0
+                atm.Haze = 0.5
                 atm.Glare = 0.0
             end
         end
 
+        -- Тонкая подстройка лучей солнца, заставляющая их работать мягко и без засветов экрана
         local sr = Lighting:FindFirstChild("PulseHub_SunRays")
         if sr and shaderStates.SunRays then
-            sr.Intensity = shaderStates.SunRaysIntensity / 100
-            sr.Spread = 0.80
-            sr.Threshold = 0.0
+            sr.Intensity = (shaderStates.SunRaysIntensity / 100) * 0.6 -- Мягкий коэффициент силы лучей
+            sr.Spread = 0.75
+            sr.Threshold = 0.35 -- Порог изменен с 0.0 до 0.35 для корректной генерации аккуратных лучей
         end
     end)
 end
@@ -1668,14 +1692,21 @@ Library:CreateToggle(VisualSections["shader pack"], "Enable", false, function(st
         local a = Lighting:FindFirstChild("PulseHub_Atmosphere") if a then a:Destroy() end
         local s = Lighting:FindFirstChild("PulseHub_SunRays") if s then s:Destroy() end
         local bl = Lighting:FindFirstChild("PulseHub_Blur") if bl then bl:Destroy() end
+        
         restoreOriginalEnvironment()
     end
 end)
 
--- НАСТРОЙКИ ФИЛЬТРОВ И ПРЕСЕТОВ
-Library:CreateDropdown(VisualSections["shader pack"], "Mode", {"None", "Day", "Sunset", "Midnight"}, "None", function(value)
-    shaderStates.Mode = value
-    if masterCC then masterCC.Enabled = (value ~= "None") end
+Library:CreateDropdown(VisualSections["shader pack"], "Mode", {"None", "Day", "Sunset", "Midnight"}, "None", function(selected)
+    shaderStates.Mode = selected
+    if not shaderStates.Master then return end
+    
+    if masterCC then
+        masterCC.Enabled = (selected ~= "None")
+    end
+    
+    updateSunRays()
+    updateAtmosphere()
 end)
 
 Library:CreateToggle(VisualSections["shader pack"], "Bloom", false, function(state)
@@ -1683,14 +1714,16 @@ Library:CreateToggle(VisualSections["shader pack"], "Bloom", false, function(sta
     updateBloom()
 end)
 
-Library:CreateSlider(VisualSections["shader pack"], "Intensity", 0, 10, 2.2, function(value)
+Library:CreateSlider(VisualSections["shader pack"], "Intensity", 0, 10, 2, function(value)
     shaderStates.BloomIntensity = value
-    updateBloom()
+    local bloom = Lighting:FindFirstChild("PulseHub_Bloom")
+    if bloom then bloom.Intensity = value * 0.7 end
 end)
 
 Library:CreateSlider(VisualSections["shader pack"], "Size", 0, 56, 16, function(value)
     shaderStates.BloomSize = value
-    updateBloom()
+    local bloom = Lighting:FindFirstChild("PulseHub_Bloom")
+    if bloom then bloom.Size = value end
 end)
 
 Library:CreateToggle(VisualSections["shader pack"], "Atmosphere", false, function(state)
@@ -1718,48 +1751,61 @@ end)
 
 Library:CreateSlider(VisualSections["shader pack"], "Strength", 0, 100, 20, function(value)
     shaderStates.BlurStrength = value
-    updateBlur()
+    local blur = Lighting:FindFirstChild("PulseHub_Blur")
+    if blur then blur.Size = (value / 100) * 56 end
+end)
+----------------------------------------------------
+
+Library:CreateSlider(SettingSections["UI"], "UISize", 0.5, 1.5, 1.00, function(value) MainScale.Scale = value end)
+Library:CreateSlider(SettingSections["UI"], "UITransparency", 0, 100, 15, function(value) MainFrame.BackgroundTransparency = value / 100 end)
+
+Library:CreateDropdown(SettingSections["UI"], "MenuFont", {"Gotham", "Gotham Bold", "Source Sans", "Roboto", "Roboto Mono", "Ubuntu", "Michroma", "Code", "Fantasy", "Fredoka One"}, "Gotham", function(selectedFont)
+    local targetFont = FontMapping[selectedFont] or Enum.Font.Gotham
+    Library.CurrentFont = targetFont
+    for _, obj in ipairs(PulseHub:GetDescendants()) do
+        if obj:IsA("TextLabel") or obj:IsA("TextButton") or obj:IsA("TextBox") then
+            if obj.Text ~= "—" and obj.Text ~= "×" and obj.Text ~= "▼" and obj.Text ~= "▲" and obj.Text ~= "✓" and obj.Name ~= "FontPreviewLabel" then 
+                obj.Font = targetFont 
+            end
+        end
+    end
 end)
 
-----------------------------------------------------
--- НАСТРОЙКИ ИНТЕРФЕЙСА СИСТЕМЫ (SETTINGS SECTIONS)
-----------------------------------------------------
+Library:CreateDropdown(SettingSections["UI"], "Language", {"English", "Русский"}, "English", function(selectedLang)
+    Library.CurrentLanguage = selectedLang
+    for _, item in ipairs(LocaleObjects) do
+        local translatedText = Localization[selectedLang][item.Key]
+        if translatedText then
+            item.Object.Text = translatedText
+            if item.SearchItem then item.SearchItem.SearchText = NormalizeText(translatedText) end
+        end
+    end
+    TabTitle.Text = Localization[selectedLang][Library.CurrentTabKey] or Library.CurrentTabKey
+end)
+
 Library:CreateToggle(SettingSections["UI"], "AntiAFK", false, function(state)
     toggleAntiAFK(state)
 end)
 
-Library:CreateToggle(SettingSections["UI"], "AnimatedWindow", false, function(state)
+Library:CreateDropdown(SettingSections["Theme"], "UITheme", ThemeNamesList, "Deep Ocean", function(selectedTheme)
+    Library:UpdateTheme(selectedTheme)
+end)
+
+Library:CreateToggle(SettingSections["Theme"], "AnimatedWindow", false, function(state)
     toggleAnimatedWindow(state)
 end)
 
-Library:CreateToggle(SettingSections["UI"], "Gradient", false, function(state)
+Library:CreateToggle(SettingSections["Theme"], "Gradient", false, function(state)
     toggleGradientEffect(state)
 end)
 
-Library:CreateDropdown(SettingSections["UI"], "Language", {"English", "Русский"}, "English", function(lang)
-    Library.CurrentLanguage = lang
-    for _, loc in ipairs(LocaleObjects) do
-        local newText = Localization[lang][loc.Key] or loc.Key
-        loc.Object.Text = newText
-        if loc.SearchItem then
-            loc.SearchItem.SearchText = NormalizeText(newText)
-        end
-    end
-    TabTitle.Text = Localization[lang][Library.CurrentTabKey] or Library.CurrentTabKey
-end)
+if allTabs["Main"] and allTabButtons["Main"] then
+    allTabs["Main"].BackgroundTransparency = 0
+    allTabButtons["Main"].TextColor3 = Color3.fromRGB(255, 255, 255)
+    if allTabIcons["Main"] then allTabIcons["Main"].ImageTransparency = 0 end
+    allPages["Main"].Visible = true
+    Library.CurrentTabKey = "Main"
+    TabTitle.Text = Localization[Library.CurrentLanguage]["Main"] or "Main"
+end
 
-Library:CreateDropdown(SettingSections["Theme"], "UITheme", ThemeNamesList, "Deep Ocean", function(theme)
-    Library:UpdateTheme(theme)
-end)
-
-----------------------------------------------------
--- ИНИЦИАЛИЗАЦИЯ ПО УМОЛЧАНИЮ
-----------------------------------------------------
 Library:UpdateTheme("Deep Ocean")
-
--- Открытие первой вкладки ("Main") по дефолту при старте
-allPages["Main"].Visible = true
-allTabs["Main"].BackgroundTransparency = 0
-local bgL = (Library.CurrentThemeData.MainBg.R * 0.299 + Library.CurrentThemeData.MainBg.G * 0.587 + Library.CurrentThemeData.MainBg.B * 0.114)
-allTabButtons["Main"].TextColor3 = (bgL > 0.5) and Color3.fromRGB(35, 35, 35) or Color3.fromRGB(255, 255, 255)
-if allTabIcons["Main"] then allTabIcons["Main"].ImageTransparency = 0 end
