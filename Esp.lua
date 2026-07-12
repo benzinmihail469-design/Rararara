@@ -1581,28 +1581,28 @@ local function startLightingEnforcer()
                 masterCC.TintColor = Color3.fromRGB(255, 250, 245)
             end
         elseif shaderStates.Mode == "Sunset" then
-            Lighting.TimeOfDay = "17:45:00"
-            Lighting.Brightness = 3.0
-            Lighting.OutdoorAmbient = Color3.fromRGB(150, 90, 100)
-            Lighting.Ambient = Color3.fromRGB(80, 50, 60)
+            Lighting.TimeOfDay = "17:35:00" -- Сделал чуть раньше для большего количества света
+            Lighting.Brightness = 3.5 -- Повысил общую яркость
+            Lighting.OutdoorAmbient = Color3.fromRGB(170, 110, 120) -- Высветлил общее освещение
+            Lighting.Ambient = Color3.fromRGB(110, 80, 90) -- Высветлил тени
             Lighting.GeographicLatitude = 45
-            Lighting.ExposureCompensation = 0.3
+            Lighting.ExposureCompensation = 0.45 -- Добавил экспозиции
             if masterCC then
                 masterCC.Contrast = 0.15
-                masterCC.Saturation = 0.4
-                masterCC.TintColor = Color3.fromRGB(255, 220, 200)
+                masterCC.Saturation = 0.45
+                masterCC.TintColor = Color3.fromRGB(255, 230, 210) -- Чуть меньше агрессивного оранжевого
             end
         elseif shaderStates.Mode == "Midnight" then
             Lighting.TimeOfDay = "00:00:00"
-            Lighting.Brightness = 1.5
-            Lighting.OutdoorAmbient = Color3.fromRGB(15, 20, 40)
-            Lighting.Ambient = Color3.fromRGB(5, 5, 15)
+            Lighting.Brightness = 2.5 -- Значительно повысил яркость луны
+            Lighting.OutdoorAmbient = Color3.fromRGB(45, 55, 80) -- Сделал ночное небо светлее
+            Lighting.Ambient = Color3.fromRGB(35, 40, 60) -- Убрал кромешную тьму из теней
             Lighting.GeographicLatitude = 45
-            Lighting.ExposureCompensation = -0.1
+            Lighting.ExposureCompensation = 0.15 -- Вывел из минуса в плюс
             if masterCC then
-                masterCC.Contrast = 0.2
-                masterCC.Saturation = 0.1
-                masterCC.TintColor = Color3.fromRGB(210, 220, 255)
+                masterCC.Contrast = 0.15 -- Смягчил контраст, чтобы тени не проваливались
+                masterCC.Saturation = 0.15
+                masterCC.TintColor = Color3.fromRGB(220, 230, 255) -- Более чистый лунный свет
             end
         elseif shaderStates.Mode == "None" then
             restoreOriginalEnvironment()
