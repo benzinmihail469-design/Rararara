@@ -1312,7 +1312,7 @@ function Library:CreateSubTabs(parentPage, tabsList)
                 data.Stroke.Enabled = false
                 
                 local bgL = (Library.CurrentThemeData.MainBg.R * 0.299 + Library.CurrentThemeData.MainBg.G * 0.587 + Library.CurrentThemeData.MainBg.B * 0.114)
-                local currentInactive = (bgL > 0.5) boiled and Color3.fromRGB(110, 110, 110) or colorGrayInactive
+                local currentInactive = (bgL > 0.5) and Color3.fromRGB(110, 110, 110) or colorGrayInactive
                 data.Label.TextColor3 = currentInactive
                 if data.Icon then data.Icon.ImageColor3 = currentInactive end
             end
@@ -1555,7 +1555,7 @@ local function startLightingEnforcer()
     lightingLoopConnection = RunService.Heartbeat:Connect(function()
         if not shaderStates.Master then return end
         
-        for _, child in ip its(Lighting:GetChildren()) do
+        for _, child in ipairs(Lighting:GetChildren()) do
             if child:IsA("Atmosphere") and child.Name ~= "PulseHub_Atmosphere" then child:Destroy() end
             if child:IsA("SunRaysEffect") and child.Name ~= "PulseHub_SunRays" then child:Destroy() end
             if child:IsA("BloomEffect") and child.Name ~= "PulseHub_Bloom" then child:Destroy() end
