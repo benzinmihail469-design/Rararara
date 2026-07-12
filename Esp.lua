@@ -525,7 +525,7 @@ function Library:UpdateTheme(themeName)
     for _, data in ipairs(Library.TrackedAccents) do
         if data.Type == "Toggle" then
             if data.IsEnabled() then
-                tween(data.Checkbox, {BackgroundColor3 = Color3.fromRGB(255, 140, 0)})
+                tween(data.Checkbox, {BackgroundColor3 = theme.Accent})
                 local brightness = (theme.Accent.R + theme.Accent.G + theme.Accent.B)
                 if brightness > 2.5 then
                     tween(data.Indicator, {BackgroundColor3 = Color3.fromRGB(30, 30, 30)})
@@ -1002,7 +1002,7 @@ function Library:CreateToggle(parentPage, textKey, default, callback)
     local Checkbox = Instance.new("TextButton", TglFrame)
     Checkbox.Size = UDim2.new(0, 34, 0, 18)
     Checkbox.Position = UDim2.new(1, -44, 0.5, -9)
-    Checkbox.BackgroundColor3 = default and Color3.fromRGB(255, 140, 0) or Color3.fromRGB(40, 40, 40) 
+    Checkbox.BackgroundColor3 = default and Library.CurrentThemeData.Accent or Color3.fromRGB(40, 40, 40) 
     Checkbox.Text = ""
     Checkbox.ZIndex = 7
     Instance.new("UICorner", Checkbox).CornerRadius = UDim.new(0, 9)
@@ -1022,7 +1022,7 @@ function Library:CreateToggle(parentPage, textKey, default, callback)
         local activeIndicatorColor = brightness > 2.5 and Color3.fromRGB(30, 30, 30) or Color3.fromRGB(255, 255, 255)
 
         if enabled then
-            tween(Checkbox, {BackgroundColor3 = Color3.fromRGB(255, 140, 0)}, 0.2)
+            tween(Checkbox, {BackgroundColor3 = Library.CurrentThemeData.Accent}, 0.2)
             tween(Indicator, {Position = UDim2.new(1, -16, 0.5, -7), BackgroundColor3 = activeIndicatorColor}, 0.2)
         else
             local bgL = (Library.CurrentThemeData.MainBg.R * 0.299 + Library.CurrentThemeData.MainBg.G * 0.587 + Library.CurrentThemeData.MainBg.B * 0.114)
@@ -1264,7 +1264,7 @@ function Library:CreateSubTabs(parentPage, tabsList)
         local Icon
         if iconId and iconId ~= "" then
             Icon = Instance.new("ImageLabel", ContentFrame)
-            Icon.Size = UDim2.new(0, 18, 0, 18)
+            Icon.Size = tabData.IconSize or UDim2.new(0, 18, 0, 18)
             Icon.BackgroundTransparency = 1
             if tonumber(iconId) then
                 Icon.Image = "rbxthumb://type=Asset&id=" .. iconId .. "&w=150&h=150"
@@ -1527,8 +1527,7 @@ local function updateAtmosphere()
 end
 
 local function updateSunRays()
-    -- Теперь лучи солнца включены и для Midnight, чтобы создать эффект лунных лучей
-    if shaderStates.Master and shaderStates.SunRays then
+    if shaderStates.Master and shaderStates.SunRays and shaderStates.Mode ~= "Midnight" then
         if not Lighting:FindFirstChild("PulseHub_SunRays") then
             local sr = Instance.new("SunRaysEffect")
             sr.Name = "PulseHub_SunRays"
@@ -1552,13 +1551,14 @@ local function updateBlur()
     end
 end
 
--- Жесткий цикл форсирования настроек каждую миллисекунду
+-- Жесткий цикл форсирования настроек каждую миллисекунду (Защита от перезаписи скриптами MM2)
 local lightingLoopConnection = nil
 local function startLightingEnforcer()
     if lightingLoopConnection then lightingLoopConnection:Disconnect() end
     lightingLoopConnection = RunService.Heartbeat:Connect(function()
         if not shaderStates.Master then return end
         
+        -- Вычищаем дефолтные эффекты MM2, которые ломают визуал раунда
         for _, child in ipairs(Lighting:GetChildren()) do
             if child:IsA("Atmosphere") and child.Name ~= "PulseHub_Atmosphere" then child:Destroy() end
             if child:IsA("SunRaysEffect") and child.Name ~= "PulseHub_SunRays" then child:Destroy() end
@@ -1568,65 +1568,47 @@ local function startLightingEnforcer()
 
         local masterCC = Lighting:FindFirstChild("PulseHub_MasterCC")
 
+        -- Кастомные конфигурации под конкретные пресеты времени суток
         if shaderStates.Mode == "Day" then
-            Lighting.TimeOfDay = "11:00:00"
+            Lighting.TimeOfDay = "10:30:00" -- Идеальное утреннее солнце для длинных объемных лучей
             Lighting.Brightness = 3.5
-            Lighting.OutdoorAmbient = Color3.fromRGB(130, 150, 175)
-            Lighting.Ambient = Color3.fromRGB(70, 70, 85)
-            Lighting.GeographicLatitude = 45
-            Lighting.ExposureCompensation = 0.2
-            if masterCC then
-                masterCC.Contrast = 0.1
-                masterCC.Saturation = 0.3
-                masterCC.TintColor = Color3.fromRGB(255, 250, 245)
-            end
-        elseif shaderStates.Mode == "Sunset" then
-            Lighting.TimeOfDay = "17:45:00"
-            Lighting.Brightness = 3.0
-            Lighting.OutdoorAmbient = Color3.fromRGB(150, 90, 100)
-            Lighting.Ambient = Color3.fromRGB(80, 50, 60)
-            Lighting.GeographicLatitude = 45
-            Lighting.ExposureCompensation = 0.3
+            Lighting.OutdoorAmbient = Color3.fromRGB(145, 150, 155)
+            Lighting.Ambient = Color3.fromRGB(60, 60, 60)
+            Lighting.GeographicLatitude = 35
+            Lighting.ExposureCompensation = 0.4
             if masterCC then
                 masterCC.Contrast = 0.15
-                masterCC.Saturation = 0.4
-                masterCC.TintColor = Color3.fromRGB(255, 220, 200)
+                masterCC.Saturation = 0.2
+                masterCC.TintColor = Color3.fromRGB(255, 255, 255)
             end
-        elseif shaderStates.Mode == "Midnight" then
-            Lighting.TimeOfDay = "00:00:00"
-            Lighting.Brightness = 1.5
-            Lighting.OutdoorAmbient = Color3.fromRGB(15, 20, 40)
-            Lighting.Ambient = Color3.fromRGB(5, 5, 15)
-            Lighting.GeographicLatitude = 45
-            Lighting.ExposureCompensation = -0.1
+        elseif shaderStates.Mode == "Sunset" or shaderStates.Mode == "Midnight" then
+            -- Сброс в нормальное, обычное и чистое состояние
+            Lighting.TimeOfDay = "14:00:00"
+            Lighting.Brightness = 2
+            Lighting.OutdoorAmbient = Color3.fromRGB(128, 128, 128)
+            Lighting.Ambient = Color3.fromRGB(128, 128, 128)
+            Lighting.GeographicLatitude = 0
+            Lighting.ExposureCompensation = 0
             if masterCC then
-                masterCC.Contrast = 0.2
-                masterCC.Saturation = 0.1
-                masterCC.TintColor = Color3.fromRGB(210, 220, 255)
+                masterCC.Contrast = 0
+                masterCC.Saturation = 0
+                masterCC.TintColor = Color3.fromRGB(255, 255, 255)
             end
         elseif shaderStates.Mode == "None" then
             restoreOriginalEnvironment()
         end
         
+        -- Насильно прокачиваем свойства Атмосферы, делая её 100% видимой
         local atm = Lighting:FindFirstChild("PulseHub_Atmosphere")
         if atm and shaderStates.Atmosphere then
             atm.Density = shaderStates.AtmosphereDensity / 100
             if shaderStates.Mode == "Day" then
                 atm.Color = Color3.fromRGB(185, 215, 255)
                 atm.Decay = Color3.fromRGB(250, 230, 210)
-                atm.Haze = 1.5
-                atm.Glare = 1.2
-            elseif shaderStates.Mode == "Sunset" then
-                atm.Color = Color3.fromRGB(255, 120, 80)
-                atm.Decay = Color3.fromRGB(180, 60, 200)
                 atm.Haze = 2.5
-                atm.Glare = 2.0
-            elseif shaderStates.Mode == "Midnight" then
-                atm.Color = Color3.fromRGB(10, 15, 30)
-                atm.Decay = Color3.fromRGB(5, 10, 20)
-                atm.Haze = 3.0
-                atm.Glare = 0.1
+                atm.Glare = 1.8
             else
+                -- Обычная стандартная атмосфера без фильтров для Sunset/Midnight и дефолтов
                 atm.Color = Color3.fromRGB(200, 200, 200)
                 atm.Decay = Color3.fromRGB(255, 255, 255)
                 atm.Haze = 1.0
@@ -1634,11 +1616,12 @@ local function startLightingEnforcer()
             end
         end
 
+        -- Тонкая подстройка лучей солнца, заставляющая их работать сквозь любые скайбоксы карт MM2
         local sr = Lighting:FindFirstChild("PulseHub_SunRays")
         if sr and shaderStates.SunRays then
             sr.Intensity = shaderStates.SunRaysIntensity / 100
-            sr.Spread = shaderStates.Mode == "Midnight" and 0.4 or 0.80
-            sr.Threshold = 0.0 
+            sr.Spread = 0.80
+            sr.Threshold = 0.0 -- Срезаем порог до нуля, чтобы лучи гарантированно рендерились
         end
     end)
 end
