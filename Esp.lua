@@ -1443,7 +1443,7 @@ local VisualSections = Library:CreateSubTabs(VisualPage, {
 })
 
 -- ============================================================================
--- МГНОВЕННОЕ ОБНАРУЖЕНИЕ РОЛЕЙ ДО НАЧАЛА ВЫДАЧИ ОРУЖИЯ (MM2 МЕМОРИ-ХАК FIXED)
+-- МГНОВЕННОЕ ОБНАРУЖЕНИЕ РОЛЕЙ (ЧЕРЕЗ ПРОСЛУШКУ ИНВЕНТАРЯ)
 -- ============================================================================
 local espActive = false
 local activePlayersEsp = {}
@@ -1457,7 +1457,7 @@ local function cleanESP()
     table.clear(activePlayersEsp)
 end
 
--- Сброс кэша ролей при переходе в новый раунд
+-- Сброс кэша ролей при переходе в новый раунд (смена карты)
 workspace.ChildAdded:Connect(function(child)
     if child.Name == "Map" or child.Name == "Normal" or child.Name == "Hardcore" or child.Name == "Assassin" or child:FindFirstChild("Spawns") then
         table.clear(PreRevealedRoles)
@@ -1465,121 +1465,63 @@ workspace.ChildAdded:Connect(function(child)
     end
 end)
 
--- Функция перевода строк-имен или объектов в Player инстансы
-local function processRoleTable(data)
-    if type(data) ~= "table" then return end
-    
-    local function resolvePlayer(val)
-        if typeof(val) == "Instance" and val:IsA("Player") then
-            return val
-        elseif type(val) == "string" then
-            return Players:FindFirstChild(val)
-        end
-        return nil
-    end
-
-    if data.Murderer then
-        local p = resolvePlayer(data.Murderer)
-        if p then PreRevealedRoles[p] = "Murderer" end
-        if type(data.Murderer) == "table" then
-            for _, v in pairs(data.Murderer) do
-                local pl = resolvePlayer(v)
-                if pl then PreRevealedRoles[pl] = "Murderer" end
+-- Быстрая проверка контейнера (рюкзак или персонаж)
+local function scanContainer(container)
+    if not container then return nil end
+    for _, item in ipairs(container:GetChildren()) do
+        if item:IsA("Tool") or item:IsA("Model") then
+            local name = string.lower(item.Name)
+            if string.find(name, "knife") or item:FindFirstChild("KnifeScript") or item:FindFirstChild("LocalKnife") then
+                return "Murderer"
+            elseif string.find(name, "gun") or string.find(name, "revolver") or item:FindFirstChild("GunScript") or item:FindFirstChild("LocalGun") then
+                return "Sheriff"
             end
         end
     end
-
-    if data.Sheriff then
-        local p = resolvePlayer(data.Sheriff)
-        if p then PreRevealedRoles[p] = "Sheriff" end
-        if type(data.Sheriff) == "table" then
-            for _, v in pairs(data.Sheriff) do
-                local pl = resolvePlayer(v)
-                if pl then PreRevealedRoles[pl] = "Sheriff" end
-            end
-        end
-    end
-    
-    if data.Murder then
-        local p = resolvePlayer(data.Murder)
-        if p then PreRevealedRoles[p] = "Murderer" end
-    end
+    return nil
 end
 
-local function getPlayerRole(player)
-    if not player then return "Innocent" end
+-- Обновление роли конкретного игрока
+local function updatePlayerRole(player)
+    if PreRevealedRoles[player] then return PreRevealedRoles[player] end
     
-    if PreRevealedRoles[player] then
-        return PreRevealedRoles[player]
+    local role = scanContainer(player:FindFirstChild("Backpack")) or scanContainer(player.Character)
+    if role then
+        PreRevealedRoles[player] = role
     end
     
-    local backpack = player:FindFirstChild("Backpack")
-    local char = player.Character
-    
-    if (backpack and (backpack:FindFirstChild("Knife") or backpack:FindFirstChild("Weapon") or backpack:FindFirstChild("RealKnife"))) or 
-       (char and (char:FindFirstChild("Knife") or char:FindFirstChild("Weapon") or char:FindFirstChild("RealKnife"))) then
-        return "Murderer"
-    elseif (backpack and (backpack:FindFirstChild("Gun") or backpack:FindFirstChild("Revolver"))) or 
-           (char and (char:FindFirstChild("Gun") or char:FindFirstChild("Revolver"))) then
-        return "Sheriff"
-    end
-    return "Innocent"
+    return role or "Innocent"
 end
 
--- ФОНОВЫЙ ПОТОК: Вытаскивает скрытые переменные модулей и памяти
-task.spawn(function()
-    while true do
-        if espActive then
-            pcall(function()
-                -- Метод 1: Сканирование Апвалют активных скриптов (Самый точный способ без багов памяти)
-                if type(getgc) == "function" and debug and type(debug.getupvalues) == "function" then
-                    for _, v in pairs(getgc()) do
-                        if type(v) == "function" then
-                            local info = debug.getinfo(v)
-                            if info.source and (info.source:match("MainGame") or info.source:match("Client") or info.source:match("Player")) then
-                                for _, up in pairs(debug.getupvalues(v)) do
-                                    if type(up) == "table" and (up.Murderer or up.Sheriff or up.Murder) then
-                                        processRoleTable(up)
-                                    end
-                                end
-                            end
-                        end
-                    end
-                end
-                
-                -- Метод 2: Резервное GC сканирование
-                if type(getgc) == "function" then
-                    for _, data in pairs(getgc(true)) do
-                        if type(data) == "table" and (data.Murderer or data.Sheriff or data.Murder) then
-                            processRoleTable(data)
-                        end
-                    end
-                end
-            end)
-            
-            -- Метод 3: Детект по скриптам в инвентаре (если оружие скрыто в рюкзаке)
-            pcall(function()
-                for _, p in ipairs(Players:GetPlayers()) do
-                    if p ~= Players.LocalPlayer and not PreRevealedRoles[p] then
-                        local bp = p:FindFirstChild("Backpack")
-                        if bp then
-                            if bp:FindFirstChild("KnifeScript") or bp:FindFirstChild("LocalKnife") then
-                                PreRevealedRoles[p] = "Murderer"
-                            elseif bp:FindFirstChild("GunScript") or bp:FindFirstChild("LocalGun") then
-                                PreRevealedRoles[p] = "Sheriff"
-                            end
-                        end
-                    end
-                end
-            end)
-        else
-            table.clear(PreRevealedRoles)
-        end
-        task.wait(0.2)
+-- Установка "прослушки" для моментального детекта выдачи оружия
+local function setupPlayerListeners(player)
+    local function onCharacterAdded(char)
+        char.ChildAdded:Connect(function(child)
+            if espActive then updatePlayerRole(player) end
+        end)
     end
-end)
+    
+    if player.Character then onCharacterAdded(player.Character) end
+    player.CharacterAdded:Connect(onCharacterAdded)
+    
+    local function onBackpackAdded(bp)
+        bp.ChildAdded:Connect(function(child)
+            if espActive then updatePlayerRole(player) end
+        end)
+    end
+    
+    local bp = player:FindFirstChild("Backpack")
+    if bp then onBackpackAdded(bp) end
+    
+    player.ChildAdded:Connect(function(child)
+        if child.Name == "Backpack" then onBackpackAdded(child) end
+    end)
+end
 
--- УЛЬТРА-БЫСТРЫЙ ЦИКЛ ОБНОВЛЕНИЯ ЕСП ВИЗУАЛОВ
+for _, p in ipairs(Players:GetPlayers()) do setupPlayerListeners(p) end
+Players.PlayerAdded:Connect(setupPlayerListeners)
+
+-- Цикл отрисовки ESP (без тяжелого сканирования памяти)
 task.spawn(function()
     while true do
         if espActive then
@@ -1589,6 +1531,7 @@ task.spawn(function()
                     if char and char:FindFirstChild("HumanoidRootPart") and char:FindFirstChild("Head") then
                         local assets = activePlayersEsp[player]
                         
+                        -- Пересоздание ESP, если персонаж обновился
                         if not assets or assets.Character ~= char then
                             if assets then
                                 pcall(function() assets.Highlight:Destroy() end)
@@ -1626,18 +1569,20 @@ task.spawn(function()
                             activePlayersEsp[player] = assets
                         end
                         
-                        local role = getPlayerRole(player)
-                        local color = Color3.fromRGB(46, 204, 113) -- Innocent
+                        -- Определяем цвет и текст
+                        local role = updatePlayerRole(player)
+                        local color = Color3.fromRGB(46, 204, 113) -- Innocent (Зеленый)
                         local roleName = "Innocent"
                         
                         if role == "Murderer" then
-                            color = Color3.fromRGB(231, 76, 60) -- Murderer
+                            color = Color3.fromRGB(231, 76, 60) -- Murderer (Красный)
                             roleName = "Murderer"
                         elseif role == "Sheriff" then
-                            color = Color3.fromRGB(52, 152, 219) -- Sheriff
+                            color = Color3.fromRGB(52, 152, 219) -- Sheriff (Синий)
                             roleName = "Sheriff"
                         end
                         
+                        -- Применяем визуал
                         if assets.Highlight and assets.Highlight.Parent then
                             assets.Highlight.FillColor = color
                             assets.Highlight.OutlineColor = color
@@ -1649,6 +1594,7 @@ task.spawn(function()
                             assets.TextLabel.TextColor3 = color
                         end
                     else
+                        -- Удаление ESP, если игрок мертв/вышел
                         if activePlayersEsp[player] then
                             pcall(function() activePlayersEsp[player].Highlight:Destroy() end)
                             pcall(function() activePlayersEsp[player].Billboard:Destroy() end)
@@ -1658,6 +1604,7 @@ task.spawn(function()
                 end
             end
             
+            -- Очистка мусора для отключившихся игроков
             for player, assets in pairs(activePlayersEsp) do
                 if not player or not player.Parent then
                     pcall(function() assets.Highlight:Destroy() end)
@@ -1666,7 +1613,7 @@ task.spawn(function()
                 end
             end
         end
-        task.wait(0.1)
+        task.wait(0.1) -- Оптимальная задержка для UI
     end
 end)
 
