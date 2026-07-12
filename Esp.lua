@@ -1438,13 +1438,12 @@ local SettingsPage = CreatePage("Settings", "117996761927034", 99)
 
 Library:CreateToggle(MainPage, "AutoFarmCoins", false, function(state) end)
 
--- Переименованная вкладка под ЕСП в секции Visual
 local VisualSections = Library:CreateSubTabs(VisualPage, {
     {Name = "Esp", Icon = "80768064990053", Color = Color3.fromRGB(46, 204, 113)}
 })
 
 -- ============================================================================
--- ЛОГИКА РАБОТЫ КРАСИВОГО ММ2 ESP
+-- ОПТИМИЗИРОВАННАЯ ЛОГИКА РАБОТЫ ММ2 ESP (БЕЗ ЗАДЕРЖЕК)
 -- ============================================================================
 local espActive = false
 local espConnections = {}
@@ -1455,7 +1454,7 @@ local function getPlayerRole(player)
     local char = player.Character
     local backpack = player:FindFirstChild("Backpack")
     
-    -- Проверка рюкзака и рук на наличие оружия
+    -- Мгновенная проверка рюкзака и рук на наличие оружия
     if (char and char:FindFirstChild("Knife")) or (backpack and backpack:FindFirstChild("Knife")) then
         return "Murderer"
     elseif (char and char:FindFirstChild("Gun")) or (backpack and backpack:FindFirstChild("Gun")) then
@@ -1472,19 +1471,47 @@ local function cleanESP()
     table.clear(activePlayersEsp)
 end
 
+local function updateSingleESP(player, assets)
+    if player and player.Parent and assets.Character and assets.Character.Parent then
+        local role = getPlayerRole(player)
+        local color = Color3.fromRGB(46, 204, 113) -- По умолчанию зеленый мирный
+        local roleName = "Innocent"
+        
+        if role == "Murderer" then
+            color = Color3.fromRGB(231, 76, 60) -- Красный убийца
+            roleName = "Murderer"
+        elseif role == "Sheriff" then
+            color = Color3.fromRGB(52, 152, 219) -- Синий шериф
+            roleName = "Sheriff"
+        end
+        
+        if assets.Highlight and assets.Highlight.Parent then
+            assets.Highlight.FillColor = color
+            assets.Highlight.OutlineColor = color
+        end
+        
+        if assets.TextLabel and assets.TextLabel.Parent then
+            assets.TextLabel.Text = string.format("%s\n[%s]", player.DisplayName or player.Name, roleName)
+            assets.TextLabel.TextColor3 = color
+        end
+    else
+        activePlayersEsp[player] = nil
+    end
+end
+
 local function createESP(player)
     if player == Players.LocalPlayer then return end
     
     local function handleCharacter(char)
-        task.wait(0.5) -- Безопасное время для загрузки костей/частей персонажа
         if not espActive then return end
+        char:WaitForChild("HumanoidRootPart", 10) -- Ожидаем готовности персонажа без костыльных пауз
         
         if activePlayersEsp[player] then
             pcall(function() activePlayersEsp[player].Highlight:Destroy() end)
             pcall(function() activePlayersEsp[player].Billboard:Destroy() end)
         end
         
-        -- Создание красивого свечения через нативный Highlight
+        -- Свечение
         local highlight = Instance.new("Highlight")
         highlight.Name = "PulseHub_Highlight"
         highlight.FillTransparency = 0.5
@@ -1492,7 +1519,7 @@ local function createESP(player)
         highlight.Adornee = char
         highlight.Parent = char
         
-        -- СозданиеBillboardGui над головой персонажа для отображения ников и ролей
+        --Billboard над головой
         local billboard = Instance.new("BillboardGui")
         billboard.Name = "PulseHub_Billboard"
         billboard.AlwaysOnTop = true
@@ -1514,12 +1541,14 @@ local function createESP(player)
             billboard.Parent = char
         end
         
-        activePlayersEsp[player] = {
+        local assets = {
             Highlight = highlight,
             Billboard = billboard,
             TextLabel = textLabel,
             Character = char
         }
+        activePlayersEsp[player] = assets
+        updateSingleESP(player, assets) -- Мгновенный апдейт роли при спавне персонажа
     end
     
     if player.Character then
@@ -1532,7 +1561,6 @@ end
 local function toggleESP(state)
     espActive = state
     if state then
-        -- Слушатели на вход и выход игроков
         for _, p in ipairs(Players:GetPlayers()) do
             createESP(p)
         end
@@ -1544,6 +1572,11 @@ local function toggleESP(state)
                 activePlayersEsp[p] = nil
             end
         end))
+        
+        -- Форсируем мгновенное обновление ролей для всех, кто уже в игре
+        for player, assets in pairs(activePlayersEsp) do
+            updateSingleESP(player, assets)
+        end
     else
         for _, c in ipairs(espConnections) do c:Disconnect() end
         table.clear(espConnections)
@@ -1551,43 +1584,18 @@ local function toggleESP(state)
     end
 end
 
--- Постоянный цикл для динамического обновления ролей и цветов раз в полсекунды
+-- Высокоскоростной цикл проверки ролей (каждые 0.1 сек) для исключения задержек
 task.spawn(function()
     while true do
         if espActive then
             for player, assets in pairs(activePlayersEsp) do
-                if player and player.Parent and assets.Character and assets.Character.Parent then
-                    local role = getPlayerRole(player)
-                    local color = Color3.fromRGB(46, 204, 113) -- По умолчанию зеленый мирный
-                    local roleName = "Innocent"
-                    
-                    if role == "Murderer" then
-                        color = Color3.fromRGB(231, 76, 60) -- Красный убийца
-                        roleName = "Murderer"
-                    elseif role == "Sheriff" then
-                        color = Color3.fromRGB(52, 152, 219) -- Синий шериф
-                        roleName = "Sheriff"
-                    end
-                    
-                    if assets.Highlight and assets.Highlight.Parent then
-                        assets.Highlight.FillColor = color
-                        assets.Highlight.OutlineColor = color
-                    end
-                    
-                    if assets.TextLabel and assets.TextLabel.Parent then
-                        assets.TextLabel.Text = string.format("%s\n[%s]", player.DisplayName or player.Name, roleName)
-                        assets.TextLabel.TextColor3 = color
-                    end
-                else
-                    activePlayersEsp[player] = nil
-                end
+                updateSingleESP(player, assets)
             end
         end
-        task.wait(0.5)
+        task.wait(0.1)
     end
 end)
 
--- Создание кнопки ESP внутри подвкладки "Esp"
 Library:CreateToggle(VisualSections["Esp"], "EspToggle", false, function(state)
     toggleESP(state)
 end)
