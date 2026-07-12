@@ -453,7 +453,7 @@ local ThemeConfig = {
     ["Deep Violet"]   = { Accent = Color3.fromRGB(102, 51, 153),  MainBg = Color3.fromRGB(13, 11, 20),   ElementBg = Color3.fromRGB(23, 19, 36) },
     ["Cyanic"]        = { Accent = Color3.fromRGB(0, 255, 200),   MainBg = Color3.fromRGB(10, 22, 26),   ElementBg = Color3.fromRGB(18, 38, 46) },
     ["Blood Red"]     = { Accent = Color3.fromRGB(170, 0, 0),     MainBg = Color3.fromRGB(14, 4, 4),     ElementBg = Color3.fromRGB(28, 8, 8) },
-    ["AMOLED"]        = { Accent = Color3.fromRGB(255, 255, 255), MainBg = Color3.fromRGB(0, 0, 0),      ElementBg = Color3.fromRGB(15, 15, 15) }
+    ["AMOLED"]        = { Accent = Color3.fromRGB(0, 0, 0),       MainBg = Color3.fromRGB(0, 0, 0),      ElementBg = Color3.fromRGB(15, 15, 15) }
 }
 
 local ThemeNamesList = {}
@@ -1567,7 +1567,7 @@ local function startLightingEnforcer()
         local masterCC = Lighting:FindFirstChild("PulseHub_MasterCC")
 
         if shaderStates.Mode == "Day" then
-            Lighting.TimeOfDay = "10:30:00" 
+            Lighting.TimeOfDay = "10:30:00"
             Lighting.Brightness = 3.5
             Lighting.OutdoorAmbient = Color3.fromRGB(145, 150, 155)
             Lighting.Ambient = Color3.fromRGB(60, 60, 60)
@@ -1579,16 +1579,16 @@ local function startLightingEnforcer()
                 masterCC.TintColor = Color3.fromRGB(255, 255, 255)
             end
         elseif shaderStates.Mode == "Sunset" or shaderStates.Mode == "Midnight" then
-            Lighting.TimeOfDay = "14:00:00"
-            Lighting.Brightness = 2
-            Lighting.OutdoorAmbient = Color3.fromRGB(128, 128, 128)
-            Lighting.Ambient = Color3.fromRGB(128, 128, 128)
-            Lighting.GeographicLatitude = 0
-            Lighting.ExposureCompensation = 0
+            Lighting.TimeOfDay = (shaderStates.Mode == "Sunset") and "17:45:00" or "00:00:00"
+            Lighting.Brightness = (shaderStates.Mode == "Sunset") and 2.5 or 0.8
+            Lighting.OutdoorAmbient = (shaderStates.Mode == "Sunset") and Color3.fromRGB(140, 90, 80) or Color3.fromRGB(15, 20, 35)
+            Lighting.Ambient = (shaderStates.Mode == "Sunset") and Color3.fromRGB(50, 40, 45) or Color3.fromRGB(10, 10, 20)
+            Lighting.GeographicLatitude = 45
+            Lighting.ExposureCompensation = (shaderStates.Mode == "Sunset") and 0.2 or -0.1
             if masterCC then
-                masterCC.Contrast = 0
-                masterCC.Saturation = 0
-                masterCC.TintColor = Color3.fromRGB(255, 255, 255)
+                masterCC.Contrast = (shaderStates.Mode == "Sunset") and 0.2 or 0.3
+                masterCC.Saturation = (shaderStates.Mode == "Sunset") and 0.35 or -0.1
+                masterCC.TintColor = (shaderStates.Mode == "Sunset") and Color3.fromRGB(255, 220, 200) or Color3.fromRGB(200, 220, 255)
             end
         elseif shaderStates.Mode == "None" then
             restoreOriginalEnvironment()
@@ -1602,6 +1602,11 @@ local function startLightingEnforcer()
                 atm.Decay = Color3.fromRGB(250, 230, 210)
                 atm.Haze = 2.5
                 atm.Glare = 1.8
+            elseif shaderStates.Mode == "Sunset" then
+                atm.Color = Color3.fromRGB(255, 150, 100)
+                atm.Decay = Color3.fromRGB(120, 60, 90)
+                atm.Haze = 3.5
+                atm.Glare = 2.5
             else
                 atm.Color = Color3.fromRGB(200, 200, 200)
                 atm.Decay = Color3.fromRGB(255, 255, 255)
@@ -1614,7 +1619,7 @@ local function startLightingEnforcer()
         if sr and shaderStates.SunRays then
             sr.Intensity = shaderStates.SunRaysIntensity / 100
             sr.Spread = 0.80
-            sr.Threshold = 0.0 
+            sr.Threshold = 0.0
         end
     end)
 end
@@ -1667,14 +1672,10 @@ Library:CreateToggle(VisualSections["shader pack"], "Enable", false, function(st
     end
 end)
 
-----------------------------------------------------
--- ИНИЦИАЛИЗАЦИЯ КОМПОНЕНТОВ УПРАВЛЕНИЯ ШЕЙДЕРАМИ
-----------------------------------------------------
+-- НАСТРОЙКИ ФИЛЬТРОВ И ПРЕСЕТОВ
 Library:CreateDropdown(VisualSections["shader pack"], "Mode", {"None", "Day", "Sunset", "Midnight"}, "None", function(value)
     shaderStates.Mode = value
-    if masterCC then
-        masterCC.Enabled = (value ~= "None")
-    end
+    if masterCC then masterCC.Enabled = (value ~= "None") end
 end)
 
 Library:CreateToggle(VisualSections["shader pack"], "Bloom", false, function(state)
@@ -1699,7 +1700,6 @@ end)
 
 Library:CreateSlider(VisualSections["shader pack"], "Density", 0, 100, 55, function(value)
     shaderStates.AtmosphereDensity = value
-    updateAtmosphere()
 end)
 
 Library:CreateToggle(VisualSections["shader pack"], "Sun Rays", false, function(state)
@@ -1709,7 +1709,6 @@ end)
 
 Library:CreateSlider(VisualSections["shader pack"], "Intensity", 0, 100, 45, function(value)
     shaderStates.SunRaysIntensity = value
-    updateSunRays()
 end)
 
 Library:CreateToggle(VisualSections["shader pack"], "Blur", false, function(state)
@@ -1723,26 +1722,8 @@ Library:CreateSlider(VisualSections["shader pack"], "Strength", 0, 100, 20, func
 end)
 
 ----------------------------------------------------
--- НАСТРОЙКИ СМЕНЫ ЯЗЫКА И ИНТЕРФЕЙСА (SETTINGS)
+-- НАСТРОЙКИ ИНТЕРФЕЙСА СИСТЕМЫ (SETTINGS SECTIONS)
 ----------------------------------------------------
-local function changeLanguage(newLang)
-    Library.CurrentLanguage = newLang
-    for _, item in ipairs(LocaleObjects) do
-        local localizedText = Localization[newLang][item.Key] or item.Key
-        item.Object.Text = localizedText
-        if item.SearchItem then
-            item.SearchItem.SearchText = NormalizeText(localizedText)
-        end
-    end
-    if allPages[Library.CurrentTabKey] then
-        TabTitle.Text = Localization[newLang][Library.CurrentTabKey] or Library.CurrentTabKey
-    end
-end
-
-Library:CreateDropdown(SettingSections["UI"], "Language", {"English", "Русский"}, "English", function(value)
-    changeLanguage(value)
-end)
-
 Library:CreateToggle(SettingSections["UI"], "AntiAFK", false, function(state)
     toggleAntiAFK(state)
 end)
@@ -1755,18 +1736,30 @@ Library:CreateToggle(SettingSections["UI"], "Gradient", false, function(state)
     toggleGradientEffect(state)
 end)
 
-Library:CreateDropdown(SettingSections["Theme"], "UITheme", ThemeNamesList, "Deep Ocean", function(value)
-    Library:UpdateTheme(value)
+Library:CreateDropdown(SettingSections["UI"], "Language", {"English", "Русский"}, "English", function(lang)
+    Library.CurrentLanguage = lang
+    for _, loc in ipairs(LocaleObjects) do
+        local newText = Localization[lang][loc.Key] or loc.Key
+        loc.Object.Text = newText
+        if loc.SearchItem then
+            loc.SearchItem.SearchText = NormalizeText(newText)
+        end
+    end
+    TabTitle.Text = Localization[lang][Library.CurrentTabKey] or Library.CurrentTabKey
+end)
+
+Library:CreateDropdown(SettingSections["Theme"], "UITheme", ThemeNamesList, "Deep Ocean", function(theme)
+    Library:UpdateTheme(theme)
 end)
 
 ----------------------------------------------------
--- АВТОМАТИЧЕСКАЯ АКТИВАЦИЯ ПЕРВОЙ ВКЛАДКИ ПРИ ЗАПУСКЕ
+-- ИНИЦИАЛИЗАЦИЯ ПО УМОЛЧАНИЮ
 ----------------------------------------------------
 Library:UpdateTheme("Deep Ocean")
-if allTabButtons["Main"] then
-    allPages["Main"].Visible = true
-    allTabs["Main"].BackgroundTransparency = 0
-    allTabs["Main"].BackgroundColor3 = Color3.fromRGB(35, 35, 35)
-    allTabButtons["Main"].TextColor3 = Color3.fromRGB(255, 255, 255)
-    if allTabIcons["Main"] then allTabIcons["Main"].ImageTransparency = 0 end
-end
+
+-- Открытие первой вкладки ("Main") по дефолту при старте
+allPages["Main"].Visible = true
+allTabs["Main"].BackgroundTransparency = 0
+local bgL = (Library.CurrentThemeData.MainBg.R * 0.299 + Library.CurrentThemeData.MainBg.G * 0.587 + Library.CurrentThemeData.MainBg.B * 0.114)
+allTabButtons["Main"].TextColor3 = (bgL > 0.5) and Color3.fromRGB(35, 35, 35) or Color3.fromRGB(255, 255, 255)
+if allTabIcons["Main"] then allTabIcons["Main"].ImageTransparency = 0 end
