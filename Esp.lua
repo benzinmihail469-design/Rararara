@@ -1438,26 +1438,41 @@ local SettingsPage = CreatePage("Settings", "117996761927034", 99)
 
 Library:CreateToggle(MainPage, "AutoFarmCoins", false, function(state) end)
 
--- Переименованная вкладка под ЕСП в секции Visual
 local VisualSections = Library:CreateSubTabs(VisualPage, {
     {Name = "Esp", Icon = "80768064990053", Color = Color3.fromRGB(46, 204, 113)}
 })
 
 -- ============================================================================
--- ЛОГИКА РАБОТЫ КРАСИВОГО ММ2 ESP (ИСПРАВЛЕНО ДЛЯ МГНОВЕННОГО ОПРЕДЕЛЕНИЯ РОЛЕЙ)
+-- МГНОВЕННОЕ ОБНАРУЖЕНИЕ РОЛЕЙ ДО НАЧАЛА ВЫДАЧИ ОРУЖИЯ (MM2 МЕМОРИ-ХАК)
 -- ============================================================================
 local espActive = false
 local activePlayersEsp = {}
+local PreRevealedRoles = {} -- Локальная база ролей, перехваченная до спавна ножей
+
+-- Сброс кэша ролей при переходе в новый раунд (когда спавнится карта катки)
+workspace.ChildAdded:Connect(function(child)
+    if child.Name == "Map" or child:FindFirstChild("Spawns") or child.Name == "Normal" then
+        table.clear(PreRevealedRoles)
+    end
+end)
 
 local function getPlayerRole(player)
     if not player then return "Innocent" end
+    
+    -- Шаг 1: Проверяем перехваченное мгновенное значение из кэша памяти игры
+    if PreRevealedRoles[player] then
+        return PreRevealedRoles[player]
+    end
+    
+    -- Шаг 2: Проверяем по инвентарю (когда 10 секунд прошли и оружие упало в Backpack)
     local backpack = player:FindFirstChild("Backpack")
     local char = player.Character
     
-    -- Быстрая прямая проверка рюкзака и рук на оружие
-    if (backpack and backpack:FindFirstChild("Knife")) or (char and char:FindFirstChild("Knife")) then
+    if (backpack and (backpack:FindFirstChild("Knife") or backpack:FindFirstChild("Weapon") or backpack:FindFirstChild("RealKnife"))) or 
+       (char and (char:FindFirstChild("Knife") or char:FindFirstChild("Weapon") or char:FindFirstChild("RealKnife"))) then
         return "Murderer"
-    elseif (backpack and backpack:FindFirstChild("Gun")) or (char and char:FindFirstChild("Gun")) then
+    elseif (backpack and (backpack:FindFirstChild("Gun") or backpack:FindFirstChild("Revolver"))) or 
+           (char and (char:FindFirstChild("Gun") or char:FindFirstChild("Revolver"))) then
         return "Sheriff"
     end
     return "Innocent"
@@ -1471,18 +1486,71 @@ local function cleanESP()
     table.clear(activePlayersEsp)
 end
 
--- Ультра-быстрый бесконечный поток обновлений без задержек события CharacterAdded
+-- ФОНОВЫЙ ПОТОК: Вытаскивает скрытые таблицы ролей из Garbage Collector эксплоита
+task.spawn(function()
+    while true do
+        if espActive then
+            pcall(function()
+                -- Сканируем среду Lua на предмет игровых модулей с ролями
+                if type(getgc) == "function" then
+                    for _, data in pairs(getgc(true)) do
+                        if type(data) == "table" then
+                            -- Ищем таблицы со специфическими ключами Murderer / Sheriff
+                            if data.Murderer or data.Sheriff or data.Murder then
+                                -- Анализируем Мардера
+                                if typeof(data.Murderer) == "Instance" and data.Murderer:IsA("Player") then
+                                    PreRevealedRoles[data.Murderer] = "Murderer"
+                                elseif type(data.Murderer) == "table" then
+                                    for _, p in pairs(data.Murderer) do
+                                        if typeof(p) == "Instance" and p:IsA("Player") then PreRevealedRoles[p] = "Murderer" end
+                                    end
+                                end
+                                -- Анализируем Шерифа
+                                if typeof(data.Sheriff) == "Instance" and data.Sheriff:IsA("Player") then
+                                    PreRevealedRoles[data.Sheriff] = "Sheriff"
+                                elseif type(data.Sheriff) == "table" then
+                                    for _, p in pairs(data.Sheriff) do
+                                        if typeof(p) == "Instance" and p:IsA("Player") then PreRevealedRoles[p] = "Sheriff" end
+                                    end
+                                end
+                            end
+                        end
+                    end
+                end
+            end)
+            
+            -- Резервная проверка на случай кастомных версий MM2 (ранняя выгрузка управляющих скриптов)
+            pcall(function()
+                for _, p in ipairs(Players:GetPlayers()) do
+                    if p ~= Players.LocalPlayer and not PreRevealedRoles[p] then
+                        local bp = p:FindFirstChild("Backpack")
+                        if bp then
+                            if bp:FindFirstChild("KnifeScript") or bp:FindFirstChild("LocalKnife") then
+                                PreRevealedRoles[p] = "Murderer"
+                            elseif bp:FindFirstChild("GunScript") or bp:FindFirstChild("LocalGun") then
+                                PreRevealedRoles[p] = "Sheriff"
+                            end
+                        end
+                    end
+                end
+            end)
+        else
+            table.clear(PreRevealedRoles)
+        end
+        task.wait(0.3) -- Сканируем память 3 раза в секунду, чтобы сразу поймать роли
+    end
+end)
+
+-- УЛЬТРА-БЫСТРЫЙ ЦИКЛ ОБНОВЛЕНИЯ ЕСП ВИЗУАЛОВ
 task.spawn(function()
     while true do
         if espActive then
             for _, player in ipairs(Players:GetPlayers()) do
                 if player ~= Players.LocalPlayer then
                     local char = player.Character
-                    -- Проверяем, что персонаж существует и загружен в мире
                     if char and char:FindFirstChild("HumanoidRootPart") and char:FindFirstChild("Head") then
                         local assets = activePlayersEsp[player]
                         
-                        -- Если игрок заспавнился заново (новый раунд) или ESP еще нет
                         if not assets or assets.Character ~= char then
                             if assets then
                                 pcall(function() assets.Highlight:Destroy() end)
@@ -1520,16 +1588,16 @@ task.spawn(function()
                             activePlayersEsp[player] = assets
                         end
                         
-                        -- Мгновенная проверка роли прямо из инвентаря
+                        -- Берём роль из нашего гибридного геттера
                         local role = getPlayerRole(player)
-                        local color = Color3.fromRGB(46, 204, 113) -- Innocent (Зеленый)
+                        local color = Color3.fromRGB(46, 204, 113) -- Innocent
                         local roleName = "Innocent"
                         
                         if role == "Murderer" then
-                            color = Color3.fromRGB(231, 76, 60) -- Murderer (Красный)
+                            color = Color3.fromRGB(231, 76, 60) -- Murderer
                             roleName = "Murderer"
                         elseif role == "Sheriff" then
-                            color = Color3.fromRGB(52, 152, 219) -- Sheriff (Синий)
+                            color = Color3.fromRGB(52, 152, 219) -- Sheriff
                             roleName = "Sheriff"
                         end
                         
@@ -1543,7 +1611,6 @@ task.spawn(function()
                             assets.TextLabel.TextColor3 = color
                         end
                     else
-                        -- Очищаем кэш игрока, если его персонаж умер/удален
                         if activePlayersEsp[player] then
                             pcall(function() activePlayersEsp[player].Highlight:Destroy() end)
                             pcall(function() activePlayersEsp[player].Billboard:Destroy() end)
@@ -1553,7 +1620,6 @@ task.spawn(function()
                 end
             end
             
-            -- Удаляем из кэша игроков, которые вышли с сервера
             for player, assets in pairs(activePlayersEsp) do
                 if not player or not player.Parent then
                     pcall(function() assets.Highlight:Destroy() end)
@@ -1562,7 +1628,7 @@ task.spawn(function()
                 end
             end
         end
-        task.wait(0.1) -- Частота сканирования 10 раз в секунду гарантирует мгновенный показ ролей
+        task.wait(0.1)
     end
 end)
 
@@ -1573,7 +1639,6 @@ local function toggleESP(state)
     end
 end
 
--- Создание кнопки ESP внутри подвкладки "Esp"
 Library:CreateToggle(VisualSections["Esp"], "EspToggle", false, function(state)
     toggleESP(state)
 end)
