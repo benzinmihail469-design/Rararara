@@ -521,6 +521,15 @@ function Library:UpdateTheme(themeName)
             tBtn.TextColor3 = subTextColor
         end
     end
+
+    -- Фикс тем: Перекрашиваем иконки вкладок в цвет текста при обновлении темы
+    for tName, tIcon in pairs(allTabIcons) do
+        if tName == Library.CurrentTabKey then
+            tIcon.ImageColor3 = mainTextColor
+        else
+            tIcon.ImageColor3 = subTextColor
+        end
+    end
     
     for _, data in ipairs(Library.TrackedAccents) do
         if data.Type == "Toggle" then
@@ -1392,11 +1401,14 @@ function CreatePage(textKey, iconId, layoutOrder)
         TabIcon.Size = UDim2.new(0, 24, 0, 24)
         TabIcon.Position = UDim2.new(0, 10, 0.5, -12)
         TabIcon.BackgroundTransparency = 1
+        
+        -- ФИКС: Для длинных ID вкладок теперь используется современный rbxthumb, как и во всем остальном вашем скрипте.
         if tonumber(iconId) then
-            TabIcon.Image = "rbxassetid://" .. iconId
+            TabIcon.Image = "rbxthumb://type=Asset&id=" .. iconId .. "&w=150&h=150"
         else
             TabIcon.Image = iconId
         end
+        TabIcon.ImageColor3 = Color3.fromRGB(140, 140, 140) -- Дефолтный цвет
         TabIcon.ImageTransparency = 0.25
         TabIcon.ZIndex = 7
         allTabIcons[textKey] = TabIcon
@@ -1418,10 +1430,14 @@ function CreatePage(textKey, iconId, layoutOrder)
         local bgL = (Library.CurrentThemeData.MainBg.R * 0.299 + Library.CurrentThemeData.MainBg.G * 0.587 + Library.CurrentThemeData.MainBg.B * 0.114)
         local isL = bgL > 0.5
         
+        -- Фикс изменения цвета: Перекрашиваем неактивные иконки в соответствии со светлой/темной темой
         for tName, tContainer in pairs(allTabs) do
             tween(tContainer, {BackgroundTransparency = 1}, 0.2)
-            tween(allTabButtons[tName], {TextColor3 = isL and Color3.fromRGB(110, 110, 110) or Color3.fromRGB(140, 140, 140)}, 0.2)
-            if allTabIcons[tName] then tween(allTabIcons[tName], {ImageTransparency = 0.25}, 0.2) end
+            local inactiveColor = isL and Color3.fromRGB(110, 110, 110) or Color3.fromRGB(140, 140, 140)
+            tween(allTabButtons[tName], {TextColor3 = inactiveColor}, 0.2)
+            if allTabIcons[tName] then 
+                tween(allTabIcons[tName], {ImageTransparency = 0.25, ImageColor3 = inactiveColor}, 0.2) 
+            end
             allPages[tName].Visible = false
         end
         Library.CurrentTabKey = textKey
@@ -1429,9 +1445,15 @@ function CreatePage(textKey, iconId, layoutOrder)
         PageFrame.Visible = true
         
         local activeTabBg = isL and Color3.fromRGB(215, 215, 215) or Color3.fromRGB(35, 35, 35)
+        local activeTextColor = isL and Color3.fromRGB(35, 35, 35) or Color3.fromRGB(255, 255, 255)
+        
         tween(TabContainer, {BackgroundColor3 = activeTabBg, BackgroundTransparency = 0}, 0.2)
-        tween(TabBtn, {TextColor3 = isL and Color3.fromRGB(35, 35, 35) or Color3.fromRGB(255, 255, 255)}, 0.2)
-        if allTabIcons[textKey] then tween(allTabIcons[textKey], {ImageTransparency = 0}, 0.2) end
+        tween(TabBtn, {TextColor3 = activeTextColor}, 0.2)
+        
+        -- Фикс изменения цвета: Перекрашиваем активную иконку при клике
+        if allTabIcons[textKey] then 
+            tween(allTabIcons[textKey], {ImageTransparency = 0, ImageColor3 = activeTextColor}, 0.2) 
+        end
     end)
     table.insert(LocaleObjects, {Object = TabBtn, Key = textKey})
     UpdateNavCanvas()
@@ -1590,23 +1612,22 @@ local function startLightingEnforcer()
                 masterCC.TintColor = Color3.fromRGB(255, 220, 195)
             end
         elseif shaderStates.Mode == "Midnight" then
-            -- Фикс: Midnight больше не темный, видимость идеальная
             Lighting.TimeOfDay = "00:00:00"
             Lighting.Brightness = 1.6
-            Lighting.OutdoorAmbient = Color3.fromRGB(60, 70, 95)  -- Мягкие ночные отражения
-            Lighting.Ambient = Color3.fromRGB(45, 45, 55)         -- Подсветка темных участков
+            Lighting.OutdoorAmbient = Color3.fromRGB(60, 70, 95)  
+            Lighting.Ambient = Color3.fromRGB(45, 45, 55)         
             Lighting.GeographicLatitude = 15
-            Lighting.ExposureCompensation = 0.1                 -- Избавляет от слепой темноты
+            Lighting.ExposureCompensation = 0.1                 
             if masterCC then
                 masterCC.Contrast = 0.06
                 masterCC.Saturation = 0.05
-                masterCC.TintColor = Color3.fromRGB(220, 230, 255) -- Красивый серебряный лунный оттенок
+                masterCC.TintColor = Color3.fromRGB(220, 230, 255) 
             end
         elseif shaderStates.Mode == "None" then
             restoreOriginalEnvironment()
         end
         
-        -- Синхронизация и кастомизация Bloom (Стал мягче и объемнее)
+        -- Синхронизация и кастомизация Bloom
         local bloom = Lighting:FindFirstChild("PulseHub_Bloom")
         if bloom and shaderStates.Bloom then
             bloom.Intensity = shaderStates.BloomIntensity * 0.45 
@@ -1616,13 +1637,13 @@ local function startLightingEnforcer()
             elseif shaderStates.Mode == "Sunset" then
                 bloom.Threshold = 0.3
             elseif shaderStates.Mode == "Midnight" then
-                bloom.Threshold = 0.15 -- Красивое неоновое свечение окон и ламп ночью
+                bloom.Threshold = 0.15 
             else
                 bloom.Threshold = 0.5
             end
         end
 
-        -- Фикс Atmosphere: теперь изменения плотности реально видны
+        -- Фикс Atmosphere
         local atm = Lighting:FindFirstChild("PulseHub_Atmosphere")
         if atm and shaderStates.Atmosphere then
             atm.Density = shaderStates.AtmosphereDensity / 100
@@ -1649,7 +1670,7 @@ local function startLightingEnforcer()
             end
         end
 
-        -- Фикс Sun Rays: Снижен порог видимости лучей солнца/луны
+        -- Фикс Sun Rays
         local sr = Lighting:FindFirstChild("PulseHub_SunRays")
         if sr and shaderStates.SunRays then
             sr.Intensity = (shaderStates.SunRaysIntensity / 100) * 0.75
@@ -1659,7 +1680,7 @@ local function startLightingEnforcer()
             elseif shaderStates.Mode == "Sunset" then
                 sr.Threshold = 0.04
             elseif shaderStates.Mode == "Midnight" then
-                sr.Threshold = 0.04 -- Мягкие лучи лунного света в темноте
+                sr.Threshold = 0.04 
             else
                 sr.Threshold = 0.1
             end
