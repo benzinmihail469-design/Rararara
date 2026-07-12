@@ -1468,7 +1468,7 @@ local originalLightingSettings = {
     GeographicLatitude = Lighting.GeographicLatitude,
     ExposureCompensation = Lighting.ExposureCompensation
 }
-local originalSky = nil
+local originalSky = Lighting:FindFirstChildOfClass("Sky") and Lighting:FindFirstChildOfClass("Sky"):Clone() or nil
 
 local function restoreOriginalEnvironment()
     Lighting.TimeOfDay = originalLightingSettings.TimeOfDay
@@ -1489,75 +1489,32 @@ local shaderStates = {
     Master = false,
     Mode = "None",
     Bloom = false,
-    BloomIntensity = 0.8, -- Базовое значение снижено для мягкости
-    BloomSize = 24,       -- Размер увеличен для плавного рассеивания
+    BloomIntensity = 0.5,    -- Снизили базовый дефолт для мягкости
+    BloomSize = 12,          -- Чуть уменьшили размер
     Atmosphere = false,
-    AtmosphereDensity = 55,
+    AtmosphereDensity = 30,  -- Снизили дефолтную плотность, чтобы картинка была чистой
     SunRays = false,
-    SunRaysIntensity = 45,
+    SunRaysIntensity = 35,   -- Смягчили лучи
     Blur = false,
-    BlurStrength = 20
+    BlurStrength = 15
 }
 
-local function updateBloom()
-    if shaderStates.Master and shaderStates.Bloom then
-        local bloom = Lighting:FindFirstChild("PulseHub_Bloom") or Instance.new("BloomEffect")
-        bloom.Name = "PulseHub_Bloom"
-        bloom.Intensity = shaderStates.BloomIntensity
-        bloom.Size = shaderStates.BloomSize
-        bloom.Threshold = 0.75 -- Мягкий порог свечения
-        bloom.Parent = Lighting
-    else
-        local bloom = Lighting:FindFirstChild("PulseHub_Bloom")
-        if bloom then bloom:Destroy() end
-    end
-end
-
-local function updateAtmosphere()
-    if shaderStates.Master and shaderStates.Atmosphere then
-        if not Lighting:FindFirstChild("PulseHub_Atmosphere") then
-            local atm = Instance.new("Atmosphere")
-            atm.Name = "PulseHub_Atmosphere"
-            atm.Parent = Lighting
-        end
-    else
-        local atm = Lighting:FindFirstChild("PulseHub_Atmosphere")
-        if atm then atm:Destroy() end
-    end
-end
-
-local function updateSunRays()
-    if shaderStates.Master and shaderStates.SunRays then
-        if not Lighting:FindFirstChild("PulseHub_SunRays") then
-            local sr = Instance.new("SunRaysEffect")
-            sr.Name = "PulseHub_SunRays"
-            sr.Parent = Lighting
-        end
-    else
-        local sr = Lighting:FindFirstChild("PulseHub_SunRays")
-        if sr then sr:Destroy() end
-    end
-end
-
-local function updateBlur()
-    if shaderStates.Master and shaderStates.Blur then
-        local blur = Lighting:FindFirstChild("PulseHub_Blur") or Instance.new("BlurEffect")
-        blur.Name = "PulseHub_Blur"
-        blur.Size = (shaderStates.BlurStrength / 100) * 56
-        blur.Parent = Lighting
-    else
-        local blur = Lighting:FindFirstChild("PulseHub_Blur")
-        if blur then blur:Destroy() end
-    end
-end
-
--- Жесткий цикл форсирования настроек каждую миллисекунду
+-- Потокобезопасный цикл принудительного форсирования параметров (защита от сбросов MM2)
 local lightingLoopConnection = nil
 local function startLightingEnforcer()
     if lightingLoopConnection then lightingLoopConnection:Disconnect() end
     lightingLoopConnection = RunService.Heartbeat:Connect(function()
-        if not shaderStates.Master then return end
+        if not shaderStates.Master then 
+            restoreOriginalEnvironment()
+            local masterCC = Lighting:FindFirstChild("PulseHub_MasterCC") if masterCC then masterCC:Destroy() end
+            local atm = Lighting:FindFirstChild("PulseHub_Atmosphere") if atm then atm:Destroy() end
+            local sr = Lighting:FindFirstChild("PulseHub_SunRays") if sr then sr:Destroy() end
+            local bloom = Lighting:FindFirstChild("PulseHub_Bloom") if bloom then bloom:Destroy() end
+            local blur = Lighting:FindFirstChild("PulseHub_Blur") if blur then blur:Destroy() end
+            return 
+        end
         
+        -- Вычищаем сторонние дубликаты инстансов, чтобы избежать наслаивания багов
         for _, child in ipairs(Lighting:GetChildren()) do
             if child:IsA("Atmosphere") and child.Name ~= "PulseHub_Atmosphere" then child:Destroy() end
             if child:IsA("SunRaysEffect") and child.Name ~= "PulseHub_SunRays" then child:Destroy() end
@@ -1565,153 +1522,179 @@ local function startLightingEnforcer()
             if child:IsA("BlurEffect") and child.Name ~= "PulseHub_Blur" then child:Destroy() end
         end
 
-        -- Автоматическое создание ColorCorrection для мягких пресетов
-        local masterCC = Lighting:FindFirstChild("PulseHub_MasterCC") or Instance.new("ColorCorrectionEffect")
-        if masterCC.Name ~= "PulseHub_MasterCC" then
+        local masterCC = Lighting:FindFirstChild("PulseHub_MasterCC")
+        if not masterCC then
+            masterCC = Instance.new("ColorCorrectionEffect")
             masterCC.Name = "PulseHub_MasterCC"
             masterCC.Parent = Lighting
         end
 
-        -- Включаем влияние окружения, чтобы Атмосфера и Лучи работали на 100%
-        Lighting.EnvironmentDiffuseScale = 1
-        Lighting.EnvironmentSpecularScale = 1
-
         if shaderStates.Mode == "Day" then
             Lighting.TimeOfDay = "11:00:00"
-            Lighting.Brightness = 3.5
-            Lighting.OutdoorAmbient = Color3.fromRGB(130, 150, 175)
-            Lighting.Ambient = Color3.fromRGB(70, 70, 85)
+            Lighting.Brightness = 3.0
+            Lighting.OutdoorAmbient = Color3.fromRGB(140, 155, 175)
+            Lighting.Ambient = Color3.fromRGB(80, 80, 90)
             Lighting.GeographicLatitude = 45
             Lighting.ExposureCompensation = 0.2
-            masterCC.Contrast = 0.1
-            masterCC.Saturation = 0.3
-            masterCC.TintColor = Color3.fromRGB(255, 250, 245)
+            masterCC.Contrast = 0.05
+            masterCC.Saturation = 0.2
+            masterCC.TintColor = Color3.fromRGB(255, 252, 248)
         elseif shaderStates.Mode == "Sunset" then
-            Lighting.TimeOfDay = "17:40:00" -- Более мягкий закатный час
-            Lighting.Brightness = 3.2 
-            Lighting.OutdoorAmbient = Color3.fromRGB(160, 120, 125) -- Высветлили окружение
-            Lighting.Ambient = Color3.fromRGB(105, 90, 100) -- Ослабили темные тени
+            Lighting.TimeOfDay = "17:45:00"
+            Lighting.Brightness = 2.8
+            Lighting.OutdoorAmbient = Color3.fromRGB(175, 125, 115) -- Убрали едкий оранжевый, добавили пастели
+            Lighting.Ambient = Color3.fromRGB(120, 95, 95)         -- Высветлили тени для мягкости
             Lighting.GeographicLatitude = 45
-            Lighting.ExposureCompensation = 0.5 -- Смягчающее высветление сцены
-            masterCC.Contrast = 0.0 -- Убрали контраст для максимальной мягкости
-            masterCC.Saturation = 0.35 
-            masterCC.TintColor = Color3.fromRGB(255, 225, 205) -- Пастельно-персиковый оттенок
+            Lighting.ExposureCompensation = 0.45
+            masterCC.Contrast = 0.05                                -- Понизили контраст
+            masterCC.Saturation = 0.25                              -- Смягчили ядовитость цвета
+            masterCC.TintColor = Color3.fromRGB(255, 235, 215)      -- Приятный персиковый оттенок
         elseif shaderStates.Mode == "Midnight" then
             Lighting.TimeOfDay = "00:00:00"
-            Lighting.Brightness = 3.0 -- Яркий, красивый лунный свет
-            Lighting.OutdoorAmbient = Color3.fromRGB(65, 75, 100) -- Светлая глубокая ночь
-            Lighting.Ambient = Color3.fromRGB(50, 55, 75) -- Мягкие, видимые тени вместо кромешной тьмы
+            Lighting.Brightness = 2.2                               -- Выразительный свет луны
+            Lighting.OutdoorAmbient = Color3.fromRGB(75, 85, 110)   -- Сделали ночь светлой и мягкой
+            Lighting.Ambient = Color3.fromRGB(60, 65, 80)           -- Полностью убрали слепые черные тени
             Lighting.GeographicLatitude = 45
-            Lighting.ExposureCompensation = 0.45 -- Отличная общая видимость без слепоты
-            masterCC.Contrast = -0.05 -- Смягчили переходы, полностью убрав черноту
-            masterCC.Saturation = 0.15
-            masterCC.TintColor = Color3.fromRGB(215, 225, 255) -- Чистое лунное свечение
+            Lighting.ExposureCompensation = 0.35                    -- Безопасное высветление
+            masterCC.Contrast = 0.02                                -- Разгладили перепады света
+            masterCC.Saturation = 0.05
+            masterCC.TintColor = Color3.fromRGB(230, 235, 255)      -- Чистый серебряный фильтр
         elseif shaderStates.Mode == "None" then
             restoreOriginalEnvironment()
             if masterCC then masterCC:Destroy() end
         end
         
+        -- Коррекция Атмосферы (Убрали ломающий Haze, добавили мягкую фильтрацию цвета)
         local atm = Lighting:FindFirstChild("PulseHub_Atmosphere")
-        if atm and shaderStates.Atmosphere then
+        if shaderStates.Atmosphere then
+            if not atm then
+                atm = Instance.new("Atmosphere")
+                atm.Name = "PulseHub_Atmosphere"
+                atm.Parent = Lighting
+            end
             atm.Density = shaderStates.AtmosphereDensity / 100
+            atm.Haze = 0.4   -- Поставили комфортное значение вместо слепящих 3.0
+            atm.Glare = 0.15 -- Сбалансировали блики
+            
             if shaderStates.Mode == "Day" then
-                atm.Color = Color3.fromRGB(185, 215, 255)
-                atm.Decay = Color3.fromRGB(250, 230, 210)
-                atm.Haze = 1.5
-                atm.Glare = 1.2
+                atm.Color = Color3.fromRGB(190, 215, 245)
+                atm.Decay = Color3.fromRGB(240, 240, 240)
             elseif shaderStates.Mode == "Sunset" then
-                atm.Color = Color3.fromRGB(255, 140, 100)
-                atm.Decay = Color3.fromRGB(200, 80, 180)
-                atm.Haze = 1.4 -- Снизили дымку ради мягкости и четкости картинки
-                atm.Glare = 1.5
+                atm.Color = Color3.fromRGB(240, 150, 120)
+                atm.Decay = Color3.fromRGB(200, 130, 150)
             elseif shaderStates.Mode == "Midnight" then
-                atm.Color = Color3.fromRGB(20, 30, 50)
-                atm.Decay = Color3.fromRGB(15, 20, 35)
-                atm.Haze = 1.0 
-                atm.Glare = 0.5
+                atm.Color = Color3.fromRGB(30, 40, 65)
+                atm.Decay = Color3.fromRGB(20, 25, 45)
             else
                 atm.Color = Color3.fromRGB(200, 200, 200)
                 atm.Decay = Color3.fromRGB(255, 255, 255)
-                atm.Haze = 1.0
-                atm.Glare = 0.0
             end
+        else
+            if atm then atm:Destroy() end
         end
 
+        -- Коррекция Солнечных лучей
         local sr = Lighting:FindFirstChild("PulseHub_SunRays")
-        if sr and shaderStates.SunRays then
+        if shaderStates.SunRays then
+            if not sr then
+                sr = Instance.new("SunRaysEffect")
+                sr.Name = "PulseHub_SunRays"
+                sr.Parent = Lighting
+            end
             sr.Intensity = shaderStates.SunRaysIntensity / 100
-            sr.Spread = shaderStates.Mode == "Midnight" and 0.6 or 0.85 -- Повысили разброс лучей
-            sr.Threshold = 0.05 -- Снизили порог, чтобы лучи гарантированно работали везде
+            sr.Spread = 0.75
+            sr.Threshold = 0.1 -- Аккуратное скольжение лучей сквозь текстуры
+        else
+            if sr then sr:Destroy() end
+        end
+
+        -- Коррекция Блума (Сделан бархатным и не слепящим)
+        local bloom = Lighting:FindFirstChild("PulseHub_Bloom")
+        if shaderStates.Bloom then
+            if not bloom then
+                bloom = Instance.new("BloomEffect")
+                bloom.Name = "PulseHub_Bloom"
+                bloom.Parent = Lighting
+            end
+            bloom.Intensity = shaderStates.BloomIntensity
+            bloom.Size = shaderStates.BloomSize
+            bloom.Threshold = 0.95 -- Ограничивает свечение только на действительно ярких элементах
+        else
+            if bloom then bloom:Destroy() end
+        end
+
+        -- Коррекция Размытия
+        local blur = Lighting:FindFirstChild("PulseHub_Blur")
+        if shaderStates.Blur then
+            if not blur then
+                blur = Instance.new("BlurEffect")
+                blur.Name = "PulseHub_Blur"
+                blur.Parent = Lighting
+            end
+            blur.Size = (shaderStates.BlurStrength / 100) * 56
+        else
+            if blur then blur:Destroy() end
         end
     end)
 end
 
-----------------------------------------------------
--- СОЗДАНИЕ И ПРИВЯЗКА КНОПОК И ПОЛЗУНКОВ В ИНТЕРФЕЙС
-----------------------------------------------------
-local shaderPage = VisualSections["shader pack"]
+-- Создаем и регистрируем UI элементы управления во вкладке шейдеров
+local targetPage = VisualSections["shader pack"]
 
-Library:CreateToggle(shaderPage, "Enable", shaderStates.Master, function(state)
+Library:CreateToggle(targetPage, "Enable", false, function(state)
     shaderStates.Master = state
     if state then
         startLightingEnforcer()
     else
-        if lightingLoopConnection then
-            lightingLoopConnection:Disconnect()
-            lightingLoopConnection = nil
-        end
+        if lightingLoopConnection then lightingLoopConnection:Disconnect() lightingLoopConnection = nil end
         restoreOriginalEnvironment()
-        local cc = Lighting:FindFirstChild("PulseHub_MasterCC") if cc then cc:Destroy() end
+        local masterCC = Lighting:FindFirstChild("PulseHub_MasterCC") if masterCC then masterCC:Destroy() end
+        local atm = Lighting:FindFirstChild("PulseHub_Atmosphere") if atm then atm:Destroy() end
+        local sr = Lighting:FindFirstChild("PulseHub_SunRays") if sr then sr:Destroy() end
+        local bloom = Lighting:FindFirstChild("PulseHub_Bloom") if bloom then bloom:Destroy() end
+        local blur = Lighting:FindFirstChild("PulseHub_Blur") if blur then blur:Destroy() end
     end
-    updateBloom()
-    updateAtmosphere()
-    updateSunRays()
-    updateBlur()
 end)
 
-Library:CreateDropdown(shaderPage, "Mode", {"None", "Day", "Sunset", "Midnight"}, shaderStates.Mode, function(selected)
-    shaderStates.Mode = selected
+Library:CreateDropdown(targetPage, "Mode", {"None", "Day", "Sunset", "Midnight"}, "None", function(mode)
+    shaderStates.Mode = mode
 end)
 
-Library:CreateToggle(shaderPage, "Bloom", shaderStates.Bloom, function(state)
+Library:CreateToggle(targetPage, "Bloom", false, function(state)
     shaderStates.Bloom = state
-    updateBloom()
 end)
 
-Library:CreateSlider(shaderPage, "Intensity", 0, 500, shaderStates.BloomIntensity * 100, function(value)
-    shaderStates.BloomIntensity = value / 100
-    updateBloom()
+Library:CreateSlider(targetPage, "Intensity", 0, 5, 1, function(val)
+    shaderStates.BloomIntensity = val
 end)
 
-Library:CreateSlider(shaderPage, "Size", 0, 56, shaderStates.BloomSize, function(value)
-    shaderStates.BloomSize = value
-    updateBloom()
+Library:CreateSlider(targetPage, "Size", 1, 56, 12, function(val)
+    shaderStates.BloomSize = val
 end)
 
-Library:CreateToggle(shaderPage, "Atmosphere", shaderStates.Atmosphere, function(state)
+Library:CreateToggle(targetPage, "Atmosphere", false, function(state)
     shaderStates.Atmosphere = state
-    updateAtmosphere()
 end)
 
-Library:CreateSlider(shaderPage, "Density", 0, 100, shaderStates.AtmosphereDensity, function(value)
-    shaderStates.AtmosphereDensity = value
+Library:CreateSlider(targetPage, "Density", 0, 100, 30, function(val)
+    shaderStates.AtmosphereDensity = val
 end)
 
-Library:CreateToggle(shaderPage, "Sun Rays", shaderStates.SunRays, function(state)
+Library:CreateToggle(targetPage, "Sun Rays", false, function(state)
     shaderStates.SunRays = state
-    updateSunRays()
 end)
 
-Library:CreateSlider(shaderPage, "Intensity", 0, 100, shaderStates.SunRaysIntensity, function(value)
-    shaderStates.SunRaysIntensity = value
+Library:CreateSlider(targetPage, "Intensity", 0, 100, 35, function(val)
+    shaderStates.SunRaysIntensity = val
 end)
 
-Library:CreateToggle(shaderPage, "Blur", shaderStates.Blur, function(state)
+Library:CreateToggle(targetPage, "Blur", false, function(state)
     shaderStates.Blur = state
-    updateBlur()
 end)
 
-Library:CreateSlider(shaderPage, "Strength", 0, 100, shaderStates.BlurStrength, function(value)
-    shaderStates.BlurStrength = value
-    updateBlur()
+Library:CreateSlider(targetPage, "Strength", 0, 100, 15, function(val)
+    shaderStates.BlurStrength = val
 end)
+
+-- Инициализируем стандартную тему оформления
+Library:UpdateTheme("Deep Ocean")
