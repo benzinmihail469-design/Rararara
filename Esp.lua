@@ -1443,28 +1443,76 @@ local VisualSections = Library:CreateSubTabs(VisualPage, {
 })
 
 -- ============================================================================
--- МГНОВЕННОЕ ОБНАРУЖЕНИЕ РОЛЕЙ ДО НАЧАЛА ВЫДАЧИ ОРУЖИЯ (MM2 МЕМОРИ-ХАК)
+-- МГНОВЕННОЕ ОБНАРУЖЕНИЕ РОЛЕЙ ДО НАЧАЛА ВЫДАЧИ ОРУЖИЯ (MM2 МЕМОРИ-ХАК FIXED)
 -- ============================================================================
 local espActive = false
 local activePlayersEsp = {}
-local PreRevealedRoles = {} -- Локальная база ролей, перехваченная до спавна ножей
+local PreRevealedRoles = {} -- Локальная база ролей
 
--- Сброс кэша ролей при переходе в новый раунд (когда спавнится карта катки)
+local function cleanESP()
+    for player, assets in pairs(activePlayersEsp) do
+        if assets.Highlight then pcall(function() assets.Highlight:Destroy() end) end
+        if assets.Billboard then pcall(function() assets.Billboard:Destroy() end) end
+    end
+    table.clear(activePlayersEsp)
+end
+
+-- Сброс кэша ролей при переходе в новый раунд
 workspace.ChildAdded:Connect(function(child)
-    if child.Name == "Map" or child:FindFirstChild("Spawns") or child.Name == "Normal" then
+    if child.Name == "Map" or child.Name == "Normal" or child.Name == "Hardcore" or child.Name == "Assassin" or child:FindFirstChild("Spawns") then
         table.clear(PreRevealedRoles)
+        cleanESP()
     end
 end)
+
+-- Функция перевода строк-имен или объектов в Player инстансы
+local function processRoleTable(data)
+    if type(data) ~= "table" then return end
+    
+    local function resolvePlayer(val)
+        if typeof(val) == "Instance" and val:IsA("Player") then
+            return val
+        elseif type(val) == "string" then
+            return Players:FindFirstChild(val)
+        end
+        return nil
+    end
+
+    if data.Murderer then
+        local p = resolvePlayer(data.Murderer)
+        if p then PreRevealedRoles[p] = "Murderer" end
+        if type(data.Murderer) == "table" then
+            for _, v in pairs(data.Murderer) do
+                local pl = resolvePlayer(v)
+                if pl then PreRevealedRoles[pl] = "Murderer" end
+            end
+        end
+    end
+
+    if data.Sheriff then
+        local p = resolvePlayer(data.Sheriff)
+        if p then PreRevealedRoles[p] = "Sheriff" end
+        if type(data.Sheriff) == "table" then
+            for _, v in pairs(data.Sheriff) do
+                local pl = resolvePlayer(v)
+                if pl then PreRevealedRoles[pl] = "Sheriff" end
+            end
+        end
+    end
+    
+    if data.Murder then
+        local p = resolvePlayer(data.Murder)
+        if p then PreRevealedRoles[p] = "Murderer" end
+    end
+end
 
 local function getPlayerRole(player)
     if not player then return "Innocent" end
     
-    -- Шаг 1: Проверяем перехваченное мгновенное значение из кэша памяти игры
     if PreRevealedRoles[player] then
         return PreRevealedRoles[player]
     end
     
-    -- Шаг 2: Проверяем по инвентарю (когда 10 секунд прошли и оружие упало в Backpack)
     local backpack = player:FindFirstChild("Backpack")
     local char = player.Character
     
@@ -1478,48 +1526,38 @@ local function getPlayerRole(player)
     return "Innocent"
 end
 
-local function cleanESP()
-    for player, assets in pairs(activePlayersEsp) do
-        if assets.Highlight then pcall(function() assets.Highlight:Destroy() end) end
-        if assets.Billboard then pcall(function() assets.Billboard:Destroy() end) end
-    end
-    table.clear(activePlayersEsp)
-end
-
--- ФОНОВЫЙ ПОТОК: Вытаскивает скрытые таблицы ролей из Garbage Collector эксплоита
+-- ФОНОВЫЙ ПОТОК: Вытаскивает скрытые переменные модулей и памяти
 task.spawn(function()
     while true do
         if espActive then
             pcall(function()
-                -- Сканируем среду Lua на предмет игровых модулей с ролями
-                if type(getgc) == "function" then
-                    for _, data in pairs(getgc(true)) do
-                        if type(data) == "table" then
-                            -- Ищем таблицы со специфическими ключами Murderer / Sheriff
-                            if data.Murderer or data.Sheriff or data.Murder then
-                                -- Анализируем Мардера
-                                if typeof(data.Murderer) == "Instance" and data.Murderer:IsA("Player") then
-                                    PreRevealedRoles[data.Murderer] = "Murderer"
-                                elseif type(data.Murderer) == "table" then
-                                    for _, p in pairs(data.Murderer) do
-                                        if typeof(p) == "Instance" and p:IsA("Player") then PreRevealedRoles[p] = "Murderer" end
-                                    end
-                                end
-                                -- Анализируем Шерифа
-                                if typeof(data.Sheriff) == "Instance" and data.Sheriff:IsA("Player") then
-                                    PreRevealedRoles[data.Sheriff] = "Sheriff"
-                                elseif type(data.Sheriff) == "table" then
-                                    for _, p in pairs(data.Sheriff) do
-                                        if typeof(p) == "Instance" and p:IsA("Player") then PreRevealedRoles[p] = "Sheriff" end
+                -- Метод 1: Сканирование Апвалют активных скриптов (Самый точный способ без багов памяти)
+                if type(getgc) == "function" and debug and type(debug.getupvalues) == "function" then
+                    for _, v in pairs(getgc()) do
+                        if type(v) == "function" then
+                            local info = debug.getinfo(v)
+                            if info.source and (info.source:match("MainGame") or info.source:match("Client") or info.source:match("Player")) then
+                                for _, up in pairs(debug.getupvalues(v)) do
+                                    if type(up) == "table" and (up.Murderer or up.Sheriff or up.Murder) then
+                                        processRoleTable(up)
                                     end
                                 end
                             end
                         end
                     end
                 end
+                
+                -- Метод 2: Резервное GC сканирование
+                if type(getgc) == "function" then
+                    for _, data in pairs(getgc(true)) do
+                        if type(data) == "table" and (data.Murderer or data.Sheriff or data.Murder) then
+                            processRoleTable(data)
+                        end
+                    end
+                end
             end)
             
-            -- Резервная проверка на случай кастомных версий MM2 (ранняя выгрузка управляющих скриптов)
+            -- Метод 3: Детект по скриптам в инвентаре (если оружие скрыто в рюкзаке)
             pcall(function()
                 for _, p in ipairs(Players:GetPlayers()) do
                     if p ~= Players.LocalPlayer and not PreRevealedRoles[p] then
@@ -1537,7 +1575,7 @@ task.spawn(function()
         else
             table.clear(PreRevealedRoles)
         end
-        task.wait(0.3) -- Сканируем память 3 раза в секунду, чтобы сразу поймать роли
+        task.wait(0.2)
     end
 end)
 
@@ -1574,7 +1612,7 @@ task.spawn(function()
                             local textLabel = Instance.new("TextLabel", billboard)
                             textLabel.Size = UDim2.new(1, 0, 1, 0)
                             textLabel.BackgroundTransparency = 1
-                            textLabel.Font = Enum.Font.GothamBold
+                            textLabel.Font = Library.CurrentFont
                             textLabel.TextSize = 12
                             textLabel.TextStrokeTransparency = 0.2
                             textLabel.TextStrokeColor3 = Color3.fromRGB(0, 0, 0)
@@ -1588,7 +1626,6 @@ task.spawn(function()
                             activePlayersEsp[player] = assets
                         end
                         
-                        -- Берём роль из нашего гибридного геттера
                         local role = getPlayerRole(player)
                         local color = Color3.fromRGB(46, 204, 113) -- Innocent
                         local roleName = "Innocent"
@@ -1607,6 +1644,7 @@ task.spawn(function()
                         end
                         
                         if assets.TextLabel and assets.TextLabel.Parent then
+                            assets.TextLabel.Font = Library.CurrentFont
                             assets.TextLabel.Text = string.format("%s\n[%s]", player.DisplayName or player.Name, roleName)
                             assets.TextLabel.TextColor3 = color
                         end
