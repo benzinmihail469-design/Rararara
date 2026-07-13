@@ -1441,7 +1441,7 @@ Library:CreateToggle(AutoPage, "KillAura", false, function(state) end)
 Library:CreateToggle(AutoBuyPage, "SilentAim", false, function(state) end)
 
 -- ============================================================================
--- СУБ-ВКЛАДКА ESP С ФУНКЦИОНАЛОМ ESP ФРУКТОВ ДЛЯ GROW A GARDEN 2
+-- СУБ-ВКЛАДКА ESP С ФУНКЦИОНАЛОМ ESP ФРУКТОВ ДЛЯ GROW A GARDEN 2 [ИСПРАВЛЕНО]
 -- ============================================================================
 local VisualSections = Library:CreateSubTabs(VisualPage, {
     {Name = "Esp", Icon = "80768064990053", Color = Color3.fromRGB(46, 204, 113)}
@@ -1451,37 +1451,56 @@ local ESP_Enabled = false
 local fruitHighlights = {}
 local targetFolder = workspace 
 
--- Проверка, является ли спавнящийся в Workspace объект фруктом/растением/урожаем
+-- Проверка, является ли объект исключительно выросшим фруктом/урожаем
 local function isFruit(child)
     if not (child:IsA("Model") or child:IsA("BasePart")) then return false end
     if child.Name == "FruitHighlightESP" or child.Name == "FruitLabelESP" then return false end
     if child:FindFirstChild("FruitHighlightESP") or child:FindFirstChild("FruitLabelESP") then return false end
     
     local name = child.Name:lower()
+    
+    -- Чёрный список (исключаем семена, магазины, грядки, пустые горшки и технические зоны)
+    local blacklist = {
+        "shop", "store", "seed", "bed", "plot", "dirt", "planter", "pot", "griadka", "soil", 
+        "zone", "buy", "sell", "merchant", "npc", "stage", "sprout", "stem", "leaf", "leaves",
+        "water", "fertilizer", "tool", "bag", "chest", "gate", "fence", "sign", "teleport",
+        "семена", "грядка", "горшок", "магазин", "покупка"
+    }
+    
+    for _, badWord in ipairs(blacklist) do
+        if name:find(badWord) then
+            return false
+        end
+    end
+    
+    -- Белый список (только настоящие готовые фрукты, ягоды и овощи)
     local fruitNames = {
         "fruit", "apple", "banana", "berry", "orange", "lemon", "strawberry", 
         "cherry", "grape", "dragon", "pineapple", "watermelon", "peach", 
         "pear", "plum", "coconut", "melon", "tomato", "carrot", "potato",
-        "pumpkin", "cabbage", "wheat", "corn", "seed", "plant", "flower", "gold"
+        "pumpkin", "cabbage", "wheat", "corn", "gold", "фрукт", "яблоко", "банан"
     }
     
+    local isMatch = false
     for _, fName in ipairs(fruitNames) do
         if name:find(fName) then
-            return true
+            isMatch = true
+            break
         end
     end
-    return child:GetAttribute("IsFruit") == true
+    
+    return isMatch or child:GetAttribute("IsFruit") == true
 end
 
 -- Наложение обводки и текста
 local function applyFruitESP(fruit)
-    -- Проверка на вложенность: избегаем повторной подсветки частей внутри модели-фрукта
+    -- Избегаем повторной подсветки частей внутри модели-фрукта
     local parent = fruit.Parent
     if parent and isFruit(parent) then
         return
     end
 
-    if fruitHighlights[fruit] then return end -- Уже подсвечено
+    if fruitHighlights[fruit] then return end
     
     -- Силуэт
     local highlight = Instance.new("Highlight")
@@ -1498,6 +1517,7 @@ local function applyFruitESP(fruit)
     billboard.Name = "FruitLabelESP"
     billboard.Size = UDim2.new(0, 100, 0, 30)
     billboard.AlwaysOnTop = true
+    billboard.DynamicPixelsPerStud = true
     billboard.StudsOffset = Vector3.new(0, 2, 0)
     billboard.Adornee = fruit
     
@@ -1530,20 +1550,17 @@ local descRemovedConnection = nil
 local function toggleFruitESP(state)
     ESP_Enabled = state
     if ESP_Enabled then
-        -- Глубокое сканирование всего Workspace при включении
         for _, desc in ipairs(targetFolder:GetDescendants()) do
             if isFruit(desc) then
                 applyFruitESP(desc)
             end
         end
-        -- Мониторинг появления новых фруктов по всему дереву объектов Workspace
         spawnConnection = targetFolder.DescendantAdded:Connect(function(desc)
             task.wait(0.1)
             if ESP_Enabled and isFruit(desc) then
                 applyFruitESP(desc)
             end
         end)
-        -- Удаление ESP при уничтожении объектов фруктов из Workspace
         descRemovedConnection = targetFolder.DescendantRemoving:Connect(function(desc)
             if fruitHighlights[desc] then
                 removeFruitESP(desc)
@@ -1564,7 +1581,7 @@ local function toggleFruitESP(state)
     end
 end
 
--- Создаем переключатель в суб-вкладке ESP
+-- Переключатель в суб-вкладке ESP
 Library:CreateToggle(VisualSections["Esp"], "FruitEsp", false, function(state)
     toggleFruitESP(state)
 end)
