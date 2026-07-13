@@ -582,7 +582,7 @@ local LocaleObjects = {}
 
 local Localization = {
     ["English"] = {
-        ["Main"] = "Main", ["Teleport"] = "Teleport", ["Murder"] = "Murder", ["Sheriff"] = "Sheriff",
+        ["Main"] = "Main", ["Teleport"] = "Teleport", ["Auto"] = "Auto", ["Auto buy"] = "Auto buy",
         ["Players"] = "Players", ["Visual"] = "Visual", ["Settings"] = "Settings", ["UI"] = "UI",
         ["Theme"] = "Theme", ["AutoFarmCoins"] = "Auto-Farm Coins",
         ["UISize"] = "UI Size", ["UITransparency"] = "UI Transparency", ["MenuFont"] = "Menu Font",
@@ -594,7 +594,7 @@ local Localization = {
         ["KillAura"] = "Kill Aura", ["SilentAim"] = "Silent Aim"
     },
     ["Русский"] = {
-        ["Main"] = "Главная", ["Teleport"] = "Телепорт", ["Murder"] = "Убийца", ["Sheriff"] = "Шериф",
+        ["Main"] = "Главная", ["Teleport"] = "Телепорт", ["Auto"] = "Авто", ["Auto buy"] = "Авто-покупка",
         ["Players"] = "Игроки", ["Visual"] = "Визуалы", ["Settings"] = "Настройки", ["UI"] = "Интерфейс",
         ["Theme"] = "Тема", ["AutoFarmCoins"] = "Авто-Фарм Монет",
         ["UISize"] = "Размер интерфейса", ["UITransparency"] = "Прозрачность меню", ["MenuFont"] = "Шрифт меню",
@@ -1397,8 +1397,8 @@ end
 
 local MainPage = Library:CreatePage("Main", "103980564128710", 1)
 local TeleportPage = Library:CreatePage("Teleport", "94373592263020", 2)
-local MurderPage = Library:CreatePage("Murder", "85278865249050", 3)
-local SheriffPage = Library:CreatePage("Sheriff", "77487634679354", 4)
+local AutoPage = Library:CreatePage("Auto", "118241174836692", 3)
+local AutoBuyPage = Library:CreatePage("Auto buy", "84252806798323", 4)
 local PlayersPage = Library:CreatePage("Players", "99904215381150", 5)
 local VisualPage = Library:CreatePage("Visual", "78910169210318", 6)
 local SettingsPage = Library:CreatePage("Settings", "117996761927034", 99)
@@ -1437,11 +1437,11 @@ Library:CreateButton(TeleportPage, "TeleportToLobby", function()
     end)
 end)
 
-Library:CreateToggle(MurderPage, "KillAura", false, function(state) end)
-Library:CreateToggle(SheriffPage, "SilentAim", false, function(state) end)
+Library:CreateToggle(AutoPage, "KillAura", false, function(state) end)
+Library:CreateToggle(AutoBuyPage, "SilentAim", false, function(state) end)
 
 -- ============================================================================
--- СУБ-ВКЛАДКА ESP С ФУНКЦИОНАЛОМ ESP ФРУКТОВ
+-- СУБ-ВКЛАДКА ESP С ФУНКЦИОНАЛОМ ESP ФРУКТОВ ДЛЯ GROW A GARDEN 2
 -- ============================================================================
 local VisualSections = Library:CreateSubTabs(VisualPage, {
     {Name = "Esp", Icon = "80768064990053", Color = Color3.fromRGB(46, 204, 113)}
@@ -1451,20 +1451,36 @@ local ESP_Enabled = false
 local fruitHighlights = {}
 local targetFolder = workspace 
 
--- Проверка, является ли спавнящийся в Workspace объект фруктом
+-- Проверка, является ли спавнящийся в Workspace объект фруктом/растением/урожаем
 local function isFruit(child)
+    if not (child:IsA("Model") or child:IsA("BasePart")) then return false end
+    if child.Name == "FruitHighlightESP" or child.Name == "FruitLabelESP" then return false end
+    if child:FindFirstChild("FruitHighlightESP") or child:FindFirstChild("FruitLabelESP") then return false end
+    
     local name = child.Name:lower()
-    return name:find("fruit") 
-        or name:find("apple") 
-        or name:find("banana") 
-        or name:find("berry") 
-        or name:find("orange")
-        or child:GetAttribute("IsFruit") == true
+    local fruitNames = {
+        "fruit", "apple", "banana", "berry", "orange", "lemon", "strawberry", 
+        "cherry", "grape", "dragon", "pineapple", "watermelon", "peach", 
+        "pear", "plum", "coconut", "melon", "tomato", "carrot", "potato",
+        "pumpkin", "cabbage", "wheat", "corn", "seed", "plant", "flower", "gold"
+    }
+    
+    for _, fName in ipairs(fruitNames) do
+        if name:find(fName) then
+            return true
+        end
+    end
+    return child:GetAttribute("IsFruit") == true
 end
 
 -- Наложение обводки и текста
 local function applyFruitESP(fruit)
-    if not fruit:IsA("Model") and not fruit:IsA("BasePart") then return end
+    -- Проверка на вложенность: избегаем повторной подсветки частей внутри модели-фрукта
+    local parent = fruit.Parent
+    if parent and isFruit(parent) then
+        return
+    end
+
     if fruitHighlights[fruit] then return end -- Уже подсвечено
     
     -- Силуэт
@@ -1509,26 +1525,38 @@ local function removeFruitESP(fruit)
 end
 
 local spawnConnection = nil
+local descRemovedConnection = nil
+
 local function toggleFruitESP(state)
     ESP_Enabled = state
     if ESP_Enabled then
-        -- Подсвечиваем текущие фрукты
-        for _, child in ipairs(targetFolder:GetChildren()) do
-            if isFruit(child) then
-                applyFruitESP(child)
+        -- Глубокое сканирование всего Workspace при включении
+        for _, desc in ipairs(targetFolder:GetDescendants()) do
+            if isFruit(desc) then
+                applyFruitESP(desc)
             end
         end
-        -- Следим за появлением новых фруктов
-        spawnConnection = targetFolder.ChildAdded:Connect(function(child)
+        -- Мониторинг появления новых фруктов по всему дереву объектов Workspace
+        spawnConnection = targetFolder.DescendantAdded:Connect(function(desc)
             task.wait(0.1)
-            if isFruit(child) then
-                applyFruitESP(child)
+            if ESP_Enabled and isFruit(desc) then
+                applyFruitESP(desc)
+            end
+        end)
+        -- Удаление ESP при уничтожении объектов фруктов из Workspace
+        descRemovedConnection = targetFolder.DescendantRemoving:Connect(function(desc)
+            if fruitHighlights[desc] then
+                removeFruitESP(desc)
             end
         end)
     else
         if spawnConnection then 
             spawnConnection:Disconnect() 
             spawnConnection = nil
+        end
+        if descRemovedConnection then
+            descRemovedConnection:Disconnect()
+            descRemovedConnection = nil
         end
         for fruit, _ in pairs(fruitHighlights) do
             removeFruitESP(fruit)
