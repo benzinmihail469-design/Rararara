@@ -1437,8 +1437,15 @@ Library:CreateButton(TeleportPage, "TeleportToLobby", function()
     end)
 end)
 
-Library:CreateToggle(MurderPage, "KillAura", false, function(state) end)
-Library:CreateToggle(SheriffPage, "SilentAim", false, function(state) end)
+local killAuraActive = false
+Library:CreateToggle(MurderPage, "KillAura", false, function(state) 
+    killAuraActive = state
+end)
+
+local silentAimActive = false
+Library:CreateToggle(SheriffPage, "SilentAim", false, function(state) 
+    silentAimActive = state
+end)
 
 -- ============================================================================
 -- УЛЬТРА СКОРОСТНАЯ СИСТЕМА ESP И ДЕТЕКТА РОЛЕЙ (БЕЗ ЗАДЕРЖКИ В 10 СЕКУНД)
@@ -1660,3 +1667,90 @@ if allTabs["Main"] and allTabButtons["Main"] then
 end
 
 Library:UpdateTheme("Deep Ocean")
+
+-- ============================================================================
+-- РАБОЧАЯ ЛОГИКА ФУНКЦИЙ (АВТОФАРМ, КИЛЛАУРА, САЙЛЕНТ АИМ)
+-- ============================================================================
+
+-- Цикл Авто-Фарма монет (Телепортирует к монетам на карте с безопасной задержкой)
+task.spawn(function()
+    while true do
+        if autoFarmActive then
+            pcall(function()
+                local character = Players.LocalPlayer.Character
+                local root = character and character:FindFirstChild("HumanoidRootPart")
+                if root then
+                    local map = workspace:FindFirstChild("Map") or workspace:FindFirstChild("Normal") or workspace:FindFirstChild("InGame")
+                    local coinContainer = map and (map:FindFirstChild("CoinContainer") or map:FindFirstChild("Coins"))
+                    
+                    if coinContainer then
+                        for _, coin in ipairs(coinContainer:GetChildren()) do
+                            if autoFarmActive and (coin:IsA("BasePart") or coin:FindFirstChildOfClass("BasePart")) then
+                                local target = coin:IsA("BasePart") and coin or coin:FindFirstChildOfClass("BasePart")
+                                if target and target.Transparency ~= 1 then
+                                    root.CFrame = target.CFrame
+                                    task.wait(0.3) -- Небольшая задержка от детекта
+                                end
+                            end
+                        end
+                    end
+                end
+            end)
+        end
+        task.wait(0.1)
+    end
+end)
+
+-- Цикл Килл Ауры (Автоматически достает нож и бьет игроков поблизости, если ты Мардер)
+task.spawn(function()
+    while true do
+        if killAuraActive then
+            pcall(function()
+                local character = Players.LocalPlayer.Character
+                local root = character and character:FindFirstChild("HumanoidRootPart")
+                local knife = character and (character:FindFirstChild("Knife") or Players.LocalPlayer.Backpack:FindFirstChild("Knife"))
+                
+                if root and knife then
+                    if knife.Parent ~= character then
+                        knife.Parent = character -- Достаем нож в руки
+                    end
+                    
+                    for _, player in ipairs(Players:GetPlayers()) do
+                        if player ~= Players.LocalPlayer and player.Character and player.Character:FindFirstChild("HumanoidRootPart") then
+                            local targetRoot = player.Character.HumanoidRootPart
+                            local distance = (root.Position - targetRoot.Position).Magnitude
+                            
+                            if distance < 15 then
+                                knife:Activate() -- Атакуем
+                            end
+                        end
+                    end
+                end
+            end)
+        end
+        task.wait(0.1)
+    end
+end)
+
+-- Цикл Сайлент Аима (Автоматически наводит камеру на Убийцу, если в руках пистолет Шерифа)
+task.spawn(function()
+    while true do
+        if silentAimActive then
+            pcall(function()
+                local character = Players.LocalPlayer.Character
+                local gun = character and (character:FindFirstChild("Gun") or Players.LocalPlayer.Backpack:FindFirstChild("Gun"))
+                
+                if gun and character:FindFirstChild("HumanoidRootPart") and gun.Parent == character then
+                    for _, player in ipairs(Players:GetPlayers()) do
+                        if PreRevealedRoles[player] == "Murderer" and player.Character and player.Character:FindFirstChild("HumanoidRootPart") then
+                            local targetPos = player.Character.HumanoidRootPart.Position
+                            -- Мягкий Silent Aim через поворот камеры на цель при стрельбе
+                            workspace.CurrentCamera.CFrame = CFrame.new(workspace.CurrentCamera.CFrame.Position, targetPos)
+                        end
+                    end
+                end
+            end)
+        end
+        task.wait(0.02)
+    end
+end)
