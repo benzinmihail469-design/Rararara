@@ -588,7 +588,7 @@ local Localization = {
         ["UISize"] = "UI Size", ["UITransparency"] = "UI Transparency", ["MenuFont"] = "Menu Font",
         ["Language"] = "Language", ["AntiAFK"] = "Anti-AFK", ["UITheme"] = "UI Theme",
         ["AnimatedWindow"] = "Animated Window", ["Gradient"] = "Gradient Background",
-        ["Esp"] = "ESP", ["EspToggle"] = "Enable ESP / Player Roles",
+        ["Esp"] = "ESP", ["EspToggle"] = "Enable ESP / Player Roles", ["FruitEsp"] = "Fruit ESP",
         ["WalkSpeed"] = "WalkSpeed", ["JumpPower"] = "JumpPower", ["ResetStats"] = "Reset Modifiers",
         ["TeleportToMap"] = "Teleport to Map", ["TeleportToLobby"] = "Teleport to Lobby",
         ["KillAura"] = "Kill Aura", ["SilentAim"] = "Silent Aim"
@@ -600,7 +600,7 @@ local Localization = {
         ["UISize"] = "Размер интерфейса", ["UITransparency"] = "Прозрачность меню", ["MenuFont"] = "Шрифт меню",
         ["Language"] = "Язык", ["AntiAFK"] = "Анти-АФК", ["UITheme"] = "Тема UI",
         ["AnimatedWindow"] = "Анимированное окно", ["Gradient"] = "Градиентный фон",
-        ["Esp"] = "ЕСП", ["EspToggle"] = "Включить ЕСП / Роли игроков",
+        ["Esp"] = "ЕСП", ["EspToggle"] = "Включить ЕСП / Роли игроков", ["FruitEsp"] = "ESP Фруктов",
         ["WalkSpeed"] = "Скорость ходьбы", ["JumpPower"] = "Сила прыжка", ["ResetStats"] = "Сбросить модификаторы",
         ["TeleportToMap"] = "Телепортироваться на Карту", ["TeleportToLobby"] = "Телепортироваться в Лобби",
         ["KillAura"] = "Килл Аура", ["SilentAim"] = "Сайлент Аим"
@@ -1441,11 +1441,105 @@ Library:CreateToggle(MurderPage, "KillAura", false, function(state) end)
 Library:CreateToggle(SheriffPage, "SilentAim", false, function(state) end)
 
 -- ============================================================================
--- СУБ-ВКЛАДКА ESP (ОЧИЩЕНА ОТ ФУНКЦИЙ)
+-- СУБ-ВКЛАДКА ESP С ФУНКЦИОНАЛОМ ESP ФРУКТОВ
 -- ============================================================================
 local VisualSections = Library:CreateSubTabs(VisualPage, {
     {Name = "Esp", Icon = "80768064990053", Color = Color3.fromRGB(46, 204, 113)}
 })
+
+local ESP_Enabled = false
+local fruitHighlights = {}
+local targetFolder = workspace 
+
+-- Проверка, является ли спавнящийся в Workspace объект фруктом
+local function isFruit(child)
+    local name = child.Name:lower()
+    return name:find("fruit") 
+        or name:find("apple") 
+        or name:find("banana") 
+        or name:find("berry") 
+        or name:find("orange")
+        or child:GetAttribute("IsFruit") == true
+end
+
+-- Наложение обводки и текста
+local function applyFruitESP(fruit)
+    if not fruit:IsA("Model") and not fruit:IsA("BasePart") then return end
+    if fruitHighlights[fruit] then return end -- Уже подсвечено
+    
+    -- Силуэт
+    local highlight = Instance.new("Highlight")
+    highlight.Name = "FruitHighlightESP"
+    highlight.FillColor = Color3.fromRGB(46, 204, 113) -- Зеленая подсветка
+    highlight.OutlineColor = Color3.fromRGB(255, 255, 255)
+    highlight.FillTransparency = 0.4
+    highlight.OutlineTransparency = 0.1
+    highlight.Adornee = fruit
+    highlight.Parent = fruit
+    
+    -- Текстовое BillboardGui над фруктом
+    local billboard = Instance.new("BillboardGui")
+    billboard.Name = "FruitLabelESP"
+    billboard.Size = UDim2.new(0, 100, 0, 30)
+    billboard.AlwaysOnTop = true
+    billboard.StudsOffset = Vector3.new(0, 2, 0)
+    billboard.Adornee = fruit
+    
+    local textLabel = Instance.new("TextLabel")
+    textLabel.BackgroundTransparency = 1
+    textLabel.Size = UDim2.new(1, 0, 1, 0)
+    textLabel.Text = fruit.Name
+    textLabel.TextColor3 = Color3.fromRGB(255, 255, 255)
+    textLabel.TextSize = 13
+    textLabel.Font = Enum.Font.GothamBold
+    textLabel.TextStrokeTransparency = 0.5
+    textLabel.Parent = billboard
+    
+    billboard.Parent = fruit
+    fruitHighlights[fruit] = {highlight, billboard}
+end
+
+local function removeFruitESP(fruit)
+    if fruitHighlights[fruit] then
+        for _, obj in ipairs(fruitHighlights[fruit]) do
+            if obj then pcall(function() obj:Destroy() end) end
+        end
+        fruitHighlights[fruit] = nil
+    end
+end
+
+local spawnConnection = nil
+local function toggleFruitESP(state)
+    ESP_Enabled = state
+    if ESP_Enabled then
+        -- Подсвечиваем текущие фрукты
+        for _, child in ipairs(targetFolder:GetChildren()) do
+            if isFruit(child) then
+                applyFruitESP(child)
+            end
+        end
+        -- Следим за появлением новых фруктов
+        spawnConnection = targetFolder.ChildAdded:Connect(function(child)
+            task.wait(0.1)
+            if isFruit(child) then
+                applyFruitESP(child)
+            end
+        end)
+    else
+        if spawnConnection then 
+            spawnConnection:Disconnect() 
+            spawnConnection = nil
+        end
+        for fruit, _ in pairs(fruitHighlights) do
+            removeFruitESP(fruit)
+        end
+    end
+end
+
+-- Создаем переключатель в суб-вкладке ESP
+Library:CreateToggle(VisualSections["Esp"], "FruitEsp", false, function(state)
+    toggleFruitESP(state)
+end)
 
 -- Настройки графического интерфейса
 local SettingSections = Library:CreateSubTabs(SettingsPage, {
