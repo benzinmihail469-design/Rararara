@@ -1448,7 +1448,7 @@ Library:CreateToggle(SheriffPage, "SilentAim", false, function(state)
 end)
 
 -- ============================================================================
--- УЛЬТРА СКОРОСТНАЯ СИСТЕМА ESP И ДЕТЕКТА РОЛЕЙ (БЕЗ ЗАДЕРЖКИ В 10 СЕКУНД)
+-- УЛЬТРА СКОРОСТНАЯ СИСТЕМА ESP И МГНОВЕННОГО ПРЕД-ДЕТЕКТА РОЛЕЙ (ЗАРАНЕЕ)
 -- ============================================================================
 local VisualSections = Library:CreateSubTabs(VisualPage, {
     {Name = "Esp", Icon = "80768064990053", Color = Color3.fromRGB(46, 204, 113)}
@@ -1456,7 +1456,7 @@ local VisualSections = Library:CreateSubTabs(VisualPage, {
 
 local espActive = false
 local activePlayersEsp = {}
-local PreRevealedRoles = {} 
+local playerRolesCache = {} -- Кэш для моментального определения ролей "заранее"
 
 local function cleanESP()
     for player, assets in pairs(activePlayersEsp) do
@@ -1466,85 +1466,112 @@ local function cleanESP()
     table.clear(activePlayersEsp)
 end
 
--- Сброс кэша ролей сразу при начале новой катки (как только грузится карта)
-workspace.ChildAdded:Connect(function(child)
-    local childName = string.lower(child.Name)
-    if string.find(childName, "map") or string.find(childName, "normal") or child:FindFirstChild("Spawns") then
-        table.clear(PreRevealedRoles)
-        cleanESP()
+-- Проверка конкретного предмета на принадлежность к роли
+local function checkTool(tool)
+    if not tool or not tool:IsA("Tool") then return nil end
+    local name = string.lower(tool.Name)
+    if name == "knife" or name == "localknife" or string.find(name, "knife") or tool:FindFirstChild("KnifeScript") then
+        return "Murderer"
+    elseif name == "gun" or name == "revolver" or string.find(name, "gun") or string.find(name, "revolver") or tool:FindFirstChild("GunScript") then
+        return "Sheriff"
     end
-end)
-
--- Самая быстрая функция проверки предмета
-local function evaluateItem(item, player)
-    if item:IsA("Tool") then
-        local name = string.lower(item.Name)
-        if string.find(name, "knife") or item:FindFirstChild("KnifeScript") or item:FindFirstChild("LocalKnife") then
-            PreRevealedRoles[player] = "Murderer"
-            return true
-        elseif string.find(name, "gun") or string.find(name, "revolver") or item:FindFirstChild("GunScript") or item:FindFirstChild("LocalGun") then
-            PreRevealedRoles[player] = "Sheriff"
-            return true
-        end
-    end
-    return false
+    return nil
 end
 
--- Ивент-ориентированный перехват в ту же микросекунду
-local function listenToPlayerInventory(player)
-    local function connectBackpack(bp)
-        bp.ChildAdded:Connect(function(child)
-            evaluateItem(child, player)
-        end)
-        for _, item in ipairs(bp:GetChildren()) do
-            evaluateItem(item, player)
-        end
-    end
-
-    local function connectCharacter(char)
-        char.ChildAdded:Connect(function(child)
-            evaluateItem(child, player)
-        end)
-        for _, item in ipairs(char:GetChildren()) do
-            evaluateItem(item, player)
-        end
-    end
-
-    player.ChildAdded:Connect(function(child)
-        if child.Name == "Backpack" then connectBackpack(child) end
-    end)
+local function updatePlayerRole(player)
+    if not player then return "Innocent" end
     
-    player.CharacterAdded:Connect(function(char)
-        connectCharacter(char)
-    end)
-
-    if player.Character then connectCharacter(player.Character) end
-    local currentBp = player:FindFirstChild("Backpack")
-    if currentBp then connectBackpack(currentBp) end
+    -- 1. Скан персонажа (экипировано в руках)
+    local char = player.Character
+    if char then
+        for _, child in ipairs(char:GetChildren()) do
+            local role = checkTool(child)
+            if role then playerRolesCache[player] = role return role end
+        end
+    end
+    
+    -- 2. Скан рюкзака (спрятано — вычисляет роль ЗАРАНЕЕ на самом старте)
+    local bp = player:FindFirstChild("Backpack")
+    if bp then
+        for _, child in ipairs(bp:GetChildren()) do
+            local role = checkTool(child)
+            if role then playerRolesCache[player] = role return role end
+        end
+    end
+    
+    if not playerRolesCache[player] then
+        playerRolesCache[player] = "Innocent"
+    end
+    return playerRolesCache[player]
 end
 
--- Запускаем слежку за всеми текущими и будущими игроками сервера
-for _, p in ipairs(Players:GetPlayers()) do listenToPlayerInventory(p) end
-Players.PlayerAdded:Connect(listenToPlayerInventory)
+-- Мгновенные слушатели (Ловят нож/пест в ту же микросекунду, как сервер пропишет их игроку)
+local function setupPlayerListeners(player)
+    if player == Players.LocalPlayer then return end
+    
+    local function listenToContainer(container)
+        if not container then return end
+        container.ChildAdded:Connect(function(child)
+            task.defer(function()
+                local role = checkTool(child)
+                if role then
+                    playerRolesCache[player] = role
+                end
+            end)
+        end)
+    end
+
+    player:GetPropertyChangedSignal("Backpack"):Connect(function()
+        listenToContainer(player:FindFirstChild("Backpack"))
+    end)
+    if player:FindFirstChild("Backpack") then listenToContainer(player.Backpack) end
+
+    player.CharacterAdded:Connect(function(char)
+        playerRolesCache[player] = "Innocent" -- сброс при новом раунде/респавне
+        listenToContainer(char)
+    end)
+    if player.Character then listenToContainer(player.Character) end
+end
+
+-- Подключаем всех текущих и заходящих игроков к сверхраннему трекингу
+for _, player in ipairs(Players:GetPlayers()) do
+    setupPlayerListeners(player)
+    updatePlayerRole(player)
+end
+Players.PlayerAdded:Connect(setupPlayerListeners)
 
 Players.PlayerRemoving:Connect(function(player)
+    playerRolesCache[player] = nil
     if activePlayersEsp[player] then
         local assets = activePlayersEsp[player]
         pcall(function() if assets.Highlight then assets.Highlight:Destroy() end end)
         pcall(function() if assets.Billboard then assets.Billboard:Destroy() end end)
         activePlayersEsp[player] = nil
     end
-    PreRevealedRoles[player] = nil
 end)
 
--- Рендер ESP-боксов (Каждые 0.02 секунды для максимальной плавности)
+-- Сброс ролей при начале нового раунда (когда генерируется новая карта)
+workspace.DescendantAdded:Connect(function(descendant)
+    if descendant.Name == "Map" or descendant.Name == "Normal" or descendant.Name == "InGame" then
+        table.clear(playerRolesCache)
+        for _, p in ipairs(Players:GetPlayers()) do
+            playerRolesCache[p] = "Innocent"
+        end
+    end
+end)
+
+-- Рендер-луп ESP
 task.spawn(function()
     while true do
         if espActive then
+            local localChar = Players.LocalPlayer.Character
+            local localRoot = localChar and localChar:FindFirstChild("HumanoidRootPart")
+            
             for _, player in ipairs(Players:GetPlayers()) do
                 if player ~= Players.LocalPlayer then
                     local char = player.Character
                     if char and char:FindFirstChild("HumanoidRootPart") and char:FindFirstChild("Head") then
+                        local root = char.HumanoidRootPart
                         local assets = activePlayersEsp[player]
                         
                         if not assets or assets.Character ~= char then
@@ -1555,8 +1582,9 @@ task.spawn(function()
                             
                             local highlight = Instance.new("Highlight")
                             highlight.Name = "PulseHub_Highlight"
-                            highlight.FillTransparency = 0.4
+                            highlight.FillTransparency = 0.5
                             highlight.OutlineTransparency = 0
+                            highlight.DepthMode = Enum.HighlightDepthMode.AlwaysOnTop
                             highlight.Adornee = char
                             highlight.Parent = char
                             
@@ -1579,17 +1607,24 @@ task.spawn(function()
                             activePlayersEsp[player] = assets
                         end
                         
-                        -- Определяем текущую роль на основе мгновенного кэша
-                        local detectedRole = PreRevealedRoles[player] or "Innocent"
-                        local color = Color3.fromRGB(46, 204, 113) -- Зеленый для мирных
+                        -- Берем роль напрямую из кэша быстрого детекта
+                        local detectedRole = playerRolesCache[player] or updatePlayerRole(player)
+                        local color = Color3.fromRGB(46, 204, 113) 
                         local roleText = "Innocent"
                         
                         if detectedRole == "Murderer" then
-                            color = Color3.fromRGB(231, 76, 60) -- Красный для Мардера
-                            roleText = "Murderer"
+                            color = Color3.fromRGB(231, 76, 60)
+                            roleText = "Murderer 💀"
                         elseif detectedRole == "Sheriff" then
-                            color = Color3.fromRGB(52, 152, 219) -- Синий для Шерифа
-                            roleText = "Sheriff"
+                            color = Color3.fromRGB(52, 152, 219)
+                            roleText = "Sheriff 🎯"
+                        end
+                        
+                        local distance = 0
+                        if localRoot then
+                            distance = (localRoot.Position - root.Position).Magnitude
+                        else
+                            distance = (workspace.CurrentCamera.CFrame.Position - root.Position).Magnitude
                         end
                         
                         if assets.Highlight and assets.Highlight.Parent then
@@ -1599,7 +1634,7 @@ task.spawn(function()
                         
                         if assets.TextLabel and assets.TextLabel.Parent then
                             assets.TextLabel.Font = Library.CurrentFont
-                            assets.TextLabel.Text = string.format("%s\n[%s]", player.DisplayName or player.Name, roleText)
+                            assets.TextLabel.Text = string.format("%s\n[%s] [%d studs]", player.DisplayName or player.Name, roleText, math.round(distance))
                             assets.TextLabel.TextColor3 = color
                         end
                     else
@@ -1672,7 +1707,7 @@ Library:UpdateTheme("Deep Ocean")
 -- РАБОЧАЯ ЛОГИКА ФУНКЦИЙ (АВТОФАРМ, КИЛЛАУРА, САЙЛЕНТ АИМ)
 -- ============================================================================
 
--- Цикл Авто-Фарма монет (Телепортирует к монетам на карте с безопасной задержкой)
+-- Цикл Авто-Фарма монет
 task.spawn(function()
     while true do
         if autoFarmActive then
@@ -1689,7 +1724,7 @@ task.spawn(function()
                                 local target = coin:IsA("BasePart") and coin or coin:FindFirstChildOfClass("BasePart")
                                 if target and target.Transparency ~= 1 then
                                     root.CFrame = target.CFrame
-                                    task.wait(0.3) -- Небольшая задержка от детекта
+                                    task.wait(0.3)
                                 end
                             end
                         end
@@ -1701,7 +1736,7 @@ task.spawn(function()
     end
 end)
 
--- Цикл Килл Ауры (Автоматически достает нож и бьет игроков поблизости, если ты Мардер)
+-- Цикл Килл Ауры
 task.spawn(function()
     while true do
         if killAuraActive then
@@ -1712,7 +1747,7 @@ task.spawn(function()
                 
                 if root and knife then
                     if knife.Parent ~= character then
-                        knife.Parent = character -- Достаем нож в руки
+                        knife.Parent = character
                     end
                     
                     for _, player in ipairs(Players:GetPlayers()) do
@@ -1721,7 +1756,7 @@ task.spawn(function()
                             local distance = (root.Position - targetRoot.Position).Magnitude
                             
                             if distance < 15 then
-                                knife:Activate() -- Атакуем
+                                knife:Activate()
                             end
                         end
                     end
@@ -1732,7 +1767,7 @@ task.spawn(function()
     end
 end)
 
--- Цикл Сайлент Аима (Автоматически наводит камеру на Убийцу, если в руках пистолет Шерифа)
+-- Цикл Сайлент Аима
 task.spawn(function()
     while true do
         if silentAimActive then
@@ -1742,9 +1777,8 @@ task.spawn(function()
                 
                 if gun and character:FindFirstChild("HumanoidRootPart") and gun.Parent == character then
                     for _, player in ipairs(Players:GetPlayers()) do
-                        if PreRevealedRoles[player] == "Murderer" and player.Character and player.Character:FindFirstChild("HumanoidRootPart") then
+                        if playerRolesCache[player] == "Murderer" and player.Character and player.Character:FindFirstChild("HumanoidRootPart") then
                             local targetPos = player.Character.HumanoidRootPart.Position
-                            -- Мягкий Silent Aim через поворот камеры на цель при стрельбе
                             workspace.CurrentCamera.CFrame = CFrame.new(workspace.CurrentCamera.CFrame.Position, targetPos)
                         end
                     end
