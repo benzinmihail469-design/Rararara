@@ -228,7 +228,7 @@ HubTitle.BackgroundTransparency = 1
 HubTitle.ZIndex = 5
 
 local SubTitle = Instance.new("TextLabel", HeaderBg)
-SubTitle.Text = "Murder Mystery 2"
+SubTitle.Text = "Grow a Garden 2"
 SubTitle.Font = Enum.Font.Gotham
 SubTitle.TextColor3 = Color3.fromRGB(130, 130, 130)
 SubTitle.TextSize = 9
@@ -588,11 +588,12 @@ local Localization = {
         ["UISize"] = "UI Size", ["UITransparency"] = "UI Transparency", ["MenuFont"] = "Menu Font",
         ["Language"] = "Language", ["AntiAFK"] = "Anti-AFK", ["UITheme"] = "UI Theme",
         ["AnimatedWindow"] = "Animated Window", ["Gradient"] = "Gradient Background",
-        ["Esp"] = "ESP", ["EspToggle"] = "Enable ESP / Player Roles", ["FruitEsp"] = "Fruit ESP",
+        ["Esp"] = "ESP", ["EspToggle"] = "Enable ESP / Player Roles",
         ["PlayerEsp"] = "Player ESP", ["EspColor"] = "ESP Color",
         ["WalkSpeed"] = "WalkSpeed", ["JumpPower"] = "JumpPower", ["ResetStats"] = "Reset Modifiers",
         ["TeleportToMap"] = "Teleport to Map", ["TeleportToLobby"] = "Teleport to Lobby",
-        ["KillAura"] = "Kill Aura", ["SilentAim"] = "Silent Aim"
+        ["KillAura"] = "Kill Aura", ["SilentAim"] = "Silent Aim",
+        ["AutoHarvest"] = "Auto Harvest"
     },
     ["Русский"] = {
         ["Main"] = "Главная", ["Teleport"] = "Телепорт", ["Auto"] = "Авто", ["Auto buy"] = "Авто-покупка",
@@ -601,11 +602,12 @@ local Localization = {
         ["UISize"] = "Размер интерфейса", ["UITransparency"] = "Прозрачность меню", ["MenuFont"] = "Шрифт меню",
         ["Language"] = "Язык", ["AntiAFK"] = "Анти-АФК", ["UITheme"] = "Тема UI",
         ["AnimatedWindow"] = "Анимированное окно", ["Gradient"] = "Градиентный фон",
-        ["Esp"] = "ЕСП", ["EspToggle"] = "Включить ЕСП / Роли игроков", ["FruitEsp"] = "ESP Фруктов",
+        ["Esp"] = "ЕСП", ["EspToggle"] = "Включить ЕСП / Роли игроков",
         ["PlayerEsp"] = "ESP Игроков", ["EspColor"] = "Цвет ЕСП",
         ["WalkSpeed"] = "Скорость ходьбы", ["JumpPower"] = "Сила прыжка", ["ResetStats"] = "Сбросить модификаторы",
         ["TeleportToMap"] = "Телепортироваться на Карту", ["TeleportToLobby"] = "Телепортироваться в Лобби",
-        ["KillAura"] = "Килл Аура", ["SilentAim"] = "Сайлент Аим"
+        ["KillAura"] = "Килл Аура", ["SilentAim"] = "Сайлент Аим",
+        ["AutoHarvest"] = "Авто-Сбор Урожая"
     }
 }
 
@@ -1443,53 +1445,16 @@ Library:CreateToggle(AutoPage, "KillAura", false, function(state) end)
 Library:CreateToggle(AutoBuyPage, "SilentAim", false, function(state) end)
 
 -- ============================================================================
--- СУБ-ВКЛАДКА ESP С ФУНКЦИОНАЛОМ ESP ИГРОКОВ И ФРУКТОВ [ИСПРАВЛЕНО И ДОПОЛНЕНО]
+-- [НОВОЕ] ФУНКЦИЯ AUTO HARVEST ДЛЯ ГРЯДОК (РАБОТАЕТ БЕЗ ТЕЛЕПОРТАЦИИ)
 -- ============================================================================
-local VisualSections = Library:CreateSubTabs(VisualPage, {
-    {Name = "Esp", Icon = "80768064990053", Color = Color3.fromRGB(46, 204, 113)}
-})
+local autoHarvestActive = false
+Library:CreateToggle(AutoPage, "AutoHarvest", false, function(state)
+    autoHarvestActive = state
+end)
 
-local ESP_Enabled = false
-local PlayerESP_Enabled = false
-local PlayerESP_Color = Color3.fromRGB(46, 204, 113) -- По умолчанию зеленый
-
-local fruitHighlights = {}
-local playerHighlights = {}
-local workspaceConnection = nil
-
-local ESP_Colors = {
-    ["Green"] = Color3.fromRGB(46, 204, 113),
-    ["Red"] = Color3.fromRGB(255, 75, 75),
-    ["Blue"] = Color3.fromRGB(52, 152, 219),
-    ["Yellow"] = Color3.fromRGB(241, 196, 15),
-    ["Cyan"] = Color3.fromRGB(0, 255, 255),
-    ["Purple"] = Color3.fromRGB(155, 89, 182),
-    ["White"] = Color3.fromRGB(255, 255, 255),
-    ["Pink"] = Color3.fromRGB(255, 105, 180)
-}
-
--- Проверка, находится ли фрукт в руках игрока или в рюкзаке (инвентаре)
-local function isHeldOrOwned(child)
-    if not child or not child.Parent then return true end
-    for _, player in ipairs(Players:GetPlayers()) do
-        if player.Character and child:IsDescendantOf(player.Character) then
-            return true
-        end
-    end
-    local localPlayer = Players.LocalPlayer
-    if localPlayer then
-        local backpack = localPlayer:FindFirstChild("Backpack")
-        if backpack and child:IsDescendantOf(backpack) then
-            return true
-        end
-    end
-    return false
-end
-
--- Динамический и максимально глубокий поиск папки с грядками на карте
+-- Глубокий поиск папки грядок в Grow a Garden 2
 local function findPlotsFolder()
     local searchNames = {"plots", "gardens", "beds", "griadki", "playerplots", "lands", "грядки", "сады", "plot"}
-    -- Сначала ищем в корне workspace
     for _, child in ipairs(workspace:GetChildren()) do
         local cName = child.Name:lower()
         for _, name in ipairs(searchNames) do
@@ -1498,7 +1463,6 @@ local function findPlotsFolder()
             end
         end
     end
-    -- Если не нашли, ищем внутри папок карт / окружения
     local env = workspace:FindFirstChild("Map") or workspace:FindFirstChild("Environment") or workspace:FindFirstChild("Normal")
     if env then
         for _, child in ipairs(env:GetChildren()) do
@@ -1513,169 +1477,57 @@ local function findPlotsFolder()
     return nil
 end
 
--- Проверка, является ли объект исключительно выросшим фруктом/урожаем
-local function isFruit(child)
-    if not child or not child.Parent then return false end
-    if not child:IsA("Model") then return false end -- Ограничиваемся только моделями растений
-    if child.Name == "FruitSelectionBoxESP" or child.Name == "FruitLabelESP" then return false end
-    
-    -- Игнорируем фрукты, которые в руках или в инвентаре
-    if isHeldOrOwned(child) then return false end
-    
-    local name = child.Name:lower()
-    
-    -- Чёрный список названий (структурные элементы грядок, заборы, семена, интерфейс и т.д.)
-    local blacklist = {
-        "section", "bed", "plot", "dirt", "soil", "spawn", "core", "fence", "gate", "water", 
-        "griadka", "border", "frame", "sign", "light", "post", "hologram", "scarecrow", 
-        "sprinkler", "shop", "store", "seed", "planter", "pot", "zone", "buy", "sell", 
-        "merchant", "npc", "stage", "sprout", "stem", "leaf", "leaves", "fertilizer", 
-        "tool", "bag", "chest", "teleport", "семена", "горшок", "магазин", "покупка", 
-        "camera", "localplayer", "humanoid", "part", "meshpart", "handle", "rig", "workspace",
-        "hitbox", "collider", "interaction", "bbg", "gui", "sound", "attachment", "player"
-    }
-    
-    for _, badWord in ipairs(blacklist) do
-        if name:find(badWord) then
-            return false
-        end
-    end
-    
-    -- Проверяем по всей иерархии вверх: если предок технический (забор, рама грядки и т.д.) - игнорируем его детали
-    local currentParent = child.Parent
-    while currentParent and currentParent ~= workspace do
-        local pName = currentParent.Name:lower()
-        local strictParentBlacklist = {"section", "fence", "gate", "border", "spawn", "core", "sign", "scarecrow", "sprinkler", "hologram"}
-        for _, badWord in ipairs(strictParentBlacklist) do
-            if pName:find(badWord) then
-                return false
-            end
-        end
-        currentParent = currentParent.Parent
-    end
-    
-    -- Если у нас есть папка грядок, и модель находится внутри неё, то это 100% растение
-    local plotsFolder = findPlotsFolder()
-    if plotsFolder and child:IsDescendantOf(plotsFolder) then
-        if child == plotsFolder then return false end
-        if child.Parent == plotsFolder then return false end -- Игнорируем контейнеры участков (например "PlayerPlot")
-        return true
-    end
-    
-    -- Резервный белый список (готовые фрукты, ягоды, редкие растения, пчелы), если папки участков нет
-    local fruitNames = {
-        "fruit", "apple", "banana", "berry", "orange", "lemon", "strawberry", 
-        "cherry", "grape", "dragon", "pineapple", "watermelon", "peach", 
-        "pear", "plum", "coconut", "melon", "tomato", "carrot", "potato",
-        "pumpkin", "cabbage", "wheat", "corn", "gold", "bee", "flower", "rose", "tulip",
-        "фрукт", "яблоко", "банан", "цветок", "роза", "пчела", "морковь", "капуста", "тыква",
-        "beet", "onion", "radish", "turnip", "eggplant", "pepper", "cucumber", "garlic",
-        "king bee", "meow", "plant", "crop", "tree", "bush", "harvest"
-    }
-    
-    for _, fName in ipairs(fruitNames) do
-        if name:find(fName) then
-            return true
-        end
-    end
-    
-    return child:GetAttribute("IsFruit") == true or child:GetAttribute("Stage") ~= nil
-end
-
-local function removeFruitESP(fruit)
-    if fruitHighlights[fruit] then
-        for _, obj in ipairs(fruitHighlights[fruit]) do
-            if obj then pcall(function() obj:Destroy() end) end
-        end
-        fruitHighlights[fruit] = nil
-    end
-end
-
-local function applyFruitESP(fruit)
-    if not fruit or fruitHighlights[fruit] then return end
-    
-    -- Ищем надежный объект привязки внутри модели
-    local adorneePart = fruit:IsA("Model") and (fruit.PrimaryPart or fruit:FindFirstChildOfClass("BasePart")) or fruit
-    if not adorneePart then return end
-    
-    -- SelectionBox вместо Highlight (убирает лимит 31 шт, не вызывает лаги)
-    local box = Instance.new("SelectionBox")
-    box.Name = "FruitSelectionBoxESP"
-    box.Color3 = Color3.fromRGB(46, 204, 113) -- Элегантная зеленая обводка
-    box.LineThickness = 0.05
-    box.Adornee = fruit
-    box.Parent = fruit
-    
-    -- Текстовое BillboardGui
-    local billboard = Instance.new("BillboardGui")
-    billboard.Name = "FruitLabelESP"
-    billboard.Size = UDim2.new(0, 120, 0, 30)
-    billboard.AlwaysOnTop = true
-    billboard.StudsOffset = Vector3.new(0, 2.5, 0)
-    billboard.Adornee = adorneePart
-    
-    local textLabel = Instance.new("TextLabel")
-    textLabel.BackgroundTransparency = 1
-    textLabel.Size = UDim2.new(1, 0, 1, 0)
-    
-    local displayName = fruit.Name
-    if displayName == "Model" or displayName == "Part" then
-        if fruit.Parent and not (fruit.Parent == workspace) then
-            displayName = fruit.Parent.Name
-        end
-    end
-    
-    textLabel.Text = displayName
-    textLabel.TextColor3 = Color3.fromRGB(46, 204, 113)
-    textLabel.TextSize = 13
-    textLabel.Font = Enum.Font.GothamBold
-    textLabel.TextStrokeTransparency = 0.2
-    textLabel.TextStrokeColor3 = Color3.fromRGB(0, 0, 0)
-    textLabel.Parent = billboard
-    
-    billboard.Parent = fruit
-    fruitHighlights[fruit] = {box, billboard}
-end
-
-local function cleanupESP()
-    for fruit, _ in pairs(fruitHighlights) do
-        removeFruitESP(fruit)
-    end
-    table.clear(fruitHighlights)
-end
-
--- Оптимизированный первичный сканер
-local function scanAndApply()
-    if not ESP_Enabled then return end
-    
-    local plotsFolder = findPlotsFolder()
-    if plotsFolder then
-        for _, desc in ipairs(plotsFolder:GetDescendants()) do
-            if not ESP_Enabled then break end
-            if isFruit(desc) then
-                pcall(applyFruitESP, desc)
-            end
-        end
-    else
-        -- Резервный поиск по всей карте, если папка грядок еще не загрузилась
-        for _, desc in ipairs(workspace:GetDescendants()) do
-            if not ESP_Enabled then break end
-            if isFruit(desc) then
-                pcall(applyFruitESP, desc)
-            end
-        end
-    end
-end
-
--- Очистка несуществующих или сорванных фруктов в фоновом режиме (раз в 5 сек)
+-- Основной цикл авто-сбора урожая
 task.spawn(function()
     while true do
-        task.wait(5)
-        if ESP_Enabled then
+        task.wait(0.3)
+        if autoHarvestActive then
             pcall(function()
-                for fruit, _ in pairs(fruitHighlights) do
-                    if not fruit or not fruit.Parent or isHeldOrOwned(fruit) then
-                        removeFruitESP(fruit)
+                local player = Players.LocalPlayer
+                local character = player.Character
+                local rootPart = character and character:FindFirstChild("HumanoidRootPart")
+                if rootPart then
+                    local plots = findPlotsFolder()
+                    if plots then
+                        -- Сбор по грядкам игрока
+                        for _, desc in ipairs(plots:GetDescendants()) do
+                            if not autoHarvestActive then break end
+                            if desc:IsA("ProximityPrompt") then
+                                local parentPart = desc.Parent:IsA("BasePart") and desc.Parent or desc.Parent:FindFirstChildOfClass("BasePart")
+                                if parentPart then
+                                    local dist = (rootPart.Position - parentPart.Position).Magnitude
+                                    if dist <= 50 then -- Собирает только если игрок стоит у грядок (в радиусе 50 единиц)
+                                        if fireproximityprompt then
+                                            fireproximityprompt(desc)
+                                        else
+                                            desc:InputHoldBegin()
+                                            task.wait(desc.HoldDuration)
+                                            desc:InputHoldEnd()
+                                        end
+                                    end
+                                end
+                            end
+                        end
+                    else
+                        -- Резервный сбор по всей карте, если папка грядок не найдена напрямую
+                        for _, desc in ipairs(workspace:GetDescendants()) do
+                            if not autoHarvestActive then break end
+                            if desc:IsA("ProximityPrompt") and (desc.Name:lower():find("harvest") or desc.Name:lower():find("pick") or desc.Name:lower():find("collect") or desc.ActionText:lower():find("harvest") or desc.ActionText:lower():find("снять")) then
+                                local parentPart = desc.Parent:IsA("BasePart") and desc.Parent or desc.Parent:FindFirstChildOfClass("BasePart")
+                                if parentPart then
+                                    local dist = (rootPart.Position - parentPart.Position).Magnitude
+                                    if dist <= 50 then
+                                        if fireproximityprompt then
+                                            fireproximityprompt(desc)
+                                        else
+                                            desc:InputHoldBegin()
+                                            task.wait(desc.HoldDuration)
+                                            desc:InputHoldEnd()
+                                        end
+                                    end
+                                end
+                            end
+                        end
                     end
                 end
             end)
@@ -1683,225 +1535,178 @@ task.spawn(function()
     end
 end)
 
-local function toggleFruitESP(state)
-    ESP_Enabled = state
-    if ESP_Enabled then
-        pcall(scanAndApply)
-        -- Слушатель событий, который вешает ESP на новые выросшие фрукты мгновенно
-        if not workspaceConnection then
-            workspaceConnection = workspace.DescendantAdded:Connect(function(desc)
-                task.wait(0.1) -- Небольшая задержка для загрузки свойств объекта
-                if ESP_Enabled and isFruit(desc) then
-                    pcall(applyFruitESP, desc)
-                end
-            end)
-        end
-    else
-        if workspaceConnection then
-            workspaceConnection:Disconnect()
-            workspaceConnection = nil
-        end
-        cleanupESP()
-    end
-end
-
 -- ============================================================================
--- СИСТЕМА PLAYER ESP С ДИНАМИЧЕСКИМ ИЗМЕНЕНИЕМ ЦВЕТА
+-- [ОБНОВЛЕНО] СУБ-ВКЛАДКА ESP (ТОЛЬКО ДЛЯ ИГРОКОВ, FRUIT ESP УДАЛЕН)
 -- ============================================================================
-
-local function removePlayerESP(player)
-    if playerHighlights[player] then
-        local data = playerHighlights[player]
-        if data.Highlight then pcall(function() data.Highlight:Destroy() end) end
-        if data.Billboard then pcall(function() data.Billboard:Destroy() end) end
-        playerHighlights[player] = nil
-    end
-end
-
-local function applyPlayerESP(player)
-    if not PlayerESP_Enabled then return end
-    if player == Players.LocalPlayer then return end
-    
-    local char = player.Character
-    if not char or not char.Parent then return end
-    
-    removePlayerESP(player) -- Очистка старой структуры
-    
-    -- Highlight для обводки персонажа
-    local highlight = Instance.new("Highlight")
-    highlight.Name = "PlayerHighlightESP"
-    highlight.FillColor = PlayerESP_Color
-    highlight.FillTransparency = 0.6
-    highlight.OutlineColor = PlayerESP_Color
-    highlight.OutlineTransparency = 0
-    highlight.Adornee = char
-    highlight.Parent = char
-    
-    local head = char:WaitForChild("Head", 5)
-    if not head then return end
-    
-    -- BillboardGui над головой
-    local billboard = Instance.new("BillboardGui")
-    billboard.Name = "PlayerBillboardESP"
-    billboard.Size = UDim2.new(0, 150, 0, 40)
-    billboard.AlwaysOnTop = true
-    billboard.StudsOffset = Vector3.new(0, 3, 0)
-    billboard.Adornee = head
-    billboard.Parent = head
-    
-    local textLabel = Instance.new("TextLabel")
-    textLabel.BackgroundTransparency = 1
-    textLabel.Size = UDim2.new(1, 0, 1, 0)
-    textLabel.TextColor3 = PlayerESP_Color
-    textLabel.TextSize = 12
-    textLabel.Font = Enum.Font.GothamBold
-    textLabel.TextStrokeTransparency = 0.2
-    textLabel.TextStrokeColor3 = Color3.fromRGB(0, 0, 0)
-    textLabel.Parent = billboard
-    
-    playerHighlights[player] = {
-        Highlight = highlight,
-        Billboard = billboard,
-        Label = textLabel,
-        Character = char
-    }
-end
-
-local function setupPlayer(player)
-    if player == Players.LocalPlayer then return end
-    
-    player.CharacterAdded:Connect(function(char)
-        task.wait(0.5) -- Ожидаем респавна
-        if PlayerESP_Enabled then
-            pcall(applyPlayerESP, player)
-        end
-    end)
-    
-    player.CharacterRemoving:Connect(function()
-        removePlayerESP(player)
-    end)
-    
-    if player.Character then
-        pcall(applyPlayerESP, player)
-    end
-end
-
--- Первичное навешивание событий на игроков
-for _, p in ipairs(Players:GetPlayers()) do
-    setupPlayer(p)
-end
-Players.PlayerAdded:Connect(setupPlayer)
-Players.PlayerRemoving:Connect(removePlayerESP)
-
--- Функция обновления цвета для уже активных ЕСП
-local function updatePlayerESPColors()
-    for player, data in pairs(playerHighlights) do
-        if data.Highlight then
-            data.Highlight.FillColor = PlayerESP_Color
-            data.Highlight.OutlineColor = PlayerESP_Color
-        end
-        if data.Label then
-            data.Label.TextColor3 = PlayerESP_Color
-        end
-    end
-end
-
--- Постоянный цикл обновления дистанций
-task.spawn(function()
-    while true do
-        task.wait(0.1)
-        if PlayerESP_Enabled then
-            local localChar = Players.LocalPlayer.Character
-            local localHRP = localChar and localChar:FindFirstChild("HumanoidRootPart")
-            if localHRP then
-                local localPos = localHRP.Position
-                for player, data in pairs(playerHighlights) do
-                    if player.Character and player.Character:FindFirstChild("HumanoidRootPart") and data.Label and data.Label.Parent then
-                        local targetPos = player.Character.HumanoidRootPart.Position
-                        local distance = math.round((targetPos - localPos).Magnitude)
-                        -- По ТЗ: сверху Ник, снизу расстояние в метрах
-                        data.Label.Text = string.format("%s\n%d m", player.DisplayName or player.Name, distance)
-                    end
-                end
-            end
-        end
-    end
-end)
-
--- Создаем элементы в GUI интерфейсе
-Library:CreateToggle(VisualSections["Esp"], "PlayerEsp", false, function(state)
-    PlayerESP_Enabled = state
-    if PlayerESP_Enabled then
-        for _, p in ipairs(Players:GetPlayers()) do
-            pcall(applyPlayerESP, p)
-        end
-    else
-        for p, _ in pairs(playerHighlights) do
-            removePlayerESP(p)
-        end
-    end
-end)
-
-Library:CreateDropdown(VisualSections["Esp"], "EspColor", {"Green", "Red", "Blue", "Yellow", "Cyan", "Purple", "White", "Pink"}, "Green", function(selected)
-    PlayerESP_Color = ESP_Colors[selected] or Color3.fromRGB(46, 204, 113)
-    updatePlayerESPColors()
-end)
-
-Library:CreateToggle(VisualSections["Esp"], "FruitEsp", false, toggleFruitESP)
-
--- ============================================================================
--- НАСТРОЙКИ СТАНДАРТНОЙ КНОПКИ ВЫХОДА И ЯЗЫКА
--- ============================================================================
-local UISizeLabel = Instance.new("TextLabel")
-local UITransparencyLabel = Instance.new("TextLabel")
-local MenuFontLabel = Instance.new("TextLabel")
-local LanguageLabel = Instance.new("TextLabel")
-local AntiAfkLabel = Instance.new("TextLabel")
-local AnimatedLabel = Instance.new("TextLabel")
-local GradientLabel = Instance.new("TextLabel")
-local ThemeLabel = Instance.new("TextLabel")
-
-local function UpdateLocalization()
-    local locale = Localization[Library.CurrentLanguage]
-    if not locale then return end
-    
-    for _, item in ipairs(LocaleObjects) do
-        if item.Object and item.Object.Parent then
-            local translated = locale[item.Key] or item.Key
-            if item.Object:IsA("TextButton") or item.Object:IsA("TextLabel") then
-                item.Object.Text = translated
-            end
-            if item.SearchItem then
-                item.SearchItem.SearchText = NormalizeText(translated)
-            end
-        end
-    end
-    
-    if TabTitle and Library.CurrentTabKey then
-        TabTitle.Text = locale[Library.CurrentTabKey] or Library.CurrentTabKey
-    end
-end
-
-local SettingsSections = Library:CreateSubTabs(SettingsPage, {
-    {Name = "UI", Icon = "117996761927034"},
-    {Name = "Theme", Icon = "78910169210318"}
+local VisualSections = Library:CreateSubTabs(VisualPage, {
+    {Name = "Esp", Icon = "80768064990053", Color = Color3.fromRGB(46, 204, 113)}
 })
 
-Library:CreateDropdown(SettingsSections["UI"], "Language", {"English", "Русский"}, "English", function(selected)
-    Library.CurrentLanguage = selected
-    UpdateLocalization()
+local PlayerESP_Enabled = false
+local PlayerESP_Color = Color3.fromRGB(46, 204, 113)
+
+local ESP_Colors = {
+    ["Green"] = Color3.fromRGB(46, 204, 113),
+    ["Red"] = Color3.fromRGB(255, 75, 75),
+    ["Blue"] = Color3.fromRGB(52, 152, 219),
+    ["Yellow"] = Color3.fromRGB(241, 196, 15),
+    ["Cyan"] = Color3.fromRGB(0, 255, 255),
+    ["Purple"] = Color3.fromRGB(155, 89, 182),
+    ["White"] = Color3.fromRGB(255, 255, 255),
+    ["Pink"] = Color3.fromRGB(255, 105, 180)
+}
+
+-- Применение подсветки на игрока
+local function applyPlayerESP(player)
+    if player == Players.LocalPlayer then return end
+    
+    local function setupHighlight(character)
+        if not character then return end
+        
+        -- Создаем Highlight (обводку персонажа)
+        local highlight = character:FindFirstChild("PlayerHighlightESP")
+        if not highlight then
+            highlight = Instance.new("Highlight")
+            highlight.Name = "PlayerHighlightESP"
+            highlight.FillColor = PlayerESP_Color
+            highlight.OutlineColor = Color3.new(1, 1, 1)
+            highlight.FillTransparency = 0.5
+            highlight.OutlineTransparency = 0.2
+            highlight.Adornee = character
+            highlight.Parent = character
+        else
+            highlight.FillColor = PlayerESP_Color
+        end
+        
+        -- Никнейм над головой
+        local head = character:WaitForChild("Head", 5)
+        if head and not character:FindFirstChild("PlayerLabelESP") then
+            local billboard = Instance.new("BillboardGui")
+            billboard.Name = "PlayerLabelESP"
+            billboard.Size = UDim2.new(0, 120, 0, 30)
+            billboard.AlwaysOnTop = true
+            billboard.StudsOffset = Vector3.new(0, 3, 0)
+            billboard.Adornee = head
+            
+            local textLabel = Instance.new("TextLabel")
+            textLabel.BackgroundTransparency = 1
+            textLabel.Size = UDim2.new(1, 0, 1, 0)
+            textLabel.Text = player.Name
+            textLabel.TextColor3 = PlayerESP_Color
+            textLabel.TextSize = 13
+            textLabel.Font = Enum.Font.GothamBold
+            textLabel.TextStrokeTransparency = 0.2
+            textLabel.TextStrokeColor3 = Color3.new(0, 0, 0)
+            textLabel.Parent = billboard
+            
+            billboard.Parent = character
+        elseif character:FindFirstChild("PlayerLabelESP") then
+            local textLabel = character.PlayerLabelESP:FindFirstChildOfClass("TextLabel")
+            if textLabel then
+                textLabel.TextColor3 = PlayerESP_Color
+            end
+        end
+    end
+    
+    if player.Character then
+        setupHighlight(player.Character)
+    end
+    player.CharacterAdded:Connect(setupHighlight)
+end
+
+-- Удаление подсветки с игрока
+local function removePlayerESP(player)
+    if player.Character then
+        local hl = player.Character:FindFirstChild("PlayerHighlightESP")
+        if hl then hl:Destroy() end
+        local lbl = player.Character:FindFirstChild("PlayerLabelESP")
+        if lbl then lbl:Destroy() end
+    end
+end
+
+-- Обновление состояния ЕСП для всех игроков
+local function updatePlayerESP()
+    for _, player in ipairs(Players:GetPlayers()) do
+        if PlayerESP_Enabled then
+            applyPlayerESP(player)
+        else
+            removePlayerESP(player)
+        end
+    end
+end
+
+-- Тумблер включения ЕСП Игроков
+Library:CreateToggle(VisualSections["Esp"], "PlayerEsp", false, function(state)
+    PlayerESP_Enabled = state
+    updatePlayerESP()
 end)
 
-Library:CreateToggle(SettingsSections["UI"], "AntiAFK", false, toggleAntiAFK)
+-- Выбор цветов для ЕСП
+local colorNames = {}
+for name, _ in pairs(ESP_Colors) do table.insert(colorNames, name) end
+table.sort(colorNames)
 
-Library:CreateDropdown(SettingsSections["Theme"], "UITheme", ThemeNamesList, "Deep Ocean", function(selected)
-    Library:UpdateTheme(selected)
+Library:CreateDropdown(VisualSections["Esp"], "EspColor", colorNames, "Green", function(selectedColorName)
+    local selectedColor = ESP_Colors[selectedColorName] or Color3.fromRGB(46, 204, 113)
+    PlayerESP_Color = selectedColor
+    if PlayerESP_Enabled then
+        updatePlayerESP()
+    end
 end)
 
-Library:CreateToggle(SettingsSections["Theme"], "AnimatedWindow", false, toggleAnimatedWindow)
-Library:CreateToggle(SettingsSections["Theme"], "Gradient", false, toggleGradientEffect)
-
-task.spawn(function()
-    UpdateLocalization()
-    Library:UpdateTheme("Deep Ocean")
+-- Отслеживание захода новых игроков для работы ЕСП
+Players.PlayerAdded:Connect(function(player)
+    if PlayerESP_Enabled then
+        player.CharacterAdded:Connect(function(char)
+            task.wait(0.5)
+            if PlayerESP_Enabled then
+                applyPlayerESP(player)
+            end
+        end)
+    end
 end)
+
+-- ============================================================================
+-- НАСТРОЙКИ UI И ТЕМЫ
+-- ============================================================================
+local UISizeNames = {"80%", "90%", "100%", "110%", "120%"}
+local UISizes = {["80%"] = 0.8, ["90%"] = 0.9, ["100%"] = 1.0, ["110%"] = 1.1, ["120%"] = 1.2}
+
+Library:CreateDropdown(SettingsPage, "UISize", UISizeNames, "100%", function(option)
+    local scale = UISizes[option] or 1
+    tween(MainScale, {Scale = scale})
+end)
+
+Library:CreateDropdown(SettingsPage, "UITheme", ThemeNamesList, "Deep Ocean", function(option)
+    Library:UpdateTheme(option)
+end)
+
+Library:CreateDropdown(SettingsPage, "Language", {"English", "Русский"}, "English", function(option)
+    Library.CurrentLanguage = option
+    TabTitle.Text = Localization[option][Library.CurrentTabKey] or Library.CurrentTabKey
+    for _, item in ipairs(LocaleObjects) do
+        if item.Object and item.Object.Parent then
+            local localizedText = Localization[option][item.Key] or item.Key
+            if item.Object:IsA("TextButton") or item.Object:IsA("TextLabel") then
+                item.Object.Text = localizedText
+            end
+            if item.SearchItem then
+                item.SearchItem.SearchText = NormalizeText(localizedText)
+            end
+        end
+    end
+end)
+
+Library:CreateToggle(SettingsPage, "AntiAFK", false, function(state)
+    toggleAntiAFK(state)
+end)
+
+Library:CreateToggle(SettingsPage, "AnimatedWindow", false, function(state)
+    toggleAnimatedWindow(state)
+end)
+
+Library:CreateToggle(SettingsPage, "Gradient", false, function(state)
+    toggleGradientEffect(state)
+end)
+
+Library:UpdateTheme("Deep Ocean")
