@@ -594,7 +594,9 @@ local Localization = {
         ["PlayerEsp"] = "Player ESP", ["EspColor"] = "ESP Color",
         ["WalkSpeed"] = "WalkSpeed", ["JumpPower"] = "JumpPower", ["ResetStats"] = "Reset Modifiers",
         ["TeleportToMap"] = "Teleport to Map", ["TeleportToLobby"] = "Teleport to Lobby",
-        ["SilentAim"] = "Silent Aim", ["AutoHarvest"] = "Auto Harvest"
+        ["SilentAim"] = "Silent Aim", ["AutoHarvest"] = "Auto Harvest",
+        ["HarvestDelay"] = "Harvest Delay (sec)", ["AutoSell"] = "Auto Sell Fruits",
+        ["MaxSellAmount"] = "Max Sell Amount"
     },
     ["Русский"] = {
         ["Main"] = "Главная", ["Teleport"] = "Телепорт", ["Auto"] = "Авто", ["Auto buy"] = "Авто-покупка",
@@ -607,7 +609,9 @@ local Localization = {
         ["PlayerEsp"] = "ESP Игроков", ["EspColor"] = "Цвет ЕСП",
         ["WalkSpeed"] = "Скорость ходьбы", ["JumpPower"] = "Сила прыжка", ["ResetStats"] = "Сбросить модификаторы",
         ["TeleportToMap"] = "Телепортироваться на Карту", ["TeleportToLobby"] = "Телепортироваться в Лобби",
-        ["SilentAim"] = "Сайлент Аим", ["AutoHarvest"] = "Авто-Сбор Урожая"
+        ["SilentAim"] = "Сайлент Аим", ["AutoHarvest"] = "Авто-Сбор Урожая",
+        ["HarvestDelay"] = "Задержка сбора (сек)", ["AutoSell"] = "Авто-Продажа фруктов",
+        ["MaxSellAmount"] = "Макс. продажа за раз"
     }
 }
 
@@ -1469,11 +1473,17 @@ end)
 Library:CreateToggle(AutoBuyPage, "SilentAim", false, function(state) end)
 
 -- ============================================================================
--- [ОБНОВЛЕНО И ИСПРАВЛЕНО] БЕЗОПАСНЫЙ СБОР УРОЖАЯ БЕЗ ТЕЛЕПОРТА
+-- [ОБНОВЛЕНО И ИСПРАВЛЕНО] БЕЗОПАСНЫЙ СБОР УРОЖАЯ БЕЗ ТЕЛЕПОРТА И НАСТРОЙКИ
 -- ============================================================================
 local autoHarvestActive = false
+local harvestDelayTime = 0.5 -- По умолчанию задержка 0.5 секунд
+
 Library:CreateToggle(AutoPage, "AutoHarvest", false, function(state)
     autoHarvestActive = state
+end)
+
+Library:CreateSlider(AutoPage, "HarvestDelay", 1, 50, 5, function(value)
+    harvestDelayTime = value / 10 -- Делим на 10 для диапазона 0.1 - 5.0 секунд
 end)
 
 -- Динамический поиск своей грядки
@@ -1562,7 +1572,7 @@ local function isHarvestable(desc)
     return false
 end
 
--- Поиск урожая поблизости (В РАДИУСЕ СТОЯНИЯ НА ГРЯДКЕ)
+-- Поиск урожая поблизости (с увеличенной дистанцией для больших садов и гигантских растений)
 local function getHarvestables()
     local list = {}
     local player = Players.LocalPlayer
@@ -1574,11 +1584,11 @@ local function getHarvestables()
     local pUserId = tostring(player.UserId)
     local myPlot = findMyPlot()
 
-    -- Проверка на расстояние: увеличили радиус до 120 блоков, чтобы собирать даже очень крупные растения
+    -- Увеличенный максимальный радиус (350 блоков), чтобы покрыть огромные сады и большие растения
     local function isInRange(obj)
         local part = obj.Parent:IsA("BasePart") and obj.Parent or obj:FindFirstAncestorWhichIsA("BasePart")
         if part then
-            return (part.Position - rootPart.Position).Magnitude <= 120
+            return (part.Position - rootPart.Position).Magnitude <= 350
         end
         return false
     end
@@ -1622,12 +1632,12 @@ local function getHarvestables()
                     parent = parent.Parent
                 end
 
-                -- Относим к себе по близости к грядке (увеличено расстояние до 150 блоков)
+                -- Относим к себе по близости к грядке (увеличенный лимит 350 блоков)
                 if not isMine and myPlot then
                     local part = desc.Parent:IsA("BasePart") and desc.Parent or desc:FindFirstAncestorWhichIsA("BasePart")
                     local plotPart = myPlot:IsA("BasePart") and myPlot or myPlot:FindFirstChildWhichIsA("BasePart")
                     if part and plotPart then
-                        if (part.Position - plotPart.Position).Magnitude < 150 then
+                        if (part.Position - plotPart.Position).Magnitude < 350 then
                             isMine = true
                         end
                     end
@@ -1679,10 +1689,10 @@ local function fireClick(clickDec)
     end
 end
 
--- Главный цикл автоматического сбора БЕЗ ТЕЛЕПОРТА
+-- Главный цикл автоматического сбора БЕЗ ТЕЛЕПОРТА (использует установленный слайдером интервал)
 task.spawn(function()
     while true do
-        task.wait(0.2)
+        task.wait(math.max(0.05, harvestDelayTime))
         if autoHarvestActive then
             pcall(function()
                 local player = Players.LocalPlayer
@@ -1700,6 +1710,94 @@ task.spawn(function()
                     elseif desc:IsA("ClickDetector") then
                         fireClick(desc)
                         task.wait(0.05)
+                    end
+                end
+            end)
+        end
+    end
+end)
+
+-- ============================================================================
+-- [НОВОЕ] ФУНКЦИЯ AUTO SELL И СЛАЙДЕР КОЛИЧЕСТВА ПРОДАЖИ
+-- ============================================================================
+local autoSellActive = false
+local maxSellAmount = 100
+
+Library:CreateToggle(AutoPage, "AutoSell", false, function(state)
+    autoSellActive = state
+end)
+
+Library:CreateSlider(AutoPage, "MaxSellAmount", 1, 100, 100, function(value)
+    maxSellAmount = value
+end)
+
+-- Поиск магазина продажи урожая
+local function findSellTarget()
+    for _, obj in ipairs(workspace:GetDescendants()) do
+        if obj:IsA("BasePart") or obj:IsA("Model") then
+            local name = obj.Name:lower()
+            if name:find("sell") or name:find("merchant") or name:find("shop") or name:find("прода") then
+                local prompt = obj:FindFirstChildWhichIsA("ProximityPrompt") or obj:FindFirstAncestorWhichIsA("ProximityPrompt")
+                if prompt then return prompt end
+                
+                local click = obj:FindFirstChildWhichIsA("ClickDetector")
+                if click then return click end
+            end
+        end
+    end
+    
+    -- Поиск резервных ProximityPrompt по тексту продажи
+    for _, prompt in ipairs(workspace:GetDescendants()) do
+        if prompt:IsA("ProximityPrompt") then
+            local actionText = prompt.ActionText:lower()
+            local objectText = prompt.ObjectText:lower()
+            if actionText:find("sell") or objectText:find("sell") or actionText:find("продать") then
+                return prompt
+            end
+        end
+    end
+    return nil
+end
+
+-- Луп автоматической продажи
+task.spawn(function()
+    while true do
+        task.wait(1.5)
+        if autoSellActive then
+            pcall(function()
+                local player = Players.LocalPlayer
+                local backpack = player:FindFirstChild("Backpack")
+                local character = player.Character
+                
+                -- Считаем количество фруктов/урожая в инвентаре
+                local crops = {}
+                local count = 0
+                if backpack then
+                    for _, tool in ipairs(backpack:GetChildren()) do
+                        if tool:IsA("Tool") and not tool:FindFirstChild("Equipped") then
+                            table.insert(crops, tool)
+                            count = count + 1
+                        end
+                    end
+                end
+                if character then
+                    for _, tool in ipairs(character:GetChildren()) do
+                        if tool:IsA("Tool") then
+                            table.insert(crops, tool)
+                            count = count + 1
+                        end
+                    end
+                end
+                
+                -- Если количество фруктов достигло лимита — продаем
+                if count >= maxSellAmount or count >= 100 then
+                    local sellTrigger = findSellTarget()
+                    if sellTrigger then
+                        if sellTrigger:IsA("ProximityPrompt") then
+                            firePrompt(sellTrigger)
+                        elseif sellTrigger:IsA("ClickDetector") then
+                            fireClick(sellTrigger)
+                        end
                     end
                 end
             end)
