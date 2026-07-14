@@ -1696,7 +1696,7 @@ task.spawn(function()
 end)
 
 -- ============================================================================
--- АВТО-ПРОДАЖА ДЛЯ ЛЮБОГО ИНВЕНТАРЯ (СУПЕР-ИМБОВАЯ С БЛИНК-ТЕЛЕПОРТОМ)
+-- АВТО-ПРОДАЖА (БЕЗОПАСНАЯ, ДИСТАНЦИОННАЯ, БЕЗ ЭКИПИРОВКИ И ТЕЛЕПОРТАЦИИ)
 -- ============================================================================
 local autoSellActive = false
 local maxSellAmount = 4 
@@ -1705,370 +1705,118 @@ Library:CreateToggle(AutoPage, "AutoSell", false, function(state)
     autoSellActive = state
 end)
 
-Library:CreateSlider(AutoPage, "MaxSellAmount", 1, 5, 4, function(value)
+Library:CreateSlider(AutoPage, "MaxSellAmount", 1, 50, 4, function(value)
     maxSellAmount = value
 end)
 
-local function activateGameUiButton(btn)
-    if not btn then return end
-    if firesignal then
-        pcall(function() firesignal(btn.Activated) end)
-        pcall(function() firesignal(btn.MouseButton1Click) end)
-        pcall(function() firesignal(btn.MouseButton1Down) end)
-        pcall(function() firesignal(btn.MouseButton1Up) end)
-    else
-        pcall(function() btn:Activate() end)
-    end
-end
-
--- Функция убирания предметов/фруктов из рук (нужно, чтобы не багалась продажа)
-local function unequipAllTools()
-    local character = Players.LocalPlayer.Character
-    if character then
-        local humanoid = character:FindFirstChildOfClass("Humanoid")
-        if humanoid then
-            humanoid:UnequipTools()
+-- Фильтр: Проверяем, является ли предмет фруктом/урожаем, а не инструментом
+local function isFruit(item)
+    if not item:IsA("Tool") then return false end
+    local name = item.Name:lower()
+    local blacklistedTools = {
+        "watering", "can", "shovel", "axe", "scissors", "shears", "bucket", "basket",
+        "pickaxe", "hoe", "scythe", "rake", "seed", "fertilizer", "pot", "glove", "bag",
+        "лейка", "лопата", "топор", "ножницы", "секатор", "коса", "кирка", "семена", "удобрение"
+    }
+    for _, toolName in ipairs(blacklistedTools) do
+        if name:find(toolName) then
+            return false
         end
     end
+    return true
 end
 
--- Поиск скупщика (Стивена) по всей карте
-local function findSellTarget()
-    for _, obj in ipairs(workspace:GetDescendants()) do
-        if obj:IsA("ProximityPrompt") then
-            local parent = obj.Parent
-            local parentName = parent and parent.Name:lower() or ""
-            local actText = obj.ActionText:lower()
-            local objText = obj.ObjectText:lower()
-            
-            if parentName:find("steve") or parentName:find("стив") or 
-               parentName:find("sell") or parentName:find("прод") or
-               objText:find("steve") or objText:find("стив") or 
-               objText:find("sell") or objText:find("прод") or
-               actText:find("sell") or actText:find("прод") or actText:find("talk") or actText:find("говор") then
-                
-                obj.RequiresLineOfSight = false
-                obj.MaxActivationDistance = 999999
-                return obj
+local function getFruitsInInventory()
+    local fruits = {}
+    local backpack = Players.LocalPlayer:FindFirstChild("Backpack")
+    if backpack then
+        for _, item in ipairs(backpack:GetChildren()) do
+            if isFruit(item) then
+                table.insert(fruits, item)
             end
         end
     end
-    return nil
-end
-
--- Клик по кнопке "Продать все" во всех диалогах и GUI игры
-local function clickDialogueOption()
-    local playerGui = Players.LocalPlayer:FindFirstChild("PlayerGui")
-    if not playerGui then return false end
-    
-    local clicked = false
-    for _, v in ipairs(playerGui:GetDescendants()) do
-        if not v:IsDescendantOf(PulseHub) and v:IsA("GuiButton") and v.Visible then
-            local isDialogue = false
-            local parent = v.Parent
-            while parent and parent ~= playerGui do
-                local pName = parent.Name:lower()
-                if pName:find("dialog") or pName:find("talk") or pName:find("chat") or pName:find("npc") or 
-                   pName:find("convo") or pName:find("choice") or pName:find("option") or pName:find("bubble") or 
-                   pName:find("sell") or pName:find("shop") or pName:find("trade") then
-                    isDialogue = true
-                    break
-                end
-                parent = parent.Parent
-            end
-            
-            if isDialogue then
-                local text = v:IsA("TextButton") and v.Text:lower() or ""
-                for _, child in ipairs(v:GetChildren()) do
-                    if child:IsA("TextLabel") then
-                        text = text .. " " .. child.Text:lower()
-                    end
-                end
-                
-                if text:find("все") or text:find("all") or text:find("продать") or text:find("sell") or 
-                   text:find("да") or text:find("yes") or text:find("подтверд") or text:find("confirm") then
-                    activateGameUiButton(v)
-                    clicked = true
-                end
-            end
-        end
-    end
-
-    -- Виртуальная клавиатура на случай скрытых NPC меню
-    pcall(function()
-        local vim = game:GetService("VirtualInputManager")
-        if vim then
-            vim:SendKeyEvent(true, Enum.KeyCode.One, false, game)
-            task.wait(0.01)
-            vim:SendKeyEvent(false, Enum.KeyCode.One, false, game)
-            
-            vim:SendKeyEvent(true, Enum.KeyCode.E, false, game)
-            task.wait(0.01)
-            vim:SendKeyEvent(false, Enum.KeyCode.E, false, game)
-        end
-    end)
-    
-    return clicked
-end
-
--- Блинк-взаимодействие с промптом без фактического передвижения на глазах других игроков
-local function firePromptLocally(prompt)
-    if not prompt then return end
-    prompt.RequiresLineOfSight = false
-    prompt.MaxActivationDistance = 999999
-    
-    local character = Players.LocalPlayer.Character
-    local rootPart = character and character:FindFirstChild("HumanoidRootPart")
-    local promptPart = prompt.Parent:IsA("BasePart") and prompt.Parent or prompt:FindFirstAncestorWhichIsA("BasePart")
-    
-    if rootPart and promptPart then
-        local originalCFrame = rootPart.CFrame
-        
-        -- Сверхбыстрый блинк-порт к NPC, прожимаем промпт и мгновенно возвращаемся назад в том же кадре!
-        rootPart.CFrame = promptPart.CFrame + Vector3.new(0, 1.5, 0)
-        task.wait(0.015) -- 15 миллисекунд для регистрации сервером
-        
-        if fireproximityprompt then
-            fireproximityprompt(prompt)
-        else
-            prompt:InputHoldBegin()
-            task.wait(prompt.HoldDuration + 0.01)
-            prompt:InputHoldEnd()
-        end
-        
-        task.wait(0.015)
-        rootPart.CFrame = originalCFrame
-    else
-        -- Обычный вызов на случай если персонаж умер
-        if fireproximityprompt then
-            fireproximityprompt(prompt)
-        end
-    end
+    return fruits
 end
 
 task.spawn(function()
     while true do
-        task.wait(0.3) -- Проверяем инвентарь каждые 0.3 сек
+        task.wait(1)
         if autoSellActive then
             pcall(function()
-                local playerGui = Players.LocalPlayer:FindFirstChild("PlayerGui")
-                local cropSlotsCount = 0
-                local parsedWeight = 0
-                
-                if playerGui then
-                    for _, v in ipairs(playerGui:GetDescendants()) do
-                        if not v:IsDescendantOf(PulseHub) and v:IsA("TextLabel") and v.Visible then
-                            local t = v.Text:lower()
-                            if t:find("кг") or t:find("kg") or t:find("🎒") or t:find("инвентарь") or t:find("inventory") or t:find("/") then
-                                cropSlotsCount = cropSlotsCount + 1
-                                local numbers = {}
-                                for num in t:gmatch("%d+") do
-                                    table.insert(numbers, tonumber(num))
-                                end
-                                if #numbers >= 1 then
-                                    parsedWeight = numbers[1]
-                                end
-                            end
+                local character = Players.LocalPlayer.Character
+                local rootPart = character and character:FindFirstChild("HumanoidRootPart")
+                if not rootPart then return end
+
+                local fruits = getFruitsInInventory()
+                if #fruits == 0 then return end
+
+                -- Поиск зон продажи (Sell Pad / Merchant Parts)
+                local sellParts = {}
+                for _, obj in ipairs(workspace:GetDescendants()) do
+                    if obj:IsA("BasePart") then
+                        local name = obj.Name:lower()
+                        if name == "sell" or name == "sellpad" or name == "sellzone" or name == "merchant" or name == "shop" or name == "sell_zone" then
+                            table.insert(sellParts, obj)
                         end
                     end
                 end
-                
-                -- Если накопили выбранный лимит или вес
-                if (parsedWeight >= maxSellAmount) or (cropSlotsCount >= maxSellAmount) then
-                    local sellTrigger = findSellTarget()
-                    if sellTrigger then
-                        unequipAllTools()
-                        task.wait(0.05)
-                        
-                        -- Активация блинка и автоклика диалога (делаем циклом для надежности)
-                        for i = 1, 3 do
-                            firePromptLocally(sellTrigger)
-                            task.wait(0.05)
-                            clickDialogueOption()
-                            task.wait(0.05)
+
+                -- Поиск ProximityPrompt для продажи
+                local sellPrompts = {}
+                for _, obj in ipairs(workspace:GetDescendants()) do
+                    if obj:IsA("ProximityPrompt") and obj.Enabled then
+                        local actText = obj.ActionText:lower()
+                        local objText = obj.ObjectText:lower()
+                        local name = obj.Name:lower()
+                        if actText:find("sell") or objText:find("sell") or name:find("sell") or actText:find("продать") or objText:find("продать") then
+                            table.insert(sellPrompts, obj)
                         end
+                    end
+                end
+
+                -- Способ 1: Активация ProximityPrompt торговца (Самый беспалевный способ продать всё скопом)
+                if #sellPrompts > 0 then
+                    for _, prompt in ipairs(sellPrompts) do
+                        firePrompt(prompt)
+                        task.wait(0.1)
+                    end
+                end
+
+                -- Способ 2: Виртуальное касание TouchInterest (для плит продажи)
+                if #sellParts > 0 and firetouchinterest then
+                    local sellCount = 0
+                    for _, fruit in ipairs(fruits) do
+                        if sellCount >= maxSellAmount then break end
+                        if not autoSellActive then break end
+
+                        local originalParent = fruit.Parent
+                        -- Переносим в персонажа на миллисекунду, чтобы сработало касание, но без анимации
+                        fruit.Parent = character
+                        
+                        local handle = fruit:FindFirstChild("Handle") or fruit:FindFirstChildWhichIsA("BasePart")
+                        for _, sellPart in ipairs(sellParts) do
+                            if handle then
+                                firetouchinterest(handle, sellPart, 0)
+                                task.wait(0.02)
+                                firetouchinterest(handle, sellPart, 1)
+                            else
+                                firetouchinterest(rootPart, sellPart, 0)
+                                task.wait(0.02)
+                                firetouchinterest(rootPart, sellPart, 1)
+                            end
+                        end
+
+                        -- Возвращаем обратно в Backpack, если игра не успела уничтожить/продать фрукт
+                        if fruit and fruit.Parent == character then
+                            fruit.Parent = originalParent
+                        end
+
+                        sellCount = sellCount + 1
+                        task.wait(0.1)
                     end
                 end
             end)
         end
     end
 end)
-
--- ============================================================================
--- СУБ-ВКЛАДКА ESP (ДЛЯ ИГРОКОВ)
--- ============================================================================
-local VisualSections = Library:CreateSubTabs(VisualPage, {
-    {Name = "Esp", Icon = "80768064990053", Color = Color3.fromRGB(46, 204, 113)}
-})
-
-local PlayerESP_Enabled = false
-local PlayerESP_Color = Color3.fromRGB(46, 204, 113)
-
-local ESP_Colors = {
-    ["Green"] = Color3.fromRGB(46, 204, 113),
-    ["Red"] = Color3.fromRGB(255, 75, 75),
-    ["Blue"] = Color3.fromRGB(52, 152, 219),
-    ["Yellow"] = Color3.fromRGB(241, 196, 15),
-    ["Cyan"] = Color3.fromRGB(0, 255, 255),
-    ["Purple"] = Color3.fromRGB(155, 89, 182),
-    ["White"] = Color3.fromRGB(255, 255, 255),
-    ["Pink"] = Color3.fromRGB(255, 105, 180)
-}
-
-local function applyPlayerESP(player)
-    if player == Players.LocalPlayer then return end
-    
-    local function setupHighlight(character)
-        if not character then return end
-        
-        local highlight = character:FindFirstChild("PlayerHighlightESP")
-        if not highlight then
-            highlight = Instance.new("Highlight")
-            highlight.Name = "PlayerHighlightESP"
-            highlight.FillColor = PlayerESP_Color
-            highlight.OutlineColor = Color3.new(1, 1, 1)
-            highlight.FillTransparency = 0.5
-            highlight.OutlineTransparency = 0.2
-            highlight.Adornee = character
-            highlight.Parent = character
-        else
-            highlight.FillColor = PlayerESP_Color
-        end
-        
-        local head = character:WaitForChild("Head", 5)
-        if head and not character:FindFirstChild("PlayerLabelESP") then
-            local billboard = Instance.new("BillboardGui")
-            billboard.Name = "PlayerLabelESP"
-            billboard.Size = UDim2.new(0, 120, 0, 30)
-            billboard.AlwaysOnTop = true
-            billboard.StudsOffset = Vector3.new(0, 3, 0)
-            billboard.Adornee = head
-            
-            local textLabel = Instance.new("TextLabel")
-            textLabel.BackgroundTransparency = 1
-            textLabel.Size = UDim2.new(1, 0, 1, 0)
-            textLabel.Text = player.Name
-            textLabel.TextColor3 = PlayerESP_Color
-            textLabel.TextSize = 13
-            textLabel.Font = Enum.Font.GothamBold
-            textLabel.TextStrokeTransparency = 0.2
-            textLabel.TextStrokeColor3 = Color3.new(0, 0, 0)
-            textLabel.Parent = billboard
-            
-            billboard.Parent = character
-        elseif character:FindFirstChild("PlayerLabelESP") then
-            local textLabel = character.PlayerLabelESP:FindFirstChildOfClass("TextLabel")
-            if textLabel then
-                textLabel.TextColor3 = PlayerESP_Color
-            end
-        end
-    end
-    
-    if player.Character then
-        setupHighlight(player.Character)
-    end
-    player.CharacterAdded:Connect(setupHighlight)
-end
-
-local function removePlayerESP(player)
-    if player.Character then
-        local hl = player.Character:FindFirstChild("PlayerHighlightESP")
-        if hl then hl:Destroy() end
-        local lbl = player.Character:FindFirstChild("PlayerLabelESP")
-        if lbl then lbl:Destroy() end
-    end
-end
-
-local function updatePlayerESP()
-    for _, player in ipairs(Players:GetPlayers()) do
-        if PlayerESP_Enabled then
-            applyPlayerESP(player)
-        else
-            removePlayerESP(player)
-        end
-    end
-end
-
-Library:CreateToggle(VisualSections.Esp, "EspToggle", false, function(state)
-    PlayerESP_Enabled = state
-    updatePlayerESP()
-end)
-
-Library:CreateDropdown(VisualSections.Esp, "EspColor", {"Green", "Red", "Blue", "Yellow", "Cyan", "Purple", "White", "Pink"}, "Green", function(colorName)
-    PlayerESP_Color = ESP_Colors[colorName] or Color3.fromRGB(46, 204, 113)
-    updatePlayerESP()
-end)
-
-Players.PlayerAdded:Connect(function(player)
-    if PlayerESP_Enabled then
-        applyPlayerESP(player)
-    end
-end)
-
-Players.PlayerRemoving:Connect(function(player)
-    removePlayerESP(player)
-end)
-
--- ============================================================================
--- НАСТРОЙКИ ИНТЕРФЕЙСА (SETTINGS) С СУБ-ВКЛАДКАМИ UI И THEME
--- ============================================================================
-local SettingsSections = Library:CreateSubTabs(SettingsPage, {
-    {Name = "UI", Icon = "117996761927034", Color = Color3.fromRGB(52, 152, 219)},
-    {Name = "Theme", Icon = "78910169210318", Color = Color3.fromRGB(235, 94, 153)}
-})
-
-Library:CreateDropdown(SettingsSections.UI, "Language", {"English", "Русский"}, "Русский", function(lang)
-    Library.CurrentLanguage = lang
-    for _, loc in ipairs(LocaleObjects) do
-        local key = loc.Key
-        local text = Localization[lang][key] or key
-        loc.Object.Text = text
-        if loc.SearchItem then
-            loc.SearchItem.SearchText = NormalizeText(text)
-        end
-    end
-    TabTitle.Text = Localization[lang][Library.CurrentTabKey] or Library.CurrentTabKey
-end)
-
-Library:CreateSlider(SettingsSections.UI, "UISize", 50, 150, 100, function(value)
-    MainScale.Scale = value / 100
-end)
-
-Library:CreateSlider(SettingsSections.UI, "UITransparency", 0, 90, 15, function(value)
-    currentTransparency = value / 100
-    if not isMinimized then
-        MainFrame.BackgroundTransparency = currentTransparency
-    end
-end)
-
-local fontNames = {}
-for fontName, _ in pairs(FontMapping) do table.insert(fontNames, fontName) end
-table.sort(fontNames)
-
-Library:CreateDropdown(SettingsSections.UI, "MenuFont", fontNames, "Gotham", function(fontName)
-    local selectedFont = FontMapping[fontName] or Enum.Font.Gotham
-    Library.CurrentFont = selectedFont
-    for _, obj in ipairs(PulseHub:GetDescendants()) do
-        if (obj:IsA("TextLabel") or obj:IsA("TextButton") or obj:IsA("TextBox")) and obj.Name ~= "FontPreviewLabel" then
-            obj.Font = selectedFont
-        end
-    end
-end)
-
-Library:CreateToggle(SettingsSections.UI, "AntiAFK", false, function(state)
-    toggleAntiAFK(state)
-end)
-
-Library:CreateDropdown(SettingsSections.Theme, "UITheme", ThemeNamesList, "Deep Ocean", function(theme)
-    Library:UpdateTheme(theme)
-end)
-
-Library:CreateToggle(SettingsSections.Theme, "AnimatedWindow", false, function(state)
-    toggleAnimatedWindow(state)
-end)
-
-Library:CreateToggle(SettingsSections.Theme, "Gradient", false, function(state)
-    toggleGradientEffect(state)
-end)
-
-Library:UpdateTheme("Deep Ocean")
