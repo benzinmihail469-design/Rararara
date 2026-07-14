@@ -596,11 +596,7 @@ local Localization = {
         ["TeleportToMap"] = "Teleport to Map", ["TeleportToLobby"] = "Teleport to Lobby",
         ["SilentAim"] = "Silent Aim", ["AutoHarvest"] = "Auto Harvest",
         ["HarvestDelay"] = "Harvest Delay (sec)", ["AutoSell"] = "Auto Sell Fruits",
-        ["MaxSellAmount"] = "Max Sell Amount",
-        ["AutoWater"] = "Auto-Water Crops",
-        ["WaterDelay"] = "Watering Delay (sec)",
-        ["AutoFertilize"] = "Auto-Fertilize Crops",
-        ["FertilizeDelay"] = "Fertilization Delay (sec)"
+        ["MaxSellAmount"] = "Max Sell Amount"
     },
     ["Русский"] = {
         ["Main"] = "Главная", ["Teleport"] = "Телепорт", ["Auto"] = "Авто", ["Auto buy"] = "Авто-покупка",
@@ -615,11 +611,7 @@ local Localization = {
         ["TeleportToMap"] = "Телепортироваться на Карту", ["TeleportToLobby"] = "Телепортироваться в Лобби",
         ["SilentAim"] = "Сайлент Аим", ["AutoHarvest"] = "Авто-Сбор Урожая",
         ["HarvestDelay"] = "Задержка сбора (сек)", ["AutoSell"] = "Авто-Продажа фруктов",
-        ["MaxSellAmount"] = "Макс. продажа за раз",
-        ["AutoWater"] = "Авто-Полив грядок",
-        ["WaterDelay"] = "Задержка полива (сек)",
-        ["AutoFertilize"] = "Авто-Удобрение грядок",
-        ["FertilizeDelay"] = "Задержка удобрения (сек)"
+        ["MaxSellAmount"] = "Макс. продажа за раз"
     }
 }
 
@@ -1025,7 +1017,7 @@ function Library:CreateToggle(parentPage, textKey, default, callback)
             tween(Indicator, {Position = UDim2.new(1, -16, 0.5, -7), BackgroundColor3 = activeIndicatorColor}, 0.2)
         else
             local bgL = (Library.CurrentThemeData.MainBg.R * 0.299 + Library.CurrentThemeData.MainBg.G * 0.587 + Library.CurrentThemeData.MainBg.B * 0.114)
-            local offColor = (bgL > 0.5) and Color3.fromRGB(210, 210, 210) or Color3.fromRGB(40, 40, 40)
+            local offColor = (bgL > 0.5) nickname Color3.fromRGB(210, 210, 210) or Color3.fromRGB(40, 40, 40)
             tween(Checkbox, {BackgroundColor3 = offColor}, 0.2)
             tween(Indicator, {Position = UDim2.new(0, 2, 0.5, -7), BackgroundColor3 = Color3.fromRGB(255, 255, 255)}, 0.2)
         end
@@ -1490,28 +1482,6 @@ Library:CreateSlider(AutoPage, "HarvestDelay", 1, 50, 5, function(value)
     harvestDelayTime = value / 10 
 end)
 
-local autoWaterActive = false
-local waterDelayTime = 0.5
-
-Library:CreateToggle(AutoPage, "AutoWater", false, function(state)
-    autoWaterActive = state
-end)
-
-Library:CreateSlider(AutoPage, "WaterDelay", 1, 50, 5, function(value)
-    waterDelayTime = value / 10
-end)
-
-local autoFertilizeActive = false
-local fertilizeDelayTime = 0.5
-
-Library:CreateToggle(AutoPage, "AutoFertilize", false, function(state)
-    autoFertilizeActive = state
-end)
-
-Library:CreateSlider(AutoPage, "FertilizeDelay", 1, 50, 5, function(value)
-    fertilizeDelayTime = value / 10
-end)
-
 local function findMyPlot()
     local player = Players.LocalPlayer
     local pName = player.Name:lower()
@@ -1725,70 +1695,8 @@ task.spawn(function()
     end
 end)
 
-task.spawn(function()
-    while true do
-        task.wait(math.max(0.05, waterDelayTime))
-        if autoWaterActive then
-            pcall(function()
-                local player = Players.LocalPlayer
-                local character = player.Character
-                local rootPart = character and character:FindFirstChild("HumanoidRootPart")
-                if not rootPart then return end
-                
-                local myPlot = findMyPlot()
-                if not myPlot then return end
-                
-                for _, desc in ipairs(myPlot:GetDescendants()) do
-                    if desc:IsA("ProximityPrompt") and desc.Enabled then
-                        local name = desc.Name:lower()
-                        local actText = desc.ActionText:lower()
-                        local objText = desc.ObjectText:lower()
-                        
-                        if name:find("water") or actText:find("water") or objText:find("water") or
-                           name:find("полив") or actText:find("полив") or objText:find("полив") then
-                            firePrompt(desc)
-                            task.wait(0.05)
-                        end
-                    end
-                end
-            end)
-        end
-    end
-end)
-
-task.spawn(function()
-    while true do
-        task.wait(math.max(0.05, fertilizeDelayTime))
-        if autoFertilizeActive then
-            pcall(function()
-                local player = Players.LocalPlayer
-                local character = player.Character
-                local rootPart = character and character:FindFirstChild("HumanoidRootPart")
-                if not rootPart then return end
-                
-                local myPlot = findMyPlot()
-                if not myPlot then return end
-                
-                for _, desc in ipairs(myPlot:GetDescendants()) do
-                    if desc:IsA("ProximityPrompt") and desc.Enabled then
-                        local name = desc.Name:lower()
-                        local actText = desc.ActionText:lower()
-                        local objText = desc.ObjectText:lower()
-                        
-                        if name:find("fertilize") or actText:find("fertilize") or objText:find("fertilize") or
-                           name:find("удобр") or actText:find("удобр") or objText:find("удобр") then
-                            firePrompt(desc)
-                            task.wait(0.05)
-                        end
-                    end
-                end
-            end)
-        end
-    end
-end)
-
 -- ============================================================================
--- АВТО-ПРОДАЖА ДЛЯ ЛЮБОГО ИНВЕНТАРЯ (ИСПРАВЛЕНО И ОПТИМИЗИРОВАНО)
+-- АВТО-ПРОДАЖА ДЛЯ ЛЮБОГО ИНВЕНТАРЯ (СУПЕР-ИМБОВАЯ С БЛИНК-ТЕЛЕПОРТОМ)
 -- ============================================================================
 local autoSellActive = false
 local maxSellAmount = 4 
@@ -1806,12 +1714,14 @@ local function activateGameUiButton(btn)
     if firesignal then
         pcall(function() firesignal(btn.Activated) end)
         pcall(function() firesignal(btn.MouseButton1Click) end)
+        pcall(function() firesignal(btn.MouseButton1Down) end)
+        pcall(function() firesignal(btn.MouseButton1Up) end)
     else
         pcall(function() btn:Activate() end)
     end
 end
 
--- Функция убирания предметов/фруктов из рук
+-- Функция убирания предметов/фруктов из рук (нужно, чтобы не багалась продажа)
 local function unequipAllTools()
     local character = Players.LocalPlayer.Character
     if character then
@@ -1822,16 +1732,8 @@ local function unequipAllTools()
     end
 end
 
--- Поиск скупщика (Стивена) по карте по различным ключевым словам
+-- Поиск скупщика (Стивена) по всей карте
 local function findSellTarget()
-    local player = Players.LocalPlayer
-    local character = player.Character
-    local rootPart = character and character:FindFirstChild("HumanoidRootPart")
-    if not rootPart then return nil end
-
-    local bestPrompt = nil
-    local minDistance = 999999 -- Ищем по всей карте
-
     for _, obj in ipairs(workspace:GetDescendants()) do
         if obj:IsA("ProximityPrompt") then
             local parent = obj.Parent
@@ -1845,35 +1747,30 @@ local function findSellTarget()
                objText:find("sell") or objText:find("прод") or
                actText:find("sell") or actText:find("прод") or actText:find("talk") or actText:find("говор") then
                 
-                local part = parent:IsA("BasePart") and parent or obj:FindFirstAncestorWhichIsA("BasePart")
-                if part then
-                    local dist = (part.Position - rootPart.Position).Magnitude
-                    if dist < minDistance then
-                        minDistance = dist
-                        bestPrompt = obj
-                    end
-                end
+                obj.RequiresLineOfSight = false
+                obj.MaxActivationDistance = 999999
+                return obj
             end
         end
     end
-    return bestPrompt
+    return nil
 end
 
--- Клик по кнопке "Продать все" в диалоговом окне
+-- Клик по кнопке "Продать все" во всех диалогах и GUI игры
 local function clickDialogueOption()
     local playerGui = Players.LocalPlayer:FindFirstChild("PlayerGui")
     if not playerGui then return false end
     
     local clicked = false
     for _, v in ipairs(playerGui:GetDescendants()) do
-        -- Проверяем, что кнопка видима и не принадлежит PulseHub
-        if not v:IsDescendantOf(PulseHub) and (v:IsA("TextButton") or v:IsA("ImageButton")) and v.Visible then
-            -- Ищем, находится ли кнопка внутри GUI диалога
+        if not v:IsDescendantOf(PulseHub) and v:IsA("GuiButton") and v.Visible then
             local isDialogue = false
             local parent = v.Parent
             while parent and parent ~= playerGui do
                 local pName = parent.Name:lower()
-                if pName:find("dialog") or pName:find("talk") or pName:find("chat") or pName:find("npc") or pName:find("convo") or pName:find("choice") or pName:find("option") or pName:find("bubble") then
+                if pName:find("dialog") or pName:find("talk") or pName:find("chat") or pName:find("npc") or 
+                   pName:find("convo") or pName:find("choice") or pName:find("option") or pName:find("bubble") or 
+                   pName:find("sell") or pName:find("shop") or pName:find("trade") then
                     isDialogue = true
                     break
                 end
@@ -1888,39 +1785,72 @@ local function clickDialogueOption()
                     end
                 end
                 
-                -- Приоритет кнопкам "все", "all", "продать все", "sell all"
-                if text:find("все") or text:find("all") or text:find("продать") or text:find("sell") or text:find("да") or text:find("yes") then
+                if text:find("все") or text:find("all") or text:find("продать") or text:find("sell") or 
+                   text:find("да") or text:find("yes") or text:find("подтверд") or text:find("confirm") then
                     activateGameUiButton(v)
                     clicked = true
-                    break
                 end
             end
         end
     end
 
-    -- Резервный вариант: симуляция нажатия клавиш диалога
-    if not clicked then
-        pcall(function()
-            game:GetService("VirtualInputManager"):SendKeyEvent(true, Enum.KeyCode.One, false, game)
-            task.wait(0.02)
-            game:GetService("VirtualInputManager"):SendKeyEvent(false, Enum.KeyCode.One, false, game)
-        end)
-        pcall(function()
-            game:GetService("VirtualUser"):TypeKey("1")
-        end)
-    end
+    -- Виртуальная клавиатура на случай скрытых NPC меню
+    pcall(function()
+        local vim = game:GetService("VirtualInputManager")
+        if vim then
+            vim:SendKeyEvent(true, Enum.KeyCode.One, false, game)
+            task.wait(0.01)
+            vim:SendKeyEvent(false, Enum.KeyCode.One, false, game)
+            
+            vim:SendKeyEvent(true, Enum.KeyCode.E, false, game)
+            task.wait(0.01)
+            vim:SendKeyEvent(false, Enum.KeyCode.E, false, game)
+        end
+    end)
     
     return clicked
 end
 
+-- Блинк-взаимодействие с промптом без фактического передвижения на глазах других игроков
+local function firePromptLocally(prompt)
+    if not prompt then return end
+    prompt.RequiresLineOfSight = false
+    prompt.MaxActivationDistance = 999999
+    
+    local character = Players.LocalPlayer.Character
+    local rootPart = character and character:FindFirstChild("HumanoidRootPart")
+    local promptPart = prompt.Parent:IsA("BasePart") and prompt.Parent or prompt:FindFirstAncestorWhichIsA("BasePart")
+    
+    if rootPart and promptPart then
+        local originalCFrame = rootPart.CFrame
+        
+        -- Сверхбыстрый блинк-порт к NPC, прожимаем промпт и мгновенно возвращаемся назад в том же кадре!
+        rootPart.CFrame = promptPart.CFrame + Vector3.new(0, 1.5, 0)
+        task.wait(0.015) -- 15 миллисекунд для регистрации сервером
+        
+        if fireproximityprompt then
+            fireproximityprompt(prompt)
+        else
+            prompt:InputHoldBegin()
+            task.wait(prompt.HoldDuration + 0.01)
+            prompt:InputHoldEnd()
+        end
+        
+        task.wait(0.015)
+        rootPart.CFrame = originalCFrame
+    else
+        -- Обычный вызов на случай если персонаж умер
+        if fireproximityprompt then
+            fireproximityprompt(prompt)
+        end
+    end
+end
+
 task.spawn(function()
     while true do
-        task.wait(1) 
+        task.wait(0.3) -- Проверяем инвентарь каждые 0.3 сек
         if autoSellActive then
             pcall(function()
-                -- Постоянно убираем предметы из рук, чтобы персонаж не держал фрукты
-                unequipAllTools()
-                
                 local playerGui = Players.LocalPlayer:FindFirstChild("PlayerGui")
                 local cropSlotsCount = 0
                 local parsedWeight = 0
@@ -1929,32 +1859,34 @@ task.spawn(function()
                     for _, v in ipairs(playerGui:GetDescendants()) do
                         if not v:IsDescendantOf(PulseHub) and v:IsA("TextLabel") and v.Visible then
                             local t = v.Text:lower()
-                            if t:find("кг") or t:find("kg") or t:find("🎒") or t:find("инвентарь") or t:find("inventory") then
+                            if t:find("кг") or t:find("kg") or t:find("🎒") or t:find("инвентарь") or t:find("inventory") or t:find("/") then
                                 cropSlotsCount = cropSlotsCount + 1
-                                local n1 = t:match("(%d+)")
-                                if n1 then
-                                    local val = tonumber(n1)
-                                    if val and val > parsedWeight then
-                                        parsedWeight = val
-                                    end
+                                local numbers = {}
+                                for num in t:gmatch("%d+") do
+                                    table.insert(numbers, tonumber(num))
+                                end
+                                if #numbers >= 1 then
+                                    parsedWeight = numbers[1]
                                 end
                             end
                         end
                     end
                 end
                 
-                -- Если заполнено до лимита
-                if (parsedWeight >= maxSellAmount) or (cropSlotsCount >= maxSellAmount and parsedWeight == 0) then
+                -- Если накопили выбранный лимит или вес
+                if (parsedWeight >= maxSellAmount) or (cropSlotsCount >= maxSellAmount) then
                     local sellTrigger = findSellTarget()
                     if sellTrigger then
-                        -- Дополнительно убираем вещи из рук прямо перед взаимодействием
                         unequipAllTools()
-                        task.wait(0.1)
+                        task.wait(0.05)
                         
-                        firePrompt(sellTrigger)
-                        task.wait(0.4) 
-                        
-                        clickDialogueOption()
+                        -- Активация блинка и автоклика диалога (делаем циклом для надежности)
+                        for i = 1, 3 do
+                            firePromptLocally(sellTrigger)
+                            task.wait(0.05)
+                            clickDialogueOption()
+                            task.wait(0.05)
+                        end
                     end
                 end
             end)
