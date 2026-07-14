@@ -1738,17 +1738,16 @@ task.spawn(function()
                 -- Если есть фрукты, запускаем полностью скрытую продажу
                 if hasFruits then
                     
-                    -- Метод 1: Самый скрытный. Поиск GUI-кнопок продажи из твоего скриншота (3628.jpg) и тихая активация
-                    local textsToFind = {"продать инвентарь", "sell inventory", "продай это", "продать", "sell"}
-                    local guiLocations = {player:WaitForChild("PlayerGui"), workspace} -- Ищем в интерфейсе и в BillboardGui над NPC
+                    -- Метод 1: Поиск GUI-кнопок продажи из диалога (как на скриншоте 3627.jpg)
+                    -- Убраны слова "продать" и "sell", чтобы скрипт не нажимал на верхнюю желтую кнопку
+                    local textsToFind = {"продать инвентарь", "sell inventory", "продай это"}
+                    local guiLocations = {player:WaitForChild("PlayerGui"), workspace} 
                     
                     for _, loc in ipairs(guiLocations) do
                         for _, obj in ipairs(loc:GetDescendants()) do
-                            -- Ищем кнопки диалога
                             if obj:IsA("TextButton") or obj:IsA("ImageButton") then
                                 local btnText = ""
                                 if obj:IsA("TextButton") then btnText = obj.Text:lower() end
-                                -- Если внутри кнопки есть TextLabel, читаем и его
                                 for _, child in ipairs(obj:GetDescendants()) do
                                     if child:IsA("TextLabel") then
                                         btnText = btnText .. " " .. child.Text:lower()
@@ -1757,11 +1756,14 @@ task.spawn(function()
 
                                 for _, target in ipairs(textsToFind) do
                                     if btnText:find(target) then
-                                        -- Если эксплойт поддерживает getconnections, мы нажимаем кнопку ИДЕАЛЬНО ТИХО, без курсора
-                                        if getconnections then
-                                            for _, conn in ipairs(getconnections(obj.Activated)) do conn:Fire() end
-                                            for _, conn in ipairs(getconnections(obj.MouseButton1Click)) do conn:Fire() end
-                                            for _, conn in ipairs(getconnections(obj.MouseButton1Down)) do conn:Fire() end
+                                        -- На 100% исключаем кнопку телепорта, если она случайно попалась
+                                        if not obj.Name:lower():find("teleport") and not (btnText == "продать" or btnText == "sell") then
+                                            -- Нажимаем кнопку ИДЕАЛЬНО ТИХО
+                                            if getconnections then
+                                                for _, conn in ipairs(getconnections(obj.Activated)) do conn:Fire() end
+                                                for _, conn in ipairs(getconnections(obj.MouseButton1Click)) do conn:Fire() end
+                                                for _, conn in ipairs(getconnections(obj.MouseButton1Down)) do conn:Fire() end
+                                            end
                                         end
                                     end
                                 end
@@ -1769,16 +1771,18 @@ task.spawn(function()
                         end
                     end
 
-                    -- Метод 2: Напрямую дергаем RemoteEvents продажи (работает с любой дистанции моментально)
+                    -- Метод 2: Напрямую дергаем RemoteEvents продажи
                     for _, obj in ipairs(game:GetService("ReplicatedStorage"):GetDescendants()) do
                         if obj:IsA("RemoteEvent") or obj:IsA("RemoteFunction") then
                             local name = obj.Name:lower()
                             if name:find("sell") or name:find("продать") then
-                                if obj:IsA("RemoteEvent") then
-                                    obj:FireServer()
-                                else
-                                    -- Оборачиваем RemoteFunction в task.spawn чтобы скрипт не завис
-                                    task.spawn(function() pcall(function() obj:InvokeServer() end) end)
+                                -- Защита от эвентов телепорта
+                                if not name:find("teleport") then
+                                    if obj:IsA("RemoteEvent") then
+                                        obj:FireServer()
+                                    else
+                                        task.spawn(function() pcall(function() obj:InvokeServer() end) end)
+                                    end
                                 end
                             end
                         end
