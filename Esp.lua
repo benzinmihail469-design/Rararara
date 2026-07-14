@@ -1449,9 +1449,11 @@ local VisualSections = Library:CreateSubTabs(VisualPage, {
 
 local ESP_Enabled = false
 local fruitHighlights = {}
+local workspaceConnection = nil
 
 -- Проверка, находится ли фрукт в руках игрока или в рюкзаке (инвентаре)
 local function isHeldOrOwned(child)
+    if not child or not child.Parent then return true end
     for _, player in ipairs(Players:GetPlayers()) do
         if player.Character and child:IsDescendantOf(player.Character) then
             return true
@@ -1467,32 +1469,41 @@ local function isHeldOrOwned(child)
     return false
 end
 
--- Динамический поиск папок грядок на карте для оптимизации
-local function getTargetFolders()
-    local folders = {}
-    local searchNames = {"plots", "gardens", "beds", "griadki", "playerplots", "lands", "грядки", "сады"}
+-- Динамический и максимально глубокий поиск папки с грядками на карте
+local function findPlotsFolder()
+    local searchNames = {"plots", "gardens", "beds", "griadki", "playerplots", "lands", "грядки", "сады", "plot"}
+    -- Сначала ищем в корне
     for _, child in ipairs(workspace:GetChildren()) do
         local cName = child.Name:lower()
         for _, name in ipairs(searchNames) do
             if cName:find(name) then
-                table.insert(folders, child)
-                break
+                return child
             end
         end
     end
-    return folders
+    -- Если не нашли, ищем внутри папок карт / окружения
+    local env = workspace:FindFirstChild("Map") or workspace:FindFirstChild("Environment") or workspace:FindFirstChild("Normal")
+    if env then
+        for _, child in ipairs(env:GetChildren()) do
+            local cName = child.Name:lower()
+            for _, name in ipairs(searchNames) do
+                if cName:find(name) then
+                    return child
+                end
+            end
+        end
+    end
+    return nil
 end
 
 -- Проверка, является ли объект исключительно выросшим фруктом/урожаем
 local function isFruit(child)
-    if not (child:IsA("Model") or child:IsA("BasePart")) then return false end
+    if not child or not child.Parent then return false end
+    if not child:IsA("Model") then return false end -- Ограничиваемся только моделями растений
     if child.Name == "FruitSelectionBoxESP" or child.Name == "FruitLabelESP" then return false end
     
     -- Игнорируем фрукты, которые в руках или в инвентаре
     if isHeldOrOwned(child) then return false end
-    
-    -- Если у родителя уже висит ESP, не нужно дублировать на дочерние части!
-    if child.Parent and fruitHighlights[child.Parent] then return false end
     
     local name = child.Name:lower()
     
@@ -1504,7 +1515,7 @@ local function isFruit(child)
         "merchant", "npc", "stage", "sprout", "stem", "leaf", "leaves", "fertilizer", 
         "tool", "bag", "chest", "teleport", "семена", "горшок", "магазин", "покупка", 
         "camera", "localplayer", "humanoid", "part", "meshpart", "handle", "rig", "workspace",
-        "hitbox", "collider", "interaction", "bbg", "gui", "sound", "attachment"
+        "hitbox", "collider", "interaction", "bbg", "gui", "sound", "attachment", "player"
     }
     
     for _, badWord in ipairs(blacklist) do
@@ -1526,7 +1537,15 @@ local function isFruit(child)
         currentParent = currentParent.Parent
     end
     
-    -- Белый список (готовые фрукты, ягоды, редкие растения, пчелы)
+    -- Если у нас есть папка грядок, и модель находится внутри неё, то это 100% растение
+    local plotsFolder = findPlotsFolder()
+    if plotsFolder and child:IsDescendantOf(plotsFolder) then
+        if child == plotsFolder then return false end
+        if child.Parent == plotsFolder then return false end -- Игнорируем контейнеры участков (например "PlayerPlot")
+        return true
+    end
+    
+    -- Резервный белый список (готовые фрукты, ягоды, редкие растения, пчелы), если папки участков нет
     local fruitNames = {
         "fruit", "apple", "banana", "berry", "orange", "lemon", "strawberry", 
         "cherry", "grape", "dragon", "pineapple", "watermelon", "peach", 
@@ -1534,29 +1553,16 @@ local function isFruit(child)
         "pumpkin", "cabbage", "wheat", "corn", "gold", "bee", "flower", "rose", "tulip",
         "фрукт", "яблоко", "банан", "цветок", "роза", "пчела", "морковь", "капуста", "тыква",
         "beet", "onion", "radish", "turnip", "eggplant", "pepper", "cucumber", "garlic",
-        "king bee", "meow"
+        "king bee", "meow", "plant", "crop", "tree", "bush", "harvest"
     }
     
-    local isMatch = false
     for _, fName in ipairs(fruitNames) do
         if name:find(fName) then
-            isMatch = true
-            break
+            return true
         end
     end
     
-    -- Если сам объект — обычная деталь BasePart внутри Модели, которая совпадает с белым списком (например, листик в "Carrot"),
-    -- мы возвращаем false, чтобы ESP повесился на всю модель, а не на ее отдельные дочерние элементы!
-    if child:IsA("BasePart") and child.Parent and child.Parent:IsA("Model") then
-        local pName = child.Parent.Name:lower()
-        for _, fName in ipairs(fruitNames) do
-            if pName:find(fName) then
-                return false
-            end
-        end
-    end
-    
-    return isMatch or child:GetAttribute("IsFruit") == true
+    return child:GetAttribute("IsFruit") == true or child:GetAttribute("Stage") ~= nil
 end
 
 local function removeFruitESP(fruit)
@@ -1569,18 +1575,17 @@ local function removeFruitESP(fruit)
 end
 
 local function applyFruitESP(fruit)
-    if fruitHighlights[fruit] then return end
+    if not fruit or fruitHighlights[fruit] then return end
     
-    local adorneePart = fruit
-    if fruit:IsA("Model") then
-        adorneePart = fruit.PrimaryPart or fruit:FindFirstChildOfClass("BasePart") or fruit
-    end
+    -- Ищем надежный объект привязки внутри модели
+    local adorneePart = fruit:IsA("Model") and (fruit.PrimaryPart or fruit:FindFirstChildOfClass("BasePart")) or fruit
+    if not adorneePart then return end
     
     -- SelectionBox вместо Highlight (убирает лимит 31 шт, не вызывает лаги)
     local box = Instance.new("SelectionBox")
     box.Name = "FruitSelectionBoxESP"
-    box.Color3 = Color3.fromRGB(46, 204, 113) -- Красивая зеленая обводка
-    box.LineThickness = 0.04
+    box.Color3 = Color3.fromRGB(46, 204, 113) -- Элегантная зеленая обводка
+    box.LineThickness = 0.05
     box.Adornee = fruit
     box.Parent = fruit
     
@@ -1589,7 +1594,7 @@ local function applyFruitESP(fruit)
     billboard.Name = "FruitLabelESP"
     billboard.Size = UDim2.new(0, 120, 0, 30)
     billboard.AlwaysOnTop = true
-    billboard.StudsOffset = Vector3.new(0, 2, 0)
+    billboard.StudsOffset = Vector3.new(0, 2.5, 0)
     billboard.Adornee = adorneePart
     
     local textLabel = Instance.new("TextLabel")
@@ -1605,9 +1610,9 @@ local function applyFruitESP(fruit)
     
     textLabel.Text = displayName
     textLabel.TextColor3 = Color3.fromRGB(46, 204, 113)
-    textLabel.TextSize = 12
+    textLabel.TextSize = 13
     textLabel.Font = Enum.Font.GothamBold
-    textLabel.TextStrokeTransparency = 0.3
+    textLabel.TextStrokeTransparency = 0.2
     textLabel.TextStrokeColor3 = Color3.fromRGB(0, 0, 0)
     textLabel.Parent = billboard
     
@@ -1622,42 +1627,41 @@ local function cleanupESP()
     table.clear(fruitHighlights)
 end
 
--- Оптимизированный фоновый сканер (срабатывает каждые 1.5 секунды)
+-- Оптимизированный первичный сканер
 local function scanAndApply()
     if not ESP_Enabled then return end
     
-    for fruit, _ in pairs(fruitHighlights) do
-        if not fruit or not fruit.Parent or isHeldOrOwned(fruit) then
-            removeFruitESP(fruit)
-        end
-    end
-
-    local targetFolders = getTargetFolders()
-    if #targetFolders > 0 then
-        for _, folder in ipairs(targetFolders) do
-            for _, desc in ipairs(folder:GetDescendants()) do
-                if not ESP_Enabled then break end
-                if isFruit(desc) then
-                    applyFruitESP(desc)
-                end
+    local plotsFolder = findPlotsFolder()
+    if plotsFolder then
+        for _, desc in ipairs(plotsFolder:GetDescendants()) do
+            if not ESP_Enabled then break end
+            if isFruit(desc) then
+                pcall(applyFruitESP, desc)
             end
         end
     else
-        -- Резервный поиск по всей карте, если папки участков не определились
+        -- Резервный поиск по всей карте, если папка грядок еще не загрузилась
         for _, desc in ipairs(workspace:GetDescendants()) do
             if not ESP_Enabled then break end
             if isFruit(desc) then
-                applyFruitESP(desc)
+                pcall(applyFruitESP, desc)
             end
         end
     end
 end
 
+-- Очистка несуществующих или сорванных фруктов в фоновом режиме (раз в 5 сек)
 task.spawn(function()
     while true do
-        task.wait(1.5)
+        task.wait(5)
         if ESP_Enabled then
-            pcall(scanAndApply)
+            pcall(function()
+                for fruit, _ in pairs(fruitHighlights) do
+                    if not fruit or not fruit.Parent or isHeldOrOwned(fruit) then
+                        removeFruitESP(fruit)
+                    end
+                end
+            end)
         end
     end
 end)
@@ -1666,7 +1670,20 @@ local function toggleFruitESP(state)
     ESP_Enabled = state
     if ESP_Enabled then
         pcall(scanAndApply)
+        -- Слушатель событий, который вешает ESP на новые выросшие фрукты мгновенно
+        if not workspaceConnection then
+            workspaceConnection = workspace.DescendantAdded:Connect(function(desc)
+                task.wait(0.1) -- Небольшая задержка для загрузки свойств объекта
+                if ESP_Enabled and isFruit(desc) then
+                    pcall(applyFruitESP, desc)
+                end
+            end)
+        end
     else
+        if workspaceConnection then
+            workspaceConnection:Disconnect()
+            workspaceConnection = nil
+        end
         cleanupESP()
     end
 end
