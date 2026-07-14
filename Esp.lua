@@ -1450,10 +1450,30 @@ local VisualSections = Library:CreateSubTabs(VisualPage, {
 local ESP_Enabled = false
 local fruitHighlights = {}
 
+-- Проверка, находится ли фрукт в руках игрока или в рюкзаке (инвентаре)
+local function isHeldOrOwned(child)
+    for _, player in ipairs(Players:GetPlayers()) do
+        if player.Character and child:IsDescendantOf(player.Character) then
+            return true
+        end
+    end
+    local localPlayer = Players.LocalPlayer
+    if localPlayer then
+        local backpack = localPlayer:FindFirstChild("Backpack")
+        if backpack and child:IsDescendantOf(backpack) then
+            return true
+        end
+    end
+    return false
+end
+
 -- Проверка, является ли объект исключительно выросшим фруктом/урожаем
 local function isFruit(child)
     if not (child:IsA("Model") or child:IsA("BasePart")) then return false end
     if child.Name == "FruitSelectionBoxESP" or child.Name == "FruitLabelESP" then return false end
+    
+    -- Игнорируем фрукты, которые в руках или в инвентаре
+    if isHeldOrOwned(child) then return false end
     
     -- Если у родителя уже висит ESP, не нужно вешать на дочерние части!
     if child.Parent and fruitHighlights[child.Parent] then return false end
@@ -1549,8 +1569,9 @@ local function scanAndApply()
     if not ESP_Enabled then return end
     
     for fruit, _ in pairs(fruitHighlights) do
-        if not fruit or not fruit.Parent then
-            fruitHighlights[fruit] = nil
+        -- Если объект уничтожен или оказался у кого-то в руках/инвентаре — снимаем ESP
+        if not fruit or not fruit.Parent or isHeldOrOwned(fruit) then
+            removeFruitESP(fruit)
         end
     end
 
