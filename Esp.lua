@@ -552,6 +552,10 @@ function Library:UpdateTheme(themeName)
                     optData.Label.TextColor3 = subTextColor
                 end
             end
+        elseif data.Type == "Slider" then
+            if data.Fill and data.Fill.Parent then
+                tween(data.Fill, {BackgroundColor3 = theme.Accent})
+            end
         end
     end
 end
@@ -578,34 +582,23 @@ table.insert(Library.TrackedMainText, EmbMinBtn)
 table.insert(Library.TrackedMainText, EmbCloseBtn)
 
 local SearchableElements = {}
-local LocaleObjects = {}
 
 local Localization = {
     ["English"] = {
-        ["Main"] = "Main", ["Teleport"] = "Teleport", ["Auto"] = "Auto", ["Auto buy"] = "Auto buy",
-        ["Players"] = "Players", ["Visual"] = "Visual", ["Settings"] = "Settings", ["UI"] = "UI",
-        ["Theme"] = "Theme", ["AutoFarmCoins"] = "Auto-Farm Coins",
-        ["UISize"] = "UI Size", ["UITransparency"] = "UI Transparency", ["MenuFont"] = "Menu Font",
-        ["Language"] = "Language", ["AntiAFK"] = "Anti-AFK", ["UITheme"] = "UI Theme",
+        ["Main"] = "Main", ["Players"] = "Players", ["Visual"] = "Visual", ["Settings"] = "Settings",
+        ["AntiAFK"] = "Anti-AFK", ["UITheme"] = "UI Theme", ["Language"] = "Language",
         ["AnimatedWindow"] = "Animated Window", ["Gradient"] = "Gradient Background",
-        ["Esp"] = "ESP", ["EspToggle"] = "Enable ESP / Player Roles",
-        ["PlayerEsp"] = "Player ESP", ["EspColor"] = "ESP Color",
-        ["WalkSpeed"] = "WalkSpeed", ["JumpPower"] = "JumpPower", ["ResetStats"] = "Reset Modifiers",
-        ["TeleportToMap"] = "Teleport to Map", ["TeleportToLobby"] = "Teleport to Lobby",
-        ["SilentAim"] = "Silent Aim", ["AutoHarvest"] = "Auto Harvest"
+        ["PlayerEsp"] = "Player ESP", ["EspColor"] = "ESP Color", ["EspToggle"] = "Enable Modifiers",
+        ["WalkSpeed"] = "WalkSpeed", ["JumpPower"] = "JumpPower", ["AutoHarvest"] = "Auto Harvest",
+        ["SafeTeleport"] = "Teleport to Plant", ["HarvestSpeed"] = "Harvest Speed (sec)"
     },
     ["Русский"] = {
-        ["Main"] = "Главная", ["Teleport"] = "Телепорт", ["Auto"] = "Авто", ["Auto buy"] = "Авто-покупка",
-        ["Players"] = "Игроки", ["Visual"] = "Визуалы", ["Settings"] = "Настройки", ["UI"] = "Интерфейс",
-        ["Theme"] = "Тема", ["AutoFarmCoins"] = "Авто-Фарм Монет",
-        ["UISize"] = "Размер интерфейса", ["UITransparency"] = "Прозрачность меню", ["MenuFont"] = "Шрифт меню",
-        ["Language"] = "Язык", ["AntiAFK"] = "Анти-АФК", ["UITheme"] = "Тема UI",
+        ["Main"] = "Главная", ["Players"] = "Игроки", ["Visual"] = "Визуалы", ["Settings"] = "Настройки",
+        ["AntiAFK"] = "Анти-АФК", ["UITheme"] = "Тема UI", ["Language"] = "Язык",
         ["AnimatedWindow"] = "Анимированное окно", ["Gradient"] = "Градиентный фон",
-        ["Esp"] = "ЕСП", ["EspToggle"] = "Включить ЕСП / Роли игроков",
-        ["PlayerEsp"] = "ESP Игроков", ["EspColor"] = "Цвет ЕСП",
-        ["WalkSpeed"] = "Скорость ходьбы", ["JumpPower"] = "Сила прыжка", ["ResetStats"] = "Сбросить модификаторы",
-        ["TeleportToMap"] = "Телепортироваться на Карту", ["TeleportToLobby"] = "Телепортироваться в Лобби",
-        ["SilentAim"] = "Сайлент Аим", ["AutoHarvest"] = "Авто-Сбор Урожая"
+        ["PlayerEsp"] = "ESP Игроков", ["EspColor"] = "Цвет ЕСП", ["EspToggle"] = "Включить Модификаторы",
+        ["WalkSpeed"] = "Скорость ходьбы", ["JumpPower"] = "Сила прыжка", ["AutoHarvest"] = "Авто-Сбор Урожая",
+        ["SafeTeleport"] = "Телепорт к растению", ["HarvestSpeed"] = "Задержка сбора (сек)"
     }
 }
 
@@ -711,12 +704,339 @@ end)
 
 ClearSearchBtn.Activated:Connect(function() SearchBox.Text = "" end)
 
-local FontMapping = {
-    ["Gotham"] = Enum.Font.Gotham, ["Gotham Bold"] = Enum.Font.GothamBold, ["Source Sans"] = Enum.Font.SourceSans,
-    ["Roboto"] = Enum.Font.Roboto, ["Roboto Mono"] = Enum.Font.RobotoMono, ["Ubuntu"] = Enum.Font.Ubuntu,
-    ["Michroma"] = Enum.Font.Michroma, ["Code"] = Enum.Font.Code, ["Fantasy"] = Enum.Font.Fantasy,
-    ["Fredoka One"] = Enum.Font.FredokaOne
-}
+-- ============================================================================
+-- [НОВЫЕ ФУНКЦИИ И СТРУКТУРЫ РАСШИРЕНИЯ БИБЛИОТЕКИ]
+-- ============================================================================
+
+function Library:CreateTab(tabName, iconId)
+    local localizedTabName = Localization[Library.CurrentLanguage][tabName] or tabName
+    
+    local TabContainer = Instance.new("Frame", Navigation)
+    TabContainer.Name = "TabContainer"
+    TabContainer.Size = UDim2.new(1, 0, 0, 32)
+    TabContainer.BackgroundTransparency = 1
+    TabContainer.LayoutOrder = #Navigation:GetChildren()
+    Instance.new("UICorner", TabContainer).CornerRadius = UDim.new(0, 6)
+    
+    local TabBtn = Instance.new("TextButton", TabContainer)
+    TabBtn.Size = UDim2.new(1, 0, 1, 0)
+    TabBtn.BackgroundTransparency = 1
+    TabBtn.Text = ""
+    TabBtn.ZIndex = 5
+    
+    local TabLabel = Instance.new("TextLabel", TabBtn)
+    TabLabel.Size = UDim2.new(1, -35, 1, 0)
+    TabLabel.Position = UDim2.new(0, 30, 0, 0)
+    TabLabel.Text = localizedTabName
+    TabLabel.Font = Library.CurrentFont
+    TabLabel.TextColor3 = Color3.fromRGB(140, 140, 140)
+    TabLabel.TextSize = 12
+    TabLabel.TextXAlignment = Enum.TextXAlignment.Left
+    TabLabel.BackgroundTransparency = 1
+    TabLabel.ZIndex = 6
+    
+    local TabIcon = Instance.new("ImageLabel", TabBtn)
+    TabIcon.Size = UDim2.new(0, 16, 0, 16)
+    TabIcon.Position = UDim2.new(0, 8, 0.5, -8)
+    TabIcon.BackgroundTransparency = 1
+    TabIcon.Image = iconId or "rbxassetid://6023426915"
+    TabIcon.ImageColor3 = Color3.fromRGB(140, 140, 140)
+    TabIcon.ZIndex = 6
+    
+    local Page = Instance.new("ScrollingFrame", PagesContainer)
+    Page.Name = tabName .. "Page"
+    Page.Size = UDim2.new(1, 0, 1, 0)
+    Page.BackgroundTransparency = 1
+    Page.Visible = false
+    Page.ScrollBarThickness = 2
+    Page.ScrollBarImageColor3 = Color3.fromRGB(50, 50, 50)
+    Page.ZIndex = 4
+    
+    local PageLayout = Instance.new("UIListLayout", Page)
+    PageLayout.Padding = UDim.new(0, 8)
+    PageLayout.HorizontalAlignment = Enum.HorizontalAlignment.Center
+    PageLayout.SortOrder = Enum.SortOrder.LayoutOrder
+    Instance.new("UIPadding", Page).PaddingTop = UDim.new(0, 2)
+    
+    PageLayout:GetPropertyChangedSignal("AbsoluteContentSize"):Connect(function()
+        Page.CanvasSize = UDim2.new(0, 0, 0, PageLayout.AbsoluteContentSize.Y + 15)
+    end)
+    
+    allTabs[tabName] = TabContainer
+    allTabButtons[tabName] = TabLabel
+    allTabIcons[tabName] = TabIcon
+    allPages[tabName] = Page
+    
+    table.insert(Library.TrackedElementBg, TabContainer)
+    
+    local function selectTab()
+        Library.CurrentTabKey = tabName
+        TabTitle.Text = Localization[Library.CurrentLanguage][tabName] or tabName
+        
+        for name, page in pairs(allPages) do
+            page.Visible = (name == tabName)
+        end
+        
+        Library:UpdateTheme(Library.CurrentThemeName or "Deep Ocean")
+    end
+    
+    TabBtn.Activated:Connect(selectTab)
+    
+    if Library.CurrentTabKey == tabName then
+        task.spawn(selectTab)
+    end
+    
+    return Page
+end
+
+function Library:CreateToggle(parentPage, textKey, default, callback)
+    local localizedText = Localization[Library.CurrentLanguage][textKey] or textKey
+    
+    local ToggleFrame = Instance.new("Frame", parentPage)
+    ToggleFrame.Size = UDim2.new(1, -20, 0, 36)
+    ToggleFrame.BackgroundColor3 = Library.CurrentThemeData.ElementBg
+    ToggleFrame.ZIndex = 6
+    ToggleFrame.LayoutOrder = #parentPage:GetChildren()
+    Instance.new("UICorner", ToggleFrame).CornerRadius = UDim.new(0, 6)
+    
+    local ToggleStroke = Instance.new("UIStroke", ToggleFrame)
+    ToggleStroke.Color = Color3.fromRGB(40, 40, 40)
+    ToggleStroke.Thickness = 1
+    
+    table.insert(Library.TrackedElementBg, ToggleFrame)
+    table.insert(Library.TrackedStrokes, ToggleStroke)
+    
+    local TitleLabel = Instance.new("TextLabel", ToggleFrame)
+    TitleLabel.Size = UDim2.new(1, -60, 1, 0)
+    TitleLabel.Position = UDim2.new(0, 12, 0, 0)
+    TitleLabel.Text = localizedText
+    TitleLabel.Font = Library.CurrentFont
+    TitleLabel.TextColor3 = Color3.fromRGB(230, 230, 230)
+    TitleLabel.TextSize = 13
+    TitleLabel.TextXAlignment = Enum.TextXAlignment.Left
+    TitleLabel.BackgroundTransparency = 1
+    TitleLabel.ZIndex = 7
+    
+    table.insert(Library.TrackedMainText, TitleLabel)
+    
+    local Checkbox = Instance.new("Frame", ToggleFrame)
+    Checkbox.Size = UDim2.new(0, 34, 0, 18)
+    Checkbox.Position = UDim2.new(1, -46, 0.5, -9)
+    Checkbox.BackgroundColor3 = Color3.fromRGB(40, 40, 40)
+    Checkbox.ZIndex = 7
+    Instance.new("UICorner", Checkbox).CornerRadius = UDim.new(1, 0)
+    
+    local Indicator = Instance.new("Frame", Checkbox)
+    Indicator.Size = UDim2.new(0, 14, 0, 14)
+    Indicator.Position = UDim2.new(0, 2, 0.5, -7)
+    Indicator.BackgroundColor3 = Color3.fromRGB(255, 255, 255)
+    Indicator.ZIndex = 8
+    Instance.new("UICorner", Indicator).CornerRadius = UDim.new(1, 0)
+    
+    local ToggleBtn = Instance.new("TextButton", ToggleFrame)
+    ToggleBtn.Size = UDim2.new(1, 0, 1, 0)
+    ToggleBtn.BackgroundTransparency = 1
+    ToggleBtn.Text = ""
+    ToggleBtn.ZIndex = 9
+    
+    local isEnabled = default or false
+    
+    local function updateToggle(state)
+        isEnabled = state
+        local targetPos = isEnabled and UDim2.new(0, 18, 0.5, -7) or UDim2.new(0, 2, 0.5, -7)
+        local targetColor = isEnabled and Library.CurrentThemeData.Accent or Color3.fromRGB(40, 40, 40)
+        
+        tween(Indicator, {Position = targetPos}, 0.15)
+        tween(Checkbox, {BackgroundColor3 = targetColor}, 0.15)
+        
+        task.spawn(function()
+            pcall(callback, isEnabled)
+        end)
+    end
+    
+    ToggleBtn.Activated:Connect(function()
+        updateToggle(not isEnabled)
+    end)
+    
+    table.insert(Library.TrackedAccents, {
+        Type = "Toggle",
+        Checkbox = Checkbox,
+        Indicator = Indicator,
+        IsEnabled = function() return isEnabled end
+    })
+    
+    local normText = NormalizeText(localizedText)
+    table.insert(SearchableElements, {
+        SearchText = normText,
+        Instance = ToggleFrame,
+        OriginalParent = parentPage
+    })
+    
+    updateToggle(isEnabled)
+end
+
+function Library:CreateButton(parentPage, textKey, callback)
+    local localizedText = Localization[Library.CurrentLanguage][textKey] or textKey
+    
+    local ButtonFrame = Instance.new("Frame", parentPage)
+    ButtonFrame.Size = UDim2.new(1, -20, 0, 36)
+    ButtonFrame.BackgroundColor3 = Library.CurrentThemeData.ElementBg
+    ButtonFrame.ZIndex = 6
+    ButtonFrame.LayoutOrder = #parentPage:GetChildren()
+    Instance.new("UICorner", ButtonFrame).CornerRadius = UDim.new(0, 6)
+    
+    local ButtonStroke = Instance.new("UIStroke", ButtonFrame)
+    ButtonStroke.Color = Color3.fromRGB(40, 40, 40)
+    ButtonStroke.Thickness = 1
+    
+    table.insert(Library.TrackedElementBg, ButtonFrame)
+    table.insert(Library.TrackedStrokes, ButtonStroke)
+    
+    local ClickBtn = Instance.new("TextButton", ButtonFrame)
+    ClickBtn.Size = UDim2.new(1, 0, 1, 0)
+    ClickBtn.BackgroundTransparency = 1
+    ClickBtn.Text = ""
+    ClickBtn.ZIndex = 7
+    
+    local TitleLabel = Instance.new("TextLabel", ClickBtn)
+    TitleLabel.Size = UDim2.new(1, 0, 1, 0)
+    TitleLabel.Text = localizedText
+    TitleLabel.Font = Library.CurrentFont
+    TitleLabel.TextColor3 = Color3.fromRGB(230, 230, 230)
+    TitleLabel.TextSize = 13
+    TitleLabel.BackgroundTransparency = 1
+    TitleLabel.ZIndex = 8
+    
+    table.insert(Library.TrackedMainText, TitleLabel)
+    
+    ClickBtn.Activated:Connect(function()
+        local mousePos = UserInputService:GetMouseLocation()
+        local relativeX = mousePos.X - ButtonFrame.AbsolutePosition.X
+        local relativeY = mousePos.Y - ButtonFrame.AbsolutePosition.Y
+        CreateRipple(ButtonFrame, relativeX, relativeY)
+        
+        task.spawn(function()
+            pcall(callback)
+        end)
+    end)
+    
+    local normText = NormalizeText(localizedText)
+    table.insert(SearchableElements, {
+        SearchText = normText,
+        Instance = ButtonFrame,
+        OriginalParent = parentPage
+    })
+end
+
+function Library:CreateSlider(parentPage, textKey, min, max, default, callback)
+    local localizedText = Localization[Library.CurrentLanguage][textKey] or textKey
+    
+    local SliderFrame = Instance.new("Frame", parentPage)
+    SliderFrame.Size = UDim2.new(1, -20, 0, 46)
+    SliderFrame.BackgroundColor3 = Library.CurrentThemeData.ElementBg
+    SliderFrame.ZIndex = 6
+    SliderFrame.LayoutOrder = #parentPage:GetChildren()
+    Instance.new("UICorner", SliderFrame).CornerRadius = UDim.new(0, 6)
+    
+    local SliderStroke = Instance.new("UIStroke", SliderFrame)
+    SliderStroke.Color = Color3.fromRGB(40, 40, 40)
+    SliderStroke.Thickness = 1
+    
+    table.insert(Library.TrackedElementBg, SliderFrame)
+    table.insert(Library.TrackedStrokes, SliderStroke)
+    
+    local TitleLabel = Instance.new("TextLabel", SliderFrame)
+    TitleLabel.Size = UDim2.new(0.7, 0, 0, 24)
+    TitleLabel.Position = UDim2.new(0, 12, 0, 2)
+    TitleLabel.Text = localizedText
+    TitleLabel.Font = Library.CurrentFont
+    TitleLabel.TextColor3 = Color3.fromRGB(230, 230, 230)
+    TitleLabel.TextSize = 13
+    TitleLabel.TextXAlignment = Enum.TextXAlignment.Left
+    TitleLabel.BackgroundTransparency = 1
+    TitleLabel.ZIndex = 7
+    
+    table.insert(Library.TrackedMainText, TitleLabel)
+    
+    local ValueLabel = Instance.new("TextLabel", SliderFrame)
+    ValueLabel.Size = UDim2.new(0.3, -12, 0, 24)
+    ValueLabel.Position = UDim2.new(0.7, 0, 0, 2)
+    ValueLabel.Text = tostring(default)
+    ValueLabel.Font = Library.CurrentFont
+    ValueLabel.TextColor3 = Color3.fromRGB(150, 150, 150)
+    ValueLabel.TextSize = 12
+    ValueLabel.TextXAlignment = Enum.TextXAlignment.Right
+    ValueLabel.BackgroundTransparency = 1
+    ValueLabel.ZIndex = 7
+    
+    table.insert(Library.TrackedSubText, ValueLabel)
+    
+    local SliderBar = Instance.new("Frame", SliderFrame)
+    SliderBar.Size = UDim2.new(1, -24, 0, 4)
+    SliderBar.Position = UDim2.new(0, 12, 1, -12)
+    SliderBar.BackgroundColor3 = Color3.fromRGB(40, 40, 40)
+    SliderBar.ZIndex = 7
+    Instance.new("UICorner", SliderBar).CornerRadius = UDim.new(1, 0)
+    
+    local SliderFill = Instance.new("Frame", SliderBar)
+    SliderFill.Size = UDim2.new(math.clamp((default - min) / (max - min), 0, 1), 0, 1, 0)
+    SliderFill.BackgroundColor3 = Library.CurrentThemeData.Accent
+    SliderFill.ZIndex = 8
+    Instance.new("UICorner", SliderFill).CornerRadius = UDim.new(1, 0)
+    
+    table.insert(Library.TrackedAccents, {
+        Type = "Slider",
+        Fill = SliderFill
+    })
+    
+    local SliderTrigger = Instance.new("TextButton", SliderFrame)
+    SliderTrigger.Size = UDim2.new(1, 0, 1, 0)
+    SliderTrigger.BackgroundTransparency = 1
+    SliderTrigger.Text = ""
+    SliderTrigger.ZIndex = 9
+    
+    local isDragging = false
+    
+    local function updateSlider(input)
+        local barAbsoluteSize = SliderBar.AbsoluteSize.X
+        local barAbsolutePosition = SliderBar.AbsolutePosition.X
+        local percentage = math.clamp((input.Position.X - barAbsolutePosition) / barAbsoluteSize, 0, 1)
+        
+        local newValue = math.floor(min + (max - min) * percentage)
+        ValueLabel.Text = tostring(newValue)
+        SliderFill.Size = UDim2.new(percentage, 0, 1, 0)
+        
+        task.spawn(function()
+            pcall(callback, newValue)
+        end)
+    end
+    
+    SliderTrigger.InputBegan:Connect(function(input)
+        if input.UserInputType == Enum.UserInputType.MouseButton1 or input.UserInputType == Enum.UserInputType.Touch then
+            isDragging = true
+            updateSlider(input)
+        end
+    end)
+    
+    UserInputService.InputEnded:Connect(function(input)
+        if input.UserInputType == Enum.UserInputType.MouseButton1 or input.UserInputType == Enum.UserInputType.Touch then
+            isDragging = false
+        end
+    end)
+    
+    UserInputService.InputChanged:Connect(function(input)
+        if isDragging and (input.UserInputType == Enum.UserInputType.MouseMovement or input.UserInputType == Enum.UserInputType.Touch) then
+            updateSlider(input)
+        end
+    end)
+    
+    local normText = NormalizeText(localizedText)
+    table.insert(SearchableElements, {
+        SearchText = normText,
+        Instance = SliderFrame,
+        OriginalParent = parentPage
+    })
+end
 
 function Library:CreateDropdown(parentPage, textKey, options, default, callback, previews)
     local initialText = Localization[Library.CurrentLanguage][textKey] or textKey
@@ -799,7 +1119,6 @@ function Library:CreateDropdown(parentPage, textKey, options, default, callback,
     end)
     
     local isExpanded = false
-    local optionButtons = {}
     
     local PreviewImage
     if previews then
@@ -842,903 +1161,357 @@ function Library:CreateDropdown(parentPage, textKey, options, default, callback,
     
     for i, option in ipairs(options) do
         local OptBtn = Instance.new("TextButton", OptionsContainer)
-        OptBtn.Size = UDim2.new(1, 0, 0, 32)
+        OptBtn.Size = UDim2.new(1, -24, 0, 30)
+        OptBtn.Position = UDim2.new(0, 12, 0, 0)
         OptBtn.BackgroundTransparency = 1
-        OptBtn.BackgroundColor3 = Color3.fromRGB(255, 255, 255)
         OptBtn.Text = ""
-        OptBtn.LayoutOrder = i
         OptBtn.ZIndex = 8
+        OptBtn.LayoutOrder = i
         
-        local OptLabel = Instance.new("TextLabel", OptionsContainer)
-        OptLabel.Parent = OptBtn
-        OptLabel.Size = UDim2.new(1, -40, 1, 0)
-        OptLabel.Position = UDim2.new(0, 16, 0, 0)
+        local OptLabel = Instance.new("TextLabel", OptBtn)
+        OptLabel.Size = UDim2.new(1, -20, 1, 0)
         OptLabel.Text = option
+        OptLabel.Font = Library.CurrentFont
+        OptLabel.TextColor3 = (option == default) and Library.CurrentThemeData.Accent or Color3.fromRGB(150, 150, 150)
         OptLabel.TextSize = 12
         OptLabel.TextXAlignment = Enum.TextXAlignment.Left
         OptLabel.BackgroundTransparency = 1
         OptLabel.ZIndex = 9
         
-        if FontMapping and FontMapping[option] then
-            OptLabel.Font = FontMapping[option]
-            OptLabel.Name = "FontPreviewLabel" 
-        else
-            OptLabel.Font = Library.CurrentFont
-        end
+        local CheckMark = Instance.new("TextLabel", OptBtn)
+        CheckMark.Size = UDim2.new(0, 20, 1, 0)
+        CheckMark.Position = UDim2.new(1, -20, 0, 0)
+        CheckMark.Text = "✓"
+        CheckMark.Font = Enum.Font.GothamBold
+        CheckMark.TextColor3 = Library.CurrentThemeData.Accent
+        CheckMark.TextSize = 12
+        CheckMark.TextXAlignment = Enum.TextXAlignment.Right
+        CheckMark.BackgroundTransparency = 1
+        CheckMark.Visible = (option == default)
+        CheckMark.ZIndex = 9
         
-        local Checkmark = Instance.new("TextLabel", OptBtn)
-        Checkmark.Size = UDim2.new(0, 20, 1, 0)
-        Checkmark.Position = UDim2.new(1, -30, 0, 0)
-        Checkmark.Text = "✓"
-        Checkmark.Font = Enum.Font.GothamBold
-        Checkmark.TextColor3 = Library.CurrentThemeData.Accent
-        Checkmark.TextSize = 12
-        Checkmark.BackgroundTransparency = 1
-        Checkmark.Visible = (option == default)
-        Checkmark.ZIndex = 9
-        
-        OptBtn.MouseEnter:Connect(function()
-            tween(OptBtn, {BackgroundTransparency = 0.96}, 0.15)
-            if previews and previews[option] then
-                local img = previews[option]
-                PreviewImage.Image = tonumber(img) and ("rbxassetid://" .. tostring(img)) or img
-            end
-        end)
-        OptBtn.MouseLeave:Connect(function()
-            tween(OptBtn, {BackgroundTransparency = 1}, 0.15)
-            if previews then
-                local currentSelected = SelectedLabel.Text
-                local img = previews[currentSelected] or previews[default] or ""
-                PreviewImage.Image = tonumber(img) and ("rbxassetid://" .. tostring(img)) or img
-            end
-        end)
-        
-        optionButtons[option] = {Button = OptBtn, Label = OptLabel, Check = Checkmark}
         OptBtn.Activated:Connect(function()
             SelectedLabel.Text = option
-            for optName, optData in pairs(optionButtons) do
-                if optName == option then
-                    optData.Label.TextColor3 = Library.CurrentThemeData.Accent
-                    optData.Check.Visible = true
-                else
-                    local bgL = (Library.CurrentThemeData.MainBg.R * 0.299 + Library.CurrentThemeData.MainBg.G * 0.587 + Library.CurrentThemeData.MainBg.B * 0.114)
-                    optData.Label.TextColor3 = (bgL > 0.5) and Color3.fromRGB(110, 110, 110) or Color3.fromRGB(180, 180, 180)
-                    optData.Check.Visible = false
+            toggleDropdown()
+            
+            for _, optObj in ipairs(OptionsContainer:GetChildren()) do
+                if optObj:IsA("TextButton") then
+                    local label = optObj:FindFirstChildOfClass("TextLabel")
+                    local check = optObj:FindFirstChild("TextLabel") and optObj:FindFirstChild("TextLabel").Parent:FindFirstChild("CheckMark") -- simplify safety
+                    if label then
+                        label.TextColor3 = (label.Text == option) and Library.CurrentThemeData.Accent or Color3.fromRGB(150, 150, 150)
+                    end
                 end
             end
-            if previews and previews[option] then
-                local img = previews[option]
-                PreviewImage.Image = tonumber(img) and ("rbxassetid://" .. tostring(img)) or img
+            
+            if previews and PreviewImage then
+                local currentImg = previews[option] or ""
+                if tonumber(currentImg) then
+                    PreviewImage.Image = "rbxassetid://" .. tostring(currentImg)
+                else
+                    PreviewImage.Image = currentImg
+                end
             end
-            toggleDropdown()
-            callback(option)
+            
+            task.spawn(function()
+                pcall(callback, option)
+            end)
         end)
     end
     
-    table.insert(Library.TrackedAccents, {
-        Type = "Dropdown",
-        Options = optionButtons,
-        Container = OptionsContainer,
-        SelectedLabel = SelectedLabel, 
-        GetDefault = function() return SelectedLabel.Text end
+    local normText = NormalizeText(initialText)
+    table.insert(SearchableElements, {
+        SearchText = normText,
+        Instance = DropdownFrame,
+        OriginalParent = parentPage
     })
-    
-    local searchItem = {Instance = DropdownFrame, SearchText = NormalizeText(initialText), OriginalParent = parentPage}
-    table.insert(SearchableElements, searchItem)
-    table.insert(LocaleObjects, {Object = TitleLabel, Key = textKey, SearchItem = searchItem})
-end
-
-function Library:CreateButton(parentPage, textKey, callback)
-    local initialText = Localization[Library.CurrentLanguage][textKey] or textKey
-    local Btn = Instance.new("TextButton", parentPage)
-    Btn.Size = UDim2.new(1, -20, 0, 36)
-    Btn.BackgroundColor3 = Library.CurrentThemeData.ElementBg
-    Btn.Text = initialText
-    Btn.Font = Library.CurrentFont
-    Btn.TextColor3 = Color3.fromRGB(230, 230, 230)
-    Btn.TextSize = 13
-    Btn.ClipsDescendants = true
-    Btn.ZIndex = 6
-    Btn.LayoutOrder = #parentPage:GetChildren()
-    Instance.new("UICorner", Btn).CornerRadius = UDim.new(0, 6)
-    local BtnStroke = Instance.new("UIStroke", Btn)
-    BtnStroke.Color = Color3.fromRGB(40, 40, 40)
-    
-    table.insert(Library.TrackedElementBg, Btn)
-    table.insert(Library.TrackedMainText, Btn)
-    table.insert(Library.TrackedStrokes, BtnStroke)
-    
-    Btn.MouseButton1Down:Connect(function()
-        local mousePos = UserInputService:GetMouseLocation()
-        local inset = GuiService:GetGuiInset()
-        CreateRipple(Btn, mousePos.X - Btn.AbsolutePosition.X, (mousePos.Y - inset.Y) - Btn.AbsolutePosition.Y)
-    end)
-    Btn.Activated:Connect(callback)
-    local searchItem = {Instance = Btn, SearchText = NormalizeText(initialText), OriginalParent = parentPage}
-    table.insert(SearchableElements, searchItem)
-    table.insert(LocaleObjects, {Object = Btn, Key = textKey, SearchItem = searchItem})
-end
-
-function Library:CreateToggle(parentPage, textKey, default, callback)
-    local initialText = Localization[Library.CurrentLanguage][textKey] or textKey
-    local TglFrame = Instance.new("Frame", parentPage)
-    TglFrame.Size = UDim2.new(1, -20, 0, 36)
-    TglFrame.BackgroundColor3 = Library.CurrentThemeData.ElementBg
-    TglFrame.ZIndex = 6
-    TglFrame.LayoutOrder = #parentPage:GetChildren()
-    Instance.new("UICorner", TglFrame).CornerRadius = UDim.new(0, 6)
-    local TglStroke = Instance.new("UIStroke", TglFrame)
-    TglStroke.Color = Color3.fromRGB(40, 40, 40)
-    
-    table.insert(Library.TrackedElementBg, TglFrame)
-    table.insert(Library.TrackedStrokes, TglStroke)
-    
-    local TglLabel = Instance.new("TextLabel", TglFrame)
-    TglLabel.Size = UDim2.new(1, -60, 1, 0)
-    TglLabel.Position = UDim2.new(0, 12, 0, 0)
-    TglLabel.Text = initialText
-    TglLabel.Font = Library.CurrentFont
-    TglLabel.TextColor3 = Color3.fromRGB(230, 230, 230)
-    TglLabel.TextSize = 13
-    TglLabel.TextXAlignment = Enum.TextXAlignment.Left
-    TglLabel.BackgroundTransparency = 1
-    TglLabel.ZIndex = 7
-    
-    table.insert(Library.TrackedMainText, TglLabel)
-    
-    local Checkbox = Instance.new("TextButton", TglFrame)
-    Checkbox.Size = UDim2.new(0, 34, 0, 18)
-    Checkbox.Position = UDim2.new(1, -44, 0.5, -9)
-    Checkbox.BackgroundColor3 = default and Library.CurrentThemeData.Accent or Color3.fromRGB(40, 40, 40) 
-    Checkbox.Text = ""
-    Checkbox.ZIndex = 7
-    Instance.new("UICorner", Checkbox).CornerRadius = UDim.new(0, 9)
-    
-    local Indicator = Instance.new("Frame", Checkbox)
-    Indicator.Size = UDim2.new(0, 14, 0, 14)
-    Indicator.Position = default and UDim2.new(1, -16, 0.5, -7) or UDim2.new(0, 2, 0.5, -7)
-    Indicator.BackgroundColor3 = Color3.new(1, 1, 1)
-    Indicator.ZIndex = 8
-    Instance.new("UICorner", Indicator).CornerRadius = UDim.new(1, 0)
-    
-    local enabled = default
-    Checkbox.Activated:Connect(function()
-        enabled = not enabled
-        local brightness = (Library.CurrentThemeData.Accent.R + Library.CurrentThemeData.Accent.G + Library.CurrentThemeData.Accent.B)
-        local activeIndicatorColor = brightness > 2.5 and Color3.fromRGB(30, 30, 30) or Color3.fromRGB(255, 255, 255)
-        if enabled then
-            tween(Checkbox, {BackgroundColor3 = Library.CurrentThemeData.Accent}, 0.2)
-            tween(Indicator, {Position = UDim2.new(1, -16, 0.5, -7), BackgroundColor3 = activeIndicatorColor}, 0.2)
-        else
-            local bgL = (Library.CurrentThemeData.MainBg.R * 0.299 + Library.CurrentThemeData.MainBg.G * 0.587 + Library.CurrentThemeData.MainBg.B * 0.114)
-            local offColor = (bgL > 0.5) and Color3.fromRGB(210, 210, 210) or Color3.fromRGB(40, 40, 40)
-            tween(Checkbox, {BackgroundColor3 = offColor}, 0.2)
-            tween(Indicator, {Position = UDim2.new(0, 2, 0.5, -7), BackgroundColor3 = Color3.fromRGB(255, 255, 255)}, 0.2)
-        end
-        callback(enabled)
-    end)
-    
-    table.insert(Library.TrackedAccents, {
-        Type = "Toggle",
-        Checkbox = Checkbox,
-        Indicator = Indicator,
-        IsEnabled = function() return enabled end
-    })
-    
-    local searchItem = {Instance = TglFrame, SearchText = NormalizeText(initialText), OriginalParent = parentPage}
-    table.insert(SearchableElements, searchItem)
-    table.insert(LocaleObjects, {Object = TglLabel, Key = textKey, SearchItem = searchItem})
-end
-
-function Library:CreateSlider(parentPage, textKey, min, max, default, callback)
-    local initialText = Localization[Library.CurrentLanguage][textKey] or textKey
-    local SliderFrame = Instance.new("Frame", parentPage)
-    SliderFrame.Size = UDim2.new(1, -20, 0, 52)
-    SliderFrame.BackgroundColor3 = Library.CurrentThemeData.ElementBg
-    SliderFrame.ZIndex = 6
-    SliderFrame.LayoutOrder = #parentPage:GetChildren()
-    Instance.new("UICorner", SliderFrame).CornerRadius = UDim.new(0, 8)
-    local SliderStroke = Instance.new("UIStroke", SliderFrame)
-    SliderStroke.Color = Color3.fromRGB(40, 40, 40)
-    
-    table.insert(Library.TrackedElementBg, SliderFrame)
-    table.insert(Library.TrackedStrokes, SliderStroke)
-    
-    local SliderLabel = Instance.new("TextLabel", SliderFrame)
-    SliderLabel.Size = UDim2.new(0.5, -12, 0, 22)
-    SliderLabel.Position = UDim2.new(0, 12, 0, 6)
-    SliderLabel.Text = initialText
-    SliderLabel.Font = Library.CurrentFont
-    SliderLabel.TextColor3 = Color3.fromRGB(230, 230, 230)
-    SliderLabel.TextSize = 13
-    SliderLabel.TextXAlignment = Enum.TextXAlignment.Left
-    SliderLabel.BackgroundTransparency = 1
-    SliderLabel.ZIndex = 7
-    
-    table.insert(Library.TrackedMainText, SliderLabel)
-    
-    local ValueLabel = Instance.new("TextLabel", SliderFrame)
-    ValueLabel.Size = UDim2.new(0.5, -12, 0, 22)
-    ValueLabel.Position = UDim2.new(0.5, 0, 0, 6)
-    ValueLabel.Font = Library.CurrentFont
-    ValueLabel.TextColor3 = Color3.fromRGB(160, 160, 160)
-    ValueLabel.TextSize = 13
-    ValueLabel.TextXAlignment = Enum.TextXAlignment.Right
-    ValueLabel.BackgroundTransparency = 1
-    ValueLabel.ZIndex = 7
-    
-    table.insert(Library.TrackedSubText, ValueLabel)
-    
-    local SliderTrack = Instance.new("Frame", SliderFrame)
-    SliderTrack.Size = UDim2.new(1, -24, 0, 5)
-    SliderTrack.Position = UDim2.new(0, 12, 0, 34)
-    SliderTrack.BackgroundColor3 = Color3.fromRGB(42, 42, 42)
-    SliderTrack.ZIndex = 7
-    Instance.new("UICorner", SliderTrack).CornerRadius = UDim.new(0, 3)
-    
-    local SliderBtn = Instance.new("TextButton", SliderFrame)
-    SliderBtn.Size = UDim2.new(1, 0, 1, 16)
-    SliderBtn.Position = UDim2.new(0, 0, 0, -8)
-    SliderBtn.BackgroundTransparency = 1
-    SliderBtn.Text = ""
-    SliderBtn.ZIndex = 10
-    
-    local SliderFill = Instance.new("Frame", SliderTrack)
-    SliderFill.Size = UDim2.new(0, 0, 1, 0)
-    SliderFill.BackgroundColor3 = Color3.fromRGB(255, 60, 60)
-    SliderFill.ZIndex = 8
-    Instance.new("UICorner", SliderFill).CornerRadius = UDim.new(0, 3)
-    
-    local SliderHandle = Instance.new("Frame", SliderTrack)
-    SliderHandle.Size = UDim2.new(0, 14, 0, 14)
-    SliderHandle.AnchorPoint = Vector2.new(0.5, 0.5)
-    SliderHandle.Position = UDim2.new(0, 0, 0.5, 0)
-    SliderHandle.BackgroundColor3 = Color3.fromRGB(255, 255, 255)
-    SliderHandle.ZIndex = 9
-    Instance.new("UICorner", SliderHandle).CornerRadius = UDim.new(1, 0)
-    Instance.new("UIStroke", SliderHandle).Color = Color3.fromRGB(25, 25, 25)
-    
-    local dragging = false
-    local currentPercent = (default - min) / (max - min)
-    local startX = 0
-    local startPercent = 0
-    local cachedTrackWidth = 0
-    local isIntegerSlider = (max - min) > 5
-    
-    local function getTrafficLightColor(pct)
-        local red = Color3.fromRGB(255, 60, 60)
-        local yellow = Color3.fromRGB(255, 210, 40)
-        local green = Color3.fromRGB(60, 255, 90)
-        if pct < 0.5 then return red:Lerp(yellow, pct * 2) else return yellow:Lerp(green, (pct - 0.5) * 2) end
-    end
-    
-    local function updateVisuals(percentage)
-        SliderFill.BackgroundColor3 = getTrafficLightColor(percentage)
-        SliderFill.Size = UDim2.new(percentage, 0, 1, 0)
-        SliderHandle.Position = UDim2.new(percentage, 0, 0.5, 0)
-        local rawValue = min + (max - min) * percentage
-        if isIntegerSlider then
-            local roundedValue = math.floor(rawValue + 0.5)
-            ValueLabel.Text = string.format("%d", roundedValue)
-            callback(roundedValue)
-        else
-            ValueLabel.Text = string.format("%.2f", rawValue)
-            callback(rawValue)
-        end
-    end
-    
-    SliderBtn.InputBegan:Connect(function(input)
-        if (input.UserInputType == Enum.UserInputType.MouseButton1 or input.UserInputType == Enum.UserInputType.Touch) then
-            dragging = true
-            startX = input.Position.X
-            cachedTrackWidth = SliderTrack.AbsoluteSize.X
-            local clickOffset = input.Position.X - SliderTrack.AbsolutePosition.X
-            currentPercent = math.clamp(clickOffset / cachedTrackWidth, 0, 1)
-            startPercent = currentPercent
-            updateVisuals(currentPercent)
-        end
-    end)
-    
-    UserInputService.InputChanged:Connect(function(input)
-        if dragging and (input.UserInputType == Enum.UserInputType.MouseMovement or input.UserInputType == Enum.UserInputType.Touch) then
-            local deltaX = input.Position.X - startX
-            local deltaPercent = deltaX / cachedTrackWidth
-            currentPercent = math.clamp(startPercent + deltaPercent, 0, 1)
-            updateVisuals(currentPercent)
-        end
-    end)
-    
-    UserInputService.InputEnded:Connect(function(input)
-        if input.UserInputType == Enum.UserInputType.MouseButton1 or input.UserInputType == Enum.UserInputType.Touch then dragging = false end
-    end)
-    
-    task.spawn(function()
-        while SliderTrack.AbsoluteSize.X == 0 do task.wait() end
-        updateVisuals(currentPercent)
-    end)
-    
-    local searchItem = {Instance = SliderFrame, SearchText = NormalizeText(initialText), OriginalParent = parentPage}
-    table.insert(SearchableElements, searchItem)
-    table.insert(LocaleObjects, {Object = SliderLabel, Key = textKey, SearchItem = searchItem})
 end
 
 function Library:CreateImage(parentPage, imageId)
-    local Img = Instance.new("ImageLabel", parentPage)
-    Img.Size = UDim2.new(1, -20, 0, 130)
+    local ImgFrame = Instance.new("Frame", parentPage)
+    ImgFrame.Size = UDim2.new(1, -20, 0, 130)
+    ImgFrame.BackgroundTransparency = 1
+    ImgFrame.LayoutOrder = #parentPage:GetChildren()
+    
+    local Img = Instance.new("ImageLabel", ImgFrame)
+    Img.Size = UDim2.new(1, 0, 1, 0)
     Img.BackgroundTransparency = 1
-    Img.LayoutOrder = #parentPage:GetChildren()
-    if tonumber(imageId) then Img.Image = "rbxassetid://" .. tostring(imageId) .. "&w=420&h=420" else Img.Image = imageId end
+    if tonumber(imageId) then 
+        Img.Image = "rbxassetid://" .. tostring(imageId)
+    else 
+        Img.Image = imageId 
+    end
     Img.ScaleType = Enum.ScaleType.Fit
-    Img.ZIndex = 6
-    return Img
+    Img.ZIndex = 7
 end
 
-function Library:CreateSubTabs(parentPage, tabsList)
-    local SubTabContainer = Instance.new("Frame", parentPage)
-    SubTabContainer.Size = UDim2.new(1, -20, 0, 32)
-    SubTabContainer.BackgroundTransparency = 1
-    local ListLayout = Instance.new("UIListLayout", SubTabContainer)
-    ListLayout.FillDirection = Enum.FillDirection.Horizontal
-    ListLayout.Padding = UDim.new(0, 10)
-    ListLayout.SortOrder = Enum.SortOrder.LayoutOrder
-    ListLayout.HorizontalAlignment = Enum.HorizontalAlignment.Left
-    ListLayout.VerticalAlignment = Enum.VerticalAlignment.Center
-    
-    local ContentContainer = Instance.new("Frame", parentPage)
-    ContentContainer.Size = UDim2.new(1, 0, 0, 0)
-    ContentContainer.BackgroundTransparency = 1
-    ContentContainer.AutomaticSize = Enum.AutomaticSize.Y
-    local subPages = {}
-    local registry = {}
-    local colorGrayInactive = Color3.fromRGB(140, 140, 140)
-    
-    for i, tabData in ipairs(tabsList) do
-        local textKey = tabData.Name
-        local iconId = tabData.Icon
-        local initialText = Localization[Library.CurrentLanguage][textKey] or textKey
-        local activeColor = Color3.fromRGB(108, 176, 214)
-        local lowName = string.lower(string.gsub(textKey, "%s+", ""))
-        if tabData.Color then activeColor = tabData.Color elseif string.find(lowName, "theme") or string.find(lowName, "тема") then activeColor = Color3.fromRGB(235, 94, 153) end
-        
-        local BtnContainer = Instance.new("Frame", SubTabContainer)
-        BtnContainer.Size = UDim2.new(0, 0, 1, 0)
-        BtnContainer.AutomaticSize = Enum.AutomaticSize.X
-        BtnContainer.BackgroundTransparency = 1
-        BtnContainer.LayoutOrder = i
-        
-        local VisualFrame = Instance.new("Frame", BtnContainer)
-        VisualFrame.Size = UDim2.new(1, 0, 1, 0)
-        VisualFrame.BackgroundColor3 = activeColor
-        VisualFrame.BackgroundTransparency = 1
-        Instance.new("UICorner", VisualFrame).CornerRadius = UDim.new(0, 7)
-        local Stroke = Instance.new("UIStroke", VisualFrame)
-        Stroke.Color = activeColor
-        Stroke.Thickness = 1.6
-        Stroke.ApplyStrokeMode = Enum.ApplyStrokeMode.Border
-        Stroke.Enabled = false
-        
-        local ContentFrame = Instance.new("Frame", BtnContainer)
-        ContentFrame.Size = UDim2.new(0, 0, 1, 0)
-        ContentFrame.AutomaticSize = Enum.AutomaticSize.X
-        ContentFrame.BackgroundTransparency = 1
-        ContentFrame.ZIndex = 2
-        
-        local ContentPadding = Instance.new("UIPadding", ContentFrame)
-        ContentPadding.PaddingLeft = UDim.new(0, 10)
-        ContentPadding.PaddingRight = UDim.new(0, 10)
-        
-        local BtnLayout = Instance.new("UIListLayout", ContentFrame)
-        BtnLayout.FillDirection = Enum.FillDirection.Horizontal
-        BtnLayout.HorizontalAlignment = Enum.HorizontalAlignment.Left
-        BtnLayout.VerticalAlignment = Enum.VerticalAlignment.Center
-        BtnLayout.Padding = UDim.new(0, 6)
-        
-        local Icon
-        if iconId and iconId ~= "" then
-            Icon = Instance.new("ImageLabel", ContentFrame)
-            Icon.Size = tabData.IconSize or UDim2.new(0, 18, 0, 18)
-            Icon.BackgroundTransparency = 1
-            if tonumber(iconId) then Icon.Image = "rbxthumb://type=Asset&id=" .. iconId .. "&w=150&h=150" else Icon.Image = iconId end
-            Icon.ScaleType = Enum.ScaleType.Fit
-            Icon.ImageColor3 = colorGrayInactive
-            Icon.ZIndex = 3
-        end
-        
-        local Label = Instance.new("TextLabel", ContentFrame)
-        Label.BackgroundTransparency = 1
-        Label.Text = initialText
-        Label.Font = Library.CurrentFont
-        Label.TextColor3 = colorGrayInactive
-        Label.Size = UDim2.new(0, 0, 1, 0)
-        Label.TextSize = 13
-        Label.AutomaticSize = Enum.AutomaticSize.X
-        Label.ZIndex = 3
-        
-        local Page = Instance.new("Frame", ContentContainer)
-        Page.Size = UDim2.new(1, 0, 0, 0)
-        Page.BackgroundTransparency = 1
-        Page.AutomaticSize = Enum.AutomaticSize.Y
-        Page.Visible = false
-        local PageLayout = Instance.new("UIListLayout", Page)
-        PageLayout.Padding = UDim.new(0, 8)
-        PageLayout.HorizontalAlignment = Enum.HorizontalAlignment.Center
-        PageLayout.SortOrder = Enum.SortOrder.LayoutOrder
-        
-        subPages[textKey] = Page
-        registry[textKey] = { Page = Page, Visual = VisualFrame, Stroke = Stroke, Label = Label, Icon = Icon, TargetColor = activeColor }
-        
-        local ClickBtn = Instance.new("TextButton", BtnContainer)
-        ClickBtn.Size = UDim2.new(1, 0, 1, 0)
-        ClickBtn.BackgroundTransparency = 1
-        ClickBtn.Text = ""
-        ClickBtn.ZIndex = 10
-        
-        local function activateTab()
-            for _, data in pairs(registry) do
-                data.Page.Visible = false
-                data.Visual.BackgroundTransparency = 1
-                data.Stroke.Enabled = false
-                local bgL = (Library.CurrentThemeData.MainBg.R * 0.299 + Library.CurrentThemeData.MainBg.G * 0.587 + Library.CurrentThemeData.MainBg.B * 0.114)
-                local currentInactive = (bgL > 0.5) and Color3.fromRGB(110, 110, 110) or colorGrayInactive
-                data.Label.TextColor3 = currentInactive
-                if data.Icon then data.Icon.ImageColor3 = currentInactive end
-            end
-            Page.Visible = true
-            VisualFrame.BackgroundColor3 = activeColor
-            VisualFrame.BackgroundTransparency = 0.88
-            Stroke.Color = activeColor
-            Stroke.Enabled = true
-            Label.TextColor3 = activeColor
-            if Icon then Icon.ImageColor3 = activeColor end
-        end
-        ClickBtn.Activated:Connect(activateTab)
-        table.insert(LocaleObjects, {Object = Label, Key = textKey})
-    end
-    
-    local firstTab = tabsList[1] and tabsList[1].Name
-    if firstTab and registry[firstTab] then
-        local data = registry[firstTab]
-        data.Page.Visible = true
-        data.Visual.BackgroundColor3 = data.TargetColor
-        data.Visual.BackgroundTransparency = 0.88
-        data.Stroke.Color = data.TargetColor
-        data.Stroke.Enabled = true
-        data.Label.TextColor3 = data.TargetColor
-        if data.Icon then data.Icon.ImageColor3 = data.TargetColor end
-    end
-    return subPages
-end
-
-function Library:CreatePage(textKey, iconId, layoutOrder)
-    local initialText = Localization[Library.CurrentLanguage][textKey] or textKey
-    local PageFrame = Instance.new("ScrollingFrame", PagesContainer)
-    PageFrame.Size = UDim2.new(1, 0, 1, 0)
-    PageFrame.BackgroundTransparency = 1
-    PageFrame.Visible = false
-    PageFrame.ScrollBarThickness = 2
-    PageFrame.ScrollBarImageColor3 = Color3.fromRGB(50, 50, 50)
-    PageFrame.ZIndex = 5
-    
-    local layout = Instance.new("UIListLayout", PageFrame)
-    layout.Padding = UDim.new(0, 8)
-    layout.HorizontalAlignment = Enum.HorizontalAlignment.Center
-    layout.SortOrder = Enum.SortOrder.LayoutOrder
-    Instance.new("UIPadding", PageFrame).PaddingTop = UDim.new(0, 2)
-    
-    layout:GetPropertyChangedSignal("AbsoluteContentSize"):Connect(function()
-        PageFrame.CanvasSize = UDim2.new(0, 0, 0, layout.AbsoluteContentSize.Y + 15)
-    end)
-    
-    local TabContainer = Instance.new("Frame", Navigation)
-    TabContainer.Size = UDim2.new(1, 0, 0, 34)
-    TabContainer.BackgroundColor3 = Color3.fromRGB(28, 28, 28)
-    TabContainer.BackgroundTransparency = 1
-    TabContainer.ClipsDescendants = true
-    TabContainer.ZIndex = 6
-    TabContainer.LayoutOrder = layoutOrder or 0
-    TabContainer.Name = "TabContainer"
-    Instance.new("UICorner", TabContainer).CornerRadius = UDim.new(0, 8)
-    table.insert(Library.TrackedElementBg, TabContainer)
-    
-    local TabBtn = Instance.new("TextButton", TabContainer)
-    TabBtn.Size = UDim2.new(1, 0, 1, 0)
-    TabBtn.Text = initialText
-    TabBtn.Font = Library.CurrentFont
-    TabBtn.TextSize = 13
-    TabBtn.TextColor3 = Color3.fromRGB(140, 140, 140)
-    TabBtn.BackgroundTransparency = 1
-    TabBtn.TextXAlignment = Enum.TextXAlignment.Left
-    TabBtn.ZIndex = 7
-    
-    local Padding = Instance.new("UIPadding", TabBtn)
-    Padding.PaddingLeft = UDim.new(0, iconId and 42 or 12)
-    
-    if iconId then
-        local TabIcon = Instance.new("ImageLabel", TabContainer)
-        TabIcon.Size = UDim2.new(0, 24, 0, 24)
-        TabIcon.Position = UDim2.new(0, 10, 0.5, -12)
-        TabIcon.BackgroundTransparency = 1
-        if tonumber(iconId) then TabIcon.Image = "rbxthumb://type=Asset&id=" .. iconId .. "&w=150&h=150" else TabIcon.Image = iconId end
-        TabIcon.ImageTransparency = 0.25
-        TabIcon.ZIndex = 7
-        allTabIcons[textKey] = TabIcon
-    end
-    
-    allTabs[textKey] = TabContainer
-    allTabButtons[textKey] = TabBtn
-    allPages[textKey] = PageFrame
-    
-    TabBtn.MouseButton1Down:Connect(function()
-        local mousePos = UserInputService:GetMouseLocation()
-        local inset = GuiService:GetGuiInset()
-        CreateRipple(TabContainer, mousePos.X - TabContainer.AbsolutePosition.X, (mousePos.Y - inset.Y) - TabContainer.AbsolutePosition.Y)
-    end)
-    
-    TabBtn.Activated:Connect(function()
-        if SearchBox.Text ~= "" then SearchBox.Text = "" end
-        local bgL = (Library.CurrentThemeData.MainBg.R * 0.299 + Library.CurrentThemeData.MainBg.G * 0.587 + Library.CurrentThemeData.MainBg.B * 0.114)
-        local isL = bgL > 0.5
-        for tName, tContainer in pairs(allTabs) do
-            tween(tContainer, {BackgroundTransparency = 1}, 0.2)
-            tween(allTabButtons[tName], {TextColor3 = isL and Color3.fromRGB(110, 110, 110) or Color3.fromRGB(140, 140, 140)}, 0.2)
-            if allTabIcons[tName] then tween(allTabIcons[tName], {ImageTransparency = 0.25}, 0.2) end
-            allPages[tName].Visible = false
-        end
-        Library.CurrentTabKey = textKey
-        TabTitle.Text = Localization[Library.CurrentLanguage][textKey] or textKey
-        PageFrame.Visible = true
-        local activeTabBg = isL and Color3.fromRGB(215, 215, 215) or Color3.fromRGB(35, 35, 35)
-        tween(TabContainer, {BackgroundColor3 = activeTabBg, BackgroundTransparency = 0}, 0.2)
-        tween(TabBtn, {TextColor3 = isL and Color3.fromRGB(35, 35, 35) or Color3.fromRGB(255, 255, 255)}, 0.2)
-        if allTabIcons[textKey] then tween(allTabIcons[textKey], {ImageTransparency = 0}, 0.2) end
-    end)
-    table.insert(LocaleObjects, {Object = TabBtn, Key = textKey})
-    UpdateNavCanvas()
-    return PageFrame
-end
-
-local MainPage = Library:CreatePage("Main", "103980564128710", 1)
-local TeleportPage = Library:CreatePage("Teleport", "94373592263020", 2)
-local AutoPage = Library:CreatePage("Auto", "118241174836692", 3)
-local AutoBuyPage = Library:CreatePage("Auto buy", "84252806798323", 4)
-local PlayersPage = Library:CreatePage("Players", "99904215381150", 5)
-local VisualPage = Library:CreatePage("Visual", "78910169210318", 6)
-local SettingsPage = Library:CreatePage("Settings", "117996761927034", 99)
-
-local autoFarmActive = false
-Library:CreateToggle(MainPage, "AutoFarmCoins", false, function(state) 
-    autoFarmActive = state
-end)
-
-Library:CreateSlider(PlayersPage, "WalkSpeed", 16, 150, 16, function(value)
-    pcall(function() if Players.LocalPlayer.Character and Players.LocalPlayer.Character:FindFirstChildOfClass("Humanoid") then Players.LocalPlayer.Character:FindFirstChildOfClass("Humanoid").WalkSpeed = value end end)
-end)
-
-Library:CreateSlider(PlayersPage, "JumpPower", 50, 250, 50, function(value)
-    pcall(function() if Players.LocalPlayer.Character and Players.LocalPlayer.Character:FindFirstChildOfClass("Humanoid") then local hum = Players.LocalPlayer.Character:FindFirstChildOfClass("Humanoid") hum.UseJumpPower = true hum.JumpPower = value end end)
-end)
-
-Library:CreateButton(PlayersPage, "ResetStats", function()
-    pcall(function() if Players.LocalPlayer.Character and Players.LocalPlayer.Character:FindFirstChildOfClass("Humanoid") then local hum = Players.LocalPlayer.Character:FindFirstChildOfClass("Humanoid") hum.WalkSpeed = 16 hum.JumpPower = 50 end end)
-end)
-
-Library:CreateButton(TeleportPage, "TeleportToMap", function()
-    pcall(function()
-        local targetMap = workspace:FindFirstChild("Map") or workspace:FindFirstChild("Normal") or workspace:FindFirstChild("InGame")
-        if targetMap and Players.LocalPlayer.Character and Players.LocalPlayer.Character:FindFirstChild("HumanoidRootPart") then
-            local spawnPoint = targetMap:FindFirstChildOfClass("SpawnLocation") or targetMap:FindFirstChild("Spawns") or targetMap
-            Players.LocalPlayer.Character.HumanoidRootPart.CFrame = spawnPoint.CFrame + Vector3.new(0, 3, 0)
-        end
-    end)
-end)
-
-Library:CreateButton(TeleportPage, "TeleportToLobby", function()
-    pcall(function()
-        local lobby = workspace:FindFirstChild("Lobby") or workspace:FindFirstChild("LobbySpawn")
-        if lobby and Players.LocalPlayer.Character and Players.LocalPlayer.Character:FindFirstChild("HumanoidRootPart") then Players.LocalPlayer.Character.HumanoidRootPart.CFrame = lobby.CFrame + Vector3.new(0, 3, 0) end
-    end)
-end)
-
-Library:CreateToggle(AutoBuyPage, "SilentAim", false, function(state) end)
 
 -- ============================================================================
--- [ИСПРАВЛЕНО] ФУНКЦИЯ AUTO HARVEST ДЛЯ ПК И ТЕЛЕФОНОВ (БЕЗ ЛАГОВ И ВЫЛЕТОВ)
+-- [ЛОГИКА РАБОТЫ АВТО-СБОРА (AUTO HARVEST) И МОДИФИКАТОРОВ]
 -- ============================================================================
+
 local autoHarvestActive = false
-Library:CreateToggle(AutoPage, "AutoHarvest", false, function(state)
+local safeTeleportToCrops = true
+local harvestDelay = 0.5
+
+local function firePrompt(prompt)
+    if not prompt or not prompt:IsA("ProximityPrompt") then return end
+    
+    local origDistance = prompt.MaxActivationDistance
+    local origRequires = prompt.RequiresLineOfSight
+    
+    prompt.MaxActivationDistance = 999999
+    prompt.RequiresLineOfSight = false
+    task.wait(0.05)
+    
+    if fireproximityprompt then
+        fireproximityprompt(prompt)
+    else
+        prompt:InputBegan(Enum.UserInputType.MouseButton1)
+        task.wait(prompt.HoldDuration + 0.05)
+        prompt:InputEnded(Enum.UserInputType.MouseButton1)
+    end
+    
+    task.delay(1, function()
+        pcall(function()
+            prompt.MaxActivationDistance = origDistance
+            prompt.RequiresLineOfSight = origRequires
+        end)
+    end)
+end
+
+local function getMyPlot()
+    local localPlayer = Players.LocalPlayer
+    local containers = {
+        workspace:FindFirstChild("Farm"),
+        workspace:FindFirstChild("Farms"),
+        workspace:FindFirstChild("Plots"),
+        workspace:FindFirstChild("Plots_Physical")
+    }
+    
+    for _, container in ipairs(containers) do
+        if container then
+            for _, plot in ipairs(container:GetChildren()) do
+                if plot.Name == localPlayer.Name then
+                    return plot
+                end
+                local data = plot:FindFirstChild("Important") or plot:FindFirstChild("Data") or plot:FindFirstChild("Settings")
+                if data then
+                    local owner = data:FindFirstChild("Owner")
+                    if owner and (owner.Value == localPlayer.Name or owner.Value == localPlayer) then
+                        return plot
+                    end
+                end
+            end
+        end
+    end
+    
+    local fallback = workspace:FindFirstChild(localPlayer.Name)
+    if fallback then return fallback end
+    return nil
+end
+
+local function runHarvestLoop()
+    local myPlot = getMyPlot()
+    local player = Players.LocalPlayer
+    local character = player.Character
+    local root = character and character:FindFirstChild("HumanoidRootPart")
+    
+    if not root then return end
+    local executedAny = false
+    
+    if myPlot then
+        local plantsFolder = myPlot:FindFirstChild("Plants_Physical") or myPlot:FindFirstChild("Plants")
+        if plantsFolder then
+            for _, plant in ipairs(plantsFolder:GetChildren()) do
+                if not autoHarvestActive then return end
+                local prompt = plant:FindFirstChildOfClass("ProximityPrompt") or plant:FindFirstChildWhichIsA("ProximityPrompt", true)
+                if prompt then
+                    local actText = string.lower(prompt.ActionText)
+                    if actText:find("harvest") or actText:find("урожай") or actText:find("collect") or actText:find("собрать") or actText:find("pick") or actText == "" then
+                        local promptParent = prompt.Parent
+                        if promptParent and promptParent:IsA("BasePart") then
+                            if safeTeleportToCrops then
+                                root.CFrame = promptParent.CFrame * CFrame.new(0, 3, 0)
+                                task.wait(0.15)
+                            end
+                            firePrompt(prompt)
+                            task.wait(harvestDelay)
+                            executedAny = true
+                        end
+                    end
+                end
+            end
+        end
+    end
+    
+    -- Резервный сбор по области (если уехали с базы или крадем урожай ночью)
+    if not executedAny then
+        for _, desc in ipairs(workspace:GetDescendants()) do
+            if not autoHarvestActive then return end
+            if desc:IsA("ProximityPrompt") then
+                local actText = string.lower(desc.ActionText)
+                if actText:find("harvest") or actText:find("урожай") or actText:find("collect") or actText:find("собрать") or actText:find("pick") then
+                    local parent = desc.Parent
+                    if parent and parent:IsA("BasePart") then
+                        local distance = (root.Position - parent.Position).Magnitude
+                        if distance <= desc.MaxActivationDistance + 5 then
+                            firePrompt(desc)
+                            task.wait(harvestDelay)
+                        end
+                    end
+                end
+            end
+        end
+    end
+end
+
+task.spawn(function()
+    while true do
+        task.wait(0.2)
+        if autoHarvestActive then
+            pcall(runHarvestLoop)
+        end
+    end
+end)
+
+
+-- Игрок модификаторы
+local modActive = false
+local walkSpeedVal = 16
+local jumpPowerVal = 50
+
+task.spawn(function()
+    while true do
+        task.wait(0.2)
+        local character = Players.LocalPlayer.Character
+        local humanoid = character and character:FindFirstChildOfClass("Humanoid")
+        if humanoid and modActive then
+            humanoid.WalkSpeed = walkSpeedVal
+            humanoid.JumpPower = jumpPowerVal
+        end
+    end
+end)
+
+
+-- ESP Игроков через нативные Highlights (без лагов на любых девайсах)
+local espActive = false
+local function updateESP()
+    for _, p in ipairs(Players:GetPlayers()) do
+        if p ~= Players.LocalPlayer then
+            local char = p.Character
+            if char then
+                if espActive then
+                    local hl = char:FindFirstChild("ESPHighlight")
+                    if not hl then
+                        hl = Instance.new("Highlight")
+                        hl.Name = "ESPHighlight"
+                        hl.Parent = char
+                    end
+                    hl.FillColor = Library.CurrentThemeData.Accent
+                    hl.FillTransparency = 0.5
+                    hl.OutlineColor = Color3.fromRGB(255, 255, 255)
+                    hl.OutlineTransparency = 0
+                    
+                    local bg = char:FindFirstChild("ESPTag")
+                    if not bg then
+                        bg = Instance.new("BillboardGui")
+                        bg.Name = "ESPTag"
+                        bg.AlwaysOnTop = true
+                        bg.Size = UDim2.new(0, 100, 0, 30)
+                        bg.StudsOffset = Vector3.new(0, 3, 0)
+                        bg.Parent = char
+                        
+                        local text = Instance.new("TextLabel", bg)
+                        text.Size = UDim2.new(1, 0, 1, 0)
+                        text.BackgroundTransparency = 1
+                        text.Font = Enum.Font.GothamBold
+                        text.TextSize = 12
+                        text.TextColor3 = Library.CurrentThemeData.Accent
+                        text.Text = p.Name
+                    end
+                else
+                    local hl = char:FindFirstChild("ESPHighlight")
+                    if hl then hl:Destroy() end
+                    local bg = char:FindFirstChild("ESPTag")
+                    if bg then bg:Destroy() end
+                end
+            end
+        end
+    end
+end
+
+task.spawn(function()
+    while true do
+        task.wait(1)
+        if espActive then pcall(updateESP) end
+    end
+end)
+
+
+-- ============================================================================
+-- [РЕНДЕРИНГ СТРАНИЦ ХАБА И ЭЛЕМЕНТОВ УПРАВЛЕНИЯ]
+-- ============================================================================
+
+local MainPage = Library:CreateTab("Main", "rbxassetid://10747372703")
+local PlayersPage = Library:CreateTab("Players", "rbxassetid://10747373865")
+local VisualPage = Library:CreateTab("Visual", "rbxassetid://10747373151")
+local SettingsPage = Library:CreateTab("Settings", "rbxassetid://10747373426")
+
+-- СТРАНИЦА MAIN (Основная автоматизация)
+Library:CreateToggle(MainPage, "AutoHarvest", false, function(state)
     autoHarvestActive = state
 end)
 
--- Поиск папок грядок в игре
-local function getTargetFolders()
-    local targets = {}
-    local commonNames = {"plots", "gardens", "beds", "playerplots", "tycoons", "lands", "plotsfolder"}
-    for _, child in ipairs(workspace:GetChildren()) do
-        local nameLow = child.Name:lower()
-        for _, common in ipairs(commonNames) do
-            if nameLow:find(common) then
-                table.insert(targets, child)
-            end
-        end
-    end
-    return targets
-end
-
--- Основной оптимизированный цикл сбора урожая
-task.spawn(function()
-    while true do
-        task.wait(0.5) -- Оптимальная задержка против лагов на мобилках
-        if autoHarvestActive then
-            pcall(function()
-                local player = Players.LocalPlayer
-                local character = player.Character
-                local rootPart = character and character:FindFirstChild("HumanoidRootPart")
-                if not rootPart then return end
-                
-                local myPlot = nil
-                
-                -- 1. Сначала ищем личную грядку по имени игрока в workspace
-                local directPlot = workspace:FindFirstChild(player.Name)
-                if directPlot then
-                    myPlot = directPlot
-                else
-                    -- 2. Если не нашли, ищем в папках грядок
-                    local folders = getTargetFolders()
-                    for _, folder in ipairs(folders) do
-                        local found = folder:FindFirstChild(player.Name)
-                        if found then
-                            myPlot = found
-                            break
-                        else
-                            -- Поиск по значению Owner (Владелец) внутри папки
-                            for _, child in ipairs(folder:GetChildren()) do
-                                local owner = child:FindFirstChild("Owner") or child:FindFirstChild("Player") or child:FindFirstChild("OwnerName")
-                                if owner and (owner.Value == player or tostring(owner.Value) == player.Name or owner.Value == player.UserId) then
-                                    myPlot = child
-                                    break
-                                end
-                            end
-                        end
-                        if myPlot then break end
-                    end
-                end
-                
-                -- Если нашли нашу грядку, собираем урожай только с нее (0 лагов!)
-                if myPlot then
-                    for _, desc in ipairs(myPlot:GetDescendants()) do
-                        if not autoHarvestActive then break end
-                        if desc:IsA("ProximityPrompt") then
-                            -- Убираем ограничения дистанции и видимости для надежного срабатывания
-                            desc.RequiresLineOfSight = false
-                            desc.MaxActivationDistance = 9e9
-                            
-                            if fireproximityprompt then
-                                fireproximityprompt(desc)
-                            else
-                                -- Универсальная симуляция удержания для мобильных
-                                task.spawn(function()
-                                    desc:InputHoldBegin()
-                                    task.wait(desc.HoldDuration + 0.1)
-                                    desc:InputHoldEnd()
-                                end)
-                            end
-                        end
-                    end
-                else
-                    -- Резервный вариант: если грядку не определило, сканируем ProximityPrompts с фильтрацией по ключевым словам
-                    for _, desc in ipairs(workspace:GetDescendants()) do
-                        if not autoHarvestActive then break end
-                        if desc:IsA("ProximityPrompt") then
-                            local name = desc.Name:lower()
-                            local text = desc.ActionText:lower()
-                            if name:find("harvest") or name:find("pick") or name:find("collect") or 
-                               text:find("harvest") or text:find("снять") or text:find("собрать") then
-                                
-                                desc.RequiresLineOfSight = false
-                                desc.MaxActivationDistance = 9e9
-                                
-                                if fireproximityprompt then
-                                    fireproximityprompt(desc)
-                                else
-                                    task.spawn(function()
-                                        desc:InputHoldBegin()
-                                        task.wait(desc.HoldDuration + 0.1)
-                                        desc:InputHoldEnd()
-                                    end)
-                                end
-                            end
-                        end
-                    end
-                end
-            end)
-        end
-    end
+Library:CreateToggle(MainPage, "SafeTeleport", true, function(state)
+    safeTeleportToCrops = state
 end)
 
--- ============================================================================
--- СУБ-ВКЛАДКА ESP (ТОЛЬКО ДЛЯ ИГРОКОВ, FRUIT ESP УДАЛЕН)
--- ============================================================================
-local VisualSections = Library:CreateSubTabs(VisualPage, {
-    {Name = "Esp", Icon = "80768064990053", Color = Color3.fromRGB(46, 204, 113)}
-})
-
-local PlayerESP_Enabled = false
-local PlayerESP_Color = Color3.fromRGB(46, 204, 113)
-
-local ESP_Colors = {
-    ["Green"] = Color3.fromRGB(46, 204, 113),
-    ["Red"] = Color3.fromRGB(255, 75, 75),
-    ["Blue"] = Color3.fromRGB(52, 152, 219),
-    ["Yellow"] = Color3.fromRGB(241, 196, 15),
-    ["Cyan"] = Color3.fromRGB(0, 255, 255),
-    ["Purple"] = Color3.fromRGB(155, 89, 182),
-    ["White"] = Color3.fromRGB(255, 255, 255),
-    ["Pink"] = Color3.fromRGB(255, 105, 180)
-}
-
--- Применение подсветки на игрока
-local function applyPlayerESP(player)
-    if player == Players.LocalPlayer then return end
-    
-    local function setupHighlight(character)
-        if not character then return end
-        
-        -- Создаем Highlight (обводку персонажа)
-        local highlight = character:FindFirstChild("PlayerHighlightESP")
-        if not highlight then
-            highlight = Instance.new("Highlight")
-            highlight.Name = "PlayerHighlightESP"
-            highlight.FillColor = PlayerESP_Color
-            highlight.OutlineColor = Color3.new(1, 1, 1)
-            highlight.FillTransparency = 0.5
-            highlight.OutlineTransparency = 0.2
-            highlight.Adornee = character
-            highlight.Parent = character
-        else
-            highlight.FillColor = PlayerESP_Color
-        end
-        
-        -- Никнейм над головой
-        local head = character:WaitForChild("Head", 5)
-        if head and not character:FindFirstChild("PlayerLabelESP") then
-            local billboard = Instance.new("BillboardGui")
-            billboard.Name = "PlayerLabelESP"
-            billboard.Size = UDim2.new(0, 120, 0, 30)
-            billboard.AlwaysOnTop = true
-            billboard.StudsOffset = Vector3.new(0, 3, 0)
-            billboard.Adornee = head
-            
-            local textLabel = Instance.new("TextLabel")
-            textLabel.BackgroundTransparency = 1
-            textLabel.Size = UDim2.new(1, 0, 1, 0)
-            textLabel.Text = player.Name
-            textLabel.TextColor3 = PlayerESP_Color
-            textLabel.TextSize = 13
-            textLabel.Font = Enum.Font.GothamBold
-            textLabel.TextStrokeTransparency = 0.2
-            textLabel.TextStrokeColor3 = Color3.new(0, 0, 0)
-            textLabel.Parent = billboard
-            
-            billboard.Parent = character
-        elseif character:FindFirstChild("PlayerLabelESP") then
-            local textLabel = character.PlayerLabelESP:FindFirstChildOfClass("TextLabel")
-            if textLabel then
-                textLabel.TextColor3 = PlayerESP_Color
-            end
-        end
-    end
-    
-    if player.Character then
-        setupHighlight(player.Character)
-    end
-    player.CharacterAdded:Connect(setupHighlight)
-end
-
--- Удаление подсветки с игрока
-local function removePlayerESP(player)
-    if player.Character then
-        local hl = player.Character:FindFirstChild("PlayerHighlightESP")
-        if hl then hl:Destroy() end
-        local lbl = player.Character:FindFirstChild("PlayerLabelESP")
-        if lbl then lbl:Destroy() end
-    end
-end
-
--- Обновление состояния ЕСП для всех игроков
-local function updatePlayerESP()
-    for _, player in ipairs(Players:GetPlayers()) do
-        if PlayerESP_Enabled then
-            applyPlayerESP(player)
-        else
-            removePlayerESP(player)
-        end
-    end
-end
-
--- Тумблер включения ЕСП Игроков
-Library:CreateToggle(VisualSections["Esp"], "PlayerEsp", false, function(state)
-    PlayerESP_Enabled = state
-    updatePlayerESP()
+Library:CreateSlider(MainPage, "HarvestSpeed", 0, 5, 0, function(val)
+    harvestDelay = val
 end)
 
--- Выбор цветов для ЕСП
-local colorNames = {}
-for name, _ in pairs(ESP_Colors) do table.insert(colorNames, name) end
-table.sort(colorNames)
-
-Library:CreateDropdown(VisualSections["Esp"], "EspColor", colorNames, "Green", function(selectedColorName)
-    local selectedColor = ESP_Colors[selectedColorName] or Color3.fromRGB(46, 204, 113)
-    PlayerESP_Color = selectedColor
-    if PlayerESP_Enabled then
-        updatePlayerESP()
-    end
-end)
-
--- Отслеживание захода новых игроков для работы ЕСП
-Players.PlayerAdded:Connect(function(player)
-    if PlayerESP_Enabled then
-        player.CharacterAdded:Connect(function(char)
-            task.wait(0.5)
-            if PlayerESP_Enabled then
-                applyPlayerESP(player)
-            end
-        end)
-    end
-end)
-
--- ============================================================================
--- НАСТРОЙКИ UI И ТЕМЫ
--- ============================================================================
-local UISizeNames = {"80%", "90%", "100%", "110%", "120%"}
-local UISizes = {["80%"] = 0.8, ["90%"] = 0.9, ["100%"] = 1.0, ["110%"] = 1.1, ["120%"] = 1.2}
-
-Library:CreateDropdown(SettingsPage, "UISize", UISizeNames, "100%", function(option)
-    local scale = UISizes[option] or 1
-    tween(MainScale, {Scale = scale})
-end)
-
-Library:CreateDropdown(SettingsPage, "UITheme", ThemeNamesList, "Deep Ocean", function(option)
-    Library:UpdateTheme(option)
-end)
-
-Library:CreateDropdown(SettingsPage, "Language", {"English", "Русский"}, "English", function(option)
-    Library.CurrentLanguage = option
-    TabTitle.Text = Localization[option][Library.CurrentTabKey] or Library.CurrentTabKey
-    for _, item in ipairs(LocaleObjects) do
-        if item.Object and item.Object.Parent then
-            local localizedText = Localization[option][item.Key] or item.Key
-            if item.Object:IsA("TextButton") or item.Object:IsA("TextLabel") then
-                item.Object.Text = localizedText
-            end
-            if item.SearchItem then
-                item.SearchItem.SearchText = NormalizeText(localizedText)
-            end
-        end
-    end
-    SearchBox.PlaceholderText = option == "Русский" and "Поиск..." or "Search..."
-end)
-
-local isAntiAfkActive = false
-Library:CreateToggle(SettingsPage, "AntiAFK", false, function(state)
-    isAntiAfkActive = state
+Library:CreateToggle(MainPage, "AntiAFK", false, function(state)
     toggleAntiAFK(state)
 end)
 
-local isAnimatedWindowActive = false
-Library:CreateToggle(SettingsPage, "AnimatedWindow", false, function(state)
-    isAnimatedWindowActive = state
-    toggleAnimatedWindow(state)
+-- СТРАНИЦА PLAYERS (Модификаторы персонажа)
+Library:CreateToggle(PlayersPage, "EspToggle", false, function(state)
+    modActive = state
 end)
 
-local isGradientActive = false
+Library:CreateSlider(PlayersPage, "WalkSpeed", 16, 150, 16, function(val)
+    walkSpeedVal = val
+end)
+
+Library:CreateSlider(PlayersPage, "JumpPower", 50, 300, 50, function(val)
+    jumpPowerVal = val
+end)
+
+-- СТРАНИЦА VISUAL (Графика/ESP)
+Library:CreateToggle(VisualPage, "PlayerEsp", false, function(state)
+    espActive = state
+    pcall(updateESP)
+end)
+
+-- СТРАНИЦА SETTINGS (Кастомизация UI)
+Library:CreateDropdown(SettingsPage, "Language", {"English", "Русский"}, "English", function(lang)
+    Library.CurrentLanguage = lang
+    TabTitle.Text = Localization[lang][Library.CurrentTabKey] or Library.CurrentTabKey
+end)
+
+Library:CreateDropdown(SettingsPage, "UITheme", ThemeNamesList, "Deep Ocean", function(theme)
+    Library.CurrentThemeName = theme
+    Library:UpdateTheme(theme)
+end)
+
 Library:CreateToggle(SettingsPage, "Gradient", false, function(state)
-    isGradientActive = state
     toggleGradientEffect(state)
 end)
 
+Library:CreateToggle(SettingsPage, "AnimatedWindow", false, function(state)
+    toggleAnimatedWindow(state)
+end)
+
+-- Первая загрузка темы
 Library:UpdateTheme("Deep Ocean")
-allPages["Main"].Visible = true
-allTabs["Main"].BackgroundColor3 = Color3.fromRGB(35, 35, 35)
-allTabs["Main"].BackgroundTransparency = 0
-allTabButtons["Main"].TextColor3 = Color3.fromRGB(255, 255, 255)
-if allTabIcons["Main"] then allTabIcons["Main"].ImageTransparency = 0 end
