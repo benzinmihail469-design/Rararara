@@ -1719,58 +1719,76 @@ local function activateGameUiButton(btn)
     end
 end
 
-local function clickGameSellButton()
-    local playerGui = Players.LocalPlayer:FindFirstChild("PlayerGui")
-    if not playerGui then return false end
-    for _, v in ipairs(playerGui:GetDescendants()) do
-        if not v:IsDescendantOf(PulseHub) then
-            if v:IsA("TextButton") or v:IsA("ImageButton") then
-                local found = false
-                local text = v:IsA("TextButton") and v.Text:lower() or ""
-                if text:find("продать") or text:find("sell") then
-                    found = true
-                else
-                    for _, child in ipairs(v:GetChildren()) do
-                        if child:IsA("TextLabel") and (child.Text:lower():find("продать") or child.Text:lower():find("sell")) then
-                            found = true
-                            break
-                        end
-                    end
-                end
-                if found then
-                    activateGameUiButton(v)
-                    return true
-                end
-            end
+-- Функция убирания предметов/фруктов из рук
+local function unequipAllTools()
+    local character = Players.LocalPlayer.Character
+    if character then
+        local humanoid = character:FindFirstChildOfClass("Humanoid")
+        if humanoid then
+            humanoid:UnequipTools()
         end
     end
-    return false
 end
 
+-- Поиск скупщика (Стивена) по карте по различным ключевым словам
 local function findSellTarget()
+    local player = Players.LocalPlayer
+    local character = player.Character
+    local rootPart = character and character:FindFirstChild("HumanoidRootPart")
+    if not rootPart then return nil end
+
+    local bestPrompt = nil
+    local minDistance = 999999 -- Ищем по всей карте
+
     for _, obj in ipairs(workspace:GetDescendants()) do
         if obj:IsA("ProximityPrompt") then
-            local parentName = obj.Parent and obj.Parent.Name:lower() or ""
+            local parent = obj.Parent
+            local parentName = parent and parent.Name:lower() or ""
             local actText = obj.ActionText:lower()
             local objText = obj.ObjectText:lower()
             
-            if parentName:find("стивен") or parentName:find("steven") or 
-               objText:find("стивен") or objText:find("steven") or 
-               actText:find("поговорить") or actText:find("продать") or actText:find("sell") then
-                return obj
+            if parentName:find("steve") or parentName:find("стив") or 
+               parentName:find("sell") or parentName:find("прод") or
+               objText:find("steve") or objText:find("стив") or 
+               objText:find("sell") or objText:find("прод") or
+               actText:find("sell") or actText:find("прод") or actText:find("talk") or actText:find("говор") then
+                
+                local part = parent:IsA("BasePart") and parent or obj:FindFirstAncestorWhichIsA("BasePart")
+                if part then
+                    local dist = (part.Position - rootPart.Position).Magnitude
+                    if dist < minDistance then
+                        minDistance = dist
+                        bestPrompt = obj
+                    end
+                end
             end
         end
     end
-    return nil
+    return bestPrompt
 end
 
+-- Клик по кнопке "Продать все" в диалоговом окне
 local function clickDialogueOption()
     local playerGui = Players.LocalPlayer:FindFirstChild("PlayerGui")
-    local clicked = false
+    if not playerGui then return false end
     
-    if playerGui then
-        for _, v in ipairs(playerGui:GetDescendants()) do
-            if not v:IsDescendantOf(PulseHub) and (v:IsA("TextButton") or v:IsA("ImageButton")) and v.Visible then
+    local clicked = false
+    for _, v in ipairs(playerGui:GetDescendants()) do
+        -- Проверяем, что кнопка видима и не принадлежит PulseHub
+        if not v:IsDescendantOf(PulseHub) and (v:IsA("TextButton") or v:IsA("ImageButton")) and v.Visible then
+            -- Ищем, находится ли кнопка внутри GUI диалога
+            local isDialogue = false
+            local parent = v.Parent
+            while parent and parent ~= playerGui do
+                local pName = parent.Name:lower()
+                if pName:find("dialog") or pName:find("talk") or pName:find("chat") or pName:find("npc") or pName:find("convo") or pName:find("choice") or pName:find("option") or pName:find("bubble") then
+                    isDialogue = true
+                    break
+                end
+                parent = parent.Parent
+            end
+            
+            if isDialogue then
                 local text = v:IsA("TextButton") and v.Text:lower() or ""
                 for _, child in ipairs(v:GetChildren()) do
                     if child:IsA("TextLabel") then
@@ -1778,22 +1796,27 @@ local function clickDialogueOption()
                     end
                 end
                 
-                if text:find("продать") or text:find("sell") or text:find("инвентарь") or text:find("inventory") or text:find("все") or text:find("all") or text:find("да") or text:find("yes") then
+                -- Приоритет кнопкам "все", "all", "продать все", "sell all"
+                if text:find("все") or text:find("all") or text:find("продать") or text:find("sell") or text:find("да") or text:find("yes") then
                     activateGameUiButton(v)
                     clicked = true
+                    break
                 end
             end
         end
     end
 
-    pcall(function()
-        game:GetService("VirtualInputManager"):SendKeyEvent(true, Enum.KeyCode.One, false, game)
-        task.wait(0.02)
-        game:GetService("VirtualInputManager"):SendKeyEvent(false, Enum.KeyCode.One, false, game)
-    end)
-    pcall(function()
-        game:GetService("VirtualUser"):TypeKey("1")
-    end)
+    -- Резервный вариант: симуляция нажатия клавиш диалога
+    if not clicked then
+        pcall(function()
+            game:GetService("VirtualInputManager"):SendKeyEvent(true, Enum.KeyCode.One, false, game)
+            task.wait(0.02)
+            game:GetService("VirtualInputManager"):SendKeyEvent(false, Enum.KeyCode.One, false, game)
+        end)
+        pcall(function()
+            game:GetService("VirtualUser"):TypeKey("1")
+        end)
+    end
     
     return clicked
 end
@@ -1803,6 +1826,9 @@ task.spawn(function()
         task.wait(1) 
         if autoSellActive then
             pcall(function()
+                -- Постоянно убираем предметы из рук, чтобы персонаж не держал фрукты
+                unequipAllTools()
+                
                 local playerGui = Players.LocalPlayer:FindFirstChild("PlayerGui")
                 local cropSlotsCount = 0
                 local parsedWeight = 0
@@ -1825,14 +1851,16 @@ task.spawn(function()
                     end
                 end
                 
+                -- Если заполнено до лимита
                 if (parsedWeight >= maxSellAmount) or (cropSlotsCount >= maxSellAmount and parsedWeight == 0) then
-                    clickGameSellButton()
-                    task.wait(0.3) 
-                    
                     local sellTrigger = findSellTarget()
                     if sellTrigger then
+                        -- Дополнительно убираем вещи из рук прямо перед взаимодействием
+                        unequipAllTools()
+                        task.wait(0.1)
+                        
                         firePrompt(sellTrigger)
-                        task.wait(0.5) 
+                        task.wait(0.4) 
                         
                         clickDialogueOption()
                     end
