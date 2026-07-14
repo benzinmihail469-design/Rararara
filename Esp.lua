@@ -8,6 +8,8 @@ local VirtualUser = game:GetService("VirtualUser")
 local Lighting = game:GetService("Lighting")
 
 local startTime = os.clock()
+local currentTransparency = 0.15 -- Переменная для динамического сохранения прозрачности
+
 local function formatSessionTime(seconds)
     local hours = math.floor(seconds / 3600)
     local minutes = math.floor((seconds % 3600) / 60)
@@ -91,7 +93,7 @@ end
 local MainFrame = Instance.new("Frame", PulseHub)
 MainFrame.Name = "MainFrame"
 MainFrame.BackgroundColor3 = Color3.fromRGB(14, 14, 14)
-MainFrame.BackgroundTransparency = 0.15
+MainFrame.BackgroundTransparency = currentTransparency
 MainFrame.AnchorPoint = Vector2.new(0.5, 0.5)
 MainFrame.Position = UDim2.new(0.5, 0, 0.5, 0)
 MainFrame.Size = UDim2.new(0, 550, 0, 350)
@@ -371,7 +373,7 @@ local function ToggleMinimize()
         HeaderBg.Position = UDim2.new(0, 10, 0, 10)
         HeaderBg.Size = UDim2.new(0, 150, 0, 46)
         MainStroke.Enabled = true
-        MainFrame.BackgroundTransparency = 0.15
+        MainFrame.BackgroundTransparency = currentTransparency
         tween(MainFrame, {Size = UDim2.new(0, 550, 0, 350), Position = UDim2.new(0.5, 0, 0.5, 0)}).Completed:Connect(function()
             if not isMinimized then
                 PagesContainer.Visible, TabTitle.Visible, SearchContainer.Visible, Navigation.Visible, FooterBg.Visible, ControlsContainer.Visible = true, true, true, true, true, true
@@ -1822,9 +1824,15 @@ Players.PlayerRemoving:Connect(function(player)
 end)
 
 -- ============================================================================
--- НАСТРОЙКИ ИНТЕРФЕЙСА (SETTINGS)
+-- НАСТРОЙКИ ИНТЕРФЕЙСА (SETTINGS) С СУБ-ВКЛАДКАМИ UI И THEME
 -- ============================================================================
-Library:CreateDropdown(SettingsPage, "Language", {"English", "Русский"}, "Русский", function(lang)
+local SettingsSections = Library:CreateSubTabs(SettingsPage, {
+    {Name = "UI", Icon = "117996761927034", Color = Color3.fromRGB(52, 152, 219)},
+    {Name = "Theme", Icon = "78910169210318", Color = Color3.fromRGB(235, 94, 153)}
+})
+
+-- --- [ВКЛАДКА UI] ---
+Library:CreateDropdown(SettingsSections.UI, "Language", {"English", "Русский"}, "Русский", function(lang)
     Library.CurrentLanguage = lang
     for _, loc in ipairs(LocaleObjects) do
         local key = loc.Key
@@ -1837,19 +1845,45 @@ Library:CreateDropdown(SettingsPage, "Language", {"English", "Русский"}, 
     TabTitle.Text = Localization[lang][Library.CurrentTabKey] or Library.CurrentTabKey
 end)
 
-Library:CreateDropdown(SettingsPage, "UITheme", ThemeNamesList, "Deep Ocean", function(theme)
-    Library:UpdateTheme(theme)
+Library:CreateSlider(SettingsSections.UI, "UISize", 50, 150, 100, function(value)
+    MainScale.Scale = value / 100
 end)
 
-Library:CreateToggle(SettingsPage, "AntiAFK", false, function(state)
+Library:CreateSlider(SettingsSections.UI, "UITransparency", 0, 90, 15, function(value)
+    currentTransparency = value / 100
+    if not isMinimized then
+        MainFrame.BackgroundTransparency = currentTransparency
+    end
+end)
+
+local fontNames = {}
+for fontName, _ in pairs(FontMapping) do table.insert(fontNames, fontName) end
+table.sort(fontNames)
+
+Library:CreateDropdown(SettingsSections.UI, "MenuFont", fontNames, "Gotham", function(fontName)
+    local selectedFont = FontMapping[fontName] or Enum.Font.Gotham
+    Library.CurrentFont = selectedFont
+    for _, obj in ipairs(PulseHub:GetDescendants()) do
+        if (obj:IsA("TextLabel") or obj:IsA("TextButton") or obj:IsA("TextBox")) and obj.Name ~= "FontPreviewLabel" then
+            obj.Font = selectedFont
+        end
+    end
+end)
+
+Library:CreateToggle(SettingsSections.UI, "AntiAFK", false, function(state)
     toggleAntiAFK(state)
 end)
 
-Library:CreateToggle(SettingsPage, "AnimatedWindow", false, function(state)
+-- --- [ВКЛАДКА THEME] ---
+Library:CreateDropdown(SettingsSections.Theme, "UITheme", ThemeNamesList, "Deep Ocean", function(theme)
+    Library:UpdateTheme(theme)
+end)
+
+Library:CreateToggle(SettingsSections.Theme, "AnimatedWindow", false, function(state)
     toggleAnimatedWindow(state)
 end)
 
-Library:CreateToggle(SettingsPage, "Gradient", false, function(state)
+Library:CreateToggle(SettingsSections.Theme, "Gradient", false, function(state)
     toggleGradientEffect(state)
 end)
 
