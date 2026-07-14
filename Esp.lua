@@ -426,7 +426,7 @@ end)
 
 local Library = {}
 Library.CurrentFont = Enum.Font.Gotham
-Library.CurrentLanguage = "English"
+Library.CurrentLanguage = "Русский" -- Установил русский по умолчанию
 Library.CurrentTabKey = "Main"
 
 Library.TrackedMainBg = {}
@@ -601,16 +601,16 @@ local Localization = {
     ["Русский"] = {
         ["Main"] = "Главная", ["Teleport"] = "Телепорт", ["Auto"] = "Авто", ["Auto buy"] = "Авто-покупка",
         ["Players"] = "Игроки", ["Visual"] = "Визуалы", ["Settings"] = "Настройки", ["UI"] = "Интерфейс",
-        ["Theme"] = "Тема", ["AutoFarmCoins"] = "Авто-Фарм Монет",
+        ["Theme"] = "Тема (Цвет)", ["AutoFarmCoins"] = "Авто-Фарм Монет",
         ["UISize"] = "Размер интерфейса", ["UITransparency"] = "Прозрачность меню", ["MenuFont"] = "Шрифт меню",
         ["Language"] = "Язык", ["AntiAFK"] = "Анти-АФК", ["UITheme"] = "Тема UI",
         ["AnimatedWindow"] = "Анимированное окно", ["Gradient"] = "Градиентный фон",
         ["Esp"] = "ЕСП", ["EspToggle"] = "Включить ЕСП / Роли игроков",
         ["PlayerEsp"] = "ESP Игроков", ["EspColor"] = "Цвет ЕСП",
         ["WalkSpeed"] = "Скорость ходьбы", ["JumpPower"] = "Сила прыжка", ["ResetStats"] = "Сбросить модификаторы",
-        ["TeleportToMap"] = "Телепортироваться на Карту", ["TeleportToLobby"] = "Телепортироваться в Лобби",
+        ["TeleportToMap"] = "Телепорт на Карту", ["TeleportToLobby"] = "Телепорт в Лобби",
         ["SilentAim"] = "Сайлент Аим", ["AutoHarvest"] = "Авто-Сбор Урожая",
-        ["HarvestDelay"] = "Задержка сбора (сек)", ["AutoSell"] = "Авто-Продажа фруктов",
+        ["HarvestDelay"] = "Задержка сбора (сек)", ["AutoSell"] = "Дистанционная Авто-Продажа",
         ["MaxSellAmount"] = "Макс. продажа за раз"
     }
 }
@@ -1411,6 +1411,11 @@ local PlayersPage = Library:CreatePage("Players", "99904215381150", 5)
 local VisualPage = Library:CreatePage("Visual", "78910169210318", 6)
 local SettingsPage = Library:CreatePage("Settings", "117996761927034", 99)
 
+-- ВЫБОР И СОХРАНЕНИЕ ЦВЕТА МЕНЮ (ТЕМЫ)
+Library:CreateDropdown(SettingsPage, "Theme", ThemeNamesList, "Deep Ocean", function(selectedTheme)
+    Library:UpdateTheme(selectedTheme)
+end)
+
 local autoFarmActive = false
 Library:CreateToggle(MainPage, "AutoFarmCoins", false, function(state) 
     autoFarmActive = state
@@ -1649,7 +1654,7 @@ end
 local function firePrompt(prompt)
     if not prompt or not prompt.Enabled then return end
     prompt.RequiresLineOfSight = false
-    prompt.MaxActivationDistance = 999999 -- Увеличиваем радиус для продажи на дистанции
+    prompt.MaxActivationDistance = 999999 -- Увеличиваем радиус
     if fireproximityprompt then
         fireproximityprompt(prompt)
     else
@@ -1668,7 +1673,6 @@ local function fireClick(clickDec)
     end
 end
 
--- ВОТ ЗДЕСЬ БЫЛ ОБРЫВ ТВОЕГО КОДА. ОН ТЕПЕРЬ ПОЛНОСТЬЮ ЗАКОНЧЕН --
 task.spawn(function()
     while true do
         task.wait(math.max(0.05, harvestDelayTime))
@@ -1694,7 +1698,7 @@ task.spawn(function()
 end)
 
 ----------------------------------------------------------
--- НОВАЯ СИСТЕМА АВТО-ПРОДАЖИ (БЕЗ ТЕЛЕПОРТОВ И ЭКИПИРОВКИ) --
+-- НОВАЯ СИСТЕМА НЕЗАМЕТНОЙ АВТО-ПРОДАЖИ НА ДИСТАНЦИИ --
 ----------------------------------------------------------
 local autoSellActive = false
 Library:CreateToggle(AutoPage, "AutoSell", false, function(state)
@@ -1713,7 +1717,7 @@ task.spawn(function()
                 local hasFruits = false
                 local ignoreList = {"water", "hoe", "shovel", "rake", "seed", "pot", "hammer", "axe", "pickaxe", "basket", "лейка", "лопата", "грабли", "семена", "корзина", "топор", "кирка"}
                 
-                -- Ищем ТОЛЬКО фрукты в инвентаре, не берем их в руки (они остаются в Backpack)
+                -- Проверяем инвентарь на наличие урожая
                 for _, item in ipairs(player.Backpack:GetChildren()) do
                     if item:IsA("Tool") then
                         local itemName = item.Name:lower()
@@ -1731,47 +1735,60 @@ task.spawn(function()
                     end
                 end
 
-                -- Если есть фрукты, продаем их с дистанции
+                -- Если есть фрукты, запускаем полностью скрытую продажу
                 if hasFruits then
-                    -- 1. Активация кнопок или продавцов с дистанции
-                    for _, obj in ipairs(workspace:GetDescendants()) do
-                        if obj:IsA("ProximityPrompt") or obj:IsA("ClickDetector") then
-                            local name = obj.Name:lower()
-                            local parentName = obj.Parent and obj.Parent.Name:lower() or ""
-                            local actText = obj:IsA("ProximityPrompt") and obj.ActionText:lower() or ""
-                            local objText = obj:IsA("ProximityPrompt") and obj.ObjectText:lower() or ""
-                            
-                            if name:find("sell") or parentName:find("sell") or actText:find("sell") or objText:find("sell") 
-                               or name:find("продать") or parentName:find("продать") or actText:find("продать") or objText:find("продать") then
-                                
-                                if obj:IsA("ProximityPrompt") then
-                                    firePrompt(obj) -- Функция сама обходит дистанцию (999999)
-                                elseif obj:IsA("ClickDetector") then
-                                    fireClick(obj)
+                    
+                    -- Метод 1: Самый скрытный. Поиск GUI-кнопок продажи из твоего скриншота (3628.jpg) и тихая активация
+                    local textsToFind = {"продать инвентарь", "sell inventory", "продай это", "продать", "sell"}
+                    local guiLocations = {player:WaitForChild("PlayerGui"), workspace} -- Ищем в интерфейсе и в BillboardGui над NPC
+                    
+                    for _, loc in ipairs(guiLocations) do
+                        for _, obj in ipairs(loc:GetDescendants()) do
+                            -- Ищем кнопки диалога
+                            if obj:IsA("TextButton") or obj:IsA("ImageButton") then
+                                local btnText = ""
+                                if obj:IsA("TextButton") then btnText = obj.Text:lower() end
+                                -- Если внутри кнопки есть TextLabel, читаем и его
+                                for _, child in ipairs(obj:GetDescendants()) do
+                                    if child:IsA("TextLabel") then
+                                        btnText = btnText .. " " .. child.Text:lower()
+                                    end
+                                end
+
+                                for _, target in ipairs(textsToFind) do
+                                    if btnText:find(target) then
+                                        -- Если эксплойт поддерживает getconnections, мы нажимаем кнопку ИДЕАЛЬНО ТИХО, без курсора
+                                        if getconnections then
+                                            for _, conn in ipairs(getconnections(obj.Activated)) do conn:Fire() end
+                                            for _, conn in ipairs(getconnections(obj.MouseButton1Click)) do conn:Fire() end
+                                            for _, conn in ipairs(getconnections(obj.MouseButton1Down)) do conn:Fire() end
+                                        end
+                                    end
                                 end
                             end
                         end
                     end
 
-                    -- 2. Активация площадок для продажи с дистанции (если игра просит наступить на что-то)
-                    if firetouchinterest then
-                        for _, obj in ipairs(workspace:GetDescendants()) do
-                            if obj:IsA("BasePart") and (obj.Name:lower():find("sell") or obj.Name:lower():find("продать")) then
-                                firetouchinterest(character.HumanoidRootPart, obj, 0)
-                                task.wait(0.05)
-                                firetouchinterest(character.HumanoidRootPart, obj, 1)
+                    -- Метод 2: Напрямую дергаем RemoteEvents продажи (работает с любой дистанции моментально)
+                    for _, obj in ipairs(game:GetService("ReplicatedStorage"):GetDescendants()) do
+                        if obj:IsA("RemoteEvent") or obj:IsA("RemoteFunction") then
+                            local name = obj.Name:lower()
+                            if name:find("sell") or name:find("продать") then
+                                if obj:IsA("RemoteEvent") then
+                                    obj:FireServer()
+                                else
+                                    -- Оборачиваем RemoteFunction в task.spawn чтобы скрипт не завис
+                                    task.spawn(function() pcall(function() obj:InvokeServer() end) end)
+                                end
                             end
                         end
                     end
                     
-                    -- 3. Если в игре есть RemoteEvent на продажу (на всякий случай)
-                    for _, obj in ipairs(game:GetService("ReplicatedStorage"):GetDescendants()) do
-                        if obj:IsA("RemoteEvent") and (obj.Name:lower():find("sell") or obj.Name:lower():find("продать")) then
-                            obj:FireServer()
-                        end
-                    end
                 end
             end)
         end
     end
 end)
+
+-- Инициализация темы при запуске
+Library:UpdateTheme("Deep Ocean")
