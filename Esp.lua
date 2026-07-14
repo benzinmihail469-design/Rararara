@@ -1467,6 +1467,22 @@ local function isHeldOrOwned(child)
     return false
 end
 
+-- Динамический поиск папок грядок на карте для оптимизации
+local function getTargetFolders()
+    local folders = {}
+    local searchNames = {"plots", "gardens", "beds", "griadki", "playerplots", "lands", "грядки", "сады"}
+    for _, child in ipairs(workspace:GetChildren()) do
+        local cName = child.Name:lower()
+        for _, name in ipairs(searchNames) do
+            if cName:find(name) then
+                table.insert(folders, child)
+                break
+            end
+        end
+    end
+    return folders
+end
+
 -- Проверка, является ли объект исключительно выросшим фруктом/урожаем
 local function isFruit(child)
     if not (child:IsA("Model") or child:IsA("BasePart")) then return false end
@@ -1475,17 +1491,28 @@ local function isFruit(child)
     -- Игнорируем фрукты, которые в руках или в инвентаре
     if isHeldOrOwned(child) then return false end
     
-    -- Если у родителя уже висит ESP, не нужно вешать на дочерние части!
+    -- Если у родителя уже висит ESP, не нужно дублировать на дочерние части!
     if child.Parent and fruitHighlights[child.Parent] then return false end
     
     local name = child.Name:lower()
     
-    -- Чёрный список (семена, грядки, горшки, магазины, игроки, интерфейс, служебные части)
+    -- Проверяем, находится ли объект прямо внутри грядки/участка
+    local parent = child.Parent
+    if parent then
+        local pName = parent.Name:lower()
+        if pName:find("dirt") or pName:find("plot") or pName:find("bed") or pName:find("griadka") or pName:find("soil") or pName:find("garden") or pName:find("planter") then
+            -- Исключаем служебные детали грядки (лейки, рамки, знаки покупки и т.д.)
+            if not (name:find("dirt") or name:find("soil") or name:find("bed") or name:find("plot") or name:find("frame") or name:find("border") or name:find("sign") or name:find("buy") or name:find("grid") or name:find("hitbox") or name:find("water")) then
+                return true
+            end
+        end
+    end
+    
+    -- Чёрный список (семена, горшки, магазины, игроки, интерфейс, служебные части)
     local blacklist = {
-        "shop", "store", "seed", "bed", "plot", "dirt", "planter", "pot", "griadka", "soil", 
-        "zone", "buy", "sell", "merchant", "npc", "stage", "sprout", "stem", "leaf", "leaves",
+        "shop", "store", "seed", "planter", "pot", "zone", "buy", "sell", "merchant", "npc", "stage", "sprout", "stem", "leaf", "leaves",
         "water", "fertilizer", "tool", "bag", "chest", "gate", "fence", "sign", "teleport",
-        "семена", "грядка", "горшок", "магазин", "покупка", "camera", "localplayer", "humanoid",
+        "семена", "горшок", "магазин", "покупка", "camera", "localplayer", "humanoid",
         "part", "meshpart", "handle", "rig", "workspace"
     }
     
@@ -1501,7 +1528,7 @@ local function isFruit(child)
         "cherry", "grape", "dragon", "pineapple", "watermelon", "peach", 
         "pear", "plum", "coconut", "melon", "tomato", "carrot", "potato",
         "pumpkin", "cabbage", "wheat", "corn", "gold", "bee", "flower", "rose", "tulip",
-        "фрукт", "яблоко", "банан", "цветок", "роза", "пчела"
+        "фрукт", "яблоко", "банан", "цветок", "роза", "пчела", "морковь", "капуста", "тыква"
     }
     
     local isMatch = false
@@ -1527,10 +1554,15 @@ end
 local function applyFruitESP(fruit)
     if fruitHighlights[fruit] then return end
     
+    local adorneePart = fruit
+    if fruit:IsA("Model") then
+        adorneePart = fruit.PrimaryPart or fruit:FindFirstChildOfClass("BasePart") or fruit
+    end
+    
     -- SelectionBox вместо Highlight (убирает лимит 31 шт, не вызывает лаги)
     local box = Instance.new("SelectionBox")
     box.Name = "FruitSelectionBoxESP"
-    box.Color3 = Color3.fromRGB(46, 204, 113) -- Зеленая обводка
+    box.Color3 = Color3.fromRGB(46, 204, 113) -- Красивая зеленая обводка
     box.LineThickness = 0.04
     box.Adornee = fruit
     box.Parent = fruit
@@ -1538,19 +1570,28 @@ local function applyFruitESP(fruit)
     -- Текстовое BillboardGui
     local billboard = Instance.new("BillboardGui")
     billboard.Name = "FruitLabelESP"
-    billboard.Size = UDim2.new(0, 100, 0, 30)
+    billboard.Size = UDim2.new(0, 120, 0, 30)
     billboard.AlwaysOnTop = true
     billboard.StudsOffset = Vector3.new(0, 2, 0)
-    billboard.Adornee = fruit
+    billboard.Adornee = adorneePart
     
     local textLabel = Instance.new("TextLabel")
     textLabel.BackgroundTransparency = 1
     textLabel.Size = UDim2.new(1, 0, 1, 0)
-    textLabel.Text = fruit.Name
-    textLabel.TextColor3 = Color3.fromRGB(255, 255, 255)
-    textLabel.TextSize = 11
+    
+    local displayName = fruit.Name
+    if displayName == "Model" or displayName == "Part" then
+        if fruit.Parent and not (fruit.Parent == workspace) then
+            displayName = fruit.Parent.Name
+        end
+    end
+    
+    textLabel.Text = displayName
+    textLabel.TextColor3 = Color3.fromRGB(46, 204, 113)
+    textLabel.TextSize = 12
     textLabel.Font = Enum.Font.GothamBold
-    textLabel.TextStrokeTransparency = 0.5
+    textLabel.TextStrokeTransparency = 0.3
+    textLabel.TextStrokeColor3 = Color3.fromRGB(0, 0, 0)
     textLabel.Parent = billboard
     
     billboard.Parent = fruit
@@ -1569,16 +1610,28 @@ local function scanAndApply()
     if not ESP_Enabled then return end
     
     for fruit, _ in pairs(fruitHighlights) do
-        -- Если объект уничтожен или оказался у кого-то в руках/инвентаре — снимаем ESP
         if not fruit or not fruit.Parent or isHeldOrOwned(fruit) then
             removeFruitESP(fruit)
         end
     end
 
-    for _, desc in ipairs(workspace:GetDescendants()) do
-        if not ESP_Enabled then break end
-        if isFruit(desc) then
-            applyFruitESP(desc)
+    local targetFolders = getTargetFolders()
+    if #targetFolders > 0 then
+        for _, folder in ipairs(targetFolders) do
+            for _, desc in ipairs(folder:GetDescendants()) do
+                if not ESP_Enabled then break end
+                if isFruit(desc) then
+                    applyFruitESP(desc)
+                end
+            end
+        end
+    else
+        -- Резервный поиск по всей карте, если папки участков не определились
+        for _, desc in ipairs(workspace:GetDescendants()) do
+            if not ESP_Enabled then break end
+            if isFruit(desc) then
+                applyFruitESP(desc)
+            end
         end
     end
 end
