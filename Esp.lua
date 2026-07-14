@@ -1472,7 +1472,7 @@ end
 -- Динамический и максимально глубокий поиск папки с грядками на карте
 local function findPlotsFolder()
     local searchNames = {"plots", "gardens", "beds", "griadki", "playerplots", "lands", "грядки", "сады", "plot"}
-    -- Сначала ищем в корне
+    -- Сначала ищем в корне workspace
     for _, child in ipairs(workspace:GetChildren()) do
         local cName = child.Name:lower()
         for _, name in ipairs(searchNames) do
