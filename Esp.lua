@@ -388,7 +388,7 @@ EmbMinBtn.Activated:Connect(ToggleMinimize)
 local function CloseGui()
     PulseHub:Destroy()
 end
-CloseGui.Activated:Connect(CloseGui)
+CloseBtn.Activated:Connect(CloseGui) -- ИСПРАВЛЕНО: Теперь привязано к кнопке CloseBtn, а не к функции
 EmbCloseBtn.Activated:Connect(CloseGui)
 
 local function applyHover(btn, normalColor, hoverColor)
@@ -1707,7 +1707,7 @@ task.spawn(function()
 end)
 
 -- ============================================================================
--- [ОБНОВЛЕНО И ИСПРАВЛЕНО] АВТО-ПРОДАЖА ДЛЯ ЛЮБОГО ИНВЕНТАРЯ
+-- АВТО-ПРОДАЖА ДЛЯ ЛЮБОГО ИНВЕНТАРЯ
 -- ============================================================================
 local autoSellActive = false
 local maxSellAmount = 4 -- Измерение по слотам (например, когда забито 4 слота)
@@ -1720,7 +1720,7 @@ Library:CreateSlider(AutoPage, "MaxSellAmount", 1, 5, 4, function(value)
     maxSellAmount = value
 end)
 
--- Функция симуляции клика по кнопкам игрового UI
+-- Функция симуляции ккликом по кнопкам игрового UI
 local function activateGameUiButton(btn)
     if not btn then return end
     if firesignal then
@@ -1882,7 +1882,7 @@ local function applyPlayerESP(player)
             billboard.Name = "PlayerLabelESP"
             billboard.Size = UDim2.new(0, 120, 0, 30)
             billboard.AlwaysOnTop = true
-            billboard.Value = Vector3.new(0, 3, 0)
+            -- ИСПРАВЛЕНО: Удалено несуществующее свойство billboard.Value
             billboard.StudsOffset = Vector3.new(0, 3, 0)
             billboard.Adornee = head
             
