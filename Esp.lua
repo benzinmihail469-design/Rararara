@@ -596,7 +596,11 @@ local Localization = {
         ["TeleportToMap"] = "Teleport to Map", ["TeleportToLobby"] = "Teleport to Lobby",
         ["SilentAim"] = "Silent Aim", ["AutoHarvest"] = "Auto Harvest",
         ["HarvestDelay"] = "Harvest Delay (sec)", ["AutoSell"] = "Auto Sell Fruits",
-        ["MaxSellAmount"] = "Max Sell Amount"
+        ["MaxSellAmount"] = "Max Sell Amount",
+        ["AutoWater"] = "Auto-Water Crops",
+        ["WaterDelay"] = "Watering Delay (sec)",
+        ["AutoFertilize"] = "Auto-Fertilize Crops",
+        ["FertilizeDelay"] = "Fertilization Delay (sec)"
     },
     ["Русский"] = {
         ["Main"] = "Главная", ["Teleport"] = "Телепорт", ["Auto"] = "Авто", ["Auto buy"] = "Авто-покупка",
@@ -611,7 +615,11 @@ local Localization = {
         ["TeleportToMap"] = "Телепортироваться на Карту", ["TeleportToLobby"] = "Телепортироваться в Лобби",
         ["SilentAim"] = "Сайлент Аим", ["AutoHarvest"] = "Авто-Сбор Урожая",
         ["HarvestDelay"] = "Задержка сбора (сек)", ["AutoSell"] = "Авто-Продажа фруктов",
-        ["MaxSellAmount"] = "Макс. продажа за раз"
+        ["MaxSellAmount"] = "Макс. продажа за раз",
+        ["AutoWater"] = "Авто-Полив грядок",
+        ["WaterDelay"] = "Задержка полива (сек)",
+        ["AutoFertilize"] = "Авто-Удобрение грядок",
+        ["FertilizeDelay"] = "Задержка удобрения (сек)"
     }
 }
 
@@ -1482,6 +1490,28 @@ Library:CreateSlider(AutoPage, "HarvestDelay", 1, 50, 5, function(value)
     harvestDelayTime = value / 10 
 end)
 
+local autoWaterActive = false
+local waterDelayTime = 0.5
+
+Library:CreateToggle(AutoPage, "AutoWater", false, function(state)
+    autoWaterActive = state
+end)
+
+Library:CreateSlider(AutoPage, "WaterDelay", 1, 50, 5, function(value)
+    waterDelayTime = value / 10
+end)
+
+local autoFertilizeActive = false
+local fertilizeDelayTime = 0.5
+
+Library:CreateToggle(AutoPage, "AutoFertilize", false, function(state)
+    autoFertilizeActive = state
+end)
+
+Library:CreateSlider(AutoPage, "FertilizeDelay", 1, 50, 5, function(value)
+    fertilizeDelayTime = value / 10
+end)
+
 local function findMyPlot()
     local player = Players.LocalPlayer
     local pName = player.Name:lower()
@@ -1688,6 +1718,68 @@ task.spawn(function()
                     elseif desc:IsA("ClickDetector") then
                         fireClick(desc)
                         task.wait(0.05)
+                    end
+                end
+            end)
+        end
+    end
+end)
+
+task.spawn(function()
+    while true do
+        task.wait(math.max(0.05, waterDelayTime))
+        if autoWaterActive then
+            pcall(function()
+                local player = Players.LocalPlayer
+                local character = player.Character
+                local rootPart = character and character:FindFirstChild("HumanoidRootPart")
+                if not rootPart then return end
+                
+                local myPlot = findMyPlot()
+                if not myPlot then return end
+                
+                for _, desc in ipairs(myPlot:GetDescendants()) do
+                    if desc:IsA("ProximityPrompt") and desc.Enabled then
+                        local name = desc.Name:lower()
+                        local actText = desc.ActionText:lower()
+                        local objText = desc.ObjectText:lower()
+                        
+                        if name:find("water") or actText:find("water") or objText:find("water") or
+                           name:find("полив") or actText:find("полив") or objText:find("полив") then
+                            firePrompt(desc)
+                            task.wait(0.05)
+                        end
+                    end
+                end
+            end)
+        end
+    end
+end)
+
+task.spawn(function()
+    while true do
+        task.wait(math.max(0.05, fertilizeDelayTime))
+        if autoFertilizeActive then
+            pcall(function()
+                local player = Players.LocalPlayer
+                local character = player.Character
+                local rootPart = character and character:FindFirstChild("HumanoidRootPart")
+                if not rootPart then return end
+                
+                local myPlot = findMyPlot()
+                if not myPlot then return end
+                
+                for _, desc in ipairs(myPlot:GetDescendants()) do
+                    if desc:IsA("ProximityPrompt") and desc.Enabled then
+                        local name = desc.Name:lower()
+                        local actText = desc.ActionText:lower()
+                        local objText = desc.ObjectText:lower()
+                        
+                        if name:find("fertilize") or actText:find("fertilize") or objText:find("fertilize") or
+                           name:find("удобр") or actText:find("удобр") or objText:find("удобр") then
+                            firePrompt(desc)
+                            task.wait(0.05)
+                        end
                     end
                 end
             end)
