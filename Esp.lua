@@ -1410,6 +1410,31 @@ Library:CreateToggle(MainPage, "AutoFarmCoins", false, function(state)
     autoFarmActive = state
 end)
 
+-- Луп для автофарма монет (если монеты есть в Workspace)
+task.spawn(function()
+    while true do
+        task.wait(0.5)
+        if autoFarmActive then
+            pcall(function()
+                local character = Players.LocalPlayer.Character
+                local rootPart = character and character:FindFirstChild("HumanoidRootPart")
+                if not rootPart then return end
+                
+                for _, obj in ipairs(workspace:GetDescendants()) do
+                    if not autoFarmActive then break end
+                    if obj:IsA("BasePart") and (obj.Name:lower():find("coin") or obj.Name:lower():find("gold") or obj.Name:lower():find("money")) then
+                        local originalCF = rootPart.CFrame
+                        rootPart.CFrame = obj.CFrame
+                        task.wait(0.12)
+                        rootPart.CFrame = originalCF
+                        task.wait(0.1)
+                    end
+                end
+            end)
+        end
+    end
+end)
+
 Library:CreateSlider(PlayersPage, "WalkSpeed", 16, 150, 16, function(value)
     pcall(function() if Players.LocalPlayer.Character and Players.LocalPlayer.Character:FindFirstChildOfClass("Humanoid") then Players.LocalPlayer.Character:FindFirstChildOfClass("Humanoid").WalkSpeed = value end end)
 end)
@@ -1442,58 +1467,46 @@ end)
 Library:CreateToggle(AutoBuyPage, "SilentAim", false, function(state) end)
 
 -- ============================================================================
--- [ИСПРАВЛЕНО] УМНЫЙ ПОИСК ЛИЧНОЙ ГРЯДКИ И ОПТИМИЗИРОВАННЫЙ АВТОСБОР
+-- [ОБНОВЛЕНО] СВЕРХТОЧНЫЙ СБОР УРОЖАЯ
 -- ============================================================================
 local autoHarvestActive = false
 Library:CreateToggle(AutoPage, "AutoHarvest", false, function(state)
     autoHarvestActive = state
 end)
 
--- Сверхточный поиск грядки игрока в Grow a Garden 2
+-- Динамический и безошибочный поиск грядки игрока в Grow a Garden 2
 local function findMyPlot()
     local player = Players.LocalPlayer
     local pName = player.Name:lower()
-    local pUserId = player.UserId
+    local pDisplayName = player.DisplayName:lower()
+    local pUserId = tostring(player.UserId)
 
-    -- 1. Сначала ищем личную грядку напрямую в workspace по имени игрока
-    local directPlot = workspace:FindFirstChild(player.Name)
-    if directPlot then return directPlot end
-
-    -- 2. Ищем по подстроке имени или UserId среди всех дочерних элементов workspace
-    for _, child in ipairs(workspace:GetChildren()) do
-        local childName = child.Name:lower()
-        if childName:find(pName) or childName:find(tostring(pUserId)) then
-            return child
-        end
-        if child:GetAttribute("Owner") == player.Name or child:GetAttribute("OwnerId") == pUserId then
-            return child
-        end
-        local ownerVal = child:FindFirstChild("Owner") or child:FindFirstChild("Player") or child:FindFirstChild("OwnerId")
-        if ownerVal then
-            if ownerVal.Value == player or tostring(ownerVal.Value) == player.Name or ownerVal.Value == pUserId or tostring(ownerVal.Value) == tostring(pUserId) then
-                return child
+    -- Поиск по всем объектам Workspace
+    for _, obj in ipairs(workspace:GetDescendants()) do
+        if obj:IsA("Model") or obj:IsA("Folder") then
+            local objName = obj.Name:lower()
+            if objName == pName or objName == pUserId or objName:find(pName) then
+                if obj ~= player.Character and not obj:IsDescendantOf(player.Character) then
+                    return obj
+                end
             end
-        end
-    end
+            
+            -- Чтение атрибутов (поддерживается многими тайкунами/грядками)
+            local ownerAttr = obj:GetAttribute("Owner") or obj:GetAttribute("OwnerId") or obj:GetAttribute("Player")
+            if ownerAttr then
+                local strAttr = tostring(ownerAttr):lower()
+                if strAttr == pName or strAttr == pUserId or strAttr == pDisplayName then
+                    return obj
+                end
+            end
 
-    -- 3. Ищем внутри папок грядок (plots, gardens, tycoons и т.д.)
-    local commonNames = {"plots", "gardens", "beds", "playerplots", "tycoons", "lands", "plotsfolder"}
-    for _, child in ipairs(workspace:GetChildren()) do
-        local nameLow = child.Name:lower()
-        for _, common in ipairs(commonNames) do
-            if nameLow:find(common) then
-                for _, plot in ipairs(child:GetChildren()) do
-                    local plotName = plot.Name:lower()
-                    if plotName:find(pName) or plotName:find(tostring(pUserId)) then
-                        return plot
-                    end
-                    if plot:GetAttribute("Owner") == player.Name or plot:GetAttribute("OwnerId") == pUserId then
-                        return plot
-                    end
-                    local ownerVal = plot:FindFirstChild("Owner") or plot:FindFirstChild("Player") or plot:FindFirstChild("OwnerId")
-                    if ownerVal then
-                        if ownerVal.Value == player or tostring(ownerVal.Value) == player.Name or ownerVal.Value == pUserId or tostring(ownerVal.Value) == tostring(pUserId) then
-                            return plot
+            -- Проверка наличия Value-объектов (наподобие "Owner" ObjectValue)
+            for _, val in ipairs(obj:GetChildren()) do
+                if val:IsA("ValueBase") then
+                    local valName = val.Name:lower()
+                    if valName == "owner" or valName == "player" or valName == "ownerid" then
+                        if val.Value == player or tostring(val.Value):lower() == pName or tostring(val.Value) == pUserId then
+                            return obj
                         end
                     end
                 end
@@ -1503,17 +1516,102 @@ local function findMyPlot()
     return nil
 end
 
--- Универсальные и стабильные клики
+-- Универсальный сбор объектов с учетом расположения и зоны видимости
+local function getHarvestables()
+    local list = {}
+    local player = Players.LocalPlayer
+    local pName = player.Name:lower()
+    local pUserId = tostring(player.UserId)
+    local myPlot = findMyPlot()
+
+    -- 1. Сначала ищем в нашей грядке
+    if myPlot then
+        for _, desc in ipairs(myPlot:GetDescendants()) do
+            if (desc:IsA("ProximityPrompt") and desc.Enabled) or desc:IsA("ClickDetector") then
+                table.insert(list, desc)
+            end
+        end
+    end
+
+    -- 2. Сканируем Workspace на наличие наших растений, которые могут быть вне папки грядки
+    for _, desc in ipairs(workspace:GetDescendants()) do
+        if (desc:IsA("ProximityPrompt") and desc.Enabled) or desc:IsA("ClickDetector") then
+            local isMine = false
+            local name = desc.Name:lower()
+            local actText = desc:IsA("ProximityPrompt") and desc.ActionText:lower() or ""
+            local objText = desc:IsA("ProximityPrompt") and desc.ObjectText:lower() or ""
+
+            -- Фильтр: собираем только то, что связано со сбором урожая
+            if name:find("harvest") or name:find("pick") or name:find("collect") or 
+               actText:find("harvest") or actText:find("снять") or actText:find("собрать") or
+               objText:find("harvest") or objText:find("снять") or objText:find("собрать") then
+                
+                -- Проверка владельца по иерархии вверх
+                local parent = desc.Parent
+                while parent and parent ~= workspace do
+                    local pOwner = parent:GetAttribute("Owner") or parent:GetAttribute("OwnerId")
+                    if pOwner then
+                        local strOwner = tostring(pOwner):lower()
+                        if strOwner == pName or strOwner == pUserId then
+                            isMine = true
+                            break
+                        end
+                    end
+                    local ownerVal = parent:FindFirstChild("Owner") or parent:FindFirstChild("Player")
+                    if ownerVal and (ownerVal.Value == player or tostring(ownerVal.Value):lower() == pName) then
+                        isMine = true
+                        break
+                    end
+                    parent = parent.Parent
+                end
+
+                -- Если владелец не найден явно, но грядка близко (менее 45 studs), относим к игроку
+                if not isMine and myPlot then
+                    local part = desc.Parent:IsA("BasePart") and desc.Parent or desc:FindFirstAncestorWhichIsA("BasePart")
+                    local plotPart = myPlot:IsA("BasePart") and myPlot or myPlot:FindFirstChildWhichIsA("BasePart")
+                    if part and plotPart then
+                        if (part.Position - plotPart.Position).Magnitude < 45 then
+                            isMine = true
+                        end
+                    end
+                end
+
+                if isMine and not table.find(list, desc) then
+                    table.insert(list, desc)
+                end
+            end
+        end
+    end
+
+    -- 3. Резервный сбор: если ничего не нашлось, собираем любые доступные промпты сбора поблизости
+    if #list == 0 then
+        for _, desc in ipairs(workspace:GetDescendants()) do
+            if desc:IsA("ProximityPrompt") and desc.Enabled then
+                local text = desc.ActionText:lower()
+                local name = desc.Name:lower()
+                if text:find("harvest") or text:find("снять") or text:find("собрать") or text:find("pick") or name:find("harvest") then
+                    table.insert(list, desc)
+                end
+            end
+        end
+    end
+
+    return list
+end
+
+-- Безопасные функции активации элементов
 local function firePrompt(prompt)
     if not prompt or not prompt.Enabled then return end
     prompt.RequiresLineOfSight = false
-    prompt.MaxActivationDistance = 9e9
+    prompt.MaxActivationDistance = 999999
     if fireproximityprompt then
+        fireproximityprompt(prompt, 1)
+        fireproximityprompt(prompt, 0)
         fireproximityprompt(prompt)
     else
-        pcall(function()
+        task.spawn(function()
             prompt:InputHoldBegin()
-            task.wait(prompt.HoldDuration + 0.02)
+            task.wait(prompt.HoldDuration + 0.05)
             prompt:InputHoldEnd()
         end)
     end
@@ -1526,10 +1624,10 @@ local function fireClick(clickDec)
     end
 end
 
--- Цикл автосбора с быстрым микротелепортом для обхода серверных проверок
+-- Главный цикл автоматического сбора
 task.spawn(function()
     while true do
-        task.wait(0.5)
+        task.wait(0.3)
         if autoHarvestActive then
             pcall(function()
                 local player = Players.LocalPlayer
@@ -1537,13 +1635,12 @@ task.spawn(function()
                 local rootPart = character and character:FindFirstChild("HumanoidRootPart")
                 if not rootPart then return end
 
-                local myPlot = findMyPlot()
-                
-                if myPlot then
+                local harvestables = getHarvestables()
+                if #harvestables > 0 then
                     local originalCF = rootPart.CFrame
                     local harvestedAny = false
                     
-                    for _, desc in ipairs(myPlot:GetDescendants()) do
+                    for _, desc in ipairs(harvestables) do
                         if not autoHarvestActive then break end
                         
                         local isPrompt = desc:IsA("ProximityPrompt") and desc.Enabled
@@ -1556,47 +1653,30 @@ task.spawn(function()
                             end
                             
                             if parentPart and parentPart:IsA("BasePart") then
-                                -- Телепортируем игрока на долю секунды прямо к грядке для регистрации сервером
+                                -- Замораживаем физику игрока на момент ТП
+                                local wasAnchored = rootPart.Anchored
+                                rootPart.Anchored = true
+                                
+                                -- Телепортируем к плоду
                                 rootPart.CFrame = parentPart.CFrame + Vector3.new(0, 3, 0)
-                                task.wait(0.12) -- Важное ожидание, чтобы сервер зафиксировал координаты персонажа
+                                task.wait(0.12) -- Ждем, пока сервер зарегистрирует позицию
                                 
                                 if isPrompt then
                                     firePrompt(desc)
                                 else
                                     fireClick(desc)
                                 end
+                                
+                                rootPart.Anchored = wasAnchored
                                 harvestedAny = true
-                                task.wait(0.05)
+                                task.wait(0.08)
                             end
                         end
                     end
                     
-                    -- Возвращаем игрока назад на исходное место по окончании сбора урожая
+                    -- Возвращаем игрока в исходную точку
                     if harvestedAny and autoHarvestActive and rootPart then
                         rootPart.CFrame = originalCF
-                    end
-                else
-                    -- Резервный вариант на случай, если грядка не найдена в системе
-                    for _, desc in ipairs(workspace:GetDescendants()) do
-                        if not autoHarvestActive then break end
-                        if desc:IsA("ProximityPrompt") and desc.Enabled then
-                            local name = desc.Name:lower()
-                            local text = desc.ActionText:lower()
-                            if name:find("harvest") or name:find("pick") or name:find("collect") or 
-                               text:find("harvest") or text:find("снять") or text:find("собрать") then
-                                
-                                local parentPart = desc.Parent:IsA("BasePart") and desc.Parent or desc:FindFirstAncestorWhichIsA("BasePart")
-                                if parentPart and parentPart:IsA("BasePart") then
-                                    local originalCF = rootPart.CFrame
-                                    rootPart.CFrame = parentPart.CFrame + Vector3.new(0, 3, 0)
-                                    task.wait(0.12)
-                                    firePrompt(desc)
-                                    task.wait(0.05)
-                                    rootPart.CFrame = originalCF
-                                    task.wait(0.1)
-                                end
-                            end
-                        end
                     end
                 end
             end)
@@ -1605,7 +1685,7 @@ task.spawn(function()
 end)
 
 -- ============================================================================
--- СУБ-ВКЛАДКА ESP (ТОЛЬКО ДЛЯ ИГРОКОВ, FRUIT ESP УДАЛЕН)
+-- СУБ-ВКЛАДКА ESP (ДЛЯ ИГРОКОВ)
 -- ============================================================================
 local VisualSections = Library:CreateSubTabs(VisualPage, {
     {Name = "Esp", Icon = "80768064990053", Color = Color3.fromRGB(46, 204, 113)}
@@ -1625,14 +1705,12 @@ local ESP_Colors = {
     ["Pink"] = Color3.fromRGB(255, 105, 180)
 }
 
--- Применение подсветки на игрока
 local function applyPlayerESP(player)
     if player == Players.LocalPlayer then return end
     
     local function setupHighlight(character)
         if not character then return end
         
-        -- Создаем Highlight (обводку персонажа)
         local highlight = character:FindFirstChild("PlayerHighlightESP")
         if not highlight then
             highlight = Instance.new("Highlight")
@@ -1647,13 +1725,13 @@ local function applyPlayerESP(player)
             highlight.FillColor = PlayerESP_Color
         end
         
-        -- Никнейм над головой
         local head = character:WaitForChild("Head", 5)
         if head and not character:FindFirstChild("PlayerLabelESP") then
             local billboard = Instance.new("BillboardGui")
             billboard.Name = "PlayerLabelESP"
             billboard.Size = UDim2.new(0, 120, 0, 30)
             billboard.AlwaysOnTop = true
+            billboard.Value = Vector3.new(0, 3, 0)
             billboard.StudsOffset = Vector3.new(0, 3, 0)
             billboard.Adornee = head
             
@@ -1683,7 +1761,6 @@ local function applyPlayerESP(player)
     player.CharacterAdded:Connect(setupHighlight)
 end
 
--- Удаление подсветки с игрока
 local function removePlayerESP(player)
     if player.Character then
         local hl = player.Character:FindFirstChild("PlayerHighlightESP")
@@ -1693,7 +1770,6 @@ local function removePlayerESP(player)
     end
 end
 
--- Обновление состояния ЕСП для всех игроков
 local function updatePlayerESP()
     for _, player in ipairs(Players:GetPlayers()) do
         if PlayerESP_Enabled then
@@ -1704,62 +1780,57 @@ local function updatePlayerESP()
     end
 end
 
--- Тумблер включения ЕСП Игроков
-Library:CreateToggle(VisualSections["Esp"], "PlayerEsp", false, function(state)
+Library:CreateToggle(VisualSections.Esp, "EspToggle", false, function(state)
     PlayerESP_Enabled = state
     updatePlayerESP()
 end)
 
--- Выбор цветов для ЕСП
-local colorNames = {}
-for name, _ in pairs(ESP_Colors) do table.insert(colorNames, name) end
-table.sort(colorNames)
-
-Library:CreateDropdown(VisualSections["Esp"], "EspColor", colorNames, "Green", function(selectedColorName)
-    local selectedColor = ESP_Colors[selectedColorName] or Color3.fromRGB(46, 204, 113)
-    PlayerESP_Color = selectedColor
-    if PlayerESP_Enabled then
-        updatePlayerESP()
-    end
+Library:CreateDropdown(VisualSections.Esp, "EspColor", {"Green", "Red", "Blue", "Yellow", "Cyan", "Purple", "White", "Pink"}, "Green", function(colorName)
+    PlayerESP_Color = ESP_Colors[colorName] or Color3.fromRGB(46, 204, 113)
+    updatePlayerESP()
 end)
 
--- Отслеживание захода новых игроков для работы ЕСП
 Players.PlayerAdded:Connect(function(player)
     if PlayerESP_Enabled then
-        player.CharacterAdded:Connect(function(char)
-            task.wait(0.5)
-            if PlayerESP_Enabled then
-                applyPlayerESP(player)
-            end
-        end)
+        applyPlayerESP(player)
     end
 end)
 
--- ============================================================================
--- НАСТРОЙКИ UI И ТЕМЫ
--- ============================================================================
-local UISizeNames = {"80%", "90%", "100%", "110%", "120%"}
-local UISizes = {["80%"] = 0.8, ["90%"] = 0.9, ["100%"] = 1.0, ["110%"] = 1.1, ["120%"] = 1.2}
-
-Library:CreateDropdown(SettingsPage, "UISize", UISizeNames, "100%", function(option)
-    local scale = UISizes[option] or 1
-    tween(MainScale, {Scale = scale})
+Players.PlayerRemoving:Connect(function(player)
+    removePlayerESP(player)
 end)
 
-Library:CreateDropdown(SettingsPage, "UITheme", ThemeNamesList, "Deep Ocean", function(option)
-    Library:UpdateTheme(option)
-end)
-
--- [ИСПРАВЛЕНО] ПОЛНОЦЕННОЕ ПЕРЕКЛЮЧЕНИЕ ЯЗЫКА С ЗАВЕРШЕННЫМ ЦИКЛОМ
-Library:CreateDropdown(SettingsPage, "Language", {"English", "Русский"}, "English", function(option)
-    Library.CurrentLanguage = option
-    TabTitle.Text = Localization[option][Library.CurrentTabKey] or Library.CurrentTabKey
-    for _, item in ipairs(LocaleObjects) do
-        if item.Object and item.Object.Parent then
-            item.Object.Text = Localization[option][item.Key] or item.Key
-        end
-        if item.SearchItem then
-            item.SearchItem.SearchText = NormalizeText(Localization[option][item.Key] or item.Key)
+-- ============================================================================
+-- НАСТРОЙКИ ИНТЕРФЕЙСА (SETTINGS)
+-- ============================================================================
+Library:CreateDropdown(SettingsPage, "Language", {"English", "Русский"}, "Русский", function(lang)
+    Library.CurrentLanguage = lang
+    for _, loc in ipairs(LocaleObjects) do
+        local key = loc.Key
+        local text = Localization[lang][key] or key
+        loc.Object.Text = text
+        if loc.SearchItem then
+            loc.SearchItem.SearchText = NormalizeText(text)
         end
     end
+    TabTitle.Text = Localization[lang][Library.CurrentTabKey] or Library.CurrentTabKey
 end)
+
+Library:CreateDropdown(SettingsPage, "UITheme", ThemeNamesList, "Deep Ocean", function(theme)
+    Library:UpdateTheme(theme)
+end)
+
+Library:CreateToggle(SettingsPage, "AntiAFK", false, function(state)
+    toggleAntiAFK(state)
+end)
+
+Library:CreateToggle(SettingsPage, "AnimatedWindow", false, function(state)
+    toggleAnimatedWindow(state)
+end)
+
+Library:CreateToggle(SettingsPage, "Gradient", false, function(state)
+    toggleGradientEffect(state)
+end)
+
+-- Инициализация стартовой темы
+Library:UpdateTheme("Deep Ocean")
