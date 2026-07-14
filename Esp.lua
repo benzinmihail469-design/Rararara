@@ -1651,8 +1651,6 @@ local function firePrompt(prompt)
     prompt.RequiresLineOfSight = false
     prompt.MaxActivationDistance = 999999
     if fireproximityprompt then
-        fireproximityprompt(prompt, 1)
-        fireproximityprompt(prompt, 0)
         fireproximityprompt(prompt)
     else
         task.spawn(function()
@@ -1714,10 +1712,10 @@ end)
 local function activateGameUiButton(btn)
     if not btn then return end
     if firesignal then
-        firesignal(btn.Activated)
-        firesignal(btn.MouseButton1Click)
+        pcall(function() firesignal(btn.Activated) end)
+        pcall(function() firesignal(btn.MouseButton1Click) end)
     else
-        btn:Activate()
+        pcall(function() btn:Activate() end)
     end
 end
 
@@ -1728,11 +1726,12 @@ local function clickGameSellButton()
         if not v:IsDescendantOf(PulseHub) then
             if v:IsA("TextButton") or v:IsA("ImageButton") then
                 local found = false
-                if v:IsA("TextButton") and v.Text:lower():find("продать") then
+                local text = v:IsA("TextButton") and v.Text:lower() or ""
+                if text:find("продать") or text:find("sell") then
                     found = true
                 else
                     for _, child in ipairs(v:GetChildren()) do
-                        if child:IsA("TextLabel") and child.Text:lower():find("продать") then
+                        if child:IsA("TextLabel") and (child.Text:lower():find("продать") or child.Text:lower():find("sell")) then
                             found = true
                             break
                         end
@@ -1757,7 +1756,7 @@ local function findSellTarget()
             
             if parentName:find("стивен") or parentName:find("steven") or 
                objText:find("стивен") or objText:find("steven") or 
-               actText:find("поговорить") or actText:find("продать") then
+               actText:find("поговорить") or actText:find("продать") or actText:find("sell") then
                 return obj
             end
         end
@@ -1765,14 +1764,12 @@ local function findSellTarget()
     return nil
 end
 
--- ИСПРАВЛЕНО: Сканирует интерфейс диалогов игры и нажимает кнопку «Продать инвентарь»
 local function clickDialogueOption()
     local playerGui = Players.LocalPlayer:FindFirstChild("PlayerGui")
     local clicked = false
     
     if playerGui then
         for _, v in ipairs(playerGui:GetDescendants()) do
-            -- Пропускаем UI PulseHub, ищем только активные кнопки в самой игре
             if not v:IsDescendantOf(PulseHub) and (v:IsA("TextButton") or v:IsA("ImageButton")) and v.Visible then
                 local text = v:IsA("TextButton") and v.Text:lower() or ""
                 for _, child in ipairs(v:GetChildren()) do
@@ -1781,8 +1778,7 @@ local function clickDialogueOption()
                     end
                 end
                 
-                -- Точные ключевые слова для выбора диалога торговли
-                if text:find("продать") or text:find("sell") or text:find("инвентарь") or text:find("inventory") or text:find("все") or text:find("all") then
+                if text:find("продать") or text:find("sell") or text:find("инвентарь") or text:find("inventory") or text:find("все") or text:find("all") or text:find("да") or text:find("yes") then
                     activateGameUiButton(v)
                     clicked = true
                 end
@@ -1790,7 +1786,6 @@ local function clickDialogueOption()
         end
     end
 
-    -- Классический дублирующий фаллбэк, если интерфейс построен на стандартном движке диалогов Roblox
     pcall(function()
         game:GetService("VirtualInputManager"):SendKeyEvent(true, Enum.KeyCode.One, false, game)
         task.wait(0.02)
@@ -1803,39 +1798,43 @@ local function clickDialogueOption()
     return clicked
 end
 
--- ИСПРАВЛЕНО: Доработанный цикл проверки заполнения
 task.spawn(function()
     while true do
-        task.wait(1.5) 
+        task.wait(1) 
         if autoSellActive then
             pcall(function()
                 local playerGui = Players.LocalPlayer:FindFirstChild("PlayerGui")
                 local cropSlotsCount = 0
+                local parsedWeight = 0
                 
                 if playerGui then
                     for _, v in ipairs(playerGui:GetDescendants()) do
                         if not v:IsDescendantOf(PulseHub) and v:IsA("TextLabel") and v.Visible then
                             local t = v.Text:lower()
-                            if t:find("кг") or t:find("kg") then
+                            if t:find("кг") or t:find("kg") or t:find("🎒") or t:find("инвентарь") or t:find("inventory") then
                                 cropSlotsCount = cropSlotsCount + 1
+                                local n1 = t:match("(%d+)")
+                                if n1 then
+                                    local val = tonumber(n1)
+                                    if val and val > parsedWeight then
+                                        parsedWeight = val
+                                    end
+                                end
                             end
                         end
                     end
                 end
                 
-                -- Запускаем продажу, только если в инвентаре есть ресурсы и их количество удовлетворяет условию слайдера
-                if cropSlotsCount > 0 and (cropSlotsCount >= maxSellAmount) then
-                    
+                if (parsedWeight >= maxSellAmount) or (cropSlotsCount >= maxSellAmount and parsedWeight == 0) then
                     clickGameSellButton()
-                    task.wait(0.8) 
+                    task.wait(0.3) 
                     
                     local sellTrigger = findSellTarget()
                     if sellTrigger then
                         firePrompt(sellTrigger)
-                        task.wait(0.7) -- Время на анимацию появления облака диалога игры
+                        task.wait(0.5) 
                         
                         clickDialogueOption()
-                        task.wait(0.5)
                     end
                 end
             end)
