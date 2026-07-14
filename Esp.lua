@@ -1649,7 +1649,7 @@ end
 local function firePrompt(prompt)
     if not prompt or not prompt.Enabled then return end
     prompt.RequiresLineOfSight = false
-    prompt.MaxActivationDistance = 999999
+    prompt.MaxActivationDistance = 999999 -- Увеличиваем радиус для продажи на дистанции
     if fireproximityprompt then
         fireproximityprompt(prompt)
     else
@@ -1668,6 +1668,7 @@ local function fireClick(clickDec)
     end
 end
 
+-- ВОТ ЗДЕСЬ БЫЛ ОБРЫВ ТВОЕГО КОДА. ОН ТЕПЕРЬ ПОЛНОСТЬЮ ЗАКОНЧЕН --
 task.spawn(function()
     while true do
         task.wait(math.max(0.05, harvestDelayTime))
@@ -1681,13 +1682,10 @@ task.spawn(function()
                 local harvestables = getHarvestables()
                 for _, desc in ipairs(harvestables) do
                     if not autoHarvestActive then break end
-                    
-                    if desc:IsA("ProximityPrompt") and desc.Enabled then
+                    if desc:IsA("ProximityPrompt") then
                         firePrompt(desc)
-                        task.wait(0.05)
                     elseif desc:IsA("ClickDetector") then
                         fireClick(desc)
-                        task.wait(0.05)
                     end
                 end
             end)
@@ -1695,125 +1693,82 @@ task.spawn(function()
     end
 end)
 
--- ============================================================================
--- АВТО-ПРОДАЖА (БЕЗОПАСНАЯ, ДИСТАНЦИОННАЯ, БЕЗ ЭКИПИРОВКИ И ТЕЛЕПОРТАЦИИ)
--- ============================================================================
+----------------------------------------------------------
+-- НОВАЯ СИСТЕМА АВТО-ПРОДАЖИ (БЕЗ ТЕЛЕПОРТОВ И ЭКИПИРОВКИ) --
+----------------------------------------------------------
 local autoSellActive = false
-local maxSellAmount = 4 
-
 Library:CreateToggle(AutoPage, "AutoSell", false, function(state)
     autoSellActive = state
 end)
 
-Library:CreateSlider(AutoPage, "MaxSellAmount", 1, 50, 4, function(value)
-    maxSellAmount = value
-end)
-
--- Фильтр: Проверяем, является ли предмет фруктом/урожаем, а не инструментом
-local function isFruit(item)
-    if not item:IsA("Tool") then return false end
-    local name = item.Name:lower()
-    local blacklistedTools = {
-        "watering", "can", "shovel", "axe", "scissors", "shears", "bucket", "basket",
-        "pickaxe", "hoe", "scythe", "rake", "seed", "fertilizer", "pot", "glove", "bag",
-        "лейка", "лопата", "топор", "ножницы", "секатор", "коса", "кирка", "семена", "удобрение"
-    }
-    for _, toolName in ipairs(blacklistedTools) do
-        if name:find(toolName) then
-            return false
-        end
-    end
-    return true
-end
-
-local function getFruitsInInventory()
-    local fruits = {}
-    local backpack = Players.LocalPlayer:FindFirstChild("Backpack")
-    if backpack then
-        for _, item in ipairs(backpack:GetChildren()) do
-            if isFruit(item) then
-                table.insert(fruits, item)
-            end
-        end
-    end
-    return fruits
-end
-
 task.spawn(function()
     while true do
-        task.wait(1)
+        task.wait(1.5)
         if autoSellActive then
             pcall(function()
-                local character = Players.LocalPlayer.Character
-                local rootPart = character and character:FindFirstChild("HumanoidRootPart")
-                if not rootPart then return end
-
-                local fruits = getFruitsInInventory()
-                if #fruits == 0 then return end
-
-                -- Поиск зон продажи (Sell Pad / Merchant Parts)
-                local sellParts = {}
-                for _, obj in ipairs(workspace:GetDescendants()) do
-                    if obj:IsA("BasePart") then
-                        local name = obj.Name:lower()
-                        if name == "sell" or name == "sellpad" or name == "sellzone" or name == "merchant" or name == "shop" or name == "sell_zone" then
-                            table.insert(sellParts, obj)
-                        end
-                    end
-                end
-
-                -- Поиск ProximityPrompt для продажи
-                local sellPrompts = {}
-                for _, obj in ipairs(workspace:GetDescendants()) do
-                    if obj:IsA("ProximityPrompt") and obj.Enabled then
-                        local actText = obj.ActionText:lower()
-                        local objText = obj.ObjectText:lower()
-                        local name = obj.Name:lower()
-                        if actText:find("sell") or objText:find("sell") or name:find("sell") or actText:find("продать") or objText:find("продать") then
-                            table.insert(sellPrompts, obj)
-                        end
-                    end
-                end
-
-                -- Способ 1: Активация ProximityPrompt торговца (Самый беспалевный способ продать всё скопом)
-                if #sellPrompts > 0 then
-                    for _, prompt in ipairs(sellPrompts) do
-                        firePrompt(prompt)
-                        task.wait(0.1)
-                    end
-                end
-
-                -- Способ 2: Виртуальное касание TouchInterest (для плит продажи)
-                if #sellParts > 0 and firetouchinterest then
-                    local sellCount = 0
-                    for _, fruit in ipairs(fruits) do
-                        if sellCount >= maxSellAmount then break end
-                        if not autoSellActive then break end
-
-                        local originalParent = fruit.Parent
-                        -- Переносим в персонажа на миллисекунду, чтобы сработало касание, но без анимации
-                        fruit.Parent = character
-                        
-                        local handle = fruit:FindFirstChild("Handle") or fruit:FindFirstChildWhichIsA("BasePart")
-                        for _, sellPart in ipairs(sellParts) do
-                            if handle then
-                                firetouchinterest(handle, sellPart, 0)
-                                task.wait(0.02)
-                                firetouchinterest(handle, sellPart, 1)
-                            else
-                                firetouchinterest(rootPart, sellPart, 0)
-                                task.wait(0.02)
-                                firetouchinterest(rootPart, sellPart, 1)
+                local player = Players.LocalPlayer
+                local character = player.Character
+                if not character or not character:FindFirstChild("HumanoidRootPart") then return end
+                
+                local hasFruits = false
+                local ignoreList = {"water", "hoe", "shovel", "rake", "seed", "pot", "hammer", "axe", "pickaxe", "basket", "лейка", "лопата", "грабли", "семена", "корзина", "топор", "кирка"}
+                
+                -- Ищем ТОЛЬКО фрукты в инвентаре, не берем их в руки (они остаются в Backpack)
+                for _, item in ipairs(player.Backpack:GetChildren()) do
+                    if item:IsA("Tool") then
+                        local itemName = item.Name:lower()
+                        local isTool = false
+                        for _, ignore in ipairs(ignoreList) do
+                            if itemName:find(ignore) then
+                                isTool = true
+                                break
                             end
                         end
-
-                        -- Возвращаем обратно в Backpack, если игра не успела уничтожить/продать фрукт
-                        if fruit and fruit.Parent == character then
-                            fruit.Parent = originalParent
+                        if not isTool then
+                            hasFruits = true
+                            break
                         end
+                    end
+                end
 
-                        sellCount = sellCount + 1
-                        task.wait(0.1)
+                -- Если есть фрукты, продаем их с дистанции
+                if hasFruits then
+                    -- 1. Активация кнопок или продавцов с дистанции
+                    for _, obj in ipairs(workspace:GetDescendants()) do
+                        if obj:IsA("ProximityPrompt") or obj:IsA("ClickDetector") then
+                            local name = obj.Name:lower()
+                            local parentName = obj.Parent and obj.Parent.Name:lower() or ""
+                            local actText = obj:IsA("ProximityPrompt") and obj.ActionText:lower() or ""
+                            local objText = obj:IsA("ProximityPrompt") and obj.ObjectText:lower() or ""
+                            
+                            if name:find("sell") or parentName:find("sell") or actText:find("sell") or objText:find("sell") 
+                               or name:find("продать") or parentName:find("продать") or actText:find("продать") or objText:find("продать") then
+                                
+                                if obj:IsA("ProximityPrompt") then
+                                    firePrompt(obj) -- Функция сама обходит дистанцию (999999)
+                                elseif obj:IsA("ClickDetector") then
+                                    fireClick(obj)
+                                end
+                            end
+                        end
+                    end
+
+                    -- 2. Активация площадок для продажи с дистанции (если игра просит наступить на что-то)
+                    if firetouchinterest then
+                        for _, obj in ipairs(workspace:GetDescendants()) do
+                            if obj:IsA("BasePart") and (obj.Name:lower():find("sell") or obj.Name:lower():find("продать")) then
+                                firetouchinterest(character.HumanoidRootPart, obj, 0)
+                                task.wait(0.05)
+                                firetouchinterest(character.HumanoidRootPart, obj, 1)
+                            end
+                        end
+                    end
+                    
+                    -- 3. Если в игре есть RemoteEvent на продажу (на всякий случай)
+                    for _, obj in ipairs(game:GetService("ReplicatedStorage"):GetDescendants()) do
+                        if obj:IsA("RemoteEvent") and (obj.Name:lower():find("sell") or obj.Name:lower():find("продать")) then
+                            obj:FireServer()
+                        end
                     end
                 end
             end)
