@@ -1467,21 +1467,20 @@ end)
 Library:CreateToggle(AutoBuyPage, "SilentAim", false, function(state) end)
 
 -- ============================================================================
--- [ОБНОВЛЕНО] СВЕРХТОЧНЫЙ СБОР УРОЖАЯ
+-- [ОБНОВЛЕНО И ИСПРАВЛЕНО] БЕЗОПАСНЫЙ СБОР УРОЖАЯ БЕЗ ТЕЛЕПОРТА
 -- ============================================================================
 local autoHarvestActive = false
 Library:CreateToggle(AutoPage, "AutoHarvest", false, function(state)
     autoHarvestActive = state
 end)
 
--- Динамический и безошибочный поиск грядки игрока в Grow a Garden 2
+-- Динамический поиск своей грядки
 local function findMyPlot()
     local player = Players.LocalPlayer
     local pName = player.Name:lower()
     local pDisplayName = player.DisplayName:lower()
     local pUserId = tostring(player.UserId)
 
-    -- Поиск по всем объектам Workspace
     for _, obj in ipairs(workspace:GetDescendants()) do
         if obj:IsA("Model") or obj:IsA("Folder") then
             local objName = obj.Name:lower()
@@ -1491,7 +1490,6 @@ local function findMyPlot()
                 end
             end
             
-            -- Чтение атрибутов (поддерживается многими тайкунами/грядками)
             local ownerAttr = obj:GetAttribute("Owner") or obj:GetAttribute("OwnerId") or obj:GetAttribute("Player")
             if ownerAttr then
                 local strAttr = tostring(ownerAttr):lower()
@@ -1500,7 +1498,6 @@ local function findMyPlot()
                 end
             end
 
-            -- Проверка наличия Value-объектов (наподобие "Owner" ObjectValue)
             for _, val in ipairs(obj:GetChildren()) do
                 if val:IsA("ValueBase") then
                     local valName = val.Name:lower()
@@ -1516,37 +1513,95 @@ local function findMyPlot()
     return nil
 end
 
--- Универсальный сбор объектов с учетом расположения и зоны видимости
+-- Функция строгой фильтрации: собираем только урожай, игнорируем кастомизацию
+local function isHarvestable(desc)
+    if not desc then return false end
+    
+    local name = desc.Name:lower()
+    local parentName = desc.Parent and desc.Parent.Name:lower() or ""
+    local actText = desc:IsA("ProximityPrompt") and desc.ActionText:lower() or ""
+    local objText = desc:IsA("ProximityPrompt") and desc.ObjectText:lower() or ""
+    
+    -- Черный список (абсолютно игнорируем заборы, покупку семян, кастомизацию, краны полива)
+    local blacklist = {
+        "fence", "gate", "buy", "upgrade", "customize", "edit", "забор", "изменить", 
+        "купить", "улучшить", "дизайн", "цвет", "paint", "color", "skin", "скин",
+        "shop", "магазин", "sell", "продать", "spawn", "спавн", "seed", "семена",
+        "water", "полив", "поливать", "fertilize", "удобрить", "удобрение", "board",
+        "табличка", "plot", "грядка", "visual", "внешний", "вид"
+    }
+    
+    for _, word in ipairs(blacklist) do
+        if name:find(word) or parentName:find(word) or actText:find(word) or objText:find(word) then
+            return false
+        end
+    end
+    
+    -- Белый список (что мы ТОЧНО собираем)
+    local whitelist = {
+        "harvest", "pick", "collect", "снять", "собрать", "взять", "crop", "plant", 
+        "растение", "ягода", "плод", "фрукт", "овощ", "гриб", "тыкв", "арбуз", "wheat",
+        "tomato", "carrot", "berry", "fruit"
+    }
+    
+    for _, word in ipairs(whitelist) do
+        if name:find(word) or parentName:find(word) or actText:find(word) or objText:find(word) then
+            return true
+        end
+    end
+    
+    -- Для кликдетекторов с простыми названиями: проверяем имя родительской модели
+    if desc:IsA("ClickDetector") then
+        if parentName:find("plant") or parentName:find("crop") or parentName:find("harvest") then
+            return true
+        end
+    end
+    
+    return false
+end
+
+-- Поиск урожая поблизости (В РАДИУСЕ СТОЯНИЯ НА ГРЯДКЕ)
 local function getHarvestables()
     local list = {}
     local player = Players.LocalPlayer
+    local character = player.Character
+    local rootPart = character and character:FindFirstChild("HumanoidRootPart")
+    if not rootPart then return list end
+
     local pName = player.Name:lower()
     local pUserId = tostring(player.UserId)
     local myPlot = findMyPlot()
 
-    -- 1. Сначала ищем в нашей грядке
+    -- Проверка на расстояние: собираем только в радиусе 30 блоков (когда стоишь около грядки)
+    local function isInRange(obj)
+        local part = obj.Parent:IsA("BasePart") and obj.Parent or obj:FindFirstAncestorWhichIsA("BasePart")
+        if part then
+            return (part.Position - rootPart.Position).Magnitude <= 30
+        end
+        return false
+    end
+
+    -- 1. Сначала ищем на своей грядке в радиусе доступности
     if myPlot then
         for _, desc in ipairs(myPlot:GetDescendants()) do
             if (desc:IsA("ProximityPrompt") and desc.Enabled) or desc:IsA("ClickDetector") then
-                table.insert(list, desc)
+                if isHarvestable(desc) and isInRange(desc) then
+                    table.insert(list, desc)
+                end
             end
         end
     end
 
-    -- 2. Сканируем Workspace на наличие наших растений, которые могут быть вне папки грядки
+    -- 2. Сканируем Workspace на наши растения вне папки грядки
     for _, desc in ipairs(workspace:GetDescendants()) do
         if (desc:IsA("ProximityPrompt") and desc.Enabled) or desc:IsA("ClickDetector") then
-            local isMine = false
-            local name = desc.Name:lower()
-            local actText = desc:IsA("ProximityPrompt") and desc.ActionText:lower() or ""
-            local objText = desc:IsA("ProximityPrompt") and desc.ObjectText:lower() or ""
+            if isHarvestable(desc) and isInRange(desc) then
+                local isMine = false
+                local name = desc.Name:lower()
+                local actText = desc:IsA("ProximityPrompt") and desc.ActionText:lower() or ""
+                local objText = desc:IsA("ProximityPrompt") and desc.ObjectText:lower() or ""
 
-            -- Фильтр: собираем только то, что связано со сбором урожая
-            if name:find("harvest") or name:find("pick") or name:find("collect") or 
-               actText:find("harvest") or actText:find("снять") or actText:find("собрать") or
-               objText:find("harvest") or objText:find("снять") or objText:find("собрать") then
-                
-                -- Проверка владельца по иерархии вверх
+                -- Проверка владельца по иерархии
                 local parent = desc.Parent
                 while parent and parent ~= workspace do
                     local pOwner = parent:GetAttribute("Owner") or parent:GetAttribute("OwnerId")
@@ -1565,7 +1620,7 @@ local function getHarvestables()
                     parent = parent.Parent
                 end
 
-                -- Если владелец не найден явно, но грядка близко (менее 45 studs), относим к игроку
+                -- Относим к себе по близости к грядке
                 if not isMine and myPlot then
                     local part = desc.Parent:IsA("BasePart") and desc.Parent or desc:FindFirstAncestorWhichIsA("BasePart")
                     local plotPart = myPlot:IsA("BasePart") and myPlot or myPlot:FindFirstChildWhichIsA("BasePart")
@@ -1583,13 +1638,11 @@ local function getHarvestables()
         end
     end
 
-    -- 3. Резервный сбор: если ничего не нашлось, собираем любые доступные промпты сбора поблизости
+    -- 3. Резервный поиск поблизости
     if #list == 0 then
         for _, desc in ipairs(workspace:GetDescendants()) do
             if desc:IsA("ProximityPrompt") and desc.Enabled then
-                local text = desc.ActionText:lower()
-                local name = desc.Name:lower()
-                if text:find("harvest") or text:find("снять") or text:find("собрать") or text:find("pick") or name:find("harvest") then
+                if isHarvestable(desc) and isInRange(desc) then
                     table.insert(list, desc)
                 end
             end
@@ -1599,7 +1652,7 @@ local function getHarvestables()
     return list
 end
 
--- Безопасные функции активации элементов
+-- Безопасная активация кнопок
 local function firePrompt(prompt)
     if not prompt or not prompt.Enabled then return end
     prompt.RequiresLineOfSight = false
@@ -1624,10 +1677,10 @@ local function fireClick(clickDec)
     end
 end
 
--- Главный цикл автоматического сбора
+-- Главный цикл автоматического сбора БЕЗ ТЕЛЕПОРТА
 task.spawn(function()
     while true do
-        task.wait(0.3)
+        task.wait(0.2)
         if autoHarvestActive then
             pcall(function()
                 local player = Players.LocalPlayer
@@ -1636,47 +1689,15 @@ task.spawn(function()
                 if not rootPart then return end
 
                 local harvestables = getHarvestables()
-                if #harvestables > 0 then
-                    local originalCF = rootPart.CFrame
-                    local harvestedAny = false
+                for _, desc in ipairs(harvestables) do
+                    if not autoHarvestActive then break end
                     
-                    for _, desc in ipairs(harvestables) do
-                        if not autoHarvestActive then break end
-                        
-                        local isPrompt = desc:IsA("ProximityPrompt") and desc.Enabled
-                        local isClick = desc:IsA("ClickDetector")
-                        
-                        if isPrompt or isClick then
-                            local parentPart = desc.Parent
-                            if parentPart and not parentPart:IsA("BasePart") then
-                                parentPart = desc:FindFirstAncestorWhichIsA("BasePart")
-                            end
-                            
-                            if parentPart and parentPart:IsA("BasePart") then
-                                -- Замораживаем физику игрока на момент ТП
-                                local wasAnchored = rootPart.Anchored
-                                rootPart.Anchored = true
-                                
-                                -- Телепортируем к плоду
-                                rootPart.CFrame = parentPart.CFrame + Vector3.new(0, 3, 0)
-                                task.wait(0.12) -- Ждем, пока сервер зарегистрирует позицию
-                                
-                                if isPrompt then
-                                    firePrompt(desc)
-                                else
-                                    fireClick(desc)
-                                end
-                                
-                                rootPart.Anchored = wasAnchored
-                                harvestedAny = true
-                                task.wait(0.08)
-                            end
-                        end
-                    end
-                    
-                    -- Возвращаем игрока в исходную точку
-                    if harvestedAny and autoHarvestActive and rootPart then
-                        rootPart.CFrame = originalCF
+                    if desc:IsA("ProximityPrompt") and desc.Enabled then
+                        firePrompt(desc)
+                        task.wait(0.05)
+                    elseif desc:IsA("ClickDetector") then
+                        fireClick(desc)
+                        task.wait(0.05)
                     end
                 end
             end)
