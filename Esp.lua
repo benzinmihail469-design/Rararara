@@ -1698,12 +1698,30 @@ task.spawn(function()
 end)
 
 ----------------------------------------------------------
--- НОВАЯ СИСТЕМА НЕЗАМЕТНОЙ АВТО-ПРОДАЖИ НА ДИСТАНЦИИ --
+-- НОВАЯ СИСТЕМА БЕСШУМНОЙ АВТО-ПРОДАЖИ БЕЗ ДИАЛОГОВ --
 ----------------------------------------------------------
 local autoSellActive = false
 Library:CreateToggle(AutoPage, "AutoSell", false, function(state)
     autoSellActive = state
 end)
+
+-- Умный поиск зоны продажи (сканирует всю карту)
+local function findSellPart()
+    local keywords = {"sell", "продажа", "сдать", "dropoff", "bin", "merchant", "billy", "collector", "deposit", "shop", "магазин"}
+    for _, obj in ipairs(workspace:GetDescendants()) do
+        if obj:IsA("BasePart") and obj.CanTouch then
+            local objName = obj.Name:lower()
+            for _, word in ipairs(keywords) do
+                if objName:find(word) then
+                    if not obj:IsDescendantOf(Players.LocalPlayer.Character) then
+                        return obj
+                    end
+                end
+            end
+        end
+    end
+    return nil
+end
 
 task.spawn(function()
     while true do
@@ -1712,12 +1730,14 @@ task.spawn(function()
             pcall(function()
                 local player = Players.LocalPlayer
                 local character = player.Character
-                if not character or not character:FindFirstChild("HumanoidRootPart") then return end
+                if not character or not character:FindFirstChild("Humanoid") or not character:FindFirstChild("HumanoidRootPart") then return end
                 
-                local hasFruits = false
+                local rootPart = character.HumanoidRootPart
+                local humanoid = character.Humanoid
                 local ignoreList = {"water", "hoe", "shovel", "rake", "seed", "pot", "hammer", "axe", "pickaxe", "basket", "лейка", "лопата", "грабли", "семена", "корзина", "топор", "кирка"}
                 
-                -- Проверяем инвентарь на наличие урожая
+                -- Собираем список плодов в Backpack
+                local fruitsToSell = {}
                 for _, item in ipairs(player.Backpack:GetChildren()) do
                     if item:IsA("Tool") then
                         local itemName = item.Name:lower()
@@ -1729,65 +1749,59 @@ task.spawn(function()
                             end
                         end
                         if not isTool then
-                            hasFruits = true
-                            break
+                            table.insert(fruitsToSell, item)
                         end
                     end
                 end
 
-                -- Если есть фрукты, запускаем полностью скрытую продажу
-                if hasFruits then
+                -- Если есть фрукты, запускаем продажу в обход диалогов
+                if #fruitsToSell > 0 then
+                    local sellPart = findSellPart()
                     
-                    -- Метод 1: Поиск GUI-кнопок продажи из диалога (как на скриншоте 3627.jpg)
-                    -- Убраны слова "продать" и "sell", чтобы скрипт не нажимал на верхнюю желтую кнопку
-                    local textsToFind = {"продать инвентарь", "sell inventory", "продай это"}
-                    local guiLocations = {player:WaitForChild("PlayerGui"), workspace} 
-                    
-                    for _, loc in ipairs(guiLocations) do
-                        for _, obj in ipairs(loc:GetDescendants()) do
-                            if obj:IsA("TextButton") or obj:IsA("ImageButton") then
-                                local btnText = ""
-                                if obj:IsA("TextButton") then btnText = obj.Text:lower() end
-                                for _, child in ipairs(obj:GetDescendants()) do
-                                    if child:IsA("TextLabel") then
-                                        btnText = btnText .. " " .. child.Text:lower()
-                                    end
-                                end
-
-                                for _, target in ipairs(textsToFind) do
-                                    if btnText:find(target) then
-                                        -- На 100% исключаем кнопку телепорта, если она случайно попалась
-                                        if not obj.Name:lower():find("teleport") and not (btnText == "продать" or btnText == "sell") then
-                                            -- Нажимаем кнопку ИДЕАЛЬНО ТИХО
-                                            if getconnections then
-                                                for _, conn in ipairs(getconnections(obj.Activated)) do conn:Fire() end
-                                                for _, conn in ipairs(getconnections(obj.MouseButton1Click)) do conn:Fire() end
-                                                for _, conn in ipairs(getconnections(obj.MouseButton1Down)) do conn:Fire() end
-                                            end
-                                        end
-                                    end
+                    for _, fruit in ipairs(fruitsToSell) do
+                        if not autoSellActive then break end
+                        
+                        -- Берем фрукт в руку
+                        humanoid:EquipTool(fruit)
+                        task.wait(0.12)
+                        
+                        -- Симулируем быстрое физическое касание зоны продажи
+                        if sellPart then
+                            local handle = fruit:FindFirstChild("Handle") or fruit:FindFirstChildWhichIsA("BasePart")
+                            if handle then
+                                if firetouchinterest then
+                                    firetouchinterest(handle, sellPart, 0)
+                                    task.wait(0.05)
+                                    firetouchinterest(handle, sellPart, 1)
+                                else
+                                    -- Альтернатива для простых инжекторов: CFrame-касание на доли секунды
+                                    local originalCF = handle.CFrame
+                                    handle.CFrame = sellPart.CFrame
+                                    task.wait(0.08)
+                                    handle.CFrame = originalCF
                                 end
                             end
                         end
                     end
-
-                    -- Метод 2: Напрямую дергаем RemoteEvents продажи
+                    
+                    -- Метод с триггером Remote событий напрямую (на случай, если игра работает по сессионным релейшенам)
                     for _, obj in ipairs(game:GetService("ReplicatedStorage"):GetDescendants()) do
                         if obj:IsA("RemoteEvent") or obj:IsA("RemoteFunction") then
                             local name = obj.Name:lower()
-                            if name:find("sell") or name:find("продать") then
-                                -- Защита от эвентов телепорта
-                                if not name:find("teleport") then
-                                    if obj:IsA("RemoteEvent") then
-                                        obj:FireServer()
-                                    else
-                                        task.spawn(function() pcall(function() obj:InvokeServer() end) end)
-                                    end
+                            if (name:find("sell") or name:find("продать") or name:find("claim") or name:find("merchant") or name:find("billy")) and not name:find("teleport") then
+                                if obj:IsA("RemoteEvent") then
+                                    obj:FireServer()
+                                else
+                                    task.spawn(function() pcall(function() obj:InvokeServer() end) end)
                                 end
                             end
                         end
                     end
                     
+                    -- Убираем из рук то, что осталось
+                    pcall(function()
+                        humanoid:UnequipTools()
+                    end)
                 end
             end)
         end
