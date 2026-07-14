@@ -1572,11 +1572,11 @@ local function getHarvestables()
     local pUserId = tostring(player.UserId)
     local myPlot = findMyPlot()
 
-    -- Проверка на расстояние: собираем только в радиусе 30 блоков (когда стоишь около грядки)
+    -- Проверка на расстояние: увеличили радиус до 120 блоков, чтобы собирать даже очень крупные растения
     local function isInRange(obj)
         local part = obj.Parent:IsA("BasePart") and obj.Parent or obj:FindFirstAncestorWhichIsA("BasePart")
         if part then
-            return (part.Position - rootPart.Position).Magnitude <= 30
+            return (part.Position - rootPart.Position).Magnitude <= 120
         end
         return false
     end
@@ -1620,12 +1620,12 @@ local function getHarvestables()
                     parent = parent.Parent
                 end
 
-                -- Относим к себе по близости к грядке
+                -- Относим к себе по близости к грядке (увеличено расстояние до 150 блоков)
                 if not isMine and myPlot then
                     local part = desc.Parent:IsA("BasePart") and desc.Parent or desc:FindFirstAncestorWhichIsA("BasePart")
                     local plotPart = myPlot:IsA("BasePart") and myPlot or myPlot:FindFirstChildWhichIsA("BasePart")
                     if part and plotPart then
-                        if (part.Position - plotPart.Position).Magnitude < 45 then
+                        if (part.Position - plotPart.Position).Magnitude < 150 then
                             isMine = true
                         end
                     end
