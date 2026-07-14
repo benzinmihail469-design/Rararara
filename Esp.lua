@@ -388,7 +388,7 @@ EmbMinBtn.Activated:Connect(ToggleMinimize)
 local function CloseGui()
     PulseHub:Destroy()
 end
-CloseBtn.Activated:Connect(CloseGui) -- ИСПРАВЛЕНО: Теперь привязано к кнопке CloseBtn, а не к функции
+CloseBtn.Activated:Connect(CloseGui)
 EmbCloseBtn.Activated:Connect(CloseGui)
 
 local function applyHover(btn, normalColor, hoverColor)
@@ -1416,7 +1416,6 @@ Library:CreateToggle(MainPage, "AutoFarmCoins", false, function(state)
     autoFarmActive = state
 end)
 
--- Луп для автофарма монет (если монеты есть в Workspace)
 task.spawn(function()
     while true do
         task.wait(0.5)
@@ -1472,11 +1471,8 @@ end)
 
 Library:CreateToggle(AutoBuyPage, "SilentAim", false, function(state) end)
 
--- ============================================================================
--- БЕЗОПАСНЫЙ СБОР УРОЖАЯ БЕЗ ТЕЛЕПОРТА И НАСТРОЙКИ
--- ============================================================================
 local autoHarvestActive = false
-local harvestDelayTime = 0.5 -- По умолчанию задержка 0.5 секунд
+local harvestDelayTime = 0.5
 
 Library:CreateToggle(AutoPage, "AutoHarvest", false, function(state)
     autoHarvestActive = state
@@ -1486,7 +1482,6 @@ Library:CreateSlider(AutoPage, "HarvestDelay", 1, 50, 5, function(value)
     harvestDelayTime = value / 10 
 end)
 
--- Динамический поиск своей грядки
 local function findMyPlot()
     local player = Players.LocalPlayer
     local pName = player.Name:lower()
@@ -1525,7 +1520,6 @@ local function findMyPlot()
     return nil
 end
 
--- Функция строгой фильтрации: собираем только урожай, игнорируем кастомизацию
 local function isHarvestable(desc)
     if not desc then return false end
     
@@ -1569,7 +1563,6 @@ local function isHarvestable(desc)
     return false
 end
 
--- Поиск урожая поблизости
 local function getHarvestables()
     local list = {}
     local player = Players.LocalPlayer
@@ -1653,7 +1646,6 @@ local function getHarvestables()
     return list
 end
 
--- Безопасная активация промптов
 local function firePrompt(prompt)
     if not prompt or not prompt.Enabled then return end
     prompt.RequiresLineOfSight = false
@@ -1678,7 +1670,6 @@ local function fireClick(clickDec)
     end
 end
 
--- Цикл автоматического сбора урожая
 task.spawn(function()
     while true do
         task.wait(math.max(0.05, harvestDelayTime))
@@ -1707,10 +1698,10 @@ task.spawn(function()
 end)
 
 -- ============================================================================
--- АВТО-ПРОДАЖА ДЛЯ ЛЮБОГО ИНВЕНТАРЯ
+-- АВТО-ПРОДАЖА ДЛЯ ЛЮБОГО ИНВЕНТАРЯ (ИСПРАВЛЕНО И ОПТИМИЗИРОВАНО)
 -- ============================================================================
 local autoSellActive = false
-local maxSellAmount = 4 -- Измерение по слотам (например, когда забито 4 слота)
+local maxSellAmount = 4 
 
 Library:CreateToggle(AutoPage, "AutoSell", false, function(state)
     autoSellActive = state
@@ -1720,7 +1711,6 @@ Library:CreateSlider(AutoPage, "MaxSellAmount", 1, 5, 4, function(value)
     maxSellAmount = value
 end)
 
--- Функция симуляции ккликом по кнопкам игрового UI
 local function activateGameUiButton(btn)
     if not btn then return end
     if firesignal then
@@ -1731,7 +1721,6 @@ local function activateGameUiButton(btn)
     end
 end
 
--- 1. Функция автоматического клика по верхней кнопке «Продать» (Встроенный в игру Телепорт)
 local function clickGameSellButton()
     local playerGui = Players.LocalPlayer:FindFirstChild("PlayerGui")
     if not playerGui then return false end
@@ -1759,7 +1748,6 @@ local function clickGameSellButton()
     return false
 end
 
--- 2. Поиск промпта «Поговорить» у торговца Стивена
 local function findSellTarget()
     for _, obj in ipairs(workspace:GetDescendants()) do
         if obj:IsA("ProximityPrompt") then
@@ -1777,31 +1765,53 @@ local function findSellTarget()
     return nil
 end
 
--- 3. Выбор опции #1 ["Продать инвентарь"] путем эмуляции клавиши "1"
+-- ИСПРАВЛЕНО: Сканирует интерфейс диалогов игры и нажимает кнопку «Продать инвентарь»
 local function clickDialogueOption()
-    -- Так как это классический Roblox Dialog, эмулируем нажатие клавиши "1"
+    local playerGui = Players.LocalPlayer:FindFirstChild("PlayerGui")
+    local clicked = false
+    
+    if playerGui then
+        for _, v in ipairs(playerGui:GetDescendants()) do
+            -- Пропускаем UI PulseHub, ищем только активные кнопки в самой игре
+            if not v:IsDescendantOf(PulseHub) and (v:IsA("TextButton") or v:IsA("ImageButton")) and v.Visible then
+                local text = v:IsA("TextButton") and v.Text:lower() or ""
+                for _, child in ipairs(v:GetChildren()) do
+                    if child:IsA("TextLabel") then
+                        text = text .. " " .. child.Text:lower()
+                    end
+                end
+                
+                -- Точные ключевые слова для выбора диалога торговли
+                if text:find("продать") or text:find("sell") or text:find("инвентарь") or text:find("inventory") or text:find("все") or text:find("all") then
+                    activateGameUiButton(v)
+                    clicked = true
+                end
+            end
+        end
+    end
+
+    -- Классический дублирующий фаллбэк, если интерфейс построен на стандартном движке диалогов Roblox
     pcall(function()
         game:GetService("VirtualInputManager"):SendKeyEvent(true, Enum.KeyCode.One, false, game)
-        task.wait(0.05)
+        task.wait(0.02)
         game:GetService("VirtualInputManager"):SendKeyEvent(false, Enum.KeyCode.One, false, game)
     end)
-    -- Фаллбэк эмуляция для других типов исполнителей скриптов
     pcall(function()
         game:GetService("VirtualUser"):TypeKey("1")
     end)
-    return true
+    
+    return clicked
 end
 
--- ГЛАВНЫЙ ИСПРАВЛЕННЫЙ ЦИКЛ ПРОДАЖИ (Проверяет кастомные слоты внизу экрана)
+-- ИСПРАВЛЕНО: Доработанный цикл проверки заполнения
 task.spawn(function()
     while true do
-        task.wait(2.0) -- Оптимальная задержка между проверками
+        task.wait(1.5) 
         if autoSellActive then
             pcall(function()
                 local playerGui = Players.LocalPlayer:FindFirstChild("PlayerGui")
                 local cropSlotsCount = 0
                 
-                -- Считаем сколько слотов с клубникой заполнено (ищем надписи "кг" или "kg")
                 if playerGui then
                     for _, v in ipairs(playerGui:GetDescendants()) do
                         if not v:IsDescendantOf(PulseHub) and v:IsA("TextLabel") and v.Visible then
@@ -1813,21 +1823,19 @@ task.spawn(function()
                     end
                 end
                 
-                -- Если забито слотов больше или равно значению слайдера (или если выставлено на 1) — продаем!
-                if cropSlotsCount >= maxSellAmount or cropSlotsCount >= 4 or maxSellAmount == 1 then
+                -- Запускаем продажу, только если в инвентаре есть ресурсы и их количество удовлетворяет условию слайдера
+                if cropSlotsCount > 0 and (cropSlotsCount >= maxSellAmount) then
                     
-                    -- Шаг 1: Жмем верхнюю кнопку игры «Продать» для телепортации к Стивену
                     clickGameSellButton()
-                    task.wait(0.8) -- Ждем завершения телепортации
+                    task.wait(0.8) 
                     
-                    -- Шаг 2: Взаимодействуем со Стивеном через промпт «Поговорить»
                     local sellTrigger = findSellTarget()
                     if sellTrigger then
                         firePrompt(sellTrigger)
-                        task.wait(0.6) -- Время на открытие облака диалога движком
+                        task.wait(0.7) -- Время на анимацию появления облака диалога игры
                         
-                        -- Шаг 3: Автоматически выбираем вариант #1 ["Продать инвентарь"]
                         clickDialogueOption()
+                        task.wait(0.5)
                     end
                 end
             end)
@@ -1882,7 +1890,6 @@ local function applyPlayerESP(player)
             billboard.Name = "PlayerLabelESP"
             billboard.Size = UDim2.new(0, 120, 0, 30)
             billboard.AlwaysOnTop = true
-            -- ИСПРАВЛЕНО: Удалено несуществующее свойство billboard.Value
             billboard.StudsOffset = Vector3.new(0, 3, 0)
             billboard.Adornee = head
             
@@ -1959,7 +1966,6 @@ local SettingsSections = Library:CreateSubTabs(SettingsPage, {
     {Name = "Theme", Icon = "78910169210318", Color = Color3.fromRGB(235, 94, 153)}
 })
 
--- --- [ВКЛАДКА UI] ---
 Library:CreateDropdown(SettingsSections.UI, "Language", {"English", "Русский"}, "Русский", function(lang)
     Library.CurrentLanguage = lang
     for _, loc in ipairs(LocaleObjects) do
@@ -2002,7 +2008,6 @@ Library:CreateToggle(SettingsSections.UI, "AntiAFK", false, function(state)
     toggleAntiAFK(state)
 end)
 
--- --- [ВКЛАДКА THEME] ---
 Library:CreateDropdown(SettingsSections.Theme, "UITheme", ThemeNamesList, "Deep Ocean", function(theme)
     Library:UpdateTheme(theme)
 end)
@@ -2015,5 +2020,4 @@ Library:CreateToggle(SettingsSections.Theme, "Gradient", false, function(state)
     toggleGradientEffect(state)
 end)
 
--- Инициализация стартовой темы
 Library:UpdateTheme("Deep Ocean")
