@@ -592,8 +592,7 @@ local Localization = {
         ["PlayerEsp"] = "Player ESP", ["EspColor"] = "ESP Color",
         ["WalkSpeed"] = "WalkSpeed", ["JumpPower"] = "JumpPower", ["ResetStats"] = "Reset Modifiers",
         ["TeleportToMap"] = "Teleport to Map", ["TeleportToLobby"] = "Teleport to Lobby",
-        ["KillAura"] = "Kill Aura", ["SilentAim"] = "Silent Aim",
-        ["AutoHarvest"] = "Auto Harvest"
+        ["SilentAim"] = "Silent Aim", ["AutoHarvest"] = "Auto Harvest"
     },
     ["Русский"] = {
         ["Main"] = "Главная", ["Teleport"] = "Телепорт", ["Auto"] = "Авто", ["Auto buy"] = "Авто-покупка",
@@ -606,8 +605,7 @@ local Localization = {
         ["PlayerEsp"] = "ESP Игроков", ["EspColor"] = "Цвет ЕСП",
         ["WalkSpeed"] = "Скорость ходьбы", ["JumpPower"] = "Сила прыжка", ["ResetStats"] = "Сбросить модификаторы",
         ["TeleportToMap"] = "Телепортироваться на Карту", ["TeleportToLobby"] = "Телепортироваться в Лобби",
-        ["KillAura"] = "Килл Аура", ["SilentAim"] = "Сайлент Аим",
-        ["AutoHarvest"] = "Авто-Сбор Урожая"
+        ["SilentAim"] = "Сайлент Аим", ["AutoHarvest"] = "Авто-Сбор Урожая"
     }
 }
 
@@ -1441,90 +1439,112 @@ Library:CreateButton(TeleportPage, "TeleportToLobby", function()
     end)
 end)
 
-Library:CreateToggle(AutoPage, "KillAura", false, function(state) end)
 Library:CreateToggle(AutoBuyPage, "SilentAim", false, function(state) end)
 
 -- ============================================================================
--- [НОВОЕ] ФУНКЦИЯ AUTO HARVEST ДЛЯ ГРЯДОК (РАБОТАЕТ БЕЗ ТЕЛЕПОРТАЦИИ)
+-- [ИСПРАВЛЕНО] ФУНКЦИЯ AUTO HARVEST ДЛЯ ПК И ТЕЛЕФОНОВ (БЕЗ ЛАГОВ И ВЫЛЕТОВ)
 -- ============================================================================
 local autoHarvestActive = false
 Library:CreateToggle(AutoPage, "AutoHarvest", false, function(state)
     autoHarvestActive = state
 end)
 
--- Глубокий поиск папки грядок в Grow a Garden 2
-local function findPlotsFolder()
-    local searchNames = {"plots", "gardens", "beds", "griadki", "playerplots", "lands", "грядки", "сады", "plot"}
+-- Поиск папок грядок в игре
+local function getTargetFolders()
+    local targets = {}
+    local commonNames = {"plots", "gardens", "beds", "playerplots", "tycoons", "lands", "plotsfolder"}
     for _, child in ipairs(workspace:GetChildren()) do
-        local cName = child.Name:lower()
-        for _, name in ipairs(searchNames) do
-            if cName:find(name) then
-                return child
+        local nameLow = child.Name:lower()
+        for _, common in ipairs(commonNames) do
+            if nameLow:find(common) then
+                table.insert(targets, child)
             end
         end
     end
-    local env = workspace:FindFirstChild("Map") or workspace:FindFirstChild("Environment") or workspace:FindFirstChild("Normal")
-    if env then
-        for _, child in ipairs(env:GetChildren()) do
-            local cName = child.Name:lower()
-            for _, name in ipairs(searchNames) do
-                if cName:find(name) then
-                    return child
-                end
-            end
-        end
-    end
-    return nil
+    return targets
 end
 
--- Основной цикл авто-сбора урожая
+-- Основной оптимизированный цикл сбора урожая
 task.spawn(function()
     while true do
-        task.wait(0.3)
+        task.wait(0.5) -- Оптимальная задержка против лагов на мобилках
         if autoHarvestActive then
             pcall(function()
                 local player = Players.LocalPlayer
                 local character = player.Character
                 local rootPart = character and character:FindFirstChild("HumanoidRootPart")
-                if rootPart then
-                    local plots = findPlotsFolder()
-                    if plots then
-                        -- Сбор по грядкам игрока
-                        for _, desc in ipairs(plots:GetDescendants()) do
-                            if not autoHarvestActive then break end
-                            if desc:IsA("ProximityPrompt") then
-                                local parentPart = desc.Parent:IsA("BasePart") and desc.Parent or desc.Parent:FindFirstChildOfClass("BasePart")
-                                if parentPart then
-                                    local dist = (rootPart.Position - parentPart.Position).Magnitude
-                                    if dist <= 50 then -- Собирает только если игрок стоит у грядок (в радиусе 50 единиц)
-                                        if fireproximityprompt then
-                                            fireproximityprompt(desc)
-                                        else
-                                            desc:InputHoldBegin()
-                                            task.wait(desc.HoldDuration)
-                                            desc:InputHoldEnd()
-                                        end
-                                    end
+                if not rootPart then return end
+                
+                local myPlot = nil
+                
+                -- 1. Сначала ищем личную грядку по имени игрока в workspace
+                local directPlot = workspace:FindFirstChild(player.Name)
+                if directPlot then
+                    myPlot = directPlot
+                else
+                    -- 2. Если не нашли, ищем в папках грядок
+                    local folders = getTargetFolders()
+                    for _, folder in ipairs(folders) do
+                        local found = folder:FindFirstChild(player.Name)
+                        if found then
+                            myPlot = found
+                            break
+                        else
+                            -- Поиск по значению Owner (Владелец) внутри папки
+                            for _, child in ipairs(folder:GetChildren()) do
+                                local owner = child:FindFirstChild("Owner") or child:FindFirstChild("Player") or child:FindFirstChild("OwnerName")
+                                if owner and (owner.Value == player or tostring(owner.Value) == player.Name or owner.Value == player.UserId) then
+                                    myPlot = child
+                                    break
                                 end
                             end
                         end
-                    else
-                        -- Резервный сбор по всей карте, если папка грядок не найдена напрямую
-                        for _, desc in ipairs(workspace:GetDescendants()) do
-                            if not autoHarvestActive then break end
-                            if desc:IsA("ProximityPrompt") and (desc.Name:lower():find("harvest") or desc.Name:lower():find("pick") or desc.Name:lower():find("collect") or desc.ActionText:lower():find("harvest") or desc.ActionText:lower():find("снять")) then
-                                local parentPart = desc.Parent:IsA("BasePart") and desc.Parent or desc.Parent:FindFirstChildOfClass("BasePart")
-                                if parentPart then
-                                    local dist = (rootPart.Position - parentPart.Position).Magnitude
-                                    if dist <= 50 then
-                                        if fireproximityprompt then
-                                            fireproximityprompt(desc)
-                                        else
-                                            desc:InputHoldBegin()
-                                            task.wait(desc.HoldDuration)
-                                            desc:InputHoldEnd()
-                                        end
-                                    end
+                        if myPlot then break end
+                    end
+                end
+                
+                -- Если нашли нашу грядку, собираем урожай только с нее (0 лагов!)
+                if myPlot then
+                    for _, desc in ipairs(myPlot:GetDescendants()) do
+                        if not autoHarvestActive then break end
+                        if desc:IsA("ProximityPrompt") then
+                            -- Убираем ограничения дистанции и видимости для надежного срабатывания
+                            desc.RequiresLineOfSight = false
+                            desc.MaxActivationDistance = 9e9
+                            
+                            if fireproximityprompt then
+                                fireproximityprompt(desc)
+                            else
+                                -- Универсальная симуляция удержания для мобильных
+                                task.spawn(function()
+                                    desc:InputHoldBegin()
+                                    task.wait(desc.HoldDuration + 0.1)
+                                    desc:InputHoldEnd()
+                                end)
+                            end
+                        end
+                    end
+                else
+                    -- Резервный вариант: если грядку не определило, сканируем ProximityPrompts с фильтрацией по ключевым словам
+                    for _, desc in ipairs(workspace:GetDescendants()) do
+                        if not autoHarvestActive then break end
+                        if desc:IsA("ProximityPrompt") then
+                            local name = desc.Name:lower()
+                            local text = desc.ActionText:lower()
+                            if name:find("harvest") or name:find("pick") or name:find("collect") or 
+                               text:find("harvest") or text:find("снять") or text:find("собрать") then
+                                
+                                desc.RequiresLineOfSight = false
+                                desc.MaxActivationDistance = 9e9
+                                
+                                if fireproximityprompt then
+                                    fireproximityprompt(desc)
+                                else
+                                    task.spawn(function()
+                                        desc:InputHoldBegin()
+                                        task.wait(desc.HoldDuration + 0.1)
+                                        desc:InputHoldEnd()
+                                    end)
                                 end
                             end
                         end
@@ -1536,7 +1556,7 @@ task.spawn(function()
 end)
 
 -- ============================================================================
--- [ОБНОВЛЕНО] СУБ-ВКЛАДКА ESP (ТОЛЬКО ДЛЯ ИГРОКОВ, FRUIT ESP УДАЛЕН)
+-- СУБ-ВКЛАДКА ESP (ТОЛЬКО ДЛЯ ИГРОКОВ, FRUIT ESP УДАЛЕН)
 -- ============================================================================
 local VisualSections = Library:CreateSubTabs(VisualPage, {
     {Name = "Esp", Icon = "80768064990053", Color = Color3.fromRGB(46, 204, 113)}
@@ -1695,18 +1715,30 @@ Library:CreateDropdown(SettingsPage, "Language", {"English", "Русский"}, 
             end
         end
     end
+    SearchBox.PlaceholderText = option == "Русский" and "Поиск..." or "Search..."
 end)
 
+local isAntiAfkActive = false
 Library:CreateToggle(SettingsPage, "AntiAFK", false, function(state)
+    isAntiAfkActive = state
     toggleAntiAFK(state)
 end)
 
+local isAnimatedWindowActive = false
 Library:CreateToggle(SettingsPage, "AnimatedWindow", false, function(state)
+    isAnimatedWindowActive = state
     toggleAnimatedWindow(state)
 end)
 
+local isGradientActive = false
 Library:CreateToggle(SettingsPage, "Gradient", false, function(state)
+    isGradientActive = state
     toggleGradientEffect(state)
 end)
 
 Library:UpdateTheme("Deep Ocean")
+allPages["Main"].Visible = true
+allTabs["Main"].BackgroundColor3 = Color3.fromRGB(35, 35, 35)
+allTabs["Main"].BackgroundTransparency = 0
+allTabButtons["Main"].TextColor3 = Color3.fromRGB(255, 255, 255)
+if allTabIcons["Main"] then allTabIcons["Main"].ImageTransparency = 0 end
