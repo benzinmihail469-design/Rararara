@@ -1449,22 +1449,24 @@ local VisualSections = Library:CreateSubTabs(VisualPage, {
 
 local ESP_Enabled = false
 local fruitHighlights = {}
-local targetFolder = workspace 
 
 -- Проверка, является ли объект исключительно выросшим фруктом/урожаем
 local function isFruit(child)
     if not (child:IsA("Model") or child:IsA("BasePart")) then return false end
-    if child.Name == "FruitHighlightESP" or child.Name == "FruitLabelESP" then return false end
-    if child:FindFirstChild("FruitHighlightESP") or child:FindFirstChild("FruitLabelESP") then return false end
+    if child.Name == "FruitSelectionBoxESP" or child.Name == "FruitLabelESP" then return false end
+    
+    -- Если у родителя уже висит ESP, не нужно вешать на дочерние части!
+    if child.Parent and fruitHighlights[child.Parent] then return false end
     
     local name = child.Name:lower()
     
-    -- Чёрный список (исключаем семена, магазины, грядки, пустые горшки и технические зоны)
+    -- Чёрный список (семена, грядки, горшки, магазины, игроки, интерфейс, служебные части)
     local blacklist = {
         "shop", "store", "seed", "bed", "plot", "dirt", "planter", "pot", "griadka", "soil", 
         "zone", "buy", "sell", "merchant", "npc", "stage", "sprout", "stem", "leaf", "leaves",
         "water", "fertilizer", "tool", "bag", "chest", "gate", "fence", "sign", "teleport",
-        "семена", "грядка", "горшок", "магазин", "покупка"
+        "семена", "грядка", "горшок", "магазин", "покупка", "camera", "localplayer", "humanoid",
+        "part", "meshpart", "handle", "rig", "workspace"
     }
     
     for _, badWord in ipairs(blacklist) do
@@ -1473,12 +1475,13 @@ local function isFruit(child)
         end
     end
     
-    -- Белый список (только настоящие готовые фрукты, ягоды и овощи)
+    -- Белый список (готовые фрукты, ягоды, редкие растения, пчелы)
     local fruitNames = {
         "fruit", "apple", "banana", "berry", "orange", "lemon", "strawberry", 
         "cherry", "grape", "dragon", "pineapple", "watermelon", "peach", 
         "pear", "plum", "coconut", "melon", "tomato", "carrot", "potato",
-        "pumpkin", "cabbage", "wheat", "corn", "gold", "фрукт", "яблоко", "банан"
+        "pumpkin", "cabbage", "wheat", "corn", "gold", "bee", "flower", "rose", "tulip",
+        "фрукт", "яблоко", "банан", "цветок", "роза", "пчела"
     }
     
     local isMatch = false
@@ -1492,49 +1495,6 @@ local function isFruit(child)
     return isMatch or child:GetAttribute("IsFruit") == true
 end
 
--- Наложение обводки и текста
-local function applyFruitESP(fruit)
-    -- Избегаем повторной подсветки частей внутри модели-фрукта
-    local parent = fruit.Parent
-    if parent and isFruit(parent) then
-        return
-    end
-
-    if fruitHighlights[fruit] then return end
-    
-    -- Силуэт
-    local highlight = Instance.new("Highlight")
-    highlight.Name = "FruitHighlightESP"
-    highlight.FillColor = Color3.fromRGB(46, 204, 113) -- Зеленая подсветка
-    highlight.OutlineColor = Color3.fromRGB(255, 255, 255)
-    highlight.FillTransparency = 0.4
-    highlight.OutlineTransparency = 0.1
-    highlight.Adornee = fruit
-    highlight.Parent = fruit
-    
-    -- Текстовое BillboardGui над фруктом
-    local billboard = Instance.new("BillboardGui")
-    billboard.Name = "FruitLabelESP"
-    billboard.Size = UDim2.new(0, 100, 0, 30)
-    billboard.AlwaysOnTop = true
-    billboard.DynamicPixelsPerStud = true
-    billboard.StudsOffset = Vector3.new(0, 2, 0)
-    billboard.Adornee = fruit
-    
-    local textLabel = Instance.new("TextLabel")
-    textLabel.BackgroundTransparency = 1
-    textLabel.Size = UDim2.new(1, 0, 1, 0)
-    textLabel.Text = fruit.Name
-    textLabel.TextColor3 = Color3.fromRGB(255, 255, 255)
-    textLabel.TextSize = 13
-    textLabel.Font = Enum.Font.GothamBold
-    textLabel.TextStrokeTransparency = 0.5
-    textLabel.Parent = billboard
-    
-    billboard.Parent = fruit
-    fruitHighlights[fruit] = {highlight, billboard}
-end
-
 local function removeFruitESP(fruit)
     if fruitHighlights[fruit] then
         for _, obj in ipairs(fruitHighlights[fruit]) do
@@ -1544,40 +1504,79 @@ local function removeFruitESP(fruit)
     end
 end
 
-local spawnConnection = nil
-local descRemovedConnection = nil
+local function applyFruitESP(fruit)
+    if fruitHighlights[fruit] then return end
+    
+    -- SelectionBox вместо Highlight (убирает лимит 31 шт, не вызывает лаги)
+    local box = Instance.new("SelectionBox")
+    box.Name = "FruitSelectionBoxESP"
+    box.Color3 = Color3.fromRGB(46, 204, 113) -- Зеленая обводка
+    box.LineThickness = 0.04
+    box.Adornee = fruit
+    box.Parent = fruit
+    
+    -- Текстовое BillboardGui
+    local billboard = Instance.new("BillboardGui")
+    billboard.Name = "FruitLabelESP"
+    billboard.Size = UDim2.new(0, 100, 0, 30)
+    billboard.AlwaysOnTop = true
+    billboard.StudsOffset = Vector3.new(0, 2, 0)
+    billboard.Adornee = fruit
+    
+    local textLabel = Instance.new("TextLabel")
+    textLabel.BackgroundTransparency = 1
+    textLabel.Size = UDim2.new(1, 0, 1, 0)
+    textLabel.Text = fruit.Name
+    textLabel.TextColor3 = Color3.fromRGB(255, 255, 255)
+    textLabel.TextSize = 11
+    textLabel.Font = Enum.Font.GothamBold
+    textLabel.TextStrokeTransparency = 0.5
+    textLabel.Parent = billboard
+    
+    billboard.Parent = fruit
+    fruitHighlights[fruit] = {box, billboard}
+end
+
+local function cleanupESP()
+    for fruit, _ in pairs(fruitHighlights) do
+        removeFruitESP(fruit)
+    end
+    table.clear(fruitHighlights)
+end
+
+-- Оптимизированный фоновый сканер (срабатывает каждые 1.5 секунды)
+local function scanAndApply()
+    if not ESP_Enabled then return end
+    
+    for fruit, _ in pairs(fruitHighlights) do
+        if not fruit or not fruit.Parent then
+            fruitHighlights[fruit] = nil
+        end
+    end
+
+    for _, desc in ipairs(workspace:GetDescendants()) do
+        if not ESP_Enabled then break end
+        if isFruit(desc) then
+            applyFruitESP(desc)
+        end
+    end
+end
+
+task.spawn(function()
+    while true do
+        task.wait(1.5)
+        if ESP_Enabled then
+            pcall(scanAndApply)
+        end
+    end
+end)
 
 local function toggleFruitESP(state)
     ESP_Enabled = state
     if ESP_Enabled then
-        for _, desc in ipairs(targetFolder:GetDescendants()) do
-            if isFruit(desc) then
-                applyFruitESP(desc)
-            end
-        end
-        spawnConnection = targetFolder.DescendantAdded:Connect(function(desc)
-            task.wait(0.1)
-            if ESP_Enabled and isFruit(desc) then
-                applyFruitESP(desc)
-            end
-        end)
-        descRemovedConnection = targetFolder.DescendantRemoving:Connect(function(desc)
-            if fruitHighlights[desc] then
-                removeFruitESP(desc)
-            end
-        end)
+        pcall(scanAndApply)
     else
-        if spawnConnection then 
-            spawnConnection:Disconnect() 
-            spawnConnection = nil
-        end
-        if descRemovedConnection then
-            descRemovedConnection:Disconnect()
-            descRemovedConnection = nil
-        end
-        for fruit, _ in pairs(fruitHighlights) do
-            removeFruitESP(fruit)
-        end
+        cleanupESP()
     end
 end
 
