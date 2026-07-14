@@ -1496,24 +1496,15 @@ local function isFruit(child)
     
     local name = child.Name:lower()
     
-    -- Проверяем, находится ли объект прямо внутри грядки/участка
-    local parent = child.Parent
-    if parent then
-        local pName = parent.Name:lower()
-        if pName:find("dirt") or pName:find("plot") or pName:find("bed") or pName:find("griadka") or pName:find("soil") or pName:find("garden") or pName:find("planter") then
-            -- Исключаем служебные детали грядки (лейки, рамки, знаки покупки и т.д.)
-            if not (name:find("dirt") or name:find("soil") or name:find("bed") or name:find("plot") or name:find("frame") or name:find("border") or name:find("sign") or name:find("buy") or name:find("grid") or name:find("hitbox") or name:find("water")) then
-                return true
-            end
-        end
-    end
-    
-    -- Чёрный список (семена, горшки, магазины, игроки, интерфейс, служебные части)
+    -- Чёрный список названий (структурные элементы грядок, заборы, семена, интерфейс и т.д.)
     local blacklist = {
-        "shop", "store", "seed", "planter", "pot", "zone", "buy", "sell", "merchant", "npc", "stage", "sprout", "stem", "leaf", "leaves",
-        "water", "fertilizer", "tool", "bag", "chest", "gate", "fence", "sign", "teleport",
-        "семена", "горшок", "магазин", "покупка", "camera", "localplayer", "humanoid",
-        "part", "meshpart", "handle", "rig", "workspace"
+        "section", "bed", "plot", "dirt", "soil", "spawn", "core", "fence", "gate", "water", 
+        "griadka", "border", "frame", "sign", "light", "post", "hologram", "scarecrow", 
+        "sprinkler", "shop", "store", "seed", "planter", "pot", "zone", "buy", "sell", 
+        "merchant", "npc", "stage", "sprout", "stem", "leaf", "leaves", "fertilizer", 
+        "tool", "bag", "chest", "teleport", "семена", "горшок", "магазин", "покупка", 
+        "camera", "localplayer", "humanoid", "part", "meshpart", "handle", "rig", "workspace",
+        "hitbox", "collider", "interaction", "bbg", "gui", "sound", "attachment"
     }
     
     for _, badWord in ipairs(blacklist) do
@@ -1522,13 +1513,28 @@ local function isFruit(child)
         end
     end
     
+    -- Проверяем по всей иерархии вверх: если предок технический (забор, рама грядки и т.д.) - игнорируем его детали
+    local currentParent = child.Parent
+    while currentParent and currentParent ~= workspace do
+        local pName = currentParent.Name:lower()
+        local strictParentBlacklist = {"section", "fence", "gate", "border", "spawn", "core", "sign", "scarecrow", "sprinkler", "hologram"}
+        for _, badWord in ipairs(strictParentBlacklist) do
+            if pName:find(badWord) then
+                return false
+            end
+        end
+        currentParent = currentParent.Parent
+    end
+    
     -- Белый список (готовые фрукты, ягоды, редкие растения, пчелы)
     local fruitNames = {
         "fruit", "apple", "banana", "berry", "orange", "lemon", "strawberry", 
         "cherry", "grape", "dragon", "pineapple", "watermelon", "peach", 
         "pear", "plum", "coconut", "melon", "tomato", "carrot", "potato",
         "pumpkin", "cabbage", "wheat", "corn", "gold", "bee", "flower", "rose", "tulip",
-        "фрукт", "яблоко", "банан", "цветок", "роза", "пчела", "морковь", "капуста", "тыква"
+        "фрукт", "яблоко", "банан", "цветок", "роза", "пчела", "морковь", "капуста", "тыква",
+        "beet", "onion", "radish", "turnip", "eggplant", "pepper", "cucumber", "garlic",
+        "king bee", "meow"
     }
     
     local isMatch = false
@@ -1536,6 +1542,17 @@ local function isFruit(child)
         if name:find(fName) then
             isMatch = true
             break
+        end
+    end
+    
+    -- Если сам объект — обычная деталь BasePart внутри Модели, которая совпадает с белым списком (например, листик в "Carrot"),
+    -- мы возвращаем false, чтобы ESP повесился на всю модель, а не на ее отдельные дочерние элементы!
+    if child:IsA("BasePart") and child.Parent and child.Parent:IsA("Model") then
+        local pName = child.Parent.Name:lower()
+        for _, fName in ipairs(fruitNames) do
+            if pName:find(fName) then
+                return false
+            end
         end
     end
     
