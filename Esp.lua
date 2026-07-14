@@ -388,7 +388,7 @@ EmbMinBtn.Activated:Connect(ToggleMinimize)
 local function CloseGui()
     PulseHub:Destroy()
 end
-CloseBtn.Activated:Connect(CloseGui)
+CloseGui.Activated:Connect(CloseGui)
 EmbCloseBtn.Activated:Connect(CloseGui)
 
 local function applyHover(btn, normalColor, hoverColor)
@@ -1707,7 +1707,7 @@ task.spawn(function()
 end)
 
 -- ============================================================================
--- [ОБНОВЛЕНО И ПОЛНОСТЬЮ ИСПРАВЛЕНО] АВТО-ПРОДАЖА ДЛЯ ЛЮБОГО ИНВЕНТАРЯ
+-- [ОБНОВЛЕНО И ИСПРАВЛЕНО] АВТО-ПРОДАЖА ДЛЯ ЛЮБОГО ИНВЕНТАРЯ
 -- ============================================================================
 local autoSellActive = false
 local maxSellAmount = 4 -- Измерение по слотам (например, когда забито 4 слота)
@@ -1777,25 +1777,19 @@ local function findSellTarget()
     return nil
 end
 
--- 3. Выбор опции #1 ["Продать инвентарь"] в окне диалога игры
+-- 3. Выбор опции #1 ["Продать инвентарь"] путем эмуляции клавиши "1"
 local function clickDialogueOption()
-    local playerGui = Players.LocalPlayer:FindFirstChild("PlayerGui")
-    if not playerGui then return false end
-    for _, v in ipairs(playerGui:GetDescendants()) do
-        if not v:IsDescendantOf(PulseHub) and (v:IsA("TextButton") or v:IsA("TextLabel")) then
-            local text = v.Text:lower()
-            if text:find("продать инвентарь") or text:find("продай это") or text:find("#1") then
-                if v:IsA("TextButton") then
-                    activateGameUiButton(v)
-                    return true
-                elseif v.Parent:IsA("TextButton") then
-                    activateGameUiButton(v.Parent)
-                    return true
-                end
-            end
-        end
-    end
-    return false
+    -- Так как это классический Roblox Dialog, эмулируем нажатие клавиши "1"
+    pcall(function()
+        game:GetService("VirtualInputManager"):SendKeyEvent(true, Enum.KeyCode.One, false, game)
+        task.wait(0.05)
+        game:GetService("VirtualInputManager"):SendKeyEvent(false, Enum.KeyCode.One, false, game)
+    end)
+    -- Фаллбэк эмуляция для других типов исполнителей скриптов
+    pcall(function()
+        game:GetService("VirtualUser"):TypeKey("1")
+    end)
+    return true
 end
 
 -- ГЛАВНЫЙ ИСПРАВЛЕННЫЙ ЦИКЛ ПРОДАЖИ (Проверяет кастомные слоты внизу экрана)
@@ -1824,15 +1818,15 @@ task.spawn(function()
                     
                     -- Шаг 1: Жмем верхнюю кнопку игры «Продать» для телепортации к Стивену
                     clickGameSellButton()
-                    task.wait(0.6) -- Ждем завершения телепортации
+                    task.wait(0.8) -- Ждем завершения телепортации
                     
                     -- Шаг 2: Взаимодействуем со Стивеном через промпт «Поговорить»
                     local sellTrigger = findSellTarget()
                     if sellTrigger then
                         firePrompt(sellTrigger)
-                        task.wait(0.5) -- Секунда на открытие диалогового окна
+                        task.wait(0.6) -- Время на открытие облака диалога движком
                         
-                        -- Шаг 3: Автоматически жмем на вариант выборки "#1 [Продать инвентарь]"
+                        -- Шаг 3: Автоматически выбираем вариант #1 ["Продать инвентарь"]
                         clickDialogueOption()
                     end
                 end
