@@ -589,6 +589,7 @@ local Localization = {
         ["Language"] = "Language", ["AntiAFK"] = "Anti-AFK", ["UITheme"] = "UI Theme",
         ["AnimatedWindow"] = "Animated Window", ["Gradient"] = "Gradient Background",
         ["Esp"] = "ESP", ["EspToggle"] = "Enable ESP / Player Roles", ["FruitEsp"] = "Fruit ESP",
+        ["PlayerEsp"] = "Player ESP", ["EspColor"] = "ESP Color",
         ["WalkSpeed"] = "WalkSpeed", ["JumpPower"] = "JumpPower", ["ResetStats"] = "Reset Modifiers",
         ["TeleportToMap"] = "Teleport to Map", ["TeleportToLobby"] = "Teleport to Lobby",
         ["KillAura"] = "Kill Aura", ["SilentAim"] = "Silent Aim"
@@ -601,6 +602,7 @@ local Localization = {
         ["Language"] = "Язык", ["AntiAFK"] = "Анти-АФК", ["UITheme"] = "Тема UI",
         ["AnimatedWindow"] = "Анимированное окно", ["Gradient"] = "Градиентный фон",
         ["Esp"] = "ЕСП", ["EspToggle"] = "Включить ЕСП / Роли игроков", ["FruitEsp"] = "ESP Фруктов",
+        ["PlayerEsp"] = "ESP Игроков", ["EspColor"] = "Цвет ЕСП",
         ["WalkSpeed"] = "Скорость ходьбы", ["JumpPower"] = "Сила прыжка", ["ResetStats"] = "Сбросить модификаторы",
         ["TeleportToMap"] = "Телепортироваться на Карту", ["TeleportToLobby"] = "Телепортироваться в Лобби",
         ["KillAura"] = "Килл Аура", ["SilentAim"] = "Сайлент Аим"
@@ -1441,15 +1443,30 @@ Library:CreateToggle(AutoPage, "KillAura", false, function(state) end)
 Library:CreateToggle(AutoBuyPage, "SilentAim", false, function(state) end)
 
 -- ============================================================================
--- СУБ-ВКЛАДКА ESP С ФУНКЦИОНАЛОМ ESP ФРУКТОВ ДЛЯ GROW A GARDEN 2 [ИСПРАВЛЕНО]
+-- СУБ-ВКЛАДКА ESP С ФУНКЦИОНАЛОМ ESP ИГРОКОВ И ФРУКТОВ [ИСПРАВЛЕНО И ДОПОЛНЕНО]
 -- ============================================================================
 local VisualSections = Library:CreateSubTabs(VisualPage, {
     {Name = "Esp", Icon = "80768064990053", Color = Color3.fromRGB(46, 204, 113)}
 })
 
 local ESP_Enabled = false
+local PlayerESP_Enabled = false
+local PlayerESP_Color = Color3.fromRGB(46, 204, 113) -- По умолчанию зеленый
+
 local fruitHighlights = {}
+local playerHighlights = {}
 local workspaceConnection = nil
+
+local ESP_Colors = {
+    ["Green"] = Color3.fromRGB(46, 204, 113),
+    ["Red"] = Color3.fromRGB(255, 75, 75),
+    ["Blue"] = Color3.fromRGB(52, 152, 219),
+    ["Yellow"] = Color3.fromRGB(241, 196, 15),
+    ["Cyan"] = Color3.fromRGB(0, 255, 255),
+    ["Purple"] = Color3.fromRGB(155, 89, 182),
+    ["White"] = Color3.fromRGB(255, 255, 255),
+    ["Pink"] = Color3.fromRGB(255, 105, 180)
+}
 
 -- Проверка, находится ли фрукт в руках игрока или в рюкзаке (инвентаре)
 local function isHeldOrOwned(child)
@@ -1688,54 +1705,203 @@ local function toggleFruitESP(state)
     end
 end
 
--- Переключатель в суб-вкладке ESP
-Library:CreateToggle(VisualSections["Esp"], "FruitEsp", false, function(state)
-    toggleFruitESP(state)
-end)
+-- ============================================================================
+-- СИСТЕМА PLAYER ESP С ДИНАМИЧЕСКИМ ИЗМЕНЕНИЕМ ЦВЕТА
+-- ============================================================================
 
--- Настройки графического интерфейса
-local SettingSections = Library:CreateSubTabs(SettingsPage, {
-    {Name = "UI", Icon = "85203682050945", Color = Color3.fromRGB(108, 176, 214)},
-    {Name = "Theme", Icon = "78640980615320", Color = Color3.fromRGB(235, 94, 153)}
-})
-
-Library:CreateSlider(SettingSections["UI"], "UISize", 0.5, 1.5, 1.00, function(value) MainScale.Scale = value end)
-Library:CreateSlider(SettingSections["UI"], "UITransparency", 0, 100, 15, function(value) MainFrame.BackgroundTransparency = value / 100 end)
-
-Library:CreateDropdown(SettingSections["UI"], "MenuFont", {"Gotham", "Gotham Bold", "Source Sans", "Roboto", "Roboto Mono", "Ubuntu", "Michroma", "Code", "Fantasy", "Fredoka One"}, "Gotham", function(selectedFont)
-    local targetFont = FontMapping[selectedFont] or Enum.Font.Gotham
-    Library.CurrentFont = targetFont
-    for _, obj in ipairs(PulseHub:GetDescendants()) do
-        if obj:IsA("TextLabel") or obj:IsA("TextButton") or obj:IsA("TextBox") then
-            if obj.Text ~= "—" and obj.Text ~= "×" and obj.Text ~= "▼" and obj.Text ~= "▲" and obj.Text ~= "✓" and obj.Name ~= "FontPreviewLabel" then obj.Font = targetFont end
-        end
+local function removePlayerESP(player)
+    if playerHighlights[player] then
+        local data = playerHighlights[player]
+        if data.Highlight then pcall(function() data.Highlight:Destroy() end) end
+        if data.Billboard then pcall(function() data.Billboard:Destroy() end) end
+        playerHighlights[player] = nil
     end
-end)
-
-Library:CreateDropdown(SettingSections["UI"], "Language", {"English", "Русский"}, "English", function(selectedLang)
-    Library.CurrentLanguage = selectedLang
-    for _, item in ipairs(LocaleObjects) do
-        local translatedText = Localization[selectedLang][item.Key]
-        if translatedText then
-            item.Object.Text = translatedText
-            if item.SearchItem then item.SearchItem.SearchText = NormalizeText(translatedText) end
-        end
-    end
-    TabTitle.Text = Localization[selectedLang][Library.CurrentTabKey] or Library.CurrentTabKey
-end)
-
-Library:CreateToggle(SettingSections["UI"], "AntiAFK", false, function(state) toggleAntiAFK(state) end)
-Library:CreateDropdown(SettingSections["Theme"], "UITheme", ThemeNamesList, "Deep Ocean", function(selectedTheme) Library:UpdateTheme(selectedTheme) end)
-Library:CreateToggle(SettingSections["Theme"], "AnimatedWindow", false, function(state) toggleAnimatedWindow(state) end)
-Library:CreateToggle(SettingSections["Theme"], "Gradient", false, function(state) toggleGradientEffect(state) end)
-
-if allTabs["Main"] and allTabButtons["Main"] then
-    allTabs["Main"].BackgroundTransparency = 0
-    allTabButtons["Main"].TextColor3 = Color3.fromRGB(255, 255, 255)
-    if allTabIcons["Main"] then allTabIcons["Main"].ImageTransparency = 0 end
-    allPages["Main"].Visible = true
-    Library.CurrentTabKey = "Main"
-    TabTitle.Text = Localization[Library.CurrentLanguage]["Main"] or "Main"
 end
 
-Library:UpdateTheme("Deep Ocean")
+local function applyPlayerESP(player)
+    if not PlayerESP_Enabled then return end
+    if player == Players.LocalPlayer then return end
+    
+    local char = player.Character
+    if not char or not char.Parent then return end
+    
+    removePlayerESP(player) -- Очистка старой структуры
+    
+    -- Highlight для обводки персонажа
+    local highlight = Instance.new("Highlight")
+    highlight.Name = "PlayerHighlightESP"
+    highlight.FillColor = PlayerESP_Color
+    highlight.FillTransparency = 0.6
+    highlight.OutlineColor = PlayerESP_Color
+    highlight.OutlineTransparency = 0
+    highlight.Adornee = char
+    highlight.Parent = char
+    
+    local head = char:WaitForChild("Head", 5)
+    if not head then return end
+    
+    -- BillboardGui над головой
+    local billboard = Instance.new("BillboardGui")
+    billboard.Name = "PlayerBillboardESP"
+    billboard.Size = UDim2.new(0, 150, 0, 40)
+    billboard.AlwaysOnTop = true
+    billboard.StudsOffset = Vector3.new(0, 3, 0)
+    billboard.Adornee = head
+    billboard.Parent = head
+    
+    local textLabel = Instance.new("TextLabel")
+    textLabel.BackgroundTransparency = 1
+    textLabel.Size = UDim2.new(1, 0, 1, 0)
+    textLabel.TextColor3 = PlayerESP_Color
+    textLabel.TextSize = 12
+    textLabel.Font = Enum.Font.GothamBold
+    textLabel.TextStrokeTransparency = 0.2
+    textLabel.TextStrokeColor3 = Color3.fromRGB(0, 0, 0)
+    textLabel.Parent = billboard
+    
+    playerHighlights[player] = {
+        Highlight = highlight,
+        Billboard = billboard,
+        Label = textLabel,
+        Character = char
+    }
+end
+
+local function setupPlayer(player)
+    if player == Players.LocalPlayer then return end
+    
+    player.CharacterAdded:Connect(function(char)
+        task.wait(0.5) -- Ожидаем респавна
+        if PlayerESP_Enabled then
+            pcall(applyPlayerESP, player)
+        end
+    end)
+    
+    player.CharacterRemoving:Connect(function()
+        removePlayerESP(player)
+    end)
+    
+    if player.Character then
+        pcall(applyPlayerESP, player)
+    end
+end
+
+-- Первичное навешивание событий на игроков
+for _, p in ipairs(Players:GetPlayers()) do
+    setupPlayer(p)
+end
+Players.PlayerAdded:Connect(setupPlayer)
+Players.PlayerRemoving:Connect(removePlayerESP)
+
+-- Функция обновления цвета для уже активных ЕСП
+local function updatePlayerESPColors()
+    for player, data in pairs(playerHighlights) do
+        if data.Highlight then
+            data.Highlight.FillColor = PlayerESP_Color
+            data.Highlight.OutlineColor = PlayerESP_Color
+        end
+        if data.Label then
+            data.Label.TextColor3 = PlayerESP_Color
+        end
+    end
+end
+
+-- Постоянный цикл обновления дистанций
+task.spawn(function()
+    while true do
+        task.wait(0.1)
+        if PlayerESP_Enabled then
+            local localChar = Players.LocalPlayer.Character
+            local localHRP = localChar and localChar:FindFirstChild("HumanoidRootPart")
+            if localHRP then
+                local localPos = localHRP.Position
+                for player, data in pairs(playerHighlights) do
+                    if player.Character and player.Character:FindFirstChild("HumanoidRootPart") and data.Label and data.Label.Parent then
+                        local targetPos = player.Character.HumanoidRootPart.Position
+                        local distance = math.round((targetPos - localPos).Magnitude)
+                        -- По ТЗ: сверху Ник, снизу расстояние в метрах
+                        data.Label.Text = string.format("%s\n%d m", player.DisplayName or player.Name, distance)
+                    end
+                end
+            end
+        end
+    end
+end)
+
+-- Создаем элементы в GUI интерфейсе
+Library:CreateToggle(VisualSections["Esp"], "PlayerEsp", false, function(state)
+    PlayerESP_Enabled = state
+    if PlayerESP_Enabled then
+        for _, p in ipairs(Players:GetPlayers()) do
+            pcall(applyPlayerESP, p)
+        end
+    else
+        for p, _ in pairs(playerHighlights) do
+            removePlayerESP(p)
+        end
+    end
+end)
+
+Library:CreateDropdown(VisualSections["Esp"], "EspColor", {"Green", "Red", "Blue", "Yellow", "Cyan", "Purple", "White", "Pink"}, "Green", function(selected)
+    PlayerESP_Color = ESP_Colors[selected] or Color3.fromRGB(46, 204, 113)
+    updatePlayerESPColors()
+end)
+
+Library:CreateToggle(VisualSections["Esp"], "FruitEsp", false, toggleFruitESP)
+
+-- ============================================================================
+-- НАСТРОЙКИ СТАНДАРТНОЙ КНОПКИ ВЫХОДА И ЯЗЫКА
+-- ============================================================================
+local UISizeLabel = Instance.new("TextLabel")
+local UITransparencyLabel = Instance.new("TextLabel")
+local MenuFontLabel = Instance.new("TextLabel")
+local LanguageLabel = Instance.new("TextLabel")
+local AntiAfkLabel = Instance.new("TextLabel")
+local AnimatedLabel = Instance.new("TextLabel")
+local GradientLabel = Instance.new("TextLabel")
+local ThemeLabel = Instance.new("TextLabel")
+
+local function UpdateLocalization()
+    local locale = Localization[Library.CurrentLanguage]
+    if not locale then return end
+    
+    for _, item in ipairs(LocaleObjects) do
+        if item.Object and item.Object.Parent then
+            local translated = locale[item.Key] or item.Key
+            if item.Object:IsA("TextButton") or item.Object:IsA("TextLabel") then
+                item.Object.Text = translated
+            end
+            if item.SearchItem then
+                item.SearchItem.SearchText = NormalizeText(translated)
+            end
+        end
+    end
+    
+    if TabTitle and Library.CurrentTabKey then
+        TabTitle.Text = locale[Library.CurrentTabKey] or Library.CurrentTabKey
+    end
+end
+
+local SettingsSections = Library:CreateSubTabs(SettingsPage, {
+    {Name = "UI", Icon = "117996761927034"},
+    {Name = "Theme", Icon = "78910169210318"}
+})
+
+Library:CreateDropdown(SettingsSections["UI"], "Language", {"English", "Русский"}, "English", function(selected)
+    Library.CurrentLanguage = selected
+    UpdateLocalization()
+end)
+
+Library:CreateToggle(SettingsSections["UI"], "AntiAFK", false, toggleAntiAFK)
+
+Library:CreateDropdown(SettingsSections["Theme"], "UITheme", ThemeNamesList, "Deep Ocean", function(selected)
+    Library:UpdateTheme(selected)
+end)
+
+Library:CreateToggle(SettingsSections["Theme"], "AnimatedWindow", false, toggleAnimatedWindow)
+Library:CreateToggle(SettingsSections["Theme"], "Gradient", false, toggleGradientEffect)
+
+task.spawn(function()
+    UpdateLocalization()
+    Library:UpdateTheme("Deep Ocean")
+end)
