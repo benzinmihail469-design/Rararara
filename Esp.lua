@@ -1442,7 +1442,7 @@ end)
 Library:CreateToggle(AutoBuyPage, "SilentAim", false, function(state) end)
 
 -- ============================================================================
--- [ИСПРАВЛЕНО] УЛЬТРА-ОПТИМИЗИРОВАННЫЙ AUTO HARVEST (БЕЗЛИМИТНАЯ ДИСТАНЦИЯ)
+-- [ИСПРАВЛЕНО] УЛЬТРА-ОПТИМИЗИРОВАННЫЙ БЕСКОНТАКТНЫЙ СБОР НА ЛЮБОЙ ДИСТАНЦИИ (600+ СТУДОВ)
 -- ============================================================================
 local autoHarvestActive = false
 Library:CreateToggle(AutoPage, "AutoHarvest", false, function(state)
@@ -1451,21 +1451,8 @@ end)
 
 local cachedPlot = nil
 local lastPlotCheck = 0
-local firedPrompts = {}
 
--- Периодическая очистка удаленных промптов из кеша кулдауна
-task.spawn(function()
-    while true do
-        task.wait(5)
-        for prompt, _ in pairs(firedPrompts) do
-            if not prompt or not prompt.Parent then
-                firedPrompts[prompt] = nil
-            end
-        end
-    end
-end)
-
--- Функция надежного поиска грядки игрока с оптимизацией
+-- Функция быстрого поиска твоей грядки
 local function getPlayerPlot()
     local player = Players.LocalPlayer
     if cachedPlot and cachedPlot.Parent then
@@ -1478,7 +1465,6 @@ local function getPlayerPlot()
     end
     lastPlotCheck = now
     
-    -- Проверка стандартных мест спавна участков грядок
     local commonFolders = {"Plots", "Gardens", "Beds", "PlayerPlots", "Tycoons", "Lands", "PlotsFolder", "TycoonFolder"}
     for _, folderName in ipairs(commonFolders) do
         local folder = workspace:FindFirstChild(folderName)
@@ -1498,7 +1484,6 @@ local function getPlayerPlot()
         end
     end
     
-    -- Проверка прямого расположения в workspace
     local direct = workspace:FindFirstChild(player.Name) or workspace:FindFirstChild(player.DisplayName)
     if direct then
         cachedPlot = direct
@@ -1508,15 +1493,13 @@ local function getPlayerPlot()
     return nil
 end
 
--- Распознавание промптов, отвечающих за сбор урожая
+-- Проверка промптов на сбор урожая
 local function isCropPrompt(prompt)
     if not prompt:IsA("ProximityPrompt") then return false end
-    
     local action = prompt.ActionText:lower()
     local object = prompt.ObjectText:lower()
     local name = prompt.Name:lower()
     
-    -- Расширенный словарь ключевых слов сбора (RU / EN)
     local keywords = {
         "harvest", "pick", "collect", "gather", "grab", "shake", "cut", "reap",
         "собрать", "урожай", "снять", "взять", "сорвать", "собирать", "срезать"
@@ -1527,59 +1510,102 @@ local function isCropPrompt(prompt)
             return true
         end
     end
-    
     return false
 end
 
--- Основной цикл бесперебойного авто-сбора
+-- Основной цикл авто-сбора урожая (Флеш-Телепорт)
 task.spawn(function()
     while true do
-        task.wait(0.1) -- Моментальный отклик
+        task.wait(0.2)
         if autoHarvestActive then
             pcall(function()
-                local plot = getPlayerPlot()
-                local targets = {}
+                local player = Players.LocalPlayer
+                local char = player.Character
+                local hrp = char and char:FindFirstChild("HumanoidRootPart")
                 
-                if plot then
-                    -- Сканируем только свой плот (0 лагов для процессора)
-                    for _, desc in ipairs(plot:GetDescendants()) do
-                        if desc:IsA("ProximityPrompt") and isCropPrompt(desc) then
-                            table.insert(targets, desc)
-                        end
-                    end
-                else
-                    -- Запасной вариант: сканирование всего workspace
-                    for _, desc in ipairs(workspace:GetDescendants()) do
-                        if desc:IsA("ProximityPrompt") and isCropPrompt(desc) then
-                            table.insert(targets, desc)
-                        end
-                    end
-                end
-                
-                local now = os.clock()
-                for _, prompt in ipairs(targets) do
-                    if not autoHarvestActive then break end
+                if hrp then
+                    local plot = getPlayerPlot()
                     
-                    local lastFired = firedPrompts[prompt] or 0
-                    local duration = prompt.HoldDuration or 0
-                    
-                    -- Защита от спама и прерывания зажатия
-                    if now - lastFired > (duration + 1.2) then
-                        firedPrompts[prompt] = now
+                    if plot then
+                        -- Способ 1: Если у нас есть грядка, собираем все промпты на ней с использованием Флеш-ТП
+                        local targets = {}
+                        for _, desc in ipairs(plot:GetDescendants()) do
+                            if desc:IsA("ProximityPrompt") and isCropPrompt(desc) then
+                                table.insert(targets, desc)
+                            end
+                        end
                         
-                        -- Обход лимита дистанции на стороне клиента
-                        prompt.RequiresLineOfSight = false
-                        prompt.MaxActivationDistance = 999999
+                        if #targets > 0 then
+                            local oldCFrame = hrp.CFrame
+                            local oldGravity = workspace.Gravity
+                            workspace.Gravity = 0 -- Чтобы избежать падения под карту
+                            
+                            -- Быстро облетаем грядки и жмем
+                            for _, prompt in ipairs(targets) do
+                                if not autoHarvestActive then break end
+                                if prompt and prompt.Parent and prompt.Parent:IsA("BasePart") then
+                                    -- Смещаем СFrame персонажа к грядке на 0.05 сек для регистрации
+                                    hrp.CFrame = prompt.Parent.CFrame * CFrame.new(0, 3, 0)
+                                    task.wait(0.05)
+                                    
+                                    prompt.RequiresLineOfSight = false
+                                    prompt.MaxActivationDistance = 1000
+                                    
+                                    if fireproximityprompt then
+                                        fireproximityprompt(prompt)
+                                    else
+                                        prompt:InputHoldBegin()
+                                        task.wait(prompt.HoldDuration + 0.02)
+                                        prompt:InputHoldEnd()
+                                    end
+                                end
+                            end
+                            
+                            task.wait(0.05)
+                            hrp.CFrame = oldCFrame -- Возвращаем тебя на исходную точку
+                            workspace.Gravity = oldGravity
+                        end
+                    else
+                        -- Способ 2 (Резервный): Если грядка не найдена в системе, собираем все в радиусе 600 студов
+                        local targets = {}
+                        for _, desc in ipairs(workspace:GetDescendants()) do
+                            if desc:IsA("ProximityPrompt") and isCropPrompt(desc) then
+                                local dist = (desc.Parent.Position - hrp.Position).Magnitude
+                                if dist <= 600 then
+                                    table.insert(targets, desc)
+                                end
+                            end
+                        end
                         
-                        -- Активация промпта
-                        if fireproximityprompt then
-                            fireproximityprompt(prompt)
-                        else
-                            task.spawn(function()
-                                prompt:InputHoldBegin()
-                                task.wait(duration + 0.05)
-                                prompt:InputHoldEnd()
-                            end)
+                        if #targets > 0 then
+                            local oldCFrame = hrp.CFrame
+                            local oldGravity = workspace.Gravity
+                            workspace.Gravity = 0
+                            
+                            -- Собираем по очереди, максимум 15 штук за один пролет для стабильности
+                            local limit = math.min(#targets, 15)
+                            for i = 1, limit do
+                                local prompt = targets[i]
+                                if not autoHarvestActive then break end
+                                if prompt and prompt.Parent and prompt.Parent:IsA("BasePart") then
+                                    hrp.CFrame = prompt.Parent.CFrame * CFrame.new(0, 3, 0)
+                                    task.wait(0.06)
+                                    
+                                    prompt.RequiresLineOfSight = false
+                                    prompt.MaxActivationDistance = 1000
+                                    
+                                    if fireproximityprompt then
+                                        fireproximityprompt(prompt)
+                                    else
+                                        prompt:InputHoldBegin()
+                                        task.wait(prompt.HoldDuration + 0.02)
+                                        prompt:InputHoldEnd()
+                                    end
+                                end
+                            end
+                            task.wait(0.05)
+                            hrp.CFrame = oldCFrame
+                            workspace.Gravity = oldGravity
                         end
                     end
                 end
@@ -1609,14 +1635,12 @@ local ESP_Colors = {
     ["Pink"] = Color3.fromRGB(255, 105, 180)
 }
 
--- Применение подсветки на игрока
 local function applyPlayerESP(player)
     if player == Players.LocalPlayer then return end
     
     local function setupHighlight(character)
         if not character then return end
         
-        -- Создаем Highlight (обводку персонажа)
         local highlight = character:FindFirstChild("PlayerHighlightESP")
         if not highlight then
             highlight = Instance.new("Highlight")
@@ -1631,7 +1655,6 @@ local function applyPlayerESP(player)
             highlight.FillColor = PlayerESP_Color
         end
         
-        -- Никнейм над головой
         local head = character:WaitForChild("Head", 5)
         if head and not character:FindFirstChild("PlayerLabelESP") then
             local billboard = Instance.new("BillboardGui")
@@ -1667,7 +1690,6 @@ local function applyPlayerESP(player)
     player.CharacterAdded:Connect(setupHighlight)
 end
 
--- Удаление подсветки с игрока
 local function removePlayerESP(player)
     if player.Character then
         local hl = player.Character:FindFirstChild("PlayerHighlightESP")
@@ -1677,7 +1699,6 @@ local function removePlayerESP(player)
     end
 end
 
--- Обновление состояния ЕСП для всех игроков
 local function updatePlayerESP()
     for _, player in ipairs(Players:GetPlayers()) do
         if PlayerESP_Enabled then
@@ -1688,13 +1709,11 @@ local function updatePlayerESP()
     end
 end
 
--- Тумблер включения ЕСП Игроков
 Library:CreateToggle(VisualSections["Esp"], "PlayerEsp", false, function(state)
     PlayerESP_Enabled = state
     updatePlayerESP()
 end)
 
--- Выбор цветов для ЕСП
 local colorNames = {}
 for name, _ in pairs(ESP_Colors) do table.insert(colorNames, name) end
 table.sort(colorNames)
@@ -1707,7 +1726,6 @@ Library:CreateDropdown(VisualSections["Esp"], "EspColor", colorNames, "Green", f
     end
 end)
 
--- Отслеживание захода новых игроков для работы ЕСП
 Players.PlayerAdded:Connect(function(player)
     if PlayerESP_Enabled then
         player.CharacterAdded:Connect(function(char)
