@@ -1718,7 +1718,7 @@ task.spawn(function()
 end)
 
 -- ============================================================================
--- [НОВОЕ] ФУНКЦИЯ AUTO SELL И СЛАЙДЕР КОЛИЧЕСТВА ПРОДАЖИ
+-- [ИСПРАВЛЕНО И ПОЛНОСТЬЮ ОБНОВЛЕНО] ИНТЕЛЛЕКТУАЛЬНЫЙ AUTO SELL С ИНТЕРФЕЙСОМ
 -- ============================================================================
 local autoSellActive = false
 local maxSellAmount = 100
@@ -1731,12 +1731,12 @@ Library:CreateSlider(AutoPage, "MaxSellAmount", 1, 100, 100, function(value)
     maxSellAmount = value
 end)
 
--- Поиск магазина продажи урожая
+-- Поиск физического магазина/NPC на карте
 local function findSellTarget()
     for _, obj in ipairs(workspace:GetDescendants()) do
         if obj:IsA("BasePart") or obj:IsA("Model") then
             local name = obj.Name:lower()
-            if name:find("sell") or name:find("merchant") or name:find("shop") or name:find("прода") then
+            if name:find("sell") or name:find("merchant") or name:find("shop") or name:find("прода") or name:find("торгов") then
                 local prompt = obj:FindFirstChildWhichIsA("ProximityPrompt") or obj:FindFirstAncestorWhichIsA("ProximityPrompt")
                 if prompt then return prompt end
                 
@@ -1746,12 +1746,12 @@ local function findSellTarget()
         end
     end
     
-    -- Поиск резервных ProximityPrompt по тексту продажи
+    -- Резервный поиск ProximityPrompt по тексту продажи
     for _, prompt in ipairs(workspace:GetDescendants()) do
         if prompt:IsA("ProximityPrompt") then
             local actionText = prompt.ActionText:lower()
             local objectText = prompt.ObjectText:lower()
-            if actionText:find("sell") or objectText:find("sell") or actionText:find("продать") then
+            if actionText:find("sell") or objectText:find("sell") or actionText:find("продать") or actionText:find("разговор") then
                 return prompt
             end
         end
@@ -1759,47 +1759,64 @@ local function findSellTarget()
     return nil
 end
 
--- Луп автоматической продажи
+-- Автоматическое нажатие на кнопки продажи в интерфейсах (и верхней панели игры, и в диалогах NPC)
+local function clickGameSellButtons()
+    local playerGui = Players.LocalPlayer:FindFirstChild("PlayerGui")
+    if not playerGui then return end
+    
+    for _, desc in ipairs(playerGui:GetDescendants()) do
+        if desc:IsA("TextButton") or desc:IsA("ImageButton") then
+            local txt = desc:IsA("TextButton") and desc.Text:lower() or ""
+            local name = desc.Name:lower()
+            
+            -- Проверяем текст реплики NPC или кнопки UI (например: "Продать инвентарь", "#1", "Продать")
+            if txt:find("продать") or txt:find("инвентар") or txt:find("продай") or txt:find("#1") or txt:find("sell") then
+                if desc.Visible and desc.AbsoluteSize.X > 0 then
+                    pcall(function() desc:Activate() end)
+                end
+            -- Если кнопка называется в честь продажи/диалога
+            elseif name:find("sell") or name:find("prodat") or name:find("dialog") or name:find("option") then
+                if desc.Visible and desc.AbsoluteSize.X > 0 then
+                    pcall(function() desc:Activate() end)
+                end
+            end
+        elseif desc:IsA("TextLabel") then
+            -- Если кнопка состоит из фрейма и текстовой метки внутри
+            local txt = desc.Text:lower()
+            if txt:find("продать") or txt:find("инвентар") or txt:find("#1") or txt:find("sell") then
+                local parent = desc.Parent
+                if parent and (parent:IsA("TextButton") or parent:IsA("ImageButton") or parent:IsA("GuiButton")) then
+                    if parent.Visible and parent.AbsoluteSize.X > 0 then
+                        pcall(function() parent:Activate() end)
+                    end
+                end
+            end
+        end
+    end
+end
+
+-- Постоянный цикл автоматической сдачи/продажи урожая
 task.spawn(function()
     while true do
-        task.wait(1.5)
+        task.wait(2.5) -- Проверяем каждые 2.5 секунды для максимальной стабильности
         if autoSellActive then
             pcall(function()
-                local player = Players.LocalPlayer
-                local backpack = player:FindFirstChild("Backpack")
-                local character = player.Character
+                -- 1. Пробуем мгновенно кликнуть верхнюю панель "Продать" игры, если она активна
+                clickGameSellButtons()
                 
-                -- Считаем количество фруктов/урожая в инвентаре
-                local crops = {}
-                local count = 0
-                if backpack then
-                    for _, tool in ipairs(backpack:GetChildren()) do
-                        if tool:IsA("Tool") and not tool:FindFirstChild("Equipped") then
-                            table.insert(crops, tool)
-                            count = count + 1
-                        end
-                    end
-                end
-                if character then
-                    for _, tool in ipairs(character:GetChildren()) do
-                        if tool:IsA("Tool") then
-                            table.insert(crops, tool)
-                            count = count + 1
-                        end
+                -- 2. Дополнительно взаимодействуем со стендом/NPC на карте
+                local sellTrigger = findSellTarget()
+                if sellTrigger then
+                    if sellTrigger:IsA("ProximityPrompt") then
+                        firePrompt(sellTrigger)
+                    elseif sellTrigger:IsA("ClickDetector") then
+                        fireClick(sellTrigger)
                     end
                 end
                 
-                -- Если количество фруктов достигло лимита — продаем
-                if count >= maxSellAmount or count >= 100 then
-                    local sellTrigger = findSellTarget()
-                    if sellTrigger then
-                        if sellTrigger:IsA("ProximityPrompt") then
-                            firePrompt(sellTrigger)
-                        elseif sellTrigger:IsA("ClickDetector") then
-                            fireClick(sellTrigger)
-                        end
-                    end
-                end
+                -- 3. Даем диалоговому окну 0.3 сек на появление и принудительно прожимаем пункт выбора реплики
+                task.wait(0.3)
+                clickGameSellButtons()
             end)
         end
     end
