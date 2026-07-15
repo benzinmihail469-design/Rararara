@@ -1637,176 +1637,204 @@ local function getHarvestables()
             end
         end
     end
-
-    if #list == 0 then
-        for _, desc in ipairs(workspace:GetDescendants()) do
-            if desc:IsA("ProximityPrompt") and desc.Enabled then
-                if isHarvestable(desc) and isInRange(desc) then
-                    table.insert(list, desc)
-                end
-            end
-        end
-    end
-
     return list
 end
 
-local function firePrompt(prompt)
-    if not prompt or not prompt.Enabled then return end
-    prompt.RequiresLineOfSight = false
-    prompt.MaxActivationDistance = 999999 -- Увеличиваем радиус
-    if fireproximityprompt then
-        fireproximityprompt(prompt)
-    else
-        task.spawn(function()
-            prompt:InputHoldBegin()
-            task.wait(prompt.HoldDuration + 0.05)
-            prompt:InputHoldEnd()
-        end)
-    end
-end
+-- =========================================================================
+-- [РЕАЛИЗАЦИЯ ИСПРАВЛЕНИЙ И НОВЫХ ФУНКЦИЙ]
+-- =========================================================================
 
-local function fireClick(clickDec)
-    if not clickDec then return end
-    if fireclickdetector then
-        fireclickdetector(clickDec)
-    end
-end
-
+-- 1. Цикл для Авто-Сбора Урожая (Auto-Harvest background loop)
 task.spawn(function()
     while true do
-        task.wait(math.max(0.05, harvestDelayTime))
+        task.wait(0.1)
         if autoHarvestActive then
-            pcall(function()
-                local player = Players.LocalPlayer
-                local character = player.Character
-                local rootPart = character and character:FindFirstChild("HumanoidRootPart")
-                if not rootPart then return end
-
-                local harvestables = getHarvestables()
-                for _, desc in ipairs(harvestables) do
-                    if not autoHarvestActive then break end
-                    if desc:IsA("ProximityPrompt") then
-                        firePrompt(desc)
-                    elseif desc:IsA("ClickDetector") then
-                        fireClick(desc)
+            local targets = getHarvestables()
+            for _, target in ipairs(targets) do
+                if not autoHarvestActive then break end
+                pcall(function()
+                    if target:IsA("ProximityPrompt") then
+                        if fireproximityprompt then
+                            fireproximityprompt(target)
+                        else
+                            -- Безопасный фоллбек вызова для читов без fireproximityprompt
+                            target:InputBegan(Players.LocalPlayer)
+                        end
+                    elseif target:IsA("ClickDetector") then
+                        if fireclickdetector then
+                            fireclickdetector(target)
+                        end
                     end
-                end
-            end)
-        end
-    end
-end)
-
-----------------------------------------------------------
--- НОВАЯ СИСТЕМА БЕСШУМНОЙ АВТО-ПРОДАЖИ БЕЗ ДИАЛОГОВ --
-----------------------------------------------------------
-local autoSellActive = false
-Library:CreateToggle(AutoPage, "AutoSell", false, function(state)
-    autoSellActive = state
-end)
-
--- Умный поиск зоны продажи (сканирует всю карту)
-local function findSellPart()
-    local keywords = {"sell", "продажа", "сдать", "dropoff", "bin", "merchant", "billy", "collector", "deposit", "shop", "магазин"}
-    for _, obj in ipairs(workspace:GetDescendants()) do
-        if obj:IsA("BasePart") and obj.CanTouch then
-            local objName = obj.Name:lower()
-            for _, word in ipairs(keywords) do
-                if objName:find(word) then
-                    if not obj:IsDescendantOf(Players.LocalPlayer.Character) then
-                        return obj
-                    end
-                end
+                end)
+                task.wait(harvestDelayTime)
             end
         end
     end
-    return nil
-end
+end)
+
+-- 2. Дистанционная продажа (Auto Sell)
+local autoSellActive = false
+local maxSellAmount = 50
+
+Library:CreateToggle(AutoBuyPage, "AutoSell", false, function(state)
+    autoSellActive = state
+end)
+
+Library:CreateSlider(AutoBuyPage, "MaxSellAmount", 1, 100, 50, function(value)
+    maxSellAmount = value
+end)
 
 task.spawn(function()
     while true do
-        task.wait(1.5)
+        task.wait(1)
         if autoSellActive then
             pcall(function()
-                local player = Players.LocalPlayer
-                local character = player.Character
-                if not character or not character:FindFirstChild("Humanoid") or not character:FindFirstChild("HumanoidRootPart") then return end
-                
-                local rootPart = character.HumanoidRootPart
-                local humanoid = character.Humanoid
-                local ignoreList = {"water", "hoe", "shovel", "rake", "seed", "pot", "hammer", "axe", "pickaxe", "basket", "лейка", "лопата", "грабли", "семена", "корзина", "топор", "кирка"}
-                
-                -- Собираем список плодов в Backpack
-                local fruitsToSell = {}
-                for _, item in ipairs(player.Backpack:GetChildren()) do
-                    if item:IsA("Tool") then
-                        local itemName = item.Name:lower()
-                        local isTool = false
-                        for _, ignore in ipairs(ignoreList) do
-                            if itemName:find(ignore) then
-                                isTool = true
-                                break
+                for _, desc in ipairs(workspace:GetDescendants()) do
+                    if not autoSellActive then break end
+                    if desc:IsA("ProximityPrompt") and desc.Enabled then
+                        local name = desc.Name:lower()
+                        local actText = desc.ActionText:lower()
+                        local objText = desc.ObjectText:lower()
+                        if name:find("sell") or actText:find("sell") or objText:find("sell") or name:find("продать") or actText:find("продать") then
+                            if fireproximityprompt then
+                                fireproximityprompt(desc)
+                            else
+                                desc:InputBegan(Players.LocalPlayer)
                             end
-                        end
-                        if not isTool then
-                            table.insert(fruitsToSell, item)
+                            task.wait(0.5)
                         end
                     end
-                end
-
-                -- Если есть фрукты, запускаем продажу в обход диалогов
-                if #fruitsToSell > 0 then
-                    local sellPart = findSellPart()
-                    
-                    for _, fruit in ipairs(fruitsToSell) do
-                        if not autoSellActive then break end
-                        
-                        -- Берем фрукт в руку
-                        humanoid:EquipTool(fruit)
-                        task.wait(0.12)
-                        
-                        -- Симулируем быстрое физическое касание зоны продажи
-                        if sellPart then
-                            local handle = fruit:FindFirstChild("Handle") or fruit:FindFirstChildWhichIsA("BasePart")
-                            if handle then
-                                if firetouchinterest then
-                                    firetouchinterest(handle, sellPart, 0)
-                                    task.wait(0.05)
-                                    firetouchinterest(handle, sellPart, 1)
-                                else
-                                    -- Альтернатива для простых инжекторов: CFrame-касание на доли секунды
-                                    local originalCF = handle.CFrame
-                                    handle.CFrame = sellPart.CFrame
-                                    task.wait(0.08)
-                                    handle.CFrame = originalCF
-                                end
-                            end
-                        end
-                    end
-                    
-                    -- Метод с триггером Remote событий напрямую (на случай, если игра работает по сессионным релейшенам)
-                    for _, obj in ipairs(game:GetService("ReplicatedStorage"):GetDescendants()) do
-                        if obj:IsA("RemoteEvent") or obj:IsA("RemoteFunction") then
-                            local name = obj.Name:lower()
-                            if (name:find("sell") or name:find("продать") or name:find("claim") or name:find("merchant") or name:find("billy")) and not name:find("teleport") then
-                                if obj:IsA("RemoteEvent") then
-                                    obj:FireServer()
-                                else
-                                    task.spawn(function() pcall(function() obj:InvokeServer() end) end)
-                                end
-                            end
-                        end
-                    end
-                    
-                    -- Убираем из рук то, что осталось
-                    pcall(function()
-                        humanoid:UnequipTools()
-                    end)
                 end
             end)
         end
     end
 end)
 
--- Инициализация темы при запуске
+-- 3. Настройка ESP игроков (VisualPage)
+local espActive = false
+local espColor = Color3.fromRGB(0, 206, 209)
+local espHighlights = {}
+
+local function applyESP(player)
+    if player == Players.LocalPlayer then return end
+    
+    local function setupCharacter(char)
+        if not espActive then return end
+        task.wait(0.5)
+        if not char:Parent then return end
+        
+        if espHighlights[player] then
+            espHighlights[player]:Destroy()
+            espHighlights[player] = nil
+        end
+        
+        local highlight = Instance.new("Highlight")
+        highlight.Name = "PulseESP"
+        highlight.FillColor = espColor
+        highlight.FillTransparency = 0.5
+        highlight.OutlineColor = Color3.new(1, 1, 1)
+        highlight.OutlineTransparency = 0
+        highlight.Adornee = char
+        highlight.Parent = SafeParent
+        
+        espHighlights[player] = highlight
+    end
+    
+    if player.Character then
+        setupCharacter(player.Character)
+    end
+    player.CharacterAdded:Connect(setupCharacter)
+end
+
+local function removeESP(player)
+    if espHighlights[player] then
+        espHighlights[player]:Destroy()
+        espHighlights[player] = nil
+    end
+end
+
+Library:CreateToggle(VisualPage, "EspToggle", false, function(state)
+    espActive = state
+    if espActive then
+        for _, player in ipairs(Players:GetPlayers()) do
+            applyESP(player)
+        end
+    else
+        for player, _ in pairs(espHighlights) do
+            removeESP(player)
+        end
+    end
+end)
+
+local espColorsList = {"Cyan", "Red", "Green", "Blue", "Yellow", "White", "Pink"}
+local espColorMap = {
+    ["Cyan"] = Color3.fromRGB(0, 206, 209),
+    ["Red"] = Color3.fromRGB(255, 50, 50),
+    ["Green"] = Color3.fromRGB(50, 255, 50),
+    ["Blue"] = Color3.fromRGB(50, 50, 255),
+    ["Yellow"] = Color3.fromRGB(255, 255, 50),
+    ["White"] = Color3.fromRGB(255, 255, 255),
+    ["Pink"] = Color3.fromRGB(255, 105, 180)
+}
+Library:CreateDropdown(VisualPage, "EspColor", espColorsList, "Cyan", function(colorName)
+    espColor = espColorMap[colorName] or Color3.fromRGB(0, 206, 209)
+    for _, hl in pairs(espHighlights) do
+        if hl and hl.Parent then
+            hl.FillColor = espColor
+        end
+    end
+end)
+
+Players.PlayerAdded:Connect(function(player)
+    if espActive then
+        applyESP(player)
+    end
+end)
+Players.PlayerRemoving:Connect(removeESP)
+
+-- 4. Настройки Интерфейса (SettingsPage)
+Library:CreateToggle(SettingsPage, "AntiAFK", false, function(state)
+    toggleAntiAFK(state)
+end)
+
+Library:CreateToggle(SettingsPage, "AnimatedWindow", false, function(state)
+    toggleAnimatedWindow(state)
+end)
+
+Library:CreateToggle(SettingsPage, "Gradient", false, function(state)
+    toggleGradientEffect(state)
+end)
+
+Library:CreateSlider(SettingsPage, "UITransparency", 0, 100, 15, function(value)
+    currentTransparency = value / 100
+    if MainFrame then
+        MainFrame.BackgroundTransparency = currentTransparency
+    end
+end)
+
+Library:CreateSlider(SettingsPage, "UISize", 50, 150, 100, function(value)
+    if MainScale then
+        MainScale.Scale = value / 100
+    end
+end)
+
+local langList = {"Русский", "English"}
+Library:CreateDropdown(SettingsPage, "Language", langList, "Русский", function(selectedLang)
+    Library.CurrentLanguage = selectedLang
+    for _, loc in ipairs(LocaleObjects) do
+        local key = loc.Key
+        local newText = Localization[selectedLang][key] or key
+        if loc.Object:IsA("TextLabel") or loc.Object:IsA("TextButton") then
+            loc.Object.Text = newText
+        end
+        if loc.SearchItem then
+            loc.SearchItem.SearchText = NormalizeText(newText)
+        end
+    end
+    if allPages[Library.CurrentTabKey] then
+        TabTitle.Text = Localization[selectedLang][Library.CurrentTabKey] or Library.CurrentTabKey
+    end
+end)
+
+-- Инициализация стартовой темы
 Library:UpdateTheme("Deep Ocean")
