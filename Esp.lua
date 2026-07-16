@@ -2058,4 +2058,4 @@ Library:CreateDropdown(SettingsPage, "Language", langList, "Русский", fun
     end
 end)
 
-Library:UpdateTheme("Deep Ocean")
+Library:UpdateTheme("Deep Ocean") 
