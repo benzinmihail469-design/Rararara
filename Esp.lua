@@ -1413,7 +1413,6 @@ local PlayersPage = Library:CreatePage("Players", "99904215381150", 5)
 local VisualPage = Library:CreatePage("Visual", "78910169210318", 6)
 local SettingsPage = Library:CreatePage("Settings", "117996761927034", 99)
 
--- ВЫБОР И СОХРАНЕНИЕ ЦВЕТА МЕНЮ (ТЕМЫ)
 Library:CreateDropdown(SettingsPage, "Theme", ThemeNamesList, "Deep Ocean", function(selectedTheme)
     Library:UpdateTheme(selectedTheme)
 end)
@@ -1642,9 +1641,6 @@ local function getHarvestables()
     return list
 end
 
--- =========================================================================
--- [АВТО-СБОР УРОЖАЯ]
--- =========================================================================
 task.spawn(function()
     while true do
         task.wait(0.1)
@@ -1671,14 +1667,9 @@ task.spawn(function()
     end
 end)
 
--- =========================================================================
--- [АВТО-ПРОДАЖА (УЛУЧШЕННАЯ ВЕРСИЯ)]
--- =========================================================================
-
 local autoSellActive = false
 local maxSellAmount = 50
 
--- Функция для поиска объектов продажи
 local function findSellTargets()
     local targets = {}
     local player = Players.LocalPlayer
@@ -1692,7 +1683,6 @@ local function findSellTargets()
         local isSellable = false
         local targetPart = nil
         
-        -- Проверка ProximityPrompt
         if desc:IsA("ProximityPrompt") and desc.Enabled then
             local name = desc.Name:lower()
             local actText = desc.ActionText and desc.ActionText:lower() or ""
@@ -1726,7 +1716,6 @@ local function findSellTargets()
             end
         end
         
-        -- Проверка ClickDetector
         if desc:IsA("ClickDetector") then
             local parent = desc.Parent
             if parent then
@@ -1738,7 +1727,6 @@ local function findSellTargets()
             end
         end
         
-        -- Проверка Tool или объект
         if desc:IsA("Tool") or desc:IsA("Part") then
             local name = desc.Name:lower()
             if name:find("sell") or name:find("прода") or name:find("trade") then
@@ -1765,14 +1753,12 @@ local function findSellTargets()
     return targets
 end
 
--- Функция для выполнения продажи
 local function executeSell(targetObj)
     if not targetObj then return false end
     
     local success = false
     
     pcall(function()
-        -- Метод 1: ProximityPrompt
         if targetObj:IsA("ProximityPrompt") then
             if fireproximityprompt then
                 fireproximityprompt(targetObj)
@@ -1799,7 +1785,6 @@ local function executeSell(targetObj)
             end
         end
         
-        -- Метод 2: ClickDetector
         if targetObj:IsA("ClickDetector") then
             if fireclickdetector then
                 fireclickdetector(targetObj)
@@ -1815,7 +1800,6 @@ local function executeSell(targetObj)
             end
         end
         
-        -- Метод 3: RemoteEvent
         local parent = targetObj.Parent
         while parent do
             if parent:IsA("BasePart") or parent:IsA("Model") then
@@ -1840,7 +1824,6 @@ local function executeSell(targetObj)
             parent = parent.Parent
         end
         
-        -- Метод 4: Клавиша E
         if targetObj:IsA("ProximityPrompt") then
             local virtualInput = game:GetService("VirtualInputManager")
             if virtualInput then
@@ -1856,7 +1839,6 @@ local function executeSell(targetObj)
     return success
 end
 
--- Создаем элементы Auto Sell
 Library:CreateToggle(AutoBuyPage, "AutoSell", false, function(state)
     autoSellActive = state
     if state then
@@ -1870,7 +1852,6 @@ Library:CreateSlider(AutoBuyPage, "MaxSellAmount", 1, 100, 50, function(value)
     maxSellAmount = value
 end)
 
--- Основной цикл Auto Sell
 task.spawn(function()
     local sellCount = 0
     local lastSellTime = 0
@@ -1912,7 +1893,6 @@ task.spawn(function()
     end
 end)
 
--- Функция поиска RemoteEvent
 local function detectSellRemotes()
     local remotes = {}
     for _, obj in ipairs(workspace:GetDescendants()) do
@@ -1927,7 +1907,6 @@ local function detectSellRemotes()
     return remotes
 end
 
--- Кнопки для отладки
 Library:CreateButton(AutoBuyPage, "Find Sell Remotes", function()
     local remotes = detectSellRemotes()
     if #remotes > 0 then
@@ -1954,10 +1933,6 @@ Library:CreateButton(AutoBuyPage, "Manual Sell", function()
         print("✅ Ручная продажа: " .. sold .. " предметов")
     end)
 end)
-
--- =========================================================================
--- [ESP (ВИЗУАЛЫ)]
--- =========================================================================
 
 local espActive = false
 local espColor = Color3.fromRGB(0, 206, 209)
@@ -2040,10 +2015,6 @@ Players.PlayerAdded:Connect(function(player)
 end)
 Players.PlayerRemoving:Connect(removeESP)
 
--- =========================================================================
--- [НАСТРОЙКИ UI]
--- =========================================================================
-
 Library:CreateToggle(SettingsPage, "AntiAFK", false, function(state)
     toggleAntiAFK(state)
 end)
@@ -2087,5 +2058,4 @@ Library:CreateDropdown(SettingsPage, "Language", langList, "Русский", fun
     end
 end)
 
--- Инициализация стартовой темы
 Library:UpdateTheme("Deep Ocean")
