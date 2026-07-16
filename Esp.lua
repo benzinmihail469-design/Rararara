@@ -1,4 +1,3 @@
--- 67--
 local CustomIconID = "76579925188009"
 local TweenService = game:GetService("TweenService")
 local UserInputService = game:GetService("UserInputService")
@@ -9,7 +8,7 @@ local VirtualUser = game:GetService("VirtualUser")
 local Lighting = game:GetService("Lighting")
 
 local startTime = os.clock()
-local currentTransparency = 0.15 -- Переменная для динамического сохранения прозрачности
+local currentTransparency = 0.15
 
 local function formatSessionTime(seconds)
     local hours = math.floor(seconds / 3600)
@@ -427,7 +426,7 @@ end)
 
 local Library = {}
 Library.CurrentFont = Enum.Font.Gotham
-Library.CurrentLanguage = "Русский" -- Установил русский по умолчанию
+Library.CurrentLanguage = "Русский"
 Library.CurrentTabKey = "Main"
 
 Library.TrackedMainBg = {}
@@ -597,7 +596,8 @@ local Localization = {
         ["TeleportToMap"] = "Teleport to Map", ["TeleportToLobby"] = "Teleport to Lobby",
         ["SilentAim"] = "Silent Aim", ["AutoHarvest"] = "Auto Harvest",
         ["HarvestDelay"] = "Harvest Delay (sec)", ["AutoSell"] = "Auto Sell Fruits",
-        ["MaxSellAmount"] = "Max Sell Amount"
+        ["MaxSellAmount"] = "Max Sell Amount", ["Find Sell Remotes"] = "Find Sell Remotes",
+        ["Manual Sell"] = "Manual Sell"
     },
     ["Русский"] = {
         ["Main"] = "Главная", ["Teleport"] = "Телепорт", ["Auto"] = "Авто", ["Auto buy"] = "Авто-покупка",
@@ -612,7 +612,8 @@ local Localization = {
         ["TeleportToMap"] = "Телепорт на Карту", ["TeleportToLobby"] = "Телепорт в Лобби",
         ["SilentAim"] = "Сайлент Аим", ["AutoHarvest"] = "Авто-Сбор Урожая",
         ["HarvestDelay"] = "Задержка сбора (сек)", ["AutoSell"] = "Дистанционная Авто-Продажа",
-        ["MaxSellAmount"] = "Макс. продажа за раз"
+        ["MaxSellAmount"] = "Макс. продажа за раз", ["Find Sell Remotes"] = "Найти RemoteEvent",
+        ["Manual Sell"] = "Ручная продажа"
     }
 }
 
@@ -1642,10 +1643,8 @@ local function getHarvestables()
 end
 
 -- =========================================================================
--- [РЕАЛИЗАЦИЯ ИСПРАВЛЕНИЙ И НОВЫХ ФУНКЦИЙ]
+-- [АВТО-СБОР УРОЖАЯ]
 -- =========================================================================
-
--- 1. Цикл для Авто-Сбора Урожая (Auto-Harvest background loop)
 task.spawn(function()
     while true do
         task.wait(0.1)
@@ -1658,7 +1657,6 @@ task.spawn(function()
                         if fireproximityprompt then
                             fireproximityprompt(target)
                         else
-                            -- Безопасный фоллбек вызова для читов без fireproximityprompt
                             target:InputBegan(Players.LocalPlayer)
                         end
                     elseif target:IsA("ClickDetector") then
@@ -1673,45 +1671,294 @@ task.spawn(function()
     end
 end)
 
--- 2. Дистанционная продажа (Auto Sell)
+-- =========================================================================
+-- [АВТО-ПРОДАЖА (УЛУЧШЕННАЯ ВЕРСИЯ)]
+-- =========================================================================
+
 local autoSellActive = false
 local maxSellAmount = 50
 
+-- Функция для поиска объектов продажи
+local function findSellTargets()
+    local targets = {}
+    local player = Players.LocalPlayer
+    local character = player.Character
+    local rootPart = character and character:FindFirstChild("HumanoidRootPart")
+    if not rootPart then return targets end
+    
+    for _, desc in ipairs(workspace:GetDescendants()) do
+        if not autoSellActive then break end
+        
+        local isSellable = false
+        local targetPart = nil
+        
+        -- Проверка ProximityPrompt
+        if desc:IsA("ProximityPrompt") and desc.Enabled then
+            local name = desc.Name:lower()
+            local actText = desc.ActionText and desc.ActionText:lower() or ""
+            local objText = desc.ObjectText and desc.ObjectText:lower() or ""
+            
+            local sellKeywords = {
+                "sell", "sale", "продать", "продажа", "продам", "торговля", 
+                "trade", "market", "shop", "магазин", "лавка", "bazar"
+            }
+            
+            for _, kw in ipairs(sellKeywords) do
+                if name:find(kw) or actText:find(kw) or objText:find(kw) then
+                    isSellable = true
+                    targetPart = desc.Parent
+                    break
+                end
+            end
+            
+            if not isSellable and desc.Parent then
+                local attrs = desc.Parent:GetAttributes()
+                for attrName, attrValue in pairs(attrs) do
+                    local attrLower = attrName:lower()
+                    if attrLower:find("sell") or attrLower:find("продаж") then
+                        if type(attrValue) == "boolean" and attrValue then
+                            isSellable = true
+                            targetPart = desc.Parent
+                            break
+                        end
+                    end
+                end
+            end
+        end
+        
+        -- Проверка ClickDetector
+        if desc:IsA("ClickDetector") then
+            local parent = desc.Parent
+            if parent then
+                local name = parent.Name:lower()
+                if name:find("sell") or name:find("продат") or name:find("trade") or name:find("shop") then
+                    isSellable = true
+                    targetPart = parent
+                end
+            end
+        end
+        
+        -- Проверка Tool или объект
+        if desc:IsA("Tool") or desc:IsA("Part") then
+            local name = desc.Name:lower()
+            if name:find("sell") or name:find("прода") or name:find("trade") then
+                isSellable = true
+                targetPart = desc
+            end
+        end
+        
+        if isSellable and targetPart then
+            local pos = targetPart:IsA("BasePart") and targetPart.Position or 
+                       (targetPart:FindFirstChildWhichIsA("BasePart") and targetPart:FindFirstChildWhichIsA("BasePart").Position)
+            
+            if pos and (pos - rootPart.Position).Magnitude <= 400 then
+                table.insert(targets, {
+                    Object = desc,
+                    Parent = targetPart,
+                    Distance = (pos - rootPart.Position).Magnitude
+                })
+            end
+        end
+    end
+    
+    table.sort(targets, function(a, b) return a.Distance < b.Distance end)
+    return targets
+end
+
+-- Функция для выполнения продажи
+local function executeSell(targetObj)
+    if not targetObj then return false end
+    
+    local success = false
+    
+    pcall(function()
+        -- Метод 1: ProximityPrompt
+        if targetObj:IsA("ProximityPrompt") then
+            if fireproximityprompt then
+                fireproximityprompt(targetObj)
+                success = true
+                return
+            end
+            
+            local success2, result = pcall(function()
+                targetObj:InputBegan(Players.LocalPlayer)
+                return true
+            end)
+            if success2 and result then 
+                success = true
+                return
+            end
+            
+            local holdDur = targetObj.HoldDuration or 0
+            if holdDur > 0 then
+                targetObj:InputBegan(Players.LocalPlayer)
+                task.wait(holdDur + 0.1)
+                targetObj:InputEnded(Players.LocalPlayer)
+                success = true
+                return
+            end
+        end
+        
+        -- Метод 2: ClickDetector
+        if targetObj:IsA("ClickDetector") then
+            if fireclickdetector then
+                fireclickdetector(targetObj)
+                success = true
+                return
+            end
+            
+            local mouse = Players.LocalPlayer:GetMouse()
+            if mouse then
+                mouse.Button1Click:Fire(targetObj.Parent or targetObj)
+                success = true
+                return
+            end
+        end
+        
+        -- Метод 3: RemoteEvent
+        local parent = targetObj.Parent
+        while parent do
+            if parent:IsA("BasePart") or parent:IsA("Model") then
+                local remote = parent:FindFirstChild("SellRemote") or 
+                               parent:FindFirstChild("TradeRemote") or
+                               parent:FindFirstChild("MarketRemote") or
+                               parent:FindFirstChild("SellEvent")
+                
+                if remote and remote:IsA("RemoteEvent") then
+                    remote:FireServer()
+                    success = true
+                    return
+                end
+                
+                local func = parent:FindFirstChild("SellFunction")
+                if func and func:IsA("BindableFunction") then
+                    func:Invoke()
+                    success = true
+                    return
+                end
+            end
+            parent = parent.Parent
+        end
+        
+        -- Метод 4: Клавиша E
+        if targetObj:IsA("ProximityPrompt") then
+            local virtualInput = game:GetService("VirtualInputManager")
+            if virtualInput then
+                virtualInput:SendKeyEvent(true, Enum.KeyCode.E, false, game)
+                task.wait(0.1)
+                virtualInput:SendKeyEvent(false, Enum.KeyCode.E, false, game)
+                success = true
+                return
+            end
+        end
+    end)
+    
+    return success
+end
+
+-- Создаем элементы Auto Sell
 Library:CreateToggle(AutoBuyPage, "AutoSell", false, function(state)
     autoSellActive = state
+    if state then
+        print("🔄 Auto Sell включен!")
+    else
+        print("⏹ Auto Sell выключен")
+    end
 end)
 
 Library:CreateSlider(AutoBuyPage, "MaxSellAmount", 1, 100, 50, function(value)
     maxSellAmount = value
 end)
 
+-- Основной цикл Auto Sell
 task.spawn(function()
+    local sellCount = 0
+    local lastSellTime = 0
+    
     while true do
-        task.wait(1)
+        task.wait(0.3)
+        
         if autoSellActive then
+            local currentTime = os.clock()
+            
+            if currentTime - lastSellTime < 0.2 then
+                continue
+            end
+            
             pcall(function()
-                for _, desc in ipairs(workspace:GetDescendants()) do
+                local targets = findSellTargets()
+                local soldThisCycle = 0
+                
+                for _, target in ipairs(targets) do
                     if not autoSellActive then break end
-                    if desc:IsA("ProximityPrompt") and desc.Enabled then
-                        local name = desc.Name:lower()
-                        local actText = desc.ActionText:lower()
-                        local objText = desc.ObjectText:lower()
-                        if name:find("sell") or actText:find("sell") or objText:find("sell") or name:find("продать") or actText:find("продать") then
-                            if fireproximityprompt then
-                                fireproximityprompt(desc)
-                            else
-                                desc:InputBegan(Players.LocalPlayer)
-                            end
-                            task.wait(0.5)
-                        end
+                    if soldThisCycle >= maxSellAmount then break end
+                    
+                    local success = executeSell(target.Object)
+                    if success then
+                        soldThisCycle = soldThisCycle + 1
+                        sellCount = sellCount + 1
+                        lastSellTime = currentTime
+                        task.wait(0.15)
                     end
                 end
+                
+                if soldThisCycle > 0 then
+                    print("💰 Продано: " .. soldThisCycle .. " предметов. Всего: " .. sellCount)
+                end
             end)
+        else
+            sellCount = 0
         end
     end
 end)
 
--- 3. Настройка ESP игроков (VisualPage)
+-- Функция поиска RemoteEvent
+local function detectSellRemotes()
+    local remotes = {}
+    for _, obj in ipairs(workspace:GetDescendants()) do
+        if obj:IsA("RemoteEvent") or obj:IsA("RemoteFunction") then
+            local name = obj.Name:lower()
+            if name:find("sell") or name:find("trade") or name:find("shop") or 
+               name:find("market") or name:find("прода") or name:find("торг") then
+                table.insert(remotes, obj)
+            end
+        end
+    end
+    return remotes
+end
+
+-- Кнопки для отладки
+Library:CreateButton(AutoBuyPage, "Find Sell Remotes", function()
+    local remotes = detectSellRemotes()
+    if #remotes > 0 then
+        print("🔍 Найдены RemoteEvent продажи:")
+        for _, remote in ipairs(remotes) do
+            print("   - " .. remote:GetFullName())
+        end
+    else
+        print("❌ RemoteEvent продажи не найдены")
+    end
+end)
+
+Library:CreateButton(AutoBuyPage, "Manual Sell", function()
+    pcall(function()
+        local targets = findSellTargets()
+        local sold = 0
+        for _, target in ipairs(targets) do
+            if sold >= 10 then break end
+            if executeSell(target.Object) then
+                sold = sold + 1
+                task.wait(0.1)
+            end
+        end
+        print("✅ Ручная продажа: " .. sold .. " предметов")
+    end)
+end)
+
+-- =========================================================================
+-- [ESP (ВИЗУАЛЫ)]
+-- =========================================================================
+
 local espActive = false
 local espColor = Color3.fromRGB(0, 206, 209)
 local espHighlights = {}
@@ -1793,7 +2040,10 @@ Players.PlayerAdded:Connect(function(player)
 end)
 Players.PlayerRemoving:Connect(removeESP)
 
--- 4. Настройки Интерфейса (SettingsPage)
+-- =========================================================================
+-- [НАСТРОЙКИ UI]
+-- =========================================================================
+
 Library:CreateToggle(SettingsPage, "AntiAFK", false, function(state)
     toggleAntiAFK(state)
 end)
