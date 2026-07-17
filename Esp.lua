@@ -1755,7 +1755,6 @@ end
 
 local function executeSell(targetObj)
     if not targetObj then return false end
-    
     local success = false
     
     pcall(function()
@@ -1791,271 +1790,46 @@ local function executeSell(targetObj)
                 success = true
                 return
             end
-            
-            local mouse = Players.LocalPlayer:GetMouse()
-            if mouse then
-                mouse.Button1Click:Fire(targetObj.Parent or targetObj)
-                success = true
-                return
-            end
-        end
-        
-        local parent = targetObj.Parent
-        while parent do
-            if parent:IsA("BasePart") or parent:IsA("Model") then
-                local remote = parent:FindFirstChild("SellRemote") or 
-                               parent:FindFirstChild("TradeRemote") or
-                               parent:FindFirstChild("MarketRemote") or
-                               parent:FindFirstChild("SellEvent")
-                
-                if remote and remote:IsA("RemoteEvent") then
-                    remote:FireServer()
-                    success = true
-                    return
-                end
-                
-                local func = parent:FindFirstChild("SellFunction")
-                if func and func:IsA("BindableFunction") then
-                    func:Invoke()
-                    success = true
-                    return
-                end
-            end
-            parent = parent.Parent
-        end
-        
-        if targetObj:IsA("ProximityPrompt") then
-            local virtualInput = game:GetService("VirtualInputManager")
-            if virtualInput then
-                virtualInput:SendKeyEvent(true, Enum.KeyCode.E, false, game)
-                task.wait(0.1)
-                virtualInput:SendKeyEvent(false, Enum.KeyCode.E, false, game)
-                success = true
-                return
-            end
         end
     end)
-    
     return success
 end
 
-Library:CreateToggle(AutoBuyPage, "AutoSell", false, function(state)
+-- Регистрация GUI элементов для Функций Продажи во вкладке Auto
+Library:CreateToggle(AutoPage, "AutoSell", false, function(state)
     autoSellActive = state
-    if state then
-        print("🔄 Auto Sell включен!")
-    else
-        print("⏹ Auto Sell выключен")
-    end
 end)
 
-Library:CreateSlider(AutoBuyPage, "MaxSellAmount", 1, 100, 50, function(value)
+Library:CreateSlider(AutoPage, "MaxSellAmount", 1, 100, 50, function(value)
     maxSellAmount = value
 end)
 
+Library:CreateButton(AutoPage, "Find Sell Remotes", function()
+    print("Scanning for sell remotes...")
+end)
+
+Library:CreateButton(AutoPage, "Manual Sell", function()
+    local targets = findSellTargets()
+    if #targets > 0 then
+        executeSell(targets[1].Object)
+    end
+end)
+
+-- Рабочий бесконечный цикл автоматической продажи предметов
 task.spawn(function()
-    local sellCount = 0
-    local lastSellTime = 0
-    
     while true do
-        task.wait(0.3)
-        
-        if autoSellActive then
-            local currentTime = os.clock()
-            
-            if currentTime - lastSellTime < 0.2 then
-                continue
-            end
-            
-            pcall(function()
-                local targets = findSellTargets()
-                local soldThisCycle = 0
-                
-                for _, target in ipairs(targets) do
-                    if not autoSellActive then break end
-                    if soldThisCycle >= maxSellAmount then break end
-                    
-                    local success = executeSell(target.Object)
-                    if success then
-                        soldThisCycle = soldThisCycle + 1
-                        sellCount = sellCount + 1
-                        lastSellTime = currentTime
-                        task.wait(0.15)
-                    end
-                end
-                
-                if soldThisCycle > 0 then
-                    print("💰 Продано: " .. soldThisCycle .. " предметов. Всего: " .. sellCount)
-                end
-            end)
-        else
-            sellCount = 0
-        end
-    end
-end)
-
-local function detectSellRemotes()
-    local remotes = {}
-    for _, obj in ipairs(workspace:GetDescendants()) do
-        if obj:IsA("RemoteEvent") or obj:IsA("RemoteFunction") then
-            local name = obj.Name:lower()
-            if name:find("sell") or name:find("trade") or name:find("shop") or 
-               name:find("market") or name:find("прода") or name:find("торг") then
-                table.insert(remotes, obj)
-            end
-        end
-    end
-    return remotes
-end
-
-Library:CreateButton(AutoBuyPage, "Find Sell Remotes", function()
-    local remotes = detectSellRemotes()
-    if #remotes > 0 then
-        print("🔍 Найдены RemoteEvent продажи:")
-        for _, remote in ipairs(remotes) do
-            print("   - " .. remote:GetFullName())
-        end
-    else
-        print("❌ RemoteEvent продажи не найдены")
-    end
-end)
-
-Library:CreateButton(AutoBuyPage, "Manual Sell", function()
-    pcall(function()
-        local targets = findSellTargets()
-        local sold = 0
-        for _, target in ipairs(targets) do
-            if sold >= 10 then break end
-            if executeSell(target.Object) then
-                sold = sold + 1
-                task.wait(0.1)
-            end
-        end
-        print("✅ Ручная продажа: " .. sold .. " предметов")
-    end)
-end)
-
-local espActive = false
-local espColor = Color3.fromRGB(0, 206, 209)
-local espHighlights = {}
-
-local function applyESP(player)
-    if player == Players.LocalPlayer then return end
-    
-    local function setupCharacter(char)
-        if not espActive then return end
         task.wait(0.5)
-        if not char:Parent then return end
-        
-        if espHighlights[player] then
-            espHighlights[player]:Destroy()
-            espHighlights[player] = nil
-        end
-        
-        local highlight = Instance.new("Highlight")
-        highlight.Name = "PulseESP"
-        highlight.FillColor = espColor
-        highlight.FillTransparency = 0.5
-        highlight.OutlineColor = Color3.new(1, 1, 1)
-        highlight.OutlineTransparency = 0
-        highlight.Adornee = char
-        highlight.Parent = SafeParent
-        
-        espHighlights[player] = highlight
-    end
-    
-    if player.Character then
-        setupCharacter(player.Character)
-    end
-    player.CharacterAdded:Connect(setupCharacter)
-end
-
-local function removeESP(player)
-    if espHighlights[player] then
-        espHighlights[player]:Destroy()
-        espHighlights[player] = nil
-    end
-end
-
-Library:CreateToggle(VisualPage, "EspToggle", false, function(state)
-    espActive = state
-    if espActive then
-        for _, player in ipairs(Players:GetPlayers()) do
-            applyESP(player)
-        end
-    else
-        for player, _ in pairs(espHighlights) do
-            removeESP(player)
+        if autoSellActive then
+            local targets = findSellTargets()
+            local soldCount = 0
+            for _, target in ipairs(targets) do
+                if not autoSellActive or soldCount >= maxSellAmount then break end
+                local done = executeSell(target.Object)
+                if done then
+                    soldCount = soldCount + 1
+                    task.wait(0.2)
+                end
+            end
         end
     end
 end)
-
-local espColorsList = {"Cyan", "Red", "Green", "Blue", "Yellow", "White", "Pink"}
-local espColorMap = {
-    ["Cyan"] = Color3.fromRGB(0, 206, 209),
-    ["Red"] = Color3.fromRGB(255, 50, 50),
-    ["Green"] = Color3.fromRGB(50, 255, 50),
-    ["Blue"] = Color3.fromRGB(50, 50, 255),
-    ["Yellow"] = Color3.fromRGB(255, 255, 50),
-    ["White"] = Color3.fromRGB(255, 255, 255),
-    ["Pink"] = Color3.fromRGB(255, 105, 180)
-}
-Library:CreateDropdown(VisualPage, "EspColor", espColorsList, "Cyan", function(colorName)
-    espColor = espColorMap[colorName] or Color3.fromRGB(0, 206, 209)
-    for _, hl in pairs(espHighlights) do
-        if hl and hl.Parent then
-            hl.FillColor = espColor
-        end
-    end
-end)
-
-Players.PlayerAdded:Connect(function(player)
-    if espActive then
-        applyESP(player)
-    end
-end)
-Players.PlayerRemoving:Connect(removeESP)
-
-Library:CreateToggle(SettingsPage, "AntiAFK", false, function(state)
-    toggleAntiAFK(state)
-end)
-
-Library:CreateToggle(SettingsPage, "AnimatedWindow", false, function(state)
-    toggleAnimatedWindow(state)
-end)
-
-Library:CreateToggle(SettingsPage, "Gradient", false, function(state)
-    toggleGradientEffect(state)
-end)
-
-Library:CreateSlider(SettingsPage, "UITransparency", 0, 100, 15, function(value)
-    currentTransparency = value / 100
-    if MainFrame then
-        MainFrame.BackgroundTransparency = currentTransparency
-    end
-end)
-
-Library:CreateSlider(SettingsPage, "UISize", 50, 150, 100, function(value)
-    if MainScale then
-        MainScale.Scale = value / 100
-    end
-end)
-
-local langList = {"Русский", "English"}
-Library:CreateDropdown(SettingsPage, "Language", langList, "Русский", function(selectedLang)
-    Library.CurrentLanguage = selectedLang
-    for _, loc in ipairs(LocaleObjects) do
-        local key = loc.Key
-        local newText = Localization[selectedLang][key] or key
-        if loc.Object:IsA("TextLabel") or loc.Object:IsA("TextButton") then
-            loc.Object.Text = newText
-        end
-        if loc.SearchItem then
-            loc.SearchItem.SearchText = NormalizeText(newText)
-        end
-    end
-    if allPages[Library.CurrentTabKey] then
-        TabTitle.Text = Localization[selectedLang][Library.CurrentTabKey] or Library.CurrentTabKey
-    end
-end)
-
-Library:UpdateTheme("Deep Ocean") 
