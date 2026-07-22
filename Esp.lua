@@ -1438,92 +1438,113 @@ Library:CreateButton(TeleportPage, "TeleportToLobby", function()
 end)
 
 -- ============================================================================
--- ОПТИМИЗИРОВАННЫЙ AUTO FARM WINS
+-- ОБНОВЛЕННЫЙ AUTO FARM WINS С ПОИСКОМ win(цифра)/stage(цифра) И ПОДЪЕМОМ
 -- ============================================================================
 local autoFarmWinsActive = false
-local selectedStage = "Final Win"
+local selectedStage = ""
 local currentTargetPart = nil
 
+-- Функция поиска STRICTLY ТОЛЬКО win(цифры) и stage(цифры)
 local function GetDynamicStages()
     local stagesData = {}
     local stagesNames = {}
+    local added = {}
     
     for _, obj in ipairs(workspace:GetDescendants()) do
         if obj:IsA("BasePart") or obj:IsA("Model") then
             local name = obj.Name:lower()
-            if name:find("stage") or name:find("checkpoint") or name:find("этап") then
-                local num = name:match("%d+")
-                if num then
-                    table.insert(stagesData, {Name = obj.Name, Num = tonumber(num)})
+            -- Проверка на точное соответствие формата stage(цифра) или win(цифра)
+            local isStage = name:match("stage%s*%d+") or name:match("^stage%d+$")
+            local isWin = name:match("win%s*%d+") or name:match("^win%d+$") or (name == "win")
+            
+            if isStage or isWin then
+                if not added[obj.Name] then
+                    added[obj.Name] = true
+                    local num = tonumber(name:match("%d+")) or 9999
+                    table.insert(stagesData, {Name = obj.Name, Num = num})
                 end
             end
         end
     end
     
-    local added = {}
     table.sort(stagesData, function(a, b) return a.Num < b.Num end)
     for _, data in ipairs(stagesData) do
-        if not added[data.Name] then
-            added[data.Name] = true
-            table.insert(stagesNames, data.Name)
-        end
+        table.insert(stagesNames, data.Name)
     end
     
     if #stagesNames == 0 then
-        stagesNames = {"Stage 1", "Stage 2", "Stage 3", "Stage 4", "Stage 5"}
+        stagesNames = {"Stage1", "Win1"}
     end
     
-    table.insert(stagesNames, "Final Win")
     return stagesNames
 end
 
 local dynamicStagesList = GetDynamicStages()
+selectedStage = dynamicStagesList[1] or "Stage1"
 
--- Исправленный поиск целевого объекта: строгая проверка на название "win"
 local function findTargetStage(stageName)
-    if stageName == "Final Win" then
-        for _, obj in ipairs(workspace:GetDescendants()) do
-            if (obj:IsA("BasePart") or obj:IsA("Model")) and obj.Name:lower() == "win" then
-                return obj:IsA("BasePart") and obj or (obj.PrimaryPart or obj:FindFirstChildWhichIsA("BasePart"))
-            end
-        end
-    else
-        for _, obj in ipairs(workspace:GetDescendants()) do
-            if obj.Name == stageName and (obj:IsA("BasePart") or obj:IsA("Model")) then
-                return obj:IsA("BasePart") and obj or (obj.PrimaryPart or obj:FindFirstChildWhichIsA("BasePart"))
-            end
+    for _, obj in ipairs(workspace:GetDescendants()) do
+        if obj.Name == stageName and (obj:IsA("BasePart") or obj:IsA("Model")) then
+            return obj:IsA("BasePart") and obj or (obj.PrimaryPart or obj:FindFirstChildWhichIsA("BasePart"))
         end
     end
     return nil
 end
 
-local function SafeTweenTeleport(targetCFrame)
+-- Система безопасного авто-полета на высоте с плавным спуском
+local function SafeTweenHoverTeleport(targetCFrame)
     local character = Players.LocalPlayer.Character
     if not character or not character:FindFirstChild("HumanoidRootPart") then return end
     
     local hrp = character.HumanoidRootPart
-    local distance = (hrp.Position - targetCFrame.Position).Magnitude
-    local speed = 120 
-    local tweenTime = math.clamp(distance / speed, 0.1, 15)
+    local HOVER_HEIGHT = 150 -- Высота полёта, где лава/цунами не убивает
+    local APPROACH_RADIUS = 35 -- Расстояние, когда начинает опускаться к точке
     
-    local tweenInfo = TweenInfo.new(tweenTime, Enum.EasingStyle.Linear)
-    local tween = TweenService:Create(hrp, tweenInfo, {CFrame = targetCFrame + Vector3.new(0, 3.5, 0)})
+    local targetPos = targetCFrame.Position
+    local safeY = math.max(hrp.Position.Y, targetPos.Y) + HOVER_HEIGHT
     
+    -- Включаем отключение коллизии (Noclip) и обнуляем гравитацию/скорость падающего персонажа
     local noclipConnection = RunService.Stepped:Connect(function()
         for _, part in ipairs(character:GetDescendants()) do
-            if part:IsA("BasePart") and part.CanCollide then
+            if part:IsA("BasePart") then
                 part.CanCollide = false
             end
         end
         hrp.Velocity = Vector3.new(0, 0, 0)
     end)
     
-    tween:Play()
-    tween.Completed:Wait()
+    -- 1. Поднимаем персонажа на безопасную высоту над лавой
+    local currentPos = hrp.Position
+    local upPos = Vector3.new(currentPos.X, safeY, currentPos.Z)
+    if (upPos - currentPos).Magnitude > 5 then
+        local upTween = TweenService:Create(hrp, TweenInfo.new(0.4, Enum.EasingStyle.Quart, Enum.EasingDirection.Out), {CFrame = CFrame.new(upPos)})
+        upTween:Play()
+        upTween.Completed:Wait()
+    end
+    
+    -- 2. Летим по воздуху на безопасной высоте к точке над stage/win
+    local hoverTargetPos = Vector3.new(targetPos.X, safeY, targetPos.Z)
+    local horizontalDist = (Vector3.new(hrp.Position.X, 0, hrp.Position.Z) - Vector3.new(targetPos.X, 0, targetPos.Z)).Magnitude
+    
+    if horizontalDist > APPROACH_RADIUS then
+        local flySpeed = 130
+        local travelTime = math.clamp(horizontalDist / flySpeed, 0.1, 12)
+        local flyTween = TweenService:Create(hrp, TweenInfo.new(travelTime, Enum.EasingStyle.Linear), {CFrame = CFrame.new(hoverTargetPos)})
+        flyTween:Play()
+        flyTween.Completed:Wait()
+    end
+    
+    -- 3. Как только подлетели близко к точке — опускаем персонажа на stage/win
+    local finalCFrame = targetCFrame + Vector3.new(0, 3.5, 0)
+    local descendDist = (hrp.Position - finalCFrame.Position).Magnitude
+    local descendTween = TweenService:Create(hrp, TweenInfo.new(math.clamp(descendDist / 120, 0.1, 2), Enum.EasingStyle.Quad, Enum.EasingDirection.Out), {CFrame = finalCFrame})
+    descendTween:Play()
+    descendTween.Completed:Wait()
+    
     noclipConnection:Disconnect()
 end
 
-Library:CreateDropdown(AutoPage, "SelectStage", dynamicStagesList, dynamicStagesList[1] or "Final Win", function(option)
+Library:CreateDropdown(AutoPage, "SelectStage", dynamicStagesList, dynamicStagesList[1] or "Stage1", function(option)
     selectedStage = option
     currentTargetPart = findTargetStage(selectedStage)
 end)
@@ -1554,15 +1575,17 @@ task.spawn(function()
                     if hrp then
                         local targetCFrame = currentTargetPart:IsA("BasePart") and currentTargetPart.CFrame or currentTargetPart:GetPivot()
                         
-                        SafeTweenTeleport(targetCFrame)
+                        -- Вызываем функцию полета сверху и плавной посадки
+                        SafeTweenHoverTeleport(targetCFrame)
                         
+                        -- Фиксируем касание чекпоинта
                         if firetouchinterest and currentTargetPart:IsA("BasePart") then
                             firetouchinterest(hrp, currentTargetPart, 0)
                             task.wait(0.1)
                             firetouchinterest(hrp, currentTargetPart, 1)
                         end
                         
-                        task.wait(0.5)
+                        task.wait(0.4)
                     end
                 end
             end)
