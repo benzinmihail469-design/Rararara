@@ -32,7 +32,6 @@ local function toggleAntiAFK(state)
     end
 end
 
--- Автоматически включаем Anti-AFK для защиты от вылета
 toggleAntiAFK(true)
 
 local SafeParent = nil
@@ -1441,13 +1440,12 @@ Library:CreateButton(TeleportPage, "TeleportToLobby", function()
 end)
 
 -- ============================================================================
--- ОБНОВЛЕННЫЙ AUTO FARM WINS (30 СТУДОВ, ТОЛЬКО WINBLOCK, ПОЛНОЕ ОПУСКАНИЕ)
+-- ОБНОВЛЕННЫЙ И ИСПРАВЛЕННЫЙ AUTO FARM WINS
 -- ============================================================================
 local autoFarmWinsActive = false
 local selectedStage = ""
-local currentTargetPart = nil
 
--- Точный поиск только блоков Winblock(цифра)
+-- Гибкий поиск абсолютно всех Winblock и зон финиша
 local function GetDynamicStages()
     local stagesData = {}
     local stagesNames = {}
@@ -1456,8 +1454,10 @@ local function GetDynamicStages()
     for _, obj in ipairs(workspace:GetDescendants()) do
         if obj:IsA("BasePart") or obj:IsA("Model") then
             local name = obj.Name
-            -- Строгий фильтр: берем ТОЛЬКО объекты, начинающиеся с Winblock + цифра
-            if string.match(name:lower(), "^winblock%s*%d+$") then
+            local lowerName = name:lower()
+            
+            -- Ищет winblock, win, stage, finish и номера этапов
+            if string.find(lowerName, "win") or string.find(lowerName, "stage") or string.find(lowerName, "finish") then
                 if not added[name] then
                     added[name] = true
                     local num = tonumber(name:match("%d+")) or 9999
@@ -1486,28 +1486,26 @@ local function findTargetStage(stageName)
     if not stageName then return nil end
     local lowerTarget = stageName:lower()
 
-    -- Ищем точное совпадение
     for _, obj in ipairs(workspace:GetDescendants()) do
-        if obj.Name:lower() == lowerTarget and (obj:IsA("BasePart") or obj:IsA("Model")) then
-            return obj:IsA("BasePart") and obj or (obj.PrimaryPart or obj:FindFirstChildWhichIsA("BasePart"))
+        if obj.Name:lower() == lowerTarget then
+            return obj
         end
     end
-    
     return nil
 end
 
--- Безопасный и плавный полет на высоте 30 студов
-local function SafeTweenHoverTeleport(targetCFrame)
+-- Безопасное пошаговое перемещение (не вызывает кик за полет)
+local function SafeTeleportToTarget(targetObj)
     local character = Players.LocalPlayer.Character
     if not character or not character:FindFirstChild("HumanoidRootPart") then return end
     
     local hrp = character.HumanoidRootPart
-    local HOVER_HEIGHT = 30 -- Уменьшена высота подъема до 30 студов
-    local APPROACH_RADIUS = 20
+    local humanoid = character:FindFirstChildOfClass("Humanoid")
     
-    local targetPos = targetCFrame.Position
-    local safeY = math.max(hrp.Position.Y, targetPos.Y) + HOVER_HEIGHT
-    
+    if humanoid then
+        humanoid.PlatformStand = true -- Отключаем физику, чтобы античит не кикал
+    end
+
     local noclipConnection = RunService.Stepped:Connect(function()
         if character then
             for _, part in ipairs(character:GetDescendants()) do
@@ -1515,88 +1513,78 @@ local function SafeTweenHoverTeleport(targetCFrame)
                     part.CanCollide = false
                 end
             end
-            if hrp then hrp.Velocity = Vector3.new(0, 0, 0) end
         end
     end)
+
+    local targetCFrame = targetObj:IsA("BasePart") and targetObj.CFrame or targetObj:GetPivot()
+    local startPos = hrp.Position
+    local endPos = targetCFrame.Position + Vector3.new(0, 2, 0)
+    local distance = (endPos - startPos).Magnitude
     
-    local currentPos = hrp.Position
-    local upPos = Vector3.new(currentPos.X, safeY, currentPos.Z)
-    if (upPos - currentPos).Magnitude > 3 then
-        local upTween = TweenService:Create(hrp, TweenInfo.new(0.5, Enum.EasingStyle.Quart, Enum.EasingDirection.Out), {CFrame = CFrame.new(upPos)})
-        upTween:Play()
-        upTween.Completed:Wait()
+    -- Безопасные шаги телепортации
+    local steps = math.clamp(math.floor(distance / 25), 1, 15)
+    for i = 1, steps do
+        if not autoFarmWinsActive then break end
+        local alpha = i / steps
+        local currentStepPos = startPos:Lerp(endPos, alpha)
+        hrp.CFrame = CFrame.new(currentStepPos)
+        if hrp:IsA("BasePart") then
+            hrp.AssemblyLinearVelocity = Vector3.zero
+            hrp.AssemblyAngularVelocity = Vector3.zero
+        end
+        task.wait(0.03)
     end
-    
-    local hoverTargetPos = Vector3.new(targetPos.X, safeY, targetPos.Z)
-    local horizontalDist = (Vector3.new(hrp.Position.X, 0, hrp.Position.Z) - Vector3.new(targetPos.X, 0, targetPos.Z)).Magnitude
-    
-    if horizontalDist > APPROACH_RADIUS then
-        local flySpeed = 65 -- Сниженная скорость для предотвращения киков
-        local travelTime = math.clamp(horizontalDist / flySpeed, 0.2, 15)
-        local flyTween = TweenService:Create(hrp, TweenInfo.new(travelTime, Enum.EasingStyle.Linear), {CFrame = CFrame.new(hoverTargetPos)})
-        flyTween:Play()
-        flyTween.Completed:Wait()
+
+    -- Становимся ровно на блок
+    hrp.CFrame = targetCFrame + Vector3.new(0, 1.8, 0)
+    task.wait(0.1)
+
+    -- Принудительный Touch для зачисления победы (вызывается на все детали блока)
+    local function triggerTouch(part)
+        if firetouchinterest and part:IsA("BasePart") then
+            firetouchinterest(hrp, part, 0)
+            task.wait(0.05)
+            firetouchinterest(hrp, part, 1)
+        end
     end
-    
-    -- Опускаем ноги персонажа ровно на поверхность блока Winblock
-    local finalCFrame = targetCFrame + Vector3.new(0, 1.8, 0)
-    local descendDist = (hrp.Position - finalCFrame.Position).Magnitude
-    local descendTween = TweenService:Create(hrp, TweenInfo.new(math.clamp(descendDist / 40, 0.2, 2), Enum.EasingStyle.Quad, Enum.EasingDirection.Out), {CFrame = finalCFrame})
-    descendTween:Play()
-    descendTween.Completed:Wait()
-    
+
+    if targetObj:IsA("BasePart") then
+        triggerTouch(targetObj)
+    else
+        for _, child in ipairs(targetObj:GetDescendants()) do
+            if child:IsA("BasePart") or child:IsA("TouchTransmitter") then
+                local parentPart = child:IsA("TouchTransmitter") and child.Parent or child
+                triggerTouch(parentPart)
+            end
+        end
+    end
+
     noclipConnection:Disconnect()
+    if humanoid then
+        humanoid.PlatformStand = false
+    end
 end
 
 Library:CreateDropdown(AutoPage, "SelectStage", dynamicStagesList, dynamicStagesList[1] or "Winblock1", function(option)
     selectedStage = option
-    currentTargetPart = findTargetStage(selectedStage)
 end)
 
 Library:CreateToggle(AutoPage, "AutoFarmWins", false, function(state)
     autoFarmWinsActive = state
-    if state then
-        currentTargetPart = findTargetStage(selectedStage)
-    end
 end)
 
 local isTeleporting = false
 
 task.spawn(function()
-    while task.wait(0.2) do
+    while task.wait(0.3) do
         if autoFarmWinsActive and not isTeleporting then
             isTeleporting = true
             
             pcall(function()
-                if not currentTargetPart or not currentTargetPart.Parent then
-                    currentTargetPart = findTargetStage(selectedStage)
-                end
-
-                if currentTargetPart then
-                    local character = Players.LocalPlayer.Character
-                    local hrp = character and character:FindFirstChild("HumanoidRootPart")
-                    
-                    if hrp then
-                        local targetPart = currentTargetPart:IsA("BasePart") and currentTargetPart or (currentTargetPart.PrimaryPart or currentTargetPart:FindFirstChildWhichIsA("BasePart"))
-                        if targetPart then
-                            local targetCFrame = targetPart.CFrame
-                            
-                            -- Плавный полет
-                            SafeTweenHoverTeleport(targetCFrame)
-                            
-                            -- Полная посадка прямо на Winblock
-                            hrp.CFrame = targetCFrame + Vector3.new(0, 1.5, 0)
-                            
-                            -- Принудительный Touch для гарантии зачисления победы
-                            if firetouchinterest then
-                                firetouchinterest(hrp, targetPart, 0)
-                                task.wait(0.05)
-                                firetouchinterest(hrp, targetPart, 1)
-                            end
-                            
-                            task.wait(0.5)
-                        end
-                    end
+                local targetObj = findTargetStage(selectedStage)
+                if targetObj then
+                    SafeTeleportToTarget(targetObj)
+                    task.wait(0.5)
                 end
             end)
             
