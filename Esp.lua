@@ -1438,13 +1438,13 @@ Library:CreateButton(TeleportPage, "TeleportToLobby", function()
 end)
 
 -- ============================================================================
--- ОБНОВЛЕННЫЙ AUTO FARM WINS С ПОИСКОМ win(цифра)/stage(цифра) И ПОДЪЕМОМ
+-- ОБНОВЛЕННЫЙ AUTO FARM WINS (УНИВЕРСАЛЬНЫЙ ПОИСК "WIN" И "STAGE")
 -- ============================================================================
 local autoFarmWinsActive = false
 local selectedStage = ""
 local currentTargetPart = nil
 
--- Функция поиска STRICTLY ТОЛЬКО win(цифры) и stage(цифры)
+-- Улучшенный гибкий поиск
 local function GetDynamicStages()
     local stagesData = {}
     local stagesNames = {}
@@ -1453,11 +1453,7 @@ local function GetDynamicStages()
     for _, obj in ipairs(workspace:GetDescendants()) do
         if obj:IsA("BasePart") or obj:IsA("Model") then
             local name = obj.Name:lower()
-            -- Проверка на точное соответствие формата stage(цифра) или win(цифра)
-            local isStage = name:match("stage%s*%d+") or name:match("^stage%d+$")
-            local isWin = name:match("win%s*%d+") or name:match("^win%d+$") or (name == "win")
-            
-            if isStage or isWin then
+            if string.find(name, "win") or string.find(name, "stage") then
                 if not added[obj.Name] then
                     added[obj.Name] = true
                     local num = tonumber(name:match("%d+")) or 9999
@@ -1473,47 +1469,60 @@ local function GetDynamicStages()
     end
     
     if #stagesNames == 0 then
-        stagesNames = {"Stage1", "Win1"}
+        stagesNames = {"Win", "Stage1", "Win1"}
     end
     
     return stagesNames
 end
 
 local dynamicStagesList = GetDynamicStages()
-selectedStage = dynamicStagesList[1] or "Stage1"
+selectedStage = dynamicStagesList[1] or "Win"
 
 local function findTargetStage(stageName)
+    if not stageName then return nil end
+    local lowerTarget = stageName:lower()
+
+    -- 1. Точное совпадение по имени
     for _, obj in ipairs(workspace:GetDescendants()) do
-        if obj.Name == stageName and (obj:IsA("BasePart") or obj:IsA("Model")) then
+        if obj.Name:lower() == lowerTarget and (obj:IsA("BasePart") or obj:IsA("Model")) then
             return obj:IsA("BasePart") and obj or (obj.PrimaryPart or obj:FindFirstChildWhichIsA("BasePart"))
         end
     end
+    
+    -- 2. Если имя изменилось, берем любой подходящий блок 'win'
+    for _, obj in ipairs(workspace:GetDescendants()) do
+        local name = obj.Name:lower()
+        if (string.find(name, "win") or string.find(name, "stage")) and (obj:IsA("BasePart") or obj:IsA("Model")) then
+            return obj:IsA("BasePart") and obj or (obj.PrimaryPart or obj:FindFirstChildWhichIsA("BasePart"))
+        end
+    end
+    
     return nil
 end
 
--- Система безопасного авто-полета на высоте с плавным спуском
+-- Безопасный полет к точке назначения
 local function SafeTweenHoverTeleport(targetCFrame)
     local character = Players.LocalPlayer.Character
     if not character or not character:FindFirstChild("HumanoidRootPart") then return end
     
     local hrp = character.HumanoidRootPart
-    local HOVER_HEIGHT = 150 -- Высота полёта, где лава/цунами не убивает
-    local APPROACH_RADIUS = 35 -- Расстояние, когда начинает опускаться к точке
+    local HOVER_HEIGHT = 150
+    local APPROACH_RADIUS = 35
     
     local targetPos = targetCFrame.Position
     local safeY = math.max(hrp.Position.Y, targetPos.Y) + HOVER_HEIGHT
     
-    -- Включаем отключение коллизии (Noclip) и обнуляем гравитацию/скорость падающего персонажа
     local noclipConnection = RunService.Stepped:Connect(function()
-        for _, part in ipairs(character:GetDescendants()) do
-            if part:IsA("BasePart") then
-                part.CanCollide = false
+        if character then
+            for _, part in ipairs(character:GetDescendants()) do
+                if part:IsA("BasePart") then
+                    part.CanCollide = false
+                end
             end
+            if hrp then hrp.Velocity = Vector3.new(0, 0, 0) end
         end
-        hrp.Velocity = Vector3.new(0, 0, 0)
     end)
     
-    -- 1. Поднимаем персонажа на безопасную высоту над лавой
     local currentPos = hrp.Position
     local upPos = Vector3.new(currentPos.X, safeY, currentPos.Z)
     if (upPos - currentPos).Magnitude > 5 then
@@ -1522,7 +1531,6 @@ local function SafeTweenHoverTeleport(targetCFrame)
         upTween.Completed:Wait()
     end
     
-    -- 2. Летим по воздуху на безопасной высоте к точке над stage/win
     local hoverTargetPos = Vector3.new(targetPos.X, safeY, targetPos.Z)
     local horizontalDist = (Vector3.new(hrp.Position.X, 0, hrp.Position.Z) - Vector3.new(targetPos.X, 0, targetPos.Z)).Magnitude
     
@@ -1534,7 +1542,6 @@ local function SafeTweenHoverTeleport(targetCFrame)
         flyTween.Completed:Wait()
     end
     
-    -- 3. Как только подлетели близко к точке — опускаем персонажа на stage/win
     local finalCFrame = targetCFrame + Vector3.new(0, 3.5, 0)
     local descendDist = (hrp.Position - finalCFrame.Position).Magnitude
     local descendTween = TweenService:Create(hrp, TweenInfo.new(math.clamp(descendDist / 120, 0.1, 2), Enum.EasingStyle.Quad, Enum.EasingDirection.Out), {CFrame = finalCFrame})
@@ -1544,14 +1551,14 @@ local function SafeTweenHoverTeleport(targetCFrame)
     noclipConnection:Disconnect()
 end
 
-Library:CreateDropdown(AutoPage, "SelectStage", dynamicStagesList, dynamicStagesList[1] or "Stage1", function(option)
+Library:CreateDropdown(AutoPage, "SelectStage", dynamicStagesList, dynamicStagesList[1] or "Win", function(option)
     selectedStage = option
     currentTargetPart = findTargetStage(selectedStage)
 end)
 
 Library:CreateToggle(AutoPage, "AutoFarmWins", false, function(state)
     autoFarmWinsActive = state
-    if state and not currentTargetPart then
+    if state then
         currentTargetPart = findTargetStage(selectedStage)
     end
 end)
@@ -1564,7 +1571,7 @@ task.spawn(function()
             isTeleporting = true
             
             pcall(function()
-                if not currentTargetPart or currentTargetPart.Parent == nil then
+                if not currentTargetPart or not currentTargetPart.Parent then
                     currentTargetPart = findTargetStage(selectedStage)
                 end
 
@@ -1575,10 +1582,8 @@ task.spawn(function()
                     if hrp then
                         local targetCFrame = currentTargetPart:IsA("BasePart") and currentTargetPart.CFrame or currentTargetPart:GetPivot()
                         
-                        -- Вызываем функцию полета сверху и плавной посадки
                         SafeTweenHoverTeleport(targetCFrame)
                         
-                        -- Фиксируем касание чекпоинта
                         if firetouchinterest and currentTargetPart:IsA("BasePart") then
                             firetouchinterest(hrp, currentTargetPart, 0)
                             task.wait(0.1)
@@ -1596,7 +1601,7 @@ task.spawn(function()
 end)
 
 -- ============================================================================
--- СУБ-ВКЛАДКА ESP (ТОЛЬКО ДЛЯ ИГРОКОВ)
+-- СУБ-ВКЛАДКА ESP
 -- ============================================================================
 local VisualSections = Library:CreateSubTabs(VisualPage, {
     {Name = "Esp", Icon = "80768064990053", Color = Color3.fromRGB(46, 204, 113)}
