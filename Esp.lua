@@ -1479,14 +1479,12 @@ end
 
 local dynamicStagesList = GetDynamicStages()
 
+-- Исправленный поиск целевого объекта: строгая проверка на название "win"
 local function findTargetStage(stageName)
     if stageName == "Final Win" then
-        for _, part in ipairs(workspace:GetDescendants()) do
-            if part:IsA("BasePart") then
-                local name = part.Name:lower()
-                if name:find("win") or name:find("finish") or name:find("endpad") or name:find("trophy") then
-                    return part
-                end
+        for _, obj in ipairs(workspace:GetDescendants()) do
+            if (obj:IsA("BasePart") or obj:IsA("Model")) and obj.Name:lower() == "win" then
+                return obj:IsA("BasePart") and obj or (obj.PrimaryPart or obj:FindFirstChildWhichIsA("BasePart"))
             end
         end
     else
@@ -1521,7 +1519,7 @@ local function SafeTweenTeleport(targetCFrame)
     end)
     
     tween:Play()
-    tween.Completed:Wait() -- Скрипт будет ждать здесь
+    tween.Completed:Wait()
     noclipConnection:Disconnect()
 end
 
