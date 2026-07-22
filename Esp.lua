@@ -1438,34 +1438,11 @@ Library:CreateButton(TeleportPage, "TeleportToLobby", function()
 end)
 
 -- ============================================================================
--- AUTO FARM WINS С ВЫБОРОМ ЭТАПОВ, NOCLIP И БЕЗОПАСНЫМ ТЕЛЕПОРТОМ
+-- AUTO FARM WINS С ВЫБОРОМ ЭТАПОВ И МОМЕНТАЛЬНЫМ ТЕЛЕПОРТОМ
 -- ============================================================================
 local autoFarmWinsActive = false
 local selectedStage = "Final Win"
 local stagesList = {"Stage 1", "Stage 2", "Stage 3", "Stage 4", "Stage 5", "Stage 6", "Stage 7", "Stage 8", "Stage 9", "Stage 10", "Final Win"}
-
-local noclipConnection = nil
-local function toggleNoclip(state)
-    if state then
-        if not noclipConnection then
-            noclipConnection = RunService.Stepped:Connect(function()
-                local character = Players.LocalPlayer.Character
-                if character then
-                    for _, part in ipairs(character:GetDescendants()) do
-                        if part:IsA("BasePart") and part.CanCollide then
-                            part.CanCollide = false
-                        end
-                    end
-                end
-            end)
-        end
-    else
-        if noclipConnection then
-            noclipConnection:Disconnect()
-            noclipConnection = nil
-        end
-    end
-end
 
 local function findTargetStage(stageName)
     local query = tostring(stageName):lower()
@@ -1507,40 +1484,12 @@ local function findTargetStage(stageName)
     return nil
 end
 
-local function safeSmoothTeleport(targetCFrame)
-    local character = Players.LocalPlayer.Character
-    local hrp = character and character:FindFirstChild("HumanoidRootPart")
-    if not hrp then return end
-    
-    local distance = (hrp.Position - targetCFrame.Position).Magnitude
-    local farmSpeed = 40 
-    local duration = math.clamp(distance / farmSpeed, 0.25, 8)
-    
-    local tweenInfo = TweenInfo.new(duration, Enum.EasingStyle.Linear)
-    local tweenInst = TweenService:Create(hrp, tweenInfo, {CFrame = targetCFrame})
-    
-    tweenInst:Play()
-    
-    local elapsed = 0
-    while elapsed < duration and autoFarmWinsActive do
-        task.wait(0.05)
-        elapsed = elapsed + 0.05
-    end
-    
-    if autoFarmWinsActive then
-        hrp.CFrame = targetCFrame
-    else
-        tweenInst:Cancel()
-    end
-end
-
 Library:CreateDropdown(AutoPage, "SelectStage", stagesList, "Final Win", function(option)
     selectedStage = option
 end)
 
 Library:CreateToggle(AutoPage, "AutoFarmWins", false, function(state)
     autoFarmWinsActive = state
-    toggleNoclip(state)
 end)
 
 task.spawn(function()
@@ -1549,18 +1498,22 @@ task.spawn(function()
             pcall(function()
                 local target = findTargetStage(selectedStage)
                 if target then
-                    local targetCFrame = target:IsA("BasePart") and target.CFrame or target:GetPivot()
-                    safeSmoothTeleport(targetCFrame + Vector3.new(0, 3, 0))
-                    
                     local hrp = Players.LocalPlayer.Character and Players.LocalPlayer.Character:FindFirstChild("HumanoidRootPart")
-                    if hrp and firetouchinterest and target:IsA("BasePart") then
-                        firetouchinterest(hrp, target, 0)
-                        task.wait(0.1)
-                        firetouchinterest(hrp, target, 1)
+                    if hrp then
+                        -- Моментальный телепорт на нужный CFrame (без полетов)
+                        local targetCFrame = target:IsA("BasePart") and target.CFrame or target:GetPivot()
+                        hrp.CFrame = targetCFrame + Vector3.new(0, 3, 0)
+                        
+                        -- Эмуляция касания (firetouchinterest)
+                        if firetouchinterest and target:IsA("BasePart") then
+                            firetouchinterest(hrp, target, 0)
+                            task.wait(0.1)
+                            firetouchinterest(hrp, target, 1)
+                        end
                     end
                 end
             end)
-            task.wait(1.2)
+            task.wait(0.5) -- Оптимизированная задержка
         else
             task.wait(0.5)
         end
