@@ -585,27 +585,25 @@ local Localization = {
         ["Main"] = "Main", ["Teleport"] = "Teleport", ["Auto"] = "Auto", ["Auto buy"] = "Auto buy",
         ["Players"] = "Players", ["Visual"] = "Visual", ["Settings"] = "Settings", ["UI"] = "UI",
         ["Theme"] = "Theme", ["AutoFarmCoins"] = "Auto-Farm Coins", ["AutoFarmWins"] = "Auto-Farm Wins",
-        ["UISize"] = "UI Size", ["UITransparency"] = "UI Transparency", ["MenuFont"] = "Menu Font",
-        ["Language"] = "Language", ["AntiAFK"] = "Anti-AFK", ["UITheme"] = "UI Theme",
+        ["SelectStage"] = "Select Stage", ["UISize"] = "UI Size", ["UITransparency"] = "UI Transparency",
+        ["MenuFont"] = "Menu Font", ["Language"] = "Language", ["AntiAFK"] = "Anti-AFK", ["UITheme"] = "UI Theme",
         ["AnimatedWindow"] = "Animated Window", ["Gradient"] = "Gradient Background",
         ["Esp"] = "ESP", ["EspToggle"] = "Enable ESP / Player Roles",
         ["PlayerEsp"] = "Player ESP", ["EspColor"] = "ESP Color",
         ["WalkSpeed"] = "WalkSpeed", ["JumpPower"] = "JumpPower", ["ResetStats"] = "Reset Modifiers",
-        ["TeleportToMap"] = "Teleport to Map", ["TeleportToLobby"] = "Teleport to Lobby",
-        ["SilentAim"] = "Silent Aim", ["AutoHarvest"] = "Auto Harvest"
+        ["TeleportToMap"] = "Teleport to Map", ["TeleportToLobby"] = "Teleport to Lobby"
     },
     ["Русский"] = {
         ["Main"] = "Главная", ["Teleport"] = "Телепорт", ["Auto"] = "Авто", ["Auto buy"] = "Авто-покупка",
         ["Players"] = "Игроки", ["Visual"] = "Визуалы", ["Settings"] = "Настройки", ["UI"] = "Интерфейс",
         ["Theme"] = "Тема", ["AutoFarmCoins"] = "Авто-Фарм Монет", ["AutoFarmWins"] = "Авто-Фарм Побед",
-        ["UISize"] = "Размер интерфейса", ["UITransparency"] = "Прозрачность меню", ["MenuFont"] = "Шрифт меню",
-        ["Language"] = "Язык", ["AntiAFK"] = "Анти-АФК", ["UITheme"] = "Тема UI",
+        ["SelectStage"] = "Выберите Этап", ["UISize"] = "Размер интерфейса", ["UITransparency"] = "Прозрачность меню",
+        ["MenuFont"] = "Шрифт меню", ["Language"] = "Язык", ["AntiAFK"] = "Анти-АФК", ["UITheme"] = "Тема UI",
         ["AnimatedWindow"] = "Анимированное окно", ["Gradient"] = "Градиентный фон",
         ["Esp"] = "ЕСП", ["EspToggle"] = "Включить ЕСП / Роли игроков",
         ["PlayerEsp"] = "ESP Игроков", ["EspColor"] = "Цвет ЕСП",
         ["WalkSpeed"] = "Скорость ходьбы", ["JumpPower"] = "Сила прыжка", ["ResetStats"] = "Сбросить модификаторы",
-        ["TeleportToMap"] = "Телепортироваться на Карту", ["TeleportToLobby"] = "Телепортироваться в Лобби",
-        ["SilentAim"] = "Сайлент Аим", ["AutoHarvest"] = "Авто-Сбор Урожая"
+        ["TeleportToMap"] = "Телепортироваться на Карту", ["TeleportToLobby"] = "Телепортироваться в Лобби"
     }
 }
 
@@ -1439,193 +1437,138 @@ Library:CreateButton(TeleportPage, "TeleportToLobby", function()
     end)
 end)
 
-Library:CreateToggle(AutoBuyPage, "SilentAim", false, function(state) end)
-
 -- ============================================================================
--- УЛЬТРА-ОПТИМИЗИРОВАННЫЙ AUTO HARVEST (БЕЗЛИМИТНАЯ ДИСТАНЦИЯ)
+-- AUTO FARM WINS С ВЫБОРОМ ЭТАПОВ, NOCLIP И БЕЗОПАСНЫМ ТЕЛЕПОРТОМ
 -- ============================================================================
-local autoHarvestActive = false
-Library:CreateToggle(AutoPage, "AutoHarvest", false, function(state)
-    autoHarvestActive = state
-end)
+local autoFarmWinsActive = false
+local selectedStage = "Final Win"
+local stagesList = {"Stage 1", "Stage 2", "Stage 3", "Stage 4", "Stage 5", "Stage 6", "Stage 7", "Stage 8", "Stage 9", "Stage 10", "Final Win"}
 
-local cachedPlot = nil
-local lastPlotCheck = 0
-local firedPrompts = {}
-
-task.spawn(function()
-    while true do
-        task.wait(5)
-        for prompt, _ in pairs(firedPrompts) do
-            if not prompt or not prompt.Parent then
-                firedPrompts[prompt] = nil
-            end
-        end
-    end
-end)
-
-local function getPlayerPlot()
-    local player = Players.LocalPlayer
-    if cachedPlot and cachedPlot.Parent then
-        return cachedPlot
-    end
-    
-    local now = os.clock()
-    if now - lastPlotCheck < 3 then
-        return nil
-    end
-    lastPlotCheck = now
-    
-    local commonFolders = {"Plots", "Gardens", "Beds", "PlayerPlots", "Tycoons", "Lands", "PlotsFolder", "TycoonFolder"}
-    for _, folderName in ipairs(commonFolders) do
-        local folder = workspace:FindFirstChild(folderName)
-        if folder then
-            local plot = folder:FindFirstChild(player.Name) or folder:FindFirstChild(player.DisplayName)
-            if plot then
-                cachedPlot = plot
-                return plot
-            end
-            for _, child in ipairs(folder:GetChildren()) do
-                local owner = child:FindFirstChild("Owner") or child:FindFirstChild("Player") or child:FindFirstChild("OwnerName")
-                if owner and (owner.Value == player or tostring(owner.Value) == player.Name or tostring(owner.Value) == player.DisplayName or owner.Value == player.UserId) then
-                    cachedPlot = child
-                    return child
-                end
-            end
-        end
-    end
-    
-    local direct = workspace:FindFirstChild(player.Name) or workspace:FindFirstChild(player.DisplayName)
-    if direct then
-        cachedPlot = direct
-        return direct
-    end
-    
-    return nil
-end
-
-local function isCropPrompt(prompt)
-    if not prompt:IsA("ProximityPrompt") then return false end
-    
-    local action = prompt.ActionText:lower()
-    local object = prompt.ObjectText:lower()
-    local name = prompt.Name:lower()
-    
-    local keywords = {
-        "harvest", "pick", "collect", "gather", "grab", "shake", "cut", "reap",
-        "собрать", "урожай", "снять", "взять", "сорвать", "собирать", "срезать"
-    }
-    
-    for _, keyword in ipairs(keywords) do
-        if action:find(keyword) or object:find(keyword) or name:find(keyword) then
-            return true
-        end
-    end
-    
-    return false
-end
-
-task.spawn(function()
-    while true do
-        task.wait(0.1) 
-        if autoHarvestActive then
-            pcall(function()
-                local plot = getPlayerPlot()
-                local targets = {}
-                
-                if plot then
-                    for _, desc in ipairs(plot:GetDescendants()) do
-                        if desc:IsA("ProximityPrompt") and isCropPrompt(desc) then
-                            table.insert(targets, desc)
-                        end
-                    end
-                else
-                    for _, desc in ipairs(workspace:GetDescendants()) do
-                        if desc:IsA("ProximityPrompt") and isCropPrompt(desc) then
-                            table.insert(targets, desc)
-                        end
-                    end
-                end
-                
-                local now = os.clock()
-                for _, prompt in ipairs(targets) do
-                    if not autoHarvestActive then break end
-                    
-                    local lastFired = firedPrompts[prompt] or 0
-                    local duration = prompt.HoldDuration or 0
-                    
-                    if now - lastFired > (duration + 1.2) then
-                        firedPrompts[prompt] = now
-                        
-                        prompt.RequiresLineOfSight = false
-                        prompt.MaxActivationDistance = 999999
-                        
-                        if fireproximityprompt then
-                            fireproximityprompt(prompt)
-                        else
-                            task.spawn(function()
-                                prompt:InputHoldBegin()
-                                task.wait(duration + 0.05)
-                                prompt:InputHoldEnd()
-                            end)
+local noclipConnection = nil
+local function toggleNoclip(state)
+    if state then
+        if not noclipConnection then
+            noclipConnection = RunService.Stepped:Connect(function()
+                local character = Players.LocalPlayer.Character
+                if character then
+                    for _, part in ipairs(character:GetDescendants()) do
+                        if part:IsA("BasePart") and part.CanCollide then
+                            part.CanCollide = false
                         end
                     end
                 end
             end)
         end
+    else
+        if noclipConnection then
+            noclipConnection:Disconnect()
+            noclipConnection = nil
+        end
     end
-end)
+end
 
--- ============================================================================
--- AUTO FARM WINS (ИНТЕГРАЦИЯ ДЛЯ ESCAPE / OBBY)
--- ============================================================================
-local autoFarmWinsActive = false
-local delayBetweenWins = 1.0 
+local function findTargetStage(stageName)
+    local query = tostring(stageName):lower()
+    local num = query:match("%d+")
+    
+    if query:find("final") or query:find("win") then
+        for _, part in ipairs(workspace:GetDescendants()) do
+            if part:IsA("BasePart") then
+                local name = part.Name:lower()
+                if name:find("win") or name:find("finish") or name:find("endpad") or name:find("trophy") then
+                    return part
+                end
+            end
+        end
+    end
+    
+    if num then
+        for _, obj in ipairs(workspace:GetDescendants()) do
+            local name = obj.Name:lower()
+            if (name:find("stage") or name:find("checkpoint") or name:find("level") or name:find("этап")) and name:find(num) then
+                if obj:IsA("BasePart") then
+                    return obj
+                elseif obj:IsA("Model") then
+                    return obj.PrimaryPart or obj:FindFirstChildWhichIsA("BasePart")
+                end
+            end
+        end
+    end
 
-local function findWinPad()
     for _, part in ipairs(workspace:GetDescendants()) do
         if part:IsA("BasePart") then
             local name = part.Name:lower()
-            if name:find("win") or name:find("finish") or name:find("endpad") or name:find("trophy") then
+            if name:find("win") or name:find("finish") or name:find("endpad") then
                 return part
             end
         end
     end
+    
     return nil
 end
 
+local function safeSmoothTeleport(targetCFrame)
+    local character = Players.LocalPlayer.Character
+    local hrp = character and character:FindFirstChild("HumanoidRootPart")
+    if not hrp then return end
+    
+    local distance = (hrp.Position - targetCFrame.Position).Magnitude
+    local farmSpeed = 40 
+    local duration = math.clamp(distance / farmSpeed, 0.25, 8)
+    
+    local tweenInfo = TweenInfo.new(duration, Enum.EasingStyle.Linear)
+    local tweenInst = TweenService:Create(hrp, tweenInfo, {CFrame = targetCFrame})
+    
+    tweenInst:Play()
+    
+    local elapsed = 0
+    while elapsed < duration and autoFarmWinsActive do
+        task.wait(0.05)
+        elapsed = elapsed + 0.05
+    end
+    
+    if autoFarmWinsActive then
+        hrp.CFrame = targetCFrame
+    else
+        tweenInst:Cancel()
+    end
+end
+
+Library:CreateDropdown(AutoPage, "SelectStage", stagesList, "Final Win", function(option)
+    selectedStage = option
+end)
+
 Library:CreateToggle(AutoPage, "AutoFarmWins", false, function(state)
     autoFarmWinsActive = state
+    toggleNoclip(state)
 end)
 
 task.spawn(function()
     while true do
         if autoFarmWinsActive then
             pcall(function()
-                local character = Players.LocalPlayer.Character
-                local hrp = character and character:FindFirstChild("HumanoidRootPart")
-                
-                if hrp then
-                    local winPad = findWinPad()
+                local target = findTargetStage(selectedStage)
+                if target then
+                    local targetCFrame = target:IsA("BasePart") and target.CFrame or target:GetPivot()
+                    safeSmoothTeleport(targetCFrame + Vector3.new(0, 3, 0))
                     
-                    if winPad then
-                        hrp.CFrame = winPad.CFrame + Vector3.new(0, 3, 0)
-                        
-                        if firetouchinterest then
-                            firetouchinterest(hrp, winPad, 0)
-                            task.wait(0.1)
-                            firetouchinterest(hrp, winPad, 1)
-                        end
+                    local hrp = Players.LocalPlayer.Character and Players.LocalPlayer.Character:FindFirstChild("HumanoidRootPart")
+                    if hrp and firetouchinterest and target:IsA("BasePart") then
+                        firetouchinterest(hrp, target, 0)
+                        task.wait(0.1)
+                        firetouchinterest(hrp, target, 1)
                     end
                 end
             end)
+            task.wait(1.2)
+        else
+            task.wait(0.5)
         end
-        task.wait(delayBetweenWins)
     end
 end)
 
 -- ============================================================================
--- СУБ-ВКЛАДКА ESP (ТОЛЬКО ДЛЯ ИГРОКОВ, FRUIT ESP УДАЛЕН)
+-- СУБ-ВКЛАДКА ESP (ТОЛЬКО ДЛЯ ИГРОКОВ)
 -- ============================================================================
 local VisualSections = Library:CreateSubTabs(VisualPage, {
     {Name = "Esp", Icon = "80768064990053", Color = Color3.fromRGB(46, 204, 113)}
