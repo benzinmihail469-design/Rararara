@@ -1438,17 +1438,55 @@ Library:CreateButton(TeleportPage, "TeleportToLobby", function()
 end)
 
 -- ============================================================================
--- AUTO FARM WINS С ВЫБОРОМ ЭТАПОВ И МОМЕНТАЛЬНЫМ ТЕЛЕПОРТОМ
+-- ОПТИМИЗИРОВАННЫЙ AUTO FARM WINS С ДИНАМИЧЕСКИМ ПОИСКОМ И ОБХОДОМ АНТИ-ЧИТА
 -- ============================================================================
 local autoFarmWinsActive = false
 local selectedStage = "Final Win"
-local stagesList = {"Stage 1", "Stage 2", "Stage 3", "Stage 4", "Stage 5", "Stage 6", "Stage 7", "Stage 8", "Stage 9", "Stage 10", "Final Win"}
+
+-- Функция для сканирования карты и нахождения всех этапов
+local function GetDynamicStages()
+    local stagesData = {}
+    local stagesNames = {}
+    
+    -- Проверяем популярные папки с этапами, чтобы не сканировать всю игру
+    local possibleFolders = {workspace:FindFirstChild("Stages"), workspace:FindFirstChild("Checkpoints"), workspace}
+    
+    for _, parentObj in ipairs(possibleFolders) do
+        if parentObj then
+            for _, obj in ipairs(parentObj:GetChildren()) do
+                local name = obj.Name:lower()
+                -- Ищем объекты, похожие на этапы
+                if (name:find("stage") or name:find("checkpoint") or name:find("этап") or tonumber(name)) and (obj:IsA("BasePart") or obj:IsA("Model")) then
+                    local num = name:match("%d+")
+                    if num then
+                        table.insert(stagesData, {Name = obj.Name, Num = tonumber(num), Target = obj})
+                    end
+                end
+            end
+        end
+        if #stagesData > 0 and parentObj ~= workspace then break end
+    end
+    
+    -- Сортируем этапы по порядку
+    table.sort(stagesData, function(a, b) return a.Num < b.Num end)
+    
+    for _, data in ipairs(stagesData) do
+        table.insert(stagesNames, data.Name)
+    end
+    table.insert(stagesNames, "Final Win")
+    
+    -- Если игра сложная и ничего не нашло, оставляем дефолт
+    if #stagesNames == 1 then
+        stagesNames = {"Stage 1", "Stage 2", "Stage 3", "Stage 4", "Stage 5", "Final Win"}
+    end
+    
+    return stagesNames
+end
+
+local dynamicStagesList = GetDynamicStages()
 
 local function findTargetStage(stageName)
-    local query = tostring(stageName):lower()
-    local num = query:match("%d+")
-    
-    if query:find("final") or query:find("win") then
+    if stageName == "Final Win" then
         for _, part in ipairs(workspace:GetDescendants()) do
             if part:IsA("BasePart") then
                 local name = part.Name:lower()
@@ -1457,34 +1495,45 @@ local function findTargetStage(stageName)
                 end
             end
         end
-    end
-    
-    if num then
+    else
         for _, obj in ipairs(workspace:GetDescendants()) do
-            local name = obj.Name:lower()
-            if (name:find("stage") or name:find("checkpoint") or name:find("level") or name:find("этап")) and name:find(num) then
-                if obj:IsA("BasePart") then
-                    return obj
-                elseif obj:IsA("Model") then
-                    return obj.PrimaryPart or obj:FindFirstChildWhichIsA("BasePart")
-                end
+            if obj.Name == stageName and (obj:IsA("BasePart") or obj:IsA("Model")) then
+                return obj:IsA("BasePart") and obj or (obj.PrimaryPart or obj:FindFirstChildWhichIsA("BasePart"))
             end
         end
     end
-
-    for _, part in ipairs(workspace:GetDescendants()) do
-        if part:IsA("BasePart") then
-            local name = part.Name:lower()
-            if name:find("win") or name:find("finish") or name:find("endpad") then
-                return part
-            end
-        end
-    end
-    
     return nil
 end
 
-Library:CreateDropdown(AutoPage, "SelectStage", stagesList, "Final Win", function(option)
+-- Безопасный телепорт (левитация) для обхода анти-чита
+local function SafeTweenTeleport(targetCFrame)
+    local character = Players.LocalPlayer.Character
+    if not character or not character:FindFirstChild("HumanoidRootPart") then return end
+    
+    local hrp = character.HumanoidRootPart
+    local distance = (hrp.Position - targetCFrame.Position).Magnitude
+    local speed = 120 -- Скорость (настраивается, если все еще кикает)
+    local tweenTime = math.clamp(distance / speed, 0.1, 15)
+    
+    local tweenInfo = TweenInfo.new(tweenTime, Enum.EasingStyle.Linear)
+    local tween = TweenService:Create(hrp, tweenInfo, {CFrame = targetCFrame + Vector3.new(0, 3.5, 0)})
+    
+    -- Отключаем коллизию во время полета, чтобы не застревать
+    local noclipConnection = RunService.Stepped:Connect(function()
+        for _, part in ipairs(character:GetDescendants()) do
+            if part:IsA("BasePart") and part.CanCollide then
+                part.CanCollide = false
+            end
+        end
+        hrp.Velocity = Vector3.new(0, 0, 0)
+    end)
+    
+    tween:Play()
+    tween.Completed:Wait()
+    noclipConnection:Disconnect()
+end
+
+Library:CreateDropdown(AutoPage, "SelectStage", dynamicStagesList, dynamicStagesList[1] or "Final Win", function(option)
     selectedStage = option
 end)
 
@@ -1493,29 +1542,25 @@ Library:CreateToggle(AutoPage, "AutoFarmWins", false, function(state)
 end)
 
 task.spawn(function()
-    while true do
+    while task.wait(0.5) do
         if autoFarmWinsActive then
             pcall(function()
                 local target = findTargetStage(selectedStage)
                 if target then
                     local hrp = Players.LocalPlayer.Character and Players.LocalPlayer.Character:FindFirstChild("HumanoidRootPart")
                     if hrp then
-                        -- Моментальный телепорт на нужный CFrame (без полетов)
                         local targetCFrame = target:IsA("BasePart") and target.CFrame or target:GetPivot()
-                        hrp.CFrame = targetCFrame + Vector3.new(0, 3, 0)
                         
-                        -- Эмуляция касания (firetouchinterest)
+                        SafeTweenTeleport(targetCFrame)
+                        
                         if firetouchinterest and target:IsA("BasePart") then
                             firetouchinterest(hrp, target, 0)
-                            task.wait(0.1)
+                            task.wait(0.05)
                             firetouchinterest(hrp, target, 1)
                         end
                     end
                 end
             end)
-            task.wait(0.5) -- Оптимизированная задержка
-        else
-            task.wait(0.5)
         end
     end
 end)
