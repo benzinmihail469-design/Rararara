@@ -1438,48 +1438,42 @@ Library:CreateButton(TeleportPage, "TeleportToLobby", function()
 end)
 
 -- ============================================================================
--- ОПТИМИЗИРОВАННЫЙ AUTO FARM WINS С ДИНАМИЧЕСКИМ ПОИСКОМ И ОБХОДОМ АНТИ-ЧИТА
+-- ИСПРАВЛЕННЫЙ AUTO FARM WINS (ПОЛНЫЙ СКАН И НАДЕЖНЫЙ ПОИСК ЭТАПОВ)
 -- ============================================================================
 local autoFarmWinsActive = false
 local selectedStage = "Final Win"
 
--- Функция для сканирования карты и нахождения всех этапов
 local function GetDynamicStages()
     local stagesData = {}
     local stagesNames = {}
     
-    -- Проверяем популярные папки с этапами, чтобы не сканировать всю игру
-    local possibleFolders = {workspace:FindFirstChild("Stages"), workspace:FindFirstChild("Checkpoints"), workspace}
-    
-    for _, parentObj in ipairs(possibleFolders) do
-        if parentObj then
-            for _, obj in ipairs(parentObj:GetChildren()) do
-                local name = obj.Name:lower()
-                -- Ищем объекты, похожие на этапы
-                if (name:find("stage") or name:find("checkpoint") or name:find("этап") or tonumber(name)) and (obj:IsA("BasePart") or obj:IsA("Model")) then
-                    local num = name:match("%d+")
-                    if num then
-                        table.insert(stagesData, {Name = obj.Name, Num = tonumber(num), Target = obj})
-                    end
+    for _, obj in ipairs(workspace:GetDescendants()) do
+        if obj:IsA("BasePart") or obj:IsA("Model") then
+            local name = obj.Name:lower()
+            if name:find("stage") or name:find("checkpoint") or name:find("этап") then
+                local num = name:match("%d+")
+                if num then
+                    table.insert(stagesData, {Name = obj.Name, Num = tonumber(num)})
                 end
             end
         end
-        if #stagesData > 0 and parentObj ~= workspace then break end
     end
     
-    -- Сортируем этапы по порядку
+    -- Уникальные имена этапов
+    local added = {}
     table.sort(stagesData, function(a, b) return a.Num < b.Num end)
-    
     for _, data in ipairs(stagesData) do
-        table.insert(stagesNames, data.Name)
+        if not added[data.Name] then
+            added[data.Name] = true
+            table.insert(stagesNames, data.Name)
+        end
     end
+    
+    if #stagesNames == 0 then
+        stagesNames = {"Stage 1", "Stage 2", "Stage 3", "Stage 4", "Stage 5"}
+    end
+    
     table.insert(stagesNames, "Final Win")
-    
-    -- Если игра сложная и ничего не нашло, оставляем дефолт
-    if #stagesNames == 1 then
-        stagesNames = {"Stage 1", "Stage 2", "Stage 3", "Stage 4", "Stage 5", "Final Win"}
-    end
-    
     return stagesNames
 end
 
@@ -1505,20 +1499,18 @@ local function findTargetStage(stageName)
     return nil
 end
 
--- Безопасный телепорт (левитация) для обхода анти-чита
 local function SafeTweenTeleport(targetCFrame)
     local character = Players.LocalPlayer.Character
     if not character or not character:FindFirstChild("HumanoidRootPart") then return end
     
     local hrp = character.HumanoidRootPart
     local distance = (hrp.Position - targetCFrame.Position).Magnitude
-    local speed = 120 -- Скорость (настраивается, если все еще кикает)
+    local speed = 120 
     local tweenTime = math.clamp(distance / speed, 0.1, 15)
     
     local tweenInfo = TweenInfo.new(tweenTime, Enum.EasingStyle.Linear)
     local tween = TweenService:Create(hrp, tweenInfo, {CFrame = targetCFrame + Vector3.new(0, 3.5, 0)})
     
-    -- Отключаем коллизию во время полета, чтобы не застревать
     local noclipConnection = RunService.Stepped:Connect(function()
         for _, part in ipairs(character:GetDescendants()) do
             if part:IsA("BasePart") and part.CanCollide then
