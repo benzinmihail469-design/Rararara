@@ -1438,10 +1438,11 @@ Library:CreateButton(TeleportPage, "TeleportToLobby", function()
 end)
 
 -- ============================================================================
--- ИСПРАВЛЕННЫЙ AUTO FARM WINS (ПОЛНЫЙ СКАН И НАДЕЖНЫЙ ПОИСК ЭТАПОВ)
+-- ОПТИМИЗИРОВАННЫЙ AUTO FARM WINS
 -- ============================================================================
 local autoFarmWinsActive = false
 local selectedStage = "Final Win"
+local currentTargetPart = nil
 
 local function GetDynamicStages()
     local stagesData = {}
@@ -1459,7 +1460,6 @@ local function GetDynamicStages()
         end
     end
     
-    -- Уникальные имена этапов
     local added = {}
     table.sort(stagesData, function(a, b) return a.Num < b.Num end)
     for _, data in ipairs(stagesData) do
@@ -1521,38 +1521,55 @@ local function SafeTweenTeleport(targetCFrame)
     end)
     
     tween:Play()
-    tween.Completed:Wait()
+    tween.Completed:Wait() -- Скрипт будет ждать здесь
     noclipConnection:Disconnect()
 end
 
 Library:CreateDropdown(AutoPage, "SelectStage", dynamicStagesList, dynamicStagesList[1] or "Final Win", function(option)
     selectedStage = option
+    currentTargetPart = findTargetStage(selectedStage)
 end)
 
 Library:CreateToggle(AutoPage, "AutoFarmWins", false, function(state)
     autoFarmWinsActive = state
+    if state and not currentTargetPart then
+        currentTargetPart = findTargetStage(selectedStage)
+    end
 end)
 
+local isTeleporting = false
+
 task.spawn(function()
-    while task.wait(0.5) do
-        if autoFarmWinsActive then
+    while task.wait(0.1) do
+        if autoFarmWinsActive and not isTeleporting then
+            isTeleporting = true
+            
             pcall(function()
-                local target = findTargetStage(selectedStage)
-                if target then
-                    local hrp = Players.LocalPlayer.Character and Players.LocalPlayer.Character:FindFirstChild("HumanoidRootPart")
+                if not currentTargetPart or currentTargetPart.Parent == nil then
+                    currentTargetPart = findTargetStage(selectedStage)
+                end
+
+                if currentTargetPart then
+                    local character = Players.LocalPlayer.Character
+                    local hrp = character and character:FindFirstChild("HumanoidRootPart")
+                    
                     if hrp then
-                        local targetCFrame = target:IsA("BasePart") and target.CFrame or target:GetPivot()
+                        local targetCFrame = currentTargetPart:IsA("BasePart") and currentTargetPart.CFrame or currentTargetPart:GetPivot()
                         
                         SafeTweenTeleport(targetCFrame)
                         
-                        if firetouchinterest and target:IsA("BasePart") then
-                            firetouchinterest(hrp, target, 0)
-                            task.wait(0.05)
-                            firetouchinterest(hrp, target, 1)
+                        if firetouchinterest and currentTargetPart:IsA("BasePart") then
+                            firetouchinterest(hrp, currentTargetPart, 0)
+                            task.wait(0.1)
+                            firetouchinterest(hrp, currentTargetPart, 1)
                         end
+                        
+                        task.wait(0.5)
                     end
                 end
             end)
+            
+            isTeleporting = false
         end
     end
 end)
