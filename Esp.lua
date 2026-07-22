@@ -32,6 +32,9 @@ local function toggleAntiAFK(state)
     end
 end
 
+-- Автоматически включаем Anti-AFK для защиты от вылета
+toggleAntiAFK(true)
+
 local SafeParent = nil
 if typeof(gethui) == "function" then
     SafeParent = gethui()
@@ -1438,13 +1441,13 @@ Library:CreateButton(TeleportPage, "TeleportToLobby", function()
 end)
 
 -- ============================================================================
--- ОБНОВЛЕННЫЙ AUTO FARM WINS (УНИВЕРСАЛЬНЫЙ ПОИСК "WIN" И "STAGE")
+-- ОБНОВЛЕННЫЙ AUTO FARM WINS (30 СТУДОВ, ТОЛЬКО WINBLOCK, ПОЛНОЕ ОПУСКАНИЕ)
 -- ============================================================================
 local autoFarmWinsActive = false
 local selectedStage = ""
 local currentTargetPart = nil
 
--- Улучшенный гибкий поиск
+-- Точный поиск только блоков Winblock(цифра)
 local function GetDynamicStages()
     local stagesData = {}
     local stagesNames = {}
@@ -1452,12 +1455,13 @@ local function GetDynamicStages()
     
     for _, obj in ipairs(workspace:GetDescendants()) do
         if obj:IsA("BasePart") or obj:IsA("Model") then
-            local name = obj.Name:lower()
-            if string.find(name, "win") or string.find(name, "stage") then
-                if not added[obj.Name] then
-                    added[obj.Name] = true
+            local name = obj.Name
+            -- Строгий фильтр: берем ТОЛЬКО объекты, начинающиеся с Winblock + цифра
+            if string.match(name:lower(), "^winblock%s*%d+$") then
+                if not added[name] then
+                    added[name] = true
                     local num = tonumber(name:match("%d+")) or 9999
-                    table.insert(stagesData, {Name = obj.Name, Num = num})
+                    table.insert(stagesData, {Name = name, Num = num})
                 end
             end
         end
@@ -1469,30 +1473,22 @@ local function GetDynamicStages()
     end
     
     if #stagesNames == 0 then
-        stagesNames = {"Win", "Stage1", "Win1"}
+        stagesNames = {"Winblock1"}
     end
     
     return stagesNames
 end
 
 local dynamicStagesList = GetDynamicStages()
-selectedStage = dynamicStagesList[1] or "Win"
+selectedStage = dynamicStagesList[1] or "Winblock1"
 
 local function findTargetStage(stageName)
     if not stageName then return nil end
     local lowerTarget = stageName:lower()
 
-    -- 1. Точное совпадение по имени
+    -- Ищем точное совпадение
     for _, obj in ipairs(workspace:GetDescendants()) do
         if obj.Name:lower() == lowerTarget and (obj:IsA("BasePart") or obj:IsA("Model")) then
-            return obj:IsA("BasePart") and obj or (obj.PrimaryPart or obj:FindFirstChildWhichIsA("BasePart"))
-        end
-    end
-    
-    -- 2. Если имя изменилось, берем любой подходящий блок 'win'
-    for _, obj in ipairs(workspace:GetDescendants()) do
-        local name = obj.Name:lower()
-        if (string.find(name, "win") or string.find(name, "stage")) and (obj:IsA("BasePart") or obj:IsA("Model")) then
             return obj:IsA("BasePart") and obj or (obj.PrimaryPart or obj:FindFirstChildWhichIsA("BasePart"))
         end
     end
@@ -1500,14 +1496,14 @@ local function findTargetStage(stageName)
     return nil
 end
 
--- Безопасный полет к точке назначения
+-- Безопасный и плавный полет на высоте 30 студов
 local function SafeTweenHoverTeleport(targetCFrame)
     local character = Players.LocalPlayer.Character
     if not character or not character:FindFirstChild("HumanoidRootPart") then return end
     
     local hrp = character.HumanoidRootPart
-    local HOVER_HEIGHT = 150
-    local APPROACH_RADIUS = 35
+    local HOVER_HEIGHT = 30 -- Уменьшена высота подъема до 30 студов
+    local APPROACH_RADIUS = 20
     
     local targetPos = targetCFrame.Position
     local safeY = math.max(hrp.Position.Y, targetPos.Y) + HOVER_HEIGHT
@@ -1525,8 +1521,8 @@ local function SafeTweenHoverTeleport(targetCFrame)
     
     local currentPos = hrp.Position
     local upPos = Vector3.new(currentPos.X, safeY, currentPos.Z)
-    if (upPos - currentPos).Magnitude > 5 then
-        local upTween = TweenService:Create(hrp, TweenInfo.new(0.4, Enum.EasingStyle.Quart, Enum.EasingDirection.Out), {CFrame = CFrame.new(upPos)})
+    if (upPos - currentPos).Magnitude > 3 then
+        local upTween = TweenService:Create(hrp, TweenInfo.new(0.5, Enum.EasingStyle.Quart, Enum.EasingDirection.Out), {CFrame = CFrame.new(upPos)})
         upTween:Play()
         upTween.Completed:Wait()
     end
@@ -1535,23 +1531,24 @@ local function SafeTweenHoverTeleport(targetCFrame)
     local horizontalDist = (Vector3.new(hrp.Position.X, 0, hrp.Position.Z) - Vector3.new(targetPos.X, 0, targetPos.Z)).Magnitude
     
     if horizontalDist > APPROACH_RADIUS then
-        local flySpeed = 130
-        local travelTime = math.clamp(horizontalDist / flySpeed, 0.1, 12)
+        local flySpeed = 65 -- Сниженная скорость для предотвращения киков
+        local travelTime = math.clamp(horizontalDist / flySpeed, 0.2, 15)
         local flyTween = TweenService:Create(hrp, TweenInfo.new(travelTime, Enum.EasingStyle.Linear), {CFrame = CFrame.new(hoverTargetPos)})
         flyTween:Play()
         flyTween.Completed:Wait()
     end
     
-    local finalCFrame = targetCFrame + Vector3.new(0, 3.5, 0)
+    -- Опускаем ноги персонажа ровно на поверхность блока Winblock
+    local finalCFrame = targetCFrame + Vector3.new(0, 1.8, 0)
     local descendDist = (hrp.Position - finalCFrame.Position).Magnitude
-    local descendTween = TweenService:Create(hrp, TweenInfo.new(math.clamp(descendDist / 120, 0.1, 2), Enum.EasingStyle.Quad, Enum.EasingDirection.Out), {CFrame = finalCFrame})
+    local descendTween = TweenService:Create(hrp, TweenInfo.new(math.clamp(descendDist / 40, 0.2, 2), Enum.EasingStyle.Quad, Enum.EasingDirection.Out), {CFrame = finalCFrame})
     descendTween:Play()
     descendTween.Completed:Wait()
     
     noclipConnection:Disconnect()
 end
 
-Library:CreateDropdown(AutoPage, "SelectStage", dynamicStagesList, dynamicStagesList[1] or "Win", function(option)
+Library:CreateDropdown(AutoPage, "SelectStage", dynamicStagesList, dynamicStagesList[1] or "Winblock1", function(option)
     selectedStage = option
     currentTargetPart = findTargetStage(selectedStage)
 end)
@@ -1566,7 +1563,7 @@ end)
 local isTeleporting = false
 
 task.spawn(function()
-    while task.wait(0.1) do
+    while task.wait(0.2) do
         if autoFarmWinsActive and not isTeleporting then
             isTeleporting = true
             
@@ -1580,17 +1577,25 @@ task.spawn(function()
                     local hrp = character and character:FindFirstChild("HumanoidRootPart")
                     
                     if hrp then
-                        local targetCFrame = currentTargetPart:IsA("BasePart") and currentTargetPart.CFrame or currentTargetPart:GetPivot()
-                        
-                        SafeTweenHoverTeleport(targetCFrame)
-                        
-                        if firetouchinterest and currentTargetPart:IsA("BasePart") then
-                            firetouchinterest(hrp, currentTargetPart, 0)
-                            task.wait(0.1)
-                            firetouchinterest(hrp, currentTargetPart, 1)
+                        local targetPart = currentTargetPart:IsA("BasePart") and currentTargetPart or (currentTargetPart.PrimaryPart or currentTargetPart:FindFirstChildWhichIsA("BasePart"))
+                        if targetPart then
+                            local targetCFrame = targetPart.CFrame
+                            
+                            -- Плавный полет
+                            SafeTweenHoverTeleport(targetCFrame)
+                            
+                            -- Полная посадка прямо на Winblock
+                            hrp.CFrame = targetCFrame + Vector3.new(0, 1.5, 0)
+                            
+                            -- Принудительный Touch для гарантии зачисления победы
+                            if firetouchinterest then
+                                firetouchinterest(hrp, targetPart, 0)
+                                task.wait(0.05)
+                                firetouchinterest(hrp, targetPart, 1)
+                            end
+                            
+                            task.wait(0.5)
                         end
-                        
-                        task.wait(0.4)
                     end
                 end
             end)
@@ -1755,8 +1760,8 @@ Library:CreateDropdown(SettingsPage, "Language", {"English", "Русский"}, 
     SearchBox.PlaceholderText = option == "Русский" and "Поиск..." or "Search..."
 end)
 
-local isAntiAfkActive = false
-Library:CreateToggle(SettingsPage, "AntiAFK", false, function(state)
+local isAntiAfkActive = true
+Library:CreateToggle(SettingsPage, "AntiAFK", true, function(state)
     isAntiAfkActive = state
     toggleAntiAFK(state)
 end)
