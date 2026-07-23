@@ -1530,27 +1530,28 @@ local function RapidFarmStage(targetObj)
     hrp.AssemblyLinearVelocity = Vector3.zero
     hrp.AssemblyAngularVelocity = Vector3.zero
     
-    -- Мгновенно телепортируем к объекту
-    hrp.CFrame = targetCFrame + Vector3.new(0, 1.5, 0)
+    -- Убрано поднятие на 1.5 стада. Теперь ТП происходит прямо в координаты кнопки для гарантированного касания
+    hrp.CFrame = targetCFrame
     
-    -- Моментально эмулируем касание (работает быстрее, чем ждать физический контакт)
+    -- Моментально эмулируем касание (добавлена микро-задержка для надежности)
     if firetouchinterest then
         local partsToTouch = {}
         if targetObj:IsA("BasePart") then
             table.insert(partsToTouch, targetObj)
-        else
-            for _, child in ipairs(targetObj:GetDescendants()) do
-                if child:IsA("BasePart") then
-                    table.insert(partsToTouch, child)
-                elseif child:IsA("TouchTransmitter") and child.Parent and child.Parent:IsA("BasePart") then
-                    table.insert(partsToTouch, child.Parent)
-                end
+        end
+        
+        for _, child in ipairs(targetObj:GetDescendants()) do
+            if child:IsA("BasePart") then
+                table.insert(partsToTouch, child)
+            elseif child:IsA("TouchTransmitter") and child.Parent and child.Parent:IsA("BasePart") then
+                table.insert(partsToTouch, child.Parent)
             end
         end
 
         for _, part in ipairs(partsToTouch) do
             pcall(function()
                 firetouchinterest(hrp, part, 0)
+                task.wait(0.05) -- Микро-задержка, чтобы сервер успел обработать Touched
                 firetouchinterest(hrp, part, 1)
             end)
         end
@@ -1605,155 +1606,149 @@ local function applyPlayerESP(player)
     local function setupHighlight(character)
         if not character then return end
         
-        local highlight = character:FindFirstChild("PlayerHighlightESP")
+        local highlight = character:FindFirstChild("PulseHub_ESP")
         if not highlight then
             highlight = Instance.new("Highlight")
-            highlight.Name = "PlayerHighlightESP"
+            highlight.Name = "PulseHub_ESP"
             highlight.FillColor = PlayerESP_Color
-            highlight.OutlineColor = Color3.new(1, 1, 1)
+            highlight.OutlineColor = Color3.fromRGB(255, 255, 255)
             highlight.FillTransparency = 0.5
             highlight.OutlineTransparency = 0.2
-            highlight.Adornee = character
+            highlight.DepthMode = Enum.HighlightDepthMode.AlwaysOnTop
             highlight.Parent = character
         else
             highlight.FillColor = PlayerESP_Color
         end
+        highlight.Enabled = PlayerESP_Enabled
         
         local head = character:WaitForChild("Head", 5)
-        if head and not character:FindFirstChild("PlayerLabelESP") then
-            local billboard = Instance.new("BillboardGui")
-            billboard.Name = "PlayerLabelESP"
-            billboard.Size = UDim2.new(0, 120, 0, 30)
-            billboard.AlwaysOnTop = true
-            billboard.StudsOffset = Vector3.new(0, 3, 0)
-            billboard.Adornee = head
-            
-            local textLabel = Instance.new("TextLabel")
-            textLabel.BackgroundTransparency = 1
-            textLabel.Size = UDim2.new(1, 0, 1, 0)
-            textLabel.Text = player.Name
-            textLabel.TextColor3 = PlayerESP_Color
-            textLabel.TextSize = 13
-            textLabel.Font = Enum.Font.GothamBold
-            textLabel.TextStrokeTransparency = 0.2
-            textLabel.TextStrokeColor3 = Color3.new(0, 0, 0)
-            textLabel.Parent = billboard
-            
-            billboard.Parent = character
-        elseif character:FindFirstChild("PlayerLabelESP") then
-            local textLabel = character.PlayerLabelESP:FindFirstChildOfClass("TextLabel")
-            if textLabel then
-                textLabel.TextColor3 = PlayerESP_Color
+        if head then
+            local billboard = head:FindFirstChild("PulseHub_Billboard")
+            if not billboard then
+                billboard = Instance.new("BillboardGui")
+                billboard.Name = "PulseHub_Billboard"
+                billboard.Size = UDim2.new(0, 200, 0, 50)
+                billboard.StudsOffset = Vector3.new(0, 2.5, 0)
+                billboard.AlwaysOnTop = true
+                
+                local nameLabel = Instance.new("TextLabel")
+                nameLabel.Size = UDim2.new(1, 0, 1, 0)
+                nameLabel.BackgroundTransparency = 1
+                nameLabel.Text = player.Name
+                nameLabel.Font = Enum.Font.GothamBold
+                nameLabel.TextSize = 14
+                nameLabel.TextColor3 = PlayerESP_Color
+                nameLabel.TextStrokeColor3 = Color3.new(0,0,0)
+                nameLabel.TextStrokeTransparency = 0.2
+                nameLabel.Parent = billboard
+                
+                billboard.Parent = head
+            else
+                local nameLabel = billboard:FindFirstChildOfClass("TextLabel")
+                if nameLabel then nameLabel.TextColor3 = PlayerESP_Color end
             end
+            billboard.Enabled = PlayerESP_Enabled
         end
     end
     
-    if player.Character then
-        setupHighlight(player.Character)
-    end
+    if player.Character then setupHighlight(player.Character) end
     player.CharacterAdded:Connect(setupHighlight)
 end
 
-local function removePlayerESP(player)
-    if player.Character then
-        local hl = player.Character:FindFirstChild("PlayerHighlightESP")
-        if hl then hl:Destroy() end
-        local lbl = player.Character:FindFirstChild("PlayerLabelESP")
-        if lbl then lbl:Destroy() end
+local function updateAllESP()
+    for _, player in ipairs(Players:GetPlayers()) do
+        if player ~= Players.LocalPlayer and player.Character then
+            local highlight = player.Character:FindFirstChild("PulseHub_ESP")
+            if highlight then 
+                highlight.Enabled = PlayerESP_Enabled 
+                highlight.FillColor = PlayerESP_Color
+            end
+            local head = player.Character:FindFirstChild("Head")
+            if head then
+                local billboard = head:FindFirstChild("PulseHub_Billboard")
+                if billboard then 
+                    billboard.Enabled = PlayerESP_Enabled 
+                    local label = billboard:FindFirstChildOfClass("TextLabel")
+                    if label then label.TextColor3 = PlayerESP_Color end
+                end
+            end
+        end
     end
 end
 
-local function updatePlayerESP()
-    for _, player in ipairs(Players:GetPlayers()) do
-        if PlayerESP_Enabled then
-            applyPlayerESP(player)
-        else
-            removePlayerESP(player)
-        end
-    end
+Players.PlayerAdded:Connect(applyPlayerESP)
+for _, player in ipairs(Players:GetPlayers()) do
+    applyPlayerESP(player)
 end
 
 Library:CreateToggle(VisualSections["Esp"], "PlayerEsp", false, function(state)
     PlayerESP_Enabled = state
-    updatePlayerESP()
+    updateAllESP()
 end)
 
 local colorNames = {}
 for name, _ in pairs(ESP_Colors) do table.insert(colorNames, name) end
 table.sort(colorNames)
 
-Library:CreateDropdown(VisualSections["Esp"], "EspColor", colorNames, "Green", function(selectedColorName)
-    local selectedColor = ESP_Colors[selectedColorName] or Color3.fromRGB(46, 204, 113)
-    PlayerESP_Color = selectedColor
-    if PlayerESP_Enabled then
-        updatePlayerESP()
-    end
+Library:CreateDropdown(VisualSections["Esp"], "EspColor", colorNames, "Green", function(option)
+    PlayerESP_Color = ESP_Colors[option]
+    updateAllESP()
 end)
 
-Players.PlayerAdded:Connect(function(player)
-    if PlayerESP_Enabled then
-        player.CharacterAdded:Connect(function(char)
-            task.wait(0.5)
-            if PlayerESP_Enabled then
-                applyPlayerESP(player)
-            end
-        end)
-    end
+local SettingsSections = Library:CreateSubTabs(SettingsPage, {
+    {Name = "UI", Icon = "92040409567954"},
+    {Name = "Theme", Icon = "82276527581519"}
+})
+
+Library:CreateToggle(SettingsSections["UI"], "AntiAFK", true, function(state) toggleAntiAFK(state) end)
+
+Library:CreateSlider(SettingsSections["UI"], "UITransparency", 0, 100, 15, function(value)
+    if not isMinimized then MainFrame.BackgroundTransparency = value / 100 end
 end)
 
--- ============================================================================
--- НАСТРОЙКИ UI И ТЕМЫ
--- ============================================================================
-local UISizeNames = {"80%", "90%", "100%", "110%", "120%"}
-local UISizes = {["80%"] = 0.8, ["90%"] = 0.9, ["100%"] = 1.0, ["110%"] = 1.1, ["120%"] = 1.2}
-
-Library:CreateDropdown(SettingsPage, "UISize", UISizeNames, "100%", function(option)
-    local scale = UISizes[option] or 1
-    tween(MainScale, {Scale = scale})
+Library:CreateSlider(SettingsSections["UI"], "UISize", 80, 120, 100, function(value)
+    MainScale.Scale = value / 100
 end)
 
-Library:CreateDropdown(SettingsPage, "UITheme", ThemeNamesList, "Deep Ocean", function(option)
-    Library:UpdateTheme(option)
-end)
-
-Library:CreateDropdown(SettingsPage, "Language", {"English", "Русский"}, "English", function(option)
-    Library.CurrentLanguage = option
-    TabTitle.Text = Localization[option][Library.CurrentTabKey] or Library.CurrentTabKey
-    for _, item in ipairs(LocaleObjects) do
-        if item.Object and item.Object.Parent then
-            local localizedText = Localization[option][item.Key] or item.Key
-            if item.Object:IsA("TextButton") or item.Object:IsA("TextLabel") then
-                item.Object.Text = localizedText
-            end
-            if item.SearchItem then
-                item.SearchItem.SearchText = NormalizeText(localizedText)
-            end
-        end
-    end
-    SearchBox.PlaceholderText = option == "Русский" and "Поиск..." or "Search..."
-end)
-
-local isAntiAfkActive = true
-Library:CreateToggle(SettingsPage, "AntiAFK", true, function(state)
-    isAntiAfkActive = state
-    toggleAntiAFK(state)
-end)
-
-local isAnimatedWindowActive = false
-Library:CreateToggle(SettingsPage, "AnimatedWindow", false, function(state)
-    isAnimatedWindowActive = state
+Library:CreateToggle(SettingsSections["UI"], "AnimatedWindow", false, function(state)
     toggleAnimatedWindow(state)
 end)
 
-local isGradientActive = false
-Library:CreateToggle(SettingsPage, "Gradient", false, function(state)
-    isGradientActive = state
+Library:CreateToggle(SettingsSections["UI"], "Gradient", false, function(state)
     toggleGradientEffect(state)
 end)
 
-Library:UpdateTheme("Deep Ocean")
-allPages["Main"].Visible = true
-allTabs["Main"].BackgroundColor3 = Color3.fromRGB(35, 35, 35)
-allTabs["Main"].BackgroundTransparency = 0
-allTabButtons["Main"].TextColor3 = Color3.fromRGB(255, 255, 255)
-if allTabIcons["Main"] then allTabIcons["Main"].ImageTransparency = 0 end
+local FontList = {}
+for fontName, _ in pairs(FontMapping) do table.insert(FontList, fontName) end
+table.sort(FontList)
+
+Library:CreateDropdown(SettingsSections["UI"], "MenuFont", FontList, "Gotham", function(option)
+    local selectedEnum = FontMapping[option]
+    if selectedEnum then
+        Library.CurrentFont = selectedEnum
+        for _, tBtn in pairs(allTabButtons) do tBtn.Font = selectedEnum end
+        TabTitle.Font = selectedEnum
+        SearchBox.Font = selectedEnum
+        for _, localeData in ipairs(LocaleObjects) do
+            if localeData.Object:IsA("TextLabel") or localeData.Object:IsA("TextButton") or localeData.Object:IsA("TextBox") then
+                if localeData.Object.Name ~= "FontPreviewLabel" then
+                    localeData.Object.Font = selectedEnum
+                end
+            end
+        end
+    end
+end)
+
+Library:CreateDropdown(SettingsSections["UI"], "Language", {"English", "Русский"}, "English", function(option)
+    Library.CurrentLanguage = option
+    TabTitle.Text = Localization[Library.CurrentLanguage][Library.CurrentTabKey] or Library.CurrentTabKey
+    for _, localeData in ipairs(LocaleObjects) do
+        local newText = Localization[Library.CurrentLanguage][localeData.Key] or localeData.Key
+        localeData.Object.Text = newText
+        if localeData.SearchItem then localeData.SearchItem.SearchText = NormalizeText(newText) end
+    end
+end)
+
+Library:CreateDropdown(SettingsSections["Theme"], "UITheme", ThemeNamesList, "Deep Ocean", function(option)
+    Library:UpdateTheme(option)
+end)
