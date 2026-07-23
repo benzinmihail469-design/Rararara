@@ -6,6 +6,7 @@ local GuiService = game:GetService("GuiService")
 local Players = game:GetService("Players")
 local VirtualUser = game:GetService("VirtualUser")
 local Lighting = game:GetService("Lighting")
+local PathfindingService = game:GetService("PathfindingService")
 
 local startTime = os.clock()
 local function formatSessionTime(seconds)
@@ -1440,12 +1441,11 @@ Library:CreateButton(TeleportPage, "TeleportToLobby", function()
 end)
 
 -- ============================================================================
--- ОБНОВЛЕННЫЙ И ИСПРАВЛЕННЫЙ AUTO FARM WINS
+-- ОБНОВЛЕННЫЙ AUTO FARM WINS (БЕЗ NOCLIP + С ОБХОДОМ ПРЕПЯТСТВИЙ)
 -- ============================================================================
 local autoFarmWinsActive = false
 local selectedStage = ""
 
--- Гибкий поиск абсолютно всех Winblock и зон финиша
 local function GetDynamicStages()
     local stagesData = {}
     local stagesNames = {}
@@ -1456,7 +1456,6 @@ local function GetDynamicStages()
             local name = obj.Name
             local lowerName = name:lower()
             
-            -- Ищет winblock, win, stage, finish и номера этапов
             if string.find(lowerName, "win") or string.find(lowerName, "stage") or string.find(lowerName, "finish") then
                 if not added[name] then
                     added[name] = true
@@ -1494,74 +1493,111 @@ local function findTargetStage(stageName)
     return nil
 end
 
--- Безопасное пошаговое перемещение (не вызывает кик за полет)
-local function SafeTeleportToTarget(targetObj)
+-- Безопасное плавно-пошаговое перемещение с обходом препятствий через Pathfinding
+local function SafeMoveToTarget(targetObj)
     local character = Players.LocalPlayer.Character
     if not character or not character:FindFirstChild("HumanoidRootPart") then return end
     
     local hrp = character.HumanoidRootPart
     local humanoid = character:FindFirstChildOfClass("Humanoid")
-    
-    if humanoid then
-        humanoid.PlatformStand = true -- Отключаем физику, чтобы античит не кикал
+    if not humanoid or humanoid.Health <= 0 then return end
+
+    -- Включаем обратно коллизию деталей (никакого NoClip!)
+    for _, part in ipairs(character:GetDescendants()) do
+        if part:IsA("BasePart") then
+            part.CanCollide = true
+        end
     end
 
-    local noclipConnection = RunService.Stepped:Connect(function()
-        if character then
-            for _, part in ipairs(character:GetDescendants()) do
-                if part:IsA("BasePart") then
-                    part.CanCollide = false
+    local targetCFrame = targetObj:IsA("BasePart") and targetObj.CFrame or targetObj:GetPivot()
+    local endPos = targetCFrame.Position + Vector3.new(0, 2, 0)
+
+    -- Генерация пути вокруг стен, лавы, обрывов и мобов
+    local path = PathfindingService:CreatePath({
+        AgentRadius = 2,
+        AgentHeight = 5,
+        AgentCanJump = true,
+        WaypointSpacing = 4
+    })
+
+    local success, _ = pcall(function()
+        path:ComputeAsync(hrp.Position, endPos)
+    end)
+
+    if success and path.Status == Enum.PathStatus.Success then
+        local waypoints = path:GetWaypoints()
+        
+        for _, waypoint in ipairs(waypoints) do
+            if not autoFarmWinsActive then break end
+            if not character or not hrp or not humanoid or humanoid.Health <= 0 then break end
+            
+            -- Прыжок, если путь пересекает препятствие или обрыв
+            if waypoint.Action == Enum.PathWaypointAction.Jump then
+                humanoid.Jump = true
+            end
+            
+            -- Плавное и убавленное по скорости перемещение от точки к точке
+            local startWp = hrp.Position
+            local targetWp = waypoint.Position + Vector3.new(0, 2, 0)
+            local dist = (targetWp - startWp).Magnitude
+            local steps = math.max(1, math.floor(dist / 3))
+            
+            for step = 1, steps do
+                if not autoFarmWinsActive then break end
+                local alpha = step / steps
+                local currentPos = startWp:Lerp(targetWp, alpha)
+                
+                hrp.CFrame = CFrame.new(currentPos)
+                if hrp:IsA("BasePart") then
+                    hrp.AssemblyLinearVelocity = Vector3.zero
+                    hrp.AssemblyAngularVelocity = Vector3.zero
+                end
+                
+                task.wait(0.06) -- Убавленная плавная скорость
+            end
+        end
+    else
+        -- Запасной плавный и медленный маршрут (если невозможно построить вейпоинты)
+        local startPos = hrp.Position
+        local distance = (endPos - startPos).Magnitude
+        local steps = math.clamp(math.floor(distance / 8), 1, 30)
+        
+        for i = 1, steps do
+            if not autoFarmWinsActive then break end
+            local alpha = i / steps
+            local currentStepPos = startPos:Lerp(endPos, alpha)
+            hrp.CFrame = CFrame.new(currentStepPos)
+            if hrp:IsA("BasePart") then
+                hrp.AssemblyLinearVelocity = Vector3.zero
+                hrp.AssemblyAngularVelocity = Vector3.zero
+            end
+            task.wait(0.08)
+        end
+    end
+
+    -- Завершение финиша и сработка триггера
+    if autoFarmWinsActive and character and hrp then
+        hrp.CFrame = targetCFrame + Vector3.new(0, 1.8, 0)
+        task.wait(0.15)
+
+        local function triggerTouch(part)
+            if firetouchinterest and part:IsA("BasePart") then
+                firetouchinterest(hrp, part, 0)
+                task.wait(0.05)
+                firetouchinterest(hrp, part, 1)
+            end
+        end
+
+        if targetObj:IsA("BasePart") then
+            triggerTouch(targetObj)
+        else
+            for _, child in ipairs(targetObj:GetDescendants()) do
+                if child:IsA("BasePart") or child:IsA("TouchTransmitter") then
+                    local parentPart = child:IsA("TouchTransmitter") and child.Parent or child
+                    triggerTouch(parentPart)
                 end
             end
         end
-    end)
-
-    local targetCFrame = targetObj:IsA("BasePart") and targetObj.CFrame or targetObj:GetPivot()
-    local startPos = hrp.Position
-    local endPos = targetCFrame.Position + Vector3.new(0, 2, 0)
-    local distance = (endPos - startPos).Magnitude
-    
-    -- Безопасные шаги телепортации
-    local steps = math.clamp(math.floor(distance / 25), 1, 15)
-    for i = 1, steps do
-        if not autoFarmWinsActive then break end
-        local alpha = i / steps
-        local currentStepPos = startPos:Lerp(endPos, alpha)
-        hrp.CFrame = CFrame.new(currentStepPos)
-        if hrp:IsA("BasePart") then
-            hrp.AssemblyLinearVelocity = Vector3.zero
-            hrp.AssemblyAngularVelocity = Vector3.zero
-        end
-        task.wait(0.03)
-    end
-
-    -- Становимся ровно на блок
-    hrp.CFrame = targetCFrame + Vector3.new(0, 1.8, 0)
-    task.wait(0.1)
-
-    -- Принудительный Touch для зачисления победы (вызывается на все детали блока)
-    local function triggerTouch(part)
-        if firetouchinterest and part:IsA("BasePart") then
-            firetouchinterest(hrp, part, 0)
-            task.wait(0.05)
-            firetouchinterest(hrp, part, 1)
-        end
-    end
-
-    if targetObj:IsA("BasePart") then
-        triggerTouch(targetObj)
-    else
-        for _, child in ipairs(targetObj:GetDescendants()) do
-            if child:IsA("BasePart") or child:IsA("TouchTransmitter") then
-                local parentPart = child:IsA("TouchTransmitter") and child.Parent or child
-                triggerTouch(parentPart)
-            end
-        end
-    end
-
-    noclipConnection:Disconnect()
-    if humanoid then
-        humanoid.PlatformStand = false
     end
 end
 
@@ -1576,15 +1612,14 @@ end)
 local isTeleporting = false
 
 task.spawn(function()
-    while task.wait(0.3) do
+    while task.wait(1.0) do -- Задержка между фармом для исключения бана/кика
         if autoFarmWinsActive and not isTeleporting then
             isTeleporting = true
             
             pcall(function()
                 local targetObj = findTargetStage(selectedStage)
                 if targetObj then
-                    SafeTeleportToTarget(targetObj)
-                    task.wait(0.5)
+                    SafeMoveToTarget(targetObj)
                 end
             end)
             
