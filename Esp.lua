@@ -548,11 +548,11 @@ function Library:UpdateTheme(themeName)
                 tween(data.SelectedLabel, {TextColor3 = theme.Accent})
             end
             for optName, optData in pairs(data.Options) do
-                optData.Check.TextColor3 = theme.Accent
+                if optData.Check and optData.Check.Parent then optData.Check.TextColor3 = theme.Accent end
                 if optName == currentSelection then
-                    tween(optData.Label, {TextColor3 = theme.Accent})
+                    if optData.Label and optData.Label.Parent then tween(optData.Label, {TextColor3 = theme.Accent}) end
                 else
-                    optData.Label.TextColor3 = subTextColor
+                    if optData.Label and optData.Label.Parent then optData.Label.TextColor3 = subTextColor end
                 end
             end
         end
@@ -829,7 +829,8 @@ function Library:CreateDropdown(parentPage, textKey, options, default, callback,
     
     local function toggleDropdown()
         isExpanded = not isExpanded
-        local baseOptionsHeight = #options * 32
+        local currentOptionsCount = #options
+        local baseOptionsHeight = currentOptionsCount * 32
         local maxVisibleOptionsHeight = 140
         local contentHeight = math.min(baseOptionsHeight, maxVisibleOptionsHeight)
         if previews then contentHeight = contentHeight + 122 end
@@ -841,80 +842,89 @@ function Library:CreateDropdown(parentPage, textKey, options, default, callback,
     end
     HeaderBtn.Activated:Connect(toggleDropdown)
     
-    for i, option in ipairs(options) do
-        local OptBtn = Instance.new("TextButton", OptionsContainer)
-        OptBtn.Size = UDim2.new(1, 0, 0, 32)
-        OptBtn.BackgroundTransparency = 1
-        OptBtn.BackgroundColor3 = Color3.fromRGB(255, 255, 255)
-        OptBtn.Text = ""
-        OptBtn.LayoutOrder = i
-        OptBtn.ZIndex = 8
-        
-        local OptLabel = Instance.new("TextLabel", OptionsContainer)
-        OptLabel.Parent = OptBtn
-        OptLabel.Size = UDim2.new(1, -40, 1, 0)
-        OptLabel.Position = UDim2.new(0, 16, 0, 0)
-        OptLabel.Text = option
-        OptLabel.TextSize = 12
-        OptLabel.TextXAlignment = Enum.TextXAlignment.Left
-        OptLabel.BackgroundTransparency = 1
-        OptLabel.ZIndex = 9
-        
-        if FontMapping and FontMapping[option] then
-            OptLabel.Font = FontMapping[option]
-            OptLabel.Name = "FontPreviewLabel" 
-        else
-            OptLabel.Font = Library.CurrentFont
+    local function populateOptions(newOptions)
+        options = newOptions
+        for _, child in ipairs(OptionsContainer:GetChildren()) do
+            if child:IsA("TextButton") then child:Destroy() end
         end
+        optionButtons = {}
         
-        local Checkmark = Instance.new("TextLabel", OptBtn)
-        Checkmark.Size = UDim2.new(0, 20, 1, 0)
-        Checkmark.Position = UDim2.new(1, -30, 0, 0)
-        Checkmark.Text = "✓"
-        Checkmark.Font = Enum.Font.GothamBold
-        Checkmark.TextColor3 = Library.CurrentThemeData.Accent
-        Checkmark.TextSize = 12
-        Checkmark.BackgroundTransparency = 1
-        Checkmark.Visible = (option == default)
-        Checkmark.ZIndex = 9
-        
-        OptBtn.MouseEnter:Connect(function()
-            tween(OptBtn, {BackgroundTransparency = 0.96}, 0.15)
-            if previews and previews[option] then
-                local img = previews[option]
-                PreviewImage.Image = tonumber(img) and ("rbxassetid://" .. tostring(img)) or img
+        for i, option in ipairs(options) do
+            local OptBtn = Instance.new("TextButton", OptionsContainer)
+            OptBtn.Size = UDim2.new(1, 0, 0, 32)
+            OptBtn.BackgroundTransparency = 1
+            OptBtn.BackgroundColor3 = Color3.fromRGB(255, 255, 255)
+            OptBtn.Text = ""
+            OptBtn.LayoutOrder = i
+            OptBtn.ZIndex = 8
+            
+            local OptLabel = Instance.new("TextLabel", OptBtn)
+            OptLabel.Size = UDim2.new(1, -40, 1, 0)
+            OptLabel.Position = UDim2.new(0, 16, 0, 0)
+            OptLabel.Text = option
+            OptLabel.TextSize = 12
+            OptLabel.TextXAlignment = Enum.TextXAlignment.Left
+            OptLabel.BackgroundTransparency = 1
+            OptLabel.ZIndex = 9
+            
+            if FontMapping and FontMapping[option] then
+                OptLabel.Font = FontMapping[option]
+                OptLabel.Name = "FontPreviewLabel" 
+            else
+                OptLabel.Font = Library.CurrentFont
             end
-        end)
-        OptBtn.MouseLeave:Connect(function()
-            tween(OptBtn, {BackgroundTransparency = 1}, 0.15)
-            if previews then
-                local currentSelected = SelectedLabel.Text
-                local img = previews[currentSelected] or previews[default] or ""
-                PreviewImage.Image = tonumber(img) and ("rbxassetid://" .. tostring(img)) or img
-            end
-        end)
-        
-        optionButtons[option] = {Button = OptBtn, Label = OptLabel, Check = Checkmark}
-        OptBtn.Activated:Connect(function()
-            SelectedLabel.Text = option
-            for optName, optData in pairs(optionButtons) do
-                if optName == option then
-                    optData.Label.TextColor3 = Library.CurrentThemeData.Accent
-                    optData.Check.Visible = true
-                else
-                    local bgL = (Library.CurrentThemeData.MainBg.R * 0.299 + Library.CurrentThemeData.MainBg.G * 0.587 + Library.CurrentThemeData.MainBg.B * 0.114)
-                    optData.Label.TextColor3 = (bgL > 0.5) and Color3.fromRGB(110, 110, 110) or Color3.fromRGB(180, 180, 180)
-                    optData.Check.Visible = false
+            
+            local Checkmark = Instance.new("TextLabel", OptBtn)
+            Checkmark.Size = UDim2.new(0, 20, 1, 0)
+            Checkmark.Position = UDim2.new(1, -30, 0, 0)
+            Checkmark.Text = "✓"
+            Checkmark.Font = Enum.Font.GothamBold
+            Checkmark.TextColor3 = Library.CurrentThemeData.Accent
+            Checkmark.TextSize = 12
+            Checkmark.BackgroundTransparency = 1
+            Checkmark.Visible = (option == SelectedLabel.Text)
+            Checkmark.ZIndex = 9
+            
+            OptBtn.MouseEnter:Connect(function()
+                tween(OptBtn, {BackgroundTransparency = 0.96}, 0.15)
+                if previews and previews[option] then
+                    local img = previews[option]
+                    PreviewImage.Image = tonumber(img) and ("rbxassetid://" .. tostring(img)) or img
                 end
-            end
-            if previews and previews[option] then
-                local img = previews[option]
-                PreviewImage.Image = tonumber(img) and ("rbxassetid://" .. tostring(img)) or img
-            end
-            toggleDropdown()
-            callback(option)
-        end)
+            end)
+            OptBtn.MouseLeave:Connect(function()
+                tween(OptBtn, {BackgroundTransparency = 1}, 0.15)
+                if previews then
+                    local currentSelected = SelectedLabel.Text
+                    local img = previews[currentSelected] or previews[default] or ""
+                    PreviewImage.Image = tonumber(img) and ("rbxassetid://" .. tostring(img)) or img
+                end
+            end)
+            
+            optionButtons[option] = {Button = OptBtn, Label = OptLabel, Check = Checkmark}
+            OptBtn.Activated:Connect(function()
+                SelectedLabel.Text = option
+                for optName, optData in pairs(optionButtons) do
+                    if optName == option then
+                        optData.Label.TextColor3 = Library.CurrentThemeData.Accent
+                        optData.Check.Visible = true
+                    else
+                        local bgL = (Library.CurrentThemeData.MainBg.R * 0.299 + Library.CurrentThemeData.MainBg.G * 0.587 + Library.CurrentThemeData.MainBg.B * 0.114)
+                        optData.Label.TextColor3 = (bgL > 0.5) and Color3.fromRGB(110, 110, 110) or Color3.fromRGB(180, 180, 180)
+                        optData.Check.Visible = false
+                    end
+                end
+                if previews and previews[option] then
+                    local img = previews[option]
+                    PreviewImage.Image = tonumber(img) and ("rbxassetid://" .. tostring(img)) or img
+                end
+                toggleDropdown()
+                callback(option)
+            end)
+        end
     end
+
+    populateOptions(options)
     
     table.insert(Library.TrackedAccents, {
         Type = "Dropdown",
@@ -927,6 +937,12 @@ function Library:CreateDropdown(parentPage, textKey, options, default, callback,
     local searchItem = {Instance = DropdownFrame, SearchText = NormalizeText(initialText), OriginalParent = parentPage}
     table.insert(SearchableElements, searchItem)
     table.insert(LocaleObjects, {Object = TitleLabel, Key = textKey, SearchItem = searchItem})
+
+    return {
+        UpdateOptions = function(newOpts)
+            populateOptions(newOpts)
+        end
+    }
 end
 
 function Library:CreateButton(parentPage, textKey, callback)
@@ -1406,9 +1422,44 @@ local PlayersPage = Library:CreatePage("Players", "99904215381150", 5)
 local VisualPage = Library:CreatePage("Visual", "78910169210318", 6)
 local SettingsPage = Library:CreatePage("Settings", "117996761927034", 99)
 
+-- ============================================================================
+-- АВТО-ФАРМ МОНЕТ
+-- ============================================================================
 local autoFarmActive = false
 Library:CreateToggle(MainPage, "AutoFarmCoins", false, function(state) 
     autoFarmActive = state
+end)
+
+task.spawn(function()
+    while task.wait(0.2) do
+        if autoFarmActive then
+            pcall(function()
+                local character = Players.LocalPlayer.Character
+                if not character or not character:FindFirstChild("HumanoidRootPart") then return end
+                local hrp = character.HumanoidRootPart
+
+                for _, item in ipairs(workspace:GetDescendants()) do
+                    if not autoFarmActive then break end
+                    if item:IsA("BasePart") or item:IsA("Model") then
+                        local lName = item.Name:lower()
+                        if (lName:find("coin") or lName:find("gem") or lName:find("money") or lName:find("token") or lName:find("cash"))
+                           and not lName:find("gui") and not lName:find("shop") then
+                            
+                            local partToTouch = item:IsA("BasePart") and item or item:FindFirstChildOfClass("BasePart")
+                            if partToTouch then
+                                hrp.CFrame = partToTouch.CFrame
+                                if firetouchinterest then
+                                    firetouchinterest(hrp, partToTouch, 0)
+                                    firetouchinterest(hrp, partToTouch, 1)
+                                end
+                                task.wait(0.05)
+                            end
+                        end
+                    end
+                end
+            end)
+        end
+    end
 end)
 
 Library:CreateSlider(PlayersPage, "WalkSpeed", 16, 150, 16, function(value)
@@ -1441,35 +1492,34 @@ Library:CreateButton(TeleportPage, "TeleportToLobby", function()
 end)
 
 -- ============================================================================
--- ОПТИМИЗИРОВАННЫЙ АВТО-ФАРМ ПОБЕД (МГНОВЕННЫЙ ТЕЛЕПОРТ И КАСАНИЕ)
+-- ОПТИМИЗИРОВАННЫЙ И ИСПРАВЛЕННЫЙ АВТО-ФАРМ ПОБЕД (ГАРАНТИРОВАННЫЙ КАСАНИЕ)
 -- ============================================================================
 local autoFarmWinsActive = false
 local selectedStage = ""
+local stageCache = {}
 
--- Фильтрация и поиск ТОЛЬКО реальных Winblock/Stage объектов
-local function GetDynamicStages()
+local function ScanStages()
     local stagesData = {}
-    local stagesNames = {}
+    local stagesNames = {"Auto All ( Все этапы )"}
     local added = {}
-    
+    stageCache = {}
+
     for _, obj in ipairs(workspace:GetDescendants()) do
         if obj:IsA("BasePart") or obj:IsA("Model") then
             local name = obj.Name
             local lowerName = name:lower()
             
-            -- Проверяем совпадение по имени и исключаем мусорные объекты
-            if (string.find(lowerName, "win") or string.find(lowerName, "stage") or string.find(lowerName, "finish"))
-               and not string.find(lowerName, "gui") 
-               and not string.find(lowerName, "effect") 
-               and not string.find(lowerName, "particle") 
-               and not string.find(lowerName, "mesh")
-               and not string.find(lowerName, "touch") then
+            if (lowerName:find("win") or lowerName:find("stage") or lowerName:find("finish") or lowerName:find("end") or lowerName:find("pad"))
+               and not lowerName:find("gui") 
+               and not lowerName:find("effect") 
+               and not lowerName:find("particle") 
+               and not lowerName:find("mesh")
+               and not lowerName:find("shop") then
                 
-                -- Если часть лежит внутри целевой модели, берем модель
                 local targetObj = obj
                 if obj:IsA("BasePart") and obj.Parent and obj.Parent:IsA("Model") and obj.Parent ~= workspace then
                     local parentLower = obj.Parent.Name:lower()
-                    if string.find(parentLower, "win") or string.find(parentLower, "stage") or string.find(parentLower, "finish") then
+                    if parentLower:find("win") or parentLower:find("stage") or parentLower:find("finish") or parentLower:find("end") then
                         targetObj = obj.Parent
                     end
                 end
@@ -1477,45 +1527,50 @@ local function GetDynamicStages()
                 local cleanName = targetObj.Name
                 if not added[cleanName] then
                     added[cleanName] = true
+                    stageCache[cleanName] = targetObj
                     local num = tonumber(cleanName:match("%d+")) or 9999
                     table.insert(stagesData, {Name = cleanName, Num = num})
                 end
             end
         end
     end
-    
+
     table.sort(stagesData, function(a, b) 
         if a.Num == b.Num then return a.Name < b.Name end
         return a.Num < b.Num 
     end)
-    
+
     for _, data in ipairs(stagesData) do
         table.insert(stagesNames, data.Name)
     end
-    
-    if #stagesNames == 0 then
-        stagesNames = {"Winblock1"}
-    end
-    
+
     return stagesNames
 end
 
-local dynamicStagesList = GetDynamicStages()
-selectedStage = dynamicStagesList[1] or "Winblock1"
+local dynamicStagesList = ScanStages()
+selectedStage = dynamicStagesList[1] or "Auto All ( Все этапы )"
 
-local function findTargetStage(stageName)
-    if not stageName then return nil end
-    local lowerTarget = stageName:lower()
+local StageDropdownRef = Library:CreateDropdown(AutoPage, "SelectStage", dynamicStagesList, selectedStage, function(option)
+    selectedStage = option
+end)
 
-    for _, obj in ipairs(workspace:GetDescendants()) do
-        if obj.Name:lower() == lowerTarget then
-            return obj
-        end
+Library:CreateButton(AutoPage, "Обновить список этапов", function()
+    local newList = ScanStages()
+    if StageDropdownRef and StageDropdownRef.UpdateOptions then
+        StageDropdownRef.UpdateOptions(newList)
     end
-    return nil
+end)
+
+local function TriggerTouch(hrp, targetPart)
+    if not targetPart or not targetPart:IsA("BasePart") then return end
+    if firetouchinterest then
+        pcall(function()
+            firetouchinterest(hrp, targetPart, 0)
+            firetouchinterest(hrp, targetPart, 1)
+        end)
+    end
 end
 
--- Быстрая функция телепортации и засчитывания победы
 local function RapidFarmStage(targetObj)
     local character = Players.LocalPlayer.Character
     if not character or not character:FindFirstChild("HumanoidRootPart") then return end
@@ -1524,43 +1579,32 @@ local function RapidFarmStage(targetObj)
     local humanoid = character:FindFirstChildOfClass("Humanoid")
     if not humanoid or humanoid.Health <= 0 then return end
 
-    local targetCFrame = targetObj:IsA("BasePart") and targetObj.CFrame or targetObj:GetPivot()
-    
-    -- Сбрасываем физическую инерцию, чтобы персонажа не откидывало
-    hrp.AssemblyLinearVelocity = Vector3.zero
-    hrp.AssemblyAngularVelocity = Vector3.zero
-    
-    -- Убрано поднятие на 1.5 стада. Теперь ТП происходит прямо в координаты кнопки для гарантированного касания
-    hrp.CFrame = targetCFrame
-    
-    -- Моментально эмулируем касание (добавлена микро-задержка для надежности)
-    if firetouchinterest then
-        local partsToTouch = {}
-        if targetObj:IsA("BasePart") then
-            table.insert(partsToTouch, targetObj)
-        end
-        
+    local targetParts = {}
+    if targetObj:IsA("BasePart") then
+        table.insert(targetParts, targetObj)
+    elseif targetObj:IsA("Model") then
         for _, child in ipairs(targetObj:GetDescendants()) do
             if child:IsA("BasePart") then
-                table.insert(partsToTouch, child)
-            elseif child:IsA("TouchTransmitter") and child.Parent and child.Parent:IsA("BasePart") then
-                table.insert(partsToTouch, child.Parent)
+                table.insert(targetParts, child)
             end
         end
+    end
 
-        for _, part in ipairs(partsToTouch) do
-            pcall(function()
-                firetouchinterest(hrp, part, 0)
-                task.wait(0.05) -- Микро-задержка, чтобы сервер успел обработать Touched
-                firetouchinterest(hrp, part, 1)
-            end)
-        end
+    if #targetParts == 0 then return end
+
+    for _, part in ipairs(targetParts) do
+        if not autoFarmWinsActive then break end
+        
+        hrp.AssemblyLinearVelocity = Vector3.zero
+        hrp.AssemblyAngularVelocity = Vector3.zero
+        hrp.CFrame = part.CFrame
+        
+        TriggerTouch(hrp, part)
+        
+        local leftFoot = character:FindFirstChild("LeftFoot") or character:FindFirstChild("Left Leg")
+        if leftFoot then TriggerTouch(leftFoot, part) end
     end
 end
-
-Library:CreateDropdown(AutoPage, "SelectStage", dynamicStagesList, dynamicStagesList[1] or "Winblock1", function(option)
-    selectedStage = option
-end)
 
 Library:CreateToggle(AutoPage, "AutoFarmWins", false, function(state)
     autoFarmWinsActive = state
@@ -1570,9 +1614,23 @@ task.spawn(function()
     while task.wait(0.1) do
         if autoFarmWinsActive then
             pcall(function()
-                local targetObj = findTargetStage(selectedStage)
-                if targetObj then
-                    RapidFarmStage(targetObj)
+                if selectedStage == "Auto All ( Все этапы )" or selectedStage == "" then
+                    for stageName, targetObj in pairs(stageCache) do
+                        if not autoFarmWinsActive then break end
+                        if targetObj and targetObj.Parent then
+                            RapidFarmStage(targetObj)
+                            task.wait(0.05)
+                        end
+                    end
+                else
+                    local targetObj = stageCache[selectedStage]
+                    if not targetObj or not targetObj.Parent then
+                        ScanStages()
+                        targetObj = stageCache[selectedStage]
+                    end
+                    if targetObj then
+                        RapidFarmStage(targetObj)
+                    end
                 end
             end)
         end
