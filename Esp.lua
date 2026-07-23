@@ -1441,7 +1441,7 @@ Library:CreateButton(TeleportPage, "TeleportToLobby", function()
 end)
 
 -- ============================================================================
--- ИСПРАВЛЕННЫЙ АВТО-ФАРМ ПОБЕД (ЧИСТЫЕ ДРОПДАУНЫ + СРАБАТЫВАНИЕ WINBLOCK3 + PATHFINDING)
+-- ОПТИМИЗИРОВАННЫЙ АВТО-ФАРМ ПОБЕД (МГНОВЕННЫЙ ТЕЛЕПОРТ И КАСАНИЕ)
 -- ============================================================================
 local autoFarmWinsActive = false
 local selectedStage = ""
@@ -1515,50 +1515,8 @@ local function findTargetStage(stageName)
     return nil
 end
 
--- Гарантированное вызов события касания (Засчитывание Winblock3)
-local function FireWinTouch(targetObj, hrp, character)
-    if not targetObj or not hrp then return end
-    
-    local partsToTouch = {}
-    if targetObj:IsA("BasePart") then
-        table.insert(partsToTouch, targetObj)
-    else
-        for _, child in ipairs(targetObj:GetDescendants()) do
-            if child:IsA("BasePart") then
-                table.insert(partsToTouch, child)
-            elseif child:IsA("TouchTransmitter") and child.Parent and child.Parent:IsA("BasePart") then
-                table.insert(partsToTouch, child.Parent)
-            end
-        end
-    end
-
-    -- Телепорт персонажа непосредственно внутрь зоны блока
-    local targetPos = targetObj:IsA("BasePart") and targetObj.CFrame or targetObj:GetPivot()
-    hrp.CFrame = targetPos + Vector3.new(0, 1.5, 0)
-    
-    -- Активация касаний от имени игрока
-    for _, part in ipairs(partsToTouch) do
-        if firetouchinterest then
-            pcall(function()
-                firetouchinterest(hrp, part, 0)
-                task.wait(0.02)
-                firetouchinterest(hrp, part, 1)
-            end)
-            
-            local torso = character:FindFirstChild("Torso") or character:FindFirstChild("UpperTorso") or character:FindFirstChild("LeftFoot")
-            if torso then
-                pcall(function()
-                    firetouchinterest(torso, part, 0)
-                    task.wait(0.02)
-                    firetouchinterest(torso, part, 1)
-                end)
-            end
-        end
-    end
-end
-
--- Обход препятствий через физический PathfindingService + Humanoid:MoveTo()
-local function SafeMoveToTarget(targetObj)
+-- Быстрая функция телепортации и засчитывания победы
+local function RapidFarmStage(targetObj)
     local character = Players.LocalPlayer.Character
     if not character or not character:FindFirstChild("HumanoidRootPart") then return end
     
@@ -1567,75 +1525,35 @@ local function SafeMoveToTarget(targetObj)
     if not humanoid or humanoid.Health <= 0 then return end
 
     local targetCFrame = targetObj:IsA("BasePart") and targetObj.CFrame or targetObj:GetPivot()
-    local endPos = targetCFrame.Position
-
-    local path = PathfindingService:CreatePath({
-        AgentRadius = 2,
-        AgentHeight = 5,
-        AgentCanJump = true,
-        WaypointSpacing = 3
-    })
-
-    local success, _ = pcall(function()
-        path:ComputeAsync(hrp.Position, endPos)
-    end)
-
-    if success and path.Status == Enum.PathStatus.Success then
-        local waypoints = path:GetWaypoints()
-        
-        for i, waypoint in ipairs(waypoints) do
-            if not autoFarmWinsActive then break end
-            if not character or not hrp or not humanoid or humanoid.Health <= 0 then break end
-            if i == 1 then continue end
-
-            -- Прыжок при препятствии/яме
-            if waypoint.Action == Enum.PathWaypointAction.Jump then
-                humanoid.Jump = true
+    
+    -- Сбрасываем физическую инерцию, чтобы персонажа не откидывало
+    hrp.AssemblyLinearVelocity = Vector3.zero
+    hrp.AssemblyAngularVelocity = Vector3.zero
+    
+    -- Мгновенно телепортируем к объекту
+    hrp.CFrame = targetCFrame + Vector3.new(0, 1.5, 0)
+    
+    -- Моментально эмулируем касание (работает быстрее, чем ждать физический контакт)
+    if firetouchinterest then
+        local partsToTouch = {}
+        if targetObj:IsA("BasePart") then
+            table.insert(partsToTouch, targetObj)
+        else
+            for _, child in ipairs(targetObj:GetDescendants()) do
+                if child:IsA("BasePart") then
+                    table.insert(partsToTouch, child)
+                elseif child:IsA("TouchTransmitter") and child.Parent and child.Parent:IsA("BasePart") then
+                    table.insert(partsToTouch, child.Parent)
+                end
             end
+        end
 
-            humanoid:MoveTo(waypoint.Position)
-            
-            -- Таймер на перемещение к следующей точке для защиты от застревания
-            local timeSpent = 0
-            local reached = false
-            local conn
-            conn = humanoid.MoveToFinished:Connect(function()
-                reached = true
+        for _, part in ipairs(partsToTouch) do
+            pcall(function()
+                firetouchinterest(hrp, part, 0)
+                firetouchinterest(hrp, part, 1)
             end)
-
-            while not reached and timeSpent < 1.5 do
-                if not autoFarmWinsActive or humanoid.Health <= 0 then break end
-                task.wait(0.05)
-                timeSpent = timeSpent + 0.05
-            end
-            if conn then conn:Disconnect() end
-
-            if not reached then
-                humanoid.Jump = true
-                task.wait(0.1)
-            end
         end
-    else
-        -- Резервное плавное перемещение, если путь на прямую заблокирован
-        local startPos = hrp.Position
-        local distance = (endPos - startPos).Magnitude
-        local steps = math.clamp(math.floor(distance / 4), 1, 40)
-        
-        for i = 1, steps do
-            if not autoFarmWinsActive then break end
-            if not character or not hrp or humanoid.Health <= 0 then break end
-            
-            local alpha = i / steps
-            local currentStepPos = startPos:Lerp(endPos, alpha)
-            hrp.CFrame = CFrame.new(currentStepPos + Vector3.new(0, 1.5, 0))
-            hrp.AssemblyLinearVelocity = Vector3.zero
-            task.wait(0.05)
-        end
-    end
-
-    -- Активация победы
-    if autoFarmWinsActive and character and hrp and humanoid.Health > 0 then
-        FireWinTouch(targetObj, hrp, character)
     end
 end
 
@@ -1647,21 +1565,15 @@ Library:CreateToggle(AutoPage, "AutoFarmWins", false, function(state)
     autoFarmWinsActive = state
 end)
 
-local isTeleporting = false
-
 task.spawn(function()
-    while task.wait(0.8) do
-        if autoFarmWinsActive and not isTeleporting then
-            isTeleporting = true
-            
+    while task.wait(0.1) do
+        if autoFarmWinsActive then
             pcall(function()
                 local targetObj = findTargetStage(selectedStage)
                 if targetObj then
-                    SafeMoveToTarget(targetObj)
+                    RapidFarmStage(targetObj)
                 end
             end)
-            
-            isTeleporting = false
         end
     end
 end)
