@@ -1552,8 +1552,7 @@ local LoadingContainer = Instance.new("Frame")
 LoadingContainer.Name = "LoadingContainer"
 LoadingContainer.Size = UDim2.new(1, 0, 1, 0)
 LoadingContainer.Position = UDim2.new(0, 0, 0, 0)
-LoadingContainer.BackgroundColor3 = Color3.fromRGB(10, 10, 15)
-LoadingContainer.BackgroundTransparency = 1
+LoadingContainer.BackgroundTransparency = 1 -- Полностью прозрачный фон
 LoadingContainer.ZIndex = 500
 LoadingContainer.Parent = PulseHub
 
@@ -1580,37 +1579,30 @@ CardStroke.Thickness = 1
 local CardScale = Instance.new("UIScale", LoadingCard)
 CardScale.Scale = 0.8
 
--- Иконка скрипта
+-- Иконка скрипта (Кастомное изображение вместо молнии)
 local IconFrame = Instance.new("Frame")
 IconFrame.Name = "IconFrame"
 IconFrame.Size = UDim2.new(0, 44, 0, 44)
 IconFrame.Position = UDim2.new(0.5, 0, 0, 16)
 IconFrame.AnchorPoint = Vector2.new(0.5, 0)
 IconFrame.BackgroundColor3 = Color3.fromRGB(255, 255, 255)
+IconFrame.BackgroundTransparency = 1
 IconFrame.ZIndex = 502
 IconFrame.Parent = LoadingCard
 
 local IconCorner = Instance.new("UICorner", IconFrame)
-IconCorner.CornerRadius = UDim.new(1, 0)
-
-local IconGradient = Instance.new("UIGradient", IconFrame)
-IconGradient.Color = ColorSequence.new({
-    ColorSequenceKeypoint.new(0, Color3.fromRGB(30, 60, 120)),
-    ColorSequenceKeypoint.new(1, Color3.fromRGB(60, 140, 255))
-})
-IconGradient.Rotation = 45
+IconCorner.CornerRadius = UDim.new(0, 10)
 
 local IconScale = Instance.new("UIScale", IconFrame)
 IconScale.Scale = 1.0
 
-local IconText = Instance.new("TextLabel", IconFrame)
-IconText.Size = UDim2.new(1, 0, 1, 0)
-IconText.Text = "⚡"
-IconText.Font = Enum.Font.GothamBold
-IconText.TextSize = 20
-IconText.TextColor3 = Color3.fromRGB(255, 255, 255)
-IconText.BackgroundTransparency = 1
-IconText.ZIndex = 503
+local IconImage = Instance.new("ImageLabel", IconFrame)
+IconImage.Size = UDim2.new(1, 0, 1, 0)
+IconImage.BackgroundTransparency = 1
+IconImage.Image = "rbxthumb://type=Asset&id=" .. CustomIconID .. "&w=150&h=150"
+IconImage.ScaleType = Enum.ScaleType.Fit
+IconImage.ZIndex = 503
+Instance.new("UICorner", IconImage).CornerRadius = UDim.new(0, 10)
 
 -- Пульсация иконки
 local pulseInfo = TweenInfo.new(1.2, Enum.EasingStyle.Sine, Enum.EasingDirection.InOut, -1, true)
@@ -1715,9 +1707,8 @@ task.spawn(function()
     end
 end)
 
--- Процесс показа фона и контейнера
-TweenService:Create(LoadingContainer, TweenInfo.new(0.3), {BackgroundTransparency = 0.4}):Play()
-TweenService:Create(LoadingCard, TweenInfo.new(0.35, Enum.EasingStyle.Back, Enum.EasingDirection.Out), {BackgroundTransparency = 0.3}):Play()
+-- Процесс показа плашки без затемнения экрана
+TweenService:Create(LoadingCard, TweenInfo.new(0.35, Enum.EasingStyle.Back, Enum.EasingDirection.Out), {BackgroundTransparency = 0.15}):Play()
 TweenService:Create(CardScale, TweenInfo.new(0.35, Enum.EasingStyle.Back, Enum.EasingDirection.Out), {Scale = 1}):Play()
 TweenService:Create(CardStroke, TweenInfo.new(0.35), {Transparency = 0.85}):Play()
 
@@ -1791,12 +1782,11 @@ task.spawn(function()
     particlesActive = false
 
     -- Плавное затухание
-    TweenService:Create(LoadingContainer, TweenInfo.new(0.5), {BackgroundTransparency = 1}):Play()
     TweenService:Create(CardScale, TweenInfo.new(0.5, Enum.EasingStyle.Quad, Enum.EasingDirection.In), {Scale = 0.8}):Play()
     TweenService:Create(LoadingCard, TweenInfo.new(0.5), {BackgroundTransparency = 1}):Play()
     TweenService:Create(CardStroke, TweenInfo.new(0.5), {Transparency = 1}):Play()
     TweenService:Create(IconFrame, TweenInfo.new(0.5), {BackgroundTransparency = 1}):Play()
-    TweenService:Create(IconText, TweenInfo.new(0.5), {TextTransparency = 1}):Play()
+    TweenService:Create(IconImage, TweenInfo.new(0.5), {ImageTransparency = 1}):Play()
     TweenService:Create(LoadingTitle, TweenInfo.new(0.5), {TextTransparency = 1}):Play()
     TweenService:Create(ProgressBarBg, TweenInfo.new(0.5), {BackgroundTransparency = 1}):Play()
     TweenService:Create(ProgressBarFill, TweenInfo.new(0.5), {BackgroundTransparency = 1}):Play()
