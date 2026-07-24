@@ -2315,7 +2315,7 @@ NewConfigBtn.Activated:Connect(function()
     showCreateOrEditModal(nil)
 end)
 
--- Initial population of available configurations (Manual selection only, no auto-load)
+-- Initial population of available configurations
 task.spawn(function()
     refreshConfigList()
 end)
@@ -2388,21 +2388,100 @@ IconImage.ZIndex = 503
 IconImage.Parent = IconFrame
 Instance.new("UICorner", IconImage).CornerRadius = UDim.new(0, 10)
 
--- Animate UI entrance
-tween(LoadingCard, {BackgroundTransparency = 0.1}, 0.5)
-tween(CardStroke, {Transparency = 0.8}, 0.5)
-tween(CardScale, {Scale = 1}, 0.5)
+-- Animated Loading Overlay
+local LoadingTitle = Instance.new("TextLabel", LoadingCard)
+LoadingTitle.Name = "LoadingTitle"
+LoadingTitle.Size = UDim2.new(1, -20, 0, 20)
+LoadingTitle.Position = UDim2.new(0, 10, 0, 68)
+LoadingTitle.Text = "Dark Hub"
+LoadingTitle.Font = Enum.Font.GothamBold
+LoadingTitle.TextColor3 = Color3.fromRGB(255, 255, 255)
+LoadingTitle.TextSize = 15
+LoadingTitle.BackgroundTransparency = 1
+LoadingTitle.ZIndex = 503
 
-task.delay(0.6, function()
-    tween(LoadingContainer, {BackgroundTransparency = 1}, 0.4)
-    local fadeOut = tween(LoadingCard, {BackgroundTransparency = 1}, 0.4)
-    if fadeOut then
-        fadeOut.Completed:Connect(function()
-            LoadingContainer:Destroy()
-            MainFrame.Visible = true
-        end)
-    else
-        LoadingContainer:Destroy()
-        MainFrame.Visible = true
+local StatusLabel = Instance.new("TextLabel", LoadingCard)
+StatusLabel.Name = "StatusLabel"
+StatusLabel.Size = UDim2.new(1, -20, 0, 16)
+StatusLabel.Position = UDim2.new(0, 10, 0, 92)
+StatusLabel.Text = "Loading components..."
+StatusLabel.Font = Enum.Font.Gotham
+StatusLabel.TextColor3 = Color3.fromRGB(150, 150, 160)
+StatusLabel.TextSize = 11
+StatusLabel.BackgroundTransparency = 1
+StatusLabel.ZIndex = 503
+
+local ProgressTrack = Instance.new("Frame", LoadingCard)
+ProgressTrack.Name = "ProgressTrack"
+ProgressTrack.Size = UDim2.new(1, -40, 0, 6)
+ProgressTrack.Position = UDim2.new(0, 20, 0, 125)
+ProgressTrack.BackgroundColor3 = Color3.fromRGB(30, 30, 40)
+ProgressTrack.BorderSizePixel = 0
+ProgressTrack.ZIndex = 503
+Instance.new("UICorner", ProgressTrack).CornerRadius = UDim.new(1, 0)
+
+local ProgressFill = Instance.new("Frame", ProgressTrack)
+ProgressFill.Name = "ProgressFill"
+ProgressFill.Size = UDim2.new(0, 0, 1, 0)
+ProgressFill.BackgroundColor3 = getThemeAccent()
+ProgressFill.BorderSizePixel = 0
+ProgressFill.ZIndex = 504
+Instance.new("UICorner", ProgressFill).CornerRadius = UDim.new(1, 0)
+
+local PercentLabel = Instance.new("TextLabel", LoadingCard)
+PercentLabel.Name = "PercentLabel"
+PercentLabel.Size = UDim2.new(1, -40, 0, 14)
+PercentLabel.Position = UDim2.new(0, 20, 0, 138)
+PercentLabel.Text = "0%"
+PercentLabel.Font = Enum.Font.Gotham
+PercentLabel.TextColor3 = Color3.fromRGB(120, 120, 130)
+PercentLabel.TextSize = 10
+PercentLabel.TextXAlignment = Enum.TextXAlignment.Right
+PercentLabel.BackgroundTransparency = 1
+PercentLabel.ZIndex = 503
+
+-- Play Intro & Progress Sequence
+task.spawn(function()
+    tween(LoadingCard, {BackgroundTransparency = 0.1}, 0.35)
+    tween(CardStroke, {Transparency = 0.85}, 0.35)
+    tween(CardScale, {Scale = 1}, 0.35)
+
+    local steps = {
+        {progress = 0.25, text = "Initializing GUI elements..."},
+        {progress = 0.55, text = "Applying themes & localization..."},
+        {progress = 0.85, text = "Loading settings & configs..."},
+        {progress = 1.00, text = "Ready!"}
+    }
+
+    for _, step in ipairs(steps) do
+        StatusLabel.Text = step.text
+        PercentLabel.Text = string.format("%d%%", math.floor(step.progress * 100))
+        local t = tween(ProgressFill, {Size = UDim2.new(step.progress, 0, 1, 0)}, 0.3)
+        if t then t.Completed:Wait() else task.wait(0.3) end
+        task.wait(0.1)
     end
+
+    task.wait(0.2)
+
+    -- Fade out loader
+    tween(LoadingCard, {BackgroundTransparency = 1}, 0.3)
+    tween(CardStroke, {Transparency = 1}, 0.3)
+    tween(CardScale, {Scale = 0.8}, 0.3)
+    tween(LoadingTitle, {TextTransparency = 1}, 0.3)
+    tween(StatusLabel, {TextTransparency = 1}, 0.3)
+    tween(PercentLabel, {TextTransparency = 1}, 0.3)
+    tween(ProgressTrack, {BackgroundTransparency = 1}, 0.3)
+    local fadeOut = tween(ProgressFill, {BackgroundTransparency = 1}, 0.3)
+
+    if fadeOut then fadeOut.Completed:Wait() else task.wait(0.3) end
+
+    LoadingContainer:Destroy()
+
+    -- Show Main Hub Window
+    MainFrame.Visible = true
+    MainScale.Scale = 0.85
+    MainFrame.BackgroundTransparency = 1
+
+    tween(MainScale, {Scale = 1}, 0.35)
+    tween(MainFrame, {BackgroundTransparency = 0.15}, 0.35)
 end)
