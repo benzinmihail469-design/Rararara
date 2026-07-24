@@ -1,5 +1,5 @@
 -- ============================================================================
--- Dark Hub - Settings Edition (Fixed & Optimized with Loading System)
+-- Dark Hub - Settings Edition (Fixed, Optimized & Loading Screen)
 -- ============================================================================
 
 local TweenService = game:GetService("TweenService")
@@ -79,277 +79,6 @@ DarkHub.Name = "DarkHub"
 DarkHub.Parent = SafeParent
 DarkHub.ZIndexBehavior = Enum.ZIndexBehavior.Sibling
 
--- ============================================================================
--- Loading Screen
--- ============================================================================
-
-local LoadingOverlay = Instance.new("Frame")
-LoadingOverlay.Name = "LoadingOverlay"
-LoadingOverlay.Size = UDim2.new(1, 0, 1, 0)
-LoadingOverlay.BackgroundColor3 = Color3.fromRGB(10, 10, 15)
-LoadingOverlay.BackgroundTransparency = 1
-LoadingOverlay.BorderSizePixel = 0
-LoadingOverlay.ZIndex = 100
-LoadingOverlay.Parent = DarkHub
-
-local LoadingContainer = Instance.new("Frame")
-LoadingContainer.Name = "LoadingContainer"
-LoadingContainer.Size = UDim2.new(0, 300, 0, 190)
-LoadingContainer.Position = UDim2.new(0.5, 0, 0.5, 0)
-LoadingContainer.AnchorPoint = Vector2.new(0.5, 0.5)
-LoadingContainer.BackgroundColor3 = Color3.fromRGB(15, 15, 20)
-LoadingContainer.BackgroundTransparency = 1
-LoadingContainer.ClipsDescendants = true
-LoadingContainer.ZIndex = 101
-LoadingContainer.Parent = LoadingOverlay
-
-local ContainerScale = Instance.new("UIScale")
-ContainerScale.Scale = 0.85
-ContainerScale.Parent = LoadingContainer
-
-local ContainerCorner = Instance.new("UICorner")
-ContainerCorner.CornerRadius = UDim.new(0, 16)
-ContainerCorner.Parent = LoadingContainer
-
-local ContainerStroke = Instance.new("UIStroke")
-ContainerStroke.Color = Color3.fromRGB(255, 255, 255)
-ContainerStroke.Transparency = 1
-ContainerStroke.Thickness = 1
-ContainerStroke.Parent = LoadingContainer
-
--- Indicator Circle & Logo
-local IconCircle = Instance.new("Frame")
-IconCircle.Name = "IconCircle"
-IconCircle.Size = UDim2.new(0, 40, 0, 40)
-IconCircle.Position = UDim2.new(0.5, 0, 0, 18)
-IconCircle.AnchorPoint = Vector2.new(0.5, 0)
-IconCircle.BackgroundColor3 = Color3.fromRGB(255, 255, 255)
-IconCircle.BackgroundTransparency = 1
-IconCircle.ZIndex = 102
-IconCircle.Parent = LoadingContainer
-
-local IconCorner = Instance.new("UICorner")
-IconCorner.CornerRadius = UDim.new(0.5, 0)
-IconCorner.Parent = IconCircle
-
-local IconGradient = Instance.new("UIGradient")
-IconGradient.Color = ColorSequence.new({
-    ColorSequenceKeypoint.new(0, Color3.fromRGB(30, 58, 95)),
-    ColorSequenceKeypoint.new(1, Color3.fromRGB(74, 144, 217))
-})
-IconGradient.Rotation = 45
-IconGradient.Parent = IconCircle
-
-local IconScale = Instance.new("UIScale")
-IconScale.Scale = 1
-IconScale.Parent = IconCircle
-
-local IconText = Instance.new("TextLabel")
-IconText.Name = "IconText"
-IconText.Size = UDim2.new(1, 0, 1, 0)
-IconText.BackgroundTransparency = 1
-IconText.Text = "S"
-IconText.Font = Enum.Font.GothamBold
-IconText.TextSize = 20
-IconText.TextColor3 = Color3.fromRGB(255, 255, 255)
-IconText.TextTransparency = 1
-IconText.ZIndex = 103
-IconText.Parent = IconCircle
-
--- Title Label
-local LoadingTitle = Instance.new("TextLabel")
-LoadingTitle.Name = "LoadingTitle"
-LoadingTitle.Size = UDim2.new(1, -20, 0, 20)
-LoadingTitle.Position = UDim2.new(0.5, 0, 0, 64)
-LoadingTitle.AnchorPoint = Vector2.new(0.5, 0)
-LoadingTitle.BackgroundTransparency = 1
-LoadingTitle.Text = "Dark Hub"
-LoadingTitle.Font = Enum.Font.GothamBold
-LoadingTitle.TextSize = 16
-LoadingTitle.TextColor3 = Color3.fromRGB(255, 255, 255)
-LoadingTitle.TextTransparency = 1
-LoadingTitle.ZIndex = 102
-LoadingTitle.Parent = LoadingContainer
-
--- ============================================================================
--- Progress Bar
--- ============================================================================
-
-local TrackFrame = Instance.new("Frame")
-TrackFrame.Name = "TrackFrame"
-TrackFrame.Size = UDim2.new(0, 240, 0, 8)
-TrackFrame.Position = UDim2.new(0.5, 0, 0, 98)
-TrackFrame.AnchorPoint = Vector2.new(0.5, 0)
-TrackFrame.BackgroundColor3 = Color3.fromRGB(42, 42, 53)
-TrackFrame.BackgroundTransparency = 1
-TrackFrame.ZIndex = 102
-TrackFrame.Parent = LoadingContainer
-
-local TrackCorner = Instance.new("UICorner")
-TrackCorner.CornerRadius = UDim.new(0, 8)
-TrackCorner.Parent = TrackFrame
-
-local FillFrame = Instance.new("Frame")
-FillFrame.Name = "FillFrame"
-FillFrame.Size = UDim2.new(0, 0, 1, 0)
-FillFrame.BackgroundColor3 = Color3.fromRGB(255, 255, 255)
-FillFrame.BackgroundTransparency = 1
-FillFrame.BorderSizePixel = 0
-FillFrame.ClipsDescendants = true
-FillFrame.ZIndex = 103
-FillFrame.Parent = TrackFrame
-
-local FillCorner = Instance.new("UICorner")
-FillCorner.CornerRadius = UDim.new(0, 8)
-FillCorner.Parent = FillFrame
-
-local FillGradient = Instance.new("UIGradient")
-FillGradient.Color = ColorSequence.new({
-    ColorSequenceKeypoint.new(0, Color3.fromRGB(30, 58, 95)),
-    ColorSequenceKeypoint.new(0.5, Color3.fromRGB(74, 144, 217)),
-    ColorSequenceKeypoint.new(1, Color3.fromRGB(30, 58, 95))
-})
-FillGradient.Offset = Vector2.new(-0.5, 0)
-FillGradient.Parent = FillFrame
-
-local PercentLabel = Instance.new("TextLabel")
-PercentLabel.Name = "PercentLabel"
-PercentLabel.Size = UDim2.new(1, 0, 0, 16)
-PercentLabel.Position = UDim2.new(0.5, 0, 0, 112)
-PercentLabel.AnchorPoint = Vector2.new(0.5, 0)
-PercentLabel.BackgroundTransparency = 1
-PercentLabel.Text = "0%"
-PercentLabel.Font = Enum.Font.GothamBold
-PercentLabel.TextSize = 12
-PercentLabel.TextColor3 = Color3.fromRGB(255, 255, 255)
-PercentLabel.TextTransparency = 1
-PercentLabel.ZIndex = 102
-PercentLabel.Parent = LoadingContainer
-
-local StatusLabel = Instance.new("TextLabel")
-StatusLabel.Name = "StatusLabel"
-StatusLabel.Size = UDim2.new(1, -20, 0, 16)
-StatusLabel.Position = UDim2.new(0.5, 0, 0, 142)
-StatusLabel.AnchorPoint = Vector2.new(0.5, 0)
-StatusLabel.BackgroundTransparency = 1
-StatusLabel.Text = "Initializing core..."
-StatusLabel.Font = Enum.Font.Gotham
-StatusLabel.TextSize = 11
-StatusLabel.TextColor3 = Color3.fromRGB(153, 154, 170)
-StatusLabel.TextTransparency = 1
-StatusLabel.ZIndex = 102
-StatusLabel.Parent = LoadingContainer
-
--- Pulse & Gradient Animations
-local pulseTweenInfo = TweenInfo.new(0.8, Enum.EasingStyle.Sine, Enum.EasingDirection.InOut, -1, true)
-local pulseTween = TweenService:Create(IconScale, pulseTweenInfo, {Scale = 1.08})
-pulseTween:Play()
-
-local gradientConnection = RunService.RenderStepped:Connect(function()
-    if FillGradient and FillGradient.Parent then
-        FillGradient.Offset = Vector2.new((os.clock() * 0.9) % 1.5 - 0.5, 0)
-    end
-end)
-
--- Fade In Loading Elements
-TweenService:Create(LoadingOverlay, TweenInfo.new(0.3), {BackgroundTransparency = 0.4}):Play()
-TweenService:Create(LoadingContainer, TweenInfo.new(0.4), {BackgroundTransparency = 0.75}):Play()
-TweenService:Create(ContainerScale, TweenInfo.new(0.4, Enum.EasingStyle.Back, Enum.EasingDirection.Out), {Scale = 1.0}):Play()
-TweenService:Create(ContainerStroke, TweenInfo.new(0.4), {Transparency = 0.7}):Play()
-TweenService:Create(IconCircle, TweenInfo.new(0.4), {BackgroundTransparency = 0}):Play()
-TweenService:Create(IconText, TweenInfo.new(0.4), {TextTransparency = 0}):Play()
-TweenService:Create(LoadingTitle, TweenInfo.new(0.4), {TextTransparency = 0}):Play()
-TweenService:Create(TrackFrame, TweenInfo.new(0.4), {BackgroundTransparency = 0}):Play()
-TweenService:Create(FillFrame, TweenInfo.new(0.4), {BackgroundTransparency = 0}):Play()
-TweenService:Create(PercentLabel, TweenInfo.new(0.4), {TextTransparency = 0}):Play()
-TweenService:Create(StatusLabel, TweenInfo.new(0.4), {TextTransparency = 0}):Play()
-
-local currentPercentValue = 0
-
-local function updateStatusText(newText, isFinal)
-    if StatusLabel.Text == newText then return end
-    local fadeOut = TweenService:Create(StatusLabel, TweenInfo.new(0.2), {TextTransparency = 1})
-    fadeOut:Play()
-    fadeOut.Completed:Wait()
-    StatusLabel.Text = newText
-    if isFinal then
-        StatusLabel.TextColor3 = Color3.fromRGB(100, 217, 138)
-    end
-    TweenService:Create(StatusLabel, TweenInfo.new(0.2), {TextTransparency = 0}):Play()
-end
-
-local function stepProgress(targetPct, duration, statusText)
-    task.spawn(function()
-        if statusText then
-            updateStatusText(statusText, targetPct >= 100)
-        end
-    end)
-
-    local startPct = currentPercentValue
-    local fillTween = TweenService:Create(FillFrame, TweenInfo.new(duration, Enum.EasingStyle.Quad, Enum.EasingDirection.Out), {
-        Size = UDim2.new(targetPct / 100, 0, 1, 0)
-    })
-    fillTween:Play()
-
-    local elapsed = 0
-    while elapsed < duration do
-        local dt = task.wait()
-        elapsed = elapsed + dt
-        local alpha = math.min(elapsed / duration, 1)
-        currentPercentValue = math.floor(startPct + (targetPct - startPct) * alpha)
-        PercentLabel.Text = string.format("%d%%", currentPercentValue)
-    end
-    currentPercentValue = targetPct
-    PercentLabel.Text = string.format("%d%%", targetPct)
-end
-
--- Asynchronous Execution of Progress Steps
-task.spawn(function()
-    stepProgress(25, 0.8, "Initializing core...")
-    stepProgress(55, 1.0, "Loading interface...")
-    stepProgress(80, 0.9, "Preparing settings...")
-    stepProgress(100, 0.7, "Finalizing...")
-
-    updateStatusText("Ready!", true)
-    task.wait(0.4)
-
-    -- ============================================================================
-    -- Loading Complete
-    -- ============================================================================
-
-    if gradientConnection then
-        gradientConnection:Disconnect()
-        gradientConnection = nil
-    end
-    if pulseTween then
-        pulseTween:Cancel()
-    end
-
-    local fadeOutOverlay = TweenService:Create(LoadingOverlay, TweenInfo.new(0.5), {BackgroundTransparency = 1})
-    local fadeOutContainer = TweenService:Create(LoadingContainer, TweenInfo.new(0.5), {BackgroundTransparency = 1})
-    
-    TweenService:Create(ContainerStroke, TweenInfo.new(0.5), {Transparency = 1}):Play()
-    TweenService:Create(IconCircle, TweenInfo.new(0.5), {BackgroundTransparency = 1}):Play()
-    TweenService:Create(IconText, TweenInfo.new(0.5), {TextTransparency = 1}):Play()
-    TweenService:Create(LoadingTitle, TweenInfo.new(0.5), {TextTransparency = 1}):Play()
-    TweenService:Create(TrackFrame, TweenInfo.new(0.5), {BackgroundTransparency = 1}):Play()
-    TweenService:Create(FillFrame, TweenInfo.new(0.5), {BackgroundTransparency = 1}):Play()
-    TweenService:Create(PercentLabel, TweenInfo.new(0.5), {TextTransparency = 1}):Play()
-    TweenService:Create(StatusLabel, TweenInfo.new(0.5), {TextTransparency = 1}):Play()
-
-    fadeOutContainer:Play()
-    fadeOutOverlay:Play()
-    fadeOutOverlay.Completed:Wait()
-
-    LoadingOverlay:Destroy()
-
-    -- Reveal Main GUI
-    if MainFrame and MainFrame.Parent then
-        MainFrame.Visible = true
-    end
-end)
-
--- Helpers & Active Tweens Tracker
 local activeTweens = {}
 
 local function tween(obj, props, dur)
@@ -1817,119 +1546,258 @@ function Library:CreatePage(textKey, iconId, layoutOrder)
     end)
     
     local TabContainer = Instance.new("Frame", Navigation)
-    TabContainer.Name = "TabContainer"
     TabContainer.Size = UDim2.new(1, 0, 0, 34)
     TabContainer.BackgroundColor3 = Color3.fromRGB(28, 28, 28)
     TabContainer.BackgroundTransparency = 1
     TabContainer.ClipsDescendants = true
     TabContainer.ZIndex = 6
     TabContainer.LayoutOrder = layoutOrder or 0
-    Instance.new("UICorner", TabContainer).CornerRadius = UDim.new(0, 6)
-
+    TabContainer.Name = "TabContainer"
+    Instance.new("UICorner", TabContainer).CornerRadius = UDim.new(0, 8)
+    table.insert(Library.TrackedElementBg, TabContainer)
+    
     local TabBtn = Instance.new("TextButton", TabContainer)
     TabBtn.Name = textKey
     TabBtn.Size = UDim2.new(1, 0, 1, 0)
-    TabBtn.BackgroundTransparency = 1
-    TabBtn.Text = "      " .. initialText
+    TabBtn.Text = initialText
     TabBtn.Font = Library.CurrentFont
-    TabBtn.TextColor3 = Color3.fromRGB(140, 140, 140)
     TabBtn.TextSize = 13
+    TabBtn.TextColor3 = Color3.fromRGB(140, 140, 140)
+    TabBtn.BackgroundTransparency = 1
     TabBtn.TextXAlignment = Enum.TextXAlignment.Left
     TabBtn.ZIndex = 7
-
+    
+    local Padding = Instance.new("UIPadding", TabBtn)
+    Padding.PaddingLeft = UDim.new(0, iconId and 42 or 12)
+    
+    if iconId then
+        local TabIcon = Instance.new("ImageLabel", TabContainer)
+        TabIcon.Size = UDim2.new(0, 24, 0, 24)
+        TabIcon.Position = UDim2.new(0, 10, 0.5, -12)
+        TabIcon.BackgroundTransparency = 1
+        if tonumber(iconId) then TabIcon.Image = "rbxthumb://type=Asset&id=" .. iconId .. "&w=150&h=150" else TabIcon.Image = iconId end
+        TabIcon.ImageTransparency = 0.25
+        TabIcon.ZIndex = 7
+        allTabIcons[textKey] = TabIcon
+    end
+    
     allTabs[textKey] = TabContainer
     allTabButtons[textKey] = TabBtn
     allPages[textKey] = PageFrame
-
-    table.insert(Library.TrackedElementBg, TabContainer)
-
-    if iconId then
-        local Icon = Instance.new("ImageLabel", TabContainer)
-        Icon.Size = UDim2.new(0, 16, 0, 16)
-        Icon.Position = UDim2.new(0, 10, 0.5, -8)
-        Icon.BackgroundTransparency = 1
-        Icon.Image = "rbxassetid://" .. tostring(iconId)
-        Icon.ImageColor3 = Color3.fromRGB(200, 200, 200)
-        Icon.ImageTransparency = 0.25
-        Icon.ZIndex = 8
-        allTabIcons[textKey] = Icon
-    end
-
+    
+    TabBtn.MouseButton1Down:Connect(function()
+        local mousePos = UserInputService:GetMouseLocation()
+        local inset = GuiService:GetGuiInset()
+        local localX = mousePos.X - TabContainer.AbsolutePosition.X
+        local localY = (mousePos.Y - inset.Y) - TabContainer.AbsolutePosition.Y
+        spawnWave(TabContainer, localX, localY)
+    end)
+    
     TabBtn.MouseEnter:Connect(function()
+        if TabBtn ~= currentActiveTab then
+            applyHover(TabBtn)
+        end
         currentHoveredTab = TabBtn
-        if currentActiveTab ~= TabBtn then applyHover(TabBtn) end
     end)
+    
     TabBtn.MouseLeave:Connect(function()
+        if TabBtn ~= currentActiveTab then
+            removeHover(TabBtn)
+        end
         currentHoveredTab = nil
-        if currentActiveTab ~= TabBtn then removeHover(TabBtn) end
     end)
 
-    local function openTab()
-        for name, page in pairs(allPages) do
-            page.Visible = (name == textKey)
+    TabBtn.Activated:Connect(function()
+        if currentActiveTab == TabBtn then return end
+
+        if currentActiveTab then
+            clearActiveTab(currentActiveTab)
         end
-        for name, btn in pairs(allTabButtons) do
-            if btn == TabBtn then
-                currentActiveTab = btn
-                setActiveTab(btn)
-            else
-                clearActiveTab(btn)
+        
+        if currentHoveredTab == TabBtn then
+            removeHover(TabBtn)
+        end
+
+        if SearchBox.Text ~= "" then SearchBox.Text = "" end
+
+        for tName, pFrame in pairs(allPages) do
+            if pFrame and pFrame.Parent then
+                pFrame.Visible = false
             end
         end
+
         Library.CurrentTabKey = textKey
         TabTitle.Text = Localization[Library.CurrentLanguage][textKey] or textKey
-    end
+        PageFrame.Visible = true
 
-    TabBtn.Activated:Connect(openTab)
+        setActiveTab(TabBtn)
+        currentActiveTab = TabBtn
+    end)
 
-    local searchItem = {Instance = TabContainer, SearchText = NormalizeText(initialText), OriginalParent = Navigation}
-    table.insert(SearchableElements, searchItem)
-    table.insert(LocaleObjects, {Object = TabBtn, Key = textKey, SearchItem = searchItem})
-
+    table.insert(LocaleObjects, {Object = TabBtn, Key = textKey})
+    UpdateNavCanvas()
     return PageFrame
 end
 
 -- ============================================================================
--- INITIALIZATION
+-- SETTINGS TAB & CONFIGURATION SYSTEM
 -- ============================================================================
+local SettingsPage = Library:CreatePage("Settings", "117996761927034", 1)
 
-local SettingsPage = Library:CreatePage("Settings", "6031280882", 1)
-
-Library:CreateDropdown(SettingsPage, "Language", {"English", "Русский"}, "English", function(selected)
-    Library:UpdateLanguage(selected)
+local LanguageDropdown = Library:CreateDropdown(SettingsPage, "Language", {"English", "Русский"}, "English", function(selectedLang)
+    Library:UpdateLanguage(selectedLang)
 end)
 
-Library:CreateDropdown(SettingsPage, "UITheme", ThemeNamesList, "Deep Ocean", function(selected)
-    Library:UpdateTheme(selected)
+local ThemeDropdown = Library:CreateDropdown(SettingsPage, "UITheme", ThemeNamesList, "Deep Ocean", function(selectedTheme)
+    Library:UpdateTheme(selectedTheme)
 end)
 
-Library:CreateDropdown(SettingsPage, "MenuFont", {"Gotham", "Gotham Bold", "Source Sans", "Roboto", "Roboto Mono", "Ubuntu", "Michroma", "Code", "Fantasy", "Fredoka One"}, "Gotham", function(selected)
-    if FontMapping[selected] then
-        Library.CurrentFont = FontMapping[selected]
-        for _, loc in ipairs(LocaleObjects) do
-            if loc.Object and (loc.Object:IsA("TextLabel") or loc.Object:IsA("TextButton")) then
-                loc.Object.Font = FontMapping[selected]
-            end
+local FontKeys = {}
+for name, _ in pairs(FontMapping) do table.insert(FontKeys, name) end
+table.sort(FontKeys)
+
+local FontDropdown = Library:CreateDropdown(SettingsPage, "MenuFont", FontKeys, "Gotham", function(selectedFont)
+    if FontMapping[selectedFont] then
+        Library.CurrentFont = FontMapping[selectedFont]
+        for _, obj in ipairs(Library.TrackedMainText) do
+            if obj and typeof(obj) == "Instance" and obj.Parent then obj.Font = Library.CurrentFont end
+        end
+        for _, obj in ipairs(Library.TrackedSubText) do
+            if obj and typeof(obj) == "Instance" and obj.Parent then obj.Font = Library.CurrentFont end
         end
     end
 end)
 
-Library:CreateSlider(SettingsPage, "UITransparency", 0, 0.9, 0.15, function(val)
-    MainFrame.BackgroundTransparency = val
+local TransparencySlider = Library:CreateSlider(SettingsPage, "UITransparency", 0, 90, 15, function(val)
+    MainFrame.BackgroundTransparency = val / 100
 end)
 
-Library:CreateToggle(SettingsPage, "AntiAFK", true, function(state)
+local ScaleSlider = Library:CreateSlider(SettingsPage, "UISize", 80, 120, 100, function(val)
+    MainScale.Scale = val / 100
+end)
+
+local AntiAFKToggle = Library:CreateToggle(SettingsPage, "AntiAFK", true, function(state)
     toggleAntiAFK(state)
 end)
 
-Library:CreateToggle(SettingsPage, "AnimatedWindow", false, function(state)
+local AnimatedWindowToggle = Library:CreateToggle(SettingsPage, "AnimatedWindow", false, function(state)
     toggleAnimatedWindow(state)
 end)
 
-Library:CreateToggle(SettingsPage, "Gradient", false, function(state)
+local GradientToggle = Library:CreateToggle(SettingsPage, "Gradient", false, function(state)
     toggleGradientEffect(state)
 end)
 
+-- Activate default tab
 if allTabButtons["Settings"] then
-    allTabButtons["Settings"].Activated:Fire()
+    currentActiveTab = allTabButtons["Settings"]
+    setActiveTab(currentActiveTab)
+    SettingsPage.Visible = true
 end
+
+-- ============================================================================
+-- NEW LOADING SCREEN BLOCK (INTRO SEQUENCE)
+-- ============================================================================
+local function StartLoadingSequence()
+    local LoadingFrame = Instance.new("Frame", DarkHub)
+    LoadingFrame.Name = "LoadingFrame"
+    LoadingFrame.Size = UDim2.new(0, 320, 0, 160)
+    LoadingFrame.AnchorPoint = Vector2.new(0.5, 0.5)
+    LoadingFrame.Position = UDim2.new(0.5, 0, 0.5, 0)
+    LoadingFrame.BackgroundColor3 = Color3.fromRGB(16, 16, 20)
+    LoadingFrame.BackgroundTransparency = 0
+    LoadingFrame.ZIndex = 100
+
+    Instance.new("UICorner", LoadingFrame).CornerRadius = UDim.new(0, 14)
+    local LoadStroke = Instance.new("UIStroke", LoadingFrame)
+    LoadStroke.Color = getThemeAccent()
+    LoadStroke.Thickness = 1.5
+
+    local LoadIcon = Instance.new("ImageLabel", LoadingFrame)
+    LoadIcon.Size = UDim2.new(0, 42, 0, 42)
+    LoadIcon.Position = UDim2.new(0.5, -21, 0, 20)
+    LoadIcon.BackgroundTransparency = 1
+    LoadIcon.Image = "rbxthumb://type=Asset&id=" .. CustomIconID .. "&w=150&h=150"
+    LoadIcon.ZIndex = 101
+    Instance.new("UICorner", LoadIcon).CornerRadius = UDim.new(0, 8)
+
+    local LoadTitle = Instance.new("TextLabel", LoadingFrame)
+    LoadTitle.Size = UDim2.new(1, 0, 0, 22)
+    LoadTitle.Position = UDim2.new(0, 0, 0, 68)
+    LoadTitle.Text = "Dark Hub"
+    LoadTitle.Font = Enum.Font.GothamBold
+    LoadTitle.TextColor3 = Color3.fromRGB(255, 255, 255)
+    LoadTitle.TextSize = 16
+    LoadTitle.BackgroundTransparency = 1
+    LoadTitle.ZIndex = 101
+
+    local LoadStatus = Instance.new("TextLabel", LoadingFrame)
+    LoadStatus.Size = UDim2.new(1, 0, 0, 16)
+    LoadStatus.Position = UDim2.new(0, 0, 0, 92)
+    LoadStatus.Text = "Loading scripts..."
+    LoadStatus.Font = Enum.Font.Gotham
+    LoadStatus.TextColor3 = Color3.fromRGB(150, 150, 150)
+    LoadStatus.TextSize = 11
+    LoadStatus.BackgroundTransparency = 1
+    LoadStatus.ZIndex = 101
+
+    local BarBg = Instance.new("Frame", LoadingFrame)
+    BarBg.Size = UDim2.new(0.8, 0, 0, 6)
+    BarBg.Position = UDim2.new(0.1, 0, 0, 122)
+    BarBg.BackgroundColor3 = Color3.fromRGB(30, 30, 35)
+    BarBg.BorderSizePixel = 0
+    BarBg.ZIndex = 101
+    Instance.new("UICorner", BarBg).CornerRadius = UDim.new(1, 0)
+
+    local BarFill = Instance.new("Frame", BarBg)
+    BarFill.Size = UDim2.new(0, 0, 1, 0)
+    BarFill.BackgroundColor3 = getThemeAccent()
+    BarFill.BorderSizePixel = 0
+    BarFill.ZIndex = 102
+    Instance.new("UICorner", BarFill).CornerRadius = UDim.new(1, 0)
+
+    -- Animate Progress Bar
+    local steps = {
+        {progress = 0.3, text = "Initializing GUI..."},
+        {progress = 0.65, text = "Applying themes..."},
+        {progress = 0.9, text = "Loading configurations..."},
+        {progress = 1.0, text = "Ready!"}
+    }
+
+    task.spawn(function()
+        for _, step in ipairs(steps) do
+            LoadStatus.Text = step.text
+            local barTween = tween(BarFill, {Size = UDim2.new(step.progress, 0, 1, 0)}, 0.35)
+            if barTween then barTween.Completed:Wait() end
+            task.wait(0.15)
+        end
+
+        task.wait(0.2)
+        -- Fade Out Loading Screen
+        tween(LoadingFrame, {BackgroundTransparency = 1}, 0.3)
+        for _, child in ipairs(LoadingFrame:GetDescendants()) do
+            if child:IsA("TextLabel") then
+                tween(child, {TextTransparency = 1}, 0.3)
+            elseif child:IsA("ImageLabel") then
+                tween(child, {ImageTransparency = 1}, 0.3)
+            elseif child:IsA("Frame") then
+                tween(child, {BackgroundTransparency = 1}, 0.3)
+            elseif child:IsA("UIStroke") then
+                tween(child, {Transparency = 1}, 0.3)
+            end
+        end
+
+        task.wait(0.35)
+        LoadingFrame:Destroy()
+
+        -- Show Main Frame with Pop Animation
+        MainFrame.Visible = true
+        MainScale.Scale = 0.8
+        MainFrame.BackgroundTransparency = 1
+        tween(MainScale, {Scale = 1}, 0.35)
+        tween(MainFrame, {BackgroundTransparency = 0.15}, 0.35)
+    end)
+end
+
+-- Launch Intro Block
+StartLoadingSequence()
