@@ -1,5 +1,5 @@
 -- ============================================================================
--- Pulse Hub - Settings Edition (Исправлен Оверлей и Дропдаун Темы)
+-- Pulse Hub - Settings Edition (С премиальной анимацией загрузки)
 -- ============================================================================
 
 local TweenService = game:GetService("TweenService")
@@ -123,58 +123,7 @@ local function spawnWave(container, clickX, clickY)
 end
 
 -- ============================================================================
--- ЭКРАН ЗАГРУЗКИ
--- ============================================================================
-local LoadingFrame = Instance.new("Frame", PulseHub)
-LoadingFrame.Name = "LoadingFrame"
-LoadingFrame.Size = UDim2.new(0, 320, 0, 160)
-LoadingFrame.Position = UDim2.new(0.5, 0, 0.5, 0)
-LoadingFrame.AnchorPoint = Vector2.new(0.5, 0.5)
-LoadingFrame.BackgroundColor3 = Color3.fromRGB(14, 14, 14)
-LoadingFrame.ZIndex = 100
-
-local LoadingCorner = Instance.new("UICorner", LoadingFrame)
-LoadingCorner.CornerRadius = UDim.new(0, 12)
-
-local LoadingStroke = Instance.new("UIStroke", LoadingFrame)
-LoadingStroke.Color = Color3.fromRGB(45, 45, 45)
-LoadingStroke.Thickness = 1.5
-
-local LoadingTitle = Instance.new("TextLabel", LoadingFrame)
-LoadingTitle.Size = UDim2.new(1, 0, 0, 30)
-LoadingTitle.Position = UDim2.new(0, 0, 0, 25)
-LoadingTitle.Text = "Pulse Hub"
-LoadingTitle.Font = Enum.Font.GothamBold
-LoadingTitle.TextSize = 18
-LoadingTitle.TextColor3 = Color3.fromRGB(255, 255, 255)
-LoadingTitle.BackgroundTransparency = 1
-LoadingTitle.ZIndex = 101
-
-local LoadingStatus = Instance.new("TextLabel", LoadingFrame)
-LoadingStatus.Size = UDim2.new(1, 0, 0, 20)
-LoadingStatus.Position = UDim2.new(0, 0, 0, 60)
-LoadingStatus.Text = "Загрузка... 0%"
-LoadingStatus.Font = Enum.Font.Gotham
-LoadingStatus.TextSize = 13
-LoadingStatus.TextColor3 = Color3.fromRGB(180, 180, 180)
-LoadingStatus.BackgroundTransparency = 1
-LoadingStatus.ZIndex = 101
-
-local ProgressBarBg = Instance.new("Frame", LoadingFrame)
-ProgressBarBg.Size = UDim2.new(0.85, 0, 0, 10)
-ProgressBarBg.Position = UDim2.new(0.075, 0, 0, 95)
-ProgressBarBg.BackgroundColor3 = Color3.fromRGB(28, 28, 28)
-ProgressBarBg.ZIndex = 101
-Instance.new("UICorner", ProgressBarBg).CornerRadius = UDim.new(0, 5)
-
-local ProgressBarFill = Instance.new("Frame", ProgressBarBg)
-ProgressBarFill.Size = UDim2.new(0, 0, 1, 0)
-ProgressBarFill.BackgroundColor3 = Color3.fromRGB(0, 150, 255)
-ProgressBarFill.ZIndex = 102
-Instance.new("UICorner", ProgressBarFill).CornerRadius = UDim.new(0, 5)
-
--- ============================================================================
--- ОСНОВНОЙ GUI
+-- ОСНОВНОЙ GUI (СКРЫТ ДО ЗАВЕРШЕНИЯ ЗАГРУЗКИ)
 -- ============================================================================
 local MainFrame = Instance.new("Frame", PulseHub)
 MainFrame.Name = "MainFrame"
@@ -977,7 +926,7 @@ local FontMapping = {
 }
 
 -- ============================================================================
--- ДРОПДАУН (АККОРДЕОН / ДИНАМИЧЕСКИЙ СДВИГ ЭЛЕМЕНТОВ)
+-- ДРОПДАУН
 -- ============================================================================
 function Library:CreateDropdown(parentPage, textKey, options, default, callback)
     local initialText = Localization[Library.CurrentLanguage][textKey] or textKey
@@ -1596,39 +1545,271 @@ end
 
 Library:UpdateTheme("Deep Ocean")
 
--- ЗАПУСК ЭКРАНА ЗАГРУЗКИ (3 СЕКУНДЫ)
+-- ============================================================================
+-- ЭКРАН ЗАГРУЗКИ (ПРОФЕССИОНАЛЬНЫЙ И АНИМИРОВАННЫЙ)
+-- ============================================================================
+local LoadingContainer = Instance.new("Frame")
+LoadingContainer.Name = "LoadingContainer"
+LoadingContainer.Size = UDim2.new(1, 0, 1, 0)
+LoadingContainer.Position = UDim2.new(0, 0, 0, 0)
+LoadingContainer.BackgroundColor3 = Color3.fromRGB(10, 10, 15)
+LoadingContainer.BackgroundTransparency = 1
+LoadingContainer.ZIndex = 500
+LoadingContainer.Parent = PulseHub
+
+-- Контейнер загрузки (Матовая плашка)
+local LoadingCard = Instance.new("Frame")
+LoadingCard.Name = "LoadingCard"
+LoadingCard.Size = UDim2.new(0, 310, 0, 185)
+LoadingCard.Position = UDim2.new(0.5, 0, 0.5, 0)
+LoadingCard.AnchorPoint = Vector2.new(0.5, 0.5)
+LoadingCard.BackgroundColor3 = Color3.fromRGB(18, 18, 26)
+LoadingCard.BackgroundTransparency = 1
+LoadingCard.ClipsDescendants = false
+LoadingCard.ZIndex = 501
+LoadingCard.Parent = LoadingContainer
+
+local CardCorner = Instance.new("UICorner", LoadingCard)
+CardCorner.CornerRadius = UDim.new(0, 16)
+
+local CardStroke = Instance.new("UIStroke", LoadingCard)
+CardStroke.Color = Color3.fromRGB(255, 255, 255)
+CardStroke.Transparency = 1
+CardStroke.Thickness = 1
+
+local CardScale = Instance.new("UIScale", LoadingCard)
+CardScale.Scale = 0.8
+
+-- Иконка скрипта
+local IconFrame = Instance.new("Frame")
+IconFrame.Name = "IconFrame"
+IconFrame.Size = UDim2.new(0, 44, 0, 44)
+IconFrame.Position = UDim2.new(0.5, 0, 0, 16)
+IconFrame.AnchorPoint = Vector2.new(0.5, 0)
+IconFrame.BackgroundColor3 = Color3.fromRGB(255, 255, 255)
+IconFrame.ZIndex = 502
+IconFrame.Parent = LoadingCard
+
+local IconCorner = Instance.new("UICorner", IconFrame)
+IconCorner.CornerRadius = UDim.new(1, 0)
+
+local IconGradient = Instance.new("UIGradient", IconFrame)
+IconGradient.Color = ColorSequence.new({
+    ColorSequenceKeypoint.new(0, Color3.fromRGB(30, 60, 120)),
+    ColorSequenceKeypoint.new(1, Color3.fromRGB(60, 140, 255))
+})
+IconGradient.Rotation = 45
+
+local IconScale = Instance.new("UIScale", IconFrame)
+IconScale.Scale = 1.0
+
+local IconText = Instance.new("TextLabel", IconFrame)
+IconText.Size = UDim2.new(1, 0, 1, 0)
+IconText.Text = "⚡"
+IconText.Font = Enum.Font.GothamBold
+IconText.TextSize = 20
+IconText.TextColor3 = Color3.fromRGB(255, 255, 255)
+IconText.BackgroundTransparency = 1
+IconText.ZIndex = 503
+
+-- Пульсация иконки
+local pulseInfo = TweenInfo.new(1.2, Enum.EasingStyle.Sine, Enum.EasingDirection.InOut, -1, true)
+local pulseTween = TweenService:Create(IconScale, pulseInfo, {Scale = 1.08})
+pulseTween:Play()
+
+-- Название скрипта
+local LoadingTitle = Instance.new("TextLabel", LoadingCard)
+LoadingTitle.Size = UDim2.new(1, 0, 0, 22)
+LoadingTitle.Position = UDim2.new(0, 0, 0, 66)
+LoadingTitle.Text = "Pulse Hub"
+LoadingTitle.Font = Enum.Font.GothamBold
+LoadingTitle.TextSize = 18
+LoadingTitle.TextColor3 = Color3.fromRGB(255, 255, 255)
+LoadingTitle.BackgroundTransparency = 1
+LoadingTitle.TextTransparency = 1
+LoadingTitle.ZIndex = 502
+
+-- Прогресс-бар с градиентом
+local ProgressBarBg = Instance.new("Frame", LoadingCard)
+ProgressBarBg.Size = UDim2.new(0, 250, 0, 20)
+ProgressBarBg.Position = UDim2.new(0.5, 0, 0, 100)
+ProgressBarBg.AnchorPoint = Vector2.new(0.5, 0)
+ProgressBarBg.BackgroundColor3 = Color3.fromRGB(40, 40, 50)
+ProgressBarBg.BackgroundTransparency = 1
+ProgressBarBg.ClipsDescendants = true
+ProgressBarBg.ZIndex = 502
+Instance.new("UICorner", ProgressBarBg).CornerRadius = UDim.new(0, 8)
+
+local ProgressBarFill = Instance.new("Frame", ProgressBarBg)
+ProgressBarFill.Size = UDim2.new(0, 0, 1, 0)
+ProgressBarFill.BackgroundColor3 = Color3.fromRGB(255, 255, 255)
+ProgressBarFill.ZIndex = 503
+Instance.new("UICorner", ProgressBarFill).CornerRadius = UDim.new(0, 8)
+
+local BarGradient = Instance.new("UIGradient", ProgressBarFill)
+BarGradient.Color = ColorSequence.new({
+    ColorSequenceKeypoint.new(0, Color3.fromRGB(0, 120, 255)),
+    ColorSequenceKeypoint.new(0.5, Color3.fromRGB(60, 180, 255)),
+    ColorSequenceKeypoint.new(1, Color3.fromRGB(0, 230, 210))
+})
+
+-- Анимация бегущей волны в градиенте
+local waveTweenInfo = TweenInfo.new(1.8, Enum.EasingStyle.Linear, Enum.EasingDirection.InOut, -1, true)
+local waveTween = TweenService:Create(BarGradient, waveTweenInfo, {Offset = Vector2.new(1, 0)})
+waveTween:Play()
+
+local BarText = Instance.new("TextLabel", ProgressBarBg)
+BarText.Size = UDim2.new(1, 0, 1, 0)
+BarText.Text = "0%"
+BarText.Font = Enum.Font.GothamBold
+BarText.TextSize = 12
+BarText.TextColor3 = Color3.fromRGB(255, 255, 255)
+BarText.TextTransparency = 1
+BarText.BackgroundTransparency = 1
+BarText.ZIndex = 504
+
+-- Статус-текст
+local LoadingStatus = Instance.new("TextLabel", LoadingCard)
+LoadingStatus.Size = UDim2.new(1, -20, 0, 18)
+LoadingStatus.Position = UDim2.new(0, 10, 0, 130)
+LoadingStatus.Text = "Инициализация ядра..."
+LoadingStatus.Font = Enum.Font.Gotham
+LoadingStatus.TextSize = 12
+LoadingStatus.TextColor3 = Color3.fromRGB(180, 180, 200)
+LoadingStatus.BackgroundTransparency = 1
+LoadingStatus.TextTransparency = 1
+LoadingStatus.ZIndex = 502
+
+-- Декоративные частицы
+local particlesActive = true
+local function spawnParticle()
+    if not particlesActive or not LoadingCard or not LoadingCard.Parent then return end
+    
+    local p = Instance.new("Frame")
+    p.Size = UDim2.new(0, math.random(4, 6), 0, math.random(4, 6))
+    p.Position = UDim2.new(math.random(10, 90) / 100, 0, math.random(70, 95) / 100, 0)
+    p.BackgroundColor3 = Color3.fromRGB(255, 255, 255)
+    p.BackgroundTransparency = 0.5
+    p.BorderSizePixel = 0
+    p.ZIndex = 500
+    p.Parent = LoadingCard
+    Instance.new("UICorner", p).CornerRadius = UDim.new(1, 0)
+    
+    local targetY = p.Position.Y.Scale - math.random(30, 60) / 100
+    local targetX = p.Position.X.Scale + (math.random(-15, 15) / 100)
+    
+    local pTween = TweenService:Create(p, TweenInfo.new(math.random(15, 25) / 10, Enum.EasingStyle.Quad, Enum.EasingDirection.Out), {
+        Position = UDim2.new(targetX, 0, targetY, 0),
+        BackgroundTransparency = 1
+    })
+    pTween:Play()
+    pTween.Completed:Connect(function()
+        p:Destroy()
+    end)
+end
+
 task.spawn(function()
-    local loadDuration = 3
-    local startTimeLoad = os.clock()
+    while particlesActive do
+        spawnParticle()
+        task.wait(math.random(2, 4) / 10)
+    end
+end)
+
+-- Процесс показа фона и контейнера
+TweenService:Create(LoadingContainer, TweenInfo.new(0.3), {BackgroundTransparency = 0.4}):Play()
+TweenService:Create(LoadingCard, TweenInfo.new(0.35, Enum.EasingStyle.Back, Enum.EasingDirection.Out), {BackgroundTransparency = 0.3}):Play()
+TweenService:Create(CardScale, TweenInfo.new(0.35, Enum.EasingStyle.Back, Enum.EasingDirection.Out), {Scale = 1}):Play()
+TweenService:Create(CardStroke, TweenInfo.new(0.35), {Transparency = 0.85}):Play()
+
+TweenService:Create(LoadingTitle, TweenInfo.new(0.3), {TextTransparency = 0}):Play()
+TweenService:Create(ProgressBarBg, TweenInfo.new(0.3), {BackgroundTransparency = 0.3}):Play()
+TweenService:Create(BarText, TweenInfo.new(0.3), {TextTransparency = 0}):Play()
+TweenService:Create(LoadingStatus, TweenInfo.new(0.3), {TextTransparency = 0}):Play()
+
+-- Функция плавной смены статуса
+local currentStatusText = LoadingStatus.Text
+local function setStatus(newText, color)
+    if currentStatusText == newText then return end
+    currentStatusText = newText
     
-    while os.clock() - startTimeLoad < loadDuration do
-        local elapsed = os.clock() - startTimeLoad
-        local progress = math.clamp(elapsed / loadDuration, 0, 1)
-        
-        ProgressBarFill.Size = UDim2.new(progress, 0, 1, 0)
-        LoadingStatus.Text = string.format("Загрузка... %d%%", math.floor(progress * 100))
-        
-        task.wait()
+    local fadeOut = TweenService:Create(LoadingStatus, TweenInfo.new(0.15), {TextTransparency = 1})
+    fadeOut:Play()
+    fadeOut.Completed:Wait()
+    
+    LoadingStatus.Text = newText
+    if color then
+        LoadingStatus.TextColor3 = color
     end
     
-    ProgressBarFill.Size = UDim2.new(1, 0, 1, 0)
-    LoadingStatus.Text = "Загрузка... 100%"
-    task.wait(0.2)
-    
-    tween(LoadingFrame, {BackgroundTransparency = 1}, 0.3)
-    tween(LoadingTitle, {TextTransparency = 1}, 0.3)
-    tween(LoadingStatus, {TextTransparency = 1}, 0.3)
-    tween(ProgressBarBg, {BackgroundTransparency = 1}, 0.3)
-    tween(ProgressBarFill, {BackgroundTransparency = 1}, 0.3)
-    local strokeTween = tween(LoadingStroke, {Transparency = 1}, 0.3)
-    
-    if strokeTween then
-        strokeTween.Completed:Connect(function()
-            LoadingFrame:Destroy()
-            MainFrame.Visible = true
-        end)
-    else
-        LoadingFrame:Destroy()
-        MainFrame.Visible = true
+    TweenService:Create(LoadingStatus, TweenInfo.new(0.15), {TextTransparency = 0}):Play()
+end
+
+-- Анимированный цикл неравномерного заполнения
+task.spawn(function()
+    local stages = {
+        { target = 0.30, duration = 1.0, status = "Инициализация ядра..." },
+        { target = 0.60, duration = 1.2, status = "Загрузка интерфейса..." },
+        { target = 0.85, duration = 0.8, status = "Подготовка настроек..." },
+        { target = 0.95, duration = 0.6, status = "Финальная настройка..." },
+        { target = 1.00, duration = 0.4, status = "Запуск..." }
+    }
+
+    local currentProgress = 0
+
+    for _, stage in ipairs(stages) do
+        setStatus(stage.status)
+        
+        local fillTween = TweenService:Create(ProgressBarFill, TweenInfo.new(stage.duration, Enum.EasingStyle.Quad, Enum.EasingDirection.Out), {
+            Size = UDim2.new(stage.target, 0, 1, 0)
+        })
+        fillTween:Play()
+        
+        local startTimeStage = os.clock()
+        local startProgress = currentProgress
+        local targetProgress = stage.target
+        
+        while os.clock() - startTimeStage < stage.duration do
+            local elapsed = os.clock() - startTimeStage
+            local alpha = math.clamp(elapsed / stage.duration, 0, 1)
+            local quadAlpha = 1 - (1 - alpha) * (1 - alpha)
+            currentProgress = startProgress + (targetProgress - startProgress) * quadAlpha
+            BarText.Text = string.format("%d%%", math.floor(currentProgress * 100))
+            task.wait()
+        end
+        
+        currentProgress = stage.target
+        BarText.Text = string.format("%d%%", math.floor(currentProgress * 100))
     end
+
+    -- ============================================================================
+    -- ЗАВЕРШЕНИЕ ЗАГРУЗКИ
+    -- ============================================================================
+    setStatus("ГОТОВО!", Color3.fromRGB(100, 255, 130))
+    BarText.Text = "100%"
+    task.wait(0.5)
+
+    particlesActive = false
+
+    -- Плавное затухание
+    TweenService:Create(LoadingContainer, TweenInfo.new(0.5), {BackgroundTransparency = 1}):Play()
+    TweenService:Create(CardScale, TweenInfo.new(0.5, Enum.EasingStyle.Quad, Enum.EasingDirection.In), {Scale = 0.8}):Play()
+    TweenService:Create(LoadingCard, TweenInfo.new(0.5), {BackgroundTransparency = 1}):Play()
+    TweenService:Create(CardStroke, TweenInfo.new(0.5), {Transparency = 1}):Play()
+    TweenService:Create(IconFrame, TweenInfo.new(0.5), {BackgroundTransparency = 1}):Play()
+    TweenService:Create(IconText, TweenInfo.new(0.5), {TextTransparency = 1}):Play()
+    TweenService:Create(LoadingTitle, TweenInfo.new(0.5), {TextTransparency = 1}):Play()
+    TweenService:Create(ProgressBarBg, TweenInfo.new(0.5), {BackgroundTransparency = 1}):Play()
+    TweenService:Create(ProgressBarFill, TweenInfo.new(0.5), {BackgroundTransparency = 1}):Play()
+    TweenService:Create(BarText, TweenInfo.new(0.5), {TextTransparency = 1}):Play()
+    local finalFade = TweenService:Create(LoadingStatus, TweenInfo.new(0.5), {TextTransparency = 1})
+    finalFade:Play()
+
+    finalFade.Completed:Wait()
+
+    -- Удаление объектов загрузки и отображение интерфейса
+    pulseTween:Cancel()
+    waveTween:Cancel()
+    LoadingContainer:Destroy()
+
+    MainFrame.Visible = true
 end)
