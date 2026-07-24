@@ -1,5 +1,5 @@
 -- ============================================================================
--- Pulse Hub - Settings Edition (Исправлен Оверлей Дропдауна)
+-- Pulse Hub - Settings Edition (Исправлен Оверлей и Дропдаун Темы)
 -- ============================================================================
 
 local TweenService = game:GetService("TweenService")
@@ -797,11 +797,14 @@ function Library:UpdateTheme(themeName)
                 tween(data.SelectedLabel, {TextColor3 = theme.Accent})
             end
             for optName, optData in pairs(data.Options) do
-                if optData.Check and optData.Check.Parent then optData.Check.TextColor3 = theme.Accent end
+                if optData.Check and optData.Check.Parent then 
+                    optData.Check.TextColor3 = theme.Accent
+                    optData.Check.Visible = (optName == currentSelection)
+                end
                 if optName == currentSelection then
                     if optData.Label and optData.Label.Parent then tween(optData.Label, {TextColor3 = theme.Accent}) end
                 else
-                    if optData.Label and optData.Label.Parent then optData.Label.TextColor3 = subTextColor end
+                    if optData.Label and optData.Label.Parent then tween(optData.Label, {TextColor3 = subTextColor}) end
                 end
             end
         end
@@ -981,7 +984,7 @@ function Library:CreateDropdown(parentPage, textKey, options, default, callback)
     local DropdownFrame = Instance.new("Frame", parentPage)
     DropdownFrame.Size = UDim2.new(1, -20, 0, 36)
     DropdownFrame.BackgroundColor3 = Library.CurrentThemeData.ElementBg
-    DropdownFrame.ClipsDescendants = true -- Обрезаем содержимое по границам Frame при анимировании высоты
+    DropdownFrame.ClipsDescendants = true
     DropdownFrame.ZIndex = 6
     DropdownFrame.LayoutOrder = #parentPage:GetChildren()
     Instance.new("UICorner", DropdownFrame).CornerRadius = UDim.new(0, 6)
@@ -1037,7 +1040,6 @@ function Library:CreateDropdown(parentPage, textKey, options, default, callback)
     
     table.insert(Library.TrackedSubText, Arrow)
     
-    -- Контейнер опций размещен внутри DropdownFrame
     local OptionsContainer = Instance.new("ScrollingFrame", DropdownFrame)
     OptionsContainer.Size = UDim2.new(1, 0, 0, 0)
     OptionsContainer.Position = UDim2.new(0, 0, 0, 36)
@@ -1153,7 +1155,6 @@ function Library:CreateDropdown(parentPage, textKey, options, default, callback)
             
             OptBtn.Activated:Connect(function()
                 SelectedLabel.Text = option
-                toggleDropdown()
                 callback(option)
                 
                 for optName, optData in pairs(optionButtons) do
