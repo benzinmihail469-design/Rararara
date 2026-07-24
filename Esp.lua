@@ -1,5 +1,5 @@
 -- ============================================================================
--- Dark Hub - Settings Edition (С премиальной анимацией загрузки)
+-- Dark Hub - Settings Edition (С премиальной системой конфигураций)
 -- ============================================================================
 
 local TweenService = game:GetService("TweenService")
@@ -8,6 +8,7 @@ local RunService = game:GetService("RunService")
 local GuiService = game:GetService("GuiService")
 local Players = game:GetService("Players")
 local VirtualUser = game:GetService("VirtualUser")
+local HttpService = game:GetService("HttpService")
 
 local CustomIconID = "76579925188009"
 local startTime = os.clock()
@@ -926,7 +927,7 @@ local FontMapping = {
 }
 
 -- ============================================================================
--- ДРОПДАУН
+-- ДРОПДАУН И ЭЛЕМЕНТЫ УПРАВЛЕНИЯ
 -- ============================================================================
 function Library:CreateDropdown(parentPage, textKey, options, default, callback)
     local initialText = Localization[Library.CurrentLanguage][textKey] or textKey
@@ -1046,6 +1047,23 @@ function Library:CreateDropdown(parentPage, textKey, options, default, callback)
     end
     HeaderBtn.Activated:Connect(toggleDropdown)
     
+    local function selectValue(option)
+        SelectedLabel.Text = option
+        callback(option)
+        
+        for optName, optData in pairs(optionButtons) do
+            if optName == option then
+                optData.Label.TextColor3 = Library.CurrentThemeData.Accent
+                optData.Check.Visible = true
+                optData.Check.TextColor3 = Library.CurrentThemeData.Accent
+            else
+                local curBgL = (Library.CurrentThemeData.MainBg.R * 0.299 + Library.CurrentThemeData.MainBg.G * 0.587 + Library.CurrentThemeData.MainBg.B * 0.114)
+                optData.Label.TextColor3 = (curBgL > 0.5) and Color3.fromRGB(110, 110, 110) or Color3.fromRGB(140, 140, 140)
+                optData.Check.Visible = false
+            end
+        end
+    end
+
     local function populateOptions(newOptions)
         options = newOptions
         for _, child in ipairs(OptionsContainer:GetChildren()) do
@@ -1103,20 +1121,7 @@ function Library:CreateDropdown(parentPage, textKey, options, default, callback)
             optionButtons[option] = {Button = OptBtn, Label = OptLabel, Check = Checkmark}
             
             OptBtn.Activated:Connect(function()
-                SelectedLabel.Text = option
-                callback(option)
-                
-                for optName, optData in pairs(optionButtons) do
-                    if optName == option then
-                        optData.Label.TextColor3 = Library.CurrentThemeData.Accent
-                        optData.Check.Visible = true
-                        optData.Check.TextColor3 = Library.CurrentThemeData.Accent
-                    else
-                        local curBgL = (Library.CurrentThemeData.MainBg.R * 0.299 + Library.CurrentThemeData.MainBg.G * 0.587 + Library.CurrentThemeData.MainBg.B * 0.114)
-                        optData.Label.TextColor3 = (curBgL > 0.5) and Color3.fromRGB(110, 110, 110) or Color3.fromRGB(140, 140, 140)
-                        optData.Check.Visible = false
-                    end
-                end
+                selectValue(option)
             end)
         end
         
@@ -1138,6 +1143,12 @@ function Library:CreateDropdown(parentPage, textKey, options, default, callback)
     table.insert(LocaleObjects, {Object = TitleLabel, Key = textKey, SearchItem = searchItem})
 
     return {
+        SetValue = function(val)
+            selectValue(val)
+        end,
+        GetValue = function()
+            return SelectedLabel.Text
+        end,
         UpdateOptions = function(newOpts)
             populateOptions(newOpts)
         end
@@ -1218,8 +1229,8 @@ function Library:CreateToggle(parentPage, textKey, default, callback)
     Instance.new("UICorner", Indicator).CornerRadius = UDim.new(1, 0)
     
     local enabled = default
-    Checkbox.Activated:Connect(function()
-        enabled = not enabled
+    local function setToggleState(state)
+        enabled = state
         local brightness = (Library.CurrentThemeData.Accent.R + Library.CurrentThemeData.Accent.G + Library.CurrentThemeData.Accent.B)
         local activeIndicatorColor = brightness > 2.5 and Color3.fromRGB(30, 30, 30) or Color3.fromRGB(255, 255, 255)
         if enabled then
@@ -1232,6 +1243,10 @@ function Library:CreateToggle(parentPage, textKey, default, callback)
             tween(Indicator, {Position = UDim2.new(0, 2, 0.5, -7), BackgroundColor3 = Color3.fromRGB(255, 255, 255)}, 0.2)
         end
         callback(enabled)
+    end
+
+    Checkbox.Activated:Connect(function()
+        setToggleState(not enabled)
     end)
     
     table.insert(Library.TrackedAccents, {
@@ -1244,6 +1259,15 @@ function Library:CreateToggle(parentPage, textKey, default, callback)
     local searchItem = {Instance = TglFrame, SearchText = NormalizeText(initialText), OriginalParent = parentPage}
     table.insert(SearchableElements, searchItem)
     table.insert(LocaleObjects, {Object = TglLabel, Key = textKey, SearchItem = searchItem})
+
+    return {
+        SetValue = function(state)
+            setToggleState(state)
+        end,
+        GetValue = function()
+            return enabled
+        end
+    }
 end
 
 function Library:CreateSlider(parentPage, textKey, min, max, default, callback)
@@ -1316,6 +1340,7 @@ function Library:CreateSlider(parentPage, textKey, min, max, default, callback)
     
     local dragging = false
     local currentPercent = (default - min) / (max - min)
+    local currentValue = default
     local startX = 0
     local startPercent = 0
     local cachedTrackWidth = 0
@@ -1335,12 +1360,19 @@ function Library:CreateSlider(parentPage, textKey, min, max, default, callback)
         local rawValue = min + (max - min) * percentage
         if isIntegerSlider then
             local roundedValue = math.floor(rawValue + 0.5)
+            currentValue = roundedValue
             ValueLabel.Text = string.format("%d", roundedValue)
             callback(roundedValue)
         else
+            currentValue = rawValue
             ValueLabel.Text = string.format("%.2f", rawValue)
             callback(rawValue)
         end
+    end
+
+    local function setSliderVal(val)
+        currentPercent = math.clamp((val - min) / (max - min), 0, 1)
+        updateVisuals(currentPercent)
     end
     
     SliderBtn.InputBegan:Connect(function(input)
@@ -1376,6 +1408,15 @@ function Library:CreateSlider(parentPage, textKey, min, max, default, callback)
     local searchItem = {Instance = SliderFrame, SearchText = NormalizeText(initialText), OriginalParent = parentPage}
     table.insert(SearchableElements, searchItem)
     table.insert(LocaleObjects, {Object = SliderLabel, Key = textKey, SearchItem = searchItem})
+
+    return {
+        SetValue = function(val)
+            setSliderVal(val)
+        end,
+        GetValue = function()
+            return currentValue
+        end
+    }
 end
 
 function Library:CreatePage(textKey, iconId, layoutOrder)
@@ -1491,15 +1532,15 @@ function Library:CreatePage(textKey, iconId, layoutOrder)
 end
 
 -- ============================================================================
--- ВКЛАДКА "SETTINGS"
+-- ВКЛАДКА "SETTINGS" + СИСТЕМА КОНФИГУРАЦИЙ (PRESETS SYSTEM)
 -- ============================================================================
 local SettingsPage = Library:CreatePage("Settings", "117996761927034", 1)
 
-Library:CreateDropdown(SettingsPage, "Language", {"English", "Русский"}, "English", function(selectedLang)
+local LanguageDropdown = Library:CreateDropdown(SettingsPage, "Language", {"English", "Русский"}, "English", function(selectedLang)
     Library:UpdateLanguage(selectedLang)
 end)
 
-Library:CreateDropdown(SettingsPage, "UITheme", ThemeNamesList, "Deep Ocean", function(selectedTheme)
+local ThemeDropdown = Library:CreateDropdown(SettingsPage, "UITheme", ThemeNamesList, "Deep Ocean", function(selectedTheme)
     Library:UpdateTheme(selectedTheme)
 end)
 
@@ -1507,7 +1548,7 @@ local FontKeys = {}
 for name, _ in pairs(FontMapping) do table.insert(FontKeys, name) end
 table.sort(FontKeys)
 
-Library:CreateDropdown(SettingsPage, "MenuFont", FontKeys, "Gotham", function(selectedFont)
+local FontDropdown = Library:CreateDropdown(SettingsPage, "MenuFont", FontKeys, "Gotham", function(selectedFont)
     if FontMapping[selectedFont] then
         Library.CurrentFont = FontMapping[selectedFont]
         for _, obj in ipairs(Library.TrackedMainText) do
@@ -1519,20 +1560,456 @@ Library:CreateDropdown(SettingsPage, "MenuFont", FontKeys, "Gotham", function(se
     end
 end)
 
-Library:CreateSlider(SettingsPage, "UITransparency", 0, 90, 15, function(value)
+local TransparencySlider = Library:CreateSlider(SettingsPage, "UITransparency", 0, 90, 15, function(value)
     MainFrame.BackgroundTransparency = value / 100
 end)
 
-Library:CreateToggle(SettingsPage, "AntiAFK", true, function(state)
+local AntiAFKToggle = Library:CreateToggle(SettingsPage, "AntiAFK", true, function(state)
     toggleAntiAFK(state)
 end)
 
-Library:CreateToggle(SettingsPage, "AnimatedWindow", false, function(state)
+local AnimatedWindowToggle = Library:CreateToggle(SettingsPage, "AnimatedWindow", false, function(state)
     toggleAnimatedWindow(state)
 end)
 
-Library:CreateToggle(SettingsPage, "Gradient", false, function(state)
+local GradientToggle = Library:CreateToggle(SettingsPage, "Gradient", false, function(state)
     toggleGradientEffect(state)
+end)
+
+-- ----------------------------------------------------------------------------
+-- МОДУЛЬ КОНФИГУРАЦИЙ
+-- ----------------------------------------------------------------------------
+local ConfigSystem = {}
+ConfigSystem.FolderPath = "DarkHub/Configs"
+ConfigSystem.LastConfigPath = "DarkHub/LastConfig.json"
+ConfigSystem.CurrentLoadedConfig = nil
+
+-- Создание директорий
+if makefolder and isfolder then
+    if not isfolder("DarkHub") then makefolder("DarkHub") end
+    if not isfolder(ConfigSystem.FolderPath) then makefolder(ConfigSystem.FolderPath) end
+end
+
+-- UI Элементы Системы Конфигураций
+local ConfigSectionHeader = Instance.new("TextLabel", SettingsPage)
+ConfigSectionHeader.Size = UDim2.new(1, -20, 0, 24)
+ConfigSectionHeader.Text = "Конфигурации"
+ConfigSectionHeader.Font = Enum.Font.GothamBold
+ConfigSectionHeader.TextColor3 = Color3.fromRGB(255, 255, 255)
+ConfigSectionHeader.TextSize = 15
+ConfigSectionHeader.TextXAlignment = Enum.TextXAlignment.Left
+ConfigSectionHeader.BackgroundTransparency = 1
+ConfigSectionHeader.LayoutOrder = 100
+table.insert(Library.TrackedMainText, ConfigSectionHeader)
+
+local ConfigDivider = Instance.new("Frame", SettingsPage)
+ConfigDivider.Size = UDim2.new(1, -20, 0, 1)
+ConfigDivider.BackgroundColor3 = Color3.fromRGB(45, 45, 45)
+ConfigDivider.BorderSizePixel = 0
+ConfigDivider.LayoutOrder = 101
+table.insert(Library.TrackedStrokes, ConfigDivider)
+
+local ConfigsScrollFrame = Instance.new("ScrollingFrame", SettingsPage)
+ConfigsScrollFrame.Size = UDim2.new(1, -20, 0, 170)
+ConfigsScrollFrame.BackgroundColor3 = Color3.fromRGB(18, 18, 18)
+ConfigsScrollFrame.BackgroundTransparency = 0.5
+ConfigsScrollFrame.ScrollBarThickness = 3
+ConfigsScrollFrame.ScrollBarImageColor3 = Library.CurrentThemeData.Accent
+ConfigsScrollFrame.BorderSizePixel = 0
+ConfigsScrollFrame.LayoutOrder = 102
+Instance.new("UICorner", ConfigsScrollFrame).CornerRadius = UDim.new(0, 8)
+local ConfigsScrollStroke = Instance.new("UIStroke", ConfigsScrollFrame)
+ConfigsScrollStroke.Color = Color3.fromRGB(40, 40, 40)
+table.insert(Library.TrackedStrokes, ConfigsScrollStroke)
+
+local ConfigListLayout = Instance.new("UIListLayout", ConfigsScrollFrame)
+ConfigListLayout.Padding = UDim.new(0, 6)
+ConfigListLayout.HorizontalAlignment = Enum.HorizontalAlignment.Center
+ConfigListLayout.SortOrder = Enum.SortOrder.LayoutOrder
+
+local ConfigListPadding = Instance.new("UIPadding", ConfigsScrollFrame)
+ConfigListPadding.PaddingTop = UDim.new(0, 6)
+ConfigListPadding.PaddingBottom = UDim.new(0, 6)
+
+ConfigListLayout:GetPropertyChangedSignal("AbsoluteContentSize"):Connect(function()
+    ConfigsScrollFrame.CanvasSize = UDim2.new(0, 0, 0, ConfigListLayout.AbsoluteContentSize.Y + 12)
+end)
+
+local EmptyConfigLabel = Instance.new("TextLabel", ConfigsScrollFrame)
+EmptyConfigLabel.Size = UDim2.new(1, 0, 1, 0)
+EmptyConfigLabel.Text = "Нет сохранённых конфигов"
+EmptyConfigLabel.Font = Enum.Font.Gotham
+EmptyConfigLabel.TextColor3 = Color3.fromRGB(120, 120, 120)
+EmptyConfigLabel.TextSize = 12
+EmptyConfigLabel.BackgroundTransparency = 1
+EmptyConfigLabel.Visible = false
+
+local SaveConfigBtn = Instance.new("TextButton", SettingsPage)
+SaveConfigBtn.Size = UDim2.new(1, -20, 0, 34)
+SaveConfigBtn.BackgroundColor3 = Color3.fromRGB(30, 140, 90)
+SaveConfigBtn.Text = "Save Config"
+SaveConfigBtn.Font = Enum.Font.GothamBold
+SaveConfigBtn.TextColor3 = Color3.fromRGB(255, 255, 255)
+SaveConfigBtn.TextSize = 13
+SaveConfigBtn.LayoutOrder = 103
+SaveConfigBtn.ClipsDescendants = true
+Instance.new("UICorner", SaveConfigBtn).CornerRadius = UDim.new(0, 6)
+
+local StatusLabel = Instance.new("TextLabel", SettingsPage)
+StatusLabel.Size = UDim2.new(1, -20, 0, 18)
+StatusLabel.Text = ""
+StatusLabel.Font = Enum.Font.Gotham
+StatusLabel.TextColor3 = Color3.fromRGB(100, 220, 140)
+StatusLabel.TextSize = 11
+StatusLabel.BackgroundTransparency = 1
+StatusLabel.LayoutOrder = 104
+
+local function ShowStatus(text, isError)
+    StatusLabel.Text = text
+    StatusLabel.TextColor3 = isError and Color3.fromRGB(255, 90, 90) or Color3.fromRGB(100, 220, 140)
+    task.delay(4, function()
+        if StatusLabel.Text == text then StatusLabel.Text = "" end
+    end)
+end
+
+-- Сбор всех данных настроек
+function ConfigSystem:GetCurrentData()
+    return {
+        Language = LanguageDropdown.GetValue(),
+        Theme = ThemeDropdown.GetValue(),
+        Font = FontDropdown.GetValue(),
+        Transparency = TransparencySlider.GetValue(),
+        AntiAFK = AntiAFKToggle.GetValue(),
+        AnimatedWindow = AnimatedWindowToggle.GetValue(),
+        Gradient = GradientToggle.GetValue()
+    }
+end
+
+-- Применение сохранённых настроек
+function ConfigSystem:ApplyData(data)
+    if type(data) ~= "table" then return end
+    if data.Language then LanguageDropdown.SetValue(data.Language) end
+    if data.Theme then ThemeDropdown.SetValue(data.Theme) end
+    if data.Font then FontDropdown.SetValue(data.Font) end
+    if data.Transparency ~= nil then TransparencySlider.SetValue(data.Transparency) end
+    if data.AntiAFK ~= nil then AntiAFKToggle.SetValue(data.AntiAFK) end
+    if data.AnimatedWindow ~= nil then AnimatedWindowToggle.SetValue(data.AnimatedWindow) end
+    if data.Gradient ~= nil then GradientToggle.SetValue(data.Gradient) end
+end
+
+-- Модальное окно для ввода имени или подтверждения удаления
+local ModalOverlay = Instance.new("Frame", DarkHub)
+ModalOverlay.Size = UDim2.new(1, 0, 1, 0)
+ModalOverlay.BackgroundColor3 = Color3.fromRGB(0, 0, 0)
+ModalOverlay.BackgroundTransparency = 0.6
+ModalOverlay.Visible = false
+ModalOverlay.ZIndex = 300
+
+local ModalCard = Instance.new("Frame", ModalOverlay)
+ModalCard.Size = UDim2.new(0, 280, 0, 140)
+ModalCard.Position = UDim2.new(0.5, 0, 0.5, 0)
+ModalCard.AnchorPoint = Vector2.new(0.5, 0.5)
+ModalCard.BackgroundColor3 = Color3.fromRGB(22, 22, 28)
+ModalCard.ZIndex = 301
+Instance.new("UICorner", ModalCard).CornerRadius = UDim.new(0, 10)
+local ModalStroke = Instance.new("UIStroke", ModalCard)
+ModalStroke.Color = Color3.fromRGB(50, 50, 60)
+
+local ModalTitle = Instance.new("TextLabel", ModalCard)
+ModalTitle.Size = UDim2.new(1, -20, 0, 30)
+ModalTitle.Position = UDim2.new(0, 10, 0, 10)
+ModalTitle.Text = "Сохранить конфиг"
+ModalTitle.Font = Enum.Font.GothamBold
+ModalTitle.TextColor3 = Color3.fromRGB(255, 255, 255)
+ModalTitle.TextSize = 14
+ModalTitle.BackgroundTransparency = 1
+ModalTitle.ZIndex = 302
+
+local ModalTextBox = Instance.new("TextBox", ModalCard)
+ModalTextBox.Size = UDim2.new(1, -20, 0, 32)
+ModalTextBox.Position = UDim2.new(0, 10, 0, 48)
+ModalTextBox.BackgroundColor3 = Color3.fromRGB(14, 14, 18)
+ModalTextBox.PlaceholderText = "Введите имя конфига..."
+ModalTextBox.Text = ""
+ModalTextBox.Font = Enum.Font.Gotham
+ModalTextBox.TextColor3 = Color3.fromRGB(240, 240, 240)
+ModalTextBox.PlaceholderColor3 = Color3.fromRGB(120, 120, 120)
+ModalTextBox.TextSize = 12
+ModalTextBox.ZIndex = 302
+Instance.new("UICorner", ModalTextBox).CornerRadius = UDim.new(0, 6)
+
+local ModalBtnConfirm = Instance.new("TextButton", ModalCard)
+ModalBtnConfirm.Size = UDim2.new(0.45, -5, 0, 30)
+ModalBtnConfirm.Position = UDim2.new(0, 10, 1, -40)
+ModalBtnConfirm.BackgroundColor3 = Color3.fromRGB(0, 140, 90)
+ModalBtnConfirm.Text = "Сохранить"
+ModalBtnConfirm.Font = Enum.Font.GothamBold
+ModalBtnConfirm.TextColor3 = Color3.fromRGB(255, 255, 255)
+ModalBtnConfirm.TextSize = 12
+ModalBtnConfirm.ZIndex = 302
+Instance.new("UICorner", ModalBtnConfirm).CornerRadius = UDim.new(0, 6)
+
+local ModalBtnCancel = Instance.new("TextButton", ModalCard)
+ModalBtnCancel.Size = UDim2.new(0.45, -5, 0, 30)
+ModalBtnCancel.Position = UDim2.new(0.55, -5, 1, -40)
+ModalBtnCancel.BackgroundColor3 = Color3.fromRGB(60, 60, 70)
+ModalBtnCancel.Text = "Отмена"
+ModalBtnCancel.Font = Enum.Font.Gotham
+ModalBtnCancel.TextColor3 = Color3.fromRGB(220, 220, 220)
+ModalBtnCancel.TextSize = 12
+ModalBtnCancel.ZIndex = 302
+Instance.new("UICorner", ModalBtnCancel).CornerRadius = UDim.new(0, 6)
+
+local function HideModal()
+    ModalOverlay.Visible = false
+    ModalTextBox.Text = ""
+end
+
+ModalBtnCancel.Activated:Connect(HideModal)
+
+-- Сохранение конфига
+function ConfigSystem:SaveToFile(name)
+    if name == "" then return end
+    local filepath = ConfigSystem.FolderPath .. "/" .. name .. ".json"
+    local timeStr = os.date("%d.%m.%Y %H:%M")
+    local saveData = {
+        Timestamp = timeStr,
+        Settings = ConfigSystem:GetCurrentData()
+    }
+    
+    local success, encoded = pcall(function() return HttpService:JSONEncode(saveData) end)
+    if success and writefile then
+        writefile(filepath, encoded)
+        ConfigSystem.CurrentLoadedConfig = name
+        
+        -- Запись последнего конфига
+        if writefile then
+            writefile(ConfigSystem.LastConfigPath, HttpService:JSONEncode({Last = name}))
+        end
+        
+        ShowStatus("Конфиг '" .. name .. "' сохранён!", false)
+        ConfigSystem:RefreshList()
+    else
+        ShowStatus("Ошибка при сохранении конфига", true)
+    end
+end
+
+-- Функция переименования
+function ConfigSystem:RenameConfig(oldName, newName)
+    if newName == "" or newName == oldName then return end
+    local oldPath = ConfigSystem.FolderPath .. "/" .. oldName .. ".json"
+    local newPath = ConfigSystem.FolderPath .. "/" .. newName .. ".json"
+    
+    if isfile and isfile(oldPath) and readfile and writefile and delfile then
+        local content = readfile(oldPath)
+        writefile(newPath, content)
+        delfile(oldPath)
+        
+        if ConfigSystem.CurrentLoadedConfig == oldName then
+            ConfigSystem.CurrentLoadedConfig = newName
+            writefile(ConfigSystem.LastConfigPath, HttpService:JSONEncode({Last = newName}))
+        end
+        ShowStatus("Конфиг переименован в '" .. newName .. "'", false)
+        ConfigSystem:RefreshList()
+    end
+end
+
+-- Отрисовка списка конфигов
+function ConfigSystem:RefreshList()
+    for _, child in ipairs(ConfigsScrollFrame:GetChildren()) do
+        if child:IsA("Frame") then child:Destroy() end
+    end
+    
+    local files = {}
+    if listfiles and isfolder and isfolder(ConfigSystem.FolderPath) then
+        for _, file in ipairs(listfiles(ConfigSystem.FolderPath)) do
+            if string.sub(file, -5) == ".json" then
+                local fileName = string.gsub(file, "\\", "/")
+                fileName = string.match(fileName, "([^/]+)%.json$")
+                if fileName then table.insert(files, fileName) end
+            end
+        end
+    end
+    
+    EmptyConfigLabel.Visible = (#files == 0)
+    
+    for i, configName in ipairs(files) do
+        local isCurrent = (configName == ConfigSystem.CurrentLoadedConfig)
+        
+        local Card = Instance.new("Frame", ConfigsScrollFrame)
+        Card.Size = UDim2.new(1, -12, 0, 48)
+        Card.BackgroundColor3 = Color3.fromRGB(26, 26, 32)
+        Card.LayoutOrder = i
+        Card.ZIndex = 8
+        Instance.new("UICorner", Card).CornerRadius = UDim.new(0, 6)
+        
+        local CardStroke = Instance.new("UIStroke", Card)
+        CardStroke.Thickness = 1
+        CardStroke.Color = isCurrent and Color3.fromRGB(80, 220, 120) or Color3.fromRGB(45, 45, 50)
+        
+        if isCurrent then
+            local ActiveBar = Instance.new("Frame", Card)
+            ActiveBar.Size = UDim2.new(0, 4, 1, 0)
+            ActiveBar.Position = UDim2.new(0, 0, 0, 0)
+            ActiveBar.BackgroundColor3 = Color3.fromRGB(80, 220, 120)
+            ActiveBar.BorderSizePixel = 0
+            ActiveBar.ZIndex = 9
+            Instance.new("UICorner", ActiveBar).CornerRadius = UDim.new(0, 2)
+        end
+        
+        -- Чтение даты создания/обновления
+        local timestampText = "00.00.0000 00:00"
+        local filePath = ConfigSystem.FolderPath .. "/" .. configName .. ".json"
+        if isfile and isfile(filePath) and readfile then
+            pcall(function()
+                local data = HttpService:JSONDecode(readfile(filePath))
+                if data and data.Timestamp then timestampText = data.Timestamp end
+            end)
+        end
+        
+        local TitleBox = Instance.new("TextBox", Card)
+        TitleBox.Size = UDim2.new(1, -140, 0, 20)
+        TitleBox.Position = UDim2.new(0, 10, 0, 6)
+        TitleBox.Text = configName
+        TitleBox.Font = Enum.Font.GothamBold
+        TitleBox.TextColor3 = Color3.fromRGB(255, 255, 255)
+        TitleBox.TextSize = 12
+        TitleBox.TextXAlignment = Enum.TextXAlignment.Left
+        TitleBox.BackgroundTransparency = 1
+        TitleBox.ClearTextOnFocus = false
+        TitleBox.ZIndex = 9
+        
+        TitleBox.FocusLost:Connect(function(enterPressed)
+            if TitleBox.Text ~= configName then
+                ConfigSystem:RenameConfig(configName, TitleBox.Text)
+            end
+        end)
+        
+        local DateLabel = Instance.new("TextLabel", Card)
+        DateLabel.Size = UDim2.new(1, -140, 0, 14)
+        DateLabel.Position = UDim2.new(0, 10, 0, 26)
+        DateLabel.Text = timestampText
+        DateLabel.Font = Enum.Font.Gotham
+        DateLabel.TextColor3 = Color3.fromRGB(130, 130, 135)
+        DateLabel.TextSize = 10
+        DateLabel.TextXAlignment = Enum.TextXAlignment.Left
+        DateLabel.BackgroundTransparency = 1
+        DateLabel.ZIndex = 9
+        
+        -- Кнопки действий
+        local ActionsContainer = Instance.new("Frame", Card)
+        ActionsContainer.Size = UDim2.new(0, 125, 0, 28)
+        ActionsContainer.Position = UDim2.new(1, -130, 0.5, -14)
+        ActionsContainer.BackgroundTransparency = 1
+        ActionsContainer.ZIndex = 9
+        
+        local ActionLayout = Instance.new("UIListLayout", ActionsContainer)
+        ActionLayout.FillDirection = Enum.FillDirection.Horizontal
+        ActionLayout.Padding = UDim.new(0, 4)
+        ActionLayout.HorizontalAlignment = Enum.HorizontalAlignment.Right
+        
+        local function createSmallBtn(btnText, color, callback)
+            local btn = Instance.new("TextButton", ActionsContainer)
+            btn.Size = UDim2.new(0, 38, 1, 0)
+            btn.BackgroundColor3 = color
+            btn.Text = btnText
+            btn.Font = Enum.Font.GothamBold
+            btn.TextColor3 = Color3.fromRGB(255, 255, 255)
+            btn.TextSize = 10
+            btn.ZIndex = 10
+            Instance.new("UICorner", btn).CornerRadius = UDim.new(0, 4)
+            btn.Activated:Connect(callback)
+            return btn
+        end
+        
+        -- Load Button
+        createSmallBtn("Load", Color3.fromRGB(0, 120, 215), function()
+            if readfile and isfile and isfile(filePath) then
+                local success, decoded = pcall(function() return HttpService:JSONDecode(readfile(filePath)) end)
+                if success and decoded and decoded.Settings then
+                    ConfigSystem:ApplyData(decoded.Settings)
+                    ConfigSystem.CurrentLoadedConfig = configName
+                    if writefile then
+                        writefile(ConfigSystem.LastConfigPath, HttpService:JSONEncode({Last = configName}))
+                    end
+                    ShowStatus("Конфиг '" .. configName .. "' загружен!", false)
+                    ConfigSystem:RefreshList()
+                end
+            end
+        end)
+        
+        -- Update Button
+        createSmallBtn("Upd", Color3.fromRGB(180, 130, 20), function()
+            ConfigSystem:SaveToFile(configName)
+            ShowStatus("Конфиг '" .. configName .. "' обновлён!", false)
+        end)
+        
+        -- Delete Button
+        createSmallBtn("Del", Color3.fromRGB(180, 40, 40), function()
+            ModalTitle.Text = "Удалить конфиг?"
+            ModalTextBox.Visible = false
+            ModalBtnConfirm.Text = "Да"
+            ModalBtnConfirm.BackgroundColor3 = Color3.fromRGB(180, 40, 40)
+            ModalOverlay.Visible = true
+            
+            local confirmConn
+            confirmConn = ModalBtnConfirm.Activated:Connect(function()
+                confirmConn:Disconnect()
+                if delfile and isfile and isfile(filePath) then
+                    delfile(filePath)
+                    if ConfigSystem.CurrentLoadedConfig == configName then
+                        ConfigSystem.CurrentLoadedConfig = nil
+                        if isfile(ConfigSystem.LastConfigPath) then delfile(ConfigSystem.LastConfigPath) end
+                    end
+                    ShowStatus("Конфиг удалён", true)
+                    ConfigSystem:RefreshList()
+                end
+                HideModal()
+            end)
+        end)
+    end
+end
+
+-- Обработка клика "Save Config"
+SaveConfigBtn.Activated:Connect(function()
+    ModalTitle.Text = "Создать новый конфиг"
+    ModalTextBox.Visible = true
+    ModalTextBox.Text = ""
+    ModalBtnConfirm.Text = "Сохранить"
+    ModalBtnConfirm.BackgroundColor3 = Color3.fromRGB(0, 140, 90)
+    ModalOverlay.Visible = true
+    
+    local confirmConn
+    confirmConn = ModalBtnConfirm.Activated:Connect(function()
+        confirmConn:Disconnect()
+        local name = ModalTextBox.Text
+        if name ~= "" then
+            ConfigSystem:SaveToFile(name)
+        end
+        HideModal()
+    end)
+end)
+
+-- Авто-загрузка последнего сохранённого конфига при старте
+task.spawn(function()
+    ConfigSystem:RefreshList()
+    if isfile and readfile and isfile(ConfigSystem.LastConfigPath) then
+        pcall(function()
+            local lastData = HttpService:JSONDecode(readfile(ConfigSystem.LastConfigPath))
+            if lastData and lastData.Last then
+                local lastConfigPath = ConfigSystem.FolderPath .. "/" .. lastData.Last .. ".json"
+                if isfile(lastConfigPath) then
+                    local cfgData = HttpService:JSONDecode(readfile(lastConfigPath))
+                    if cfgData and cfgData.Settings then
+                        ConfigSystem:ApplyData(cfgData.Settings)
+                        ConfigSystem.CurrentLoadedConfig = lastData.Last
+                        ConfigSystem:RefreshList()
+                        ShowStatus("Автозагрузка: '" .. lastData.Last .. "'", false)
+                    end
+                end
+            end
+        end)
+    end
 end)
 
 -- ИНИЦИАЛИЗАЦИЯ ПЕРВОЙ ВКЛАДКИ И ТЕМЫ
@@ -1552,11 +2029,10 @@ local LoadingContainer = Instance.new("Frame")
 LoadingContainer.Name = "LoadingContainer"
 LoadingContainer.Size = UDim2.new(1, 0, 1, 0)
 LoadingContainer.Position = UDim2.new(0, 0, 0, 0)
-LoadingContainer.BackgroundTransparency = 1 -- Полностью прозрачный фон
+LoadingContainer.BackgroundTransparency = 1
 LoadingContainer.ZIndex = 500
 LoadingContainer.Parent = DarkHub
 
--- Контейнер загрузки (Матовая плашка)
 local LoadingCard = Instance.new("Frame")
 LoadingCard.Name = "LoadingCard"
 LoadingCard.Size = UDim2.new(0, 310, 0, 185)
@@ -1579,7 +2055,6 @@ CardStroke.Thickness = 1
 local CardScale = Instance.new("UIScale", LoadingCard)
 CardScale.Scale = 0.8
 
--- Иконка скрипта (Кастомное изображение вместо молнии)
 local IconFrame = Instance.new("Frame")
 IconFrame.Name = "IconFrame"
 IconFrame.Size = UDim2.new(0, 44, 0, 44)
@@ -1604,12 +2079,10 @@ IconImage.ScaleType = Enum.ScaleType.Fit
 IconImage.ZIndex = 503
 Instance.new("UICorner", IconImage).CornerRadius = UDim.new(0, 10)
 
--- Пульсация иконки
 local pulseInfo = TweenInfo.new(1.2, Enum.EasingStyle.Sine, Enum.EasingDirection.InOut, -1, true)
 local pulseTween = TweenService:Create(IconScale, pulseInfo, {Scale = 1.08})
 pulseTween:Play()
 
--- Название скрипта
 local LoadingTitle = Instance.new("TextLabel", LoadingCard)
 LoadingTitle.Size = UDim2.new(1, 0, 0, 22)
 LoadingTitle.Position = UDim2.new(0, 0, 0, 66)
@@ -1621,7 +2094,6 @@ LoadingTitle.BackgroundTransparency = 1
 LoadingTitle.TextTransparency = 1
 LoadingTitle.ZIndex = 502
 
--- Прогресс-бар с градиентом
 local ProgressBarBg = Instance.new("Frame", LoadingCard)
 ProgressBarBg.Size = UDim2.new(0, 250, 0, 20)
 ProgressBarBg.Position = UDim2.new(0.5, 0, 0, 100)
@@ -1645,7 +2117,6 @@ BarGradient.Color = ColorSequence.new({
     ColorSequenceKeypoint.new(1, Color3.fromRGB(0, 230, 210))
 })
 
--- Анимация бегущей волны в градиенте
 local waveTweenInfo = TweenInfo.new(1.8, Enum.EasingStyle.Linear, Enum.EasingDirection.InOut, -1, true)
 local waveTween = TweenService:Create(BarGradient, waveTweenInfo, {Offset = Vector2.new(1, 0)})
 waveTween:Play()
@@ -1660,7 +2131,6 @@ BarText.TextTransparency = 1
 BarText.BackgroundTransparency = 1
 BarText.ZIndex = 504
 
--- Статус-текст
 local LoadingStatus = Instance.new("TextLabel", LoadingCard)
 LoadingStatus.Size = UDim2.new(1, -20, 0, 18)
 LoadingStatus.Position = UDim2.new(0, 10, 0, 130)
@@ -1672,7 +2142,6 @@ LoadingStatus.BackgroundTransparency = 1
 LoadingStatus.TextTransparency = 1
 LoadingStatus.ZIndex = 502
 
--- Декоративные частицы
 local particlesActive = true
 local function spawnParticle()
     if not particlesActive or not LoadingCard or not LoadingCard.Parent then return end
@@ -1707,7 +2176,6 @@ task.spawn(function()
     end
 end)
 
--- Процесс показа плашки без затемнения экрана
 TweenService:Create(LoadingCard, TweenInfo.new(0.35, Enum.EasingStyle.Back, Enum.EasingDirection.Out), {BackgroundTransparency = 0.15}):Play()
 TweenService:Create(CardScale, TweenInfo.new(0.35, Enum.EasingStyle.Back, Enum.EasingDirection.Out), {Scale = 1}):Play()
 TweenService:Create(CardStroke, TweenInfo.new(0.35), {Transparency = 0.85}):Play()
@@ -1717,7 +2185,6 @@ TweenService:Create(ProgressBarBg, TweenInfo.new(0.3), {BackgroundTransparency =
 TweenService:Create(BarText, TweenInfo.new(0.3), {TextTransparency = 0}):Play()
 TweenService:Create(LoadingStatus, TweenInfo.new(0.3), {TextTransparency = 0}):Play()
 
--- Функция плавной смены статуса
 local currentStatusText = LoadingStatus.Text
 local function setStatus(newText, color)
     if currentStatusText == newText then return end
@@ -1735,13 +2202,12 @@ local function setStatus(newText, color)
     TweenService:Create(LoadingStatus, TweenInfo.new(0.15), {TextTransparency = 0}):Play()
 end
 
--- Анимированный цикл неравномерного заполнения
 task.spawn(function()
     local stages = {
         { target = 0.30, duration = 1.0, status = "Инициализация ядра..." },
         { target = 0.60, duration = 1.2, status = "Загрузка интерфейса..." },
         { target = 0.85, duration = 0.8, status = "Подготовка настроек..." },
-        { target = 0.95, duration = 0.6, status = "Финальная настройка..." },
+        { target = 0.95, duration = 0.6, status = "Загрузка конфигураций..." },
         { target = 1.00, duration = 0.4, status = "Запуск..." }
     }
 
@@ -1772,16 +2238,12 @@ task.spawn(function()
         BarText.Text = string.format("%d%%", math.floor(currentProgress * 100))
     end
 
-    -- ============================================================================
-    -- ЗАВЕРШЕНИЕ ЗАГРУЗКИ
-    -- ============================================================================
     setStatus("ГОТОВО!", Color3.fromRGB(100, 255, 130))
     BarText.Text = "100%"
     task.wait(0.5)
 
     particlesActive = false
 
-    -- Плавное затухание
     TweenService:Create(CardScale, TweenInfo.new(0.5, Enum.EasingStyle.Quad, Enum.EasingDirection.In), {Scale = 0.8}):Play()
     TweenService:Create(LoadingCard, TweenInfo.new(0.5), {BackgroundTransparency = 1}):Play()
     TweenService:Create(CardStroke, TweenInfo.new(0.5), {Transparency = 1}):Play()
@@ -1796,7 +2258,6 @@ task.spawn(function()
 
     finalFade.Completed:Wait()
 
-    -- Удаление объектов загрузки и отображение интерфейса
     pulseTween:Cancel()
     waveTween:Cancel()
     LoadingContainer:Destroy()
