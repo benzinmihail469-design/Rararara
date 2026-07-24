@@ -196,27 +196,27 @@ TabTitle.BackgroundTransparency = 1
 
 local ControlsContainer = Instance.new("Frame", MainFrame)
 ControlsContainer.Name = "ControlsContainer"
-ControlsContainer.Size = UDim2.new(0, 60, 0, 30)
-ControlsContainer.Position = UDim2.new(1, -65, 0, 10)
+ControlsContainer.Size = UDim2.new(0, 70, 0, 30)
+ControlsContainer.Position = UDim2.new(1, -75, 0, 8)
 ControlsContainer.BackgroundTransparency = 1
 ControlsContainer.ZIndex = 10
 
 local MinBtn = Instance.new("TextButton", ControlsContainer)
-MinBtn.Size = UDim2.new(0, 24, 0, 24)
-MinBtn.Position = UDim2.new(0, 0, 0, 3)
+MinBtn.Size = UDim2.new(0, 28, 0, 28)
+MinBtn.Position = UDim2.new(0, 0, 0, 0)
 MinBtn.Text = "-"
 MinBtn.Font = Enum.Font.GothamBold
-MinBtn.TextSize = 16
+MinBtn.TextSize = 20
 MinBtn.TextColor3 = Color3.fromRGB(180, 180, 180)
 MinBtn.BackgroundTransparency = 1
 MinBtn.ZIndex = 11
 
 local CloseBtn = Instance.new("TextButton", ControlsContainer)
-CloseBtn.Size = UDim2.new(0, 24, 0, 24)
-CloseBtn.Position = UDim2.new(0, 30, 0, 3)
-CloseBtn.Text = "✕"
+CloseBtn.Size = UDim2.new(0, 28, 0, 28)
+CloseBtn.Position = UDim2.new(0, 36, 0, 0)
+CloseBtn.Text = "X"
 CloseBtn.Font = Enum.Font.GothamBold
-CloseBtn.TextSize = 14
+CloseBtn.TextSize = 16
 CloseBtn.TextColor3 = Color3.fromRGB(180, 180, 180)
 CloseBtn.BackgroundTransparency = 1
 CloseBtn.ZIndex = 11
@@ -244,7 +244,7 @@ local ClearSearchBtn = Instance.new("TextButton", SearchContainer)
 ClearSearchBtn.Size = UDim2.new(0, 16, 0, 16)
 ClearSearchBtn.Position = UDim2.new(1, -22, 0.5, -8)
 ClearSearchBtn.BackgroundTransparency = 1
-ClearSearchBtn.Text = "✕"
+ClearSearchBtn.Text = "X"
 ClearSearchBtn.Font = Enum.Font.GothamBold
 ClearSearchBtn.TextSize = 12
 ClearSearchBtn.TextColor3 = Color3.fromRGB(150, 150, 150)
@@ -311,28 +311,28 @@ SubTitle.BackgroundTransparency = 1
 SubTitle.ZIndex = 5
 
 local EmbeddedControls = Instance.new("Frame", HeaderBg)
-EmbeddedControls.Size = UDim2.new(0, 50, 0, 30)
-EmbeddedControls.Position = UDim2.new(1, -50, 0, 8)
+EmbeddedControls.Size = UDim2.new(0, 55, 0, 30)
+EmbeddedControls.Position = UDim2.new(1, -55, 0, 8)
 EmbeddedControls.BackgroundTransparency = 1
 EmbeddedControls.ZIndex = 6
 EmbeddedControls.Visible = false
 
 local EmbMinBtn = Instance.new("TextButton", EmbeddedControls)
-EmbMinBtn.Size = UDim2.new(0, 20, 0, 20)
-EmbMinBtn.Position = UDim2.new(0, 0, 0, 5)
+EmbMinBtn.Size = UDim2.new(0, 24, 0, 24)
+EmbMinBtn.Position = UDim2.new(0, 0, 0, 3)
 EmbMinBtn.Text = "-"
 EmbMinBtn.Font = Enum.Font.GothamBold
-EmbMinBtn.TextSize = 14
+EmbMinBtn.TextSize = 18
 EmbMinBtn.TextColor3 = Color3.fromRGB(180, 180, 180)
 EmbMinBtn.BackgroundTransparency = 1
 EmbMinBtn.ZIndex = 7
 
 local EmbCloseBtn = Instance.new("TextButton", EmbeddedControls)
-EmbCloseBtn.Size = UDim2.new(0, 20, 0, 20)
-EmbCloseBtn.Position = UDim2.new(0, 25, 0, 5)
-EmbCloseBtn.Text = "✕"
+EmbCloseBtn.Size = UDim2.new(0, 24, 0, 24)
+EmbCloseBtn.Position = UDim2.new(0, 28, 0, 3)
+EmbCloseBtn.Text = "X"
 EmbCloseBtn.Font = Enum.Font.GothamBold
-EmbCloseBtn.TextSize = 13
+EmbCloseBtn.TextSize = 15
 EmbCloseBtn.TextColor3 = Color3.fromRGB(180, 180, 180)
 EmbCloseBtn.BackgroundTransparency = 1
 EmbCloseBtn.ZIndex = 7
@@ -1251,10 +1251,10 @@ function Library:CreateDropdown(parentPage, textKey, options, default, callback)
             local Checkmark = Instance.new("TextLabel", OptBtn)
             Checkmark.Size = UDim2.new(0, 20, 1, 0)
             Checkmark.Position = UDim2.new(1, -30, 0, 0)
-            Checkmark.Text = "o"
+            Checkmark.Text = "✓"
             Checkmark.Font = Enum.Font.GothamBold
             Checkmark.TextColor3 = accent
-            Checkmark.TextSize = 12
+            Checkmark.TextSize = 14
             Checkmark.BackgroundTransparency = 1
             Checkmark.Visible = (option == SelectedLabel.Text)
             Checkmark.ZIndex = 10
@@ -1833,709 +1833,54 @@ local function applySettings(data)
     if data.Gradient ~= nil then GradientToggle.SetValue(data.Gradient) end
 end
 
--- Config UI
-local ConfigHeaderContainer = Instance.new("Frame", SettingsPage)
-ConfigHeaderContainer.Size = UDim2.new(1, -20, 0, 30)
-ConfigHeaderContainer.BackgroundTransparency = 1
-ConfigHeaderContainer.LayoutOrder = 100
-
-local ConfigSectionHeader = Instance.new("TextLabel", ConfigHeaderContainer)
-ConfigSectionHeader.Size = UDim2.new(1, 0, 0, 20)
-ConfigSectionHeader.Position = UDim2.new(0, 0, 0, 10)
-ConfigSectionHeader.Text = "Configurations"
-ConfigSectionHeader.Font = Enum.Font.GothamBold
-ConfigSectionHeader.TextColor3 = Color3.fromRGB(255, 255, 255)
-ConfigSectionHeader.TextSize = 14
-ConfigSectionHeader.TextXAlignment = Enum.TextXAlignment.Left
-ConfigSectionHeader.BackgroundTransparency = 1
-
-local ConfigDivider = Instance.new("Frame", SettingsPage)
-ConfigDivider.Size = UDim2.new(1, -40, 0, 1)
-ConfigDivider.BackgroundColor3 = Color3.fromRGB(42, 42, 53)
-ConfigDivider.BorderSizePixel = 0
-ConfigDivider.LayoutOrder = 101
-
-local ConfigsScrollFrame = Instance.new("ScrollingFrame", SettingsPage)
-ConfigsScrollFrame.Size = UDim2.new(1, -20, 0, 160)
-ConfigsScrollFrame.BackgroundTransparency = 1
-ConfigsScrollFrame.ScrollBarThickness = 2
-ConfigsScrollFrame.ScrollBarImageColor3 = Color3.fromRGB(74, 144, 217)
-ConfigsScrollFrame.BorderSizePixel = 0
-ConfigsScrollFrame.LayoutOrder = 102
-
-local ConfigListLayout = Instance.new("UIListLayout", ConfigsScrollFrame)
-ConfigListLayout.Padding = UDim.new(0, 6)
-ConfigListLayout.HorizontalAlignment = Enum.HorizontalAlignment.Center
-ConfigListLayout.SortOrder = Enum.SortOrder.LayoutOrder
-
-ConfigListLayout:GetPropertyChangedSignal("AbsoluteContentSize"):Connect(function()
-    if ConfigsScrollFrame and ConfigsScrollFrame.Parent then
-        ConfigsScrollFrame.CanvasSize = UDim2.new(0, 0, 0, ConfigListLayout.AbsoluteContentSize.Y + 10)
-    end
-end)
-
-local EmptyConfigLabel = Instance.new("TextLabel", ConfigsScrollFrame)
-EmptyConfigLabel.Size = UDim2.new(1, 0, 1, 0)
-EmptyConfigLabel.Text = "No configurations saved"
-EmptyConfigLabel.Font = Enum.Font.Gotham
-EmptyConfigLabel.TextColor3 = Color3.fromRGB(85, 85, 102)
-EmptyConfigLabel.TextSize = 12
-EmptyConfigLabel.BackgroundTransparency = 1
-EmptyConfigLabel.Visible = false
-
-local NewConfigBtn = Instance.new("TextButton", SettingsPage)
-NewConfigBtn.Size = UDim2.new(1, -20, 0, 34)
-NewConfigBtn.BackgroundColor3 = Color3.fromRGB(74, 144, 217)
-NewConfigBtn.BackgroundTransparency = 1
-NewConfigBtn.Text = "+ New Config"
-NewConfigBtn.Font = Enum.Font.GothamMedium
-NewConfigBtn.TextColor3 = Color3.fromRGB(74, 144, 217)
-NewConfigBtn.TextSize = 12
-NewConfigBtn.LayoutOrder = 103
-NewConfigBtn.ClipsDescendants = true
-Instance.new("UICorner", NewConfigBtn).CornerRadius = UDim.new(0, 6)
-
-local NewConfigStroke = Instance.new("UIStroke", NewConfigBtn)
-NewConfigStroke.Color = Color3.fromRGB(74, 144, 217)
-NewConfigStroke.Thickness = 1
-
-NewConfigBtn.MouseEnter:Connect(function()
-    tween(NewConfigBtn, {BackgroundTransparency = 0.85, TextColor3 = Color3.fromRGB(255, 255, 255)}, 0.2)
-end)
-NewConfigBtn.MouseLeave:Connect(function()
-    tween(NewConfigBtn, {BackgroundTransparency = 1, TextColor3 = Color3.fromRGB(74, 144, 217)}, 0.2)
-end)
-
--- Forward declarations for list refresh & modals
-local refreshConfigList
-local showCreateOrEditModal
-local showDeleteModal
-
--- Save config
+-- Configuration Save/Load Functions
 local function saveConfig(name)
     if not name or name == "" then return end
     local filePath = CONFIG_FOLDER .. "/" .. name .. ".json"
-    local isUpdate = false
-    pcall(function()
-        if typeof(isfile) == "function" and isfile(filePath) then
-            isUpdate = true
-        end
-    end)
-
-    local timeStr = os.date("%b %d, %Y %H:%M")
-    local saveData = {
-        Created = timeStr,
-        Settings = collectSettings()
-    }
-
+    local settingsData = collectSettings()
     local success, encoded = pcall(function()
-        return HttpService:JSONEncode(saveData)
+        return HttpService:JSONEncode(settingsData)
     end)
-
-    if success and typeof(writefile) == "function" then
+    if success and encoded then
         pcall(function()
-            writefile(filePath, encoded)
+            if writefile then
+                writefile(filePath, encoded)
+            end
         end)
-        activeConfigName = name
-        refreshConfigList()
-        if isUpdate then
-            showToast("Config '" .. name .. "' updated!", Color3.fromRGB(74, 144, 217))
-        else
-            showToast("Config '" .. name .. "' saved!", Color3.fromRGB(74, 144, 217))
-        end
+        showToast("Config saved: " .. name, Color3.fromRGB(60, 255, 90))
+    else
+        showToast("Failed to save config", Color3.fromRGB(255, 60, 60))
     end
 end
 
--- Load config
 local function loadConfig(name)
     if not name or name == "" then return end
     local filePath = CONFIG_FOLDER .. "/" .. name .. ".json"
-    pcall(function()
-        if typeof(readfile) == "function" and typeof(isfile) == "function" and isfile(filePath) then
-            local success, decoded = pcall(function()
-                return HttpService:JSONEncode(readfile(filePath))
+    if isfile and isfile(filePath) and readfile then
+        local success, content = pcall(function()
+            return readfile(filePath)
+        end)
+        if success and content then
+            local decodeSuccess, decoded = pcall(function()
+                return HttpService:JSONDecode(content)
             end)
-            if success and decoded and decoded.Settings then
-                applySettings(decoded.Settings)
-                activeConfigName = name
-                refreshConfigList()
-                showToast("Config '" .. name .. "' loaded!", Color3.fromRGB(85, 224, 133))
+            if decodeSuccess and type(decoded) == "table" then
+                applySettings(decoded)
+                showToast("Config loaded: " .. name, Color3.fromRGB(60, 255, 90))
+                return
             end
         end
-    end)
-end
-
--- Delete config
-local function deleteConfig(name)
-    if not name or name == "" then return end
-    local filePath = CONFIG_FOLDER .. "/" .. name .. ".json"
-    pcall(function()
-        if typeof(delfile) == "function" and typeof(isfile) == "function" and isfile(filePath) then
-            delfile(filePath)
-            if activeConfigName == name then activeConfigName = nil end
-            refreshConfigList()
-            showToast("Config '" .. name .. "' deleted!", Color3.fromRGB(224, 85, 85))
-        end
-    end)
-end
-
--- Rename config
-local function renameConfig(oldName, newName)
-    if not oldName or not newName or newName == "" or oldName == newName then return end
-    local oldPath = CONFIG_FOLDER .. "/" .. oldName .. ".json"
-    local newPath = CONFIG_FOLDER .. "/" .. newName .. ".json"
-    pcall(function()
-        if typeof(isfile) == "function" and isfile(oldPath) and typeof(readfile) == "function" and typeof(writefile) == "function" and typeof(delfile) == "function" then
-            local content = readfile(oldPath)
-            local success, decoded = pcall(function() return HttpService:JSONDecode(content) end)
-            if success and decoded then
-                writefile(newPath, HttpService:JSONEncode(decoded))
-                delfile(oldPath)
-                if activeConfigName == oldName then activeConfigName = newName end
-                refreshConfigList()
-                showToast("Config '" .. newName .. "' updated!", Color3.fromRGB(74, 144, 217))
-            end
-        end
-    end)
-end
-
--- Modal Creation/Editing Window
-function showCreateOrEditModal(existingName)
-    local isEdit = (existingName ~= nil)
-
-    local modalOverlay = Instance.new("Frame", DarkHub)
-    modalOverlay.Size = UDim2.new(1, 0, 1, 0)
-    modalOverlay.BackgroundColor3 = Color3.fromRGB(0, 0, 0)
-    modalOverlay.BackgroundTransparency = 1
-    modalOverlay.ZIndex = 300
-
-    local modalFrame = Instance.new("Frame", modalOverlay)
-    modalFrame.Size = UDim2.new(0, 280, 0, 150)
-    modalFrame.Position = UDim2.new(0.5, 0, 0.5, 0)
-    modalFrame.AnchorPoint = Vector2.new(0.5, 0.5)
-    modalFrame.BackgroundColor3 = Color3.fromRGB(30, 30, 40)
-    modalFrame.ZIndex = 301
-    Instance.new("UICorner", modalFrame).CornerRadius = UDim.new(0, 12)
-
-    local frameStroke = Instance.new("UIStroke", modalFrame)
-    frameStroke.Color = Color3.fromRGB(51, 51, 68)
-    frameStroke.Thickness = 1
-
-    local modalScale = Instance.new("UIScale", modalFrame)
-    modalScale.Scale = 0.9
-
-    local modalTitle = Instance.new("TextLabel", modalFrame)
-    modalTitle.Size = UDim2.new(1, -24, 0, 22)
-    modalTitle.Position = UDim2.new(0, 12, 0, 12)
-    modalTitle.Text = isEdit and "Edit Config" or "New Config"
-    modalTitle.Font = Enum.Font.GothamBold
-    modalTitle.TextSize = 14
-    modalTitle.TextColor3 = Color3.fromRGB(255, 255, 255)
-    modalTitle.TextXAlignment = Enum.TextXAlignment.Left
-    modalTitle.BackgroundTransparency = 1
-    modalTitle.ZIndex = 302
-
-    local nameBox = Instance.new("TextBox", modalFrame)
-    nameBox.Size = UDim2.new(1, -24, 0, 34)
-    nameBox.Position = UDim2.new(0, 12, 0, 42)
-    nameBox.BackgroundColor3 = Color3.fromRGB(21, 21, 28)
-    nameBox.Text = existingName or ""
-    nameBox.PlaceholderText = "Config name..."
-    nameBox.Font = Enum.Font.Gotham
-    nameBox.TextSize = 12
-    nameBox.TextColor3 = Color3.fromRGB(255, 255, 255)
-    nameBox.PlaceholderColor3 = Color3.fromRGB(136, 136, 153)
-    nameBox.TextXAlignment = Enum.TextXAlignment.Left
-    nameBox.ClearTextOnFocus = false
-    nameBox.ZIndex = 302
-    Instance.new("UICorner", nameBox).CornerRadius = UDim.new(0, 6)
-
-    local boxPadding = Instance.new("UIPadding", nameBox)
-    boxPadding.PaddingLeft = UDim.new(0, 10)
-    boxPadding.PaddingRight = UDim.new(0, 10)
-
-    local boxStroke = Instance.new("UIStroke", nameBox)
-    boxStroke.Color = Color3.fromRGB(42, 42, 53)
-    boxStroke.Thickness = 1
-
-    local errorLabel = Instance.new("TextLabel", modalFrame)
-    errorLabel.Size = UDim2.new(1, -24, 0, 14)
-    errorLabel.Position = UDim2.new(0, 12, 0, 80)
-    errorLabel.Text = "Name cannot be empty"
-    errorLabel.Font = Enum.Font.Gotham
-    errorLabel.TextSize = 10
-    errorLabel.TextColor3 = Color3.fromRGB(224, 85, 85)
-    errorLabel.TextXAlignment = Enum.TextXAlignment.Left
-    errorLabel.BackgroundTransparency = 1
-    errorLabel.Visible = false
-    errorLabel.ZIndex = 302
-
-    local cancelBtn = Instance.new("TextButton", modalFrame)
-    cancelBtn.Size = UDim2.new(0.5, -18, 0, 32)
-    cancelBtn.Position = UDim2.new(0, 12, 1, -44)
-    cancelBtn.BackgroundTransparency = 1
-    cancelBtn.Text = "Cancel"
-    cancelBtn.Font = Enum.Font.Gotham
-    cancelBtn.TextSize = 12
-    cancelBtn.TextColor3 = Color3.fromRGB(136, 136, 153)
-    cancelBtn.ZIndex = 302
-
-    local saveBtn = Instance.new("TextButton", modalFrame)
-    saveBtn.Size = UDim2.new(0.5, -18, 0, 32)
-    saveBtn.Position = UDim2.new(0.5, 6, 1, -44)
-    saveBtn.BackgroundColor3 = Color3.fromRGB(74, 144, 217)
-    saveBtn.Text = "Save"
-    saveBtn.Font = Enum.Font.GothamBold
-    saveBtn.TextSize = 12
-    saveBtn.TextColor3 = Color3.fromRGB(255, 255, 255)
-    saveBtn.ZIndex = 302
-    Instance.new("UICorner", saveBtn).CornerRadius = UDim.new(0, 6)
-
-    tween(modalOverlay, {BackgroundTransparency = 0.5}, 0.25)
-    tween(modalScale, {Scale = 1.0}, 0.25)
-
-    local function closeModal()
-        tween(modalOverlay, {BackgroundTransparency = 1}, 0.2)
-        local t = tween(modalScale, {Scale = 0.9}, 0.2)
-        if t then
-            t.Completed:Connect(function()
-                modalOverlay:Destroy()
-            end)
-        else
-            modalOverlay:Destroy()
-        end
     end
-
-    cancelBtn.Activated:Connect(closeModal)
-
-    saveBtn.Activated:Connect(function()
-        local inputName = nameBox.Text:gsub("^%s*(.-)%s*$", "%1")
-        if inputName == "" then
-            boxStroke.Color = Color3.fromRGB(224, 85, 85)
-            errorLabel.Visible = true
-            return
-        end
-        if isEdit then
-            renameConfig(existingName, inputName)
-        else
-            saveConfig(inputName)
-        end
-        closeModal()
-    end)
+    showToast("Failed to load config", Color3.fromRGB(255, 60, 60))
 end
 
--- Modal Confirmation Window for Deletion
-function showDeleteModal(configName)
-    local modalOverlay = Instance.new("Frame", DarkHub)
-    modalOverlay.Size = UDim2.new(1, 0, 1, 0)
-    modalOverlay.BackgroundColor3 = Color3.fromRGB(0, 0, 0)
-    modalOverlay.BackgroundTransparency = 1
-    modalOverlay.ZIndex = 300
-
-    local modalFrame = Instance.new("Frame", modalOverlay)
-    modalFrame.Size = UDim2.new(0, 260, 0, 120)
-    modalFrame.Position = UDim2.new(0.5, 0, 0.5, 0)
-    modalFrame.AnchorPoint = Vector2.new(0.5, 0.5)
-    modalFrame.BackgroundColor3 = Color3.fromRGB(30, 30, 40)
-    modalFrame.ZIndex = 301
-    Instance.new("UICorner", modalFrame).CornerRadius = UDim.new(0, 12)
-
-    local frameStroke = Instance.new("UIStroke", modalFrame)
-    frameStroke.Color = Color3.fromRGB(51, 51, 68)
-    frameStroke.Thickness = 1
-
-    local modalScale = Instance.new("UIScale", modalFrame)
-    modalScale.Scale = 0.9
-
-    local modalTitle = Instance.new("TextLabel", modalFrame)
-    modalTitle.Size = UDim2.new(1, -24, 0, 20)
-    modalTitle.Position = UDim2.new(0, 12, 0, 14)
-    modalTitle.Text = "Delete '" .. configName .. "'?"
-    modalTitle.Font = Enum.Font.GothamMedium
-    modalTitle.TextSize = 13
-    modalTitle.TextColor3 = Color3.fromRGB(255, 255, 255)
-    modalTitle.TextXAlignment = Enum.TextXAlignment.Left
-    modalTitle.BackgroundTransparency = 1
-    modalTitle.TextTruncate = Enum.TextTruncate.AtEnd
-    modalTitle.ZIndex = 302
-
-    local modalSubtext = Instance.new("TextLabel", modalFrame)
-    modalSubtext.Size = UDim2.new(1, -24, 0, 16)
-    modalSubtext.Position = UDim2.new(0, 12, 0, 36)
-    modalSubtext.Text = "This action cannot be undone."
-    modalSubtext.Font = Enum.Font.Gotham
-    modalSubtext.TextSize = 11
-    modalSubtext.TextColor3 = Color3.fromRGB(119, 119, 136)
-    modalSubtext.TextXAlignment = Enum.TextXAlignment.Left
-    modalSubtext.BackgroundTransparency = 1
-    modalSubtext.ZIndex = 302
-
-    local cancelBtn = Instance.new("TextButton", modalFrame)
-    cancelBtn.Size = UDim2.new(0.5, -18, 0, 30)
-    cancelBtn.Position = UDim2.new(0, 12, 1, -40)
-    cancelBtn.BackgroundTransparency = 1
-    cancelBtn.Text = "Cancel"
-    cancelBtn.Font = Enum.Font.Gotham
-    cancelBtn.TextSize = 12
-    cancelBtn.TextColor3 = Color3.fromRGB(136, 136, 153)
-    cancelBtn.ZIndex = 302
-
-    local deleteBtn = Instance.new("TextButton", modalFrame)
-    deleteBtn.Size = UDim2.new(0.5, -18, 0, 30)
-    deleteBtn.Position = UDim2.new(0.5, 6, 1, -40)
-    deleteBtn.BackgroundColor3 = Color3.fromRGB(224, 85, 85)
-    deleteBtn.Text = "Delete"
-    deleteBtn.Font = Enum.Font.GothamBold
-    deleteBtn.TextSize = 12
-    deleteBtn.TextColor3 = Color3.fromRGB(255, 255, 255)
-    deleteBtn.ZIndex = 302
-    Instance.new("UICorner", deleteBtn).CornerRadius = UDim.new(0, 6)
-
-    tween(modalOverlay, {BackgroundTransparency = 0.5}, 0.25)
-    tween(modalScale, {Scale = 1.0}, 0.25)
-
-    local function closeModal()
-        tween(modalOverlay, {BackgroundTransparency = 1}, 0.2)
-        local t = tween(modalScale, {Scale = 0.9}, 0.2)
-        if t then
-            t.Completed:Connect(function()
-                modalOverlay:Destroy()
-            end)
-        else
-            modalOverlay:Destroy()
-        end
-    end
-
-    cancelBtn.Activated:Connect(closeModal)
-
-    deleteBtn.Activated:Connect(function()
-        deleteConfig(configName)
-        closeModal()
-    end)
+-- Activate Main GUI Default View
+if allTabButtons["Settings"] then
+    setActiveTab(allTabButtons["Settings"])
+    currentActiveTab = allTabButtons["Settings"]
+end
+if allPages["Settings"] then
+    allPages["Settings"].Visible = true
 end
 
--- Refresh config list
-function refreshConfigList()
-    for _, child in ipairs(ConfigsScrollFrame:GetChildren()) do
-        if child:IsA("Frame") then
-            child:Destroy()
-        end
-    end
-
-    local files = {}
-    if typeof(listfiles) == "function" and typeof(isfolder) == "function" then
-        pcall(function()
-            if isfolder(CONFIG_FOLDER) then
-                for _, file in ipairs(listfiles(CONFIG_FOLDER)) do
-                    if string.sub(file, -5) == ".json" then
-                        local fileName = string.gsub(file, "\\", "/")
-                        fileName = string.match(fileName, "([^/]+)%.json$")
-                        if fileName then
-                            table.insert(files, fileName)
-                        end
-                    end
-                end
-            end
-        end)
-    end
-
-    table.sort(files)
-    EmptyConfigLabel.Visible = (#files == 0)
-
-    for i, configName in ipairs(files) do
-        local isCurrent = (configName == activeConfigName)
-
-        local Card = Instance.new("Frame", ConfigsScrollFrame)
-        Card.Name = "ConfigCard_" .. configName
-        Card.Size = UDim2.new(1, 0, 0, 52)
-        Card.BackgroundColor3 = Color3.fromRGB(31, 31, 38)
-        Card.LayoutOrder = i
-        Card.ZIndex = 8
-        Instance.new("UICorner", Card).CornerRadius = UDim.new(0, 8)
-
-        local CardPadding = Instance.new("UIPadding", Card)
-        CardPadding.PaddingLeft = UDim.new(0, 12)
-        CardPadding.PaddingRight = UDim.new(0, 12)
-        CardPadding.PaddingTop = UDim.new(0, 10)
-        CardPadding.PaddingBottom = UDim.new(0, 10)
-
-        if isCurrent then
-            local ActiveBar = Instance.new("Frame", Card)
-            ActiveBar.Size = UDim2.new(0, 3, 1, 0)
-            ActiveBar.Position = UDim2.new(0, -12, 0, 0)
-            ActiveBar.BackgroundColor3 = Color3.fromRGB(74, 144, 217)
-            ActiveBar.BorderSizePixel = 0
-            ActiveBar.ZIndex = 9
-            Instance.new("UICorner", ActiveBar).CornerRadius = UDim.new(0, 2)
-        end
-
-        local LeftDot = Instance.new("Frame", Card)
-        LeftDot.Size = UDim2.new(0, 8, 0, 8)
-        LeftDot.Position = UDim2.new(0, 0, 0, 3)
-        LeftDot.BackgroundColor3 = Color3.fromRGB(74, 144, 217)
-        LeftDot.BorderSizePixel = 0
-        LeftDot.ZIndex = 9
-        Instance.new("UICorner", LeftDot).CornerRadius = UDim.new(1, 0)
-
-        local dateText = "Jul 24, 2026 15:30"
-        local filePath = CONFIG_FOLDER .. "/" .. configName .. ".json"
-        pcall(function()
-            if typeof(isfile) == "function" and isfile(filePath) and typeof(readfile) == "function" then
-                local success, decoded = pcall(function() return HttpService:JSONEncode(readfile(filePath)) end)
-                if success and decoded and decoded.Created then
-                    dateText = decoded.Created
-                end
-            end
-        end)
-
-        local NameLabel = Instance.new("TextLabel", Card)
-        NameLabel.Size = UDim2.new(1, -110, 0, 16)
-        NameLabel.Position = UDim2.new(0, 16, 0, 0)
-        NameLabel.Text = configName
-        NameLabel.Font = Enum.Font.GothamBold
-        NameLabel.TextColor3 = Color3.fromRGB(255, 255, 255)
-        NameLabel.TextSize = 13
-        NameLabel.TextXAlignment = Enum.TextXAlignment.Left
-        NameLabel.TextTruncate = Enum.TextTruncate.AtEnd
-        NameLabel.BackgroundTransparency = 1
-        NameLabel.ZIndex = 9
-
-        local DateLabel = Instance.new("TextLabel", Card)
-        DateLabel.Size = UDim2.new(1, -110, 0, 14)
-        DateLabel.Position = UDim2.new(0, 16, 0, 18)
-        DateLabel.Text = "Created: " .. dateText
-        DateLabel.Font = Enum.Font.Gotham
-        DateLabel.TextColor3 = Color3.fromRGB(102, 102, 119)
-        DateLabel.TextSize = 10
-        DateLabel.TextXAlignment = Enum.TextXAlignment.Left
-        DateLabel.BackgroundTransparency = 1
-        DateLabel.ZIndex = 9
-
-        local BtnsContainer = Instance.new("Frame", Card)
-        BtnsContainer.Size = UDim2.new(0, 90, 1, 0)
-        BtnsContainer.Position = UDim2.new(1, -90, 0, 0)
-        BtnsContainer.BackgroundTransparency = 1
-        BtnsContainer.ZIndex = 9
-
-        local BtnsLayout = Instance.new("UIListLayout", BtnsContainer)
-        BtnsLayout.FillDirection = Enum.FillDirection.Horizontal
-        BtnsLayout.HorizontalAlignment = Enum.HorizontalAlignment.Right
-        BtnsLayout.VerticalAlignment = Enum.VerticalAlignment.Center
-        BtnsLayout.Padding = UDim.new(0, 6)
-
-        local function createCardBtn(btnText, normalColor, callback)
-            local btn = Instance.new("TextButton", BtnsContainer)
-            btn.Size = UDim2.new(0, 26, 0, 26)
-            btn.BackgroundColor3 = normalColor
-            btn.BackgroundTransparency = 1
-            btn.Text = btnText
-            btn.Font = Enum.Font.GothamMedium
-            btn.TextColor3 = normalColor
-            btn.TextSize = 10
-            btn.ZIndex = 10
-            Instance.new("UICorner", btn).CornerRadius = UDim.new(0, 4)
-
-            btn.MouseEnter:Connect(function()
-                tween(btn, {BackgroundTransparency = 0.8}, 0.15)
-            end)
-            btn.MouseLeave:Connect(function()
-                tween(btn, {BackgroundTransparency = 1}, 0.15)
-            end)
-
-            btn.Activated:Connect(callback)
-            return btn
-        end
-
-        createCardBtn("Load", Color3.fromRGB(74, 144, 217), function()
-            loadConfig(configName)
-        end)
-        createCardBtn("Edit", Color3.fromRGB(217, 164, 74), function()
-            showCreateOrEditModal(configName)
-        end)
-        createCardBtn("Del", Color3.fromRGB(224, 85, 85), function()
-            showDeleteModal(configName)
-        end)
-    end
-end
-
-NewConfigBtn.Activated:Connect(function()
-    showCreateOrEditModal(nil)
-end)
-
--- Initial population of available configurations
-task.spawn(function()
-    refreshConfigList()
-end)
-
--- Initialize Settings Tab as default
-SettingsPage.Visible = true
-local settingsButton = allTabButtons["Settings"]
-if settingsButton then
-    setActiveTab(settingsButton)
-    currentActiveTab = settingsButton
-end
-
-Library:UpdateTheme("Deep Ocean")
-
--- ============================================================================
--- INITIAL LOADING OVERLAY
--- ============================================================================
-local LoadingContainer = Instance.new("Frame")
-LoadingContainer.Name = "LoadingContainer"
-LoadingContainer.Size = UDim2.new(1, 0, 1, 0)
-LoadingContainer.Position = UDim2.new(0, 0, 0, 0)
-LoadingContainer.BackgroundTransparency = 1
-LoadingContainer.ZIndex = 500
-LoadingContainer.Parent = DarkHub
-
-local LoadingCard = Instance.new("Frame")
-LoadingCard.Name = "LoadingCard"
-LoadingCard.Size = UDim2.new(0, 310, 0, 185)
-LoadingCard.Position = UDim2.new(0.5, 0, 0.5, 0)
-LoadingCard.AnchorPoint = Vector2.new(0.5, 0.5)
-LoadingCard.BackgroundColor3 = Color3.fromRGB(18, 18, 26)
-LoadingCard.BackgroundTransparency = 1
-LoadingCard.ClipsDescendants = false
-LoadingCard.ZIndex = 501
-LoadingCard.Parent = LoadingContainer
-
-local CardCorner = Instance.new("UICorner", LoadingCard)
-CardCorner.CornerRadius = UDim.new(0, 16)
-
-local CardStroke = Instance.new("UIStroke", LoadingCard)
-CardStroke.Color = Color3.fromRGB(255, 255, 255)
-CardStroke.Transparency = 1
-CardStroke.Thickness = 1
-
-local CardScale = Instance.new("UIScale", LoadingCard)
-CardScale.Scale = 0.8
-
-local IconFrame = Instance.new("Frame")
-IconFrame.Name = "IconFrame"
-IconFrame.Size = UDim2.new(0, 44, 0, 44)
-IconFrame.Position = UDim2.new(0.5, 0, 0, 16)
-IconFrame.AnchorPoint = Vector2.new(0.5, 0)
-IconFrame.BackgroundColor3 = Color3.fromRGB(255, 255, 255)
-IconFrame.BackgroundTransparency = 1
-IconFrame.ZIndex = 502
-IconFrame.Parent = LoadingCard
-
-local IconCorner = Instance.new("UICorner", IconFrame)
-IconCorner.CornerRadius = UDim.new(0, 10)
-
-local IconScale = Instance.new("UIScale", IconFrame)
-IconScale.Scale = 1.0
-
-local IconImage = Instance.new("ImageLabel", IconFrame)
-IconImage.Size = UDim2.new(1, 0, 1, 0)
-IconImage.BackgroundTransparency = 1
-IconImage.Image = "rbxthumb://type=Asset&id=" .. CustomIconID .. "&w=150&h=150"
-IconImage.ScaleType = Enum.ScaleType.Fit
-IconImage.ZIndex = 503
-IconImage.Parent = IconFrame
-Instance.new("UICorner", IconImage).CornerRadius = UDim.new(0, 10)
-
--- Animated Loading Overlay
-local LoadingTitle = Instance.new("TextLabel", LoadingCard)
-LoadingTitle.Size = UDim2.new(1, -24, 0, 20)
-LoadingTitle.Position = UDim2.new(0, 12, 0, 68)
-LoadingTitle.Text = "Dark Hub"
-LoadingTitle.Font = Enum.Font.GothamBold
-LoadingTitle.TextColor3 = Color3.fromRGB(255, 255, 255)
-LoadingTitle.TextSize = 15
-LoadingTitle.TextTransparency = 1
-LoadingTitle.BackgroundTransparency = 1
-LoadingTitle.ZIndex = 502
-
-local LoadingStatus = Instance.new("TextLabel", LoadingCard)
-LoadingStatus.Size = UDim2.new(1, -24, 0, 16)
-LoadingStatus.Position = UDim2.new(0, 12, 0, 90)
-LoadingStatus.Text = "Loading components..."
-LoadingStatus.Font = Enum.Font.Gotham
-LoadingStatus.TextColor3 = Color3.fromRGB(130, 130, 150)
-LoadingStatus.TextSize = 11
-LoadingStatus.TextTransparency = 1
-LoadingStatus.BackgroundTransparency = 1
-LoadingStatus.ZIndex = 502
-
-local ProgressTrack = Instance.new("Frame", LoadingCard)
-ProgressTrack.Size = UDim2.new(1, -40, 0, 4)
-ProgressTrack.Position = UDim2.new(0, 20, 0, 122)
-ProgressTrack.BackgroundColor3 = Color3.fromRGB(30, 30, 42)
-ProgressTrack.BackgroundTransparency = 1
-ProgressTrack.BorderSizePixel = 0
-ProgressTrack.ZIndex = 502
-Instance.new("UICorner", ProgressTrack).CornerRadius = UDim.new(1, 0)
-
-local ProgressFill = Instance.new("Frame", ProgressTrack)
-ProgressFill.Size = UDim2.new(0, 0, 1, 0)
-ProgressFill.BackgroundColor3 = Color3.fromRGB(0, 206, 209)
-ProgressFill.BorderSizePixel = 0
-ProgressFill.ZIndex = 503
-Instance.new("UICorner", ProgressFill).CornerRadius = UDim.new(1, 0)
-
-local VersionLabel = Instance.new("TextLabel", LoadingCard)
-VersionLabel.Size = UDim2.new(1, 0, 0, 14)
-VersionLabel.Position = UDim2.new(0, 0, 1, -22)
-VersionLabel.Text = "v2.0 Settings Edition"
-VersionLabel.Font = Enum.Font.GothamMedium
-VersionLabel.TextColor3 = Color3.fromRGB(70, 70, 90)
-VersionLabel.TextSize = 9
-VersionLabel.TextTransparency = 1
-VersionLabel.BackgroundTransparency = 1
-VersionLabel.ZIndex = 502
-
--- Sequence Animation
-task.spawn(function()
-    -- Fade in overlay
-    tween(LoadingCard, {BackgroundTransparency = 0.05}, 0.3)
-    tween(CardStroke, {Transparency = 0.8}, 0.3)
-    tween(CardScale, {Scale = 1}, 0.3)
-    tween(LoadingTitle, {TextTransparency = 0}, 0.3)
-    tween(LoadingStatus, {TextTransparency = 0}, 0.3)
-    tween(ProgressTrack, {BackgroundTransparency = 0}, 0.3)
-    tween(VersionLabel, {TextTransparency = 0}, 0.3)
-
-    task.wait(0.3)
-
-    -- Progress steps
-    LoadingStatus.Text = "Initializing UI system..."
-    tween(ProgressFill, {Size = UDim2.new(0.35, 0, 1, 0)}, 0.35)
-    task.wait(0.35)
-
-    LoadingStatus.Text = "Loading configurations..."
-    tween(ProgressFill, {Size = UDim2.new(0.75, 0, 1, 0)}, 0.35)
-    task.wait(0.35)
-
-    LoadingStatus.Text = "Applying Theme..."
-    tween(ProgressFill, {Size = UDim2.new(1, 0, 1, 0)}, 0.25)
-    task.wait(0.25)
-
-    LoadingStatus.Text = "Ready!"
-    task.wait(0.15)
-
-    -- Fade out overlay
-    tween(LoadingCard, {BackgroundTransparency = 1}, 0.3)
-    tween(CardStroke, {Transparency = 1}, 0.3)
-    tween(CardScale, {Scale = 0.8}, 0.3)
-    tween(LoadingTitle, {TextTransparency = 1}, 0.3)
-    tween(LoadingStatus, {TextTransparency = 1}, 0.3)
-    tween(ProgressTrack, {BackgroundTransparency = 1}, 0.3)
-    tween(ProgressFill, {BackgroundTransparency = 1}, 0.3)
-    local exitTween = tween(VersionLabel, {TextTransparency = 1}, 0.3)
-
-    if exitTween then
-        exitTween.Completed:Connect(function()
-            LoadingContainer:Destroy()
-            -- Open MainFrame seamlessly
-            MainFrame.Visible = true
-            MainScale.Scale = 0.85
-            MainFrame.BackgroundTransparency = 1
-            tween(MainScale, {Scale = 1}, 0.25)
-            tween(MainFrame, {BackgroundTransparency = 0.15}, 0.25)
-        end)
-    else
-        LoadingContainer:Destroy()
-        MainFrame.Visible = true
-    end
-end)
+MainFrame.Visible = true
