@@ -1,5 +1,5 @@
 -- ============================================================================
--- Pulse Hub - Settings Edition (FIXED DROPDOWN TEXT COLOR & UI)
+-- Pulse Hub - Settings Edition (Исправлен Оверлей Дропдауна)
 -- ============================================================================
 
 local TweenService = game:GetService("TweenService")
@@ -501,6 +501,7 @@ local Library = {}
 Library.CurrentFont = Enum.Font.Gotham
 Library.CurrentLanguage = "English"
 Library.CurrentTabKey = "Settings"
+Library.ActiveDropdownClose = nil
 
 Library.TrackedMainBg = {}
 Library.TrackedElementBg = {}
@@ -800,7 +801,7 @@ function Library:UpdateTheme(themeName)
                 if optName == currentSelection then
                     if optData.Label and optData.Label.Parent then tween(optData.Label, {TextColor3 = theme.Accent}) end
                 else
-                    if optData.Label and optData.Label.Parent then tween(optData.Label, {TextColor3 = subTextColor}) end
+                    if optData.Label and optData.Label.Parent then optData.Label.TextColor3 = subTextColor end
                 end
             end
         end
@@ -973,14 +974,14 @@ local FontMapping = {
 }
 
 -- ============================================================================
--- ИСПРАВЛЕННЫЙ ДРОПДАУН (ЦВЕТ ТЕКСТА ОПЦИЙ И CANVAS SIZE)
+-- ДРОПДАУН (ВСFloat/Overlay СИСТЕМА)
 -- ============================================================================
 function Library:CreateDropdown(parentPage, textKey, options, default, callback)
     local initialText = Localization[Library.CurrentLanguage][textKey] or textKey
     local DropdownFrame = Instance.new("Frame", parentPage)
     DropdownFrame.Size = UDim2.new(1, -20, 0, 36)
     DropdownFrame.BackgroundColor3 = Library.CurrentThemeData.ElementBg
-    DropdownFrame.ClipsDescendants = true
+    DropdownFrame.ClipsDescendants = false -- Выпадающий список выходит за границы родителя
     DropdownFrame.ZIndex = 6
     DropdownFrame.LayoutOrder = #parentPage:GetChildren()
     Instance.new("UICorner", DropdownFrame).CornerRadius = UDim.new(0, 6)
@@ -992,7 +993,7 @@ function Library:CreateDropdown(parentPage, textKey, options, default, callback)
     table.insert(Library.TrackedStrokes, DropdownStroke)
     
     local HeaderBtn = Instance.new("TextButton", DropdownFrame)
-    HeaderBtn.Size = UDim2.new(1, 0, 0, 36)
+    HeaderBtn.Size = UDim2.new(1, 0, 1, 0)
     HeaderBtn.BackgroundTransparency = 1
     HeaderBtn.Text = ""
     HeaderBtn.ZIndex = 7
@@ -1036,24 +1037,33 @@ function Library:CreateDropdown(parentPage, textKey, options, default, callback)
     
     table.insert(Library.TrackedSubText, Arrow)
     
+    -- Всплывающий оверлей для вариантов выбора
     local OptionsContainer = Instance.new("ScrollingFrame", DropdownFrame)
     OptionsContainer.Size = UDim2.new(1, 0, 0, 0)
-    OptionsContainer.Position = UDim2.new(0, 0, 0, 36)
-    OptionsContainer.BackgroundTransparency = 1
+    OptionsContainer.Position = UDim2.new(0, 0, 1, 4)
+    OptionsContainer.BackgroundColor3 = Library.CurrentThemeData.ElementBg
     OptionsContainer.BorderSizePixel = 0
     OptionsContainer.ScrollBarThickness = 3
     OptionsContainer.ScrollBarImageColor3 = Library.CurrentThemeData.Accent
-    OptionsContainer.ZIndex = 7
+    OptionsContainer.ZIndex = 30
     OptionsContainer.ClipsDescendants = true
-    OptionsContainer.AutomaticCanvasSize = Enum.AutomaticSize.Y
-    OptionsContainer.CanvasSize = UDim2.new(0, 0, 0, 0)
+    OptionsContainer.Visible = false
+    
+    Instance.new("UICorner", OptionsContainer).CornerRadius = UDim.new(0, 6)
+    local OptContainerStroke = Instance.new("UIStroke", OptionsContainer)
+    OptContainerStroke.Color = Color3.fromRGB(45, 45, 45)
+    OptContainerStroke.Thickness = 1
+    
+    table.insert(Library.TrackedElementBg, OptionsContainer)
+    table.insert(Library.TrackedStrokes, OptContainerStroke)
     
     local ListLayout = Instance.new("UIListLayout", OptionsContainer)
     ListLayout.SortOrder = Enum.SortOrder.LayoutOrder
 
-    ListLayout:GetPropertyChangedSignal("AbsoluteContentSize"):Connect(function()
+    local function updateCanvas()
         OptionsContainer.CanvasSize = UDim2.new(0, 0, 0, ListLayout.AbsoluteContentSize.Y)
-    end)
+    end
+    ListLayout:GetPropertyChangedSignal("AbsoluteContentSize"):Connect(updateCanvas)
     
     local isExpanded = false
     local optionButtons = {}
@@ -1064,11 +1074,11 @@ function Library:CreateDropdown(parentPage, textKey, options, default, callback)
         TitleLabel.ZIndex = zIndex + 2
         SelectedLabel.ZIndex = zIndex + 2
         Arrow.ZIndex = zIndex + 2
-        OptionsContainer.ZIndex = zIndex + 1
+        OptionsContainer.ZIndex = zIndex + 10
         for _, optData in pairs(optionButtons) do
-            if optData.Button then optData.Button.ZIndex = zIndex + 2 end
-            if optData.Label then optData.Label.ZIndex = zIndex + 3 end
-            if optData.Check then optData.Check.ZIndex = zIndex + 3 end
+            if optData.Button then optData.Button.ZIndex = zIndex + 11 end
+            if optData.Label then optData.Label.ZIndex = zIndex + 12 end
+            if optData.Check then optData.Check.ZIndex = zIndex + 12 end
         end
     end
 
@@ -1076,23 +1086,34 @@ function Library:CreateDropdown(parentPage, textKey, options, default, callback)
         isExpanded = not isExpanded
         local currentOptionsCount = #options
         local contentHeight = math.min(currentOptionsCount * 32, 140)
-        local targetFrameHeight = isExpanded and (36 + contentHeight + 4) or 36
         
         if isExpanded then
-            setDropdownZIndex(25)
-            tween(DropdownFrame, {Size = UDim2.new(1, -20, 0, targetFrameHeight)}, 0.2)
+            if Library.ActiveDropdownClose and Library.ActiveDropdownClose ~= toggleDropdown then
+                Library.ActiveDropdownClose()
+            end
+            Library.ActiveDropdownClose = toggleDropdown
+            
+            setDropdownZIndex(30)
+            OptionsContainer.Visible = true
             tween(OptionsContainer, {Size = UDim2.new(1, 0, 0, contentHeight)}, 0.2)
             tween(Arrow, {Rotation = 180}, 0.2)
+            task.defer(updateCanvas)
         else
-            tween(OptionsContainer, {Size = UDim2.new(1, 0, 0, 0)}, 0.2)
+            if Library.ActiveDropdownClose == toggleDropdown then
+                Library.ActiveDropdownClose = nil
+            end
             tween(Arrow, {Rotation = 0}, 0.2)
-            local closeTween = tween(DropdownFrame, {Size = UDim2.new(1, -20, 0, 36)}, 0.2)
+            local closeTween = tween(OptionsContainer, {Size = UDim2.new(1, 0, 0, 0)}, 0.2)
             if closeTween then
                 closeTween.Completed:Connect(function()
                     if not isExpanded then
+                        OptionsContainer.Visible = false
                         setDropdownZIndex(6)
                     end
                 end)
+            else
+                OptionsContainer.Visible = false
+                setDropdownZIndex(6)
             end
         end
     end
@@ -1105,10 +1126,7 @@ function Library:CreateDropdown(parentPage, textKey, options, default, callback)
         end
         table.clear(optionButtons)
         
-        local currentZ = isExpanded and 25 or 6
-        local bgL = (Library.CurrentThemeData.MainBg.R * 0.299 + Library.CurrentThemeData.MainBg.G * 0.587 + Library.CurrentThemeData.MainBg.B * 0.114)
-        local isLight = bgL > 0.5
-        local subTextColor = isLight and Color3.fromRGB(110, 110, 110) or Color3.fromRGB(200, 200, 200)
+        local baseZ = 30
 
         for i, option in ipairs(options) do
             local OptBtn = Instance.new("TextButton", OptionsContainer)
@@ -1117,7 +1135,7 @@ function Library:CreateDropdown(parentPage, textKey, options, default, callback)
             OptBtn.BackgroundColor3 = Color3.fromRGB(255, 255, 255)
             OptBtn.Text = ""
             OptBtn.LayoutOrder = i
-            OptBtn.ZIndex = currentZ + 2
+            OptBtn.ZIndex = baseZ + 11
             
             local OptLabel = Instance.new("TextLabel", OptBtn)
             OptLabel.Size = UDim2.new(1, -40, 1, 0)
@@ -1127,14 +1145,11 @@ function Library:CreateDropdown(parentPage, textKey, options, default, callback)
             OptLabel.TextXAlignment = Enum.TextXAlignment.Left
             OptLabel.TextTruncate = Enum.TextTruncate.AtEnd
             OptLabel.BackgroundTransparency = 1
-            OptLabel.ZIndex = currentZ + 3
+            OptLabel.ZIndex = baseZ + 12
             
-            -- ФИКС: Указываем явный цвет текста
-            if option == SelectedLabel.Text then
-                OptLabel.TextColor3 = Library.CurrentThemeData.Accent
-            else
-                OptLabel.TextColor3 = subTextColor
-            end
+            local bgL = (Library.CurrentThemeData.MainBg.R * 0.299 + Library.CurrentThemeData.MainBg.G * 0.587 + Library.CurrentThemeData.MainBg.B * 0.114)
+            local defaultSubText = (bgL > 0.5) and Color3.fromRGB(110, 110, 110) or Color3.fromRGB(140, 140, 140)
+            OptLabel.TextColor3 = (option == SelectedLabel.Text) and Library.CurrentThemeData.Accent or defaultSubText
             
             if FontMapping and FontMapping[option] then
                 OptLabel.Font = FontMapping[option]
@@ -1151,10 +1166,10 @@ function Library:CreateDropdown(parentPage, textKey, options, default, callback)
             Checkmark.TextSize = 12
             Checkmark.BackgroundTransparency = 1
             Checkmark.Visible = (option == SelectedLabel.Text)
-            Checkmark.ZIndex = currentZ + 3
+            Checkmark.ZIndex = baseZ + 12
             
             OptBtn.MouseEnter:Connect(function()
-                tween(OptBtn, {BackgroundTransparency = 0.94}, 0.15)
+                tween(OptBtn, {BackgroundTransparency = 0.96}, 0.15)
             end)
             OptBtn.MouseLeave:Connect(function()
                 tween(OptBtn, {BackgroundTransparency = 1}, 0.15)
@@ -1174,14 +1189,14 @@ function Library:CreateDropdown(parentPage, textKey, options, default, callback)
                         optData.Check.TextColor3 = Library.CurrentThemeData.Accent
                     else
                         local curBgL = (Library.CurrentThemeData.MainBg.R * 0.299 + Library.CurrentThemeData.MainBg.G * 0.587 + Library.CurrentThemeData.MainBg.B * 0.114)
-                        optData.Label.TextColor3 = (curBgL > 0.5) and Color3.fromRGB(110, 110, 110) or Color3.fromRGB(200, 200, 200)
+                        optData.Label.TextColor3 = (curBgL > 0.5) and Color3.fromRGB(110, 110, 110) or Color3.fromRGB(140, 140, 140)
                         optData.Check.Visible = false
                     end
                 end
             end)
         end
         
-        OptionsContainer.CanvasSize = UDim2.new(0, 0, 0, #options * 32)
+        task.defer(updateCanvas)
     end
 
     populateOptions(options)
