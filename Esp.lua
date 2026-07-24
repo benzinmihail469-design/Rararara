@@ -1,5 +1,5 @@
 -- ============================================================================
--- Pulse Hub - Settings Edition (Enhanced UI & Loading)
+-- Pulse Hub - Settings Edition (с эффектами Hover & Active для вкладок)
 -- ============================================================================
 
 local TweenService = game:GetService("TweenService")
@@ -64,8 +64,17 @@ PulseHub.Name = "PulseHub"
 PulseHub.Parent = SafeParent
 PulseHub.ZIndexBehavior = Enum.ZIndexBehavior.Sibling
 
+-- Таблица для отслеживания текущих твинов на объектах (предотвращает конфликты)
+local activeTweens = {}
+
 local function tween(obj, props, dur)
+    if not obj then return end
+    if activeTweens[obj] then
+        activeTweens[obj]:Cancel()
+        activeTweens[obj] = nil
+    end
     local t = TweenService:Create(obj, TweenInfo.new(dur or 0.25, Enum.EasingStyle.Quart, Enum.EasingDirection.Out), props)
+    activeTweens[obj] = t
     t:Play()
     return t
 end
@@ -122,93 +131,55 @@ local function spawnWave(container, clickX, clickY)
 end
 
 -- ============================================================================
--- СИСТЕМА ЗАГРУЗКИ (ENHANCED LOADING SCREEN)
+-- ЭКРАН ЗАГРУЗКИ (LOADING SCREEN)
 -- ============================================================================
-local LoadingOverlay = Instance.new("Frame", PulseHub)
-LoadingOverlay.Name = "LoadingOverlay"
-LoadingOverlay.Size = UDim2.new(1, 0, 1, 0)
-LoadingOverlay.Position = UDim2.new(0, 0, 0, 0)
-LoadingOverlay.BackgroundColor3 = Color3.fromRGB(15, 15, 15)
-LoadingOverlay.BackgroundTransparency = 0.3
-LoadingOverlay.ZIndex = 100
-
-local LoadingFrame = Instance.new("Frame", LoadingOverlay)
+local LoadingFrame = Instance.new("Frame", PulseHub)
 LoadingFrame.Name = "LoadingFrame"
-LoadingFrame.Size = UDim2.new(0, 340, 0, 170)
+LoadingFrame.Size = UDim2.new(0, 320, 0, 160)
 LoadingFrame.Position = UDim2.new(0.5, 0, 0.5, 0)
 LoadingFrame.AnchorPoint = Vector2.new(0.5, 0.5)
-LoadingFrame.BackgroundColor3 = Color3.fromRGB(22, 22, 22)
-LoadingFrame.ZIndex = 101
+LoadingFrame.BackgroundColor3 = Color3.fromRGB(14, 14, 14)
+LoadingFrame.ZIndex = 100
 
 local LoadingCorner = Instance.new("UICorner", LoadingFrame)
 LoadingCorner.CornerRadius = UDim.new(0, 12)
 
 local LoadingStroke = Instance.new("UIStroke", LoadingFrame)
-LoadingStroke.Color = Color3.fromRGB(50, 50, 50)
+LoadingStroke.Color = Color3.fromRGB(45, 45, 45)
 LoadingStroke.Thickness = 1.5
 
 local LoadingTitle = Instance.new("TextLabel", LoadingFrame)
 LoadingTitle.Size = UDim2.new(1, 0, 0, 30)
-LoadingTitle.Position = UDim2.new(0, 0, 0, 20)
+LoadingTitle.Position = UDim2.new(0, 0, 0, 25)
 LoadingTitle.Text = "Pulse Hub"
 LoadingTitle.Font = Enum.Font.GothamBold
-LoadingTitle.TextSize = 20
+LoadingTitle.TextSize = 18
 LoadingTitle.TextColor3 = Color3.fromRGB(255, 255, 255)
 LoadingTitle.BackgroundTransparency = 1
-LoadingTitle.ZIndex = 102
+LoadingTitle.ZIndex = 101
+
+local LoadingStatus = Instance.new("TextLabel", LoadingFrame)
+LoadingStatus.Size = UDim2.new(1, 0, 0, 20)
+LoadingStatus.Position = UDim2.new(0, 0, 0, 60)
+LoadingStatus.Text = "Загрузка... 0%"
+LoadingStatus.Font = Enum.Font.Gotham
+LoadingStatus.TextSize = 13
+LoadingStatus.TextColor3 = Color3.fromRGB(180, 180, 180)
+LoadingStatus.BackgroundTransparency = 1
+LoadingStatus.ZIndex = 101
 
 local ProgressBarBg = Instance.new("Frame", LoadingFrame)
-ProgressBarBg.Size = UDim2.new(0.85, 0, 0, 18)
-ProgressBarBg.Position = UDim2.new(0.075, 0, 0, 68)
-ProgressBarBg.BackgroundColor3 = Color3.fromRGB(32, 32, 32)
-ProgressBarBg.ZIndex = 102
-Instance.new("UICorner", ProgressBarBg).CornerRadius = UDim.new(0, 9)
+ProgressBarBg.Size = UDim2.new(0.85, 0, 0, 10)
+ProgressBarBg.Position = UDim2.new(0.075, 0, 0, 95)
+ProgressBarBg.BackgroundColor3 = Color3.fromRGB(28, 28, 28)
+ProgressBarBg.ZIndex = 101
+Instance.new("UICorner", ProgressBarBg).CornerRadius = UDim.new(0, 5)
 
 local ProgressBarFill = Instance.new("Frame", ProgressBarBg)
 ProgressBarFill.Size = UDim2.new(0, 0, 1, 0)
-ProgressBarFill.BackgroundColor3 = Color3.fromRGB(255, 255, 255)
-ProgressBarFill.ZIndex = 103
-Instance.new("UICorner", ProgressBarFill).CornerRadius = UDim.new(0, 9)
-
-local ProgressGradient = Instance.new("UIGradient", ProgressBarFill)
-ProgressGradient.Color = ColorSequence.new({
-    ColorSequenceKeypoint.new(0, Color3.fromRGB(0, 70, 170)),
-    ColorSequenceKeypoint.new(1, Color3.fromRGB(0, 190, 255))
-})
-
-local ProgressPercentLabel = Instance.new("TextLabel", ProgressBarBg)
-ProgressPercentLabel.Size = UDim2.new(1, 0, 1, 0)
-ProgressPercentLabel.Position = UDim2.new(0, 0, 0, 0)
-ProgressPercentLabel.BackgroundTransparency = 1
-ProgressPercentLabel.Text = "0%"
-ProgressPercentLabel.Font = Enum.Font.GothamBold
-ProgressPercentLabel.TextSize = 11
-ProgressPercentLabel.TextColor3 = Color3.fromRGB(255, 255, 255)
-ProgressPercentLabel.ZIndex = 104
-
-local LoadingStatus = Instance.new("TextLabel", LoadingFrame)
-LoadingStatus.Size = UDim2.new(1, -30, 0, 22)
-LoadingStatus.Position = UDim2.new(0, 15, 0, 102)
-LoadingStatus.Text = "Инициализация..."
-LoadingStatus.Font = Enum.Font.Gotham
-LoadingStatus.TextSize = 12
-LoadingStatus.TextColor3 = Color3.fromRGB(180, 180, 180)
-LoadingStatus.BackgroundTransparency = 1
-LoadingStatus.ZIndex = 102
-
-local function updateLoadingStatus(progress)
-    if progress < 0.3 then
-        LoadingStatus.Text = "Инициализация..."
-    elseif progress < 0.6 then
-        LoadingStatus.Text = "Загрузка интерфейса..."
-    elseif progress < 0.9 then
-        LoadingStatus.Text = "Подготовка настроек..."
-    elseif progress < 1 then
-        LoadingStatus.Text = "Запуск..."
-    else
-        LoadingStatus.Text = "Готово!"
-    end
-end
+ProgressBarFill.BackgroundColor3 = Color3.fromRGB(0, 150, 255)
+ProgressBarFill.ZIndex = 102
+Instance.new("UICorner", ProgressBarFill).CornerRadius = UDim.new(0, 5)
 
 -- ============================================================================
 -- ОСНОВНОЙ GUI (СКРЫТ ДО ОКОНЧАНИЯ ЗАГРУЗКИ)
@@ -498,15 +469,15 @@ end
 CloseBtn.Activated:Connect(CloseGui)
 EmbCloseBtn.Activated:Connect(CloseGui)
 
-local function applyHover(btn, normalColor, hoverColor)
+local function setupHeaderBtnHover(btn, normalColor, hoverColor)
     btn.MouseEnter:Connect(function() tween(btn, {TextColor3 = hoverColor}) end)
     btn.MouseLeave:Connect(function() tween(btn, {TextColor3 = normalColor}) end)
 end
-applyHover(MinBtn, Color3.fromRGB(180,180,180), Color3.fromRGB(255,255,255))
-applyHover(EmbMinBtn, Color3.fromRGB(180,180,180), Color3.fromRGB(255,255,255))
-applyHover(CloseBtn, Color3.fromRGB(180,180,180), Color3.fromRGB(255,70,70))
-applyHover(EmbCloseBtn, Color3.fromRGB(180,180,180), Color3.fromRGB(255,70,70))
-applyHover(ClearSearchBtn, Color3.fromRGB(150,150,150), Color3.fromRGB(255,255,255))
+setupHeaderBtnHover(MinBtn, Color3.fromRGB(180,180,180), Color3.fromRGB(255,255,255))
+setupHeaderBtnHover(EmbMinBtn, Color3.fromRGB(180,180,180), Color3.fromRGB(255,255,255))
+setupHeaderBtnHover(CloseBtn, Color3.fromRGB(180,180,180), Color3.fromRGB(255,70,70))
+setupHeaderBtnHover(EmbCloseBtn, Color3.fromRGB(180,180,180), Color3.fromRGB(255,70,70))
+setupHeaderBtnHover(ClearSearchBtn, Color3.fromRGB(150,150,150), Color3.fromRGB(255,255,255))
 
 local dragToggle, dragInput, dragStart, startPos
 MainFrame.InputBegan:Connect(function(input)
@@ -579,55 +550,132 @@ local allTabButtons = {}
 local allTabIcons = {}
 local allPages = {}
 
+-- Переменные для хранения состояния активных и наводимых вкладок
+local currentActiveTab = nil
+local currentHoveredTab = nil
+
 -- ============================================================================
--- ВЫДЕЛЕНИЕ ВКЛАДОК И ПЕРЕКЛЮЧЕНИЕ СТРАНИЦ
+-- ЭФФЕКТЫ ВКЛАДОК: HOVER И ACTIVE
 -- ============================================================================
-local function highlightTab(targetKey)
-    if not targetKey or not allTabs[targetKey] then return end
+
+-- Hover эффект
+local function applyHover(button)
+    if not button then return end
+    local parentContainer = button.Parent
+    
+    -- Создаем тонкую обводку UIStroke при наведении, если ее нет
+    local stroke = parentContainer:FindFirstChild("HoverStroke")
+    if not stroke then
+        stroke = Instance.new("UIStroke")
+        stroke.Name = "HoverStroke"
+        stroke.Color = Color3.fromRGB(255, 255, 255)
+        stroke.Thickness = 1
+        stroke.Transparency = 1
+        stroke.ApplyStrokeMode = Enum.ApplyStrokeMode.Border
+        stroke.Parent = parentContainer
+    end
+    
+    -- Плавное изменение прозрачности, фона и обводки (0.15-0.2 сек)
+    tween(parentContainer, {BackgroundColor3 = Color3.fromRGB(50, 50, 50), BackgroundTransparency = 0.5}, 0.18)
+    tween(stroke, {Transparency = 0.5}, 0.18)
+    tween(button, {TextColor3 = Color3.fromRGB(255, 255, 255)}, 0.18)
+end
+
+local function removeHover(button)
+    if not button then return end
+    local parentContainer = button.Parent
+    
+    local stroke = parentContainer:FindFirstChild("HoverStroke")
+    if stroke then
+        local t = tween(stroke, {Transparency = 1}, 0.18)
+        if t then
+            t.Completed:Connect(function()
+                if stroke and stroke.Transparency >= 0.99 then
+                    stroke:Destroy()
+                end
+            end)
+        end
+    end
     
     local bgL = (Library.CurrentThemeData.MainBg.R * 0.299 + Library.CurrentThemeData.MainBg.G * 0.587 + Library.CurrentThemeData.MainBg.B * 0.114)
-    local isLightMode = bgL > 0.5
+    local isL = bgL > 0.5
+    local normalTextColor = isL and Color3.fromRGB(110, 110, 110) or Color3.fromRGB(140, 140, 140)
+    
+    tween(parentContainer, {BackgroundTransparency = 1}, 0.18)
+    tween(button, {TextColor3 = normalTextColor}, 0.18)
+end
 
-    for tName, tContainer in pairs(allTabs) do
-        local tBtn = allTabButtons[tName]
-        local tIcon = allTabIcons[tName]
-        local tPage = allPages[tName]
-        local tAccent = tContainer:FindFirstChild("TabAccentBar")
+-- Active эффект
+local function setActiveTab(tabButton)
+    if not tabButton then return end
+    local parentContainer = tabButton.Parent
+    
+    -- Полоса-индикатор высотой с вкладку и шириной 4px
+    local indicator = parentContainer:FindFirstChild("ActiveIndicator")
+    if not indicator then
+        indicator = Instance.new("Frame")
+        indicator.Name = "ActiveIndicator"
+        indicator.Size = UDim2.new(0, 4, 1, 0)
+        indicator.Position = UDim2.new(0, 0, 0, 0)
+        indicator.BackgroundColor3 = Color3.fromRGB(0, 180, 255)
+        indicator.BorderSizePixel = 0
+        indicator.ZIndex = tabButton.ZIndex + 2
+        indicator.BackgroundTransparency = 1
+        indicator.Parent = parentContainer
+        
+        local corner = Instance.new("UICorner", indicator)
+        corner.CornerRadius = UDim.new(0, 2)
+    end
+    
+    -- Шрифт GothamBold и яркий белый цвет
+    tabButton.Font = Enum.Font.GothamBold
+    tween(tabButton, {TextColor3 = Color3.fromRGB(255, 255, 255)}, 0.25)
+    
+    -- Контрастный фон для активного состояния
+    local bgL = (Library.CurrentThemeData.MainBg.R * 0.299 + Library.CurrentThemeData.MainBg.G * 0.587 + Library.CurrentThemeData.MainBg.B * 0.114)
+    local isL = bgL > 0.5
+    local activeBgColor = isL and Color3.fromRGB(215, 215, 215) or Color3.fromRGB(35, 35, 35)
+    
+    tween(parentContainer, {BackgroundColor3 = activeBgColor, BackgroundTransparency = 0}, 0.25)
+    tween(indicator, {BackgroundTransparency = 0}, 0.25)
+    
+    -- Подсветка иконки вкладки (если существует)
+    local textKey = tabButton.Name
+    if allTabIcons[textKey] then
+        tween(allTabIcons[textKey], {ImageTransparency = 0}, 0.25)
+    end
+end
 
-        if tName == targetKey then
-            Library.CurrentTabKey = tName
-            TabTitle.Text = Localization[Library.CurrentLanguage][tName] or tName
-            if tPage then tPage.Visible = true end
-
-            local activeBg = isLightMode and Color3.fromRGB(220, 220, 220) or Color3.fromRGB(38, 38, 42)
-            local activeTextColor = isLightMode and Color3.fromRGB(25, 25, 25) or Color3.fromRGB(255, 255, 255)
-
-            tween(tContainer, {BackgroundColor3 = activeBg, BackgroundTransparency = 0}, 0.25)
-            tween(tBtn, {TextColor3 = activeTextColor}, 0.25)
-            tBtn.Font = Enum.Font.GothamBold
-
-            if tIcon then
-                tween(tIcon, {ImageTransparency = 0}, 0.25)
-            end
-            if tAccent then
-                tween(tAccent, {BackgroundTransparency = 0, Size = UDim2.new(0, 4, 1, 0)}, 0.25)
-            end
-        else
-            if tPage then tPage.Visible = false end
-
-            local inactiveTextColor = isLightMode and Color3.fromRGB(110, 110, 110) or Color3.fromRGB(140, 140, 140)
-
-            tween(tContainer, {BackgroundTransparency = 1}, 0.25)
-            tween(tBtn, {TextColor3 = inactiveTextColor}, 0.25)
-            tBtn.Font = Library.CurrentFont
-
-            if tIcon then
-                tween(tIcon, {ImageTransparency = 0.35}, 0.25)
-            end
-            if tAccent then
-                tween(tAccent, {BackgroundTransparency = 1, Size = UDim2.new(0, 0, 1, 0)}, 0.25)
-            end
+local function clearActiveTab(tabButton)
+    if not tabButton then return end
+    local parentContainer = tabButton.Parent
+    
+    -- Плавное удаление/скрытие индикатора
+    local indicator = parentContainer:FindFirstChild("ActiveIndicator")
+    if indicator then
+        local t = tween(indicator, {BackgroundTransparency = 1}, 0.25)
+        if t then
+            t.Completed:Connect(function()
+                if indicator and indicator.BackgroundTransparency >= 0.99 then
+                    indicator:Destroy()
+                end
+            end)
         end
+    end
+    
+    -- Возврат шрифта к стандартному
+    tabButton.Font = Library.CurrentFont or Enum.Font.Gotham
+    
+    local bgL = (Library.CurrentThemeData.MainBg.R * 0.299 + Library.CurrentThemeData.MainBg.G * 0.587 + Library.CurrentThemeData.MainBg.B * 0.114)
+    local isL = bgL > 0.5
+    local normalTextColor = isL and Color3.fromRGB(110, 110, 110) or Color3.fromRGB(140, 140, 140)
+    
+    tween(tabButton, {TextColor3 = normalTextColor}, 0.25)
+    tween(parentContainer, {BackgroundTransparency = 1}, 0.25)
+    
+    local textKey = tabButton.Name
+    if allTabIcons[textKey] then
+        tween(allTabIcons[textKey], {ImageTransparency = 0.25}, 0.25)
     end
 end
 
@@ -649,7 +697,14 @@ function Library:UpdateTheme(themeName)
     
     for _, obj in ipairs(Library.TrackedElementBg) do
         if obj and obj.Parent then
-            if obj.Name ~= "TabContainer" then
+            if obj.Name == "TabContainer" then
+                local tabBtn = obj:FindFirstChildOfClass("TextButton")
+                if tabBtn and tabBtn == currentActiveTab then
+                    tween(obj, {BackgroundColor3 = isLightMode and Color3.fromRGB(215, 215, 215) or Color3.fromRGB(35, 35, 35), BackgroundTransparency = 0})
+                else
+                    tween(obj, {BackgroundColor3 = theme.ElementBg, BackgroundTransparency = 1})
+                end
+            else
                 tween(obj, {BackgroundColor3 = theme.ElementBg})
             end
         end
@@ -672,7 +727,13 @@ function Library:UpdateTheme(themeName)
         if obj and obj.Parent then tween(obj, {TextColor3 = subTextColor}) end
     end
     
-    highlightTab(Library.CurrentTabKey)
+    for tName, tBtn in pairs(allTabButtons) do
+        if tBtn == currentActiveTab then
+            tBtn.TextColor3 = mainTextColor
+        else
+            tBtn.TextColor3 = subTextColor
+        end
+    end
     
     for _, data in ipairs(Library.TrackedAccents) do
         if data.Type == "Toggle" then
@@ -1317,18 +1378,8 @@ function Library:CreatePage(textKey, iconId, layoutOrder)
     Instance.new("UICorner", TabContainer).CornerRadius = UDim.new(0, 8)
     table.insert(Library.TrackedElementBg, TabContainer)
     
-    -- Тонкая цветная полоса-акцент слева активной вкладки
-    local TabAccentBar = Instance.new("Frame", TabContainer)
-    TabAccentBar.Name = "TabAccentBar"
-    TabAccentBar.Size = UDim2.new(0, 0, 1, 0)
-    TabAccentBar.Position = UDim2.new(0, 0, 0, 0)
-    TabAccentBar.BackgroundColor3 = Color3.fromRGB(0, 170, 255)
-    TabAccentBar.BackgroundTransparency = 1
-    TabAccentBar.BorderSizePixel = 0
-    TabAccentBar.ZIndex = 8
-    Instance.new("UICorner", TabAccentBar).CornerRadius = UDim.new(0, 4)
-
     local TabBtn = Instance.new("TextButton", TabContainer)
+    TabBtn.Name = textKey
     TabBtn.Size = UDim2.new(1, 0, 1, 0)
     TabBtn.Text = initialText
     TabBtn.Font = Library.CurrentFont
@@ -1347,7 +1398,7 @@ function Library:CreatePage(textKey, iconId, layoutOrder)
         TabIcon.Position = UDim2.new(0, 10, 0.5, -12)
         TabIcon.BackgroundTransparency = 1
         if tonumber(iconId) then TabIcon.Image = "rbxthumb://type=Asset&id=" .. iconId .. "&w=150&h=150" else TabIcon.Image = iconId end
-        TabIcon.ImageTransparency = 0.35
+        TabIcon.ImageTransparency = 0.25
         TabIcon.ZIndex = 7
         allTabIcons[textKey] = TabIcon
     end
@@ -1364,13 +1415,55 @@ function Library:CreatePage(textKey, iconId, layoutOrder)
         local localY = (mousePos.Y - inset.Y) - TabContainer.AbsolutePosition.Y
         spawnWave(TabContainer, localX, localY)
     end)
+
+    -- ============================================================================
+    -- ЛОГИКА ВЗАИМОДЕЙСТВИЯ ВКЛАДОК (HOVER И ACTIVE)
+    -- ============================================================================
     
-    -- Переключение страниц и выделение вкладки
-    TabBtn.Activated:Connect(function()
-        if SearchBox.Text ~= "" then SearchBox.Text = "" end
-        highlightTab(textKey)
+    TabBtn.MouseEnter:Connect(function()
+        if TabBtn ~= currentActiveTab then
+            applyHover(TabBtn)
+        end
+        currentHoveredTab = TabBtn
     end)
     
+    TabBtn.MouseLeave:Connect(function()
+        if TabBtn ~= currentActiveTab then
+            removeHover(TabBtn)
+        end
+        currentHoveredTab = nil
+    end)
+
+    TabBtn.Activated:Connect(function()
+        if currentActiveTab == TabBtn then return end
+
+        -- Снимаем Active с предыдущей активной вкладки
+        if currentActiveTab then
+            clearActiveTab(currentActiveTab)
+        end
+        
+        -- Если у вкладки был Hover — убираем его перед включением Active
+        if currentHoveredTab == TabBtn then
+            removeHover(TabBtn)
+        end
+
+        -- Сбрасываем поиск
+        if SearchBox.Text ~= "" then SearchBox.Text = "" end
+
+        -- Переключаем видимость страниц
+        for tName, pFrame in pairs(allPages) do
+            pFrame.Visible = false
+        end
+
+        -- Устанавливаем новую активную вкладку
+        Library.CurrentTabKey = textKey
+        TabTitle.Text = Localization[Library.CurrentLanguage][textKey] or textKey
+        PageFrame.Visible = true
+
+        setActiveTab(TabBtn)
+        currentActiveTab = TabBtn
+    end)
+
     table.insert(LocaleObjects, {Object = TabBtn, Key = textKey})
     UpdateNavCanvas()
     return PageFrame
@@ -1405,7 +1498,6 @@ Library:CreateDropdown(SettingsPage, "MenuFont", FontKeys, "Gotham", function(se
         for _, obj in ipairs(Library.TrackedSubText) do
             if obj and obj.Parent then obj.Font = Library.CurrentFont end
         end
-        highlightTab(Library.CurrentTabKey)
     end
 end)
 
@@ -1429,65 +1521,55 @@ Library:CreateToggle(SettingsPage, "Gradient", false, function(state)
     toggleGradientEffect(state)
 end)
 
+-- ============================================================================
+-- ИНИЦИАЛИЗАЦИЯ ПЕРВОЙ АКТИВНОЙ ВКЛАДКИ ПРИ ЗАПУСКЕ
+-- ============================================================================
+SettingsPage.Visible = true
+local settingsButton = allTabButtons["Settings"]
+if settingsButton then
+    setActiveTab(settingsButton)
+    currentActiveTab = settingsButton
+end
+
 -- Применяем стартовую тему
 Library:UpdateTheme("Deep Ocean")
 
 -- ============================================================================
--- ЗАПУСК СИСТЕМЫ ЗАГРУЗКИ (3-4 СЕКУНДЫ)
+-- ЗАПУСК СИСТЕМЫ ЗАГРУЗКИ (3 СЕКУНДЫ)
 -- ============================================================================
 task.spawn(function()
-    local totalDuration = 3.5
-    local steps = {
-        { target = 0.28, timeFrac = 0.25, style = Enum.EasingStyle.OutQuad },
-        { target = 0.58, timeFrac = 0.30, style = Enum.EasingStyle.Sine },
-        { target = 0.88, timeFrac = 0.28, style = Enum.EasingStyle.Linear },
-        { target = 1.00, timeFrac = 0.17, style = Enum.EasingStyle.Quart }
-    }
-
-    local currentProgress = 0
-
-    for _, step in ipairs(steps) do
-        local stepTime = totalDuration * step.timeFrac
-        local startProg = currentProgress
-        local endProg = step.target
-
-        local tweenInfo = TweenInfo.new(stepTime, step.style, Enum.EasingDirection.Out)
-        local fillTween = TweenService:Create(ProgressBarFill, tweenInfo, {
-            Size = UDim2.new(endProg, 0, 1, 0)
-        })
-
-        fillTween:Play()
-
-        local startTimeStep = os.clock()
-        while os.clock() - startTimeStep < stepTime do
-            local dt = os.clock() - startTimeStep
-            local alpha = math.clamp(dt / stepTime, 0, 1)
-            currentProgress = startProg + (endProg - startProg) * alpha
-            ProgressPercentLabel.Text = string.format("%d%%", math.floor(currentProgress * 100))
-            updateLoadingStatus(currentProgress)
-            task.wait()
-        end
-
-        currentProgress = endProg
-        ProgressPercentLabel.Text = string.format("%d%%", math.floor(currentProgress * 100))
-        updateLoadingStatus(currentProgress)
+    local loadDuration = 3
+    local startTimeLoad = os.clock()
+    
+    while os.clock() - startTimeLoad < loadDuration do
+        local elapsed = os.clock() - startTimeLoad
+        local progress = math.clamp(elapsed / loadDuration, 0, 1)
+        
+        ProgressBarFill.Size = UDim2.new(progress, 0, 1, 0)
+        LoadingStatus.Text = string.format("Загрузка... %d%%", math.floor(progress * 100))
+        
+        task.wait()
     end
-
-    task.wait(0.3)
-
-    -- Плавное исчезновение экрана загрузки
-    tween(LoadingOverlay, {BackgroundTransparency = 1}, 0.5)
-    tween(LoadingFrame, {BackgroundTransparency = 1}, 0.5)
-    tween(LoadingTitle, {TextTransparency = 1}, 0.5)
-    tween(LoadingStatus, {TextTransparency = 1}, 0.5)
-    tween(ProgressBarBg, {BackgroundTransparency = 1}, 0.5)
-    tween(ProgressBarFill, {BackgroundTransparency = 1}, 0.5)
-    tween(ProgressPercentLabel, {TextTransparency = 1}, 0.5)
-    local fadeOut = tween(LoadingStroke, {Transparency = 1}, 0.5)
-
-    fadeOut.Completed:Connect(function()
-        LoadingOverlay:Destroy()
+    
+    ProgressBarFill.Size = UDim2.new(1, 0, 1, 0)
+    LoadingStatus.Text = "Загрузка... 100%"
+    task.wait(0.2)
+    
+    -- Плавное исчезновение экрана загрузки и появление GUI
+    tween(LoadingFrame, {BackgroundTransparency = 1}, 0.3)
+    tween(LoadingTitle, {TextTransparency = 1}, 0.3)
+    tween(LoadingStatus, {TextTransparency = 1}, 0.3)
+    tween(ProgressBarBg, {BackgroundTransparency = 1}, 0.3)
+    tween(ProgressBarFill, {BackgroundTransparency = 1}, 0.3)
+    local strokeTween = tween(LoadingStroke, {Transparency = 1}, 0.3)
+    
+    if strokeTween then
+        strokeTween.Completed:Connect(function()
+            LoadingFrame:Destroy()
+            MainFrame.Visible = true
+        end)
+    else
+        LoadingFrame:Destroy()
         MainFrame.Visible = true
-        highlightTab("Settings")
-    end)
+    end
 end)
