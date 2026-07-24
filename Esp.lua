@@ -1,5 +1,5 @@
 -- ============================================================================
--- Pulse Hub - Settings Edition (Исправлен Дропдаун и Системы Тем)
+-- Pulse Hub - Settings Edition (FIXED DROPDOWN TEXT COLOR & UI)
 -- ============================================================================
 
 local TweenService = game:GetService("TweenService")
@@ -545,7 +545,6 @@ local allPages = {}
 local currentActiveTab = nil
 local currentHoveredTab = nil
 
--- Исправлено: Динамический эффект наведения с учетом темы
 local function applyHover(button)
     if not button then return end
     local parentContainer = button.Parent
@@ -597,7 +596,6 @@ local function removeHover(button)
     tween(button, {TextColor3 = normalTextColor}, 0.18)
 end
 
--- Исправлено: Синхронизация полосы индикатора и цветов темы при активации вкладки
 local function setActiveTab(tabButton)
     if not tabButton then return end
     local parentContainer = tabButton.Parent
@@ -665,9 +663,6 @@ local function clearActiveTab(tabButton)
     end
 end
 
--- ============================================================================
--- ИСПРАВЛЕНИЕ БАГА 2: Единая функция обновления визуального стиля вкладок
--- ============================================================================
 local function applyThemeToTabs(theme)
     theme = theme or Library.CurrentThemeData
     if not theme then return end
@@ -686,7 +681,6 @@ local function applyThemeToTabs(theme)
             local hoverStroke = parentContainer:FindFirstChild("HoverStroke")
 
             if tabBtn == currentActiveTab then
-                -- Обновление активной вкладки
                 tween(tabBtn, {TextColor3 = activeTextColor}, 0.2)
                 tween(parentContainer, {BackgroundColor3 = activeBgColor, BackgroundTransparency = 0}, 0.2)
                 
@@ -708,7 +702,6 @@ local function applyThemeToTabs(theme)
                     tween(allTabIcons[textKey], {ImageTransparency = 0}, 0.2)
                 end
             else
-                -- Обновление неактивных вкладок
                 tween(tabBtn, {TextColor3 = inactiveTextColor}, 0.2)
                 if currentHoveredTab ~= tabBtn then
                     tween(parentContainer, {BackgroundTransparency = 1}, 0.2)
@@ -730,7 +723,6 @@ local function applyThemeToTabs(theme)
                 end
             end
 
-            -- Обновляем обводку эффекта Hover
             if hoverStroke then
                 tween(hoverStroke, {Color = theme.Accent}, 0.2)
             end
@@ -779,7 +771,6 @@ function Library:UpdateTheme(themeName)
         if obj and obj.Parent then tween(obj, {TextColor3 = subTextColor}) end
     end
     
-    -- Исправлено: Вызов синхронизации темы вкладок
     applyThemeToTabs(theme)
     
     for _, data in ipairs(Library.TrackedAccents) do
@@ -809,7 +800,7 @@ function Library:UpdateTheme(themeName)
                 if optName == currentSelection then
                     if optData.Label and optData.Label.Parent then tween(optData.Label, {TextColor3 = theme.Accent}) end
                 else
-                    if optData.Label and optData.Label.Parent then optData.Label.TextColor3 = subTextColor end
+                    if optData.Label and optData.Label.Parent then tween(optData.Label, {TextColor3 = subTextColor}) end
                 end
             end
         end
@@ -982,14 +973,13 @@ local FontMapping = {
 }
 
 -- ============================================================================
--- ИСПРАВЛЕНИЕ БАГА 1: ДРОПДАУН С ДИНАМИЧЕСКИМ ZINDEX И АНИМАЦИЕЙ
+-- ИСПРАВЛЕННЫЙ ДРОПДАУН (ЦВЕТ ТЕКСТА ОПЦИЙ И CANVAS SIZE)
 -- ============================================================================
 function Library:CreateDropdown(parentPage, textKey, options, default, callback)
     local initialText = Localization[Library.CurrentLanguage][textKey] or textKey
     local DropdownFrame = Instance.new("Frame", parentPage)
     DropdownFrame.Size = UDim2.new(1, -20, 0, 36)
     DropdownFrame.BackgroundColor3 = Library.CurrentThemeData.ElementBg
-    -- Исправлено: ClipsDescendants обрезает содержимое при закрытии
     DropdownFrame.ClipsDescendants = true
     DropdownFrame.ZIndex = 6
     DropdownFrame.LayoutOrder = #parentPage:GetChildren()
@@ -1055,6 +1045,8 @@ function Library:CreateDropdown(parentPage, textKey, options, default, callback)
     OptionsContainer.ScrollBarImageColor3 = Library.CurrentThemeData.Accent
     OptionsContainer.ZIndex = 7
     OptionsContainer.ClipsDescendants = true
+    OptionsContainer.AutomaticCanvasSize = Enum.AutomaticSize.Y
+    OptionsContainer.CanvasSize = UDim2.new(0, 0, 0, 0)
     
     local ListLayout = Instance.new("UIListLayout", OptionsContainer)
     ListLayout.SortOrder = Enum.SortOrder.LayoutOrder
@@ -1066,7 +1058,6 @@ function Library:CreateDropdown(parentPage, textKey, options, default, callback)
     local isExpanded = false
     local optionButtons = {}
     
-    -- Исправлено: Функция динамического управления ZIndex для предотвращения перекрытия
     local function setDropdownZIndex(zIndex)
         DropdownFrame.ZIndex = zIndex
         HeaderBtn.ZIndex = zIndex + 1
@@ -1088,7 +1079,6 @@ function Library:CreateDropdown(parentPage, textKey, options, default, callback)
         local targetFrameHeight = isExpanded and (36 + contentHeight + 4) or 36
         
         if isExpanded then
-            -- Выносим открытый дропдаун на передний план
             setDropdownZIndex(25)
             tween(DropdownFrame, {Size = UDim2.new(1, -20, 0, targetFrameHeight)}, 0.2)
             tween(OptionsContainer, {Size = UDim2.new(1, 0, 0, contentHeight)}, 0.2)
@@ -1100,7 +1090,6 @@ function Library:CreateDropdown(parentPage, textKey, options, default, callback)
             if closeTween then
                 closeTween.Completed:Connect(function()
                     if not isExpanded then
-                        -- Возвращаем исходный слой только после окончания анимации
                         setDropdownZIndex(6)
                     end
                 end)
@@ -1117,6 +1106,9 @@ function Library:CreateDropdown(parentPage, textKey, options, default, callback)
         table.clear(optionButtons)
         
         local currentZ = isExpanded and 25 or 6
+        local bgL = (Library.CurrentThemeData.MainBg.R * 0.299 + Library.CurrentThemeData.MainBg.G * 0.587 + Library.CurrentThemeData.MainBg.B * 0.114)
+        local isLight = bgL > 0.5
+        local subTextColor = isLight and Color3.fromRGB(110, 110, 110) or Color3.fromRGB(200, 200, 200)
 
         for i, option in ipairs(options) do
             local OptBtn = Instance.new("TextButton", OptionsContainer)
@@ -1137,6 +1129,13 @@ function Library:CreateDropdown(parentPage, textKey, options, default, callback)
             OptLabel.BackgroundTransparency = 1
             OptLabel.ZIndex = currentZ + 3
             
+            -- ФИКС: Указываем явный цвет текста
+            if option == SelectedLabel.Text then
+                OptLabel.TextColor3 = Library.CurrentThemeData.Accent
+            else
+                OptLabel.TextColor3 = subTextColor
+            end
+            
             if FontMapping and FontMapping[option] then
                 OptLabel.Font = FontMapping[option]
             else
@@ -1155,7 +1154,7 @@ function Library:CreateDropdown(parentPage, textKey, options, default, callback)
             Checkmark.ZIndex = currentZ + 3
             
             OptBtn.MouseEnter:Connect(function()
-                tween(OptBtn, {BackgroundTransparency = 0.96}, 0.15)
+                tween(OptBtn, {BackgroundTransparency = 0.94}, 0.15)
             end)
             OptBtn.MouseLeave:Connect(function()
                 tween(OptBtn, {BackgroundTransparency = 1}, 0.15)
@@ -1168,20 +1167,21 @@ function Library:CreateDropdown(parentPage, textKey, options, default, callback)
                 toggleDropdown()
                 callback(option)
                 
-                -- Подсветка выбранного пункта в дропдауне
                 for optName, optData in pairs(optionButtons) do
                     if optName == option then
                         optData.Label.TextColor3 = Library.CurrentThemeData.Accent
                         optData.Check.Visible = true
                         optData.Check.TextColor3 = Library.CurrentThemeData.Accent
                     else
-                        local bgL = (Library.CurrentThemeData.MainBg.R * 0.299 + Library.CurrentThemeData.MainBg.G * 0.587 + Library.CurrentThemeData.MainBg.B * 0.114)
-                        optData.Label.TextColor3 = (bgL > 0.5) and Color3.fromRGB(110, 110, 110) or Color3.fromRGB(140, 140, 140)
+                        local curBgL = (Library.CurrentThemeData.MainBg.R * 0.299 + Library.CurrentThemeData.MainBg.G * 0.587 + Library.CurrentThemeData.MainBg.B * 0.114)
+                        optData.Label.TextColor3 = (curBgL > 0.5) and Color3.fromRGB(110, 110, 110) or Color3.fromRGB(200, 200, 200)
                         optData.Check.Visible = false
                     end
                 end
             end)
         end
+        
+        OptionsContainer.CanvasSize = UDim2.new(0, 0, 0, #options * 32)
     end
 
     populateOptions(options)
