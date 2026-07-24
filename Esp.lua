@@ -97,7 +97,6 @@ local function NormalizeText(str)
     if type(str) ~= "string" then return "" end
     local lowerStr = str:lower()
     
-    -- Преобразование основных кириллических заглавных букв в строчные
     local cyrUpper = {"А","Б","В","Г","Д","Е","Ё","Ж","З","И","Й","К","Л","М","Н","О","П","Р","С","Т","У","Ф","Х","Ц","Ч","Ш","Щ","Ъ","Ы","Ь","Э","Ю","Я"}
     local cyrLower = {"а","б","в","г","д","е","ё","ж","з","и","й","к","л","м","н","о","п","р","с","т","у","ф","х","ц","ч","ш","щ","ъ","ы","ь","э","ю","я"}
     for i = 1, #cyrUpper do
@@ -507,11 +506,38 @@ local ThemeConfig = {
     ["AMOLED"]        = { Accent = Color3.fromRGB(255, 255, 255), MainBg = Color3.fromRGB(0, 0, 0),      ElementBg = Color3.fromRGB(15, 15, 15) }
 }
 
+local DefaultTheme = { Accent = Color3.fromRGB(0, 206, 209), MainBg = Color3.fromRGB(10, 20, 30), ElementBg = Color3.fromRGB(15, 30, 45) }
+Library.CurrentThemeData = ThemeConfig["Deep Ocean"] or DefaultTheme
+
+-- Защищённые вспомогательные функции для предотвращения "attempt to index nil with 'R'"
+local function getThemeAccent()
+    if Library.CurrentThemeData and typeof(Library.CurrentThemeData.Accent) == "Color3" then
+        return Library.CurrentThemeData.Accent
+    end
+    return DefaultTheme.Accent
+end
+
+local function getThemeMainBg()
+    if Library.CurrentThemeData and typeof(Library.CurrentThemeData.MainBg) == "Color3" then
+        return Library.CurrentThemeData.MainBg
+    end
+    return DefaultTheme.MainBg
+end
+
+local function getLuminance(color)
+    if typeof(color) ~= "Color3" then
+        color = DefaultTheme.MainBg
+    end
+    return (color.R * 0.299 + color.G * 0.587 + color.B * 0.114)
+end
+
+local function isLightColor(color)
+    return getLuminance(color) > 0.5
+end
+
 local ThemeNamesList = {}
 for name, _ in pairs(ThemeConfig) do table.insert(ThemeNamesList, name) end
 table.sort(ThemeNamesList)
-
-Library.CurrentThemeData = ThemeConfig["Deep Ocean"]
 
 local allTabs = {}
 local allTabButtons = {}
@@ -524,22 +550,23 @@ local currentHoveredTab = nil
 local function applyHover(button)
     if not button or not button.Parent then return end
     local parentContainer = button.Parent
+    local accent = getThemeAccent()
+    local mainBg = getThemeMainBg()
     
     local stroke = parentContainer:FindFirstChild("HoverStroke")
     if not stroke then
         stroke = Instance.new("UIStroke")
         stroke.Name = "HoverStroke"
-        stroke.Color = Library.CurrentThemeData.Accent
+        stroke.Color = accent
         stroke.Thickness = 1
         stroke.Transparency = 1
         stroke.ApplyStrokeMode = Enum.ApplyStrokeMode.Border
         stroke.Parent = parentContainer
     else
-        stroke.Color = Library.CurrentThemeData.Accent
+        stroke.Color = accent
     end
     
-    local bgL = (Library.CurrentThemeData.MainBg.R * 0.299 + Library.CurrentThemeData.MainBg.G * 0.587 + Library.CurrentThemeData.MainBg.B * 0.114)
-    local isL = bgL > 0.5
+    local isL = isLightColor(mainBg)
     local hoverBg = isL and Color3.fromRGB(200, 200, 200) or Color3.fromRGB(50, 50, 50)
     local hoverText = isL and Color3.fromRGB(20, 20, 20) or Color3.fromRGB(255, 255, 255)
 
@@ -564,8 +591,7 @@ local function removeHover(button)
         end
     end
     
-    local bgL = (Library.CurrentThemeData.MainBg.R * 0.299 + Library.CurrentThemeData.MainBg.G * 0.587 + Library.CurrentThemeData.MainBg.B * 0.114)
-    local isL = bgL > 0.5
+    local isL = isLightColor(getThemeMainBg())
     local normalTextColor = isL and Color3.fromRGB(110, 110, 110) or Color3.fromRGB(140, 140, 140)
     
     tween(parentContainer, {BackgroundTransparency = 1}, 0.18)
@@ -575,6 +601,8 @@ end
 local function setActiveTab(tabButton)
     if not tabButton or not tabButton.Parent then return end
     local parentContainer = tabButton.Parent
+    local accent = getThemeAccent()
+    local mainBg = getThemeMainBg()
     
     local indicator = parentContainer:FindFirstChild("ActiveIndicator")
     if not indicator then
@@ -582,7 +610,7 @@ local function setActiveTab(tabButton)
         indicator.Name = "ActiveIndicator"
         indicator.Size = UDim2.new(0, 4, 1, 0)
         indicator.Position = UDim2.new(0, 0, 0, 0)
-        indicator.BackgroundColor3 = Library.CurrentThemeData.Accent
+        indicator.BackgroundColor3 = accent
         indicator.BorderSizePixel = 0
         indicator.ZIndex = tabButton.ZIndex + 2
         indicator.BackgroundTransparency = 1
@@ -593,12 +621,11 @@ local function setActiveTab(tabButton)
     end
     
     tabButton.Font = Enum.Font.GothamBold
-    local bgL = (Library.CurrentThemeData.MainBg.R * 0.299 + Library.CurrentThemeData.MainBg.G * 0.587 + Library.CurrentThemeData.MainBg.B * 0.114)
-    local isL = bgL > 0.5
+    local isL = isLightColor(mainBg)
     local activeTextColor = isL and Color3.fromRGB(20, 20, 20) or Color3.fromRGB(255, 255, 255)
     local activeBgColor = isL and Color3.fromRGB(215, 215, 215) or Color3.fromRGB(35, 35, 35)
 
-    tween(indicator, {BackgroundColor3 = Library.CurrentThemeData.Accent, BackgroundTransparency = 0}, 0.25)
+    tween(indicator, {BackgroundColor3 = accent, BackgroundTransparency = 0}, 0.25)
     tween(tabButton, {TextColor3 = activeTextColor}, 0.25)
     tween(parentContainer, {BackgroundColor3 = activeBgColor, BackgroundTransparency = 0}, 0.25)
     
@@ -626,8 +653,7 @@ local function clearActiveTab(tabButton)
     
     tabButton.Font = Library.CurrentFont or Enum.Font.Gotham
     
-    local bgL = (Library.CurrentThemeData.MainBg.R * 0.299 + Library.CurrentThemeData.MainBg.G * 0.587 + Library.CurrentThemeData.MainBg.B * 0.114)
-    local isL = bgL > 0.5
+    local isL = isLightColor(getThemeMainBg())
     local normalTextColor = isL and Color3.fromRGB(110, 110, 110) or Color3.fromRGB(140, 140, 140)
     
     tween(tabButton, {TextColor3 = normalTextColor}, 0.25)
@@ -640,12 +666,11 @@ local function clearActiveTab(tabButton)
 end
 
 local function applyThemeToTabs(theme)
-    theme = theme or Library.CurrentThemeData
-    if not theme then return end
+    theme = theme or Library.CurrentThemeData or DefaultTheme
+    local mainBg = (theme and typeof(theme.MainBg) == "Color3") and theme.MainBg or DefaultTheme.MainBg
+    local accent = (theme and typeof(theme.Accent) == "Color3") and theme.Accent or DefaultTheme.Accent
 
-    local bgLuminance = (theme.MainBg.R * 0.299 + theme.MainBg.G * 0.587 + theme.MainBg.B * 0.114)
-    local isLightMode = bgLuminance > 0.5
-
+    local isLightMode = isLightColor(mainBg)
     local activeTextColor = isLightMode and Color3.fromRGB(20, 20, 20) or Color3.fromRGB(255, 255, 255)
     local inactiveTextColor = isLightMode and Color3.fromRGB(110, 110, 110) or Color3.fromRGB(140, 140, 140)
     local activeBgColor = isLightMode and Color3.fromRGB(215, 215, 215) or Color3.fromRGB(35, 35, 35)
@@ -672,7 +697,7 @@ local function applyThemeToTabs(theme)
                     corner.CornerRadius = UDim.new(0, 2)
                 end
                 
-                tween(indicator, {BackgroundColor3 = theme.Accent, BackgroundTransparency = 0}, 0.2)
+                tween(indicator, {BackgroundColor3 = accent, BackgroundTransparency = 0}, 0.2)
 
                 if allTabIcons[textKey] then
                     tween(allTabIcons[textKey], {ImageTransparency = 0}, 0.2)
@@ -700,32 +725,32 @@ local function applyThemeToTabs(theme)
             end
 
             if hoverStroke then
-                tween(hoverStroke, {Color = theme.Accent}, 0.2)
+                tween(hoverStroke, {Color = accent}, 0.2)
             end
         end
     end
 end
 
 function Library:UpdateTheme(themeName)
-    local theme = ThemeConfig[themeName]
-    if not theme then return end
+    local theme = ThemeConfig[themeName] or DefaultTheme
     Library.CurrentThemeData = theme
     
-    local bgLuminance = (theme.MainBg.R * 0.299 + theme.MainBg.G * 0.587 + theme.MainBg.B * 0.114)
-    local isLightMode = bgLuminance > 0.5
+    local mainBg = getThemeMainBg()
+    local accent = getThemeAccent()
+    local isLightMode = isLightColor(mainBg)
     
     local mainTextColor = isLightMode and Color3.fromRGB(35, 35, 35) or Color3.fromRGB(255, 255, 255)
     local subTextColor = isLightMode and Color3.fromRGB(110, 110, 110) or Color3.fromRGB(140, 140, 140)
     local strokeColor = isLightMode and Color3.fromRGB(190, 190, 190) or Color3.fromRGB(45, 45, 45)
     
     for _, obj in ipairs(Library.TrackedMainBg) do
-        if obj and obj.Parent then tween(obj, {BackgroundColor3 = theme.MainBg}) end
+        if obj and obj.Parent then tween(obj, {BackgroundColor3 = mainBg}) end
     end
     
     for _, obj in ipairs(Library.TrackedElementBg) do
         if obj and obj.Parent then
             if obj.Name ~= "TabContainer" then
-                tween(obj, {BackgroundColor3 = theme.ElementBg})
+                tween(obj, {BackgroundColor3 = theme.ElementBg or DefaultTheme.ElementBg})
             end
         end
     end
@@ -752,8 +777,8 @@ function Library:UpdateTheme(themeName)
     for _, data in ipairs(Library.TrackedAccents) do
         if data.Type == "Toggle" then
             if data.IsEnabled() then
-                tween(data.Checkbox, {BackgroundColor3 = theme.Accent})
-                local brightness = (theme.Accent.R + theme.Accent.G + theme.Accent.B)
+                tween(data.Checkbox, {BackgroundColor3 = accent})
+                local brightness = (accent.R + accent.G + accent.B)
                 if brightness > 2.5 then
                     tween(data.Indicator, {BackgroundColor3 = Color3.fromRGB(30, 30, 30)})
                 else
@@ -766,18 +791,18 @@ function Library:UpdateTheme(themeName)
         elseif data.Type == "Dropdown" then
             local currentSelection = data.GetDefault()
             if data.Container and data.Container.Parent then
-                data.Container.ScrollBarImageColor3 = theme.Accent
+                data.Container.ScrollBarImageColor3 = accent
             end
             if data.SelectedLabel and data.SelectedLabel.Parent then
-                tween(data.SelectedLabel, {TextColor3 = theme.Accent})
+                tween(data.SelectedLabel, {TextColor3 = accent})
             end
             for optName, optData in pairs(data.Options) do
                 if optData.Check and optData.Check.Parent then 
-                    optData.Check.TextColor3 = theme.Accent
+                    optData.Check.TextColor3 = accent
                     optData.Check.Visible = (optName == currentSelection)
                 end
                 if optName == currentSelection then
-                    if optData.Label and optData.Label.Parent then tween(optData.Label, {TextColor3 = theme.Accent}) end
+                    if optData.Label and optData.Label.Parent then tween(optData.Label, {TextColor3 = accent}) end
                 else
                     if optData.Label and optData.Label.Parent then tween(optData.Label, {TextColor3 = subTextColor}) end
                 end
@@ -858,8 +883,7 @@ local function toggleAnimatedWindow(state)
         if animatedWindowConnection then
             animatedWindowConnection:Disconnect()
             animatedWindowConnection = nil
-            local bgL = (Library.CurrentThemeData.MainBg.R * 0.299 + Library.CurrentThemeData.MainBg.G * 0.587 + Library.CurrentThemeData.MainBg.B * 0.114)
-            local defaultStrokeColor = (bgL > 0.5) and Color3.fromRGB(190, 190, 190) or Color3.fromRGB(45, 45, 45)
+            local defaultStrokeColor = isLightColor(getThemeMainBg()) and Color3.fromRGB(190, 190, 190) or Color3.fromRGB(45, 45, 45)
             for _, stroke in ipairs(Library.TrackedStrokes) do
                 if stroke and stroke.Parent then stroke.Color = defaultStrokeColor end
             end
@@ -962,7 +986,7 @@ function Library:CreateDropdown(parentPage, textKey, options, default, callback)
     local initialText = Localization[Library.CurrentLanguage][textKey] or textKey
     local DropdownFrame = Instance.new("Frame", parentPage)
     DropdownFrame.Size = UDim2.new(1, -20, 0, 36)
-    DropdownFrame.BackgroundColor3 = Library.CurrentThemeData.ElementBg
+    DropdownFrame.BackgroundColor3 = Library.CurrentThemeData.ElementBg or DefaultTheme.ElementBg
     DropdownFrame.ClipsDescendants = true
     DropdownFrame.ZIndex = 6
     DropdownFrame.LayoutOrder = #parentPage:GetChildren()
@@ -999,7 +1023,7 @@ function Library:CreateDropdown(parentPage, textKey, options, default, callback)
     SelectedLabel.Position = UDim2.new(0.45, 0, 0, 0)
     SelectedLabel.Text = default
     SelectedLabel.Font = Library.CurrentFont
-    SelectedLabel.TextColor3 = Library.CurrentThemeData.Accent 
+    SelectedLabel.TextColor3 = getThemeAccent()
     SelectedLabel.TextSize = 13
     SelectedLabel.TextXAlignment = Enum.TextXAlignment.Right
     SelectedLabel.TextTruncate = Enum.TextTruncate.AtEnd
@@ -1025,7 +1049,7 @@ function Library:CreateDropdown(parentPage, textKey, options, default, callback)
     OptionsContainer.BackgroundTransparency = 1
     OptionsContainer.BorderSizePixel = 0
     OptionsContainer.ScrollBarThickness = 3
-    OptionsContainer.ScrollBarImageColor3 = Library.CurrentThemeData.Accent
+    OptionsContainer.ScrollBarImageColor3 = getThemeAccent()
     OptionsContainer.ZIndex = 8
     OptionsContainer.ClipsDescendants = true
     OptionsContainer.Visible = false
@@ -1079,14 +1103,15 @@ function Library:CreateDropdown(parentPage, textKey, options, default, callback)
     local function selectValue(option)
         SelectedLabel.Text = option
         if type(callback) == "function" then callback(option) end
+        local accent = getThemeAccent()
         
         for optName, optData in pairs(optionButtons) do
             if optName == option then
-                optData.Label.TextColor3 = Library.CurrentThemeData.Accent
+                optData.Label.TextColor3 = accent
                 optData.Check.Visible = true
-                optData.Check.TextColor3 = Library.CurrentThemeData.Accent
+                optData.Check.TextColor3 = accent
             else
-                local curBgL = (Library.CurrentThemeData.MainBg.R * 0.299 + Library.CurrentThemeData.MainBg.G * 0.587 + Library.CurrentThemeData.MainBg.B * 0.114)
+                local curBgL = getLuminance(getThemeMainBg())
                 optData.Label.TextColor3 = (curBgL > 0.5) and Color3.fromRGB(110, 110, 110) or Color3.fromRGB(140, 140, 140)
                 optData.Check.Visible = false
             end
@@ -1100,6 +1125,7 @@ function Library:CreateDropdown(parentPage, textKey, options, default, callback)
         end
         table.clear(optionButtons)
 
+        local accent = getThemeAccent()
         for i, option in ipairs(options) do
             local OptBtn = Instance.new("TextButton", OptionsContainer)
             OptBtn.Size = UDim2.new(1, 0, 0, 32)
@@ -1119,9 +1145,9 @@ function Library:CreateDropdown(parentPage, textKey, options, default, callback)
             OptLabel.BackgroundTransparency = 1
             OptLabel.ZIndex = 10
             
-            local bgL = (Library.CurrentThemeData.MainBg.R * 0.299 + Library.CurrentThemeData.MainBg.G * 0.587 + Library.CurrentThemeData.MainBg.B * 0.114)
-            local defaultSubText = (bgL > 0.5) and Color3.fromRGB(110, 110, 110) or Color3.fromRGB(140, 140, 140)
-            OptLabel.TextColor3 = (option == SelectedLabel.Text) and Library.CurrentThemeData.Accent or defaultSubText
+            local curBgL = getLuminance(getThemeMainBg())
+            local defaultSubText = (curBgL > 0.5) and Color3.fromRGB(110, 110, 110) or Color3.fromRGB(140, 140, 140)
+            OptLabel.TextColor3 = (option == SelectedLabel.Text) and accent or defaultSubText
             
             if FontMapping and FontMapping[option] then
                 OptLabel.Font = FontMapping[option]
@@ -1134,7 +1160,7 @@ function Library:CreateDropdown(parentPage, textKey, options, default, callback)
             Checkmark.Position = UDim2.new(1, -30, 0, 0)
             Checkmark.Text = "✓"
             Checkmark.Font = Enum.Font.GothamBold
-            Checkmark.TextColor3 = Library.CurrentThemeData.Accent
+            Checkmark.TextColor3 = accent
             Checkmark.TextSize = 12
             Checkmark.BackgroundTransparency = 1
             Checkmark.Visible = (option == SelectedLabel.Text)
@@ -1182,7 +1208,7 @@ function Library:CreateButton(parentPage, textKey, callback)
     local initialText = Localization[Library.CurrentLanguage][textKey] or textKey
     local Btn = Instance.new("TextButton", parentPage)
     Btn.Size = UDim2.new(1, -20, 0, 36)
-    Btn.BackgroundColor3 = Library.CurrentThemeData.ElementBg
+    Btn.BackgroundColor3 = Library.CurrentThemeData.ElementBg or DefaultTheme.ElementBg
     Btn.Text = initialText
     Btn.Font = Library.CurrentFont
     Btn.TextColor3 = Color3.fromRGB(230, 230, 230)
@@ -1216,7 +1242,7 @@ function Library:CreateToggle(parentPage, textKey, default, callback)
     local initialText = Localization[Library.CurrentLanguage][textKey] or textKey
     local TglFrame = Instance.new("Frame", parentPage)
     TglFrame.Size = UDim2.new(1, -20, 0, 36)
-    TglFrame.BackgroundColor3 = Library.CurrentThemeData.ElementBg
+    TglFrame.BackgroundColor3 = Library.CurrentThemeData.ElementBg or DefaultTheme.ElementBg
     TglFrame.ZIndex = 6
     TglFrame.LayoutOrder = #parentPage:GetChildren()
     Instance.new("UICorner", TglFrame).CornerRadius = UDim.new(0, 6)
@@ -1242,7 +1268,7 @@ function Library:CreateToggle(parentPage, textKey, default, callback)
     local Checkbox = Instance.new("TextButton", TglFrame)
     Checkbox.Size = UDim2.new(0, 34, 0, 18)
     Checkbox.Position = UDim2.new(1, -44, 0.5, -9)
-    Checkbox.BackgroundColor3 = default and Library.CurrentThemeData.Accent or Color3.fromRGB(40, 40, 40) 
+    Checkbox.BackgroundColor3 = default and getThemeAccent() or Color3.fromRGB(40, 40, 40) 
     Checkbox.Text = ""
     Checkbox.ZIndex = 7
     Instance.new("UICorner", Checkbox).CornerRadius = UDim.new(0, 9)
@@ -1257,14 +1283,14 @@ function Library:CreateToggle(parentPage, textKey, default, callback)
     local enabled = default
     local function setToggleState(state)
         enabled = state
-        local brightness = (Library.CurrentThemeData.Accent.R + Library.CurrentThemeData.Accent.G + Library.CurrentThemeData.Accent.B)
+        local accent = getThemeAccent()
+        local brightness = (accent.R + accent.G + accent.B)
         local activeIndicatorColor = brightness > 2.5 and Color3.fromRGB(30, 30, 30) or Color3.fromRGB(255, 255, 255)
         if enabled then
-            tween(Checkbox, {BackgroundColor3 = Library.CurrentThemeData.Accent}, 0.2)
+            tween(Checkbox, {BackgroundColor3 = accent}, 0.2)
             tween(Indicator, {Position = UDim2.new(1, -16, 0.5, -7), BackgroundColor3 = activeIndicatorColor}, 0.2)
         else
-            local bgL = (Library.CurrentThemeData.MainBg.R * 0.299 + Library.CurrentThemeData.MainBg.G * 0.587 + Library.CurrentThemeData.MainBg.B * 0.114)
-            local offColor = (bgL > 0.5) and Color3.fromRGB(210, 210, 210) or Color3.fromRGB(40, 40, 40)
+            local offColor = isLightColor(getThemeMainBg()) and Color3.fromRGB(210, 210, 210) or Color3.fromRGB(40, 40, 40)
             tween(Checkbox, {BackgroundColor3 = offColor}, 0.2)
             tween(Indicator, {Position = UDim2.new(0, 2, 0.5, -7), BackgroundColor3 = Color3.fromRGB(255, 255, 255)}, 0.2)
         end
@@ -1296,7 +1322,7 @@ function Library:CreateSlider(parentPage, textKey, min, max, default, callback)
     local initialText = Localization[Library.CurrentLanguage][textKey] or textKey
     local SliderFrame = Instance.new("Frame", parentPage)
     SliderFrame.Size = UDim2.new(1, -20, 0, 52)
-    SliderFrame.BackgroundColor3 = Library.CurrentThemeData.ElementBg
+    SliderFrame.BackgroundColor3 = Library.CurrentThemeData.ElementBg or DefaultTheme.ElementBg
     SliderFrame.ZIndex = 6
     SliderFrame.LayoutOrder = #parentPage:GetChildren()
     Instance.new("UICorner", SliderFrame).CornerRadius = UDim.new(0, 8)
@@ -1595,14 +1621,13 @@ local GradientToggle = Library:CreateToggle(SettingsPage, "Gradient", false, fun
 end)
 
 -- ----------------------------------------------------------------------------
--- МОДУЛЬ КОНФИГУРАЦИЙ
+-- МОДУЛЬ КОНФИГУРАЦИЙ (С ЗАЩИЩЕННЫМИ ФАЙЛОВЫМИ ОПЕРАЦИЯМИ)
 -- ----------------------------------------------------------------------------
 local ConfigSystem = {}
 ConfigSystem.FolderPath = "DarkHub/Configs"
 ConfigSystem.LastConfigPath = "DarkHub/LastConfig.json"
 ConfigSystem.CurrentLoadedConfig = nil
 
--- Безопасная инициализация папок
 pcall(function()
     if typeof(makefolder) == "function" and typeof(isfolder) == "function" then
         if not isfolder("DarkHub") then makefolder("DarkHub") end
@@ -1633,7 +1658,7 @@ ConfigsScrollFrame.Size = UDim2.new(1, -20, 0, 170)
 ConfigsScrollFrame.BackgroundColor3 = Color3.fromRGB(18, 18, 18)
 ConfigsScrollFrame.BackgroundTransparency = 0.5
 ConfigsScrollFrame.ScrollBarThickness = 3
-ConfigsScrollFrame.ScrollBarImageColor3 = Library.CurrentThemeData.Accent
+ConfigsScrollFrame.ScrollBarImageColor3 = getThemeAccent()
 ConfigsScrollFrame.BorderSizePixel = 0
 ConfigsScrollFrame.LayoutOrder = 102
 Instance.new("UICorner", ConfigsScrollFrame).CornerRadius = UDim.new(0, 8)
@@ -1801,10 +1826,9 @@ function ConfigSystem:SaveToFile(name)
     
     local success, encoded = pcall(function() return HttpService:JSONEncode(saveData) end)
     if success and typeof(writefile) == "function" then
-        writefile(filepath, encoded)
-        ConfigSystem.CurrentLoadedConfig = name
-        
         pcall(function()
+            writefile(filepath, encoded)
+            ConfigSystem.CurrentLoadedConfig = name
             writefile(ConfigSystem.LastConfigPath, HttpService:JSONEncode({Last = name}))
         end)
         
@@ -1820,18 +1844,20 @@ function ConfigSystem:RenameConfig(oldName, newName)
     local oldPath = ConfigSystem.FolderPath .. "/" .. oldName .. ".json"
     local newPath = ConfigSystem.FolderPath .. "/" .. newName .. ".json"
     
-    if typeof(isfile) == "function" and isfile(oldPath) and typeof(readfile) == "function" and typeof(writefile) == "function" and typeof(delfile) == "function" then
-        local content = readfile(oldPath)
-        writefile(newPath, content)
-        delfile(oldPath)
-        
-        if ConfigSystem.CurrentLoadedConfig == oldName then
-            ConfigSystem.CurrentLoadedConfig = newName
-            writefile(ConfigSystem.LastConfigPath, HttpService:JSONEncode({Last = newName}))
+    pcall(function()
+        if typeof(isfile) == "function" and isfile(oldPath) and typeof(readfile) == "function" and typeof(writefile) == "function" and typeof(delfile) == "function" then
+            local content = readfile(oldPath)
+            writefile(newPath, content)
+            delfile(oldPath)
+            
+            if ConfigSystem.CurrentLoadedConfig == oldName then
+                ConfigSystem.CurrentLoadedConfig = newName
+                writefile(ConfigSystem.LastConfigPath, HttpService:JSONEncode({Last = newName}))
+            end
+            ShowStatus("Конфиг переименован в '" .. newName .. "'", false)
+            ConfigSystem:RefreshList()
         end
-        ShowStatus("Конфиг переименован в '" .. newName .. "'", false)
-        ConfigSystem:RefreshList()
-    end
+    end)
 end
 
 function ConfigSystem:RefreshList()
@@ -1840,13 +1866,15 @@ function ConfigSystem:RefreshList()
     end
     
     local files = {}
-    if typeof(listfiles) == "function" and typeof(isfolder) == "function" and isfolder(ConfigSystem.FolderPath) then
+    if typeof(listfiles) == "function" and typeof(isfolder) == "function" then
         pcall(function()
-            for _, file in ipairs(listfiles(ConfigSystem.FolderPath)) do
-                if string.sub(file, -5) == ".json" then
-                    local fileName = string.gsub(file, "\\", "/")
-                    fileName = string.match(fileName, "([^/]+)%.json$")
-                    if fileName then table.insert(files, fileName) end
+            if isfolder(ConfigSystem.FolderPath) then
+                for _, file in ipairs(listfiles(ConfigSystem.FolderPath)) do
+                    if string.sub(file, -5) == ".json" then
+                        local fileName = string.gsub(file, "\\", "/")
+                        fileName = string.match(fileName, "([^/]+)%.json$")
+                        if fileName then table.insert(files, fileName) end
+                    end
                 end
             end
         end)
@@ -1880,12 +1908,12 @@ function ConfigSystem:RefreshList()
         
         local timestampText = "00.00.0000 00:00"
         local filePath = ConfigSystem.FolderPath .. "/" .. configName .. ".json"
-        if typeof(isfile) == "function" and isfile(filePath) and typeof(readfile) == "function" then
-            pcall(function()
+        pcall(function()
+            if typeof(isfile) == "function" and isfile(filePath) and typeof(readfile) == "function" then
                 local data = HttpService:JSONDecode(readfile(filePath))
                 if data and data.Timestamp then timestampText = data.Timestamp end
-            end)
-        end
+            end
+        end)
         
         local TitleBox = Instance.new("TextBox", Card)
         TitleBox.Size = UDim2.new(1, -140, 0, 20)
@@ -1943,20 +1971,22 @@ function ConfigSystem:RefreshList()
         
         -- Load
         createSmallBtn("Load", Color3.fromRGB(0, 120, 215), function()
-            if typeof(readfile) == "function" and typeof(isfile) == "function" and isfile(filePath) then
-                local success, decoded = pcall(function() return HttpService:JSONDecode(readfile(filePath)) end)
-                if success and decoded and decoded.Settings then
-                    ConfigSystem:ApplyData(decoded.Settings)
-                    ConfigSystem.CurrentLoadedConfig = configName
-                    if typeof(writefile) == "function" then
-                        pcall(function()
-                            writefile(ConfigSystem.LastConfigPath, HttpService:JSONEncode({Last = configName}))
-                        end)
+            pcall(function()
+                if typeof(readfile) == "function" and typeof(isfile) == "function" and isfile(filePath) then
+                    local success, decoded = pcall(function() return HttpService:JSONDecode(readfile(filePath)) end)
+                    if success and decoded and decoded.Settings then
+                        ConfigSystem:ApplyData(decoded.Settings)
+                        ConfigSystem.CurrentLoadedConfig = configName
+                        if typeof(writefile) == "function" then
+                            pcall(function()
+                                writefile(ConfigSystem.LastConfigPath, HttpService:JSONEncode({Last = configName}))
+                            end)
+                        end
+                        ShowStatus("Конфиг '" .. configName .. "' загружен!", false)
+                        ConfigSystem:RefreshList()
                     end
-                    ShowStatus("Конфиг '" .. configName .. "' загружен!", false)
-                    ConfigSystem:RefreshList()
                 end
-            end
+            end)
         end)
         
         -- Update
@@ -1979,15 +2009,17 @@ function ConfigSystem:RefreshList()
                     activeConfirmConnection:Disconnect()
                     activeConfirmConnection = nil
                 end
-                if typeof(delfile) == "function" and typeof(isfile) == "function" and isfile(filePath) then
-                    delfile(filePath)
-                    if ConfigSystem.CurrentLoadedConfig == configName then
-                        ConfigSystem.CurrentLoadedConfig = nil
-                        if isfile(ConfigSystem.LastConfigPath) then delfile(ConfigSystem.LastConfigPath) end
+                pcall(function()
+                    if typeof(delfile) == "function" and typeof(isfile) == "function" and isfile(filePath) then
+                        delfile(filePath)
+                        if ConfigSystem.CurrentLoadedConfig == configName then
+                            ConfigSystem.CurrentLoadedConfig = nil
+                            if isfile(ConfigSystem.LastConfigPath) then delfile(ConfigSystem.LastConfigPath) end
+                        end
+                        ShowStatus("Конфиг удалён", true)
+                        ConfigSystem:RefreshList()
                     end
-                    ShowStatus("Конфиг удалён", true)
-                    ConfigSystem:RefreshList()
-                end
+                end)
                 HideModal()
             end)
         end)
@@ -2020,8 +2052,8 @@ end)
 -- Автозагрузка
 task.spawn(function()
     ConfigSystem:RefreshList()
-    if typeof(isfile) == "function" and typeof(readfile) == "function" and isfile(ConfigSystem.LastConfigPath) then
-        pcall(function()
+    pcall(function()
+        if typeof(isfile) == "function" and typeof(readfile) == "function" and isfile(ConfigSystem.LastConfigPath) then
             local lastData = HttpService:JSONDecode(readfile(ConfigSystem.LastConfigPath))
             if lastData and lastData.Last then
                 local lastConfigPath = ConfigSystem.FolderPath .. "/" .. lastData.Last .. ".json"
@@ -2035,8 +2067,8 @@ task.spawn(function()
                     end
                 end
             end
-        end)
-    end
+        end
+    end)
 end)
 
 -- Инициализация первой вкладки
