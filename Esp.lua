@@ -1,5 +1,5 @@
 -- ============================================================================
--- Dark Hub - Settings Edition (С премиальной системой конфигураций)
+-- Dark Hub - Settings Edition (Fixed & Optimized)
 -- ============================================================================
 
 local TweenService = game:GetService("TweenService")
@@ -9,6 +9,13 @@ local GuiService = game:GetService("GuiService")
 local Players = game:GetService("Players")
 local VirtualUser = game:GetService("VirtualUser")
 local HttpService = game:GetService("HttpService")
+
+-- Ожидаем загрузки локального игрока
+local LocalPlayer = Players.LocalPlayer
+while not LocalPlayer do
+    task.wait()
+    LocalPlayer = Players.LocalPlayer
+end
 
 local CustomIconID = "76579925188009"
 local startTime = os.clock()
@@ -24,9 +31,11 @@ local antiAfkConnection = nil
 local function toggleAntiAFK(state)
     if state then
         if not antiAfkConnection then
-            antiAfkConnection = Players.LocalPlayer.Idled:Connect(function()
-                VirtualUser:CaptureController()
-                VirtualUser:ClickButton2(Vector2.new(0, 0))
+            antiAfkConnection = LocalPlayer.Idled:Connect(function()
+                pcall(function()
+                    VirtualUser:CaptureController()
+                    VirtualUser:ClickButton2(Vector2.new(0, 0))
+                end)
             end)
         end
     else
@@ -39,18 +48,27 @@ end
 
 toggleAntiAFK(true)
 
+-- Безопасный выбор родительского объекта GUI
 local SafeParent = nil
 if typeof(gethui) == "function" then
-    SafeParent = gethui()
-elseif game:GetService("CoreGui") then
-    local success, _ = pcall(function() return game:GetService("CoreGui").Name end)
-    if success then
-        SafeParent = game:GetService("CoreGui")
-    end
+    pcall(function() SafeParent = gethui() end)
 end
+
 if not SafeParent then
-    SafeParent = Players.LocalPlayer:WaitForChild("PlayerGui")
+    pcall(function()
+        local cg = game:GetService("CoreGui")
+        local testFolder = Instance.new("Folder")
+        testFolder.Parent = cg
+        testFolder:Destroy()
+        SafeParent = cg
+    end)
 end
+
+if not SafeParent then
+    SafeParent = LocalPlayer:WaitForChild("PlayerGui", 10)
+end
+
+if not SafeParent then return end
 
 if SafeParent:FindFirstChild("DarkHub") then
     SafeParent.DarkHub:Destroy()
@@ -77,7 +95,15 @@ end
 
 local function NormalizeText(str)
     if type(str) ~= "string" then return "" end
-    local lowerStr = string.lower(str)
+    local lowerStr = str:lower()
+    
+    -- Преобразование основных кириллических заглавных букв в строчные
+    local cyrUpper = {"А","Б","В","Г","Д","Е","Ё","Ж","З","И","Й","К","Л","М","Н","О","П","Р","С","Т","У","Ф","Х","Ц","Ч","Ш","Щ","Ъ","Ы","Ь","Э","Ю","Я"}
+    local cyrLower = {"а","б","в","г","д","е","ё","ж","з","и","й","к","л","м","н","о","п","р","с","т","у","ф","х","ц","ч","ш","щ","ъ","ы","ь","э","ю","я"}
+    for i = 1, #cyrUpper do
+        lowerStr = lowerStr:gsub(cyrUpper[i], cyrLower[i])
+    end
+
     local synonyms = {
         ["настройки"] = "settings", ["язык"] = "language", ["тема"] = "theme", ["шрифт"] = "font"
     }
@@ -89,13 +115,11 @@ end
 
 local function spawnWave(container, clickX, clickY)
     if not container then return end
-    
     container.ClipsDescendants = true
 
     local absSize = container.AbsoluteSize
     local startX = clickX or (absSize.X / 2)
     local startY = clickY or (absSize.Y / 2)
-
     local maxDimension = math.max(absSize.X, absSize.Y) * 2.8
 
     local Wave = Instance.new("Frame")
@@ -124,7 +148,7 @@ local function spawnWave(container, clickX, clickY)
 end
 
 -- ============================================================================
--- ОСНОВНОЙ GUI (СКРЫТ ДО ЗАВЕРШЕНИЯ ЗАГРУЗКИ)
+-- ОСНОВНОЙ GUI
 -- ============================================================================
 local MainFrame = Instance.new("Frame", DarkHub)
 MainFrame.Name = "MainFrame"
@@ -356,7 +380,7 @@ local lastUpdateTime = 0
 
 RunService.RenderStepped:Connect(function(dt)
     local CurrentTime = os.clock()
-    local currentFps = 1 / dt
+    local currentFps = 1 / math.max(dt, 0.001)
     table.insert(fpsBuffer, currentFps)
     if #fpsBuffer > maxSamples then
         table.remove(fpsBuffer, 1)
@@ -366,12 +390,10 @@ RunService.RenderStepped:Connect(function(dt)
     if lastUpdateTime >= updateInterval then
         lastUpdateTime = 0
         local sum = 0
-        for _, fps in ipairs(fpsBuffer) do
-            sum = sum + fps
-        end
+        for _, fps in ipairs(fpsBuffer) do sum = sum + fps end
         local averageFps = sum / #fpsBuffer
         local passedTime = CurrentTime - startTime
-        StatsLabel.Text = string.format("FPS: %d  |  Session: %s", math.round(averageFps), formatSessionTime(passedTime))
+        StatsLabel.Text = string.format("FPS: %d  |  Session: %s", math.floor(averageFps + 0.5), formatSessionTime(passedTime))
     end
 end)
 
@@ -394,11 +416,14 @@ local function ToggleMinimize()
         HeaderBg.Size = UDim2.new(0, 150, 0, 46)
         MainStroke.Enabled = true
         MainFrame.BackgroundTransparency = 0.15
-        tween(MainFrame, {Size = UDim2.new(0, 550, 0, 350), Position = UDim2.new(0.5, 0, 0.5, 0)}).Completed:Connect(function()
-            if not isMinimized then
-                PagesContainer.Visible, TabTitle.Visible, SearchContainer.Visible, Navigation.Visible, FooterBg.Visible, ControlsContainer.Visible = true, true, true, true, true, true
-            end
-        end)
+        local t = tween(MainFrame, {Size = UDim2.new(0, 550, 0, 350), Position = UDim2.new(0.5, 0, 0.5, 0)})
+        if t then
+            t.Completed:Connect(function()
+                if not isMinimized then
+                    PagesContainer.Visible, TabTitle.Visible, SearchContainer.Visible, Navigation.Visible, FooterBg.Visible, ControlsContainer.Visible = true, true, true, true, true, true
+                end
+            end)
+        end
     end
 end
 
@@ -445,7 +470,7 @@ UserInputService.InputChanged:Connect(function(input)
 end)
 
 -- ============================================================================
--- UI БИБЛИОТЕКА И НАСТРОЙКИ ТЕМ
+-- UI БИБЛИОТЕКА И ТЕМЫ
 -- ============================================================================
 local Library = {}
 Library.CurrentFont = Enum.Font.Gotham
@@ -497,7 +522,7 @@ local currentActiveTab = nil
 local currentHoveredTab = nil
 
 local function applyHover(button)
-    if not button then return end
+    if not button or not button.Parent then return end
     local parentContainer = button.Parent
     
     local stroke = parentContainer:FindFirstChild("HoverStroke")
@@ -524,7 +549,7 @@ local function applyHover(button)
 end
 
 local function removeHover(button)
-    if not button then return end
+    if not button or not button.Parent then return end
     local parentContainer = button.Parent
     
     local stroke = parentContainer:FindFirstChild("HoverStroke")
@@ -532,7 +557,7 @@ local function removeHover(button)
         local t = tween(stroke, {Transparency = 1}, 0.18)
         if t then
             t.Completed:Connect(function()
-                if stroke and stroke.Transparency >= 0.99 then
+                if stroke and stroke.Parent and stroke.Transparency >= 0.99 then
                     stroke:Destroy()
                 end
             end)
@@ -548,7 +573,7 @@ local function removeHover(button)
 end
 
 local function setActiveTab(tabButton)
-    if not tabButton then return end
+    if not tabButton or not tabButton.Parent then return end
     local parentContainer = tabButton.Parent
     
     local indicator = parentContainer:FindFirstChild("ActiveIndicator")
@@ -584,7 +609,7 @@ local function setActiveTab(tabButton)
 end
 
 local function clearActiveTab(tabButton)
-    if not tabButton then return end
+    if not tabButton or not tabButton.Parent then return end
     local parentContainer = tabButton.Parent
     
     local indicator = parentContainer:FindFirstChild("ActiveIndicator")
@@ -592,7 +617,7 @@ local function clearActiveTab(tabButton)
         local t = tween(indicator, {BackgroundTransparency = 1}, 0.25)
         if t then
             t.Completed:Connect(function()
-                if indicator and indicator.BackgroundTransparency >= 0.99 then
+                if indicator and indicator.Parent and indicator.BackgroundTransparency >= 0.99 then
                     indicator:Destroy()
                 end
             end)
@@ -662,7 +687,7 @@ local function applyThemeToTabs(theme)
                     local t = tween(indicator, {BackgroundTransparency = 1}, 0.2)
                     if t then
                         t.Completed:Connect(function()
-                            if indicator and indicator.BackgroundTransparency >= 0.99 then
+                            if indicator and indicator.Parent and indicator.BackgroundTransparency >= 0.99 then
                                 indicator:Destroy()
                             end
                         end)
@@ -899,19 +924,23 @@ SearchBox:GetPropertyChangedSignal("Text"):Connect(function()
     if rawText == "" then
         SearchResultsPage.Visible = false
         for _, item in ipairs(SearchableElements) do
-            item.Instance.Parent = item.OriginalParent
-            item.Instance.Visible = true
+            if item.Instance and item.OriginalParent then
+                item.Instance.Parent = item.OriginalParent
+                item.Instance.Visible = true
+            end
         end
         if allPages[Library.CurrentTabKey] then allPages[Library.CurrentTabKey].Visible = true end
     else
         for _, page in pairs(allPages) do page.Visible = false end
         SearchResultsPage.Visible = true
         for _, item in ipairs(SearchableElements) do
-            if string.find(item.SearchText, query, 1, true) then
-                item.Instance.Parent = SearchResultsPage
-                item.Instance.Visible = true
-            else
-                item.Instance.Visible = false
+            if item.Instance then
+                if string.find(item.SearchText, query, 1, true) then
+                    item.Instance.Parent = SearchResultsPage
+                    item.Instance.Visible = true
+                else
+                    item.Instance.Visible = false
+                end
             end
         end
     end
@@ -927,7 +956,7 @@ local FontMapping = {
 }
 
 -- ============================================================================
--- ДРОПДАУН И ЭЛЕМЕНТЫ УПРАВЛЕНИЯ
+-- ЭЛЕМЕНТЫ УПРАВЛЕНИЯ (DROPDOWN, BUTTON, TOGGLE, SLIDER)
 -- ============================================================================
 function Library:CreateDropdown(parentPage, textKey, options, default, callback)
     local initialText = Localization[Library.CurrentLanguage][textKey] or textKey
@@ -1049,7 +1078,7 @@ function Library:CreateDropdown(parentPage, textKey, options, default, callback)
     
     local function selectValue(option)
         SelectedLabel.Text = option
-        callback(option)
+        if type(callback) == "function" then callback(option) end
         
         for optName, optData in pairs(optionButtons) do
             if optName == option then
@@ -1143,15 +1172,9 @@ function Library:CreateDropdown(parentPage, textKey, options, default, callback)
     table.insert(LocaleObjects, {Object = TitleLabel, Key = textKey, SearchItem = searchItem})
 
     return {
-        SetValue = function(val)
-            selectValue(val)
-        end,
-        GetValue = function()
-            return SelectedLabel.Text
-        end,
-        UpdateOptions = function(newOpts)
-            populateOptions(newOpts)
-        end
+        SetValue = function(val) selectValue(val) end,
+        GetValue = function() return SelectedLabel.Text end,
+        UpdateOptions = function(newOpts) populateOptions(newOpts) end
     }
 end
 
@@ -1180,7 +1203,10 @@ function Library:CreateButton(parentPage, textKey, callback)
         local inset = GuiService:GetGuiInset()
         spawnWave(Btn, mousePos.X - Btn.AbsolutePosition.X, (mousePos.Y - inset.Y) - Btn.AbsolutePosition.Y)
     end)
-    Btn.Activated:Connect(callback)
+    Btn.Activated:Connect(function()
+        if type(callback) == "function" then callback() end
+    end)
+    
     local searchItem = {Instance = Btn, SearchText = NormalizeText(initialText), OriginalParent = parentPage}
     table.insert(SearchableElements, searchItem)
     table.insert(LocaleObjects, {Object = Btn, Key = textKey, SearchItem = searchItem})
@@ -1242,7 +1268,7 @@ function Library:CreateToggle(parentPage, textKey, default, callback)
             tween(Checkbox, {BackgroundColor3 = offColor}, 0.2)
             tween(Indicator, {Position = UDim2.new(0, 2, 0.5, -7), BackgroundColor3 = Color3.fromRGB(255, 255, 255)}, 0.2)
         end
-        callback(enabled)
+        if type(callback) == "function" then callback(enabled) end
     end
 
     Checkbox.Activated:Connect(function()
@@ -1261,12 +1287,8 @@ function Library:CreateToggle(parentPage, textKey, default, callback)
     table.insert(LocaleObjects, {Object = TglLabel, Key = textKey, SearchItem = searchItem})
 
     return {
-        SetValue = function(state)
-            setToggleState(state)
-        end,
-        GetValue = function()
-            return enabled
-        end
+        SetValue = function(state) setToggleState(state) end,
+        GetValue = function() return enabled end
     }
 end
 
@@ -1362,11 +1384,11 @@ function Library:CreateSlider(parentPage, textKey, min, max, default, callback)
             local roundedValue = math.floor(rawValue + 0.5)
             currentValue = roundedValue
             ValueLabel.Text = string.format("%d", roundedValue)
-            callback(roundedValue)
+            if type(callback) == "function" then callback(roundedValue) end
         else
             currentValue = rawValue
             ValueLabel.Text = string.format("%.2f", rawValue)
-            callback(rawValue)
+            if type(callback) == "function" then callback(rawValue) end
         end
     end
 
@@ -1379,7 +1401,7 @@ function Library:CreateSlider(parentPage, textKey, min, max, default, callback)
         if (input.UserInputType == Enum.UserInputType.MouseButton1 or input.UserInputType == Enum.UserInputType.Touch) then
             dragging = true
             startX = input.Position.X
-            cachedTrackWidth = SliderTrack.AbsoluteSize.X
+            cachedTrackWidth = math.max(SliderTrack.AbsoluteSize.X, 1)
             local clickOffset = input.Position.X - SliderTrack.AbsolutePosition.X
             currentPercent = math.clamp(clickOffset / cachedTrackWidth, 0, 1)
             startPercent = currentPercent
@@ -1401,8 +1423,8 @@ function Library:CreateSlider(parentPage, textKey, min, max, default, callback)
     end)
     
     task.spawn(function()
-        while SliderTrack.AbsoluteSize.X == 0 do task.wait() end
-        updateVisuals(currentPercent)
+        while SliderTrack.Parent and SliderTrack.AbsoluteSize.X == 0 do task.wait() end
+        if SliderTrack.Parent then updateVisuals(currentPercent) end
     end)
     
     local searchItem = {Instance = SliderFrame, SearchText = NormalizeText(initialText), OriginalParent = parentPage}
@@ -1410,12 +1432,8 @@ function Library:CreateSlider(parentPage, textKey, min, max, default, callback)
     table.insert(LocaleObjects, {Object = SliderLabel, Key = textKey, SearchItem = searchItem})
 
     return {
-        SetValue = function(val)
-            setSliderVal(val)
-        end,
-        GetValue = function()
-            return currentValue
-        end
+        SetValue = function(val) setSliderVal(val) end,
+        GetValue = function() return currentValue end
     }
 end
 
@@ -1532,7 +1550,7 @@ function Library:CreatePage(textKey, iconId, layoutOrder)
 end
 
 -- ============================================================================
--- ВКЛАДКА "SETTINGS" + СИСТЕМА КОНФИГУРАЦИЙ (PRESETS SYSTEM)
+-- ВКЛАДКА "SETTINGS" + СИСТЕМА КОНФИГУРАЦИЙ
 -- ============================================================================
 local SettingsPage = Library:CreatePage("Settings", "117996761927034", 1)
 
@@ -1584,13 +1602,14 @@ ConfigSystem.FolderPath = "DarkHub/Configs"
 ConfigSystem.LastConfigPath = "DarkHub/LastConfig.json"
 ConfigSystem.CurrentLoadedConfig = nil
 
--- Создание директорий
-if makefolder and isfolder then
-    if not isfolder("DarkHub") then makefolder("DarkHub") end
-    if not isfolder(ConfigSystem.FolderPath) then makefolder(ConfigSystem.FolderPath) end
-end
+-- Безопасная инициализация папок
+pcall(function()
+    if typeof(makefolder) == "function" and typeof(isfolder) == "function" then
+        if not isfolder("DarkHub") then makefolder("DarkHub") end
+        if not isfolder(ConfigSystem.FolderPath) then makefolder(ConfigSystem.FolderPath) end
+    end
+end)
 
--- UI Элементы Системы Конфигураций
 local ConfigSectionHeader = Instance.new("TextLabel", SettingsPage)
 ConfigSectionHeader.Size = UDim2.new(1, -20, 0, 24)
 ConfigSectionHeader.Text = "Конфигурации"
@@ -1672,7 +1691,6 @@ local function ShowStatus(text, isError)
     end)
 end
 
--- Сбор всех данных настроек
 function ConfigSystem:GetCurrentData()
     return {
         Language = LanguageDropdown.GetValue(),
@@ -1685,7 +1703,6 @@ function ConfigSystem:GetCurrentData()
     }
 end
 
--- Применение сохранённых настроек
 function ConfigSystem:ApplyData(data)
     if type(data) ~= "table" then return end
     if data.Language then LanguageDropdown.SetValue(data.Language) end
@@ -1697,7 +1714,7 @@ function ConfigSystem:ApplyData(data)
     if data.Gradient ~= nil then GradientToggle.SetValue(data.Gradient) end
 end
 
--- Модальное окно для ввода имени или подтверждения удаления
+-- Модальное окно
 local ModalOverlay = Instance.new("Frame", DarkHub)
 ModalOverlay.Size = UDim2.new(1, 0, 1, 0)
 ModalOverlay.BackgroundColor3 = Color3.fromRGB(0, 0, 0)
@@ -1760,16 +1777,21 @@ ModalBtnCancel.TextSize = 12
 ModalBtnCancel.ZIndex = 302
 Instance.new("UICorner", ModalBtnCancel).CornerRadius = UDim.new(0, 6)
 
+local activeConfirmConnection = nil
+
 local function HideModal()
     ModalOverlay.Visible = false
     ModalTextBox.Text = ""
+    if activeConfirmConnection then
+        activeConfirmConnection:Disconnect()
+        activeConfirmConnection = nil
+    end
 end
 
 ModalBtnCancel.Activated:Connect(HideModal)
 
--- Сохранение конфига
 function ConfigSystem:SaveToFile(name)
-    if name == "" then return end
+    if not name or name == "" then return end
     local filepath = ConfigSystem.FolderPath .. "/" .. name .. ".json"
     local timeStr = os.date("%d.%m.%Y %H:%M")
     local saveData = {
@@ -1778,14 +1800,13 @@ function ConfigSystem:SaveToFile(name)
     }
     
     local success, encoded = pcall(function() return HttpService:JSONEncode(saveData) end)
-    if success and writefile then
+    if success and typeof(writefile) == "function" then
         writefile(filepath, encoded)
         ConfigSystem.CurrentLoadedConfig = name
         
-        -- Запись последнего конфига
-        if writefile then
+        pcall(function()
             writefile(ConfigSystem.LastConfigPath, HttpService:JSONEncode({Last = name}))
-        end
+        end)
         
         ShowStatus("Конфиг '" .. name .. "' сохранён!", false)
         ConfigSystem:RefreshList()
@@ -1794,13 +1815,12 @@ function ConfigSystem:SaveToFile(name)
     end
 end
 
--- Функция переименования
 function ConfigSystem:RenameConfig(oldName, newName)
-    if newName == "" or newName == oldName then return end
+    if not newName or newName == "" or newName == oldName then return end
     local oldPath = ConfigSystem.FolderPath .. "/" .. oldName .. ".json"
     local newPath = ConfigSystem.FolderPath .. "/" .. newName .. ".json"
     
-    if isfile and isfile(oldPath) and readfile and writefile and delfile then
+    if typeof(isfile) == "function" and isfile(oldPath) and typeof(readfile) == "function" and typeof(writefile) == "function" and typeof(delfile) == "function" then
         local content = readfile(oldPath)
         writefile(newPath, content)
         delfile(oldPath)
@@ -1814,21 +1834,22 @@ function ConfigSystem:RenameConfig(oldName, newName)
     end
 end
 
--- Отрисовка списка конфигов
 function ConfigSystem:RefreshList()
     for _, child in ipairs(ConfigsScrollFrame:GetChildren()) do
         if child:IsA("Frame") then child:Destroy() end
     end
     
     local files = {}
-    if listfiles and isfolder and isfolder(ConfigSystem.FolderPath) then
-        for _, file in ipairs(listfiles(ConfigSystem.FolderPath)) do
-            if string.sub(file, -5) == ".json" then
-                local fileName = string.gsub(file, "\\", "/")
-                fileName = string.match(fileName, "([^/]+)%.json$")
-                if fileName then table.insert(files, fileName) end
+    if typeof(listfiles) == "function" and typeof(isfolder) == "function" and isfolder(ConfigSystem.FolderPath) then
+        pcall(function()
+            for _, file in ipairs(listfiles(ConfigSystem.FolderPath)) do
+                if string.sub(file, -5) == ".json" then
+                    local fileName = string.gsub(file, "\\", "/")
+                    fileName = string.match(fileName, "([^/]+)%.json$")
+                    if fileName then table.insert(files, fileName) end
+                end
             end
-        end
+        end)
     end
     
     EmptyConfigLabel.Visible = (#files == 0)
@@ -1857,10 +1878,9 @@ function ConfigSystem:RefreshList()
             Instance.new("UICorner", ActiveBar).CornerRadius = UDim.new(0, 2)
         end
         
-        -- Чтение даты создания/обновления
         local timestampText = "00.00.0000 00:00"
         local filePath = ConfigSystem.FolderPath .. "/" .. configName .. ".json"
-        if isfile and isfile(filePath) and readfile then
+        if typeof(isfile) == "function" and isfile(filePath) and typeof(readfile) == "function" then
             pcall(function()
                 local data = HttpService:JSONDecode(readfile(filePath))
                 if data and data.Timestamp then timestampText = data.Timestamp end
@@ -1879,7 +1899,7 @@ function ConfigSystem:RefreshList()
         TitleBox.ClearTextOnFocus = false
         TitleBox.ZIndex = 9
         
-        TitleBox.FocusLost:Connect(function(enterPressed)
+        TitleBox.FocusLost:Connect(function()
             if TitleBox.Text ~= configName then
                 ConfigSystem:RenameConfig(configName, TitleBox.Text)
             end
@@ -1896,7 +1916,6 @@ function ConfigSystem:RefreshList()
         DateLabel.BackgroundTransparency = 1
         DateLabel.ZIndex = 9
         
-        -- Кнопки действий
         local ActionsContainer = Instance.new("Frame", Card)
         ActionsContainer.Size = UDim2.new(0, 125, 0, 28)
         ActionsContainer.Position = UDim2.new(1, -130, 0.5, -14)
@@ -1922,15 +1941,17 @@ function ConfigSystem:RefreshList()
             return btn
         end
         
-        -- Load Button
+        -- Load
         createSmallBtn("Load", Color3.fromRGB(0, 120, 215), function()
-            if readfile and isfile and isfile(filePath) then
+            if typeof(readfile) == "function" and typeof(isfile) == "function" and isfile(filePath) then
                 local success, decoded = pcall(function() return HttpService:JSONDecode(readfile(filePath)) end)
                 if success and decoded and decoded.Settings then
                     ConfigSystem:ApplyData(decoded.Settings)
                     ConfigSystem.CurrentLoadedConfig = configName
-                    if writefile then
-                        writefile(ConfigSystem.LastConfigPath, HttpService:JSONEncode({Last = configName}))
+                    if typeof(writefile) == "function" then
+                        pcall(function()
+                            writefile(ConfigSystem.LastConfigPath, HttpService:JSONEncode({Last = configName}))
+                        end)
                     end
                     ShowStatus("Конфиг '" .. configName .. "' загружен!", false)
                     ConfigSystem:RefreshList()
@@ -1938,24 +1959,27 @@ function ConfigSystem:RefreshList()
             end
         end)
         
-        -- Update Button
+        -- Update
         createSmallBtn("Upd", Color3.fromRGB(180, 130, 20), function()
             ConfigSystem:SaveToFile(configName)
-            ShowStatus("Конфиг '" .. configName .. "' обновлён!", false)
         end)
         
-        -- Delete Button
+        -- Delete
         createSmallBtn("Del", Color3.fromRGB(180, 40, 40), function()
+            if activeConfirmConnection then activeConfirmConnection:Disconnect() end
+            
             ModalTitle.Text = "Удалить конфиг?"
             ModalTextBox.Visible = false
             ModalBtnConfirm.Text = "Да"
             ModalBtnConfirm.BackgroundColor3 = Color3.fromRGB(180, 40, 40)
             ModalOverlay.Visible = true
             
-            local confirmConn
-            confirmConn = ModalBtnConfirm.Activated:Connect(function()
-                confirmConn:Disconnect()
-                if delfile and isfile and isfile(filePath) then
+            activeConfirmConnection = ModalBtnConfirm.Activated:Connect(function()
+                if activeConfirmConnection then
+                    activeConfirmConnection:Disconnect()
+                    activeConfirmConnection = nil
+                end
+                if typeof(delfile) == "function" and typeof(isfile) == "function" and isfile(filePath) then
                     delfile(filePath)
                     if ConfigSystem.CurrentLoadedConfig == configName then
                         ConfigSystem.CurrentLoadedConfig = nil
@@ -1970,8 +1994,9 @@ function ConfigSystem:RefreshList()
     end
 end
 
--- Обработка клика "Save Config"
 SaveConfigBtn.Activated:Connect(function()
+    if activeConfirmConnection then activeConfirmConnection:Disconnect() end
+    
     ModalTitle.Text = "Создать новый конфиг"
     ModalTextBox.Visible = true
     ModalTextBox.Text = ""
@@ -1979,9 +2004,11 @@ SaveConfigBtn.Activated:Connect(function()
     ModalBtnConfirm.BackgroundColor3 = Color3.fromRGB(0, 140, 90)
     ModalOverlay.Visible = true
     
-    local confirmConn
-    confirmConn = ModalBtnConfirm.Activated:Connect(function()
-        confirmConn:Disconnect()
+    activeConfirmConnection = ModalBtnConfirm.Activated:Connect(function()
+        if activeConfirmConnection then
+            activeConfirmConnection:Disconnect()
+            activeConfirmConnection = nil
+        end
         local name = ModalTextBox.Text
         if name ~= "" then
             ConfigSystem:SaveToFile(name)
@@ -1990,10 +2017,10 @@ SaveConfigBtn.Activated:Connect(function()
     end)
 end)
 
--- Авто-загрузка последнего сохранённого конфига при старте
+-- Автозагрузка
 task.spawn(function()
     ConfigSystem:RefreshList()
-    if isfile and readfile and isfile(ConfigSystem.LastConfigPath) then
+    if typeof(isfile) == "function" and typeof(readfile) == "function" and isfile(ConfigSystem.LastConfigPath) then
         pcall(function()
             local lastData = HttpService:JSONDecode(readfile(ConfigSystem.LastConfigPath))
             if lastData and lastData.Last then
@@ -2012,7 +2039,7 @@ task.spawn(function()
     end
 end)
 
--- ИНИЦИАЛИЗАЦИЯ ПЕРВОЙ ВКЛАДКИ И ТЕМЫ
+-- Инициализация первой вкладки
 SettingsPage.Visible = true
 local settingsButton = allTabButtons["Settings"]
 if settingsButton then
@@ -2023,7 +2050,7 @@ end
 Library:UpdateTheme("Deep Ocean")
 
 -- ============================================================================
--- ЭКРАН ЗАГРУЗКИ (ПРОФЕССИОНАЛЬНЫЙ И АНИМИРОВАННЫЙ)
+-- ЭКРАН ЗАГРУЗКИ
 -- ============================================================================
 local LoadingContainer = Instance.new("Frame")
 LoadingContainer.Name = "LoadingContainer"
