@@ -1,5 +1,5 @@
 -- ============================================================================
--- Pulse Hub - Settings Edition
+-- Pulse Hub - Settings Edition (Enhanced UI & Loading)
 -- ============================================================================
 
 local TweenService = game:GetService("TweenService")
@@ -88,17 +88,14 @@ end
 local function spawnWave(container, clickX, clickY)
     if not container then return end
     
-    -- Обрезаем выходящую за пределы часть волны
     container.ClipsDescendants = true
 
     local absSize = container.AbsoluteSize
     local startX = clickX or (absSize.X / 2)
     local startY = clickY or (absSize.Y / 2)
 
-    -- Расчет диаметра для полного перекрытия кнопки из любой точки нажатия
     local maxDimension = math.max(absSize.X, absSize.Y) * 2.8
 
-    -- Элемент круговой волны
     local Wave = Instance.new("Frame")
     Wave.Name = "TsunamiWave"
     Wave.Parent = container
@@ -113,7 +110,6 @@ local function spawnWave(container, clickX, clickY)
     local Corner = Instance.new("UICorner", Wave)
     Corner.CornerRadius = UDim.new(1, 0)
 
-    -- Анимация расширения и затухания (0.6 сек)
     local waveTween = TweenService:Create(Wave, TweenInfo.new(0.6, Enum.EasingStyle.Quart, Enum.EasingDirection.Out), {
         Size = UDim2.new(0, maxDimension, 0, maxDimension),
         BackgroundTransparency = 1
@@ -126,55 +122,93 @@ local function spawnWave(container, clickX, clickY)
 end
 
 -- ============================================================================
--- ЭКРАН ЗАГРУЗКИ (LOADING SCREEN)
+-- СИСТЕМА ЗАГРУЗКИ (ENHANCED LOADING SCREEN)
 -- ============================================================================
-local LoadingFrame = Instance.new("Frame", PulseHub)
+local LoadingOverlay = Instance.new("Frame", PulseHub)
+LoadingOverlay.Name = "LoadingOverlay"
+LoadingOverlay.Size = UDim2.new(1, 0, 1, 0)
+LoadingOverlay.Position = UDim2.new(0, 0, 0, 0)
+LoadingOverlay.BackgroundColor3 = Color3.fromRGB(15, 15, 15)
+LoadingOverlay.BackgroundTransparency = 0.3
+LoadingOverlay.ZIndex = 100
+
+local LoadingFrame = Instance.new("Frame", LoadingOverlay)
 LoadingFrame.Name = "LoadingFrame"
-LoadingFrame.Size = UDim2.new(0, 320, 0, 160)
+LoadingFrame.Size = UDim2.new(0, 340, 0, 170)
 LoadingFrame.Position = UDim2.new(0.5, 0, 0.5, 0)
 LoadingFrame.AnchorPoint = Vector2.new(0.5, 0.5)
-LoadingFrame.BackgroundColor3 = Color3.fromRGB(14, 14, 14)
-LoadingFrame.ZIndex = 100
+LoadingFrame.BackgroundColor3 = Color3.fromRGB(22, 22, 22)
+LoadingFrame.ZIndex = 101
 
 local LoadingCorner = Instance.new("UICorner", LoadingFrame)
 LoadingCorner.CornerRadius = UDim.new(0, 12)
 
 local LoadingStroke = Instance.new("UIStroke", LoadingFrame)
-LoadingStroke.Color = Color3.fromRGB(45, 45, 45)
+LoadingStroke.Color = Color3.fromRGB(50, 50, 50)
 LoadingStroke.Thickness = 1.5
 
 local LoadingTitle = Instance.new("TextLabel", LoadingFrame)
 LoadingTitle.Size = UDim2.new(1, 0, 0, 30)
-LoadingTitle.Position = UDim2.new(0, 0, 0, 25)
+LoadingTitle.Position = UDim2.new(0, 0, 0, 20)
 LoadingTitle.Text = "Pulse Hub"
 LoadingTitle.Font = Enum.Font.GothamBold
-LoadingTitle.TextSize = 18
+LoadingTitle.TextSize = 20
 LoadingTitle.TextColor3 = Color3.fromRGB(255, 255, 255)
 LoadingTitle.BackgroundTransparency = 1
-LoadingTitle.ZIndex = 101
-
-local LoadingStatus = Instance.new("TextLabel", LoadingFrame)
-LoadingStatus.Size = UDim2.new(1, 0, 0, 20)
-LoadingStatus.Position = UDim2.new(0, 0, 0, 60)
-LoadingStatus.Text = "Загрузка... 0%"
-LoadingStatus.Font = Enum.Font.Gotham
-LoadingStatus.TextSize = 13
-LoadingStatus.TextColor3 = Color3.fromRGB(180, 180, 180)
-LoadingStatus.BackgroundTransparency = 1
-LoadingStatus.ZIndex = 101
+LoadingTitle.ZIndex = 102
 
 local ProgressBarBg = Instance.new("Frame", LoadingFrame)
-ProgressBarBg.Size = UDim2.new(0.85, 0, 0, 10)
-ProgressBarBg.Position = UDim2.new(0.075, 0, 0, 95)
-ProgressBarBg.BackgroundColor3 = Color3.fromRGB(28, 28, 28)
-ProgressBarBg.ZIndex = 101
-Instance.new("UICorner", ProgressBarBg).CornerRadius = UDim.new(0, 5)
+ProgressBarBg.Size = UDim2.new(0.85, 0, 0, 18)
+ProgressBarBg.Position = UDim2.new(0.075, 0, 0, 68)
+ProgressBarBg.BackgroundColor3 = Color3.fromRGB(32, 32, 32)
+ProgressBarBg.ZIndex = 102
+Instance.new("UICorner", ProgressBarBg).CornerRadius = UDim.new(0, 9)
 
 local ProgressBarFill = Instance.new("Frame", ProgressBarBg)
 ProgressBarFill.Size = UDim2.new(0, 0, 1, 0)
-ProgressBarFill.BackgroundColor3 = Color3.fromRGB(0, 150, 255)
-ProgressBarFill.ZIndex = 102
-Instance.new("UICorner", ProgressBarFill).CornerRadius = UDim.new(0, 5)
+ProgressBarFill.BackgroundColor3 = Color3.fromRGB(255, 255, 255)
+ProgressBarFill.ZIndex = 103
+Instance.new("UICorner", ProgressBarFill).CornerRadius = UDim.new(0, 9)
+
+local ProgressGradient = Instance.new("UIGradient", ProgressBarFill)
+ProgressGradient.Color = ColorSequence.new({
+    ColorSequenceKeypoint.new(0, Color3.fromRGB(0, 70, 170)),
+    ColorSequenceKeypoint.new(1, Color3.fromRGB(0, 190, 255))
+})
+
+local ProgressPercentLabel = Instance.new("TextLabel", ProgressBarBg)
+ProgressPercentLabel.Size = UDim2.new(1, 0, 1, 0)
+ProgressPercentLabel.Position = UDim2.new(0, 0, 0, 0)
+ProgressPercentLabel.BackgroundTransparency = 1
+ProgressPercentLabel.Text = "0%"
+ProgressPercentLabel.Font = Enum.Font.GothamBold
+ProgressPercentLabel.TextSize = 11
+ProgressPercentLabel.TextColor3 = Color3.fromRGB(255, 255, 255)
+ProgressPercentLabel.ZIndex = 104
+
+local LoadingStatus = Instance.new("TextLabel", LoadingFrame)
+LoadingStatus.Size = UDim2.new(1, -30, 0, 22)
+LoadingStatus.Position = UDim2.new(0, 15, 0, 102)
+LoadingStatus.Text = "Инициализация..."
+LoadingStatus.Font = Enum.Font.Gotham
+LoadingStatus.TextSize = 12
+LoadingStatus.TextColor3 = Color3.fromRGB(180, 180, 180)
+LoadingStatus.BackgroundTransparency = 1
+LoadingStatus.ZIndex = 102
+
+local function updateLoadingStatus(progress)
+    if progress < 0.3 then
+        LoadingStatus.Text = "Инициализация..."
+    elseif progress < 0.6 then
+        LoadingStatus.Text = "Загрузка интерфейса..."
+    elseif progress < 0.9 then
+        LoadingStatus.Text = "Подготовка настроек..."
+    elseif progress < 1 then
+        LoadingStatus.Text = "Запуск..."
+    else
+        LoadingStatus.Text = "Готово!"
+    end
+end
 
 -- ============================================================================
 -- ОСНОВНОЙ GUI (СКРЫТ ДО ОКОНЧАНИЯ ЗАГРУЗКИ)
@@ -545,6 +579,58 @@ local allTabButtons = {}
 local allTabIcons = {}
 local allPages = {}
 
+-- ============================================================================
+-- ВЫДЕЛЕНИЕ ВКЛАДОК И ПЕРЕКЛЮЧЕНИЕ СТРАНИЦ
+-- ============================================================================
+local function highlightTab(targetKey)
+    if not targetKey or not allTabs[targetKey] then return end
+    
+    local bgL = (Library.CurrentThemeData.MainBg.R * 0.299 + Library.CurrentThemeData.MainBg.G * 0.587 + Library.CurrentThemeData.MainBg.B * 0.114)
+    local isLightMode = bgL > 0.5
+
+    for tName, tContainer in pairs(allTabs) do
+        local tBtn = allTabButtons[tName]
+        local tIcon = allTabIcons[tName]
+        local tPage = allPages[tName]
+        local tAccent = tContainer:FindFirstChild("TabAccentBar")
+
+        if tName == targetKey then
+            Library.CurrentTabKey = tName
+            TabTitle.Text = Localization[Library.CurrentLanguage][tName] or tName
+            if tPage then tPage.Visible = true end
+
+            local activeBg = isLightMode and Color3.fromRGB(220, 220, 220) or Color3.fromRGB(38, 38, 42)
+            local activeTextColor = isLightMode and Color3.fromRGB(25, 25, 25) or Color3.fromRGB(255, 255, 255)
+
+            tween(tContainer, {BackgroundColor3 = activeBg, BackgroundTransparency = 0}, 0.25)
+            tween(tBtn, {TextColor3 = activeTextColor}, 0.25)
+            tBtn.Font = Enum.Font.GothamBold
+
+            if tIcon then
+                tween(tIcon, {ImageTransparency = 0}, 0.25)
+            end
+            if tAccent then
+                tween(tAccent, {BackgroundTransparency = 0, Size = UDim2.new(0, 4, 1, 0)}, 0.25)
+            end
+        else
+            if tPage then tPage.Visible = false end
+
+            local inactiveTextColor = isLightMode and Color3.fromRGB(110, 110, 110) or Color3.fromRGB(140, 140, 140)
+
+            tween(tContainer, {BackgroundTransparency = 1}, 0.25)
+            tween(tBtn, {TextColor3 = inactiveTextColor}, 0.25)
+            tBtn.Font = Library.CurrentFont
+
+            if tIcon then
+                tween(tIcon, {ImageTransparency = 0.35}, 0.25)
+            end
+            if tAccent then
+                tween(tAccent, {BackgroundTransparency = 1, Size = UDim2.new(0, 0, 1, 0)}, 0.25)
+            end
+        end
+    end
+end
+
 function Library:UpdateTheme(themeName)
     local theme = ThemeConfig[themeName]
     if not theme then return end
@@ -563,13 +649,7 @@ function Library:UpdateTheme(themeName)
     
     for _, obj in ipairs(Library.TrackedElementBg) do
         if obj and obj.Parent then
-            if obj.Name == "TabContainer" then
-                if Library.CurrentTabKey and allTabs[Library.CurrentTabKey] == obj then
-                    tween(obj, {BackgroundColor3 = isLightMode and Color3.fromRGB(215, 215, 215) or Color3.fromRGB(35, 35, 35), BackgroundTransparency = 0})
-                else
-                    tween(obj, {BackgroundColor3 = theme.ElementBg, BackgroundTransparency = 1})
-                end
-            else
+            if obj.Name ~= "TabContainer" then
                 tween(obj, {BackgroundColor3 = theme.ElementBg})
             end
         end
@@ -592,13 +672,7 @@ function Library:UpdateTheme(themeName)
         if obj and obj.Parent then tween(obj, {TextColor3 = subTextColor}) end
     end
     
-    for tName, tBtn in pairs(allTabButtons) do
-        if tName == Library.CurrentTabKey then
-            tBtn.TextColor3 = mainTextColor
-        else
-            tBtn.TextColor3 = subTextColor
-        end
-    end
+    highlightTab(Library.CurrentTabKey)
     
     for _, data in ipairs(Library.TrackedAccents) do
         if data.Type == "Toggle" then
@@ -1243,6 +1317,17 @@ function Library:CreatePage(textKey, iconId, layoutOrder)
     Instance.new("UICorner", TabContainer).CornerRadius = UDim.new(0, 8)
     table.insert(Library.TrackedElementBg, TabContainer)
     
+    -- Тонкая цветная полоса-акцент слева активной вкладки
+    local TabAccentBar = Instance.new("Frame", TabContainer)
+    TabAccentBar.Name = "TabAccentBar"
+    TabAccentBar.Size = UDim2.new(0, 0, 1, 0)
+    TabAccentBar.Position = UDim2.new(0, 0, 0, 0)
+    TabAccentBar.BackgroundColor3 = Color3.fromRGB(0, 170, 255)
+    TabAccentBar.BackgroundTransparency = 1
+    TabAccentBar.BorderSizePixel = 0
+    TabAccentBar.ZIndex = 8
+    Instance.new("UICorner", TabAccentBar).CornerRadius = UDim.new(0, 4)
+
     local TabBtn = Instance.new("TextButton", TabContainer)
     TabBtn.Size = UDim2.new(1, 0, 1, 0)
     TabBtn.Text = initialText
@@ -1262,7 +1347,7 @@ function Library:CreatePage(textKey, iconId, layoutOrder)
         TabIcon.Position = UDim2.new(0, 10, 0.5, -12)
         TabIcon.BackgroundTransparency = 1
         if tonumber(iconId) then TabIcon.Image = "rbxthumb://type=Asset&id=" .. iconId .. "&w=150&h=150" else TabIcon.Image = iconId end
-        TabIcon.ImageTransparency = 0.25
+        TabIcon.ImageTransparency = 0.35
         TabIcon.ZIndex = 7
         allTabIcons[textKey] = TabIcon
     end
@@ -1280,24 +1365,12 @@ function Library:CreatePage(textKey, iconId, layoutOrder)
         spawnWave(TabContainer, localX, localY)
     end)
     
+    -- Переключение страниц и выделение вкладки
     TabBtn.Activated:Connect(function()
         if SearchBox.Text ~= "" then SearchBox.Text = "" end
-        local bgL = (Library.CurrentThemeData.MainBg.R * 0.299 + Library.CurrentThemeData.MainBg.G * 0.587 + Library.CurrentThemeData.MainBg.B * 0.114)
-        local isL = bgL > 0.5
-        for tName, tContainer in pairs(allTabs) do
-            tween(tContainer, {BackgroundTransparency = 1}, 0.2)
-            tween(allTabButtons[tName], {TextColor3 = isL and Color3.fromRGB(110, 110, 110) or Color3.fromRGB(140, 140, 140)}, 0.2)
-            if allTabIcons[tName] then tween(allTabIcons[tName], {ImageTransparency = 0.25}, 0.2) end
-            allPages[tName].Visible = false
-        end
-        Library.CurrentTabKey = textKey
-        TabTitle.Text = Localization[Library.CurrentLanguage][textKey] or textKey
-        PageFrame.Visible = true
-        local activeTabBg = isL and Color3.fromRGB(215, 215, 215) or Color3.fromRGB(35, 35, 35)
-        tween(TabContainer, {BackgroundColor3 = activeTabBg, BackgroundTransparency = 0}, 0.2)
-        tween(TabBtn, {TextColor3 = isL and Color3.fromRGB(35, 35, 35) or Color3.fromRGB(255, 255, 255)}, 0.2)
-        if allTabIcons[textKey] then tween(allTabIcons[textKey], {ImageTransparency = 0}, 0.2) end
+        highlightTab(textKey)
     end)
+    
     table.insert(LocaleObjects, {Object = TabBtn, Key = textKey})
     UpdateNavCanvas()
     return PageFrame
@@ -1332,6 +1405,7 @@ Library:CreateDropdown(SettingsPage, "MenuFont", FontKeys, "Gotham", function(se
         for _, obj in ipairs(Library.TrackedSubText) do
             if obj and obj.Parent then obj.Font = Library.CurrentFont end
         end
+        highlightTab(Library.CurrentTabKey)
     end
 end)
 
@@ -1355,47 +1429,65 @@ Library:CreateToggle(SettingsPage, "Gradient", false, function(state)
     toggleGradientEffect(state)
 end)
 
--- Активация вкладки Settings по умолчанию
-SettingsPage.Visible = true
-allTabs["Settings"].BackgroundTransparency = 0
-allTabs["Settings"].BackgroundColor3 = Color3.fromRGB(35, 35, 35)
-allTabButtons["Settings"].TextColor3 = Color3.fromRGB(255, 255, 255)
-if allTabIcons["Settings"] then allTabIcons["Settings"].ImageTransparency = 0 end
-
 -- Применяем стартовую тему
 Library:UpdateTheme("Deep Ocean")
 
 -- ============================================================================
--- ЗАПУСК СИСТЕМЫ ЗАГРУЗКИ (3 СЕКУНДЫ)
+-- ЗАПУСК СИСТЕМЫ ЗАГРУЗКИ (3-4 СЕКУНДЫ)
 -- ============================================================================
 task.spawn(function()
-    local loadDuration = 3
-    local startTimeLoad = os.clock()
-    
-    while os.clock() - startTimeLoad < loadDuration do
-        local elapsed = os.clock() - startTimeLoad
-        local progress = math.clamp(elapsed / loadDuration, 0, 1)
-        
-        ProgressBarFill.Size = UDim2.new(progress, 0, 1, 0)
-        LoadingStatus.Text = string.format("Загрузка... %d%%", math.floor(progress * 100))
-        
-        task.wait()
+    local totalDuration = 3.5
+    local steps = {
+        { target = 0.28, timeFrac = 0.25, style = Enum.EasingStyle.OutQuad },
+        { target = 0.58, timeFrac = 0.30, style = Enum.EasingStyle.Sine },
+        { target = 0.88, timeFrac = 0.28, style = Enum.EasingStyle.Linear },
+        { target = 1.00, timeFrac = 0.17, style = Enum.EasingStyle.Quart }
+    }
+
+    local currentProgress = 0
+
+    for _, step in ipairs(steps) do
+        local stepTime = totalDuration * step.timeFrac
+        local startProg = currentProgress
+        local endProg = step.target
+
+        local tweenInfo = TweenInfo.new(stepTime, step.style, Enum.EasingDirection.Out)
+        local fillTween = TweenService:Create(ProgressBarFill, tweenInfo, {
+            Size = UDim2.new(endProg, 0, 1, 0)
+        })
+
+        fillTween:Play()
+
+        local startTimeStep = os.clock()
+        while os.clock() - startTimeStep < stepTime do
+            local dt = os.clock() - startTimeStep
+            local alpha = math.clamp(dt / stepTime, 0, 1)
+            currentProgress = startProg + (endProg - startProg) * alpha
+            ProgressPercentLabel.Text = string.format("%d%%", math.floor(currentProgress * 100))
+            updateLoadingStatus(currentProgress)
+            task.wait()
+        end
+
+        currentProgress = endProg
+        ProgressPercentLabel.Text = string.format("%d%%", math.floor(currentProgress * 100))
+        updateLoadingStatus(currentProgress)
     end
-    
-    ProgressBarFill.Size = UDim2.new(1, 0, 1, 0)
-    LoadingStatus.Text = "Загрузка... 100%"
-    task.wait(0.2)
-    
-    -- Плавное исчезновение экрана загрузки и появление GUI
-    tween(LoadingFrame, {BackgroundTransparency = 1}, 0.3)
-    tween(LoadingTitle, {TextTransparency = 1}, 0.3)
-    tween(LoadingStatus, {TextTransparency = 1}, 0.3)
-    tween(ProgressBarBg, {BackgroundTransparency = 1}, 0.3)
-    tween(ProgressBarFill, {BackgroundTransparency = 1}, 0.3)
-    local strokeTween = tween(LoadingStroke, {Transparency = 1}, 0.3)
-    
-    strokeTween.Completed:Connect(function()
-        LoadingFrame:Destroy()
+
+    task.wait(0.3)
+
+    -- Плавное исчезновение экрана загрузки
+    tween(LoadingOverlay, {BackgroundTransparency = 1}, 0.5)
+    tween(LoadingFrame, {BackgroundTransparency = 1}, 0.5)
+    tween(LoadingTitle, {TextTransparency = 1}, 0.5)
+    tween(LoadingStatus, {TextTransparency = 1}, 0.5)
+    tween(ProgressBarBg, {BackgroundTransparency = 1}, 0.5)
+    tween(ProgressBarFill, {BackgroundTransparency = 1}, 0.5)
+    tween(ProgressPercentLabel, {TextTransparency = 1}, 0.5)
+    local fadeOut = tween(LoadingStroke, {Transparency = 1}, 0.5)
+
+    fadeOut.Completed:Connect(function()
+        LoadingOverlay:Destroy()
         MainFrame.Visible = true
+        highlightTab("Settings")
     end)
 end)
