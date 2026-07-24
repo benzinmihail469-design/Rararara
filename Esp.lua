@@ -1,5 +1,5 @@
 -- ============================================================================
--- Pulse Hub - Settings Edition (С премиальной анимацией загрузки)
+-- Dark Hub - Settings Edition (С премиальной анимацией загрузки)
 -- ============================================================================
 
 local TweenService = game:GetService("TweenService")
@@ -51,14 +51,14 @@ if not SafeParent then
     SafeParent = Players.LocalPlayer:WaitForChild("PlayerGui")
 end
 
-if SafeParent:FindFirstChild("PulseHub") then
-    SafeParent.PulseHub:Destroy()
+if SafeParent:FindFirstChild("DarkHub") then
+    SafeParent.DarkHub:Destroy()
 end
 
-local PulseHub = Instance.new("ScreenGui")
-PulseHub.Name = "PulseHub"
-PulseHub.Parent = SafeParent
-PulseHub.ZIndexBehavior = Enum.ZIndexBehavior.Sibling
+local DarkHub = Instance.new("ScreenGui")
+DarkHub.Name = "DarkHub"
+DarkHub.Parent = SafeParent
+DarkHub.ZIndexBehavior = Enum.ZIndexBehavior.Sibling
 
 local activeTweens = {}
 
@@ -125,7 +125,7 @@ end
 -- ============================================================================
 -- ОСНОВНОЙ GUI (СКРЫТ ДО ЗАВЕРШЕНИЯ ЗАГРУЗКИ)
 -- ============================================================================
-local MainFrame = Instance.new("Frame", PulseHub)
+local MainFrame = Instance.new("Frame", DarkHub)
 MainFrame.Name = "MainFrame"
 MainFrame.BackgroundColor3 = Color3.fromRGB(14, 14, 14)
 MainFrame.BackgroundTransparency = 0.15
@@ -255,7 +255,7 @@ Instance.new("UICorner", HubIcon).CornerRadius = UDim.new(0, 6)
 HubIcon.Image = "rbxthumb://type=Asset&id=" .. CustomIconID .. "&w=150&h=150"
 
 local HubTitle = Instance.new("TextLabel", HeaderBg)
-HubTitle.Text = "Pulse Hub"
+HubTitle.Text = "Dark Hub"
 HubTitle.Font = Enum.Font.GothamBold
 HubTitle.TextColor3 = Color3.fromRGB(255, 255, 255)
 HubTitle.TextSize = 13
@@ -405,7 +405,7 @@ MinBtn.Activated:Connect(ToggleMinimize)
 EmbMinBtn.Activated:Connect(ToggleMinimize)
 
 local function CloseGui()
-    PulseHub:Destroy()
+    DarkHub:Destroy()
 end
 CloseBtn.Activated:Connect(CloseGui)
 EmbCloseBtn.Activated:Connect(CloseGui)
@@ -1554,7 +1554,7 @@ LoadingContainer.Size = UDim2.new(1, 0, 1, 0)
 LoadingContainer.Position = UDim2.new(0, 0, 0, 0)
 LoadingContainer.BackgroundTransparency = 1 -- Полностью прозрачный фон
 LoadingContainer.ZIndex = 500
-LoadingContainer.Parent = PulseHub
+LoadingContainer.Parent = DarkHub
 
 -- Контейнер загрузки (Матовая плашка)
 local LoadingCard = Instance.new("Frame")
@@ -1613,7 +1613,7 @@ pulseTween:Play()
 local LoadingTitle = Instance.new("TextLabel", LoadingCard)
 LoadingTitle.Size = UDim2.new(1, 0, 0, 22)
 LoadingTitle.Position = UDim2.new(0, 0, 0, 66)
-LoadingTitle.Text = "Pulse Hub"
+LoadingTitle.Text = "Dark Hub"
 LoadingTitle.Font = Enum.Font.GothamBold
 LoadingTitle.TextSize = 18
 LoadingTitle.TextColor3 = Color3.fromRGB(255, 255, 255)
