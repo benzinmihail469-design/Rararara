@@ -1,5 +1,5 @@
 -- ============================================================================
--- Dark Hub - Settings Edition (Fixed, Optimized & Loading Screen)
+-- Dark Hub - Settings Edition (Fixed & Optimized)
 -- ============================================================================
 
 local TweenService = game:GetService("TweenService")
@@ -78,6 +78,271 @@ local DarkHub = Instance.new("ScreenGui")
 DarkHub.Name = "DarkHub"
 DarkHub.Parent = SafeParent
 DarkHub.ZIndexBehavior = Enum.ZIndexBehavior.Sibling
+
+-- === LOADING SYSTEM START ===
+local LoadingBg = Instance.new("Frame")
+LoadingBg.Name = "LoadingBg"
+LoadingBg.Size = UDim2.new(1, 0, 1, 0)
+LoadingBg.Position = UDim2.new(0, 0, 0, 0)
+LoadingBg.BackgroundColor3 = Color3.fromRGB(10, 10, 15)
+LoadingBg.BackgroundTransparency = 1
+LoadingBg.BorderSizePixel = 0
+LoadingBg.ZIndex = 100
+LoadingBg.Parent = DarkHub
+
+TweenService:Create(LoadingBg, TweenInfo.new(0.3), {BackgroundTransparency = 0.4}):Play()
+
+local LoadingContainer = Instance.new("Frame")
+LoadingContainer.Name = "LoadingContainer"
+LoadingContainer.Size = UDim2.new(0, 270, 0, 170)
+LoadingContainer.Position = UDim2.new(0.5, 0, 0.5, 0)
+LoadingContainer.AnchorPoint = Vector2.new(0.5, 0.5)
+LoadingContainer.BackgroundColor3 = Color3.fromRGB(20, 20, 28)
+LoadingContainer.BackgroundTransparency = 1
+LoadingContainer.BorderSizePixel = 0
+LoadingContainer.ZIndex = 101
+LoadingContainer.Parent = LoadingBg
+
+local ContainerCorner = Instance.new("UICorner")
+ContainerCorner.CornerRadius = UDim.new(0, 16)
+ContainerCorner.Parent = LoadingContainer
+
+local ContainerStroke = Instance.new("UIStroke")
+ContainerStroke.Color = Color3.fromRGB(255, 255, 255)
+ContainerStroke.Transparency = 1
+ContainerStroke.Thickness = 1
+ContainerStroke.Parent = LoadingContainer
+
+TweenService:Create(LoadingContainer, TweenInfo.new(0.4, Enum.EasingStyle.Quart, Enum.EasingDirection.Out), {
+    Size = UDim2.new(0, 300, 0, 190),
+    BackgroundTransparency = 0.75
+}):Play()
+TweenService:Create(ContainerStroke, TweenInfo.new(0.4), {Transparency = 0.7}):Play()
+
+local IconFrame = Instance.new("Frame")
+IconFrame.Name = "IconFrame"
+IconFrame.Size = UDim2.new(0, 40, 0, 40)
+IconFrame.Position = UDim2.new(0.5, 0, 0, 25)
+IconFrame.AnchorPoint = Vector2.new(0.5, 0)
+IconFrame.BackgroundColor3 = Color3.fromRGB(255, 255, 255)
+IconFrame.BorderSizePixel = 0
+IconFrame.ZIndex = 102
+IconFrame.Parent = LoadingContainer
+
+local IconCorner = Instance.new("UICorner")
+IconCorner.CornerRadius = UDim.new(0, 20)
+IconCorner.Parent = IconFrame
+
+local IconGradient = Instance.new("UIGradient")
+IconGradient.Color = ColorSequence.new({
+    ColorSequenceKeypoint.new(0, Color3.fromRGB(30, 60, 100)),
+    ColorSequenceKeypoint.new(1, Color3.fromRGB(70, 140, 220))
+})
+IconGradient.Parent = IconFrame
+
+local IconText = Instance.new("TextLabel")
+IconText.Name = "IconText"
+IconText.Size = UDim2.new(1, 0, 1, 0)
+IconText.BackgroundTransparency = 1
+IconText.Text = "S"
+IconText.Font = Enum.Font.GothamBold
+IconText.TextSize = 20
+IconText.TextColor3 = Color3.fromRGB(255, 255, 255)
+IconText.TextXAlignment = Enum.TextXAlignment.Center
+IconText.TextYAlignment = Enum.TextYAlignment.Center
+IconText.ZIndex = 103
+IconText.Parent = IconFrame
+
+local pulseActive = true
+task.spawn(function()
+    while pulseActive and IconFrame and IconFrame.Parent do
+        local t1 = TweenService:Create(IconFrame, TweenInfo.new(0.6, Enum.EasingStyle.Sine, Enum.EasingDirection.InOut), {Size = UDim2.new(0, 44, 0, 44)})
+        t1:Play()
+        t1.Completed:Wait()
+        if not pulseActive then break end
+        local t2 = TweenService:Create(IconFrame, TweenInfo.new(0.6, Enum.EasingStyle.Sine, Enum.EasingDirection.InOut), {Size = UDim2.new(0, 40, 0, 40)})
+        t2:Play()
+        t2.Completed:Wait()
+    end
+end)
+
+local TitleLabel = Instance.new("TextLabel")
+TitleLabel.Name = "TitleLabel"
+TitleLabel.Size = UDim2.new(1, -20, 0, 20)
+TitleLabel.Position = UDim2.new(0.5, 0, 0, 72)
+TitleLabel.AnchorPoint = Vector2.new(0.5, 0)
+TitleLabel.BackgroundTransparency = 1
+TitleLabel.Text = "Dark Hub"
+TitleLabel.Font = Enum.Font.GothamBold
+TitleLabel.TextSize = 16
+TitleLabel.TextColor3 = Color3.fromRGB(255, 255, 255)
+TitleLabel.TextXAlignment = Enum.TextXAlignment.Center
+TitleLabel.ZIndex = 102
+TitleLabel.Parent = LoadingContainer
+
+local BarBg = Instance.new("Frame")
+BarBg.Name = "BarBg"
+BarBg.Size = UDim2.new(0.8, 0, 0, 8)
+BarBg.Position = UDim2.new(0.5, 0, 0, 105)
+BarBg.AnchorPoint = Vector2.new(0.5, 0)
+BarBg.BackgroundColor3 = Color3.fromRGB(40, 40, 50)
+BarBg.BorderSizePixel = 0
+BarBg.ZIndex = 102
+BarBg.Parent = LoadingContainer
+
+local BarCorner = Instance.new("UICorner")
+BarCorner.CornerRadius = UDim.new(0, 8)
+BarCorner.Parent = BarBg
+
+local BarFill = Instance.new("Frame")
+BarFill.Name = "BarFill"
+BarFill.Size = UDim2.new(0, 0, 1, 0)
+BarFill.Position = UDim2.new(0, 0, 0, 0)
+BarFill.AnchorPoint = Vector2.new(0, 0)
+BarFill.BackgroundColor3 = Color3.fromRGB(255, 255, 255)
+BarFill.BorderSizePixel = 0
+BarFill.ZIndex = 103
+BarFill.Parent = BarBg
+
+local FillCorner = Instance.new("UICorner")
+FillCorner.CornerRadius = UDim.new(0, 8)
+FillCorner.Parent = BarFill
+
+local FillGradient = Instance.new("UIGradient")
+FillGradient.Color = ColorSequence.new({
+    ColorSequenceKeypoint.new(0, Color3.fromRGB(60, 130, 220)),
+    ColorSequenceKeypoint.new(1, Color3.fromRGB(100, 180, 255))
+})
+FillGradient.Offset = Vector2.new(0, 0)
+FillGradient.Parent = BarFill
+
+local gradientActive = true
+task.spawn(function()
+    while gradientActive and FillGradient and FillGradient.Parent do
+        FillGradient.Offset = Vector2.new(0, 0)
+        local gt = TweenService:Create(FillGradient, TweenInfo.new(1.5, Enum.EasingStyle.Linear), {Offset = Vector2.new(1, 0)})
+        gt:Play()
+        gt.Completed:Wait()
+    end
+end)
+
+local PercentLabel = Instance.new("TextLabel")
+PercentLabel.Name = "PercentLabel"
+PercentLabel.Size = UDim2.new(1, 0, 1, 0)
+PercentLabel.BackgroundTransparency = 1
+PercentLabel.Text = "0%"
+PercentLabel.Font = Enum.Font.GothamBold
+PercentLabel.TextSize = 11
+PercentLabel.TextColor3 = Color3.fromRGB(255, 255, 255)
+PercentLabel.TextXAlignment = Enum.TextXAlignment.Center
+PercentLabel.ZIndex = 104
+PercentLabel.Parent = BarBg
+
+local StatusLabel = Instance.new("TextLabel")
+StatusLabel.Name = "StatusLabel"
+StatusLabel.Size = UDim2.new(1, -20, 0, 14)
+StatusLabel.Position = UDim2.new(0.5, 0, 0, 122)
+StatusLabel.AnchorPoint = Vector2.new(0.5, 0)
+StatusLabel.BackgroundTransparency = 1
+StatusLabel.Text = "Initializing core..."
+StatusLabel.Font = Enum.Font.Gotham
+StatusLabel.TextSize = 11
+StatusLabel.TextColor3 = Color3.fromRGB(153, 154, 170)
+StatusLabel.TextXAlignment = Enum.TextXAlignment.Center
+StatusLabel.ZIndex = 102
+StatusLabel.Parent = LoadingContainer
+
+local function updateStatus(newText, isFinal)
+    local fadeOut = TweenService:Create(StatusLabel, TweenInfo.new(0.15), {TextTransparency = 1})
+    fadeOut:Play()
+    fadeOut.Completed:Wait()
+    StatusLabel.Text = newText
+    if isFinal then
+        StatusLabel.TextColor3 = Color3.fromRGB(100, 217, 138)
+    end
+    local fadeIn = TweenService:Create(StatusLabel, TweenInfo.new(0.15), {TextTransparency = 0})
+    fadeIn:Play()
+    fadeIn.Completed:Wait()
+end
+
+task.spawn(function()
+    -- Stage 1: 0 - 25%
+    local t1 = TweenService:Create(BarFill, TweenInfo.new(0.8, Enum.EasingStyle.Quad, Enum.EasingDirection.Out), {Size = UDim2.new(0.25, 0, 1, 0)})
+    t1:Play()
+    local startP, endP, dur = 0, 25, 0.8
+    local elapsed = 0
+    while elapsed < dur do
+        task.wait(0.03)
+        elapsed = elapsed + 0.03
+        local currentP = math.floor(startP + (endP - startP) * math.min(elapsed / dur, 1))
+        PercentLabel.Text = tostring(currentP) .. "%"
+    end
+    t1.Completed:Wait()
+    PercentLabel.Text = "25%"
+
+    -- Stage 2: 25 - 55%
+    updateStatus("Loading interface...", false)
+    local t2 = TweenService:Create(BarFill, TweenInfo.new(1.0, Enum.EasingStyle.Quad, Enum.EasingDirection.Out), {Size = UDim2.new(0.55, 0, 1, 0)})
+    t2:Play()
+    startP, endP, dur = 25, 55, 1.0
+    elapsed = 0
+    while elapsed < dur do
+        task.wait(0.03)
+        elapsed = elapsed + 0.03
+        local currentP = math.floor(startP + (endP - startP) * math.min(elapsed / dur, 1))
+        PercentLabel.Text = tostring(currentP) .. "%"
+    end
+    t2.Completed:Wait()
+    PercentLabel.Text = "55%"
+
+    -- Stage 3: 55 - 80%
+    updateStatus("Preparing settings...", false)
+    local t3 = TweenService:Create(BarFill, TweenInfo.new(0.9, Enum.EasingStyle.Quad, Enum.EasingDirection.Out), {Size = UDim2.new(0.80, 0, 1, 0)})
+    t3:Play()
+    startP, endP, dur = 55, 80, 0.9
+    elapsed = 0
+    while elapsed < dur do
+        task.wait(0.03)
+        elapsed = elapsed + 0.03
+        local currentP = math.floor(startP + (endP - startP) * math.min(elapsed / dur, 1))
+        PercentLabel.Text = tostring(currentP) .. "%"
+    end
+    t3.Completed:Wait()
+    PercentLabel.Text = "80%"
+
+    -- Stage 4: 80 - 100%
+    updateStatus("Finalizing...", false)
+    local t4 = TweenService:Create(BarFill, TweenInfo.new(0.7, Enum.EasingStyle.Quad, Enum.EasingDirection.Out), {Size = UDim2.new(1.0, 0, 1, 0)})
+    t4:Play()
+    startP, endP, dur = 80, 100, 0.7
+    elapsed = 0
+    while elapsed < dur do
+        task.wait(0.03)
+        elapsed = elapsed + 0.03
+        local currentP = math.floor(startP + (endP - startP) * math.min(elapsed / dur, 1))
+        PercentLabel.Text = tostring(currentP) .. "%"
+    end
+    t4.Completed:Wait()
+    PercentLabel.Text = "100%"
+    updateStatus("Ready!", true)
+
+    task.wait(0.4)
+    pulseActive = false
+    gradientActive = false
+
+    local fadeBg = TweenService:Create(LoadingBg, TweenInfo.new(0.5), {BackgroundTransparency = 1})
+    local fadeContainer = TweenService:Create(LoadingContainer, TweenInfo.new(0.5), {BackgroundTransparency = 1})
+    TweenService:Create(ContainerStroke, TweenInfo.new(0.5), {Transparency = 1}):Play()
+    fadeBg:Play()
+    fadeContainer:Play()
+    fadeContainer.Completed:Wait()
+
+    LoadingBg:Destroy()
+    if MainFrame then
+        MainFrame.Visible = true
+    end
+end)
+-- === LOADING SYSTEM END ===
 
 local activeTweens = {}
 
@@ -1668,136 +1933,8 @@ local FontDropdown = Library:CreateDropdown(SettingsPage, "MenuFont", FontKeys, 
     end
 end)
 
-local TransparencySlider = Library:CreateSlider(SettingsPage, "UITransparency", 0, 90, 15, function(val)
-    MainFrame.BackgroundTransparency = val / 100
+local TransparencySlider = Library:CreateSlider(SettingsPage, "UITransparency", 0, 90, 15, function(value)
+    if MainFrame and MainFrame.Parent then
+        MainFrame.BackgroundTransparency = value / 100
+    end
 end)
-
-local ScaleSlider = Library:CreateSlider(SettingsPage, "UISize", 80, 120, 100, function(val)
-    MainScale.Scale = val / 100
-end)
-
-local AntiAFKToggle = Library:CreateToggle(SettingsPage, "AntiAFK", true, function(state)
-    toggleAntiAFK(state)
-end)
-
-local AnimatedWindowToggle = Library:CreateToggle(SettingsPage, "AnimatedWindow", false, function(state)
-    toggleAnimatedWindow(state)
-end)
-
-local GradientToggle = Library:CreateToggle(SettingsPage, "Gradient", false, function(state)
-    toggleGradientEffect(state)
-end)
-
--- Activate default tab
-if allTabButtons["Settings"] then
-    currentActiveTab = allTabButtons["Settings"]
-    setActiveTab(currentActiveTab)
-    SettingsPage.Visible = true
-end
-
--- ============================================================================
--- NEW LOADING SCREEN BLOCK (INTRO SEQUENCE)
--- ============================================================================
-local function StartLoadingSequence()
-    local LoadingFrame = Instance.new("Frame", DarkHub)
-    LoadingFrame.Name = "LoadingFrame"
-    LoadingFrame.Size = UDim2.new(0, 320, 0, 160)
-    LoadingFrame.AnchorPoint = Vector2.new(0.5, 0.5)
-    LoadingFrame.Position = UDim2.new(0.5, 0, 0.5, 0)
-    LoadingFrame.BackgroundColor3 = Color3.fromRGB(16, 16, 20)
-    LoadingFrame.BackgroundTransparency = 0
-    LoadingFrame.ZIndex = 100
-
-    Instance.new("UICorner", LoadingFrame).CornerRadius = UDim.new(0, 14)
-    local LoadStroke = Instance.new("UIStroke", LoadingFrame)
-    LoadStroke.Color = getThemeAccent()
-    LoadStroke.Thickness = 1.5
-
-    local LoadIcon = Instance.new("ImageLabel", LoadingFrame)
-    LoadIcon.Size = UDim2.new(0, 42, 0, 42)
-    LoadIcon.Position = UDim2.new(0.5, -21, 0, 20)
-    LoadIcon.BackgroundTransparency = 1
-    LoadIcon.Image = "rbxthumb://type=Asset&id=" .. CustomIconID .. "&w=150&h=150"
-    LoadIcon.ZIndex = 101
-    Instance.new("UICorner", LoadIcon).CornerRadius = UDim.new(0, 8)
-
-    local LoadTitle = Instance.new("TextLabel", LoadingFrame)
-    LoadTitle.Size = UDim2.new(1, 0, 0, 22)
-    LoadTitle.Position = UDim2.new(0, 0, 0, 68)
-    LoadTitle.Text = "Dark Hub"
-    LoadTitle.Font = Enum.Font.GothamBold
-    LoadTitle.TextColor3 = Color3.fromRGB(255, 255, 255)
-    LoadTitle.TextSize = 16
-    LoadTitle.BackgroundTransparency = 1
-    LoadTitle.ZIndex = 101
-
-    local LoadStatus = Instance.new("TextLabel", LoadingFrame)
-    LoadStatus.Size = UDim2.new(1, 0, 0, 16)
-    LoadStatus.Position = UDim2.new(0, 0, 0, 92)
-    LoadStatus.Text = "Loading scripts..."
-    LoadStatus.Font = Enum.Font.Gotham
-    LoadStatus.TextColor3 = Color3.fromRGB(150, 150, 150)
-    LoadStatus.TextSize = 11
-    LoadStatus.BackgroundTransparency = 1
-    LoadStatus.ZIndex = 101
-
-    local BarBg = Instance.new("Frame", LoadingFrame)
-    BarBg.Size = UDim2.new(0.8, 0, 0, 6)
-    BarBg.Position = UDim2.new(0.1, 0, 0, 122)
-    BarBg.BackgroundColor3 = Color3.fromRGB(30, 30, 35)
-    BarBg.BorderSizePixel = 0
-    BarBg.ZIndex = 101
-    Instance.new("UICorner", BarBg).CornerRadius = UDim.new(1, 0)
-
-    local BarFill = Instance.new("Frame", BarBg)
-    BarFill.Size = UDim2.new(0, 0, 1, 0)
-    BarFill.BackgroundColor3 = getThemeAccent()
-    BarFill.BorderSizePixel = 0
-    BarFill.ZIndex = 102
-    Instance.new("UICorner", BarFill).CornerRadius = UDim.new(1, 0)
-
-    -- Animate Progress Bar
-    local steps = {
-        {progress = 0.3, text = "Initializing GUI..."},
-        {progress = 0.65, text = "Applying themes..."},
-        {progress = 0.9, text = "Loading configurations..."},
-        {progress = 1.0, text = "Ready!"}
-    }
-
-    task.spawn(function()
-        for _, step in ipairs(steps) do
-            LoadStatus.Text = step.text
-            local barTween = tween(BarFill, {Size = UDim2.new(step.progress, 0, 1, 0)}, 0.35)
-            if barTween then barTween.Completed:Wait() end
-            task.wait(0.15)
-        end
-
-        task.wait(0.2)
-        -- Fade Out Loading Screen
-        tween(LoadingFrame, {BackgroundTransparency = 1}, 0.3)
-        for _, child in ipairs(LoadingFrame:GetDescendants()) do
-            if child:IsA("TextLabel") then
-                tween(child, {TextTransparency = 1}, 0.3)
-            elseif child:IsA("ImageLabel") then
-                tween(child, {ImageTransparency = 1}, 0.3)
-            elseif child:IsA("Frame") then
-                tween(child, {BackgroundTransparency = 1}, 0.3)
-            elseif child:IsA("UIStroke") then
-                tween(child, {Transparency = 1}, 0.3)
-            end
-        end
-
-        task.wait(0.35)
-        LoadingFrame:Destroy()
-
-        -- Show Main Frame with Pop Animation
-        MainFrame.Visible = true
-        MainScale.Scale = 0.8
-        MainFrame.BackgroundTransparency = 1
-        tween(MainScale, {Scale = 1}, 0.35)
-        tween(MainFrame, {BackgroundTransparency = 0.15}, 0.35)
-    end)
-end
-
--- Launch Intro Block
-StartLoadingSequence()
