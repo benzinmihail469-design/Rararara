@@ -10,7 +10,7 @@ local Players = game:GetService("Players")
 local VirtualUser = game:GetService("VirtualUser")
 local HttpService = game:GetService("HttpService")
 
--- Ожидаем загрузки локального игрока
+-- Wait for LocalPlayer
 local LocalPlayer = Players.LocalPlayer
 while not LocalPlayer do
     task.wait()
@@ -48,7 +48,7 @@ end
 
 toggleAntiAFK(true)
 
--- Безопасный выбор родительского объекта GUI
+-- Safe GUI Parent Resolution
 local SafeParent = nil
 if typeof(gethui) == "function" then
     pcall(function() SafeParent = gethui() end)
@@ -153,7 +153,7 @@ local function spawnWave(container, clickX, clickY)
 end
 
 -- ============================================================================
--- ОСНОВНОЙ GUI
+-- MAIN GUI FRAMEWORK
 -- ============================================================================
 local MainFrame = Instance.new("Frame", DarkHub)
 MainFrame.Name = "MainFrame"
@@ -481,7 +481,7 @@ UserInputService.InputChanged:Connect(function(input)
 end)
 
 -- ============================================================================
--- UI БИБЛИОТЕКА И ТЕМЫ
+-- UI LIBRARY & THEMES
 -- ============================================================================
 local Library = {}
 Library.CurrentFont = Enum.Font.Gotham
@@ -1013,7 +1013,7 @@ local FontMapping = {
 }
 
 -- ============================================================================
--- ЭЛЕМЕНТЫ УПРАВЛЕНИЯ (DROPDOWN, BUTTON, TOGGLE, SLIDER)
+-- INTERFACE CONTROLS (DROPDOWN, BUTTON, TOGGLE, SLIDER)
 -- ============================================================================
 function Library:CreateDropdown(parentPage, textKey, options, default, callback)
     local initialText = Localization[Library.CurrentLanguage][textKey] or textKey
@@ -1070,7 +1070,7 @@ function Library:CreateDropdown(parentPage, textKey, options, default, callback)
     local Arrow = Instance.new("TextLabel", HeaderBtn)
     Arrow.Name = "Arrow"
     Arrow.Size = UDim2.new(0, 20, 1, 0)
-    Arrow.Text = "▼"
+    Arrow.Text = "v"
     Arrow.Font = Enum.Font.GothamBold
     Arrow.TextColor3 = Color3.fromRGB(150, 150, 150)
     Arrow.TextSize = 10
@@ -1214,7 +1214,7 @@ function Library:CreateDropdown(parentPage, textKey, options, default, callback)
             local Checkmark = Instance.new("TextLabel", OptBtn)
             Checkmark.Size = UDim2.new(0, 20, 1, 0)
             Checkmark.Position = UDim2.new(1, -30, 0, 0)
-            Checkmark.Text = "✓"
+            Checkmark.Text = "o"
             Checkmark.Font = Enum.Font.GothamBold
             Checkmark.TextColor3 = accent
             Checkmark.TextSize = 12
@@ -1640,7 +1640,7 @@ function Library:CreatePage(textKey, iconId, layoutOrder)
 end
 
 -- ============================================================================
--- ВКЛАДКА "SETTINGS" + СИСТЕМА КОНФИГУРАЦИЙ
+-- SETTINGS TAB & CONFIGURATION SYSTEM
 -- ============================================================================
 local SettingsPage = Library:CreatePage("Settings", "117996761927034", 1)
 
@@ -1687,105 +1687,83 @@ local GradientToggle = Library:CreateToggle(SettingsPage, "Gradient", false, fun
 end)
 
 -- ----------------------------------------------------------------------------
--- МОДУЛЬ КОНФИГУРАЦИЙ (С ЗАЩИЩЕННЫМИ ФАЙЛОВЫМИ ОПЕРАЦИЯМИ)
+-- CONFIGURATION SYSTEM MODULE
 -- ----------------------------------------------------------------------------
-local ConfigSystem = {}
-ConfigSystem.FolderPath = "DarkHub/Configs"
-ConfigSystem.LastConfigPath = "DarkHub/LastConfig.json"
-ConfigSystem.CurrentLoadedConfig = nil
+local CONFIG_FOLDER = "DarkHub/Configs"
+local activeConfigName = nil
 
 pcall(function()
     if typeof(makefolder) == "function" and typeof(isfolder) == "function" then
         if not isfolder("DarkHub") then makefolder("DarkHub") end
-        if not isfolder(ConfigSystem.FolderPath) then makefolder(ConfigSystem.FolderPath) end
+        if not isfolder(CONFIG_FOLDER) then makefolder(CONFIG_FOLDER) end
     end
 end)
 
-local ConfigSectionHeader = Instance.new("TextLabel", SettingsPage)
-ConfigSectionHeader.Size = UDim2.new(1, -20, 0, 24)
-ConfigSectionHeader.Text = "Конфигурации"
-ConfigSectionHeader.Font = Enum.Font.GothamBold
-ConfigSectionHeader.TextColor3 = Color3.fromRGB(255, 255, 255)
-ConfigSectionHeader.TextSize = 15
-ConfigSectionHeader.TextXAlignment = Enum.TextXAlignment.Left
-ConfigSectionHeader.BackgroundTransparency = 1
-ConfigSectionHeader.LayoutOrder = 100
-table.insert(Library.TrackedMainText, ConfigSectionHeader)
-
-local ConfigDivider = Instance.new("Frame", SettingsPage)
-ConfigDivider.Size = UDim2.new(1, -20, 0, 1)
-ConfigDivider.BackgroundColor3 = Color3.fromRGB(45, 45, 45)
-ConfigDivider.BorderSizePixel = 0
-ConfigDivider.LayoutOrder = 101
-table.insert(Library.TrackedStrokes, ConfigDivider)
-
-local ConfigsScrollFrame = Instance.new("ScrollingFrame", SettingsPage)
-ConfigsScrollFrame.Size = UDim2.new(1, -20, 0, 170)
-ConfigsScrollFrame.BackgroundColor3 = Color3.fromRGB(18, 18, 18)
-ConfigsScrollFrame.BackgroundTransparency = 0.5
-ConfigsScrollFrame.ScrollBarThickness = 3
-ConfigsScrollFrame.ScrollBarImageColor3 = getThemeAccent()
-ConfigsScrollFrame.BorderSizePixel = 0
-ConfigsScrollFrame.LayoutOrder = 102
-Instance.new("UICorner", ConfigsScrollFrame).CornerRadius = UDim.new(0, 8)
-local ConfigsScrollStroke = Instance.new("UIStroke", ConfigsScrollFrame)
-ConfigsScrollStroke.Color = Color3.fromRGB(40, 40, 40)
-table.insert(Library.TrackedStrokes, ConfigsScrollStroke)
-
-local ConfigListLayout = Instance.new("UIListLayout", ConfigsScrollFrame)
-ConfigListLayout.Padding = UDim.new(0, 6)
-ConfigListLayout.HorizontalAlignment = Enum.HorizontalAlignment.Center
-ConfigListLayout.SortOrder = Enum.SortOrder.LayoutOrder
-
-local ConfigListPadding = Instance.new("UIPadding", ConfigsScrollFrame)
-ConfigListPadding.PaddingTop = UDim.new(0, 6)
-ConfigListPadding.PaddingBottom = UDim.new(0, 6)
-
-ConfigListLayout:GetPropertyChangedSignal("AbsoluteContentSize"):Connect(function()
-    if ConfigsScrollFrame and ConfigsScrollFrame.Parent then
-        ConfigsScrollFrame.CanvasSize = UDim2.new(0, 0, 0, ConfigListLayout.AbsoluteContentSize.Y + 12)
+-- Toast notification
+local activeToast = nil
+local function showToast(message, dotColor)
+    if activeToast and activeToast.Parent then
+        activeToast:Destroy()
+        activeToast = nil
     end
-end)
 
-local EmptyConfigLabel = Instance.new("TextLabel", ConfigsScrollFrame)
-EmptyConfigLabel.Size = UDim2.new(1, 0, 1, 0)
-EmptyConfigLabel.Text = "Нет сохранённых конфигов"
-EmptyConfigLabel.Font = Enum.Font.Gotham
-EmptyConfigLabel.TextColor3 = Color3.fromRGB(120, 120, 120)
-EmptyConfigLabel.TextSize = 12
-EmptyConfigLabel.BackgroundTransparency = 1
-EmptyConfigLabel.Visible = false
+    local toast = Instance.new("Frame", DarkHub)
+    activeToast = toast
+    toast.Name = "ToastNotification"
+    toast.Size = UDim2.new(0, 0, 0, 30)
+    toast.Position = UDim2.new(0.5, 0, 1, 20)
+    toast.AnchorPoint = Vector2.new(0.5, 1)
+    toast.BackgroundColor3 = Color3.fromRGB(42, 42, 56)
+    toast.ZIndex = 400
+    toast.AutomaticSize = Enum.AutomaticSize.X
+    Instance.new("UICorner", toast).CornerRadius = UDim.new(0, 6)
 
-local SaveConfigBtn = Instance.new("TextButton", SettingsPage)
-SaveConfigBtn.Size = UDim2.new(1, -20, 0, 34)
-SaveConfigBtn.BackgroundColor3 = Color3.fromRGB(30, 140, 90)
-SaveConfigBtn.Text = "Save Config"
-SaveConfigBtn.Font = Enum.Font.GothamBold
-SaveConfigBtn.TextColor3 = Color3.fromRGB(255, 255, 255)
-SaveConfigBtn.TextSize = 13
-SaveConfigBtn.LayoutOrder = 103
-SaveConfigBtn.ClipsDescendants = true
-Instance.new("UICorner", SaveConfigBtn).CornerRadius = UDim.new(0, 6)
+    local toastPadding = Instance.new("UIPadding", toast)
+    toastPadding.PaddingLeft = UDim.new(0, 12)
+    toastPadding.PaddingRight = UDim.new(0, 14)
 
-local StatusLabel = Instance.new("TextLabel", SettingsPage)
-StatusLabel.Size = UDim2.new(1, -20, 0, 18)
-StatusLabel.Text = ""
-StatusLabel.Font = Enum.Font.Gotham
-StatusLabel.TextColor3 = Color3.fromRGB(100, 220, 140)
-StatusLabel.TextSize = 11
-StatusLabel.BackgroundTransparency = 1
-StatusLabel.LayoutOrder = 104
+    local layout = Instance.new("UIListLayout", toast)
+    layout.FillDirection = Enum.FillDirection.Horizontal
+    layout.VerticalAlignment = Enum.VerticalAlignment.Center
+    layout.Padding = UDim.new(0, 8)
 
-local function ShowStatus(text, isError)
-    if not StatusLabel or not StatusLabel.Parent then return end
-    StatusLabel.Text = text
-    StatusLabel.TextColor3 = isError and Color3.fromRGB(255, 90, 90) or Color3.fromRGB(100, 220, 140)
-    task.delay(4, function()
-        if StatusLabel and StatusLabel.Parent and StatusLabel.Text == text then StatusLabel.Text = "" end
+    local dot = Instance.new("Frame", toast)
+    dot.Size = UDim2.new(0, 6, 0, 6)
+    dot.BackgroundColor3 = dotColor or Color3.fromRGB(74, 144, 217)
+    dot.BorderSizePixel = 0
+    dot.ZIndex = 401
+    Instance.new("UICorner", dot).CornerRadius = UDim.new(1, 0)
+
+    local label = Instance.new("TextLabel", toast)
+    label.AutomaticSize = Enum.AutomaticSize.X
+    label.Size = UDim2.new(0, 0, 1, 0)
+    label.Text = message
+    label.Font = Enum.Font.Gotham
+    label.TextSize = 12
+    label.TextColor3 = Color3.fromRGB(255, 255, 255)
+    label.BackgroundTransparency = 1
+    label.ZIndex = 401
+
+    tween(toast, {Position = UDim2.new(0.5, 0, 1, -30)}, 0.25)
+
+    task.delay(1.5, function()
+        if toast and toast.Parent then
+            local t = tween(toast, {Position = UDim2.new(0.5, 0, 1, 20)}, 0.25)
+            if t then
+                t.Completed:Connect(function()
+                    if toast and toast.Parent then
+                        toast:Destroy()
+                    end
+                end)
+            else
+                toast:Destroy()
+            end
+        end
     end)
 end
 
-function ConfigSystem:GetCurrentData()
+-- Collect settings
+local function collectSettings()
     return {
         Language = LanguageDropdown.GetValue(),
         Theme = ThemeDropdown.GetValue(),
@@ -1797,148 +1775,413 @@ function ConfigSystem:GetCurrentData()
     }
 end
 
-function ConfigSystem:ApplyData(data)
+-- Apply settings
+local function applySettings(data)
     if type(data) ~= "table" then return end
-    if data.Language then LanguageDropdown.SetValue(data.Language) end
-    if data.Theme then ThemeDropdown.SetValue(data.Theme) end
-    if data.Font then FontDropdown.SetValue(data.Font) end
+    if data.Language ~= nil then LanguageDropdown.SetValue(data.Language) end
+    if data.Theme ~= nil then ThemeDropdown.SetValue(data.Theme) end
+    if data.Font ~= nil then FontDropdown.SetValue(data.Font) end
     if data.Transparency ~= nil then TransparencySlider.SetValue(data.Transparency) end
     if data.AntiAFK ~= nil then AntiAFKToggle.SetValue(data.AntiAFK) end
     if data.AnimatedWindow ~= nil then AnimatedWindowToggle.SetValue(data.AnimatedWindow) end
     if data.Gradient ~= nil then GradientToggle.SetValue(data.Gradient) end
 end
 
--- Модальное окно
-local ModalOverlay = Instance.new("Frame", DarkHub)
-ModalOverlay.Size = UDim2.new(1, 0, 1, 0)
-ModalOverlay.BackgroundColor3 = Color3.fromRGB(0, 0, 0)
-ModalOverlay.BackgroundTransparency = 0.6
-ModalOverlay.Visible = false
-ModalOverlay.ZIndex = 300
+-- Config UI
+local ConfigHeaderContainer = Instance.new("Frame", SettingsPage)
+ConfigHeaderContainer.Size = UDim2.new(1, -20, 0, 30)
+ConfigHeaderContainer.BackgroundTransparency = 1
+ConfigHeaderContainer.LayoutOrder = 100
 
-local ModalCard = Instance.new("Frame", ModalOverlay)
-ModalCard.Size = UDim2.new(0, 280, 0, 140)
-ModalCard.Position = UDim2.new(0.5, 0, 0.5, 0)
-ModalCard.AnchorPoint = Vector2.new(0.5, 0.5)
-ModalCard.BackgroundColor3 = Color3.fromRGB(22, 22, 28)
-ModalCard.ZIndex = 301
-Instance.new("UICorner", ModalCard).CornerRadius = UDim.new(0, 10)
-local ModalStroke = Instance.new("UIStroke", ModalCard)
-ModalStroke.Color = Color3.fromRGB(50, 50, 60)
+local ConfigSectionHeader = Instance.new("TextLabel", ConfigHeaderContainer)
+ConfigSectionHeader.Size = UDim2.new(1, 0, 0, 20)
+ConfigSectionHeader.Position = UDim2.new(0, 0, 0, 10)
+ConfigSectionHeader.Text = "Configurations"
+ConfigSectionHeader.Font = Enum.Font.GothamBold
+ConfigSectionHeader.TextColor3 = Color3.fromRGB(255, 255, 255)
+ConfigSectionHeader.TextSize = 14
+ConfigSectionHeader.TextXAlignment = Enum.TextXAlignment.Left
+ConfigSectionHeader.BackgroundTransparency = 1
 
-local ModalTitle = Instance.new("TextLabel", ModalCard)
-ModalTitle.Size = UDim2.new(1, -20, 0, 30)
-ModalTitle.Position = UDim2.new(0, 10, 0, 10)
-ModalTitle.Text = "Сохранить конфиг"
-ModalTitle.Font = Enum.Font.GothamBold
-ModalTitle.TextColor3 = Color3.fromRGB(255, 255, 255)
-ModalTitle.TextSize = 14
-ModalTitle.BackgroundTransparency = 1
-ModalTitle.ZIndex = 302
+local ConfigDivider = Instance.new("Frame", SettingsPage)
+ConfigDivider.Size = UDim2.new(1, -40, 0, 1)
+ConfigDivider.BackgroundColor3 = Color3.fromRGB(42, 42, 53)
+ConfigDivider.BorderSizePixel = 0
+ConfigDivider.LayoutOrder = 101
 
-local ModalTextBox = Instance.new("TextBox", ModalCard)
-ModalTextBox.Size = UDim2.new(1, -20, 0, 32)
-ModalTextBox.Position = UDim2.new(0, 10, 0, 48)
-ModalTextBox.BackgroundColor3 = Color3.fromRGB(14, 14, 18)
-ModalTextBox.PlaceholderText = "Введите имя конфига..."
-ModalTextBox.Text = ""
-ModalTextBox.Font = Enum.Font.Gotham
-ModalTextBox.TextColor3 = Color3.fromRGB(240, 240, 240)
-ModalTextBox.PlaceholderColor3 = Color3.fromRGB(120, 120, 120)
-ModalTextBox.TextSize = 12
-ModalTextBox.ZIndex = 302
-Instance.new("UICorner", ModalTextBox).CornerRadius = UDim.new(0, 6)
+local ConfigsScrollFrame = Instance.new("ScrollingFrame", SettingsPage)
+ConfigsScrollFrame.Size = UDim2.new(1, -20, 0, 160)
+ConfigsScrollFrame.BackgroundTransparency = 1
+ConfigsScrollFrame.ScrollBarThickness = 2
+ConfigsScrollFrame.ScrollBarImageColor3 = Color3.fromRGB(74, 144, 217)
+ConfigsScrollFrame.BorderSizePixel = 0
+ConfigsScrollFrame.LayoutOrder = 102
 
-local ModalBtnConfirm = Instance.new("TextButton", ModalCard)
-ModalBtnConfirm.Size = UDim2.new(0.45, -5, 0, 30)
-ModalBtnConfirm.Position = UDim2.new(0, 10, 1, -40)
-ModalBtnConfirm.BackgroundColor3 = Color3.fromRGB(0, 140, 90)
-ModalBtnConfirm.Text = "Сохранить"
-ModalBtnConfirm.Font = Enum.Font.GothamBold
-ModalBtnConfirm.TextColor3 = Color3.fromRGB(255, 255, 255)
-ModalBtnConfirm.TextSize = 12
-ModalBtnConfirm.ZIndex = 302
-Instance.new("UICorner", ModalBtnConfirm).CornerRadius = UDim.new(0, 6)
+local ConfigListLayout = Instance.new("UIListLayout", ConfigsScrollFrame)
+ConfigListLayout.Padding = UDim.new(0, 6)
+ConfigListLayout.HorizontalAlignment = Enum.HorizontalAlignment.Center
+ConfigListLayout.SortOrder = Enum.SortOrder.LayoutOrder
 
-local ModalBtnCancel = Instance.new("TextButton", ModalCard)
-ModalBtnCancel.Size = UDim2.new(0.45, -5, 0, 30)
-ModalBtnCancel.Position = UDim2.new(0.55, -5, 1, -40)
-ModalBtnCancel.BackgroundColor3 = Color3.fromRGB(60, 60, 70)
-ModalBtnCancel.Text = "Отмена"
-ModalBtnCancel.Font = Enum.Font.Gotham
-ModalBtnCancel.TextColor3 = Color3.fromRGB(220, 220, 220)
-ModalBtnCancel.TextSize = 12
-ModalBtnCancel.ZIndex = 302
-Instance.new("UICorner", ModalBtnCancel).CornerRadius = UDim.new(0, 6)
-
-local activeConfirmConnection = nil
-
-local function HideModal()
-    ModalOverlay.Visible = false
-    ModalTextBox.Text = ""
-    if activeConfirmConnection then
-        activeConfirmConnection:Disconnect()
-        activeConfirmConnection = nil
+ConfigListLayout:GetPropertyChangedSignal("AbsoluteContentSize"):Connect(function()
+    if ConfigsScrollFrame and ConfigsScrollFrame.Parent then
+        ConfigsScrollFrame.CanvasSize = UDim2.new(0, 0, 0, ConfigListLayout.AbsoluteContentSize.Y + 10)
     end
-end
+end)
 
-ModalBtnCancel.Activated:Connect(HideModal)
+local EmptyConfigLabel = Instance.new("TextLabel", ConfigsScrollFrame)
+EmptyConfigLabel.Size = UDim2.new(1, 0, 1, 0)
+EmptyConfigLabel.Text = "No configurations saved"
+EmptyConfigLabel.Font = Enum.Font.Gotham
+EmptyConfigLabel.TextColor3 = Color3.fromRGB(85, 85, 102)
+EmptyConfigLabel.TextSize = 12
+EmptyConfigLabel.BackgroundTransparency = 1
+EmptyConfigLabel.Visible = false
 
-function ConfigSystem:SaveToFile(name)
+local NewConfigBtn = Instance.new("TextButton", SettingsPage)
+NewConfigBtn.Size = UDim2.new(1, -20, 0, 34)
+NewConfigBtn.BackgroundColor3 = Color3.fromRGB(74, 144, 217)
+NewConfigBtn.BackgroundTransparency = 1
+NewConfigBtn.Text = "+ New Config"
+NewConfigBtn.Font = Enum.Font.GothamMedium
+NewConfigBtn.TextColor3 = Color3.fromRGB(74, 144, 217)
+NewConfigBtn.TextSize = 12
+NewConfigBtn.LayoutOrder = 103
+NewConfigBtn.ClipsDescendants = true
+Instance.new("UICorner", NewConfigBtn).CornerRadius = UDim.new(0, 6)
+
+local NewConfigStroke = Instance.new("UIStroke", NewConfigBtn)
+NewConfigStroke.Color = Color3.fromRGB(74, 144, 217)
+NewConfigStroke.Thickness = 1
+
+NewConfigBtn.MouseEnter:Connect(function()
+    tween(NewConfigBtn, {BackgroundTransparency = 0.85, TextColor3 = Color3.fromRGB(255, 255, 255)}, 0.2)
+end)
+NewConfigBtn.MouseLeave:Connect(function()
+    tween(NewConfigBtn, {BackgroundTransparency = 1, TextColor3 = Color3.fromRGB(74, 144, 217)}, 0.2)
+end)
+
+-- Forward declarations for list refresh & modals
+local refreshConfigList
+local showCreateOrEditModal
+local showDeleteModal
+
+-- Save config
+local function saveConfig(name)
     if not name or name == "" then return end
-    local filepath = ConfigSystem.FolderPath .. "/" .. name .. ".json"
-    local timeStr = os.date("%d.%m.%Y %H:%M")
+    local filePath = CONFIG_FOLDER .. "/" .. name .. ".json"
+    local isUpdate = false
+
+    pcall(function()
+        if typeof(isfile) == "function" and isfile(filePath) then
+            isUpdate = true
+        end
+    end)
+
+    local timeStr = os.date("%b %d, %Y %H:%M")
     local saveData = {
-        Timestamp = timeStr,
-        Settings = ConfigSystem:GetCurrentData()
+        Created = timeStr,
+        Settings = collectSettings()
     }
-    
+
     local success, encoded = pcall(function() return HttpService:JSONEncode(saveData) end)
     if success and typeof(writefile) == "function" then
         pcall(function()
-            writefile(filepath, encoded)
-            ConfigSystem.CurrentLoadedConfig = name
-            writefile(ConfigSystem.LastConfigPath, HttpService:JSONEncode({Last = name}))
+            writefile(filePath, encoded)
         end)
-        
-        ShowStatus("Конфиг '" .. name .. "' сохранён!", false)
-        ConfigSystem:RefreshList()
-    else
-        ShowStatus("Ошибка при сохранении конфига", true)
+
+        activeConfigName = name
+        refreshConfigList()
+
+        if isUpdate then
+            showToast("Config '" .. name .. "' updated!", Color3.fromRGB(74, 144, 217))
+        else
+            showToast("Config '" .. name .. "' saved!", Color3.fromRGB(74, 144, 217))
+        end
     end
 end
 
-function ConfigSystem:RenameConfig(oldName, newName)
-    if not newName or newName == "" or newName == oldName then return end
-    local oldPath = ConfigSystem.FolderPath .. "/" .. oldName .. ".json"
-    local newPath = ConfigSystem.FolderPath .. "/" .. newName .. ".json"
-    
+-- Load config
+local function loadConfig(name)
+    if not name or name == "" then return end
+    local filePath = CONFIG_FOLDER .. "/" .. name .. ".json"
+
     pcall(function()
-        if typeof(isfile) == "function" and isfile(oldPath) and typeof(readfile) == "function" and typeof(writefile) == "function" and typeof(delfile) == "function" then
-            local content = readfile(oldPath)
-            writefile(newPath, content)
-            delfile(oldPath)
-            
-            if ConfigSystem.CurrentLoadedConfig == oldName then
-                ConfigSystem.CurrentLoadedConfig = newName
-                writefile(ConfigSystem.LastConfigPath, HttpService:JSONEncode({Last = newName}))
+        if typeof(readfile) == "function" and typeof(isfile) == "function" and isfile(filePath) then
+            local success, decoded = pcall(function() return HttpService:JSONDecode(readfile(filePath)) end)
+            if success and decoded and decoded.Settings then
+                applySettings(decoded.Settings)
+                activeConfigName = name
+                refreshConfigList()
+                showToast("Config '" .. name .. "' loaded!", Color3.fromRGB(85, 224, 133))
             end
-            ShowStatus("Конфиг переименован в '" .. newName .. "'", false)
-            ConfigSystem:RefreshList()
         end
     end)
 end
 
-function ConfigSystem:RefreshList()
+-- Delete config
+local function deleteConfig(name)
+    if not name or name == "" then return end
+    local filePath = CONFIG_FOLDER .. "/" .. name .. ".json"
+
+    pcall(function()
+        if typeof(delfile) == "function" and typeof(isfile) == "function" and isfile(filePath) then
+            delfile(filePath)
+            if activeConfigName == name then
+                activeConfigName = nil
+            end
+            refreshConfigList()
+            showToast("Config '" .. name .. "' deleted!", Color3.fromRGB(224, 85, 85))
+        end
+    end)
+end
+
+-- Rename config
+local function renameConfig(oldName, newName)
+    if not oldName or not newName or newName == "" or oldName == newName then return end
+    local oldPath = CONFIG_FOLDER .. "/" .. oldName .. ".json"
+    local newPath = CONFIG_FOLDER .. "/" .. newName .. ".json"
+
+    pcall(function()
+        if typeof(isfile) == "function" and isfile(oldPath) and typeof(readfile) == "function" and typeof(writefile) == "function" and typeof(delfile) == "function" then
+            local content = readfile(oldPath)
+            local success, decoded = pcall(function() return HttpService:JSONDecode(content) end)
+            if success and decoded then
+                writefile(newPath, HttpService:JSONEncode(decoded))
+                delfile(oldPath)
+
+                if activeConfigName == oldName then
+                    activeConfigName = newName
+                end
+                refreshConfigList()
+                showToast("Config '" .. newName .. "' updated!", Color3.fromRGB(74, 144, 217))
+            end
+        end
+    end)
+end
+
+-- Modal Creation/Editing Window
+function showCreateOrEditModal(existingName)
+    local isEdit = (existingName ~= nil)
+    local modalOverlay = Instance.new("Frame", DarkHub)
+    modalOverlay.Size = UDim2.new(1, 0, 1, 0)
+    modalOverlay.BackgroundColor3 = Color3.fromRGB(0, 0, 0)
+    modalOverlay.BackgroundTransparency = 1
+    modalOverlay.ZIndex = 300
+
+    local modalFrame = Instance.new("Frame", modalOverlay)
+    modalFrame.Size = UDim2.new(0, 280, 0, 150)
+    modalFrame.Position = UDim2.new(0.5, 0, 0.5, 0)
+    modalFrame.AnchorPoint = Vector2.new(0.5, 0.5)
+    modalFrame.BackgroundColor3 = Color3.fromRGB(30, 30, 40)
+    modalFrame.ZIndex = 301
+    Instance.new("UICorner", modalFrame).CornerRadius = UDim.new(0, 12)
+    local frameStroke = Instance.new("UIStroke", modalFrame)
+    frameStroke.Color = Color3.fromRGB(51, 51, 68)
+    frameStroke.Thickness = 1
+
+    local modalScale = Instance.new("UIScale", modalFrame)
+    modalScale.Scale = 0.9
+
+    local modalTitle = Instance.new("TextLabel", modalFrame)
+    modalTitle.Size = UDim2.new(1, -24, 0, 22)
+    modalTitle.Position = UDim2.new(0, 12, 0, 12)
+    modalTitle.Text = isEdit and "Edit Config" or "New Config"
+    modalTitle.Font = Enum.Font.GothamBold
+    modalTitle.TextSize = 14
+    modalTitle.TextColor3 = Color3.fromRGB(255, 255, 255)
+    modalTitle.TextXAlignment = Enum.TextXAlignment.Left
+    modalTitle.BackgroundTransparency = 1
+    modalTitle.ZIndex = 302
+
+    local nameBox = Instance.new("TextBox", modalFrame)
+    nameBox.Size = UDim2.new(1, -24, 0, 34)
+    nameBox.Position = UDim2.new(0, 12, 0, 42)
+    nameBox.BackgroundColor3 = Color3.fromRGB(21, 21, 28)
+    nameBox.Text = existingName or ""
+    nameBox.PlaceholderText = "Config name..."
+    nameBox.Font = Enum.Font.Gotham
+    nameBox.TextSize = 12
+    nameBox.TextColor3 = Color3.fromRGB(255, 255, 255)
+    nameBox.PlaceholderColor3 = Color3.fromRGB(136, 136, 153)
+    nameBox.TextXAlignment = Enum.TextXAlignment.Left
+    nameBox.ClearTextOnFocus = false
+    nameBox.ZIndex = 302
+    Instance.new("UICorner", nameBox).CornerRadius = UDim.new(0, 6)
+    
+    local boxPadding = Instance.new("UIPadding", nameBox)
+    boxPadding.PaddingLeft = UDim.new(0, 10)
+    boxPadding.PaddingRight = UDim.new(0, 10)
+
+    local boxStroke = Instance.new("UIStroke", nameBox)
+    boxStroke.Color = Color3.fromRGB(42, 42, 53)
+    boxStroke.Thickness = 1
+
+    local errorLabel = Instance.new("TextLabel", modalFrame)
+    errorLabel.Size = UDim2.new(1, -24, 0, 14)
+    errorLabel.Position = UDim2.new(0, 12, 0, 80)
+    errorLabel.Text = "Name cannot be empty"
+    errorLabel.Font = Enum.Font.Gotham
+    errorLabel.TextSize = 10
+    errorLabel.TextColor3 = Color3.fromRGB(224, 85, 85)
+    errorLabel.TextXAlignment = Enum.TextXAlignment.Left
+    errorLabel.BackgroundTransparency = 1
+    errorLabel.Visible = false
+    errorLabel.ZIndex = 302
+
+    local cancelBtn = Instance.new("TextButton", modalFrame)
+    cancelBtn.Size = UDim2.new(0.5, -18, 0, 32)
+    cancelBtn.Position = UDim2.new(0, 12, 1, -44)
+    cancelBtn.BackgroundTransparency = 1
+    cancelBtn.Text = "Cancel"
+    cancelBtn.Font = Enum.Font.Gotham
+    cancelBtn.TextSize = 12
+    cancelBtn.TextColor3 = Color3.fromRGB(136, 136, 153)
+    cancelBtn.ZIndex = 302
+
+    local saveBtn = Instance.new("TextButton", modalFrame)
+    saveBtn.Size = UDim2.new(0.5, -18, 0, 32)
+    saveBtn.Position = UDim2.new(0.5, 6, 1, -44)
+    saveBtn.BackgroundColor3 = Color3.fromRGB(74, 144, 217)
+    saveBtn.Text = "Save"
+    saveBtn.Font = Enum.Font.GothamBold
+    saveBtn.TextSize = 12
+    saveBtn.TextColor3 = Color3.fromRGB(255, 255, 255)
+    saveBtn.ZIndex = 302
+    Instance.new("UICorner", saveBtn).CornerRadius = UDim.new(0, 6)
+
+    tween(modalOverlay, {BackgroundTransparency = 0.5}, 0.25)
+    tween(modalScale, {Scale = 1.0}, 0.25)
+
+    local function closeModal()
+        tween(modalOverlay, {BackgroundTransparency = 1}, 0.2)
+        local t = tween(modalScale, {Scale = 0.9}, 0.2)
+        if t then
+            t.Completed:Connect(function()
+                modalOverlay:Destroy()
+            end)
+        else
+            modalOverlay:Destroy()
+        end
+    end
+
+    cancelBtn.Activated:Connect(closeModal)
+
+    saveBtn.Activated:Connect(function()
+        local inputName = nameBox.Text:gsub("^%s*(.-)%s*$", "%1")
+        if inputName == "" then
+            boxStroke.Color = Color3.fromRGB(224, 85, 85)
+            errorLabel.Visible = true
+            return
+        end
+        if isEdit then
+            renameConfig(existingName, inputName)
+        else
+            saveConfig(inputName)
+        end
+        closeModal()
+    end)
+end
+
+-- Modal Confirmation Window for Deletion
+function showDeleteModal(configName)
+    local modalOverlay = Instance.new("Frame", DarkHub)
+    modalOverlay.Size = UDim2.new(1, 0, 1, 0)
+    modalOverlay.BackgroundColor3 = Color3.fromRGB(0, 0, 0)
+    modalOverlay.BackgroundTransparency = 1
+    modalOverlay.ZIndex = 300
+
+    local modalFrame = Instance.new("Frame", modalOverlay)
+    modalFrame.Size = UDim2.new(0, 260, 0, 120)
+    modalFrame.Position = UDim2.new(0.5, 0, 0.5, 0)
+    modalFrame.AnchorPoint = Vector2.new(0.5, 0.5)
+    modalFrame.BackgroundColor3 = Color3.fromRGB(30, 30, 40)
+    modalFrame.ZIndex = 301
+    Instance.new("UICorner", modalFrame).CornerRadius = UDim.new(0, 12)
+    local frameStroke = Instance.new("UIStroke", modalFrame)
+    frameStroke.Color = Color3.fromRGB(51, 51, 68)
+    frameStroke.Thickness = 1
+
+    local modalScale = Instance.new("UIScale", modalFrame)
+    modalScale.Scale = 0.9
+
+    local modalTitle = Instance.new("TextLabel", modalFrame)
+    modalTitle.Size = UDim2.new(1, -24, 0, 20)
+    modalTitle.Position = UDim2.new(0, 12, 0, 14)
+    modalTitle.Text = "Delete '" .. configName .. "'?"
+    modalTitle.Font = Enum.Font.GothamMedium
+    modalTitle.TextSize = 13
+    modalTitle.TextColor3 = Color3.fromRGB(255, 255, 255)
+    modalTitle.TextXAlignment = Enum.TextXAlignment.Left
+    modalTitle.BackgroundTransparency = 1
+    modalTitle.TextTruncate = Enum.TextTruncate.AtEnd
+    modalTitle.ZIndex = 302
+
+    local modalSubtext = Instance.new("TextLabel", modalFrame)
+    modalSubtext.Size = UDim2.new(1, -24, 0, 16)
+    modalSubtext.Position = UDim2.new(0, 12, 0, 36)
+    modalSubtext.Text = "This action cannot be undone."
+    modalSubtext.Font = Enum.Font.Gotham
+    modalSubtext.TextSize = 11
+    modalSubtext.TextColor3 = Color3.fromRGB(119, 119, 136)
+    modalSubtext.TextXAlignment = Enum.TextXAlignment.Left
+    modalSubtext.BackgroundTransparency = 1
+    modalSubtext.ZIndex = 302
+
+    local cancelBtn = Instance.new("TextButton", modalFrame)
+    cancelBtn.Size = UDim2.new(0.5, -18, 0, 30)
+    cancelBtn.Position = UDim2.new(0, 12, 1, -40)
+    cancelBtn.BackgroundTransparency = 1
+    cancelBtn.Text = "Cancel"
+    cancelBtn.Font = Enum.Font.Gotham
+    cancelBtn.TextSize = 12
+    cancelBtn.TextColor3 = Color3.fromRGB(136, 136, 153)
+    cancelBtn.ZIndex = 302
+
+    local deleteBtn = Instance.new("TextButton", modalFrame)
+    deleteBtn.Size = UDim2.new(0.5, -18, 0, 30)
+    deleteBtn.Position = UDim2.new(0.5, 6, 1, -40)
+    deleteBtn.BackgroundColor3 = Color3.fromRGB(224, 85, 85)
+    deleteBtn.Text = "Delete"
+    deleteBtn.Font = Enum.Font.GothamBold
+    deleteBtn.TextSize = 12
+    deleteBtn.TextColor3 = Color3.fromRGB(255, 255, 255)
+    deleteBtn.ZIndex = 302
+    Instance.new("UICorner", deleteBtn).CornerRadius = UDim.new(0, 6)
+
+    tween(modalOverlay, {BackgroundTransparency = 0.5}, 0.25)
+    tween(modalScale, {Scale = 1.0}, 0.25)
+
+    local function closeModal()
+        tween(modalOverlay, {BackgroundTransparency = 1}, 0.2)
+        local t = tween(modalScale, {Scale = 0.9}, 0.2)
+        if t then
+            t.Completed:Connect(function()
+                modalOverlay:Destroy()
+            end)
+        else
+            modalOverlay:Destroy()
+        end
+    end
+
+    cancelBtn.Activated:Connect(closeModal)
+
+    deleteBtn.Activated:Connect(function()
+        deleteConfig(configName)
+        closeModal()
+    end)
+end
+
+-- Refresh config list
+function refreshConfigList()
     for _, child in ipairs(ConfigsScrollFrame:GetChildren()) do
         if child:IsA("Frame") then child:Destroy() end
     end
-    
+
     local files = {}
     if typeof(listfiles) == "function" and typeof(isfolder) == "function" then
         pcall(function()
-            if isfolder(ConfigSystem.FolderPath) then
-                for _, file in ipairs(listfiles(ConfigSystem.FolderPath)) do
+            if isfolder(CONFIG_FOLDER) then
+                for _, file in ipairs(listfiles(CONFIG_FOLDER)) do
                     if string.sub(file, -5) == ".json" then
                         local fileName = string.gsub(file, "\\", "/")
                         fileName = string.match(fileName, "([^/]+)%.json$")
@@ -1948,199 +2191,136 @@ function ConfigSystem:RefreshList()
             end
         end)
     end
-    
+
+    table.sort(files)
     EmptyConfigLabel.Visible = (#files == 0)
-    
+
     for i, configName in ipairs(files) do
-        local isCurrent = (configName == ConfigSystem.CurrentLoadedConfig)
-        
+        local isCurrent = (configName == activeConfigName)
+
         local Card = Instance.new("Frame", ConfigsScrollFrame)
-        Card.Size = UDim2.new(1, -12, 0, 48)
-        Card.BackgroundColor3 = Color3.fromRGB(26, 26, 32)
+        Card.Name = "ConfigCard_" .. configName
+        Card.Size = UDim2.new(1, 0, 0, 52)
+        Card.BackgroundColor3 = Color3.fromRGB(31, 31, 38)
         Card.LayoutOrder = i
         Card.ZIndex = 8
-        Instance.new("UICorner", Card).CornerRadius = UDim.new(0, 6)
-        
-        local CardStroke = Instance.new("UIStroke", Card)
-        CardStroke.Thickness = 1
-        CardStroke.Color = isCurrent and Color3.fromRGB(80, 220, 120) or Color3.fromRGB(45, 45, 50)
-        
+        Instance.new("UICorner", Card).CornerRadius = UDim.new(0, 8)
+
+        local CardPadding = Instance.new("UIPadding", Card)
+        CardPadding.PaddingLeft = UDim.new(0, 12)
+        CardPadding.PaddingRight = UDim.new(0, 12)
+        CardPadding.PaddingTop = UDim.new(0, 10)
+        CardPadding.PaddingBottom = UDim.new(0, 10)
+
         if isCurrent then
             local ActiveBar = Instance.new("Frame", Card)
-            ActiveBar.Size = UDim2.new(0, 4, 1, 0)
-            ActiveBar.Position = UDim2.new(0, 0, 0, 0)
-            ActiveBar.BackgroundColor3 = Color3.fromRGB(80, 220, 120)
+            ActiveBar.Size = UDim2.new(0, 3, 1, 0)
+            ActiveBar.Position = UDim2.new(0, -12, 0, 0)
+            ActiveBar.BackgroundColor3 = Color3.fromRGB(74, 144, 217)
             ActiveBar.BorderSizePixel = 0
             ActiveBar.ZIndex = 9
             Instance.new("UICorner", ActiveBar).CornerRadius = UDim.new(0, 2)
         end
-        
-        local timestampText = "00.00.0000 00:00"
-        local filePath = ConfigSystem.FolderPath .. "/" .. configName .. ".json"
+
+        local LeftDot = Instance.new("Frame", Card)
+        LeftDot.Size = UDim2.new(0, 8, 0, 8)
+        LeftDot.Position = UDim2.new(0, 0, 0, 3)
+        LeftDot.BackgroundColor3 = Color3.fromRGB(74, 144, 217)
+        LeftDot.BorderSizePixel = 0
+        LeftDot.ZIndex = 9
+        Instance.new("UICorner", LeftDot).CornerRadius = UDim.new(1, 0)
+
+        local dateText = "Jul 24, 2026 15:30"
+        local filePath = CONFIG_FOLDER .. "/" .. configName .. ".json"
         pcall(function()
             if typeof(isfile) == "function" and isfile(filePath) and typeof(readfile) == "function" then
-                local data = HttpService:JSONDecode(readfile(filePath))
-                if data and data.Timestamp then timestampText = data.Timestamp end
+                local success, decoded = pcall(function() return HttpService:JSONDecode(readfile(filePath)) end)
+                if success and decoded and decoded.Created then dateText = decoded.Created end
             end
         end)
-        
-        local TitleBox = Instance.new("TextBox", Card)
-        TitleBox.Size = UDim2.new(1, -140, 0, 20)
-        TitleBox.Position = UDim2.new(0, 10, 0, 6)
-        TitleBox.Text = configName
-        TitleBox.Font = Enum.Font.GothamBold
-        TitleBox.TextColor3 = Color3.fromRGB(255, 255, 255)
-        TitleBox.TextSize = 12
-        TitleBox.TextXAlignment = Enum.TextXAlignment.Left
-        TitleBox.BackgroundTransparency = 1
-        TitleBox.ClearTextOnFocus = false
-        TitleBox.ZIndex = 9
-        
-        TitleBox.FocusLost:Connect(function()
-            if TitleBox.Text ~= configName then
-                ConfigSystem:RenameConfig(configName, TitleBox.Text)
-            end
-        end)
-        
+
+        local NameLabel = Instance.new("TextLabel", Card)
+        NameLabel.Size = UDim2.new(1, -110, 0, 16)
+        NameLabel.Position = UDim2.new(0, 16, 0, 0)
+        NameLabel.Text = configName
+        NameLabel.Font = Enum.Font.GothamBold
+        NameLabel.TextColor3 = Color3.fromRGB(255, 255, 255)
+        NameLabel.TextSize = 13
+        NameLabel.TextXAlignment = Enum.TextXAlignment.Left
+        NameLabel.TextTruncate = Enum.TextTruncate.AtEnd
+        NameLabel.BackgroundTransparency = 1
+        NameLabel.ZIndex = 9
+
         local DateLabel = Instance.new("TextLabel", Card)
-        DateLabel.Size = UDim2.new(1, -140, 0, 14)
-        DateLabel.Position = UDim2.new(0, 10, 0, 26)
-        DateLabel.Text = timestampText
+        DateLabel.Size = UDim2.new(1, -110, 0, 14)
+        DateLabel.Position = UDim2.new(0, 16, 0, 18)
+        DateLabel.Text = "Created: " .. dateText
         DateLabel.Font = Enum.Font.Gotham
-        DateLabel.TextColor3 = Color3.fromRGB(130, 130, 135)
+        DateLabel.TextColor3 = Color3.fromRGB(102, 102, 119)
         DateLabel.TextSize = 10
         DateLabel.TextXAlignment = Enum.TextXAlignment.Left
         DateLabel.BackgroundTransparency = 1
         DateLabel.ZIndex = 9
-        
-        local ActionsContainer = Instance.new("Frame", Card)
-        ActionsContainer.Size = UDim2.new(0, 125, 0, 28)
-        ActionsContainer.Position = UDim2.new(1, -130, 0.5, -14)
-        ActionsContainer.BackgroundTransparency = 1
-        ActionsContainer.ZIndex = 9
-        
-        local ActionLayout = Instance.new("UIListLayout", ActionsContainer)
-        ActionLayout.FillDirection = Enum.FillDirection.Horizontal
-        ActionLayout.Padding = UDim.new(0, 4)
-        ActionLayout.HorizontalAlignment = Enum.HorizontalAlignment.Right
-        
-        local function createSmallBtn(btnText, color, callback)
-            local btn = Instance.new("TextButton", ActionsContainer)
-            btn.Size = UDim2.new(0, 38, 1, 0)
-            btn.BackgroundColor3 = color
+
+        local BtnsContainer = Instance.new("Frame", Card)
+        BtnsContainer.Size = UDim2.new(0, 90, 1, 0)
+        BtnsContainer.Position = UDim2.new(1, -90, 0, 0)
+        BtnsContainer.BackgroundTransparency = 1
+        BtnsContainer.ZIndex = 9
+
+        local BtnsLayout = Instance.new("UIListLayout", BtnsContainer)
+        BtnsLayout.FillDirection = Enum.FillDirection.Horizontal
+        BtnsLayout.HorizontalAlignment = Enum.HorizontalAlignment.Right
+        BtnsLayout.VerticalAlignment = Enum.VerticalAlignment.Center
+        BtnsLayout.Padding = UDim.new(0, 6)
+
+        local function createCardBtn(btnText, normalColor, callback)
+            local btn = Instance.new("TextButton", BtnsContainer)
+            btn.Size = UDim2.new(0, 26, 0, 26)
+            btn.BackgroundColor3 = normalColor
+            btn.BackgroundTransparency = 1
             btn.Text = btnText
-            btn.Font = Enum.Font.GothamBold
-            btn.TextColor3 = Color3.fromRGB(255, 255, 255)
+            btn.Font = Enum.Font.GothamMedium
+            btn.TextColor3 = normalColor
             btn.TextSize = 10
             btn.ZIndex = 10
             Instance.new("UICorner", btn).CornerRadius = UDim.new(0, 4)
+
+            btn.MouseEnter:Connect(function()
+                tween(btn, {BackgroundTransparency = 0.8}, 0.15)
+            end)
+            btn.MouseLeave:Connect(function()
+                tween(btn, {BackgroundTransparency = 1}, 0.15)
+            end)
+
             btn.Activated:Connect(callback)
             return btn
         end
-        
-        -- Load
-        createSmallBtn("Load", Color3.fromRGB(0, 120, 215), function()
-            pcall(function()
-                if typeof(readfile) == "function" and typeof(isfile) == "function" and isfile(filePath) then
-                    local success, decoded = pcall(function() return HttpService:JSONDecode(readfile(filePath)) end)
-                    if success and decoded and decoded.Settings then
-                        ConfigSystem:ApplyData(decoded.Settings)
-                        ConfigSystem.CurrentLoadedConfig = configName
-                        if typeof(writefile) == "function" then
-                            pcall(function()
-                                writefile(ConfigSystem.LastConfigPath, HttpService:JSONEncode({Last = configName}))
-                            end)
-                        end
-                        ShowStatus("Конфиг '" .. configName .. "' загружен!", false)
-                        ConfigSystem:RefreshList()
-                    end
-                end
-            end)
+
+        createCardBtn("Load", Color3.fromRGB(74, 144, 217), function()
+            loadConfig(configName)
         end)
-        
-        -- Update
-        createSmallBtn("Upd", Color3.fromRGB(180, 130, 20), function()
-            ConfigSystem:SaveToFile(configName)
+
+        createCardBtn("Edit", Color3.fromRGB(217, 164, 74), function()
+            showCreateOrEditModal(configName)
         end)
-        
-        -- Delete
-        createSmallBtn("Del", Color3.fromRGB(180, 40, 40), function()
-            if activeConfirmConnection then activeConfirmConnection:Disconnect() end
-            
-            ModalTitle.Text = "Удалить конфиг?"
-            ModalTextBox.Visible = false
-            ModalBtnConfirm.Text = "Да"
-            ModalBtnConfirm.BackgroundColor3 = Color3.fromRGB(180, 40, 40)
-            ModalOverlay.Visible = true
-            
-            activeConfirmConnection = ModalBtnConfirm.Activated:Connect(function()
-                if activeConfirmConnection then
-                    activeConfirmConnection:Disconnect()
-                    activeConfirmConnection = nil
-                end
-                pcall(function()
-                    if typeof(delfile) == "function" and typeof(isfile) == "function" and isfile(filePath) then
-                        delfile(filePath)
-                        if ConfigSystem.CurrentLoadedConfig == configName then
-                            ConfigSystem.CurrentLoadedConfig = nil
-                            if isfile(ConfigSystem.LastConfigPath) then delfile(ConfigSystem.LastConfigPath) end
-                        end
-                        ShowStatus("Конфиг удалён", true)
-                        ConfigSystem:RefreshList()
-                    end
-                end)
-                HideModal()
-            end)
+
+        createCardBtn("Del", Color3.fromRGB(224, 85, 85), function()
+            showDeleteModal(configName)
         end)
     end
 end
 
-SaveConfigBtn.Activated:Connect(function()
-    if activeConfirmConnection then activeConfirmConnection:Disconnect() end
-    
-    ModalTitle.Text = "Создать новый конфиг"
-    ModalTextBox.Visible = true
-    ModalTextBox.Text = ""
-    ModalBtnConfirm.Text = "Сохранить"
-    ModalBtnConfirm.BackgroundColor3 = Color3.fromRGB(0, 140, 90)
-    ModalOverlay.Visible = true
-    
-    activeConfirmConnection = ModalBtnConfirm.Activated:Connect(function()
-        if activeConfirmConnection then
-            activeConfirmConnection:Disconnect()
-            activeConfirmConnection = nil
-        end
-        local name = ModalTextBox.Text
-        if name ~= "" then
-            ConfigSystem:SaveToFile(name)
-        end
-        HideModal()
-    end)
+NewConfigBtn.Activated:Connect(function()
+    showCreateOrEditModal(nil)
 end)
 
--- Автозагрузка
+-- Initial population of available configurations (Manual selection only, no auto-load)
 task.spawn(function()
-    ConfigSystem:RefreshList()
-    pcall(function()
-        if typeof(isfile) == "function" and typeof(readfile) == "function" and isfile(ConfigSystem.LastConfigPath) then
-            local lastData = HttpService:JSONDecode(readfile(ConfigSystem.LastConfigPath))
-            if lastData and lastData.Last then
-                local lastConfigPath = ConfigSystem.FolderPath .. "/" .. lastData.Last .. ".json"
-                if isfile(lastConfigPath) then
-                    local cfgData = HttpService:JSONDecode(readfile(lastConfigPath))
-                    if cfgData and cfgData.Settings then
-                        ConfigSystem:ApplyData(cfgData.Settings)
-                        ConfigSystem.CurrentLoadedConfig = lastData.Last
-                        ConfigSystem:RefreshList()
-                        ShowStatus("Автозагрузка: '" .. lastData.Last .. "'", false)
-                    end
-                end
-            end
-        end
-    end)
+    refreshConfigList()
 end)
 
--- Инициализация первой вкладки
+-- Initialize Settings Tab as default
 SettingsPage.Visible = true
 local settingsButton = allTabButtons["Settings"]
 if settingsButton then
@@ -2151,7 +2331,7 @@ end
 Library:UpdateTheme("Deep Ocean")
 
 -- ============================================================================
--- ЭКРАН ЗАГРУЗКИ
+-- INITIAL LOADING OVERLAY
 -- ============================================================================
 local LoadingContainer = Instance.new("Frame")
 LoadingContainer.Name = "LoadingContainer"
@@ -2205,196 +2385,24 @@ IconImage.BackgroundTransparency = 1
 IconImage.Image = "rbxthumb://type=Asset&id=" .. CustomIconID .. "&w=150&h=150"
 IconImage.ScaleType = Enum.ScaleType.Fit
 IconImage.ZIndex = 503
+IconImage.Parent = IconFrame
 Instance.new("UICorner", IconImage).CornerRadius = UDim.new(0, 10)
 
-local pulseInfo = TweenInfo.new(1.2, Enum.EasingStyle.Sine, Enum.EasingDirection.InOut, -1, true)
-local pulseTween = TweenService:Create(IconScale, pulseInfo, {Scale = 1.08})
-pulseTween:Play()
+-- Animate UI entrance
+tween(LoadingCard, {BackgroundTransparency = 0.1}, 0.5)
+tween(CardStroke, {Transparency = 0.8}, 0.5)
+tween(CardScale, {Scale = 1}, 0.5)
 
-local LoadingTitle = Instance.new("TextLabel", LoadingCard)
-LoadingTitle.Size = UDim2.new(1, 0, 0, 22)
-LoadingTitle.Position = UDim2.new(0, 0, 0, 66)
-LoadingTitle.Text = "Dark Hub"
-LoadingTitle.Font = Enum.Font.GothamBold
-LoadingTitle.TextSize = 18
-LoadingTitle.TextColor3 = Color3.fromRGB(255, 255, 255)
-LoadingTitle.BackgroundTransparency = 1
-LoadingTitle.TextTransparency = 1
-LoadingTitle.ZIndex = 502
-
-local ProgressBarBg = Instance.new("Frame", LoadingCard)
-ProgressBarBg.Size = UDim2.new(0, 250, 0, 20)
-ProgressBarBg.Position = UDim2.new(0.5, 0, 0, 100)
-ProgressBarBg.AnchorPoint = Vector2.new(0.5, 0)
-ProgressBarBg.BackgroundColor3 = Color3.fromRGB(40, 40, 50)
-ProgressBarBg.BackgroundTransparency = 1
-ProgressBarBg.ClipsDescendants = true
-ProgressBarBg.ZIndex = 502
-Instance.new("UICorner", ProgressBarBg).CornerRadius = UDim.new(0, 8)
-
-local ProgressBarFill = Instance.new("Frame", ProgressBarBg)
-ProgressBarFill.Size = UDim2.new(0, 0, 1, 0)
-ProgressBarFill.BackgroundColor3 = Color3.fromRGB(255, 255, 255)
-ProgressBarFill.ZIndex = 503
-Instance.new("UICorner", ProgressBarFill).CornerRadius = UDim.new(0, 8)
-
-local BarGradient = Instance.new("UIGradient", ProgressBarFill)
-BarGradient.Color = ColorSequence.new({
-    ColorSequenceKeypoint.new(0, Color3.fromRGB(0, 120, 255)),
-    ColorSequenceKeypoint.new(0.5, Color3.fromRGB(60, 180, 255)),
-    ColorSequenceKeypoint.new(1, Color3.fromRGB(0, 230, 210))
-})
-
-local waveTweenInfo = TweenInfo.new(1.8, Enum.EasingStyle.Linear, Enum.EasingDirection.InOut, -1, true)
-local waveTween = TweenService:Create(BarGradient, waveTweenInfo, {Offset = Vector2.new(1, 0)})
-waveTween:Play()
-
-local BarText = Instance.new("TextLabel", ProgressBarBg)
-BarText.Size = UDim2.new(1, 0, 1, 0)
-BarText.Text = "0%"
-BarText.Font = Enum.Font.GothamBold
-BarText.TextSize = 12
-BarText.TextColor3 = Color3.fromRGB(255, 255, 255)
-BarText.TextTransparency = 1
-BarText.BackgroundTransparency = 1
-BarText.ZIndex = 504
-
-local LoadingStatus = Instance.new("TextLabel", LoadingCard)
-LoadingStatus.Size = UDim2.new(1, -20, 0, 18)
-LoadingStatus.Position = UDim2.new(0, 10, 0, 130)
-LoadingStatus.Text = "Инициализация ядра..."
-LoadingStatus.Font = Enum.Font.Gotham
-LoadingStatus.TextSize = 12
-LoadingStatus.TextColor3 = Color3.fromRGB(180, 180, 200)
-LoadingStatus.BackgroundTransparency = 1
-LoadingStatus.TextTransparency = 1
-LoadingStatus.ZIndex = 502
-
-local particlesActive = true
-local function spawnParticle()
-    if not particlesActive or not LoadingCard or not LoadingCard.Parent then return end
-    
-    local p = Instance.new("Frame")
-    p.Size = UDim2.new(0, math.random(4, 6), 0, math.random(4, 6))
-    p.Position = UDim2.new(math.random(10, 90) / 100, 0, math.random(70, 95) / 100, 0)
-    p.BackgroundColor3 = Color3.fromRGB(255, 255, 255)
-    p.BackgroundTransparency = 0.5
-    p.BorderSizePixel = 0
-    p.ZIndex = 500
-    p.Parent = LoadingCard
-    Instance.new("UICorner", p).CornerRadius = UDim.new(1, 0)
-    
-    local targetY = p.Position.Y.Scale - math.random(30, 60) / 100
-    local targetX = p.Position.X.Scale + (math.random(-15, 15) / 100)
-    
-    local pTween = tween(p, {
-        Position = UDim2.new(targetX, 0, targetY, 0),
-        BackgroundTransparency = 1
-    }, math.random(15, 25) / 10)
-
-    if pTween then
-        pTween.Completed:Connect(function()
-            if p and p.Parent then p:Destroy() end
+task.delay(0.6, function()
+    tween(LoadingContainer, {BackgroundTransparency = 1}, 0.4)
+    local fadeOut = tween(LoadingCard, {BackgroundTransparency = 1}, 0.4)
+    if fadeOut then
+        fadeOut.Completed:Connect(function()
+            LoadingContainer:Destroy()
+            MainFrame.Visible = true
         end)
-    end
-end
-
-task.spawn(function()
-    while particlesActive do
-        spawnParticle()
-        task.wait(math.random(2, 4) / 10)
-    end
-end)
-
-tween(LoadingCard, {BackgroundTransparency = 0.15}, 0.35)
-tween(CardScale, {Scale = 1}, 0.35)
-tween(CardStroke, {Transparency = 0.85}, 0.35)
-
-tween(LoadingTitle, {TextTransparency = 0}, 0.3)
-tween(ProgressBarBg, {BackgroundTransparency = 0.3}, 0.3)
-tween(BarText, {TextTransparency = 0}, 0.3)
-tween(LoadingStatus, {TextTransparency = 0}, 0.3)
-
-local currentStatusText = LoadingStatus.Text
-local function setStatus(newText, color)
-    if currentStatusText == newText or not LoadingStatus or not LoadingStatus.Parent then return end
-    currentStatusText = newText
-    
-    local fadeOut = tween(LoadingStatus, {TextTransparency = 1}, 0.15)
-    if fadeOut then fadeOut.Completed:Wait() end
-    
-    if LoadingStatus and LoadingStatus.Parent then
-        LoadingStatus.Text = newText
-        if color then LoadingStatus.TextColor3 = color end
-        tween(LoadingStatus, {TextTransparency = 0}, 0.15)
-    end
-end
-
-task.spawn(function()
-    local stages = {
-        { target = 0.30, duration = 1.0, status = "Инициализация ядра..." },
-        { target = 0.60, duration = 1.2, status = "Загрузка интерфейса..." },
-        { target = 0.85, duration = 0.8, status = "Подготовка настроек..." },
-        { target = 0.95, duration = 0.6, status = "Загрузка конфигураций..." },
-        { target = 1.00, duration = 0.4, status = "Запуск..." }
-    }
-
-    local currentProgress = 0
-
-    for _, stage in ipairs(stages) do
-        setStatus(stage.status)
-        
-        local fillTween = tween(ProgressBarFill, {
-            Size = UDim2.new(stage.target, 0, 1, 0)
-        }, stage.duration)
-        
-        local startTimeStage = os.clock()
-        local startProgress = currentProgress
-        local targetProgress = stage.target
-        
-        while os.clock() - startTimeStage < stage.duration do
-            local elapsed = os.clock() - startTimeStage
-            local alpha = math.clamp(elapsed / stage.duration, 0, 1)
-            local quadAlpha = 1 - (1 - alpha) * (1 - alpha)
-            currentProgress = startProgress + (targetProgress - startProgress) * quadAlpha
-            if BarText and BarText.Parent then
-                BarText.Text = string.format("%d%%", math.floor(currentProgress * 100))
-            end
-            task.wait()
-        end
-        
-        currentProgress = stage.target
-        if BarText and BarText.Parent then
-            BarText.Text = string.format("%d%%", math.floor(currentProgress * 100))
-        end
-    end
-
-    setStatus("ГОТОВО!", Color3.fromRGB(100, 255, 130))
-    if BarText and BarText.Parent then BarText.Text = "100%" end
-    task.wait(0.5)
-
-    particlesActive = false
-
-    tween(CardScale, {Scale = 0.8}, 0.5)
-    tween(LoadingCard, {BackgroundTransparency = 1}, 0.5)
-    tween(CardStroke, {Transparency = 1}, 0.5)
-    tween(IconFrame, {BackgroundTransparency = 1}, 0.5)
-    tween(IconImage, {ImageTransparency = 1}, 0.5)
-    tween(LoadingTitle, {TextTransparency = 1}, 0.5)
-    tween(ProgressBarBg, {BackgroundTransparency = 1}, 0.5)
-    tween(ProgressBarFill, {BackgroundTransparency = 1}, 0.5)
-    tween(BarText, {TextTransparency = 1}, 0.5)
-    local finalFade = tween(LoadingStatus, {TextTransparency = 1}, 0.5)
-
-    if finalFade then finalFade.Completed:Wait() end
-
-    pcall(function() pulseTween:Cancel() end)
-    pcall(function() waveTween:Cancel() end)
-    if LoadingContainer and LoadingContainer.Parent then
+    else
         LoadingContainer:Destroy()
-    end
-
-    if MainFrame and MainFrame.Parent then
         MainFrame.Visible = true
     end
 end)
