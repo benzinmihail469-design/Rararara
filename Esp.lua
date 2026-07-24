@@ -1,14 +1,18 @@
-local CustomIconID = "76579925188009"
+-- ============================================================================
+-- Pulse Hub - Settings Edition
+-- ============================================================================
+
 local TweenService = game:GetService("TweenService")
 local UserInputService = game:GetService("UserInputService")
 local RunService = game:GetService("RunService")
 local GuiService = game:GetService("GuiService")
 local Players = game:GetService("Players")
 local VirtualUser = game:GetService("VirtualUser")
-local Lighting = game:GetService("Lighting")
-local PathfindingService = game:GetService("PathfindingService")
 
+local CustomIconID = "76579925188009"
 local startTime = os.clock()
+
+-- Вспомогательная функция форматирования времени сессии
 local function formatSessionTime(seconds)
     local hours = math.floor(seconds / 3600)
     local minutes = math.floor((seconds % 3600) / 60)
@@ -16,6 +20,7 @@ local function formatSessionTime(seconds)
     return string.format("%02d:%02d:%02d", hours, minutes, secs)
 end
 
+-- Система Anti-AFK
 local antiAfkConnection = nil
 local function toggleAntiAFK(state)
     if state then
@@ -35,6 +40,7 @@ end
 
 toggleAntiAFK(true)
 
+-- Поиск безопасного родителя для ScreenGui
 local SafeParent = nil
 if typeof(gethui) == "function" then
     SafeParent = gethui()
@@ -44,16 +50,16 @@ elseif game:GetService("CoreGui") then
         SafeParent = game:GetService("CoreGui")
     end
 end
-
 if not SafeParent then
     SafeParent = Players.LocalPlayer:WaitForChild("PlayerGui")
 end
 
-local PulseHub = Instance.new("ScreenGui")
+-- Удаление старого GUI при повторном запуске
 if SafeParent:FindFirstChild("PulseHub") then
     SafeParent.PulseHub:Destroy()
 end
 
+local PulseHub = Instance.new("ScreenGui")
 PulseHub.Name = "PulseHub"
 PulseHub.Parent = SafeParent
 PulseHub.ZIndexBehavior = Enum.ZIndexBehavior.Sibling
@@ -67,30 +73,69 @@ end
 local function NormalizeText(str)
     if type(str) ~= "string" then return "" end
     local lowerStr = string.lower(str)
-    local upperToLower = {
-        ["А"]="а", ["Б"]="б", ["В"]="в", ["Г"]="г", ["Д"]="д", ["Е"]="е", ["Ё"]="ё", ["Ж"]="ж", ["З"]="з",
-        ["И"]="и", ["Й"]="й", ["К"]="к", ["Л"]="л", ["М"]="м", ["Н"]="н", ["О"]="о", ["П"]="п", ["Р"]="р",
-        ["С"]="с", ["Т"]="т", ["У"]="у", ["Ф"]="ф", ["Х"]="х", ["Ц"]="ц", ["Ч"]="ч", ["Ш"]="ш", ["Щ"]="щ",
-        ["Ъ"]="ъ", ["Ы"]="ы", ["Ь"]="ь", ["Э"]="э", ["Ю"]="ю", ["Я"]="я"
-    }
-    for u, l in pairs(upperToLower) do
-        lowerStr = string.gsub(lowerStr, u, l)
-    end
     local synonyms = {
-        ["авто"] = "auto", ["фарм"] = "farm", ["есп"] = "esp", ["монет"] = "coins",
-        ["монеты"] = "coins", ["игроков"] = "players", ["игрок"] = "player",
-        ["визуал"] = "visual", ["телепорт"] = "teleport", ["настройки"] = "settings", ["язык"] = "language"
+        ["настройки"] = "settings", ["язык"] = "language", ["тема"] = "theme", ["шрифт"] = "font"
     }
     for ru, en in pairs(synonyms) do
-        lowerStr = string.gsub(lowerStr, ru, en)
-    end
-    local homoglyphs = {["а"] = "a", ["о"] = "o", ["с"] = "c", ["е"] = "e", ["р"] = "p", ["х"] = "x", ["у"] = "y"}
-    for ru, en in pairs(homoglyphs) do
         lowerStr = string.gsub(lowerStr, ru, en)
     end
     return string.gsub(lowerStr, "[%p%s%c]", "")
 end
 
+-- ============================================================================
+-- ЭКРАН ЗАГРУЗКИ (LOADING SCREEN)
+-- ============================================================================
+local LoadingFrame = Instance.new("Frame", PulseHub)
+LoadingFrame.Name = "LoadingFrame"
+LoadingFrame.Size = UDim2.new(0, 320, 0, 160)
+LoadingFrame.Position = UDim2.new(0.5, 0, 0.5, 0)
+LoadingFrame.AnchorPoint = Vector2.new(0.5, 0.5)
+LoadingFrame.BackgroundColor3 = Color3.fromRGB(14, 14, 14)
+LoadingFrame.ZIndex = 100
+
+local LoadingCorner = Instance.new("UICorner", LoadingFrame)
+LoadingCorner.CornerRadius = UDim.new(0, 12)
+
+local LoadingStroke = Instance.new("UIStroke", LoadingFrame)
+LoadingStroke.Color = Color3.fromRGB(45, 45, 45)
+LoadingStroke.Thickness = 1.5
+
+local LoadingTitle = Instance.new("TextLabel", LoadingFrame)
+LoadingTitle.Size = UDim2.new(1, 0, 0, 30)
+LoadingTitle.Position = UDim2.new(0, 0, 0, 25)
+LoadingTitle.Text = "Pulse Hub"
+LoadingTitle.Font = Enum.Font.GothamBold
+LoadingTitle.TextSize = 18
+LoadingTitle.TextColor3 = Color3.fromRGB(255, 255, 255)
+LoadingTitle.BackgroundTransparency = 1
+LoadingTitle.ZIndex = 101
+
+local LoadingStatus = Instance.new("TextLabel", LoadingFrame)
+LoadingStatus.Size = UDim2.new(1, 0, 0, 20)
+LoadingStatus.Position = UDim2.new(0, 0, 0, 60)
+LoadingStatus.Text = "Загрузка... 0%"
+LoadingStatus.Font = Enum.Font.Gotham
+LoadingStatus.TextSize = 13
+LoadingStatus.TextColor3 = Color3.fromRGB(180, 180, 180)
+LoadingStatus.BackgroundTransparency = 1
+LoadingStatus.ZIndex = 101
+
+local ProgressBarBg = Instance.new("Frame", LoadingFrame)
+ProgressBarBg.Size = UDim2.new(0.85, 0, 0, 10)
+ProgressBarBg.Position = UDim2.new(0.075, 0, 0, 95)
+ProgressBarBg.BackgroundColor3 = Color3.fromRGB(28, 28, 28)
+ProgressBarBg.ZIndex = 101
+Instance.new("UICorner", ProgressBarBg).CornerRadius = UDim.new(0, 5)
+
+local ProgressBarFill = Instance.new("Frame", ProgressBarBg)
+ProgressBarFill.Size = UDim2.new(0, 0, 1, 0)
+ProgressBarFill.BackgroundColor3 = Color3.fromRGB(0, 150, 255)
+ProgressBarFill.ZIndex = 102
+Instance.new("UICorner", ProgressBarFill).CornerRadius = UDim.new(0, 5)
+
+-- ============================================================================
+-- ОСНОВНОЙ GUI (СКРЫТ ДО ОКОНЧАНИЯ ЗАГРУЗКИ)
+-- ============================================================================
 local MainFrame = Instance.new("Frame", PulseHub)
 MainFrame.Name = "MainFrame"
 MainFrame.BackgroundColor3 = Color3.fromRGB(14, 14, 14)
@@ -98,6 +143,7 @@ MainFrame.BackgroundTransparency = 0.15
 MainFrame.AnchorPoint = Vector2.new(0.5, 0.5)
 MainFrame.Position = UDim2.new(0.5, 0, 0.5, 0)
 MainFrame.Size = UDim2.new(0, 550, 0, 350)
+MainFrame.Visible = false
 
 local MainScale = Instance.new("UIScale", MainFrame)
 MainScale.Scale = 1
@@ -117,7 +163,7 @@ PagesContainer.BackgroundTransparency = 1
 PagesContainer.ZIndex = 5
 
 local TabTitle = Instance.new("TextLabel", MainFrame)
-TabTitle.Text = "Main"
+TabTitle.Text = "Settings"
 TabTitle.Font = Enum.Font.GothamBold
 TabTitle.TextColor3 = Color3.fromRGB(255, 255, 255)
 TabTitle.TextSize = 16
@@ -231,7 +277,7 @@ HubTitle.BackgroundTransparency = 1
 HubTitle.ZIndex = 5
 
 local SubTitle = Instance.new("TextLabel", HeaderBg)
-SubTitle.Text = "Grow a Garden 2"
+SubTitle.Text = "Settings Panel"
 SubTitle.Font = Enum.Font.Gotham
 SubTitle.TextColor3 = Color3.fromRGB(130, 130, 130)
 SubTitle.TextSize = 9
@@ -425,10 +471,13 @@ UserInputService.InputChanged:Connect(function(input)
     end
 end)
 
+-- ============================================================================
+-- UI БИБЛИОТЕКА И НАСТРОЙКИ ТЕМ
+-- ============================================================================
 local Library = {}
 Library.CurrentFont = Enum.Font.Gotham
 Library.CurrentLanguage = "English"
-Library.CurrentTabKey = "Main"
+Library.CurrentTabKey = "Settings"
 
 Library.TrackedMainBg = {}
 Library.TrackedElementBg = {}
@@ -585,30 +634,35 @@ local LocaleObjects = {}
 
 local Localization = {
     ["English"] = {
-        ["Main"] = "Main", ["Teleport"] = "Teleport", ["Auto"] = "Auto", ["Auto buy"] = "Auto buy",
-        ["Players"] = "Players", ["Visual"] = "Visual", ["Settings"] = "Settings", ["UI"] = "UI",
-        ["Theme"] = "Theme", ["AutoFarmCoins"] = "Auto-Farm Coins", ["AutoFarmWins"] = "Auto-Farm Wins",
-        ["SelectStage"] = "Select Stage", ["UISize"] = "UI Size", ["UITransparency"] = "UI Transparency",
+        ["Settings"] = "Settings", ["UI"] = "UI", ["Theme"] = "Theme",
+        ["UISize"] = "UI Size", ["UITransparency"] = "UI Transparency",
         ["MenuFont"] = "Menu Font", ["Language"] = "Language", ["AntiAFK"] = "Anti-AFK", ["UITheme"] = "UI Theme",
-        ["AnimatedWindow"] = "Animated Window", ["Gradient"] = "Gradient Background",
-        ["Esp"] = "ESP", ["EspToggle"] = "Enable ESP / Player Roles",
-        ["PlayerEsp"] = "Player ESP", ["EspColor"] = "ESP Color",
-        ["WalkSpeed"] = "WalkSpeed", ["JumpPower"] = "JumpPower", ["ResetStats"] = "Reset Modifiers",
-        ["TeleportToMap"] = "Teleport to Map", ["TeleportToLobby"] = "Teleport to Lobby"
+        ["AnimatedWindow"] = "Animated Window", ["Gradient"] = "Gradient Background"
     },
     ["Русский"] = {
-        ["Main"] = "Главная", ["Teleport"] = "Телепорт", ["Auto"] = "Авто", ["Auto buy"] = "Авто-покупка",
-        ["Players"] = "Игроки", ["Visual"] = "Визуалы", ["Settings"] = "Настройки", ["UI"] = "Интерфейс",
-        ["Theme"] = "Тема", ["AutoFarmCoins"] = "Авто-Фарм Монет", ["AutoFarmWins"] = "Авто-Фарм Побед",
-        ["SelectStage"] = "Выберите Этап", ["UISize"] = "Размер интерфейса", ["UITransparency"] = "Прозрачность меню",
+        ["Settings"] = "Настройки", ["UI"] = "Интерфейс", ["Theme"] = "Тема",
+        ["UISize"] = "Размер интерфейса", ["UITransparency"] = "Прозрачность меню",
         ["MenuFont"] = "Шрифт меню", ["Language"] = "Язык", ["AntiAFK"] = "Анти-АФК", ["UITheme"] = "Тема UI",
-        ["AnimatedWindow"] = "Анимированное окно", ["Gradient"] = "Градиентный фон",
-        ["Esp"] = "ЕСП", ["EspToggle"] = "Включить ЕСП / Роли игроков",
-        ["PlayerEsp"] = "ESP Игроков", ["EspColor"] = "Цвет ЕСП",
-        ["WalkSpeed"] = "Скорость ходьбы", ["JumpPower"] = "Сила прыжка", ["ResetStats"] = "Сбросить модификаторы",
-        ["TeleportToMap"] = "Телепортироваться на Карту", ["TeleportToLobby"] = "Телепортироваться в Лобби"
+        ["AnimatedWindow"] = "Анимированное окно", ["Gradient"] = "Градиентный фон"
     }
 }
+
+function Library:UpdateLanguage(lang)
+    if not Localization[lang] then return end
+    Library.CurrentLanguage = lang
+    for _, loc in ipairs(LocaleObjects) do
+        if loc.Object and loc.Object.Parent then
+            local newText = Localization[lang][loc.Key] or loc.Key
+            loc.Object.Text = newText
+            if loc.SearchItem then
+                loc.SearchItem.SearchText = NormalizeText(newText)
+            end
+        end
+    end
+    if allPages[Library.CurrentTabKey] then
+        TabTitle.Text = Localization[lang][Library.CurrentTabKey] or Library.CurrentTabKey
+    end
+end
 
 local animatedWindowConnection = nil
 local function toggleAnimatedWindow(state)
@@ -719,7 +773,7 @@ local FontMapping = {
     ["Fredoka One"] = Enum.Font.FredokaOne
 }
 
-function Library:CreateDropdown(parentPage, textKey, options, default, callback, previews)
+function Library:CreateDropdown(parentPage, textKey, options, default, callback)
     local initialText = Localization[Library.CurrentLanguage][textKey] or textKey
     local DropdownFrame = Instance.new("Frame", parentPage)
     DropdownFrame.Size = UDim2.new(1, -20, 0, 36)
@@ -789,51 +843,18 @@ function Library:CreateDropdown(parentPage, textKey, options, default, callback,
     
     local ListLayout = Instance.new("UIListLayout", OptionsContainer)
     ListLayout.SortOrder = Enum.SortOrder.LayoutOrder
-    
-    if previews then
-        local UIPadding = Instance.new("UIPadding", OptionsContainer)
-        UIPadding.PaddingBottom = UDim.new(0, 6)
-    end
 
     ListLayout:GetPropertyChangedSignal("AbsoluteContentSize"):Connect(function()
-        OptionsContainer.CanvasSize = UDim2.new(0, 0, 0, ListLayout.AbsoluteContentSize.Y + (previews and 10 or 0))
+        OptionsContainer.CanvasSize = UDim2.new(0, 0, 0, ListLayout.AbsoluteContentSize.Y)
     end)
     
     local isExpanded = false
     local optionButtons = {}
     
-    local PreviewImage
-    if previews then
-        PreviewImage = Instance.new("ImageLabel", OptionsContainer)
-        PreviewImage.Size = UDim2.new(1, -24, 0, 110)
-        PreviewImage.Position = UDim2.new(0, 12, 0, 0)
-        PreviewImage.BackgroundColor3 = Color3.fromRGB(18, 18, 18)
-        PreviewImage.BackgroundTransparency = 0.3
-        PreviewImage.ScaleType = Enum.ScaleType.Crop
-        PreviewImage.ZIndex = 8
-        PreviewImage.LayoutOrder = 9999
-        Instance.new("UICorner", PreviewImage).CornerRadius = UDim.new(0, 6)
-        
-        local PreviewStroke = Instance.new("UIStroke", PreviewImage)
-        PreviewStroke.Color = Color3.fromRGB(55, 55, 55)
-        PreviewStroke.Thickness = 1
-        table.insert(Library.TrackedStrokes, PreviewStroke)
-
-        local currentImg = previews[default] or ""
-        if tonumber(currentImg) then
-            PreviewImage.Image = "rbxassetid://" .. tostring(currentImg)
-        else
-            PreviewImage.Image = currentImg
-        end
-    end
-    
     local function toggleDropdown()
         isExpanded = not isExpanded
         local currentOptionsCount = #options
-        local baseOptionsHeight = currentOptionsCount * 32
-        local maxVisibleOptionsHeight = 140
-        local contentHeight = math.min(baseOptionsHeight, maxVisibleOptionsHeight)
-        if previews then contentHeight = contentHeight + 122 end
+        local contentHeight = math.min(currentOptionsCount * 32, 140)
         local targetFrameHeight = isExpanded and (36 + contentHeight + 4) or 36
         
         tween(DropdownFrame, {Size = UDim2.new(1, -20, 0, targetFrameHeight)}, 0.2)
@@ -869,7 +890,6 @@ function Library:CreateDropdown(parentPage, textKey, options, default, callback,
             
             if FontMapping and FontMapping[option] then
                 OptLabel.Font = FontMapping[option]
-                OptLabel.Name = "FontPreviewLabel" 
             else
                 OptLabel.Font = Library.CurrentFont
             end
@@ -887,18 +907,9 @@ function Library:CreateDropdown(parentPage, textKey, options, default, callback,
             
             OptBtn.MouseEnter:Connect(function()
                 tween(OptBtn, {BackgroundTransparency = 0.96}, 0.15)
-                if previews and previews[option] then
-                    local img = previews[option]
-                    PreviewImage.Image = tonumber(img) and ("rbxassetid://" .. tostring(img)) or img
-                end
             end)
             OptBtn.MouseLeave:Connect(function()
                 tween(OptBtn, {BackgroundTransparency = 1}, 0.15)
-                if previews then
-                    local currentSelected = SelectedLabel.Text
-                    local img = previews[currentSelected] or previews[default] or ""
-                    PreviewImage.Image = tonumber(img) and ("rbxassetid://" .. tostring(img)) or img
-                end
             end)
             
             optionButtons[option] = {Button = OptBtn, Label = OptLabel, Check = Checkmark}
@@ -913,10 +924,6 @@ function Library:CreateDropdown(parentPage, textKey, options, default, callback,
                         optData.Label.TextColor3 = (bgL > 0.5) and Color3.fromRGB(110, 110, 110) or Color3.fromRGB(180, 180, 180)
                         optData.Check.Visible = false
                     end
-                end
-                if previews and previews[option] then
-                    local img = previews[option]
-                    PreviewImage.Image = tonumber(img) and ("rbxassetid://" .. tostring(img)) or img
                 end
                 toggleDropdown()
                 callback(option)
@@ -1179,153 +1186,6 @@ function Library:CreateSlider(parentPage, textKey, min, max, default, callback)
     table.insert(LocaleObjects, {Object = SliderLabel, Key = textKey, SearchItem = searchItem})
 end
 
-function Library:CreateImage(parentPage, imageId)
-    local Img = Instance.new("ImageLabel", parentPage)
-    Img.Size = UDim2.new(1, -20, 0, 130)
-    Img.BackgroundTransparency = 1
-    Img.LayoutOrder = #parentPage:GetChildren()
-    if tonumber(imageId) then Img.Image = "rbxassetid://" .. tostring(imageId) .. "&w=420&h=420" else Img.Image = imageId end
-    Img.ScaleType = Enum.ScaleType.Fit
-    Img.ZIndex = 6
-    return Img
-end
-
-function Library:CreateSubTabs(parentPage, tabsList)
-    local SubTabContainer = Instance.new("Frame", parentPage)
-    SubTabContainer.Size = UDim2.new(1, -20, 0, 32)
-    SubTabContainer.BackgroundTransparency = 1
-    local ListLayout = Instance.new("UIListLayout", SubTabContainer)
-    ListLayout.FillDirection = Enum.FillDirection.Horizontal
-    ListLayout.Padding = UDim.new(0, 10)
-    ListLayout.SortOrder = Enum.SortOrder.LayoutOrder
-    ListLayout.HorizontalAlignment = Enum.HorizontalAlignment.Left
-    ListLayout.VerticalAlignment = Enum.VerticalAlignment.Center
-    
-    local ContentContainer = Instance.new("Frame", parentPage)
-    ContentContainer.Size = UDim2.new(1, 0, 0, 0)
-    ContentContainer.BackgroundTransparency = 1
-    ContentContainer.AutomaticSize = Enum.AutomaticSize.Y
-    local subPages = {}
-    local registry = {}
-    local colorGrayInactive = Color3.fromRGB(140, 140, 140)
-    
-    for i, tabData in ipairs(tabsList) do
-        local textKey = tabData.Name
-        local iconId = tabData.Icon
-        local initialText = Localization[Library.CurrentLanguage][textKey] or textKey
-        local activeColor = Color3.fromRGB(108, 176, 214)
-        local lowName = string.lower(string.gsub(textKey, "%s+", ""))
-        if tabData.Color then activeColor = tabData.Color elseif string.find(lowName, "theme") or string.find(lowName, "тема") then activeColor = Color3.fromRGB(235, 94, 153) end
-        
-        local BtnContainer = Instance.new("Frame", SubTabContainer)
-        BtnContainer.Size = UDim2.new(0, 0, 1, 0)
-        BtnContainer.AutomaticSize = Enum.AutomaticSize.X
-        BtnContainer.BackgroundTransparency = 1
-        BtnContainer.LayoutOrder = i
-        
-        local VisualFrame = Instance.new("Frame", BtnContainer)
-        VisualFrame.Size = UDim2.new(1, 0, 1, 0)
-        VisualFrame.BackgroundColor3 = activeColor
-        VisualFrame.BackgroundTransparency = 1
-        Instance.new("UICorner", VisualFrame).CornerRadius = UDim.new(0, 7)
-        local Stroke = Instance.new("UIStroke", VisualFrame)
-        Stroke.Color = activeColor
-        Stroke.Thickness = 1.6
-        Stroke.ApplyStrokeMode = Enum.ApplyStrokeMode.Border
-        Stroke.Enabled = false
-        
-        local ContentFrame = Instance.new("Frame", BtnContainer)
-        ContentFrame.Size = UDim2.new(0, 0, 1, 0)
-        ContentFrame.AutomaticSize = Enum.AutomaticSize.X
-        ContentFrame.BackgroundTransparency = 1
-        ContentFrame.ZIndex = 2
-        
-        local ContentPadding = Instance.new("UIPadding", ContentFrame)
-        ContentPadding.PaddingLeft = UDim.new(0, 10)
-        ContentPadding.PaddingRight = UDim.new(0, 10)
-        
-        local BtnLayout = Instance.new("UIListLayout", ContentFrame)
-        BtnLayout.FillDirection = Enum.FillDirection.Horizontal
-        BtnLayout.HorizontalAlignment = Enum.HorizontalAlignment.Left
-        BtnLayout.VerticalAlignment = Enum.VerticalAlignment.Center
-        BtnLayout.Padding = UDim.new(0, 6)
-        
-        local Icon
-        if iconId and iconId ~= "" then
-            Icon = Instance.new("ImageLabel", ContentFrame)
-            Icon.Size = tabData.IconSize or UDim2.new(0, 18, 0, 18)
-            Icon.BackgroundTransparency = 1
-            if tonumber(iconId) then Icon.Image = "rbxthumb://type=Asset&id=" .. iconId .. "&w=150&h=150" else Icon.Image = iconId end
-            Icon.ScaleType = Enum.ScaleType.Fit
-            Icon.ImageColor3 = colorGrayInactive
-            Icon.ZIndex = 3
-        end
-        
-        local Label = Instance.new("TextLabel", ContentFrame)
-        Label.BackgroundTransparency = 1
-        Label.Text = initialText
-        Label.Font = Library.CurrentFont
-        Label.TextColor3 = colorGrayInactive
-        Label.Size = UDim2.new(0, 0, 1, 0)
-        Label.TextSize = 13
-        Label.AutomaticSize = Enum.AutomaticSize.X
-        Label.ZIndex = 3
-        
-        local Page = Instance.new("Frame", ContentContainer)
-        Page.Size = UDim2.new(1, 0, 0, 0)
-        Page.BackgroundTransparency = 1
-        Page.AutomaticSize = Enum.AutomaticSize.Y
-        Page.Visible = false
-        local PageLayout = Instance.new("UIListLayout", Page)
-        PageLayout.Padding = UDim.new(0, 8)
-        PageLayout.HorizontalAlignment = Enum.HorizontalAlignment.Center
-        PageLayout.SortOrder = Enum.SortOrder.LayoutOrder
-        
-        subPages[textKey] = Page
-        registry[textKey] = { Page = Page, Visual = VisualFrame, Stroke = Stroke, Label = Label, Icon = Icon, TargetColor = activeColor }
-        
-        local ClickBtn = Instance.new("TextButton", BtnContainer)
-        ClickBtn.Size = UDim2.new(1, 0, 1, 0)
-        ClickBtn.BackgroundTransparency = 1
-        ClickBtn.Text = ""
-        ClickBtn.ZIndex = 10
-        
-        local function activateTab()
-            for _, data in pairs(registry) do
-                data.Page.Visible = false
-                data.Visual.BackgroundTransparency = 1
-                data.Stroke.Enabled = false
-                local bgL = (Library.CurrentThemeData.MainBg.R * 0.299 + Library.CurrentThemeData.MainBg.G * 0.587 + Library.CurrentThemeData.MainBg.B * 0.114)
-                local currentInactive = (bgL > 0.5) and Color3.fromRGB(110, 110, 110) or colorGrayInactive
-                data.Label.TextColor3 = currentInactive
-                if data.Icon then data.Icon.ImageColor3 = currentInactive end
-            end
-            Page.Visible = true
-            VisualFrame.BackgroundColor3 = activeColor
-            VisualFrame.BackgroundTransparency = 0.88
-            Stroke.Color = activeColor
-            Stroke.Enabled = true
-            Label.TextColor3 = activeColor
-            if Icon then Icon.ImageColor3 = activeColor end
-        end
-        ClickBtn.Activated:Connect(activateTab)
-        table.insert(LocaleObjects, {Object = Label, Key = textKey})
-    end
-    
-    local firstTab = tabsList[1] and tabsList[1].Name
-    if firstTab and registry[firstTab] then
-        local data = registry[firstTab]
-        data.Page.Visible = true
-        data.Visual.BackgroundColor3 = data.TargetColor
-        data.Visual.BackgroundTransparency = 0.88
-        data.Stroke.Color = data.TargetColor
-        data.Stroke.Enabled = true
-        data.Label.TextColor3 = data.TargetColor
-        if data.Icon then data.Icon.ImageColor3 = data.TargetColor end
-    end
-    return subPages
-end
-
 function Library:CreatePage(textKey, iconId, layoutOrder)
     local initialText = Localization[Library.CurrentLanguage][textKey] or textKey
     local PageFrame = Instance.new("ScrollingFrame", PagesContainer)
@@ -1414,399 +1274,99 @@ function Library:CreatePage(textKey, iconId, layoutOrder)
     return PageFrame
 end
 
-local MainPage = Library:CreatePage("Main", "103980564128710", 1)
-local TeleportPage = Library:CreatePage("Teleport", "94373592263020", 2)
-local AutoPage = Library:CreatePage("Auto", "118241174836692", 3)
-local AutoBuyPage = Library:CreatePage("Auto buy", "84252806798323", 4)
-local PlayersPage = Library:CreatePage("Players", "99904215381150", 5)
-local VisualPage = Library:CreatePage("Visual", "78910169210318", 6)
-local SettingsPage = Library:CreatePage("Settings", "117996761927034", 99)
-
 -- ============================================================================
--- АВТО-ФАРМ МОНЕТ
+-- ВКЛАДКА "SETTINGS" (ЕДИНСТВЕННАЯ СТРАНИЦА)
 -- ============================================================================
-local autoFarmActive = false
-Library:CreateToggle(MainPage, "AutoFarmCoins", false, function(state) 
-    autoFarmActive = state
+local SettingsPage = Library:CreatePage("Settings", "117996761927034", 1)
+
+-- Выбор языка
+Library:CreateDropdown(SettingsPage, "Language", {"English", "Русский"}, "English", function(selectedLang)
+    Library:UpdateLanguage(selectedLang)
 end)
 
-task.spawn(function()
-    while task.wait(0.2) do
-        if autoFarmActive then
-            pcall(function()
-                local character = Players.LocalPlayer.Character
-                if not character or not character:FindFirstChild("HumanoidRootPart") then return end
-                local hrp = character.HumanoidRootPart
+-- Выбор темы UI
+Library:CreateDropdown(SettingsPage, "UITheme", ThemeNamesList, "Deep Ocean", function(selectedTheme)
+    Library:UpdateTheme(selectedTheme)
+end)
 
-                for _, item in ipairs(workspace:GetDescendants()) do
-                    if not autoFarmActive then break end
-                    if item:IsA("BasePart") or item:IsA("Model") then
-                        local lName = item.Name:lower()
-                        if (lName:find("coin") or lName:find("gem") or lName:find("money") or lName:find("token") or lName:find("cash"))
-                           and not lName:find("gui") and not lName:find("shop") then
-                            
-                            local partToTouch = item:IsA("BasePart") and item or item:FindFirstChildOfClass("BasePart")
-                            if partToTouch then
-                                hrp.CFrame = partToTouch.CFrame
-                                if firetouchinterest then
-                                    firetouchinterest(hrp, partToTouch, 0)
-                                    firetouchinterest(hrp, partToTouch, 1)
-                                end
-                                task.wait(0.05)
-                            end
-                        end
-                    end
-                end
-            end)
+-- Выбор шрифта меню
+local FontKeys = {}
+for name, _ in pairs(FontMapping) do table.insert(FontKeys, name) end
+table.sort(FontKeys)
+
+Library:CreateDropdown(SettingsPage, "MenuFont", FontKeys, "Gotham", function(selectedFont)
+    if FontMapping[selectedFont] then
+        Library.CurrentFont = FontMapping[selectedFont]
+        for _, obj in ipairs(Library.TrackedMainText) do
+            if obj and obj.Parent then obj.Font = Library.CurrentFont end
+        end
+        for _, obj in ipairs(Library.TrackedSubText) do
+            if obj and obj.Parent then obj.Font = Library.CurrentFont end
         end
     end
 end)
 
-Library:CreateSlider(PlayersPage, "WalkSpeed", 16, 150, 16, function(value)
-    pcall(function() if Players.LocalPlayer.Character and Players.LocalPlayer.Character:FindFirstChildOfClass("Humanoid") then Players.LocalPlayer.Character:FindFirstChildOfClass("Humanoid").WalkSpeed = value end end)
+-- Прозрачность интерфейса
+Library:CreateSlider(SettingsPage, "UITransparency", 0, 90, 15, function(value)
+    MainFrame.BackgroundTransparency = value / 100
 end)
 
-Library:CreateSlider(PlayersPage, "JumpPower", 50, 250, 50, function(value)
-    pcall(function() if Players.LocalPlayer.Character and Players.LocalPlayer.Character:FindFirstChildOfClass("Humanoid") then local hum = Players.LocalPlayer.Character:FindFirstChildOfClass("Humanoid") hum.UseJumpPower = true hum.JumpPower = value end end)
+-- Переключатель Anti-AFK
+Library:CreateToggle(SettingsPage, "AntiAFK", true, function(state)
+    toggleAntiAFK(state)
 end)
 
-Library:CreateButton(PlayersPage, "ResetStats", function()
-    pcall(function() if Players.LocalPlayer.Character and Players.LocalPlayer.Character:FindFirstChildOfClass("Humanoid") then local hum = Players.LocalPlayer.Character:FindFirstChildOfClass("Humanoid") hum.WalkSpeed = 16 hum.JumpPower = 50 end end)
-end)
-
-Library:CreateButton(TeleportPage, "TeleportToMap", function()
-    pcall(function()
-        local targetMap = workspace:FindFirstChild("Map") or workspace:FindFirstChild("Normal") or workspace:FindFirstChild("InGame")
-        if targetMap and Players.LocalPlayer.Character and Players.LocalPlayer.Character:FindFirstChild("HumanoidRootPart") then
-            local spawnPoint = targetMap:FindFirstChildOfClass("SpawnLocation") or targetMap:FindFirstChild("Spawns") or targetMap
-            Players.LocalPlayer.Character.HumanoidRootPart.CFrame = spawnPoint.CFrame + Vector3.new(0, 3, 0)
-        end
-    end)
-end)
-
-Library:CreateButton(TeleportPage, "TeleportToLobby", function()
-    pcall(function()
-        local lobby = workspace:FindFirstChild("Lobby") or workspace:FindFirstChild("LobbySpawn")
-        if lobby and Players.LocalPlayer.Character and Players.LocalPlayer.Character:FindFirstChild("HumanoidRootPart") then Players.LocalPlayer.Character.HumanoidRootPart.CFrame = lobby.CFrame + Vector3.new(0, 3, 0) end
-    end)
-end)
-
--- ============================================================================
--- ОПТИМИЗИРОВАННЫЙ И ИСПРАВЛЕННЫЙ АВТО-ФАРМ ПОБЕД (ГАРАНТИРОВАННЫЙ КАСАНИЕ)
--- ============================================================================
-local autoFarmWinsActive = false
-local selectedStage = ""
-local stageCache = {}
-
-local function ScanStages()
-    local stagesData = {}
-    local stagesNames = {"Auto All ( Все этапы )"}
-    local added = {}
-    stageCache = {}
-
-    for _, obj in ipairs(workspace:GetDescendants()) do
-        if obj:IsA("BasePart") or obj:IsA("Model") then
-            local name = obj.Name
-            local lowerName = name:lower()
-            
-            if (lowerName:find("win") or lowerName:find("stage") or lowerName:find("finish") or lowerName:find("end") or lowerName:find("pad"))
-               and not lowerName:find("gui") 
-               and not lowerName:find("effect") 
-               and not lowerName:find("particle") 
-               and not lowerName:find("mesh")
-               and not lowerName:find("shop") then
-                
-                local targetObj = obj
-                if obj:IsA("BasePart") and obj.Parent and obj.Parent:IsA("Model") and obj.Parent ~= workspace then
-                    local parentLower = obj.Parent.Name:lower()
-                    if parentLower:find("win") or parentLower:find("stage") or parentLower:find("finish") or parentLower:find("end") then
-                        targetObj = obj.Parent
-                    end
-                end
-                
-                local cleanName = targetObj.Name
-                if not added[cleanName] then
-                    added[cleanName] = true
-                    stageCache[cleanName] = targetObj
-                    local num = tonumber(cleanName:match("%d+")) or 9999
-                    table.insert(stagesData, {Name = cleanName, Num = num})
-                end
-            end
-        end
-    end
-
-    table.sort(stagesData, function(a, b) 
-        if a.Num == b.Num then return a.Name < b.Name end
-        return a.Num < b.Num 
-    end)
-
-    for _, data in ipairs(stagesData) do
-        table.insert(stagesNames, data.Name)
-    end
-
-    return stagesNames
-end
-
-local dynamicStagesList = ScanStages()
-selectedStage = dynamicStagesList[1] or "Auto All ( Все этапы )"
-
-local StageDropdownRef = Library:CreateDropdown(AutoPage, "SelectStage", dynamicStagesList, selectedStage, function(option)
-    selectedStage = option
-end)
-
-Library:CreateButton(AutoPage, "Обновить список этапов", function()
-    local newList = ScanStages()
-    if StageDropdownRef and StageDropdownRef.UpdateOptions then
-        StageDropdownRef.UpdateOptions(newList)
-    end
-end)
-
-local function TriggerTouch(hrp, targetPart)
-    if not targetPart or not targetPart:IsA("BasePart") then return end
-    if firetouchinterest then
-        pcall(function()
-            firetouchinterest(hrp, targetPart, 0)
-            firetouchinterest(hrp, targetPart, 1)
-        end)
-    end
-end
-
-local function RapidFarmStage(targetObj)
-    local character = Players.LocalPlayer.Character
-    if not character or not character:FindFirstChild("HumanoidRootPart") then return end
-    
-    local hrp = character.HumanoidRootPart
-    local humanoid = character:FindFirstChildOfClass("Humanoid")
-    if not humanoid or humanoid.Health <= 0 then return end
-
-    local targetParts = {}
-    if targetObj:IsA("BasePart") then
-        table.insert(targetParts, targetObj)
-    elseif targetObj:IsA("Model") then
-        for _, child in ipairs(targetObj:GetDescendants()) do
-            if child:IsA("BasePart") then
-                table.insert(targetParts, child)
-            end
-        end
-    end
-
-    if #targetParts == 0 then return end
-
-    for _, part in ipairs(targetParts) do
-        if not autoFarmWinsActive then break end
-        
-        hrp.AssemblyLinearVelocity = Vector3.zero
-        hrp.AssemblyAngularVelocity = Vector3.zero
-        hrp.CFrame = part.CFrame
-        
-        TriggerTouch(hrp, part)
-        
-        local leftFoot = character:FindFirstChild("LeftFoot") or character:FindFirstChild("Left Leg")
-        if leftFoot then TriggerTouch(leftFoot, part) end
-    end
-end
-
-Library:CreateToggle(AutoPage, "AutoFarmWins", false, function(state)
-    autoFarmWinsActive = state
-end)
-
-task.spawn(function()
-    while task.wait(0.1) do
-        if autoFarmWinsActive then
-            pcall(function()
-                if selectedStage == "Auto All ( Все этапы )" or selectedStage == "" then
-                    for stageName, targetObj in pairs(stageCache) do
-                        if not autoFarmWinsActive then break end
-                        if targetObj and targetObj.Parent then
-                            RapidFarmStage(targetObj)
-                            task.wait(0.05)
-                        end
-                    end
-                else
-                    local targetObj = stageCache[selectedStage]
-                    if not targetObj or not targetObj.Parent then
-                        ScanStages()
-                        targetObj = stageCache[selectedStage]
-                    end
-                    if targetObj then
-                        RapidFarmStage(targetObj)
-                    end
-                end
-            end)
-        end
-    end
-end)
-
--- ============================================================================
--- СУБ-ВКЛАДКА ESP
--- ============================================================================
-local VisualSections = Library:CreateSubTabs(VisualPage, {
-    {Name = "Esp", Icon = "80768064990053", Color = Color3.fromRGB(46, 204, 113)}
-})
-
-local PlayerESP_Enabled = false
-local PlayerESP_Color = Color3.fromRGB(46, 204, 113)
-
-local ESP_Colors = {
-    ["Green"] = Color3.fromRGB(46, 204, 113),
-    ["Red"] = Color3.fromRGB(255, 75, 75),
-    ["Blue"] = Color3.fromRGB(52, 152, 219),
-    ["Yellow"] = Color3.fromRGB(241, 196, 15),
-    ["Cyan"] = Color3.fromRGB(0, 255, 255),
-    ["Purple"] = Color3.fromRGB(155, 89, 182),
-    ["White"] = Color3.fromRGB(255, 255, 255),
-    ["Pink"] = Color3.fromRGB(255, 105, 180)
-}
-
-local function applyPlayerESP(player)
-    if player == Players.LocalPlayer then return end
-    
-    local function setupHighlight(character)
-        if not character then return end
-        
-        local highlight = character:FindFirstChild("PulseHub_ESP")
-        if not highlight then
-            highlight = Instance.new("Highlight")
-            highlight.Name = "PulseHub_ESP"
-            highlight.FillColor = PlayerESP_Color
-            highlight.OutlineColor = Color3.fromRGB(255, 255, 255)
-            highlight.FillTransparency = 0.5
-            highlight.OutlineTransparency = 0.2
-            highlight.DepthMode = Enum.HighlightDepthMode.AlwaysOnTop
-            highlight.Parent = character
-        else
-            highlight.FillColor = PlayerESP_Color
-        end
-        highlight.Enabled = PlayerESP_Enabled
-        
-        local head = character:WaitForChild("Head", 5)
-        if head then
-            local billboard = head:FindFirstChild("PulseHub_Billboard")
-            if not billboard then
-                billboard = Instance.new("BillboardGui")
-                billboard.Name = "PulseHub_Billboard"
-                billboard.Size = UDim2.new(0, 200, 0, 50)
-                billboard.StudsOffset = Vector3.new(0, 2.5, 0)
-                billboard.AlwaysOnTop = true
-                
-                local nameLabel = Instance.new("TextLabel")
-                nameLabel.Size = UDim2.new(1, 0, 1, 0)
-                nameLabel.BackgroundTransparency = 1
-                nameLabel.Text = player.Name
-                nameLabel.Font = Enum.Font.GothamBold
-                nameLabel.TextSize = 14
-                nameLabel.TextColor3 = PlayerESP_Color
-                nameLabel.TextStrokeColor3 = Color3.new(0,0,0)
-                nameLabel.TextStrokeTransparency = 0.2
-                nameLabel.Parent = billboard
-                
-                billboard.Parent = head
-            else
-                local nameLabel = billboard:FindFirstChildOfClass("TextLabel")
-                if nameLabel then nameLabel.TextColor3 = PlayerESP_Color end
-            end
-            billboard.Enabled = PlayerESP_Enabled
-        end
-    end
-    
-    if player.Character then setupHighlight(player.Character) end
-    player.CharacterAdded:Connect(setupHighlight)
-end
-
-local function updateAllESP()
-    for _, player in ipairs(Players:GetPlayers()) do
-        if player ~= Players.LocalPlayer and player.Character then
-            local highlight = player.Character:FindFirstChild("PulseHub_ESP")
-            if highlight then 
-                highlight.Enabled = PlayerESP_Enabled 
-                highlight.FillColor = PlayerESP_Color
-            end
-            local head = player.Character:FindFirstChild("Head")
-            if head then
-                local billboard = head:FindFirstChild("PulseHub_Billboard")
-                if billboard then 
-                    billboard.Enabled = PlayerESP_Enabled 
-                    local label = billboard:FindFirstChildOfClass("TextLabel")
-                    if label then label.TextColor3 = PlayerESP_Color end
-                end
-            end
-        end
-    end
-end
-
-Players.PlayerAdded:Connect(applyPlayerESP)
-for _, player in ipairs(Players:GetPlayers()) do
-    applyPlayerESP(player)
-end
-
-Library:CreateToggle(VisualSections["Esp"], "PlayerEsp", false, function(state)
-    PlayerESP_Enabled = state
-    updateAllESP()
-end)
-
-local colorNames = {}
-for name, _ in pairs(ESP_Colors) do table.insert(colorNames, name) end
-table.sort(colorNames)
-
-Library:CreateDropdown(VisualSections["Esp"], "EspColor", colorNames, "Green", function(option)
-    PlayerESP_Color = ESP_Colors[option]
-    updateAllESP()
-end)
-
-local SettingsSections = Library:CreateSubTabs(SettingsPage, {
-    {Name = "UI", Icon = "92040409567954"},
-    {Name = "Theme", Icon = "82276527581519"}
-})
-
-Library:CreateToggle(SettingsSections["UI"], "AntiAFK", true, function(state) toggleAntiAFK(state) end)
-
-Library:CreateSlider(SettingsSections["UI"], "UITransparency", 0, 100, 15, function(value)
-    if not isMinimized then MainFrame.BackgroundTransparency = value / 100 end
-end)
-
-Library:CreateSlider(SettingsSections["UI"], "UISize", 80, 120, 100, function(value)
-    MainScale.Scale = value / 100
-end)
-
-Library:CreateToggle(SettingsSections["UI"], "AnimatedWindow", false, function(state)
+-- Анимированное радужное окно
+Library:CreateToggle(SettingsPage, "AnimatedWindow", false, function(state)
     toggleAnimatedWindow(state)
 end)
 
-Library:CreateToggle(SettingsSections["UI"], "Gradient", false, function(state)
+-- Градиентный фон
+Library:CreateToggle(SettingsPage, "Gradient", false, function(state)
     toggleGradientEffect(state)
 end)
 
-local FontList = {}
-for fontName, _ in pairs(FontMapping) do table.insert(FontList, fontName) end
-table.sort(FontList)
+-- Активация вкладки Settings по умолчанию
+SettingsPage.Visible = true
+allTabs["Settings"].BackgroundTransparency = 0
+allTabs["Settings"].BackgroundColor3 = Color3.fromRGB(35, 35, 35)
+allTabButtons["Settings"].TextColor3 = Color3.fromRGB(255, 255, 255)
+if allTabIcons["Settings"] then allTabIcons["Settings"].ImageTransparency = 0 end
 
-Library:CreateDropdown(SettingsSections["UI"], "MenuFont", FontList, "Gotham", function(option)
-    local selectedEnum = FontMapping[option]
-    if selectedEnum then
-        Library.CurrentFont = selectedEnum
-        for _, tBtn in pairs(allTabButtons) do tBtn.Font = selectedEnum end
-        TabTitle.Font = selectedEnum
-        SearchBox.Font = selectedEnum
-        for _, localeData in ipairs(LocaleObjects) do
-            if localeData.Object:IsA("TextLabel") or localeData.Object:IsA("TextButton") or localeData.Object:IsA("TextBox") then
-                if localeData.Object.Name ~= "FontPreviewLabel" then
-                    localeData.Object.Font = selectedEnum
-                end
-            end
-        end
+-- Применяем стартовую тему
+Library:UpdateTheme("Deep Ocean")
+
+-- ============================================================================
+-- ЗАПУСК СИСТЕМЫ ЗАГРУЗКИ (3 СЕКУНДЫ)
+-- ============================================================================
+task.spawn(function()
+    local loadDuration = 3
+    local startTimeLoad = os.clock()
+    
+    while os.clock() - startTimeLoad < loadDuration do
+        local elapsed = os.clock() - startTimeLoad
+        local progress = math.clamp(elapsed / loadDuration, 0, 1)
+        
+        ProgressBarFill.Size = UDim2.new(progress, 0, 1, 0)
+        LoadingStatus.Text = string.format("Загрузка... %d%%", math.floor(progress * 100))
+        
+        task.wait()
     end
-end)
-
-Library:CreateDropdown(SettingsSections["UI"], "Language", {"English", "Русский"}, "English", function(option)
-    Library.CurrentLanguage = option
-    TabTitle.Text = Localization[Library.CurrentLanguage][Library.CurrentTabKey] or Library.CurrentTabKey
-    for _, localeData in ipairs(LocaleObjects) do
-        local newText = Localization[Library.CurrentLanguage][localeData.Key] or localeData.Key
-        localeData.Object.Text = newText
-        if localeData.SearchItem then localeData.SearchItem.SearchText = NormalizeText(newText) end
-    end
-end)
-
-Library:CreateDropdown(SettingsSections["Theme"], "UITheme", ThemeNamesList, "Deep Ocean", function(option)
-    Library:UpdateTheme(option)
+    
+    ProgressBarFill.Size = UDim2.new(1, 0, 1, 0)
+    LoadingStatus.Text = "Загрузка... 100%"
+    task.wait(0.2)
+    
+    -- Плавное исчезновение экрана загрузки и появление GUI
+    tween(LoadingFrame, {BackgroundTransparency = 1}, 0.3)
+    tween(LoadingTitle, {TextTransparency = 1}, 0.3)
+    tween(LoadingStatus, {TextTransparency = 1}, 0.3)
+    tween(ProgressBarBg, {BackgroundTransparency = 1}, 0.3)
+    tween(ProgressBarFill, {BackgroundTransparency = 1}, 0.3)
+    local strokeTween = tween(LoadingStroke, {Transparency = 1}, 0.3)
+    
+    strokeTween.Completed:Connect(function()
+        LoadingFrame:Destroy()
+        MainFrame.Visible = true
+    end)
 end)
