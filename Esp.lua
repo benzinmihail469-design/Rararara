@@ -1,7 +1,8 @@
 -- ============================================================================
 -- Dark Hub - Settings Edition (Fixed & Optimized)
 -- ============================================================================
-local TweenService = game:GetService("TweenService")
+
+local TweenService = game:GetService("TweenService") 
 local UserInputService = game:GetService("UserInputService")
 local RunService = game:GetService("RunService")
 local GuiService = game:GetService("GuiService")
@@ -44,6 +45,7 @@ local function toggleAntiAFK(state)
         end
     end
 end
+
 toggleAntiAFK(true)
 
 -- Safe GUI Parent Resolution
@@ -51,6 +53,7 @@ local SafeParent = nil
 if typeof(gethui) == "function" then
     pcall(function() SafeParent = gethui() end)
 end
+
 if not SafeParent then
     pcall(function()
         local cg = game:GetService("CoreGui")
@@ -60,9 +63,11 @@ if not SafeParent then
         SafeParent = cg
     end)
 end
+
 if not SafeParent then
     SafeParent = LocalPlayer:WaitForChild("PlayerGui", 10)
 end
+
 if not SafeParent then return end
 
 if SafeParent:FindFirstChild("DarkHub") then
@@ -75,6 +80,7 @@ DarkHub.Parent = SafeParent
 DarkHub.ZIndexBehavior = Enum.ZIndexBehavior.Sibling
 
 local activeTweens = {}
+
 local function tween(obj, props, dur)
     if not obj or typeof(obj) ~= "Instance" or not obj.Parent then return nil end
     if activeTweens[obj] then
@@ -95,16 +101,15 @@ end
 local function NormalizeText(str)
     if type(str) ~= "string" then return "" end
     local lowerStr = str:lower()
-    local cyrUpper = {"А","Б","В","Г","Д","Е","Ё","Ж","З","И","Й","К","Л","М","Н","О","П","Р","С","Т","У","Ф","Х","Ц","Ч","Ш","Щ","Ъ","Ы","Ь","Э","Ю","Я"}
-    local cyrLower = {"а","б","в","г","д","е","ё","ж","з","и","й","к","л","м","н","о","п","р","с","т","у","ф","х","ц","ч","ш","щ","ъ","ы","ь","э","ю","я"}
+    
+    local cyrUpper = {"Рђ","Р‘","Р’","Р“","Р”","Р•","РЃ","Р–","Р—","Р","Р™","Рљ","Р›","Рњ","Рќ","Рћ","Рџ","Р ","РЎ","Рў","РЈ","Р¤","РҐ","Р¦","Р§","РЁ","Р©","РЄ","Р«","Р¬","Р­","Р®","РЇ"}
+    local cyrLower = {"Р°","Р±","РІ","Рі","Рґ","Рµ","С‘","Р¶","Р·","Рё","Р№","Рє","Р»","Рј","РЅ","Рѕ","Рї","СЂ","СЃ","С‚","Сѓ","С„","С…","С†","С‡","С€","С‰","СЉ","С‹","СЊ","СЌ","СЋ","СЏ"}
     for i = 1, #cyrUpper do
         lowerStr = lowerStr:gsub(cyrUpper[i], cyrLower[i])
     end
+
     local synonyms = {
-        ["настройки"] = "settings",
-        ["язык"] = "language",
-        ["тема"] = "theme",
-        ["шрифт"] = "font"
+        ["РЅР°СЃС‚СЂРѕР№РєРё"] = "settings", ["СЏР·С‹Рє"] = "language", ["С‚РµРјР°"] = "theme", ["С€СЂРёС„С‚"] = "font"
     }
     for ru, en in pairs(synonyms) do
         lowerStr = string.gsub(lowerStr, ru, en)
@@ -115,6 +120,7 @@ end
 local function spawnWave(container, clickX, clickY)
     if not container or typeof(container) ~= "Instance" or not container.Parent then return end
     container.ClipsDescendants = true
+
     local absSize = container.AbsoluteSize
     local startX = clickX or (absSize.X / 2)
     local startY = clickY or (absSize.Y / 2)
@@ -138,11 +144,10 @@ local function spawnWave(container, clickX, clickY)
         Size = UDim2.new(0, maxDimension, 0, maxDimension),
         BackgroundTransparency = 1
     }, 0.6)
+
     if waveTween then
         waveTween.Completed:Connect(function()
-            if Wave and Wave.Parent then
-                Wave:Destroy()
-            end
+            if Wave and Wave.Parent then Wave:Destroy() end
         end)
     end
 end
@@ -196,7 +201,7 @@ ControlsContainer.ZIndex = 10
 local MinBtn = Instance.new("TextButton", ControlsContainer)
 MinBtn.Size = UDim2.new(0, 24, 0, 24)
 MinBtn.Position = UDim2.new(0, 0, 0, 3)
-MinBtn.Text = "-"
+MinBtn.Text = "вЂ”"
 MinBtn.Font = Enum.Font.GothamBold
 MinBtn.TextSize = 12
 MinBtn.TextColor3 = Color3.fromRGB(180, 180, 180)
@@ -206,9 +211,9 @@ MinBtn.ZIndex = 11
 local CloseBtn = Instance.new("TextButton", ControlsContainer)
 CloseBtn.Size = UDim2.new(0, 24, 0, 24)
 CloseBtn.Position = UDim2.new(0, 30, 0, 0)
-CloseBtn.Text = "X"
+CloseBtn.Text = "Г—"
 CloseBtn.Font = Enum.Font.Arial
-CloseBtn.TextSize = 18
+CloseBtn.TextSize = 22
 CloseBtn.TextColor3 = Color3.fromRGB(180, 180, 180)
 CloseBtn.BackgroundTransparency = 1
 CloseBtn.ZIndex = 11
@@ -236,9 +241,9 @@ local ClearSearchBtn = Instance.new("TextButton", SearchContainer)
 ClearSearchBtn.Size = UDim2.new(0, 16, 0, 16)
 ClearSearchBtn.Position = UDim2.new(1, -22, 0.5, -8)
 ClearSearchBtn.BackgroundTransparency = 1
-ClearSearchBtn.Text = "X"
+ClearSearchBtn.Text = "Г—"
 ClearSearchBtn.Font = Enum.Font.Gotham
-ClearSearchBtn.TextSize = 12
+ClearSearchBtn.TextSize = 16
 ClearSearchBtn.TextColor3 = Color3.fromRGB(150, 150, 150)
 ClearSearchBtn.Visible = false
 ClearSearchBtn.ZIndex = 8
@@ -267,7 +272,6 @@ HeaderBg.Position = UDim2.new(0, 10, 0, 10)
 HeaderBg.BackgroundColor3 = Color3.fromRGB(22, 22, 22)
 HeaderBg.ZIndex = 4
 Instance.new("UICorner", HeaderBg).CornerRadius = UDim.new(0, 10)
-
 local HeaderStroke = Instance.new("UIStroke", HeaderBg)
 HeaderStroke.Color = Color3.fromRGB(45, 45, 45)
 
@@ -278,7 +282,7 @@ HubIcon.BackgroundTransparency = 1
 HubIcon.ScaleType = Enum.ScaleType.Fit
 HubIcon.ZIndex = 5
 Instance.new("UICorner", HubIcon).CornerRadius = UDim.new(0, 6)
-HubIcon.Image = "rbxassetid://" .. CustomIconID
+HubIcon.Image = "rbxthumb://type=Asset&id=" .. CustomIconID .. "&w=150&h=150"
 
 local HubTitle = Instance.new("TextLabel", HeaderBg)
 HubTitle.Text = "Dark Hub"
@@ -312,7 +316,7 @@ EmbeddedControls.Visible = false
 local EmbMinBtn = Instance.new("TextButton", EmbeddedControls)
 EmbMinBtn.Size = UDim2.new(0, 20, 0, 20)
 EmbMinBtn.Position = UDim2.new(0, 0, 0, 5)
-EmbMinBtn.Text = "-"
+EmbMinBtn.Text = "вЂ”"
 EmbMinBtn.Font = Enum.Font.GothamBold
 EmbMinBtn.TextSize = 11
 EmbMinBtn.TextColor3 = Color3.fromRGB(180, 180, 180)
@@ -322,9 +326,9 @@ EmbMinBtn.ZIndex = 7
 local EmbCloseBtn = Instance.new("TextButton", EmbeddedControls)
 EmbCloseBtn.Size = UDim2.new(0, 20, 0, 20)
 EmbCloseBtn.Position = UDim2.new(0, 25, 0, 2)
-EmbCloseBtn.Text = "X"
+EmbCloseBtn.Text = "Г—"
 EmbCloseBtn.Font = Enum.Font.Arial
-EmbCloseBtn.TextSize = 16
+EmbCloseBtn.TextSize = 20
 EmbCloseBtn.TextColor3 = Color3.fromRGB(180, 180, 180)
 EmbCloseBtn.BackgroundTransparency = 1
 EmbCloseBtn.ZIndex = 7
@@ -353,7 +357,6 @@ FooterBg.Position = UDim2.new(0, 10, 1, -56)
 FooterBg.BackgroundColor3 = Color3.fromRGB(22, 22, 22)
 FooterBg.ZIndex = 4
 Instance.new("UICorner", FooterBg).CornerRadius = UDim.new(0, 10)
-
 local FooterStroke = Instance.new("UIStroke", FooterBg)
 FooterStroke.Color = Color3.fromRGB(45, 45, 45)
 
@@ -371,7 +374,7 @@ local StatsLabel = Instance.new("TextLabel", FooterBg)
 StatsLabel.Position = UDim2.new(0, 10, 0, 23)
 StatsLabel.Size = UDim2.new(1, -20, 0, 15)
 StatsLabel.Font = Enum.Font.Gotham
-StatsLabel.Text = "FPS: ... | Session: 00:00:00"
+StatsLabel.Text = "FPS: ...  |  Session: 00:00:00"
 StatsLabel.TextColor3 = Color3.fromRGB(130, 130, 130)
 StatsLabel.TextSize = 10
 StatsLabel.TextXAlignment = Enum.TextXAlignment.Left
@@ -390,22 +393,20 @@ RunService.RenderStepped:Connect(function(dt)
     if #fpsBuffer > maxSamples then
         table.remove(fpsBuffer, 1)
     end
+    
     lastUpdateTime = lastUpdateTime + dt
     if lastUpdateTime >= updateInterval then
         lastUpdateTime = 0
         local sum = 0
-        for _, fps in ipairs(fpsBuffer) do
-            sum = sum + fps
-        end
+        for _, fps in ipairs(fpsBuffer) do sum = sum + fps end
         local averageFps = sum / math.max(#fpsBuffer, 1)
         local passedTime = CurrentTime - startTime
-        StatsLabel.Text = string.format("FPS: %d | Session: %s", math.floor(averageFps + 0.5), formatSessionTime(passedTime))
+        StatsLabel.Text = string.format("FPS: %d  |  Session: %s", math.floor(averageFps + 0.5), formatSessionTime(passedTime))
     end
 end)
 
 local isMinimized = false
 local LastMinimizedPos = UDim2.new(0.5, 0, 0.5, 0)
-
 local function ToggleMinimize()
     isMinimized = not isMinimized
     if isMinimized then
@@ -442,7 +443,6 @@ local function CloseGui()
         DarkHub:Destroy()
     end
 end
-
 CloseBtn.Activated:Connect(CloseGui)
 EmbCloseBtn.Activated:Connect(CloseGui)
 
@@ -451,7 +451,6 @@ local function setupHeaderBtnHover(btn, normalColor, hoverColor)
     btn.MouseEnter:Connect(function() tween(btn, {TextColor3 = hoverColor}) end)
     btn.MouseLeave:Connect(function() tween(btn, {TextColor3 = normalColor}) end)
 end
-
 setupHeaderBtnHover(MinBtn, Color3.fromRGB(180,180,180), Color3.fromRGB(255,255,255))
 setupHeaderBtnHover(EmbMinBtn, Color3.fromRGB(180,180,180), Color3.fromRGB(255,255,255))
 setupHeaderBtnHover(CloseBtn, Color3.fromRGB(180,180,180), Color3.fromRGB(255,70,70))
@@ -469,9 +468,7 @@ MainFrame.InputBegan:Connect(function(input)
 end)
 
 MainFrame.InputChanged:Connect(function(input)
-    if input.UserInputType == Enum.UserInputType.MouseMovement or input.UserInputType == Enum.UserInputType.Touch then
-        dragInput = input
-    end
+    if input.UserInputType == Enum.UserInputType.MouseMovement or input.UserInputType == Enum.UserInputType.Touch then dragInput = input end
 end)
 
 UserInputService.InputChanged:Connect(function(input)
@@ -491,6 +488,7 @@ Library.CurrentFont = Enum.Font.Gotham
 Library.CurrentLanguage = "English"
 Library.CurrentTabKey = "Settings"
 Library.ActiveDropdownClose = nil
+
 Library.TrackedMainBg = {}
 Library.TrackedElementBg = {}
 Library.TrackedAccents = {}
@@ -499,26 +497,27 @@ Library.TrackedSubText = {}
 Library.TrackedStrokes = {}
 
 local ThemeConfig = {
-    ["Black"] = { Accent = Color3.fromRGB(180, 180, 180), MainBg = Color3.fromRGB(12, 12, 12), ElementBg = Color3.fromRGB(22, 22, 22) },
-    ["White"] = { Accent = Color3.fromRGB(0, 122, 255), MainBg = Color3.fromRGB(240, 240, 240), ElementBg = Color3.fromRGB(255, 255, 255) },
-    ["Pink"] = { Accent = Color3.fromRGB(255, 105, 180), MainBg = Color3.fromRGB(25, 15, 20), ElementBg = Color3.fromRGB(40, 25, 35) },
-    ["Red"] = { Accent = Color3.fromRGB(255, 50, 50), MainBg = Color3.fromRGB(20, 10, 10), ElementBg = Color3.fromRGB(35, 15, 15) },
-    ["Green"] = { Accent = Color3.fromRGB(50, 255, 50), MainBg = Color3.fromRGB(10, 20, 10), ElementBg = Color3.fromRGB(15, 35, 15) },
-    ["Blue"] = { Accent = Color3.fromRGB(0, 150, 255), MainBg = Color3.fromRGB(10, 15, 25), ElementBg = Color3.fromRGB(20, 25, 40) },
-    ["Ash Gray"] = { Accent = Color3.fromRGB(112, 128, 144), MainBg = Color3.fromRGB(28, 30, 33), ElementBg = Color3.fromRGB(40, 42, 46) },
-    ["Deep Ocean"] = { Accent = Color3.fromRGB(0, 206, 209), MainBg = Color3.fromRGB(10, 20, 30), ElementBg = Color3.fromRGB(15, 30, 45) },
-    ["Royal Blue"] = { Accent = Color3.fromRGB(65, 105, 225), MainBg = Color3.fromRGB(12, 18, 34), ElementBg = Color3.fromRGB(22, 32, 60) },
-    ["Midnight Blue"] = { Accent = Color3.fromRGB(30, 144, 255), MainBg = Color3.fromRGB(6, 10, 18), ElementBg = Color3.fromRGB(12, 20, 35) },
-    ["Galaxy Purple"] = { Accent = Color3.fromRGB(138, 43, 226), MainBg = Color3.fromRGB(15, 10, 25), ElementBg = Color3.fromRGB(28, 18, 46) },
-    ["Neon Purple"] = { Accent = Color3.fromRGB(224, 32, 255), MainBg = Color3.fromRGB(18, 8, 28), ElementBg = Color3.fromRGB(32, 12, 51) },
-    ["Neon Cyber"] = { Accent = Color3.fromRGB(0, 255, 255), MainBg = Color3.fromRGB(10, 10, 12), ElementBg = Color3.fromRGB(20, 20, 25) },
-    ["Amber Glow"] = { Accent = Color3.fromRGB(255, 165, 0), MainBg = Color3.fromRGB(20, 16, 10), ElementBg = Color3.fromRGB(36, 28, 18) },
-    ["Anime"] = { Accent = Color3.fromRGB(255, 111, 207), MainBg = Color3.fromRGB(24, 20, 26), ElementBg = Color3.fromRGB(43, 35, 48) },
-    ["Deep Violet"] = { Accent = Color3.fromRGB(102, 51, 153), MainBg = Color3.fromRGB(13, 11, 20), ElementBg = Color3.fromRGB(23, 19, 36) },
-    ["Cyanic"] = { Accent = Color3.fromRGB(0, 255, 200), MainBg = Color3.fromRGB(10, 22, 26), ElementBg = Color3.fromRGB(18, 38, 46) },
-    ["Blood Red"] = { Accent = Color3.fromRGB(170, 0, 0), MainBg = Color3.fromRGB(14, 4, 4), ElementBg = Color3.fromRGB(28, 8, 8) },
-    ["AMOLED"] = { Accent = Color3.fromRGB(255, 255, 255), MainBg = Color3.fromRGB(0, 0, 0), ElementBg = Color3.fromRGB(15, 15, 15) }
+    ["Black"]         = { Accent = Color3.fromRGB(180, 180, 180), MainBg = Color3.fromRGB(12, 12, 12), ElementBg = Color3.fromRGB(22, 22, 22) },
+    ["White"]         = { Accent = Color3.fromRGB(0, 122, 255),   MainBg = Color3.fromRGB(240, 240, 240), ElementBg = Color3.fromRGB(255, 255, 255) },
+    ["Pink"]          = { Accent = Color3.fromRGB(255, 105, 180), MainBg = Color3.fromRGB(25, 15, 20),   ElementBg = Color3.fromRGB(40, 25, 35) },
+    ["Red"]           = { Accent = Color3.fromRGB(255, 50, 50),   MainBg = Color3.fromRGB(20, 10, 10),   ElementBg = Color3.fromRGB(35, 15, 15) },
+    ["Green"]         = { Accent = Color3.fromRGB(50, 255, 50),   MainBg = Color3.fromRGB(10, 20, 10),   ElementBg = Color3.fromRGB(15, 35, 15) },
+    ["Blue"]          = { Accent = Color3.fromRGB(0, 150, 255),   MainBg = Color3.fromRGB(10, 15, 25),   ElementBg = Color3.fromRGB(20, 25, 40) },
+    ["Ash Gray"]      = { Accent = Color3.fromRGB(112, 128, 144), MainBg = Color3.fromRGB(28, 30, 33),   ElementBg = Color3.fromRGB(40, 42, 46) },
+    ["Deep Ocean"]    = { Accent = Color3.fromRGB(0, 206, 209),   MainBg = Color3.fromRGB(10, 20, 30),   ElementBg = Color3.fromRGB(15, 30, 45) },
+    ["Royal Blue"]    = { Accent = Color3.fromRGB(65, 105, 225),  MainBg = Color3.fromRGB(12, 18, 34),   ElementBg = Color3.fromRGB(22, 32, 60) },
+    ["Midnight Blue"] = { Accent = Color3.fromRGB(30, 144, 255),  MainBg = Color3.fromRGB(6, 10, 18),    ElementBg = Color3.fromRGB(12, 20, 35) },
+    ["Galaxy Purple"] = { Accent = Color3.fromRGB(138, 43, 226),  MainBg = Color3.fromRGB(15, 10, 25),   ElementBg = Color3.fromRGB(28, 18, 46) },
+    ["Neon Purple"]   = { Accent = Color3.fromRGB(224, 32, 255),  MainBg = Color3.fromRGB(18, 8, 28),    ElementBg = Color3.fromRGB(32, 12, 51) },
+    ["Neon Cyber"]    = { Accent = Color3.fromRGB(0, 255, 255),   MainBg = Color3.fromRGB(10, 10, 12),   ElementBg = Color3.fromRGB(20, 20, 25) },
+    ["Amber Glow"]    = { Accent = Color3.fromRGB(255, 165, 0),   MainBg = Color3.fromRGB(20, 16, 10),   ElementBg = Color3.fromRGB(36, 28, 18) },
+    ["Anime"]         = { Accent = Color3.fromRGB(255, 111, 207), MainBg = Color3.fromRGB(24, 20, 26),   ElementBg = Color3.fromRGB(43, 35, 48) },
+    ["Deep Violet"]   = { Accent = Color3.fromRGB(102, 51, 153),  MainBg = Color3.fromRGB(13, 11, 20),   ElementBg = Color3.fromRGB(23, 19, 36) },
+    ["Cyanic"]        = { Accent = Color3.fromRGB(0, 255, 200),   MainBg = Color3.fromRGB(10, 22, 26),   ElementBg = Color3.fromRGB(18, 38, 46) },
+    ["Blood Red"]     = { Accent = Color3.fromRGB(170, 0, 0),     MainBg = Color3.fromRGB(14, 4, 4),     ElementBg = Color3.fromRGB(28, 8, 8) },
+    ["AMOLED"]        = { Accent = Color3.fromRGB(255, 255, 255), MainBg = Color3.fromRGB(0, 0, 0),      ElementBg = Color3.fromRGB(15, 15, 15) }
 }
+
 local DefaultTheme = { Accent = Color3.fromRGB(0, 206, 209), MainBg = Color3.fromRGB(10, 20, 30), ElementBg = Color3.fromRGB(15, 30, 45) }
 Library.CurrentThemeData = ThemeConfig["Deep Ocean"] or DefaultTheme
 
@@ -537,7 +536,9 @@ local function getThemeMainBg()
 end
 
 local function getLuminance(color)
-    if typeof(color) ~= "Color3" then color = DefaultTheme.MainBg end
+    if typeof(color) ~= "Color3" then
+        color = DefaultTheme.MainBg
+    end
     return (color.R * 0.299 + color.G * 0.587 + color.B * 0.114)
 end
 
@@ -553,6 +554,7 @@ local allTabs = {}
 local allTabButtons = {}
 local allTabIcons = {}
 local allPages = {}
+
 local currentActiveTab = nil
 local currentHoveredTab = nil
 
@@ -560,8 +562,10 @@ local function applyHover(button)
     if not button or typeof(button) ~= "Instance" or not button.Parent then return end
     local parentContainer = button.Parent
     if not parentContainer or typeof(parentContainer) ~= "Instance" or not parentContainer.Parent then return end
+    
     local accent = getThemeAccent()
     local mainBg = getThemeMainBg()
+    
     local stroke = parentContainer:FindFirstChild("HoverStroke")
     if not stroke then
         stroke = Instance.new("UIStroke")
@@ -574,9 +578,11 @@ local function applyHover(button)
     else
         stroke.Color = accent
     end
+    
     local isL = isLightColor(mainBg)
     local hoverBg = isL and Color3.fromRGB(200, 200, 200) or Color3.fromRGB(50, 50, 50)
     local hoverText = isL and Color3.fromRGB(20, 20, 20) or Color3.fromRGB(255, 255, 255)
+
     tween(parentContainer, {BackgroundColor3 = hoverBg, BackgroundTransparency = 0.5}, 0.18)
     tween(stroke, {Transparency = 0.5}, 0.18)
     tween(button, {TextColor3 = hoverText}, 0.18)
@@ -586,6 +592,7 @@ local function removeHover(button)
     if not button or typeof(button) ~= "Instance" or not button.Parent then return end
     local parentContainer = button.Parent
     if not parentContainer or typeof(parentContainer) ~= "Instance" then return end
+    
     local stroke = parentContainer:FindFirstChild("HoverStroke")
     if stroke then
         local t = tween(stroke, {Transparency = 1}, 0.18)
@@ -597,8 +604,10 @@ local function removeHover(button)
             end)
         end
     end
+    
     local isL = isLightColor(getThemeMainBg())
     local normalTextColor = isL and Color3.fromRGB(110, 110, 110) or Color3.fromRGB(140, 140, 140)
+    
     tween(parentContainer, {BackgroundTransparency = 1}, 0.18)
     tween(button, {TextColor3 = normalTextColor}, 0.18)
 end
@@ -607,8 +616,10 @@ local function setActiveTab(tabButton)
     if not tabButton or typeof(tabButton) ~= "Instance" or not tabButton.Parent then return end
     local parentContainer = tabButton.Parent
     if not parentContainer or typeof(parentContainer) ~= "Instance" then return end
+    
     local accent = getThemeAccent()
     local mainBg = getThemeMainBg()
+    
     local indicator = parentContainer:FindFirstChild("ActiveIndicator")
     if not indicator then
         indicator = Instance.new("Frame")
@@ -620,16 +631,20 @@ local function setActiveTab(tabButton)
         indicator.ZIndex = tabButton.ZIndex + 2
         indicator.BackgroundTransparency = 1
         indicator.Parent = parentContainer
+        
         local corner = Instance.new("UICorner", indicator)
         corner.CornerRadius = UDim.new(0, 2)
     end
+    
     tabButton.Font = Enum.Font.GothamBold
     local isL = isLightColor(mainBg)
     local activeTextColor = isL and Color3.fromRGB(20, 20, 20) or Color3.fromRGB(255, 255, 255)
     local activeBgColor = isL and Color3.fromRGB(215, 215, 215) or Color3.fromRGB(35, 35, 35)
+
     tween(indicator, {BackgroundColor3 = accent, BackgroundTransparency = 0}, 0.25)
     tween(tabButton, {TextColor3 = activeTextColor}, 0.25)
     tween(parentContainer, {BackgroundColor3 = activeBgColor, BackgroundTransparency = 0}, 0.25)
+    
     local textKey = tabButton.Name
     if allTabIcons[textKey] and typeof(allTabIcons[textKey]) == "Instance" and allTabIcons[textKey].Parent then
         tween(allTabIcons[textKey], {ImageTransparency = 0}, 0.25)
@@ -640,6 +655,7 @@ local function clearActiveTab(tabButton)
     if not tabButton or typeof(tabButton) ~= "Instance" or not tabButton.Parent then return end
     local parentContainer = tabButton.Parent
     if not parentContainer or typeof(parentContainer) ~= "Instance" then return end
+    
     local indicator = parentContainer:FindFirstChild("ActiveIndicator")
     if indicator then
         local t = tween(indicator, {BackgroundTransparency = 1}, 0.25)
@@ -651,11 +667,15 @@ local function clearActiveTab(tabButton)
             end)
         end
     end
+    
     tabButton.Font = Library.CurrentFont or Enum.Font.Gotham
+    
     local isL = isLightColor(getThemeMainBg())
     local normalTextColor = isL and Color3.fromRGB(110, 110, 110) or Color3.fromRGB(140, 140, 140)
+    
     tween(tabButton, {TextColor3 = normalTextColor}, 0.25)
     tween(parentContainer, {BackgroundTransparency = 1}, 0.25)
+    
     local textKey = tabButton.Name
     if allTabIcons[textKey] and typeof(allTabIcons[textKey]) == "Instance" and allTabIcons[textKey].Parent then
         tween(allTabIcons[textKey], {ImageTransparency = 0.25}, 0.25)
@@ -666,6 +686,7 @@ local function applyThemeToTabs(theme)
     theme = theme or Library.CurrentThemeData or DefaultTheme
     local mainBg = (theme and typeof(theme.MainBg) == "Color3") and theme.MainBg or DefaultTheme.MainBg
     local accent = (theme and typeof(theme.Accent) == "Color3") and theme.Accent or DefaultTheme.Accent
+
     local isLightMode = isLightColor(mainBg)
     local activeTextColor = isLightMode and Color3.fromRGB(20, 20, 20) or Color3.fromRGB(255, 255, 255)
     local inactiveTextColor = isLightMode and Color3.fromRGB(110, 110, 110) or Color3.fromRGB(140, 140, 140)
@@ -677,9 +698,11 @@ local function applyThemeToTabs(theme)
             if parentContainer and typeof(parentContainer) == "Instance" then
                 local indicator = parentContainer:FindFirstChild("ActiveIndicator")
                 local hoverStroke = parentContainer:FindFirstChild("HoverStroke")
+
                 if tabBtn == currentActiveTab then
                     tween(tabBtn, {TextColor3 = activeTextColor}, 0.2)
                     tween(parentContainer, {BackgroundColor3 = activeBgColor, BackgroundTransparency = 0}, 0.2)
+                    
                     if not indicator then
                         indicator = Instance.new("Frame")
                         indicator.Name = "ActiveIndicator"
@@ -691,7 +714,9 @@ local function applyThemeToTabs(theme)
                         local corner = Instance.new("UICorner", indicator)
                         corner.CornerRadius = UDim.new(0, 2)
                     end
+                    
                     tween(indicator, {BackgroundColor3 = accent, BackgroundTransparency = 0}, 0.2)
+
                     if allTabIcons[textKey] and typeof(allTabIcons[textKey]) == "Instance" and allTabIcons[textKey].Parent then
                         tween(allTabIcons[textKey], {ImageTransparency = 0}, 0.2)
                     end
@@ -700,6 +725,7 @@ local function applyThemeToTabs(theme)
                     if currentHoveredTab ~= tabBtn then
                         tween(parentContainer, {BackgroundTransparency = 1}, 0.2)
                     end
+
                     if indicator then
                         local t = tween(indicator, {BackgroundTransparency = 1}, 0.2)
                         if t then
@@ -710,10 +736,12 @@ local function applyThemeToTabs(theme)
                             end)
                         end
                     end
+
                     if allTabIcons[textKey] and typeof(allTabIcons[textKey]) == "Instance" and allTabIcons[textKey].Parent then
                         tween(allTabIcons[textKey], {ImageTransparency = 0.25}, 0.2)
                     end
                 end
+
                 if hoverStroke then
                     tween(hoverStroke, {Color = accent}, 0.2)
                 end
@@ -725,18 +753,19 @@ end
 function Library:UpdateTheme(themeName)
     local theme = ThemeConfig[themeName] or DefaultTheme
     Library.CurrentThemeData = theme
+    
     local mainBg = getThemeMainBg()
     local accent = getThemeAccent()
     local isLightMode = isLightColor(mainBg)
+    
     local mainTextColor = isLightMode and Color3.fromRGB(35, 35, 35) or Color3.fromRGB(255, 255, 255)
     local subTextColor = isLightMode and Color3.fromRGB(110, 110, 110) or Color3.fromRGB(140, 140, 140)
     local strokeColor = isLightMode and Color3.fromRGB(190, 190, 190) or Color3.fromRGB(45, 45, 45)
-
+    
     for _, obj in ipairs(Library.TrackedMainBg) do
-        if obj and typeof(obj) == "Instance" and obj.Parent then
-            tween(obj, {BackgroundColor3 = mainBg})
-        end
+        if obj and typeof(obj) == "Instance" and obj.Parent then tween(obj, {BackgroundColor3 = mainBg}) end
     end
+    
     for _, obj in ipairs(Library.TrackedElementBg) do
         if obj and typeof(obj) == "Instance" and obj.Parent then
             if obj.Name ~= "TabContainer" then
@@ -744,34 +773,31 @@ function Library:UpdateTheme(themeName)
             end
         end
     end
+    
     for _, obj in ipairs(Library.TrackedStrokes) do
-        if obj and typeof(obj) == "Instance" and obj.Parent then
-            tween(obj, {Color = strokeColor})
-        end
+        if obj and typeof(obj) == "Instance" and obj.Parent then tween(obj, {Color = strokeColor}) end
     end
+    
     for _, obj in ipairs(Library.TrackedMainText) do
-        if obj and typeof(obj) == "Instance" and obj.Parent then
-            tween(obj, {TextColor3 = mainTextColor})
+        if obj and typeof(obj) == "Instance" and obj.Parent then 
+            tween(obj, {TextColor3 = mainTextColor}) 
             if obj:IsA("TextBox") then
                 obj.PlaceholderColor3 = subTextColor
             end
         end
     end
+    
     for _, obj in ipairs(Library.TrackedSubText) do
-        if obj and typeof(obj) == "Instance" and obj.Parent then
-            tween(obj, {TextColor3 = subTextColor})
-        end
+        if obj and typeof(obj) == "Instance" and obj.Parent then tween(obj, {TextColor3 = subTextColor}) end
     end
-
+    
     applyThemeToTabs(theme)
-
+    
     for _, data in ipairs(Library.TrackedAccents) do
         if type(data) == "table" then
             if data.Type == "Toggle" then
                 if typeof(data.IsEnabled) == "function" and data.IsEnabled() then
-                    if data.Checkbox and data.Checkbox.Parent then
-                        tween(data.Checkbox, {BackgroundColor3 = accent})
-                    end
+                    if data.Checkbox and data.Checkbox.Parent then tween(data.Checkbox, {BackgroundColor3 = accent}) end
                     local brightness = (accent.R + accent.G + accent.B)
                     if data.Indicator and data.Indicator.Parent then
                         if brightness > 2.5 then
@@ -781,12 +807,8 @@ function Library:UpdateTheme(themeName)
                         end
                     end
                 else
-                    if data.Checkbox and data.Checkbox.Parent then
-                        tween(data.Checkbox, {BackgroundColor3 = isLightMode and Color3.fromRGB(210, 210, 210) or Color3.fromRGB(40, 40, 40)})
-                    end
-                    if data.Indicator and data.Indicator.Parent then
-                        tween(data.Indicator, {BackgroundColor3 = Color3.fromRGB(255, 255, 255)})
-                    end
+                    if data.Checkbox and data.Checkbox.Parent then tween(data.Checkbox, {BackgroundColor3 = isLightMode and Color3.fromRGB(210, 210, 210) or Color3.fromRGB(40, 40, 40)}) end
+                    if data.Indicator and data.Indicator.Parent then tween(data.Indicator, {BackgroundColor3 = Color3.fromRGB(255, 255, 255)}) end
                 end
             elseif data.Type == "Dropdown" then
                 local currentSelection = (typeof(data.GetDefault) == "function") and data.GetDefault() or ""
@@ -799,18 +821,14 @@ function Library:UpdateTheme(themeName)
                 if type(data.Options) == "table" then
                     for optName, optData in pairs(data.Options) do
                         if type(optData) == "table" then
-                            if optData.Check and typeof(optData.Check) == "Instance" and optData.Check.Parent then
+                            if optData.Check and typeof(optData.Check) == "Instance" and optData.Check.Parent then 
                                 optData.Check.TextColor3 = accent
                                 optData.Check.Visible = (optName == currentSelection)
                             end
                             if optName == currentSelection then
-                                if optData.Label and typeof(optData.Label) == "Instance" and optData.Label.Parent then
-                                    tween(optData.Label, {TextColor3 = accent})
-                                end
+                                if optData.Label and typeof(optData.Label) == "Instance" and optData.Label.Parent then tween(optData.Label, {TextColor3 = accent}) end
                             else
-                                if optData.Label and typeof(optData.Label) == "Instance" and optData.Label.Parent then
-                                    tween(optData.Label, {TextColor3 = subTextColor})
-                                end
+                                if optData.Label and typeof(optData.Label) == "Instance" and optData.Label.Parent then tween(optData.Label, {TextColor3 = subTextColor}) end
                             end
                         end
                     end
@@ -824,10 +842,12 @@ table.insert(Library.TrackedMainBg, MainFrame)
 table.insert(Library.TrackedElementBg, SearchContainer)
 table.insert(Library.TrackedElementBg, HeaderBg)
 table.insert(Library.TrackedElementBg, FooterBg)
+
 table.insert(Library.TrackedStrokes, MainStroke)
 table.insert(Library.TrackedStrokes, SearchStroke)
 table.insert(Library.TrackedStrokes, HeaderStroke)
 table.insert(Library.TrackedStrokes, FooterStroke)
+
 table.insert(Library.TrackedMainText, TabTitle)
 table.insert(Library.TrackedMainText, HubTitle)
 table.insert(Library.TrackedSubText, SubTitle)
@@ -841,32 +861,19 @@ table.insert(Library.TrackedMainText, EmbCloseBtn)
 
 local SearchableElements = {}
 local LocaleObjects = {}
+
 local Localization = {
     ["English"] = {
-        ["Settings"] = "Settings",
-        ["UI"] = "UI",
-        ["Theme"] = "Theme",
-        ["UISize"] = "UI Size",
-        ["UITransparency"] = "UI Transparency",
-        ["MenuFont"] = "Menu Font",
-        ["Language"] = "Language",
-        ["AntiAFK"] = "Anti-AFK",
-        ["UITheme"] = "UI Theme",
-        ["AnimatedWindow"] = "Animated Window",
-        ["Gradient"] = "Gradient Background"
+        ["Settings"] = "Settings", ["UI"] = "UI", ["Theme"] = "Theme",
+        ["UISize"] = "UI Size", ["UITransparency"] = "UI Transparency",
+        ["MenuFont"] = "Menu Font", ["Language"] = "Language", ["AntiAFK"] = "Anti-AFK", ["UITheme"] = "UI Theme",
+        ["AnimatedWindow"] = "Animated Window", ["Gradient"] = "Gradient Background"
     },
-    ["Русский"] = {
-        ["Settings"] = "Настройки",
-        ["UI"] = "Интерфейс",
-        ["Theme"] = "Тема",
-        ["UISize"] = "Размер интерфейса",
-        ["UITransparency"] = "Прозрачность меню",
-        ["MenuFont"] = "Шрифт меню",
-        ["Language"] = "Язык",
-        ["AntiAFK"] = "Анти-АФК",
-        ["UITheme"] = "Тема UI",
-        ["AnimatedWindow"] = "Анимированное окно",
-        ["Gradient"] = "Градиентный фон"
+    ["Р СѓСЃСЃРєРёР№"] = {
+        ["Settings"] = "РќР°СЃС‚СЂРѕР№РєРё", ["UI"] = "РРЅС‚РµСЂС„РµР№СЃ", ["Theme"] = "РўРµРјР°",
+        ["UISize"] = "Р Р°Р·РјРµСЂ РёРЅС‚РµСЂС„РµР№СЃР°", ["UITransparency"] = "РџСЂРѕР·СЂР°С‡РЅРѕСЃС‚СЊ РјРµРЅСЋ",
+        ["MenuFont"] = "РЁСЂРёС„С‚ РјРµРЅСЋ", ["Language"] = "РЇР·С‹Рє", ["AntiAFK"] = "РђРЅС‚Рё-РђР¤Рљ", ["UITheme"] = "РўРµРјР° UI",
+        ["AnimatedWindow"] = "РђРЅРёРјРёСЂРѕРІР°РЅРЅРѕРµ РѕРєРЅРѕ", ["Gradient"] = "Р“СЂР°РґРёРµРЅС‚РЅС‹Р№ С„РѕРЅ"
     }
 }
 
@@ -895,9 +902,7 @@ local function toggleAnimatedWindow(state)
                 local hue = (os.clock() * 0.15) % 1
                 local rainbowColor = Color3.fromHSV(hue, 0.6, 1)
                 for _, stroke in ipairs(Library.TrackedStrokes) do
-                    if stroke and typeof(stroke) == "Instance" and stroke.Parent then
-                        stroke.Color = rainbowColor
-                    end
+                    if stroke and typeof(stroke) == "Instance" and stroke.Parent then stroke.Color = rainbowColor end
                 end
             end)
         end
@@ -907,9 +912,7 @@ local function toggleAnimatedWindow(state)
             animatedWindowConnection = nil
             local defaultStrokeColor = isLightColor(getThemeMainBg()) and Color3.fromRGB(190, 190, 190) or Color3.fromRGB(45, 45, 45)
             for _, stroke in ipairs(Library.TrackedStrokes) do
-                if stroke and typeof(stroke) == "Instance" and stroke.Parent then
-                    stroke.Color = defaultStrokeColor
-                end
+                if stroke and typeof(stroke) == "Instance" and stroke.Parent then stroke.Color = defaultStrokeColor end
             end
         end
     end
@@ -979,14 +982,12 @@ SearchBox:GetPropertyChangedSignal("Text"):Connect(function()
                 item.Instance.Visible = true
             end
         end
-        if allPages[Library.CurrentTabKey] and typeof(allPages[Library.CurrentTabKey]) == "Instance" and allPages[Library.CurrentTabKey].Parent then
-            allPages[Library.CurrentTabKey].Visible = true
+        if allPages[Library.CurrentTabKey] and typeof(allPages[Library.CurrentTabKey]) == "Instance" and allPages[Library.CurrentTabKey].Parent then 
+            allPages[Library.CurrentTabKey].Visible = true 
         end
     else
-        for _, page in pairs(allPages) do
-            if page and typeof(page) == "Instance" and page.Parent then
-                page.Visible = false
-            end
+        for _, page in pairs(allPages) do 
+            if page and typeof(page) == "Instance" and page.Parent then page.Visible = false end
         end
         SearchResultsPage.Visible = true
         for _, item in ipairs(SearchableElements) do
@@ -1002,20 +1003,12 @@ SearchBox:GetPropertyChangedSignal("Text"):Connect(function()
     end
 end)
 
-ClearSearchBtn.Activated:Connect(function()
-    SearchBox.Text = ""
-end)
+ClearSearchBtn.Activated:Connect(function() SearchBox.Text = "" end)
 
 local FontMapping = {
-    ["Gotham"] = Enum.Font.Gotham,
-    ["Gotham Bold"] = Enum.Font.GothamBold,
-    ["Source Sans"] = Enum.Font.SourceSans,
-    ["Roboto"] = Enum.Font.Roboto,
-    ["Roboto Mono"] = Enum.Font.RobotoMono,
-    ["Ubuntu"] = Enum.Font.Ubuntu,
-    ["Michroma"] = Enum.Font.Michroma,
-    ["Code"] = Enum.Font.Code,
-    ["Fantasy"] = Enum.Font.Fantasy,
+    ["Gotham"] = Enum.Font.Gotham, ["Gotham Bold"] = Enum.Font.GothamBold, ["Source Sans"] = Enum.Font.SourceSans,
+    ["Roboto"] = Enum.Font.Roboto, ["Roboto Mono"] = Enum.Font.RobotoMono, ["Ubuntu"] = Enum.Font.Ubuntu,
+    ["Michroma"] = Enum.Font.Michroma, ["Code"] = Enum.Font.Code, ["Fantasy"] = Enum.Font.Fantasy,
     ["Fredoka One"] = Enum.Font.FredokaOne
 }
 
@@ -1032,21 +1025,20 @@ function Library:CreateDropdown(parentPage, textKey, options, default, callback)
     DropdownFrame.ZIndex = 6
     DropdownFrame.LayoutOrder = #parentPage:GetChildren()
     Instance.new("UICorner", DropdownFrame).CornerRadius = UDim.new(0, 6)
-
     local DropdownStroke = Instance.new("UIStroke", DropdownFrame)
     DropdownStroke.Color = Color3.fromRGB(40, 40, 40)
     DropdownStroke.Thickness = 1
-
+    
     table.insert(Library.TrackedElementBg, DropdownFrame)
     table.insert(Library.TrackedStrokes, DropdownStroke)
-
+    
     local HeaderBtn = Instance.new("TextButton", DropdownFrame)
     HeaderBtn.Name = "HeaderBtn"
     HeaderBtn.Size = UDim2.new(1, 0, 0, 36)
     HeaderBtn.BackgroundTransparency = 1
     HeaderBtn.Text = ""
     HeaderBtn.ZIndex = 7
-
+    
     local TitleLabel = Instance.new("TextLabel", HeaderBtn)
     TitleLabel.Name = "TitleLabel"
     TitleLabel.Size = UDim2.new(0.45, 0, 1, 0)
@@ -1059,8 +1051,9 @@ function Library:CreateDropdown(parentPage, textKey, options, default, callback)
     TitleLabel.TextTruncate = Enum.TextTruncate.AtEnd
     TitleLabel.BackgroundTransparency = 1
     TitleLabel.ZIndex = 8
+    
     table.insert(Library.TrackedMainText, TitleLabel)
-
+    
     local SelectedLabel = Instance.new("TextLabel", HeaderBtn)
     SelectedLabel.Name = "SelectedLabel"
     SelectedLabel.Size = UDim2.new(0.55, -35, 1, 0)
@@ -1073,7 +1066,7 @@ function Library:CreateDropdown(parentPage, textKey, options, default, callback)
     SelectedLabel.TextTruncate = Enum.TextTruncate.AtEnd
     SelectedLabel.BackgroundTransparency = 1
     SelectedLabel.ZIndex = 8
-
+    
     local Arrow = Instance.new("TextLabel", HeaderBtn)
     Arrow.Name = "Arrow"
     Arrow.Size = UDim2.new(0, 20, 1, 0)
@@ -1085,8 +1078,9 @@ function Library:CreateDropdown(parentPage, textKey, options, default, callback)
     Arrow.AnchorPoint = Vector2.new(0.5, 0.5)
     Arrow.Position = UDim2.new(1, -16, 0.5, 0)
     Arrow.ZIndex = 8
+    
     table.insert(Library.TrackedSubText, Arrow)
-
+    
     local OptionsContainer = Instance.new("ScrollingFrame", DropdownFrame)
     OptionsContainer.Name = "OptionsContainer"
     OptionsContainer.Size = UDim2.new(1, 0, 0, 0)
@@ -1098,7 +1092,7 @@ function Library:CreateDropdown(parentPage, textKey, options, default, callback)
     OptionsContainer.ZIndex = 8
     OptionsContainer.ClipsDescendants = true
     OptionsContainer.Visible = false
-
+    
     local ListLayout = Instance.new("UIListLayout", OptionsContainer)
     ListLayout.SortOrder = Enum.SortOrder.LayoutOrder
 
@@ -1108,7 +1102,7 @@ function Library:CreateDropdown(parentPage, textKey, options, default, callback)
         end
     end
     ListLayout:GetPropertyChangedSignal("AbsoluteContentSize"):Connect(updateCanvas)
-
+    
     local isExpanded = false
     local optionButtons = {}
 
@@ -1117,12 +1111,13 @@ function Library:CreateDropdown(parentPage, textKey, options, default, callback)
         isExpanded = not isExpanded
         local currentOptionsCount = #options
         local contentHeight = math.min(currentOptionsCount * 32, 140)
-
+        
         if isExpanded then
             if Library.ActiveDropdownClose and Library.ActiveDropdownClose ~= toggleDropdown then
                 pcall(Library.ActiveDropdownClose)
             end
             Library.ActiveDropdownClose = toggleDropdown
+            
             OptionsContainer.Visible = true
             OptionsContainer.Size = UDim2.new(1, 0, 0, contentHeight)
             tween(DropdownFrame, {Size = UDim2.new(1, -20, 0, 36 + contentHeight + 4)}, 0.2)
@@ -1147,9 +1142,8 @@ function Library:CreateDropdown(parentPage, textKey, options, default, callback)
             end
         end
     end
-
     HeaderBtn.Activated:Connect(toggleDropdown)
-
+    
     local function selectValue(option)
         if SelectedLabel and SelectedLabel.Parent then
             SelectedLabel.Text = option
@@ -1158,17 +1152,23 @@ function Library:CreateDropdown(parentPage, textKey, options, default, callback)
             pcall(callback, option)
         end
         local accent = getThemeAccent()
+        
         for optName, optData in pairs(optionButtons) do
             if type(optData) == "table" then
                 if optName == option then
                     if optData.Label and optData.Label.Parent then optData.Label.TextColor3 = accent end
-                    if optData.Check and optData.Check.Parent then optData.Check.TextColor3 = accent optData.Check.Visible = true end
+                    if optData.Check and optData.Check.Parent then
+                        optData.Check.Visible = true
+                        optData.Check.TextColor3 = accent
+                    end
                 else
                     local curBgL = getLuminance(getThemeMainBg())
                     if optData.Label and optData.Label.Parent then
                         optData.Label.TextColor3 = (curBgL > 0.5) and Color3.fromRGB(110, 110, 110) or Color3.fromRGB(140, 140, 140)
                     end
-                    if optData.Check and optData.Check.Parent then optData.Check.Visible = false end
+                    if optData.Check and optData.Check.Parent then
+                        optData.Check.Visible = false
+                    end
                 end
             end
         end
@@ -1190,7 +1190,7 @@ function Library:CreateDropdown(parentPage, textKey, options, default, callback)
             OptBtn.Text = ""
             OptBtn.LayoutOrder = i
             OptBtn.ZIndex = 9
-
+            
             local OptLabel = Instance.new("TextLabel", OptBtn)
             OptLabel.Size = UDim2.new(1, -40, 1, 0)
             OptLabel.Position = UDim2.new(0, 16, 0, 0)
@@ -1200,17 +1200,17 @@ function Library:CreateDropdown(parentPage, textKey, options, default, callback)
             OptLabel.TextTruncate = Enum.TextTruncate.AtEnd
             OptLabel.BackgroundTransparency = 1
             OptLabel.ZIndex = 10
-
+            
             local curBgL = getLuminance(getThemeMainBg())
             local defaultSubText = (curBgL > 0.5) and Color3.fromRGB(110, 110, 110) or Color3.fromRGB(140, 140, 140)
             OptLabel.TextColor3 = (option == SelectedLabel.Text) and accent or defaultSubText
-
+            
             if FontMapping and FontMapping[option] then
                 OptLabel.Font = FontMapping[option]
             else
                 OptLabel.Font = Library.CurrentFont
             end
-
+            
             local Checkmark = Instance.new("TextLabel", OptBtn)
             Checkmark.Size = UDim2.new(0, 20, 1, 0)
             Checkmark.Position = UDim2.new(1, -30, 0, 0)
@@ -1221,26 +1221,34 @@ function Library:CreateDropdown(parentPage, textKey, options, default, callback)
             Checkmark.BackgroundTransparency = 1
             Checkmark.Visible = (option == SelectedLabel.Text)
             Checkmark.ZIndex = 10
-
-            OptBtn.MouseEnter:Connect(function() tween(OptBtn, {BackgroundTransparency = 0.96}, 0.15) end)
-            OptBtn.MouseLeave:Connect(function() tween(OptBtn, {BackgroundTransparency = 1}, 0.15) end)
-
+            
+            OptBtn.MouseEnter:Connect(function()
+                tween(OptBtn, {BackgroundTransparency = 0.96}, 0.15)
+            end)
+            OptBtn.MouseLeave:Connect(function()
+                tween(OptBtn, {BackgroundTransparency = 1}, 0.15)
+            end)
+            
             optionButtons[option] = {Button = OptBtn, Label = OptLabel, Check = Checkmark}
-            OptBtn.Activated:Connect(function() selectValue(option) end)
+            
+            OptBtn.Activated:Connect(function()
+                selectValue(option)
+            end)
         end
+        
         task.defer(updateCanvas)
     end
 
     populateOptions(options)
-
+    
     table.insert(Library.TrackedAccents, {
         Type = "Dropdown",
         Options = optionButtons,
         Container = OptionsContainer,
-        SelectedLabel = SelectedLabel,
+        SelectedLabel = SelectedLabel, 
         GetDefault = function() return SelectedLabel and SelectedLabel.Text or "" end
     })
-
+    
     local searchItem = {Instance = DropdownFrame, SearchText = NormalizeText(initialText), OriginalParent = parentPage}
     table.insert(SearchableElements, searchItem)
     table.insert(LocaleObjects, {Object = TitleLabel, Key = textKey, SearchItem = searchItem})
@@ -1266,24 +1274,22 @@ function Library:CreateButton(parentPage, textKey, callback)
     Btn.ZIndex = 6
     Btn.LayoutOrder = #parentPage:GetChildren()
     Instance.new("UICorner", Btn).CornerRadius = UDim.new(0, 6)
-
     local BtnStroke = Instance.new("UIStroke", Btn)
     BtnStroke.Color = Color3.fromRGB(40, 40, 40)
-
+    
     table.insert(Library.TrackedElementBg, Btn)
     table.insert(Library.TrackedMainText, Btn)
     table.insert(Library.TrackedStrokes, BtnStroke)
-
+    
     Btn.MouseButton1Down:Connect(function()
         local mousePos = UserInputService:GetMouseLocation()
         local inset = GuiService:GetGuiInset()
         spawnWave(Btn, mousePos.X - Btn.AbsolutePosition.X, (mousePos.Y - inset.Y) - Btn.AbsolutePosition.Y)
     end)
-
     Btn.Activated:Connect(function()
         if type(callback) == "function" then pcall(callback) end
     end)
-
+    
     local searchItem = {Instance = Btn, SearchText = NormalizeText(initialText), OriginalParent = parentPage}
     table.insert(SearchableElements, searchItem)
     table.insert(LocaleObjects, {Object = Btn, Key = textKey, SearchItem = searchItem})
@@ -1298,13 +1304,12 @@ function Library:CreateToggle(parentPage, textKey, default, callback)
     TglFrame.ZIndex = 6
     TglFrame.LayoutOrder = #parentPage:GetChildren()
     Instance.new("UICorner", TglFrame).CornerRadius = UDim.new(0, 6)
-
     local TglStroke = Instance.new("UIStroke", TglFrame)
     TglStroke.Color = Color3.fromRGB(40, 40, 40)
-
+    
     table.insert(Library.TrackedElementBg, TglFrame)
     table.insert(Library.TrackedStrokes, TglStroke)
-
+    
     local TglLabel = Instance.new("TextLabel", TglFrame)
     TglLabel.Size = UDim2.new(1, -60, 1, 0)
     TglLabel.Position = UDim2.new(0, 12, 0, 0)
@@ -1315,25 +1320,25 @@ function Library:CreateToggle(parentPage, textKey, default, callback)
     TglLabel.TextXAlignment = Enum.TextXAlignment.Left
     TglLabel.BackgroundTransparency = 1
     TglLabel.ZIndex = 7
+    
     table.insert(Library.TrackedMainText, TglLabel)
-
+    
     local Checkbox = Instance.new("TextButton", TglFrame)
     Checkbox.Size = UDim2.new(0, 34, 0, 18)
     Checkbox.Position = UDim2.new(1, -44, 0.5, -9)
-    Checkbox.BackgroundColor3 = default and getThemeAccent() or Color3.fromRGB(40, 40, 40)
+    Checkbox.BackgroundColor3 = default and getThemeAccent() or Color3.fromRGB(40, 40, 40) 
     Checkbox.Text = ""
     Checkbox.ZIndex = 7
     Instance.new("UICorner", Checkbox).CornerRadius = UDim.new(0, 9)
-
+    
     local Indicator = Instance.new("Frame", Checkbox)
     Indicator.Size = UDim2.new(0, 14, 0, 14)
     Indicator.Position = default and UDim2.new(1, -16, 0.5, -7) or UDim2.new(0, 2, 0.5, -7)
     Indicator.BackgroundColor3 = Color3.new(1, 1, 1)
     Indicator.ZIndex = 8
     Instance.new("UICorner", Indicator).CornerRadius = UDim.new(1, 0)
-
+    
     local enabled = default
-
     local function setToggleState(state)
         enabled = state
         local accent = getThemeAccent()
@@ -1347,20 +1352,20 @@ function Library:CreateToggle(parentPage, textKey, default, callback)
             tween(Checkbox, {BackgroundColor3 = offColor}, 0.2)
             tween(Indicator, {Position = UDim2.new(0, 2, 0.5, -7), BackgroundColor3 = Color3.fromRGB(255, 255, 255)}, 0.2)
         end
-        if type(callback) == "function" then
-            pcall(callback, enabled)
-        end
+        if type(callback) == "function" then pcall(callback, enabled) end
     end
 
-    Checkbox.Activated:Connect(function() setToggleState(not enabled) end)
-
+    Checkbox.Activated:Connect(function()
+        setToggleState(not enabled)
+    end)
+    
     table.insert(Library.TrackedAccents, {
         Type = "Toggle",
         Checkbox = Checkbox,
         Indicator = Indicator,
         IsEnabled = function() return enabled end
     })
-
+    
     local searchItem = {Instance = TglFrame, SearchText = NormalizeText(initialText), OriginalParent = parentPage}
     table.insert(SearchableElements, searchItem)
     table.insert(LocaleObjects, {Object = TglLabel, Key = textKey, SearchItem = searchItem})
@@ -1380,13 +1385,12 @@ function Library:CreateSlider(parentPage, textKey, min, max, default, callback)
     SliderFrame.ZIndex = 6
     SliderFrame.LayoutOrder = #parentPage:GetChildren()
     Instance.new("UICorner", SliderFrame).CornerRadius = UDim.new(0, 8)
-
     local SliderStroke = Instance.new("UIStroke", SliderFrame)
     SliderStroke.Color = Color3.fromRGB(40, 40, 40)
-
+    
     table.insert(Library.TrackedElementBg, SliderFrame)
     table.insert(Library.TrackedStrokes, SliderStroke)
-
+    
     local SliderLabel = Instance.new("TextLabel", SliderFrame)
     SliderLabel.Size = UDim2.new(0.5, -12, 0, 22)
     SliderLabel.Position = UDim2.new(0, 12, 0, 6)
@@ -1397,8 +1401,9 @@ function Library:CreateSlider(parentPage, textKey, min, max, default, callback)
     SliderLabel.TextXAlignment = Enum.TextXAlignment.Left
     SliderLabel.BackgroundTransparency = 1
     SliderLabel.ZIndex = 7
+    
     table.insert(Library.TrackedMainText, SliderLabel)
-
+    
     local ValueLabel = Instance.new("TextLabel", SliderFrame)
     ValueLabel.Size = UDim2.new(0.5, -12, 0, 22)
     ValueLabel.Position = UDim2.new(0.5, 0, 0, 6)
@@ -1408,28 +1413,29 @@ function Library:CreateSlider(parentPage, textKey, min, max, default, callback)
     ValueLabel.TextXAlignment = Enum.TextXAlignment.Right
     ValueLabel.BackgroundTransparency = 1
     ValueLabel.ZIndex = 7
+    
     table.insert(Library.TrackedSubText, ValueLabel)
-
+    
     local SliderTrack = Instance.new("Frame", SliderFrame)
     SliderTrack.Size = UDim2.new(1, -24, 0, 5)
     SliderTrack.Position = UDim2.new(0, 12, 0, 34)
     SliderTrack.BackgroundColor3 = Color3.fromRGB(42, 42, 42)
     SliderTrack.ZIndex = 7
     Instance.new("UICorner", SliderTrack).CornerRadius = UDim.new(0, 3)
-
+    
     local SliderBtn = Instance.new("TextButton", SliderFrame)
     SliderBtn.Size = UDim2.new(1, 0, 1, 16)
     SliderBtn.Position = UDim2.new(0, 0, 0, -8)
     SliderBtn.BackgroundTransparency = 1
     SliderBtn.Text = ""
     SliderBtn.ZIndex = 10
-
+    
     local SliderFill = Instance.new("Frame", SliderTrack)
     SliderFill.Size = UDim2.new(0, 0, 1, 0)
     SliderFill.BackgroundColor3 = Color3.fromRGB(255, 60, 60)
     SliderFill.ZIndex = 8
     Instance.new("UICorner", SliderFill).CornerRadius = UDim.new(0, 3)
-
+    
     local SliderHandle = Instance.new("Frame", SliderTrack)
     SliderHandle.Size = UDim2.new(0, 14, 0, 14)
     SliderHandle.AnchorPoint = Vector2.new(0.5, 0.5)
@@ -1438,7 +1444,7 @@ function Library:CreateSlider(parentPage, textKey, min, max, default, callback)
     SliderHandle.ZIndex = 9
     Instance.new("UICorner", SliderHandle).CornerRadius = UDim.new(1, 0)
     Instance.new("UIStroke", SliderHandle).Color = Color3.fromRGB(25, 25, 25)
-
+    
     local dragging = false
     local currentPercent = (default - min) / (max - min)
     local currentValue = default
@@ -1446,23 +1452,18 @@ function Library:CreateSlider(parentPage, textKey, min, max, default, callback)
     local startPercent = 0
     local cachedTrackWidth = 0
     local isIntegerSlider = (max - min) > 5
-
+    
     local function getTrafficLightColor(pct)
         local red = Color3.fromRGB(255, 60, 60)
         local yellow = Color3.fromRGB(255, 210, 40)
         local green = Color3.fromRGB(60, 255, 90)
-        if pct < 0.5 then
-            return red:Lerp(yellow, pct * 2)
-        else
-            return yellow:Lerp(green, (pct - 0.5) * 2)
-        end
+        if pct < 0.5 then return red:Lerp(yellow, pct * 2) else return yellow:Lerp(green, (pct - 0.5) * 2) end
     end
-
+    
     local function updateVisuals(percentage)
         SliderFill.BackgroundColor3 = getTrafficLightColor(percentage)
         SliderFill.Size = UDim2.new(percentage, 0, 1, 0)
         SliderHandle.Position = UDim2.new(percentage, 0, 0.5, 0)
-
         local rawValue = min + (max - min) * percentage
         if isIntegerSlider then
             local roundedValue = math.floor(rawValue + 0.5)
@@ -1480,7 +1481,7 @@ function Library:CreateSlider(parentPage, textKey, min, max, default, callback)
         currentPercent = math.clamp((val - min) / (max - min), 0, 1)
         updateVisuals(currentPercent)
     end
-
+    
     SliderBtn.InputBegan:Connect(function(input)
         if (input.UserInputType == Enum.UserInputType.MouseButton1 or input.UserInputType == Enum.UserInputType.Touch) then
             dragging = true
@@ -1492,7 +1493,7 @@ function Library:CreateSlider(parentPage, textKey, min, max, default, callback)
             updateVisuals(currentPercent)
         end
     end)
-
+    
     UserInputService.InputChanged:Connect(function(input)
         if dragging and (input.UserInputType == Enum.UserInputType.MouseMovement or input.UserInputType == Enum.UserInputType.Touch) then
             local deltaX = input.Position.X - startX
@@ -1501,22 +1502,16 @@ function Library:CreateSlider(parentPage, textKey, min, max, default, callback)
             updateVisuals(currentPercent)
         end
     end)
-
+    
     UserInputService.InputEnded:Connect(function(input)
-        if input.UserInputType == Enum.UserInputType.MouseButton1 or input.UserInputType == Enum.UserInputType.Touch then
-            dragging = false
-        end
+        if input.UserInputType == Enum.UserInputType.MouseButton1 or input.UserInputType == Enum.UserInputType.Touch then dragging = false end
     end)
-
+    
     task.spawn(function()
-        while SliderTrack.Parent and SliderTrack.AbsoluteSize.X == 0 do
-            task.wait()
-        end
-        if SliderTrack.Parent then
-            updateVisuals(currentPercent)
-        end
+        while SliderTrack.Parent and SliderTrack.AbsoluteSize.X == 0 do task.wait() end
+        if SliderTrack.Parent then updateVisuals(currentPercent) end
     end)
-
+    
     local searchItem = {Instance = SliderFrame, SearchText = NormalizeText(initialText), OriginalParent = parentPage}
     table.insert(SearchableElements, searchItem)
     table.insert(LocaleObjects, {Object = SliderLabel, Key = textKey, SearchItem = searchItem})
@@ -1537,19 +1532,19 @@ function Library:CreatePage(textKey, iconId, layoutOrder)
     PageFrame.ScrollBarThickness = 2
     PageFrame.ScrollBarImageColor3 = Color3.fromRGB(50, 50, 50)
     PageFrame.ZIndex = 5
-
+    
     local layout = Instance.new("UIListLayout", PageFrame)
     layout.Padding = UDim.new(0, 8)
     layout.HorizontalAlignment = Enum.HorizontalAlignment.Center
     layout.SortOrder = Enum.SortOrder.LayoutOrder
     Instance.new("UIPadding", PageFrame).PaddingTop = UDim.new(0, 2)
-
+    
     layout:GetPropertyChangedSignal("AbsoluteContentSize"):Connect(function()
         if PageFrame and PageFrame.Parent then
             PageFrame.CanvasSize = UDim2.new(0, 0, 0, layout.AbsoluteContentSize.Y + 15)
         end
     end)
-
+    
     local TabContainer = Instance.new("Frame", Navigation)
     TabContainer.Size = UDim2.new(1, 0, 0, 34)
     TabContainer.BackgroundColor3 = Color3.fromRGB(28, 28, 28)
@@ -1560,7 +1555,7 @@ function Library:CreatePage(textKey, iconId, layoutOrder)
     TabContainer.Name = "TabContainer"
     Instance.new("UICorner", TabContainer).CornerRadius = UDim.new(0, 8)
     table.insert(Library.TrackedElementBg, TabContainer)
-
+    
     local TabBtn = Instance.new("TextButton", TabContainer)
     TabBtn.Name = textKey
     TabBtn.Size = UDim2.new(1, 0, 1, 0)
@@ -1571,29 +1566,25 @@ function Library:CreatePage(textKey, iconId, layoutOrder)
     TabBtn.BackgroundTransparency = 1
     TabBtn.TextXAlignment = Enum.TextXAlignment.Left
     TabBtn.ZIndex = 7
-
+    
     local Padding = Instance.new("UIPadding", TabBtn)
     Padding.PaddingLeft = UDim.new(0, iconId and 42 or 12)
-
+    
     if iconId then
         local TabIcon = Instance.new("ImageLabel", TabContainer)
         TabIcon.Size = UDim2.new(0, 24, 0, 24)
         TabIcon.Position = UDim2.new(0, 10, 0.5, -12)
         TabIcon.BackgroundTransparency = 1
-        if tonumber(iconId) then
-            TabIcon.Image = "rbxassetid://" .. iconId
-        else
-            TabIcon.Image = iconId
-        end
+        if tonumber(iconId) then TabIcon.Image = "rbxthumb://type=Asset&id=" .. iconId .. "&w=150&h=150" else TabIcon.Image = iconId end
         TabIcon.ImageTransparency = 0.25
         TabIcon.ZIndex = 7
         allTabIcons[textKey] = TabIcon
     end
-
+    
     allTabs[textKey] = TabContainer
     allTabButtons[textKey] = TabBtn
     allPages[textKey] = PageFrame
-
+    
     TabBtn.MouseButton1Down:Connect(function()
         local mousePos = UserInputService:GetMouseLocation()
         local inset = GuiService:GetGuiInset()
@@ -1601,30 +1592,44 @@ function Library:CreatePage(textKey, iconId, layoutOrder)
         local localY = (mousePos.Y - inset.Y) - TabContainer.AbsolutePosition.Y
         spawnWave(TabContainer, localX, localY)
     end)
-
+    
     TabBtn.MouseEnter:Connect(function()
-        if TabBtn ~= currentActiveTab then applyHover(TabBtn) end
+        if TabBtn ~= currentActiveTab then
+            applyHover(TabBtn)
+        end
         currentHoveredTab = TabBtn
     end)
-
+    
     TabBtn.MouseLeave:Connect(function()
-        if TabBtn ~= currentActiveTab then removeHover(TabBtn) end
+        if TabBtn ~= currentActiveTab then
+            removeHover(TabBtn)
+        end
         currentHoveredTab = nil
     end)
 
     TabBtn.Activated:Connect(function()
         if currentActiveTab == TabBtn then return end
-        if currentActiveTab then clearActiveTab(currentActiveTab) end
-        if currentHoveredTab == TabBtn then removeHover(TabBtn) end
+
+        if currentActiveTab then
+            clearActiveTab(currentActiveTab)
+        end
+        
+        if currentHoveredTab == TabBtn then
+            removeHover(TabBtn)
+        end
+
         if SearchBox.Text ~= "" then SearchBox.Text = "" end
 
         for tName, pFrame in pairs(allPages) do
-            if pFrame and pFrame.Parent then pFrame.Visible = false end
+            if pFrame and pFrame.Parent then
+                pFrame.Visible = false
+            end
         end
 
         Library.CurrentTabKey = textKey
         TabTitle.Text = Localization[Library.CurrentLanguage][textKey] or textKey
         PageFrame.Visible = true
+
         setActiveTab(TabBtn)
         currentActiveTab = TabBtn
     end)
@@ -1637,9 +1642,9 @@ end
 -- ============================================================================
 -- SETTINGS TAB & CONFIGURATION SYSTEM
 -- ============================================================================
-local SettingsPage = Library:CreatePage("Settings", CustomIconID, 1)
+local SettingsPage = Library:CreatePage("Settings", "117996761927034", 1)
 
-local LanguageDropdown = Library:CreateDropdown(SettingsPage, "Language", {"English", "Русский"}, "English", function(selectedLang)
+local LanguageDropdown = Library:CreateDropdown(SettingsPage, "Language", {"English", "Р СѓСЃСЃРєРёР№"}, "English", function(selectedLang)
     Library:UpdateLanguage(selectedLang)
 end)
 
@@ -1685,6 +1690,7 @@ end)
 -- CONFIGURATION SYSTEM MODULE
 -- ----------------------------------------------------------------------------
 local CONFIG_FOLDER = "DarkHub/Configs"
+local activeConfigName = nil
 
 pcall(function()
     if typeof(makefolder) == "function" and typeof(isfolder) == "function" then
@@ -1693,6 +1699,7 @@ pcall(function()
     end
 end)
 
+-- Toast notification
 local activeToast = nil
 local function showToast(message, dotColor)
     if activeToast and activeToast.Parent then
@@ -1738,12 +1745,15 @@ local function showToast(message, dotColor)
     label.ZIndex = 401
 
     tween(toast, {Position = UDim2.new(0.5, 0, 1, -30)}, 0.25)
+
     task.delay(1.5, function()
         if toast and toast.Parent then
             local t = tween(toast, {Position = UDim2.new(0.5, 0, 1, 20)}, 0.25)
             if t then
                 t.Completed:Connect(function()
-                    if toast and toast.Parent then toast:Destroy() end
+                    if toast and toast.Parent then
+                        toast:Destroy()
+                    end
                 end)
             else
                 toast:Destroy()
@@ -1752,6 +1762,32 @@ local function showToast(message, dotColor)
     end)
 end
 
+-- Collect settings
+local function collectSettings()
+    return {
+        Language = LanguageDropdown.GetValue(),
+        Theme = ThemeDropdown.GetValue(),
+        Font = FontDropdown.GetValue(),
+        Transparency = TransparencySlider.GetValue(),
+        AntiAFK = AntiAFKToggle.GetValue(),
+        AnimatedWindow = AnimatedWindowToggle.GetValue(),
+        Gradient = GradientToggle.GetValue()
+    }
+end
+
+-- Apply settings
+local function applySettings(data)
+    if type(data) ~= "table" then return end
+    if data.Language ~= nil then LanguageDropdown.SetValue(data.Language) end
+    if data.Theme ~= nil then ThemeDropdown.SetValue(data.Theme) end
+    if data.Font ~= nil then FontDropdown.SetValue(data.Font) end
+    if data.Transparency ~= nil then TransparencySlider.SetValue(data.Transparency) end
+    if data.AntiAFK ~= nil then AntiAFKToggle.SetValue(data.AntiAFK) end
+    if data.AnimatedWindow ~= nil then AnimatedWindowToggle.SetValue(data.AnimatedWindow) end
+    if data.Gradient ~= nil then GradientToggle.SetValue(data.Gradient) end
+end
+
+-- Config UI
 local ConfigHeaderContainer = Instance.new("Frame", SettingsPage)
 ConfigHeaderContainer.Size = UDim2.new(1, -20, 0, 30)
 ConfigHeaderContainer.BackgroundTransparency = 1
@@ -1799,7 +1835,7 @@ EmptyConfigLabel.Font = Enum.Font.Gotham
 EmptyConfigLabel.TextColor3 = Color3.fromRGB(85, 85, 102)
 EmptyConfigLabel.TextSize = 12
 EmptyConfigLabel.BackgroundTransparency = 1
-EmptyConfigLabel.Visible = true
+EmptyConfigLabel.Visible = false
 
 local NewConfigBtn = Instance.new("TextButton", SettingsPage)
 NewConfigBtn.Size = UDim2.new(1, -20, 0, 34)
@@ -1808,23 +1844,651 @@ NewConfigBtn.BackgroundTransparency = 1
 NewConfigBtn.Text = "+ New Config"
 NewConfigBtn.Font = Enum.Font.GothamMedium
 NewConfigBtn.TextColor3 = Color3.fromRGB(74, 144, 217)
-NewConfigBtn.TextSize = 13
-NewConfigBtn.ZIndex = 6
+NewConfigBtn.TextSize = 12
 NewConfigBtn.LayoutOrder = 103
+NewConfigBtn.ClipsDescendants = true
 Instance.new("UICorner", NewConfigBtn).CornerRadius = UDim.new(0, 6)
 
-local BtnStroke = Instance.new("UIStroke", NewConfigBtn)
-BtnStroke.Color = Color3.fromRGB(74, 144, 217)
-BtnStroke.Thickness = 1
+local NewConfigStroke = Instance.new("UIStroke", NewConfigBtn)
+NewConfigStroke.Color = Color3.fromRGB(74, 144, 217)
+NewConfigStroke.Thickness = 1
 
-NewConfigBtn.Activated:Connect(function()
-    showToast("Config system ready", Color3.fromRGB(74, 144, 217))
+NewConfigBtn.MouseEnter:Connect(function()
+    tween(NewConfigBtn, {BackgroundTransparency = 0.85, TextColor3 = Color3.fromRGB(255, 255, 255)}, 0.2)
+end)
+NewConfigBtn.MouseLeave:Connect(function()
+    tween(NewConfigBtn, {BackgroundTransparency = 1, TextColor3 = Color3.fromRGB(74, 144, 217)}, 0.2)
 end)
 
--- Отображение интерфейса по завершении загрузки
-MainFrame.Visible = true
-allPages["Settings"].Visible = true
-setActiveTab(allTabButtons["Settings"])
-currentActiveTab = allTabButtons["Settings"]
+-- Forward declarations for list refresh & modals
+local refreshConfigList
+local showCreateOrEditModal
+local showDeleteModal
 
-showToast("Dark Hub loaded successfully!", Color3.fromRGB(60, 255, 90))
+-- Save config
+local function saveConfig(name)
+    if not name or name == "" then return end
+    local filePath = CONFIG_FOLDER .. "/" .. name .. ".json"
+    local isUpdate = false
+
+    pcall(function()
+        if typeof(isfile) == "function" and isfile(filePath) then
+            isUpdate = true
+        end
+    end)
+
+    local timeStr = os.date("%b %d, %Y %H:%M")
+    local saveData = {
+        Created = timeStr,
+        Settings = collectSettings()
+    }
+
+    local success, encoded = pcall(function() return HttpService:JSONEncode(saveData) end)
+    if success and typeof(writefile) == "function" then
+        pcall(function()
+            writefile(filePath, encoded)
+        end)
+
+        activeConfigName = name
+        refreshConfigList()
+
+        if isUpdate then
+            showToast("Config '" .. name .. "' updated!", Color3.fromRGB(74, 144, 217))
+        else
+            showToast("Config '" .. name .. "' saved!", Color3.fromRGB(74, 144, 217))
+        end
+    end
+end
+
+-- Load config
+local function loadConfig(name)
+    if not name or name == "" then return end
+    local filePath = CONFIG_FOLDER .. "/" .. name .. ".json"
+
+    pcall(function()
+        if typeof(readfile) == "function" and typeof(isfile) == "function" and isfile(filePath) then
+            local success, decoded = pcall(function() return HttpService:JSONDecode(readfile(filePath)) end)
+            if success and decoded and decoded.Settings then
+                applySettings(decoded.Settings)
+                activeConfigName = name
+                refreshConfigList()
+                showToast("Config '" .. name .. "' loaded!", Color3.fromRGB(85, 224, 133))
+            end
+        end
+    end)
+end
+
+-- Delete config
+local function deleteConfig(name)
+    if not name or name == "" then return end
+    local filePath = CONFIG_FOLDER .. "/" .. name .. ".json"
+
+    pcall(function()
+        if typeof(delfile) == "function" and typeof(isfile) == "function" and isfile(filePath) then
+            delfile(filePath)
+            if activeConfigName == name then
+                activeConfigName = nil
+            end
+            refreshConfigList()
+            showToast("Config '" .. name .. "' deleted!", Color3.fromRGB(224, 85, 85))
+        end
+    end)
+end
+
+-- Rename config
+local function renameConfig(oldName, newName)
+    if not oldName or not newName or newName == "" or oldName == newName then return end
+    local oldPath = CONFIG_FOLDER .. "/" .. oldName .. ".json"
+    local newPath = CONFIG_FOLDER .. "/" .. newName .. ".json"
+
+    pcall(function()
+        if typeof(isfile) == "function" and isfile(oldPath) and typeof(readfile) == "function" and typeof(writefile) == "function" and typeof(delfile) == "function" then
+            local content = readfile(oldPath)
+            local success, decoded = pcall(function() return HttpService:JSONDecode(content) end)
+            if success and decoded then
+                writefile(newPath, HttpService:JSONEncode(decoded))
+                delfile(oldPath)
+
+                if activeConfigName == oldName then
+                    activeConfigName = newName
+                end
+                refreshConfigList()
+                showToast("Config '" .. newName .. "' updated!", Color3.fromRGB(74, 144, 217))
+            end
+        end
+    end)
+end
+
+-- Modal Creation/Editing Window
+function showCreateOrEditModal(existingName)
+    local isEdit = (existingName ~= nil)
+    local modalOverlay = Instance.new("Frame", DarkHub)
+    modalOverlay.Size = UDim2.new(1, 0, 1, 0)
+    modalOverlay.BackgroundColor3 = Color3.fromRGB(0, 0, 0)
+    modalOverlay.BackgroundTransparency = 1
+    modalOverlay.ZIndex = 300
+
+    local modalFrame = Instance.new("Frame", modalOverlay)
+    modalFrame.Size = UDim2.new(0, 280, 0, 150)
+    modalFrame.Position = UDim2.new(0.5, 0, 0.5, 0)
+    modalFrame.AnchorPoint = Vector2.new(0.5, 0.5)
+    modalFrame.BackgroundColor3 = Color3.fromRGB(30, 30, 40)
+    modalFrame.ZIndex = 301
+    Instance.new("UICorner", modalFrame).CornerRadius = UDim.new(0, 12)
+    local frameStroke = Instance.new("UIStroke", modalFrame)
+    frameStroke.Color = Color3.fromRGB(51, 51, 68)
+    frameStroke.Thickness = 1
+
+    local modalScale = Instance.new("UIScale", modalFrame)
+    modalScale.Scale = 0.9
+
+    local modalTitle = Instance.new("TextLabel", modalFrame)
+    modalTitle.Size = UDim2.new(1, -24, 0, 22)
+    modalTitle.Position = UDim2.new(0, 12, 0, 12)
+    modalTitle.Text = isEdit and "Edit Config" or "New Config"
+    modalTitle.Font = Enum.Font.GothamBold
+    modalTitle.TextSize = 14
+    modalTitle.TextColor3 = Color3.fromRGB(255, 255, 255)
+    modalTitle.TextXAlignment = Enum.TextXAlignment.Left
+    modalTitle.BackgroundTransparency = 1
+    modalTitle.ZIndex = 302
+
+    local nameBox = Instance.new("TextBox", modalFrame)
+    nameBox.Size = UDim2.new(1, -24, 0, 34)
+    nameBox.Position = UDim2.new(0, 12, 0, 42)
+    nameBox.BackgroundColor3 = Color3.fromRGB(21, 21, 28)
+    nameBox.Text = existingName or ""
+    nameBox.PlaceholderText = "Config name..."
+    nameBox.Font = Enum.Font.Gotham
+    nameBox.TextSize = 12
+    nameBox.TextColor3 = Color3.fromRGB(255, 255, 255)
+    nameBox.PlaceholderColor3 = Color3.fromRGB(136, 136, 153)
+    nameBox.TextXAlignment = Enum.TextXAlignment.Left
+    nameBox.ClearTextOnFocus = false
+    nameBox.ZIndex = 302
+    Instance.new("UICorner", nameBox).CornerRadius = UDim.new(0, 6)
+    
+    local boxPadding = Instance.new("UIPadding", nameBox)
+    boxPadding.PaddingLeft = UDim.new(0, 10)
+    boxPadding.PaddingRight = UDim.new(0, 10)
+
+    local boxStroke = Instance.new("UIStroke", nameBox)
+    boxStroke.Color = Color3.fromRGB(42, 42, 53)
+    boxStroke.Thickness = 1
+
+    local errorLabel = Instance.new("TextLabel", modalFrame)
+    errorLabel.Size = UDim2.new(1, -24, 0, 14)
+    errorLabel.Position = UDim2.new(0, 12, 0, 80)
+    errorLabel.Text = "Name cannot be empty"
+    errorLabel.Font = Enum.Font.Gotham
+    errorLabel.TextSize = 10
+    errorLabel.TextColor3 = Color3.fromRGB(224, 85, 85)
+    errorLabel.TextXAlignment = Enum.TextXAlignment.Left
+    errorLabel.BackgroundTransparency = 1
+    errorLabel.Visible = false
+    errorLabel.ZIndex = 302
+
+    local cancelBtn = Instance.new("TextButton", modalFrame)
+    cancelBtn.Size = UDim2.new(0.5, -18, 0, 32)
+    cancelBtn.Position = UDim2.new(0, 12, 1, -44)
+    cancelBtn.BackgroundTransparency = 1
+    cancelBtn.Text = "Cancel"
+    cancelBtn.Font = Enum.Font.Gotham
+    cancelBtn.TextSize = 12
+    cancelBtn.TextColor3 = Color3.fromRGB(136, 136, 153)
+    cancelBtn.ZIndex = 302
+
+    local saveBtn = Instance.new("TextButton", modalFrame)
+    saveBtn.Size = UDim2.new(0.5, -18, 0, 32)
+    saveBtn.Position = UDim2.new(0.5, 6, 1, -44)
+    saveBtn.BackgroundColor3 = Color3.fromRGB(74, 144, 217)
+    saveBtn.Text = "Save"
+    saveBtn.Font = Enum.Font.GothamBold
+    saveBtn.TextSize = 12
+    saveBtn.TextColor3 = Color3.fromRGB(255, 255, 255)
+    saveBtn.ZIndex = 302
+    Instance.new("UICorner", saveBtn).CornerRadius = UDim.new(0, 6)
+
+    tween(modalOverlay, {BackgroundTransparency = 0.5}, 0.25)
+    tween(modalScale, {Scale = 1.0}, 0.25)
+
+    local function closeModal()
+        tween(modalOverlay, {BackgroundTransparency = 1}, 0.2)
+        local t = tween(modalScale, {Scale = 0.9}, 0.2)
+        if t then
+            t.Completed:Connect(function()
+                modalOverlay:Destroy()
+            end)
+        else
+            modalOverlay:Destroy()
+        end
+    end
+
+    cancelBtn.Activated:Connect(closeModal)
+
+    saveBtn.Activated:Connect(function()
+        local inputName = nameBox.Text:gsub("^%s*(.-)%s*$", "%1")
+        if inputName == "" then
+            boxStroke.Color = Color3.fromRGB(224, 85, 85)
+            errorLabel.Visible = true
+            return
+        end
+        if isEdit then
+            renameConfig(existingName, inputName)
+        else
+            saveConfig(inputName)
+        end
+        closeModal()
+    end)
+end
+
+-- Modal Confirmation Window for Deletion
+function showDeleteModal(configName)
+    local modalOverlay = Instance.new("Frame", DarkHub)
+    modalOverlay.Size = UDim2.new(1, 0, 1, 0)
+    modalOverlay.BackgroundColor3 = Color3.fromRGB(0, 0, 0)
+    modalOverlay.BackgroundTransparency = 1
+    modalOverlay.ZIndex = 300
+
+    local modalFrame = Instance.new("Frame", modalOverlay)
+    modalFrame.Size = UDim2.new(0, 260, 0, 120)
+    modalFrame.Position = UDim2.new(0.5, 0, 0.5, 0)
+    modalFrame.AnchorPoint = Vector2.new(0.5, 0.5)
+    modalFrame.BackgroundColor3 = Color3.fromRGB(30, 30, 40)
+    modalFrame.ZIndex = 301
+    Instance.new("UICorner", modalFrame).CornerRadius = UDim.new(0, 12)
+    local frameStroke = Instance.new("UIStroke", modalFrame)
+    frameStroke.Color = Color3.fromRGB(51, 51, 68)
+    frameStroke.Thickness = 1
+
+    local modalScale = Instance.new("UIScale", modalFrame)
+    modalScale.Scale = 0.9
+
+    local modalTitle = Instance.new("TextLabel", modalFrame)
+    modalTitle.Size = UDim2.new(1, -24, 0, 20)
+    modalTitle.Position = UDim2.new(0, 12, 0, 14)
+    modalTitle.Text = "Delete '" .. configName .. "'?"
+    modalTitle.Font = Enum.Font.GothamMedium
+    modalTitle.TextSize = 13
+    modalTitle.TextColor3 = Color3.fromRGB(255, 255, 255)
+    modalTitle.TextXAlignment = Enum.TextXAlignment.Left
+    modalTitle.BackgroundTransparency = 1
+    modalTitle.TextTruncate = Enum.TextTruncate.AtEnd
+    modalTitle.ZIndex = 302
+
+    local modalSubtext = Instance.new("TextLabel", modalFrame)
+    modalSubtext.Size = UDim2.new(1, -24, 0, 16)
+    modalSubtext.Position = UDim2.new(0, 12, 0, 36)
+    modalSubtext.Text = "This action cannot be undone."
+    modalSubtext.Font = Enum.Font.Gotham
+    modalSubtext.TextSize = 11
+    modalSubtext.TextColor3 = Color3.fromRGB(119, 119, 136)
+    modalSubtext.TextXAlignment = Enum.TextXAlignment.Left
+    modalSubtext.BackgroundTransparency = 1
+    modalSubtext.ZIndex = 302
+
+    local cancelBtn = Instance.new("TextButton", modalFrame)
+    cancelBtn.Size = UDim2.new(0.5, -18, 0, 30)
+    cancelBtn.Position = UDim2.new(0, 12, 1, -40)
+    cancelBtn.BackgroundTransparency = 1
+    cancelBtn.Text = "Cancel"
+    cancelBtn.Font = Enum.Font.Gotham
+    cancelBtn.TextSize = 12
+    cancelBtn.TextColor3 = Color3.fromRGB(136, 136, 153)
+    cancelBtn.ZIndex = 302
+
+    local deleteBtn = Instance.new("TextButton", modalFrame)
+    deleteBtn.Size = UDim2.new(0.5, -18, 0, 30)
+    deleteBtn.Position = UDim2.new(0.5, 6, 1, -40)
+    deleteBtn.BackgroundColor3 = Color3.fromRGB(224, 85, 85)
+    deleteBtn.Text = "Delete"
+    deleteBtn.Font = Enum.Font.GothamBold
+    deleteBtn.TextSize = 12
+    deleteBtn.TextColor3 = Color3.fromRGB(255, 255, 255)
+    deleteBtn.ZIndex = 302
+    Instance.new("UICorner", deleteBtn).CornerRadius = UDim.new(0, 6)
+
+    tween(modalOverlay, {BackgroundTransparency = 0.5}, 0.25)
+    tween(modalScale, {Scale = 1.0}, 0.25)
+
+    local function closeModal()
+        tween(modalOverlay, {BackgroundTransparency = 1}, 0.2)
+        local t = tween(modalScale, {Scale = 0.9}, 0.2)
+        if t then
+            t.Completed:Connect(function()
+                modalOverlay:Destroy()
+            end)
+        else
+            modalOverlay:Destroy()
+        end
+    end
+
+    cancelBtn.Activated:Connect(closeModal)
+
+    deleteBtn.Activated:Connect(function()
+        deleteConfig(configName)
+        closeModal()
+    end)
+end
+
+-- Refresh config list
+function refreshConfigList()
+    for _, child in ipairs(ConfigsScrollFrame:GetChildren()) do
+        if child:IsA("Frame") then child:Destroy() end
+    end
+
+    local files = {}
+    if typeof(listfiles) == "function" and typeof(isfolder) == "function" then
+        pcall(function()
+            if isfolder(CONFIG_FOLDER) then
+                for _, file in ipairs(listfiles(CONFIG_FOLDER)) do
+                    if string.sub(file, -5) == ".json" then
+                        local fileName = string.gsub(file, "\\", "/")
+                        fileName = string.match(fileName, "([^/]+)%.json$")
+                        if fileName then table.insert(files, fileName) end
+                    end
+                end
+            end
+        end)
+    end
+
+    table.sort(files)
+    EmptyConfigLabel.Visible = (#files == 0)
+
+    for i, configName in ipairs(files) do
+        local isCurrent = (configName == activeConfigName)
+
+        local Card = Instance.new("Frame", ConfigsScrollFrame)
+        Card.Name = "ConfigCard_" .. configName
+        Card.Size = UDim2.new(1, 0, 0, 52)
+        Card.BackgroundColor3 = Color3.fromRGB(31, 31, 38)
+        Card.LayoutOrder = i
+        Card.ZIndex = 8
+        Instance.new("UICorner", Card).CornerRadius = UDim.new(0, 8)
+
+        local CardPadding = Instance.new("UIPadding", Card)
+        CardPadding.PaddingLeft = UDim.new(0, 12)
+        CardPadding.PaddingRight = UDim.new(0, 12)
+        CardPadding.PaddingTop = UDim.new(0, 10)
+        CardPadding.PaddingBottom = UDim.new(0, 10)
+
+        if isCurrent then
+            local ActiveBar = Instance.new("Frame", Card)
+            ActiveBar.Size = UDim2.new(0, 3, 1, 0)
+            ActiveBar.Position = UDim2.new(0, -12, 0, 0)
+            ActiveBar.BackgroundColor3 = Color3.fromRGB(74, 144, 217)
+            ActiveBar.BorderSizePixel = 0
+            ActiveBar.ZIndex = 9
+            Instance.new("UICorner", ActiveBar).CornerRadius = UDim.new(0, 2)
+        end
+
+        local LeftDot = Instance.new("Frame", Card)
+        LeftDot.Size = UDim2.new(0, 8, 0, 8)
+        LeftDot.Position = UDim2.new(0, 0, 0, 3)
+        LeftDot.BackgroundColor3 = Color3.fromRGB(74, 144, 217)
+        LeftDot.BorderSizePixel = 0
+        LeftDot.ZIndex = 9
+        Instance.new("UICorner", LeftDot).CornerRadius = UDim.new(1, 0)
+
+        local dateText = "Jul 24, 2026 15:30"
+        local filePath = CONFIG_FOLDER .. "/" .. configName .. ".json"
+        pcall(function()
+            if typeof(isfile) == "function" and isfile(filePath) and typeof(readfile) == "function" then
+                local success, decoded = pcall(function() return HttpService:JSONDecode(readfile(filePath)) end)
+                if success and decoded and decoded.Created then dateText = decoded.Created end
+            end
+        end)
+
+        local NameLabel = Instance.new("TextLabel", Card)
+        NameLabel.Size = UDim2.new(1, -110, 0, 16)
+        NameLabel.Position = UDim2.new(0, 16, 0, 0)
+        NameLabel.Text = configName
+        NameLabel.Font = Enum.Font.GothamBold
+        NameLabel.TextColor3 = Color3.fromRGB(255, 255, 255)
+        NameLabel.TextSize = 13
+        NameLabel.TextXAlignment = Enum.TextXAlignment.Left
+        NameLabel.TextTruncate = Enum.TextTruncate.AtEnd
+        NameLabel.BackgroundTransparency = 1
+        NameLabel.ZIndex = 9
+
+        local DateLabel = Instance.new("TextLabel", Card)
+        DateLabel.Size = UDim2.new(1, -110, 0, 14)
+        DateLabel.Position = UDim2.new(0, 16, 0, 18)
+        DateLabel.Text = "Created: " .. dateText
+        DateLabel.Font = Enum.Font.Gotham
+        DateLabel.TextColor3 = Color3.fromRGB(102, 102, 119)
+        DateLabel.TextSize = 10
+        DateLabel.TextXAlignment = Enum.TextXAlignment.Left
+        DateLabel.BackgroundTransparency = 1
+        DateLabel.ZIndex = 9
+
+        local BtnsContainer = Instance.new("Frame", Card)
+        BtnsContainer.Size = UDim2.new(0, 90, 1, 0)
+        BtnsContainer.Position = UDim2.new(1, -90, 0, 0)
+        BtnsContainer.BackgroundTransparency = 1
+        BtnsContainer.ZIndex = 9
+
+        local BtnsLayout = Instance.new("UIListLayout", BtnsContainer)
+        BtnsLayout.FillDirection = Enum.FillDirection.Horizontal
+        BtnsLayout.HorizontalAlignment = Enum.HorizontalAlignment.Right
+        BtnsLayout.VerticalAlignment = Enum.VerticalAlignment.Center
+        BtnsLayout.Padding = UDim.new(0, 6)
+
+        local function createCardBtn(btnText, normalColor, callback)
+            local btn = Instance.new("TextButton", BtnsContainer)
+            btn.Size = UDim2.new(0, 26, 0, 26)
+            btn.BackgroundColor3 = normalColor
+            btn.BackgroundTransparency = 1
+            btn.Text = btnText
+            btn.Font = Enum.Font.GothamMedium
+            btn.TextColor3 = normalColor
+            btn.TextSize = 10
+            btn.ZIndex = 10
+            Instance.new("UICorner", btn).CornerRadius = UDim.new(0, 4)
+
+            btn.MouseEnter:Connect(function()
+                tween(btn, {BackgroundTransparency = 0.8}, 0.15)
+            end)
+            btn.MouseLeave:Connect(function()
+                tween(btn, {BackgroundTransparency = 1}, 0.15)
+            end)
+
+            btn.Activated:Connect(callback)
+            return btn
+        end
+
+        createCardBtn("Load", Color3.fromRGB(74, 144, 217), function()
+            loadConfig(configName)
+        end)
+
+        createCardBtn("Edit", Color3.fromRGB(217, 164, 74), function()
+            showCreateOrEditModal(configName)
+        end)
+
+        createCardBtn("Del", Color3.fromRGB(224, 85, 85), function()
+            showDeleteModal(configName)
+        end)
+    end
+end
+
+NewConfigBtn.Activated:Connect(function()
+    showCreateOrEditModal(nil)
+end)
+
+-- Initial population of available configurations
+task.spawn(function()
+    refreshConfigList()
+end)
+
+-- Initialize Settings Tab as default
+SettingsPage.Visible = true
+local settingsButton = allTabButtons["Settings"]
+if settingsButton then
+    setActiveTab(settingsButton)
+    currentActiveTab = settingsButton
+end
+
+Library:UpdateTheme("Deep Ocean")
+
+-- ============================================================================
+-- INITIAL LOADING OVERLAY
+-- ============================================================================
+local LoadingContainer = Instance.new("Frame")
+LoadingContainer.Name = "LoadingContainer"
+LoadingContainer.Size = UDim2.new(1, 0, 1, 0)
+LoadingContainer.Position = UDim2.new(0, 0, 0, 0)
+LoadingContainer.BackgroundTransparency = 1
+LoadingContainer.ZIndex = 500
+LoadingContainer.Parent = DarkHub
+
+local LoadingCard = Instance.new("Frame")
+LoadingCard.Name = "LoadingCard"
+LoadingCard.Size = UDim2.new(0, 310, 0, 185)
+LoadingCard.Position = UDim2.new(0.5, 0, 0.5, 0)
+LoadingCard.AnchorPoint = Vector2.new(0.5, 0.5)
+LoadingCard.BackgroundColor3 = Color3.fromRGB(18, 18, 26)
+LoadingCard.BackgroundTransparency = 1
+LoadingCard.ClipsDescendants = false
+LoadingCard.ZIndex = 501
+LoadingCard.Parent = LoadingContainer
+
+local CardCorner = Instance.new("UICorner", LoadingCard)
+CardCorner.CornerRadius = UDim.new(0, 16)
+
+local CardStroke = Instance.new("UIStroke", LoadingCard)
+CardStroke.Color = Color3.fromRGB(255, 255, 255)
+CardStroke.Transparency = 1
+CardStroke.Thickness = 1
+
+local CardScale = Instance.new("UIScale", LoadingCard)
+CardScale.Scale = 0.8
+
+local IconFrame = Instance.new("Frame")
+IconFrame.Name = "IconFrame"
+IconFrame.Size = UDim2.new(0, 44, 0, 44)
+IconFrame.Position = UDim2.new(0.5, 0, 0, 16)
+IconFrame.AnchorPoint = Vector2.new(0.5, 0)
+IconFrame.BackgroundColor3 = Color3.fromRGB(255, 255, 255)
+IconFrame.BackgroundTransparency = 1
+IconFrame.ZIndex = 502
+IconFrame.Parent = LoadingCard
+
+local IconCorner = Instance.new("UICorner", IconFrame)
+IconCorner.CornerRadius = UDim.new(0, 10)
+
+local IconScale = Instance.new("UIScale", IconFrame)
+IconScale.Scale = 1.0
+
+local IconImage = Instance.new("ImageLabel", IconFrame)
+IconImage.Size = UDim2.new(1, 0, 1, 0)
+IconImage.BackgroundTransparency = 1
+IconImage.Image = "rbxthumb://type=Asset&id=" .. CustomIconID .. "&w=150&h=150"
+IconImage.ScaleType = Enum.ScaleType.Fit
+IconImage.ZIndex = 503
+IconImage.Parent = IconFrame
+Instance.new("UICorner", IconImage).CornerRadius = UDim.new(0, 10)
+
+-- Animated Loading Overlay
+local LoadingTitle = Instance.new("TextLabel", LoadingCard)
+LoadingTitle.Size = UDim2.new(1, -24, 0, 20)
+LoadingTitle.Position = UDim2.new(0, 12, 0, 68)
+LoadingTitle.Text = "Dark Hub"
+LoadingTitle.Font = Enum.Font.GothamBold
+LoadingTitle.TextColor3 = Color3.fromRGB(255, 255, 255)
+LoadingTitle.TextSize = 15
+LoadingTitle.TextTransparency = 1
+LoadingTitle.BackgroundTransparency = 1
+LoadingTitle.ZIndex = 502
+
+local LoadingStatus = Instance.new("TextLabel", LoadingCard)
+LoadingStatus.Size = UDim2.new(1, -24, 0, 16)
+LoadingStatus.Position = UDim2.new(0, 12, 0, 90)
+LoadingStatus.Text = "Loading components..."
+LoadingStatus.Font = Enum.Font.Gotham
+LoadingStatus.TextColor3 = Color3.fromRGB(130, 130, 150)
+LoadingStatus.TextSize = 11
+LoadingStatus.TextTransparency = 1
+LoadingStatus.BackgroundTransparency = 1
+LoadingStatus.ZIndex = 502
+
+local ProgressTrack = Instance.new("Frame", LoadingCard)
+ProgressTrack.Size = UDim2.new(1, -40, 0, 4)
+ProgressTrack.Position = UDim2.new(0, 20, 0, 122)
+ProgressTrack.BackgroundColor3 = Color3.fromRGB(30, 30, 42)
+ProgressTrack.BackgroundTransparency = 1
+ProgressTrack.BorderSizePixel = 0
+ProgressTrack.ZIndex = 502
+Instance.new("UICorner", ProgressTrack).CornerRadius = UDim.new(1, 0)
+
+local ProgressFill = Instance.new("Frame", ProgressTrack)
+ProgressFill.Size = UDim2.new(0, 0, 1, 0)
+ProgressFill.BackgroundColor3 = Color3.fromRGB(0, 206, 209)
+ProgressFill.BorderSizePixel = 0
+ProgressFill.ZIndex = 503
+Instance.new("UICorner", ProgressFill).CornerRadius = UDim.new(1, 0)
+
+local VersionLabel = Instance.new("TextLabel", LoadingCard)
+VersionLabel.Size = UDim2.new(1, 0, 0, 14)
+VersionLabel.Position = UDim2.new(0, 0, 1, -22)
+VersionLabel.Text = "v2.0 Settings Edition"
+VersionLabel.Font = Enum.Font.GothamMedium
+VersionLabel.TextColor3 = Color3.fromRGB(70, 70, 90)
+VersionLabel.TextSize = 9
+VersionLabel.TextTransparency = 1
+VersionLabel.BackgroundTransparency = 1
+VersionLabel.ZIndex = 502
+
+-- Sequence Animation
+task.spawn(function()
+    -- Fade in overlay
+    tween(LoadingCard, {BackgroundTransparency = 0.05}, 0.3)
+    tween(CardStroke, {Transparency = 0.8}, 0.3)
+    tween(CardScale, {Scale = 1}, 0.3)
+    tween(LoadingTitle, {TextTransparency = 0}, 0.3)
+    tween(LoadingStatus, {TextTransparency = 0}, 0.3)
+    tween(ProgressTrack, {BackgroundTransparency = 0}, 0.3)
+    tween(VersionLabel, {TextTransparency = 0}, 0.3)
+    task.wait(0.3)
+
+    -- Progress steps
+    LoadingStatus.Text = "Initializing UI system..."
+    tween(ProgressFill, {Size = UDim2.new(0.35, 0, 1, 0)}, 0.35)
+    task.wait(0.35)
+
+    LoadingStatus.Text = "Loading configurations..."
+    tween(ProgressFill, {Size = UDim2.new(0.75, 0, 1, 0)}, 0.35)
+    task.wait(0.35)
+
+    LoadingStatus.Text = "Applying Theme..."
+    tween(ProgressFill, {Size = UDim2.new(1, 0, 1, 0)}, 0.25)
+    task.wait(0.25)
+
+    LoadingStatus.Text = "Ready!"
+    task.wait(0.15)
+
+    -- Fade out overlay
+    tween(LoadingCard, {BackgroundTransparency = 1}, 0.3)
+    tween(CardStroke, {Transparency = 1}, 0.3)
+    tween(CardScale, {Scale = 0.8}, 0.3)
+    tween(LoadingTitle, {TextTransparency = 1}, 0.3)
+    tween(LoadingStatus, {TextTransparency = 1}, 0.3)
+    tween(ProgressTrack, {BackgroundTransparency = 1}, 0.3)
+    tween(ProgressFill, {BackgroundTransparency = 1}, 0.3)
+    local exitTween = tween(VersionLabel, {TextTransparency = 1}, 0.3)
+
+    if exitTween then
+        exitTween.Completed:Connect(function()
+            LoadingContainer:Destroy()
+            
+            -- Open MainFrame seamlessly
+            MainFrame.Visible = true
+            MainScale.Scale = 0.85
+            MainFrame.BackgroundTransparency = 1
+            tween(MainScale, {Scale = 1}, 0.25)
+            tween(MainFrame, {BackgroundTransparency = 0.15}, 0.25)
+        end)
+    else
+        LoadingContainer:Destroy()
+        MainFrame.Visible = true
+    end
+end)
