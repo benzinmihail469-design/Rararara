@@ -83,6 +83,49 @@ local function NormalizeText(str)
 end
 
 -- ============================================================================
+-- АНИМАЦИЯ ВОЛНЫ-ЦУНАМИ ДЛЯ ВКЛАДОК
+-- ============================================================================
+local function spawnWave(container, clickX, clickY)
+    if not container then return end
+    
+    -- Обрезаем выходящую за пределы часть волны
+    container.ClipsDescendants = true
+
+    local absSize = container.AbsoluteSize
+    local startX = clickX or (absSize.X / 2)
+    local startY = clickY or (absSize.Y / 2)
+
+    -- Расчет диаметра для полного перекрытия кнопки из любой точки нажатия
+    local maxDimension = math.max(absSize.X, absSize.Y) * 2.8
+
+    -- Элемент круговой волны
+    local Wave = Instance.new("Frame")
+    Wave.Name = "TsunamiWave"
+    Wave.Parent = container
+    Wave.AnchorPoint = Vector2.new(0.5, 0.5)
+    Wave.Position = UDim2.new(0, startX, 0, startY)
+    Wave.Size = UDim2.new(0, 0, 0, 0)
+    Wave.BackgroundColor3 = Color3.fromRGB(100, 180, 255)
+    Wave.BackgroundTransparency = 0.4
+    Wave.BorderSizePixel = 0
+    Wave.ZIndex = 20
+
+    local Corner = Instance.new("UICorner", Wave)
+    Corner.CornerRadius = UDim.new(1, 0)
+
+    -- Анимация расширения и затухания (0.6 сек)
+    local waveTween = TweenService:Create(Wave, TweenInfo.new(0.6, Enum.EasingStyle.Quart, Enum.EasingDirection.Out), {
+        Size = UDim2.new(0, maxDimension, 0, maxDimension),
+        BackgroundTransparency = 1
+    })
+
+    waveTween:Play()
+    waveTween.Completed:Connect(function()
+        Wave:Destroy()
+    end)
+end
+
+-- ============================================================================
 -- ЭКРАН ЗАГРУЗКИ (LOADING SCREEN)
 -- ============================================================================
 local LoadingFrame = Instance.new("Frame", PulseHub)
@@ -384,23 +427,6 @@ RunService.RenderStepped:Connect(function(dt)
         StatsLabel.Text = string.format("FPS: %d  |  Session: %s", math.round(averageFps), formatSessionTime(passedTime))
     end
 end)
-
-local function CreateRipple(button, clickX, clickY)
-    local Ripple = Instance.new("ImageLabel")
-    Ripple.Parent = button
-    Ripple.BackgroundTransparency = 1
-    Ripple.Image = "rbxassetid://4012975932"
-    Ripple.ImageColor3 = Color3.fromRGB(255, 255, 255)
-    Ripple.ImageTransparency = 0.5
-    Ripple.ZIndex = 25
-    Ripple.AnchorPoint = Vector2.new(0.5, 0.5)
-    Ripple.Position = UDim2.new(0, clickX, 0, clickY)
-    Ripple.Size = UDim2.new(0, 0, 0, 0)
-    local maxLength = math.max(button.AbsoluteSize.X, button.AbsoluteSize.Y) * 3
-    local t = TweenService:Create(Ripple, TweenInfo.new(0.5, Enum.EasingStyle.Quad, Enum.EasingDirection.Out), {Size = UDim2.new(0, maxLength, 0, maxLength), ImageTransparency = 1})
-    t:Play()
-    t.Completed:Connect(function() Ripple:Destroy() end)
-end
 
 local isMinimized = false
 local LastMinimizedPos = UDim2.new(0.5, 0, 0.5, 0)
@@ -975,7 +1001,7 @@ function Library:CreateButton(parentPage, textKey, callback)
     Btn.MouseButton1Down:Connect(function()
         local mousePos = UserInputService:GetMouseLocation()
         local inset = GuiService:GetGuiInset()
-        CreateRipple(Btn, mousePos.X - Btn.AbsolutePosition.X, (mousePos.Y - inset.Y) - Btn.AbsolutePosition.Y)
+        spawnWave(Btn, mousePos.X - Btn.AbsolutePosition.X, (mousePos.Y - inset.Y) - Btn.AbsolutePosition.Y)
     end)
     Btn.Activated:Connect(callback)
     local searchItem = {Instance = Btn, SearchText = NormalizeText(initialText), OriginalParent = parentPage}
@@ -1245,10 +1271,13 @@ function Library:CreatePage(textKey, iconId, layoutOrder)
     allTabButtons[textKey] = TabBtn
     allPages[textKey] = PageFrame
     
+    -- Вызов волны-цунами при нажатии на вкладку
     TabBtn.MouseButton1Down:Connect(function()
         local mousePos = UserInputService:GetMouseLocation()
         local inset = GuiService:GetGuiInset()
-        CreateRipple(TabContainer, mousePos.X - TabContainer.AbsolutePosition.X, (mousePos.Y - inset.Y) - TabContainer.AbsolutePosition.Y)
+        local localX = mousePos.X - TabContainer.AbsolutePosition.X
+        local localY = (mousePos.Y - inset.Y) - TabContainer.AbsolutePosition.Y
+        spawnWave(TabContainer, localX, localY)
     end)
     
     TabBtn.Activated:Connect(function()
