@@ -1,5 +1,5 @@
 -- ============================================================================
--- Pulse Hub - Settings Edition (с эффектами Hover & Active для вкладок)
+-- Pulse Hub - Settings Edition (Исправлен Дропдаун и Системы Тем)
 -- ============================================================================
 
 local TweenService = game:GetService("TweenService")
@@ -12,7 +12,6 @@ local VirtualUser = game:GetService("VirtualUser")
 local CustomIconID = "76579925188009"
 local startTime = os.clock()
 
--- Вспомогательная функция форматирования времени сессии
 local function formatSessionTime(seconds)
     local hours = math.floor(seconds / 3600)
     local minutes = math.floor((seconds % 3600) / 60)
@@ -20,7 +19,6 @@ local function formatSessionTime(seconds)
     return string.format("%02d:%02d:%02d", hours, minutes, secs)
 end
 
--- Система Anti-AFK
 local antiAfkConnection = nil
 local function toggleAntiAFK(state)
     if state then
@@ -40,7 +38,6 @@ end
 
 toggleAntiAFK(true)
 
--- Поиск безопасного родителя для ScreenGui
 local SafeParent = nil
 if typeof(gethui) == "function" then
     SafeParent = gethui()
@@ -54,7 +51,6 @@ if not SafeParent then
     SafeParent = Players.LocalPlayer:WaitForChild("PlayerGui")
 end
 
--- Удаление старого GUI при повторном запуске
 if SafeParent:FindFirstChild("PulseHub") then
     SafeParent.PulseHub:Destroy()
 end
@@ -64,7 +60,6 @@ PulseHub.Name = "PulseHub"
 PulseHub.Parent = SafeParent
 PulseHub.ZIndexBehavior = Enum.ZIndexBehavior.Sibling
 
--- Таблица для отслеживания текущих твинов на объектах (предотвращает конфликты)
 local activeTweens = {}
 
 local function tween(obj, props, dur)
@@ -91,9 +86,6 @@ local function NormalizeText(str)
     return string.gsub(lowerStr, "[%p%s%c]", "")
 end
 
--- ============================================================================
--- АНИМАЦИЯ ВОЛНЫ-ЦУНАМИ ДЛЯ ВКЛАДОК
--- ============================================================================
 local function spawnWave(container, clickX, clickY)
     if not container then return end
     
@@ -131,7 +123,7 @@ local function spawnWave(container, clickX, clickY)
 end
 
 -- ============================================================================
--- ЭКРАН ЗАГРУЗКИ (LOADING SCREEN)
+-- ЭКРАН ЗАГРУЗКИ
 -- ============================================================================
 local LoadingFrame = Instance.new("Frame", PulseHub)
 LoadingFrame.Name = "LoadingFrame"
@@ -182,7 +174,7 @@ ProgressBarFill.ZIndex = 102
 Instance.new("UICorner", ProgressBarFill).CornerRadius = UDim.new(0, 5)
 
 -- ============================================================================
--- ОСНОВНОЙ GUI (СКРЫТ ДО ОКОНЧАНИЯ ЗАГРУЗКИ)
+-- ОСНОВНОЙ GUI
 -- ============================================================================
 local MainFrame = Instance.new("Frame", PulseHub)
 MainFrame.Name = "MainFrame"
@@ -517,6 +509,7 @@ Library.TrackedMainText = {}
 Library.TrackedSubText = {}
 Library.TrackedStrokes = {}
 
+-- Исправлен Accent для темы AMOLED на контрастный белый
 local ThemeConfig = {
     ["Black"]         = { Accent = Color3.fromRGB(180, 180, 180), MainBg = Color3.fromRGB(12, 12, 12), ElementBg = Color3.fromRGB(22, 22, 22) },
     ["White"]         = { Accent = Color3.fromRGB(0, 122, 255),   MainBg = Color3.fromRGB(240, 240, 240), ElementBg = Color3.fromRGB(255, 255, 255) },
@@ -536,7 +529,7 @@ local ThemeConfig = {
     ["Deep Violet"]   = { Accent = Color3.fromRGB(102, 51, 153),  MainBg = Color3.fromRGB(13, 11, 20),   ElementBg = Color3.fromRGB(23, 19, 36) },
     ["Cyanic"]        = { Accent = Color3.fromRGB(0, 255, 200),   MainBg = Color3.fromRGB(10, 22, 26),   ElementBg = Color3.fromRGB(18, 38, 46) },
     ["Blood Red"]     = { Accent = Color3.fromRGB(170, 0, 0),     MainBg = Color3.fromRGB(14, 4, 4),     ElementBg = Color3.fromRGB(28, 8, 8) },
-    ["AMOLED"]        = { Accent = Color3.fromRGB(0, 0, 0),       MainBg = Color3.fromRGB(0, 0, 0),      ElementBg = Color3.fromRGB(15, 15, 15) }
+    ["AMOLED"]        = { Accent = Color3.fromRGB(255, 255, 255), MainBg = Color3.fromRGB(0, 0, 0),      ElementBg = Color3.fromRGB(15, 15, 15) }
 }
 
 local ThemeNamesList = {}
@@ -550,20 +543,13 @@ local allTabButtons = {}
 local allTabIcons = {}
 local allPages = {}
 
--- Переменные для хранения состояния активных и наводимых вкладок
 local currentActiveTab = nil
 local currentHoveredTab = nil
 
--- ============================================================================
--- ЭФФЕКТЫ ВКЛАДОК: HOVER И ACTIVE
--- ============================================================================
-
--- Hover эффект
 local function applyHover(button)
     if not button then return end
     local parentContainer = button.Parent
     
-    -- Создаем тонкую обводку UIStroke при наведении, если ее нет
     local stroke = parentContainer:FindFirstChild("HoverStroke")
     if not stroke then
         stroke = Instance.new("UIStroke")
@@ -575,7 +561,6 @@ local function applyHover(button)
         stroke.Parent = parentContainer
     end
     
-    -- Плавное изменение прозрачности, фона и обводки (0.15-0.2 сек)
     tween(parentContainer, {BackgroundColor3 = Color3.fromRGB(50, 50, 50), BackgroundTransparency = 0.5}, 0.18)
     tween(stroke, {Transparency = 0.5}, 0.18)
     tween(button, {TextColor3 = Color3.fromRGB(255, 255, 255)}, 0.18)
@@ -605,12 +590,10 @@ local function removeHover(button)
     tween(button, {TextColor3 = normalTextColor}, 0.18)
 end
 
--- Active эффект
 local function setActiveTab(tabButton)
     if not tabButton then return end
     local parentContainer = tabButton.Parent
     
-    -- Полоса-индикатор высотой с вкладку и шириной 4px
     local indicator = parentContainer:FindFirstChild("ActiveIndicator")
     if not indicator then
         indicator = Instance.new("Frame")
@@ -627,11 +610,9 @@ local function setActiveTab(tabButton)
         corner.CornerRadius = UDim.new(0, 2)
     end
     
-    -- Шрифт GothamBold и яркий белый цвет
     tabButton.Font = Enum.Font.GothamBold
     tween(tabButton, {TextColor3 = Color3.fromRGB(255, 255, 255)}, 0.25)
     
-    -- Контрастный фон для активного состояния
     local bgL = (Library.CurrentThemeData.MainBg.R * 0.299 + Library.CurrentThemeData.MainBg.G * 0.587 + Library.CurrentThemeData.MainBg.B * 0.114)
     local isL = bgL > 0.5
     local activeBgColor = isL and Color3.fromRGB(215, 215, 215) or Color3.fromRGB(35, 35, 35)
@@ -639,7 +620,6 @@ local function setActiveTab(tabButton)
     tween(parentContainer, {BackgroundColor3 = activeBgColor, BackgroundTransparency = 0}, 0.25)
     tween(indicator, {BackgroundTransparency = 0}, 0.25)
     
-    -- Подсветка иконки вкладки (если существует)
     local textKey = tabButton.Name
     if allTabIcons[textKey] then
         tween(allTabIcons[textKey], {ImageTransparency = 0}, 0.25)
@@ -650,7 +630,6 @@ local function clearActiveTab(tabButton)
     if not tabButton then return end
     local parentContainer = tabButton.Parent
     
-    -- Плавное удаление/скрытие индикатора
     local indicator = parentContainer:FindFirstChild("ActiveIndicator")
     if indicator then
         local t = tween(indicator, {BackgroundTransparency = 1}, 0.25)
@@ -663,7 +642,6 @@ local function clearActiveTab(tabButton)
         end
     end
     
-    -- Возврат шрифта к стандартному
     tabButton.Font = Library.CurrentFont or Enum.Font.Gotham
     
     local bgL = (Library.CurrentThemeData.MainBg.R * 0.299 + Library.CurrentThemeData.MainBg.G * 0.587 + Library.CurrentThemeData.MainBg.B * 0.114)
@@ -934,6 +912,9 @@ local FontMapping = {
     ["Fredoka One"] = Enum.Font.FredokaOne
 }
 
+-- ============================================================================
+-- ИСПРАВЛЕННЫЙ И ОПТИМИЗИРОВАННЫЙ ДРОПДАУН
+-- ============================================================================
 function Library:CreateDropdown(parentPage, textKey, options, default, callback)
     local initialText = Localization[Library.CurrentLanguage][textKey] or textKey
     local DropdownFrame = Instance.new("Frame", parentPage)
@@ -957,26 +938,28 @@ function Library:CreateDropdown(parentPage, textKey, options, default, callback)
     HeaderBtn.ZIndex = 7
     
     local TitleLabel = Instance.new("TextLabel", HeaderBtn)
-    TitleLabel.Size = UDim2.new(0.5, 0, 1, 0)
+    TitleLabel.Size = UDim2.new(0.45, 0, 1, 0)
     TitleLabel.Position = UDim2.new(0, 12, 0, 0)
     TitleLabel.Text = initialText
     TitleLabel.Font = Library.CurrentFont
     TitleLabel.TextColor3 = Color3.fromRGB(230, 230, 230)
     TitleLabel.TextSize = 13
     TitleLabel.TextXAlignment = Enum.TextXAlignment.Left
+    TitleLabel.TextTruncate = Enum.TextTruncate.AtEnd
     TitleLabel.BackgroundTransparency = 1
     TitleLabel.ZIndex = 8
     
     table.insert(Library.TrackedMainText, TitleLabel)
     
     local SelectedLabel = Instance.new("TextLabel", HeaderBtn)
-    SelectedLabel.Size = UDim2.new(0.5, -30, 1, 0)
-    SelectedLabel.Position = UDim2.new(0.5, 0, 0, 0)
+    SelectedLabel.Size = UDim2.new(0.55, -35, 1, 0)
+    SelectedLabel.Position = UDim2.new(0.45, 0, 0, 0)
     SelectedLabel.Text = default
     SelectedLabel.Font = Library.CurrentFont
     SelectedLabel.TextColor3 = Library.CurrentThemeData.Accent 
     SelectedLabel.TextSize = 13
     SelectedLabel.TextXAlignment = Enum.TextXAlignment.Right
+    SelectedLabel.TextTruncate = Enum.TextTruncate.AtEnd
     SelectedLabel.BackgroundTransparency = 1
     SelectedLabel.ZIndex = 8
     
@@ -1001,6 +984,7 @@ function Library:CreateDropdown(parentPage, textKey, options, default, callback)
     OptionsContainer.ScrollBarThickness = 3
     OptionsContainer.ScrollBarImageColor3 = Library.CurrentThemeData.Accent
     OptionsContainer.ZIndex = 7
+    OptionsContainer.ClipsDescendants = true
     
     local ListLayout = Instance.new("UIListLayout", OptionsContainer)
     ListLayout.SortOrder = Enum.SortOrder.LayoutOrder
@@ -1029,7 +1013,7 @@ function Library:CreateDropdown(parentPage, textKey, options, default, callback)
         for _, child in ipairs(OptionsContainer:GetChildren()) do
             if child:IsA("TextButton") then child:Destroy() end
         end
-        optionButtons = {}
+        table.clear(optionButtons)
         
         for i, option in ipairs(options) do
             local OptBtn = Instance.new("TextButton", OptionsContainer)
@@ -1046,6 +1030,7 @@ function Library:CreateDropdown(parentPage, textKey, options, default, callback)
             OptLabel.Text = option
             OptLabel.TextSize = 12
             OptLabel.TextXAlignment = Enum.TextXAlignment.Left
+            OptLabel.TextTruncate = Enum.TextTruncate.AtEnd
             OptLabel.BackgroundTransparency = 1
             OptLabel.ZIndex = 9
             
@@ -1074,20 +1059,24 @@ function Library:CreateDropdown(parentPage, textKey, options, default, callback)
             end)
             
             optionButtons[option] = {Button = OptBtn, Label = OptLabel, Check = Checkmark}
+            
             OptBtn.Activated:Connect(function()
                 SelectedLabel.Text = option
+                toggleDropdown()
+                callback(option)
+                
+                -- Синхронизация подсветки после применения каллбэка
                 for optName, optData in pairs(optionButtons) do
                     if optName == option then
                         optData.Label.TextColor3 = Library.CurrentThemeData.Accent
                         optData.Check.Visible = true
+                        optData.Check.TextColor3 = Library.CurrentThemeData.Accent
                     else
                         local bgL = (Library.CurrentThemeData.MainBg.R * 0.299 + Library.CurrentThemeData.MainBg.G * 0.587 + Library.CurrentThemeData.MainBg.B * 0.114)
-                        optData.Label.TextColor3 = (bgL > 0.5) and Color3.fromRGB(110, 110, 110) or Color3.fromRGB(180, 180, 180)
+                        optData.Label.TextColor3 = (bgL > 0.5) and Color3.fromRGB(110, 110, 110) or Color3.fromRGB(140, 140, 140)
                         optData.Check.Visible = false
                     end
                 end
-                toggleDropdown()
-                callback(option)
             end)
         end
     end
@@ -1407,7 +1396,6 @@ function Library:CreatePage(textKey, iconId, layoutOrder)
     allTabButtons[textKey] = TabBtn
     allPages[textKey] = PageFrame
     
-    -- Вызов волны-цунами при нажатии на вкладку
     TabBtn.MouseButton1Down:Connect(function()
         local mousePos = UserInputService:GetMouseLocation()
         local inset = GuiService:GetGuiInset()
@@ -1415,10 +1403,6 @@ function Library:CreatePage(textKey, iconId, layoutOrder)
         local localY = (mousePos.Y - inset.Y) - TabContainer.AbsolutePosition.Y
         spawnWave(TabContainer, localX, localY)
     end)
-
-    -- ============================================================================
-    -- ЛОГИКА ВЗАИМОДЕЙСТВИЯ ВКЛАДОК (HOVER И ACTIVE)
-    -- ============================================================================
     
     TabBtn.MouseEnter:Connect(function()
         if TabBtn ~= currentActiveTab then
@@ -1437,25 +1421,20 @@ function Library:CreatePage(textKey, iconId, layoutOrder)
     TabBtn.Activated:Connect(function()
         if currentActiveTab == TabBtn then return end
 
-        -- Снимаем Active с предыдущей активной вкладки
         if currentActiveTab then
             clearActiveTab(currentActiveTab)
         end
         
-        -- Если у вкладки был Hover — убираем его перед включением Active
         if currentHoveredTab == TabBtn then
             removeHover(TabBtn)
         end
 
-        -- Сбрасываем поиск
         if SearchBox.Text ~= "" then SearchBox.Text = "" end
 
-        -- Переключаем видимость страниц
         for tName, pFrame in pairs(allPages) do
             pFrame.Visible = false
         end
 
-        -- Устанавливаем новую активную вкладку
         Library.CurrentTabKey = textKey
         TabTitle.Text = Localization[Library.CurrentLanguage][textKey] or textKey
         PageFrame.Visible = true
@@ -1470,21 +1449,18 @@ function Library:CreatePage(textKey, iconId, layoutOrder)
 end
 
 -- ============================================================================
--- ВКЛАДКА "SETTINGS" (ЕДИНСТВЕННАЯ СТРАНИЦА)
+-- ВКЛАДКА "SETTINGS"
 -- ============================================================================
 local SettingsPage = Library:CreatePage("Settings", "117996761927034", 1)
 
--- Выбор языка
 Library:CreateDropdown(SettingsPage, "Language", {"English", "Русский"}, "English", function(selectedLang)
     Library:UpdateLanguage(selectedLang)
 end)
 
--- Выбор темы UI
 Library:CreateDropdown(SettingsPage, "UITheme", ThemeNamesList, "Deep Ocean", function(selectedTheme)
     Library:UpdateTheme(selectedTheme)
 end)
 
--- Выбор шрифта меню
 local FontKeys = {}
 for name, _ in pairs(FontMapping) do table.insert(FontKeys, name) end
 table.sort(FontKeys)
@@ -1501,29 +1477,23 @@ Library:CreateDropdown(SettingsPage, "MenuFont", FontKeys, "Gotham", function(se
     end
 end)
 
--- Прозрачность интерфейса
 Library:CreateSlider(SettingsPage, "UITransparency", 0, 90, 15, function(value)
     MainFrame.BackgroundTransparency = value / 100
 end)
 
--- Переключатель Anti-AFK
 Library:CreateToggle(SettingsPage, "AntiAFK", true, function(state)
     toggleAntiAFK(state)
 end)
 
--- Анимированное радужное окно
 Library:CreateToggle(SettingsPage, "AnimatedWindow", false, function(state)
     toggleAnimatedWindow(state)
 end)
 
--- Градиентный фон
 Library:CreateToggle(SettingsPage, "Gradient", false, function(state)
     toggleGradientEffect(state)
 end)
 
--- ============================================================================
--- ИНИЦИАЛИЗАЦИЯ ПЕРВОЙ АКТИВНОЙ ВКЛАДКИ ПРИ ЗАПУСКЕ
--- ============================================================================
+-- ИНИЦИАЛИЗАЦИЯ ПЕРВОЙ ВКЛАДКИ
 SettingsPage.Visible = true
 local settingsButton = allTabButtons["Settings"]
 if settingsButton then
@@ -1531,12 +1501,9 @@ if settingsButton then
     currentActiveTab = settingsButton
 end
 
--- Применяем стартовую тему
 Library:UpdateTheme("Deep Ocean")
 
--- ============================================================================
--- ЗАПУСК СИСТЕМЫ ЗАГРУЗКИ (3 СЕКУНДЫ)
--- ============================================================================
+-- ЗАПУСК ЭКРАНА ЗАГРУЗКИ (3 СЕКУНДЫ)
 task.spawn(function()
     local loadDuration = 3
     local startTimeLoad = os.clock()
@@ -1555,7 +1522,6 @@ task.spawn(function()
     LoadingStatus.Text = "Загрузка... 100%"
     task.wait(0.2)
     
-    -- Плавное исчезновение экрана загрузки и появление GUI
     tween(LoadingFrame, {BackgroundTransparency = 1}, 0.3)
     tween(LoadingTitle, {TextTransparency = 1}, 0.3)
     tween(LoadingStatus, {TextTransparency = 1}, 0.3)
