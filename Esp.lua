@@ -509,7 +509,6 @@ Library.TrackedMainText = {}
 Library.TrackedSubText = {}
 Library.TrackedStrokes = {}
 
--- Исправлен Accent для темы AMOLED на контрастный белый
 local ThemeConfig = {
     ["Black"]         = { Accent = Color3.fromRGB(180, 180, 180), MainBg = Color3.fromRGB(12, 12, 12), ElementBg = Color3.fromRGB(22, 22, 22) },
     ["White"]         = { Accent = Color3.fromRGB(0, 122, 255),   MainBg = Color3.fromRGB(240, 240, 240), ElementBg = Color3.fromRGB(255, 255, 255) },
@@ -546,6 +545,7 @@ local allPages = {}
 local currentActiveTab = nil
 local currentHoveredTab = nil
 
+-- Исправлено: Динамический эффект наведения с учетом темы
 local function applyHover(button)
     if not button then return end
     local parentContainer = button.Parent
@@ -554,16 +554,23 @@ local function applyHover(button)
     if not stroke then
         stroke = Instance.new("UIStroke")
         stroke.Name = "HoverStroke"
-        stroke.Color = Color3.fromRGB(255, 255, 255)
+        stroke.Color = Library.CurrentThemeData.Accent
         stroke.Thickness = 1
         stroke.Transparency = 1
         stroke.ApplyStrokeMode = Enum.ApplyStrokeMode.Border
         stroke.Parent = parentContainer
+    else
+        stroke.Color = Library.CurrentThemeData.Accent
     end
     
-    tween(parentContainer, {BackgroundColor3 = Color3.fromRGB(50, 50, 50), BackgroundTransparency = 0.5}, 0.18)
+    local bgL = (Library.CurrentThemeData.MainBg.R * 0.299 + Library.CurrentThemeData.MainBg.G * 0.587 + Library.CurrentThemeData.MainBg.B * 0.114)
+    local isL = bgL > 0.5
+    local hoverBg = isL and Color3.fromRGB(200, 200, 200) or Color3.fromRGB(50, 50, 50)
+    local hoverText = isL and Color3.fromRGB(20, 20, 20) or Color3.fromRGB(255, 255, 255)
+
+    tween(parentContainer, {BackgroundColor3 = hoverBg, BackgroundTransparency = 0.5}, 0.18)
     tween(stroke, {Transparency = 0.5}, 0.18)
-    tween(button, {TextColor3 = Color3.fromRGB(255, 255, 255)}, 0.18)
+    tween(button, {TextColor3 = hoverText}, 0.18)
 end
 
 local function removeHover(button)
@@ -590,6 +597,7 @@ local function removeHover(button)
     tween(button, {TextColor3 = normalTextColor}, 0.18)
 end
 
+-- Исправлено: Синхронизация полосы индикатора и цветов темы при активации вкладки
 local function setActiveTab(tabButton)
     if not tabButton then return end
     local parentContainer = tabButton.Parent
@@ -600,7 +608,7 @@ local function setActiveTab(tabButton)
         indicator.Name = "ActiveIndicator"
         indicator.Size = UDim2.new(0, 4, 1, 0)
         indicator.Position = UDim2.new(0, 0, 0, 0)
-        indicator.BackgroundColor3 = Color3.fromRGB(0, 180, 255)
+        indicator.BackgroundColor3 = Library.CurrentThemeData.Accent
         indicator.BorderSizePixel = 0
         indicator.ZIndex = tabButton.ZIndex + 2
         indicator.BackgroundTransparency = 1
@@ -611,14 +619,14 @@ local function setActiveTab(tabButton)
     end
     
     tabButton.Font = Enum.Font.GothamBold
-    tween(tabButton, {TextColor3 = Color3.fromRGB(255, 255, 255)}, 0.25)
-    
     local bgL = (Library.CurrentThemeData.MainBg.R * 0.299 + Library.CurrentThemeData.MainBg.G * 0.587 + Library.CurrentThemeData.MainBg.B * 0.114)
     local isL = bgL > 0.5
+    local activeTextColor = isL and Color3.fromRGB(20, 20, 20) or Color3.fromRGB(255, 255, 255)
     local activeBgColor = isL and Color3.fromRGB(215, 215, 215) or Color3.fromRGB(35, 35, 35)
-    
+
+    tween(indicator, {BackgroundColor3 = Library.CurrentThemeData.Accent, BackgroundTransparency = 0}, 0.25)
+    tween(tabButton, {TextColor3 = activeTextColor}, 0.25)
     tween(parentContainer, {BackgroundColor3 = activeBgColor, BackgroundTransparency = 0}, 0.25)
-    tween(indicator, {BackgroundTransparency = 0}, 0.25)
     
     local textKey = tabButton.Name
     if allTabIcons[textKey] then
@@ -657,6 +665,79 @@ local function clearActiveTab(tabButton)
     end
 end
 
+-- ============================================================================
+-- ИСПРАВЛЕНИЕ БАГА 2: Единая функция обновления визуального стиля вкладок
+-- ============================================================================
+local function applyThemeToTabs(theme)
+    theme = theme or Library.CurrentThemeData
+    if not theme then return end
+
+    local bgLuminance = (theme.MainBg.R * 0.299 + theme.MainBg.G * 0.587 + theme.MainBg.B * 0.114)
+    local isLightMode = bgLuminance > 0.5
+
+    local activeTextColor = isLightMode and Color3.fromRGB(20, 20, 20) or Color3.fromRGB(255, 255, 255)
+    local inactiveTextColor = isLightMode and Color3.fromRGB(110, 110, 110) or Color3.fromRGB(140, 140, 140)
+    local activeBgColor = isLightMode and Color3.fromRGB(215, 215, 215) or Color3.fromRGB(35, 35, 35)
+
+    for textKey, tabBtn in pairs(allTabButtons) do
+        if tabBtn and tabBtn.Parent then
+            local parentContainer = tabBtn.Parent
+            local indicator = parentContainer:FindFirstChild("ActiveIndicator")
+            local hoverStroke = parentContainer:FindFirstChild("HoverStroke")
+
+            if tabBtn == currentActiveTab then
+                -- Обновление активной вкладки
+                tween(tabBtn, {TextColor3 = activeTextColor}, 0.2)
+                tween(parentContainer, {BackgroundColor3 = activeBgColor, BackgroundTransparency = 0}, 0.2)
+                
+                if not indicator then
+                    indicator = Instance.new("Frame")
+                    indicator.Name = "ActiveIndicator"
+                    indicator.Size = UDim2.new(0, 4, 1, 0)
+                    indicator.Position = UDim2.new(0, 0, 0, 0)
+                    indicator.BorderSizePixel = 0
+                    indicator.ZIndex = tabBtn.ZIndex + 2
+                    indicator.Parent = parentContainer
+                    local corner = Instance.new("UICorner", indicator)
+                    corner.CornerRadius = UDim.new(0, 2)
+                end
+                
+                tween(indicator, {BackgroundColor3 = theme.Accent, BackgroundTransparency = 0}, 0.2)
+
+                if allTabIcons[textKey] then
+                    tween(allTabIcons[textKey], {ImageTransparency = 0}, 0.2)
+                end
+            else
+                -- Обновление неактивных вкладок
+                tween(tabBtn, {TextColor3 = inactiveTextColor}, 0.2)
+                if currentHoveredTab ~= tabBtn then
+                    tween(parentContainer, {BackgroundTransparency = 1}, 0.2)
+                end
+
+                if indicator then
+                    local t = tween(indicator, {BackgroundTransparency = 1}, 0.2)
+                    if t then
+                        t.Completed:Connect(function()
+                            if indicator and indicator.BackgroundTransparency >= 0.99 then
+                                indicator:Destroy()
+                            end
+                        end)
+                    end
+                end
+
+                if allTabIcons[textKey] then
+                    tween(allTabIcons[textKey], {ImageTransparency = 0.25}, 0.2)
+                end
+            end
+
+            -- Обновляем обводку эффекта Hover
+            if hoverStroke then
+                tween(hoverStroke, {Color = theme.Accent}, 0.2)
+            end
+        end
+    end
+end
+
 function Library:UpdateTheme(themeName)
     local theme = ThemeConfig[themeName]
     if not theme then return end
@@ -675,14 +756,7 @@ function Library:UpdateTheme(themeName)
     
     for _, obj in ipairs(Library.TrackedElementBg) do
         if obj and obj.Parent then
-            if obj.Name == "TabContainer" then
-                local tabBtn = obj:FindFirstChildOfClass("TextButton")
-                if tabBtn and tabBtn == currentActiveTab then
-                    tween(obj, {BackgroundColor3 = isLightMode and Color3.fromRGB(215, 215, 215) or Color3.fromRGB(35, 35, 35), BackgroundTransparency = 0})
-                else
-                    tween(obj, {BackgroundColor3 = theme.ElementBg, BackgroundTransparency = 1})
-                end
-            else
+            if obj.Name ~= "TabContainer" then
                 tween(obj, {BackgroundColor3 = theme.ElementBg})
             end
         end
@@ -705,13 +779,8 @@ function Library:UpdateTheme(themeName)
         if obj and obj.Parent then tween(obj, {TextColor3 = subTextColor}) end
     end
     
-    for tName, tBtn in pairs(allTabButtons) do
-        if tBtn == currentActiveTab then
-            tBtn.TextColor3 = mainTextColor
-        else
-            tBtn.TextColor3 = subTextColor
-        end
-    end
+    -- Исправлено: Вызов синхронизации темы вкладок
+    applyThemeToTabs(theme)
     
     for _, data in ipairs(Library.TrackedAccents) do
         if data.Type == "Toggle" then
@@ -913,13 +982,14 @@ local FontMapping = {
 }
 
 -- ============================================================================
--- ИСПРАВЛЕННЫЙ И ОПТИМИЗИРОВАННЫЙ ДРОПДАУН
+-- ИСПРАВЛЕНИЕ БАГА 1: ДРОПДАУН С ДИНАМИЧЕСКИМ ZINDEX И АНИМАЦИЕЙ
 -- ============================================================================
 function Library:CreateDropdown(parentPage, textKey, options, default, callback)
     local initialText = Localization[Library.CurrentLanguage][textKey] or textKey
     local DropdownFrame = Instance.new("Frame", parentPage)
     DropdownFrame.Size = UDim2.new(1, -20, 0, 36)
     DropdownFrame.BackgroundColor3 = Library.CurrentThemeData.ElementBg
+    -- Исправлено: ClipsDescendants обрезает содержимое при закрытии
     DropdownFrame.ClipsDescendants = true
     DropdownFrame.ZIndex = 6
     DropdownFrame.LayoutOrder = #parentPage:GetChildren()
@@ -996,15 +1066,46 @@ function Library:CreateDropdown(parentPage, textKey, options, default, callback)
     local isExpanded = false
     local optionButtons = {}
     
+    -- Исправлено: Функция динамического управления ZIndex для предотвращения перекрытия
+    local function setDropdownZIndex(zIndex)
+        DropdownFrame.ZIndex = zIndex
+        HeaderBtn.ZIndex = zIndex + 1
+        TitleLabel.ZIndex = zIndex + 2
+        SelectedLabel.ZIndex = zIndex + 2
+        Arrow.ZIndex = zIndex + 2
+        OptionsContainer.ZIndex = zIndex + 1
+        for _, optData in pairs(optionButtons) do
+            if optData.Button then optData.Button.ZIndex = zIndex + 2 end
+            if optData.Label then optData.Label.ZIndex = zIndex + 3 end
+            if optData.Check then optData.Check.ZIndex = zIndex + 3 end
+        end
+    end
+
     local function toggleDropdown()
         isExpanded = not isExpanded
         local currentOptionsCount = #options
         local contentHeight = math.min(currentOptionsCount * 32, 140)
         local targetFrameHeight = isExpanded and (36 + contentHeight + 4) or 36
         
-        tween(DropdownFrame, {Size = UDim2.new(1, -20, 0, targetFrameHeight)}, 0.2)
-        tween(OptionsContainer, {Size = UDim2.new(1, 0, 0, isExpanded and contentHeight or 0)}, 0.2)
-        tween(Arrow, {Rotation = isExpanded and 180 or 0}, 0.2)
+        if isExpanded then
+            -- Выносим открытый дропдаун на передний план
+            setDropdownZIndex(25)
+            tween(DropdownFrame, {Size = UDim2.new(1, -20, 0, targetFrameHeight)}, 0.2)
+            tween(OptionsContainer, {Size = UDim2.new(1, 0, 0, contentHeight)}, 0.2)
+            tween(Arrow, {Rotation = 180}, 0.2)
+        else
+            tween(OptionsContainer, {Size = UDim2.new(1, 0, 0, 0)}, 0.2)
+            tween(Arrow, {Rotation = 0}, 0.2)
+            local closeTween = tween(DropdownFrame, {Size = UDim2.new(1, -20, 0, 36)}, 0.2)
+            if closeTween then
+                closeTween.Completed:Connect(function()
+                    if not isExpanded then
+                        -- Возвращаем исходный слой только после окончания анимации
+                        setDropdownZIndex(6)
+                    end
+                end)
+            end
+        end
     end
     HeaderBtn.Activated:Connect(toggleDropdown)
     
@@ -1015,6 +1116,8 @@ function Library:CreateDropdown(parentPage, textKey, options, default, callback)
         end
         table.clear(optionButtons)
         
+        local currentZ = isExpanded and 25 or 6
+
         for i, option in ipairs(options) do
             local OptBtn = Instance.new("TextButton", OptionsContainer)
             OptBtn.Size = UDim2.new(1, 0, 0, 32)
@@ -1022,7 +1125,7 @@ function Library:CreateDropdown(parentPage, textKey, options, default, callback)
             OptBtn.BackgroundColor3 = Color3.fromRGB(255, 255, 255)
             OptBtn.Text = ""
             OptBtn.LayoutOrder = i
-            OptBtn.ZIndex = 8
+            OptBtn.ZIndex = currentZ + 2
             
             local OptLabel = Instance.new("TextLabel", OptBtn)
             OptLabel.Size = UDim2.new(1, -40, 1, 0)
@@ -1032,7 +1135,7 @@ function Library:CreateDropdown(parentPage, textKey, options, default, callback)
             OptLabel.TextXAlignment = Enum.TextXAlignment.Left
             OptLabel.TextTruncate = Enum.TextTruncate.AtEnd
             OptLabel.BackgroundTransparency = 1
-            OptLabel.ZIndex = 9
+            OptLabel.ZIndex = currentZ + 3
             
             if FontMapping and FontMapping[option] then
                 OptLabel.Font = FontMapping[option]
@@ -1049,7 +1152,7 @@ function Library:CreateDropdown(parentPage, textKey, options, default, callback)
             Checkmark.TextSize = 12
             Checkmark.BackgroundTransparency = 1
             Checkmark.Visible = (option == SelectedLabel.Text)
-            Checkmark.ZIndex = 9
+            Checkmark.ZIndex = currentZ + 3
             
             OptBtn.MouseEnter:Connect(function()
                 tween(OptBtn, {BackgroundTransparency = 0.96}, 0.15)
@@ -1065,7 +1168,7 @@ function Library:CreateDropdown(parentPage, textKey, options, default, callback)
                 toggleDropdown()
                 callback(option)
                 
-                -- Синхронизация подсветки после применения каллбэка
+                -- Подсветка выбранного пункта в дропдауне
                 for optName, optData in pairs(optionButtons) do
                     if optName == option then
                         optData.Label.TextColor3 = Library.CurrentThemeData.Accent
@@ -1493,7 +1596,7 @@ Library:CreateToggle(SettingsPage, "Gradient", false, function(state)
     toggleGradientEffect(state)
 end)
 
--- ИНИЦИАЛИЗАЦИЯ ПЕРВОЙ ВКЛАДКИ
+-- ИНИЦИАЛИЗАЦИЯ ПЕРВОЙ ВКЛАДКИ И ТЕМЫ
 SettingsPage.Visible = true
 local settingsButton = allTabButtons["Settings"]
 if settingsButton then
