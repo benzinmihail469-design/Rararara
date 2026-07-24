@@ -2390,98 +2390,105 @@ Instance.new("UICorner", IconImage).CornerRadius = UDim.new(0, 10)
 
 -- Animated Loading Overlay
 local LoadingTitle = Instance.new("TextLabel", LoadingCard)
-LoadingTitle.Name = "LoadingTitle"
-LoadingTitle.Size = UDim2.new(1, -20, 0, 20)
-LoadingTitle.Position = UDim2.new(0, 10, 0, 68)
+LoadingTitle.Size = UDim2.new(1, -24, 0, 20)
+LoadingTitle.Position = UDim2.new(0, 12, 0, 68)
 LoadingTitle.Text = "Dark Hub"
 LoadingTitle.Font = Enum.Font.GothamBold
 LoadingTitle.TextColor3 = Color3.fromRGB(255, 255, 255)
 LoadingTitle.TextSize = 15
+LoadingTitle.TextTransparency = 1
 LoadingTitle.BackgroundTransparency = 1
-LoadingTitle.ZIndex = 503
+LoadingTitle.ZIndex = 502
 
-local StatusLabel = Instance.new("TextLabel", LoadingCard)
-StatusLabel.Name = "StatusLabel"
-StatusLabel.Size = UDim2.new(1, -20, 0, 16)
-StatusLabel.Position = UDim2.new(0, 10, 0, 92)
-StatusLabel.Text = "Loading components..."
-StatusLabel.Font = Enum.Font.Gotham
-StatusLabel.TextColor3 = Color3.fromRGB(150, 150, 160)
-StatusLabel.TextSize = 11
-StatusLabel.BackgroundTransparency = 1
-StatusLabel.ZIndex = 503
+local LoadingStatus = Instance.new("TextLabel", LoadingCard)
+LoadingStatus.Size = UDim2.new(1, -24, 0, 16)
+LoadingStatus.Position = UDim2.new(0, 12, 0, 90)
+LoadingStatus.Text = "Loading components..."
+LoadingStatus.Font = Enum.Font.Gotham
+LoadingStatus.TextColor3 = Color3.fromRGB(130, 130, 150)
+LoadingStatus.TextSize = 11
+LoadingStatus.TextTransparency = 1
+LoadingStatus.BackgroundTransparency = 1
+LoadingStatus.ZIndex = 502
 
 local ProgressTrack = Instance.new("Frame", LoadingCard)
-ProgressTrack.Name = "ProgressTrack"
-ProgressTrack.Size = UDim2.new(1, -40, 0, 6)
-ProgressTrack.Position = UDim2.new(0, 20, 0, 125)
-ProgressTrack.BackgroundColor3 = Color3.fromRGB(30, 30, 40)
+ProgressTrack.Size = UDim2.new(1, -40, 0, 4)
+ProgressTrack.Position = UDim2.new(0, 20, 0, 122)
+ProgressTrack.BackgroundColor3 = Color3.fromRGB(30, 30, 42)
+ProgressTrack.BackgroundTransparency = 1
 ProgressTrack.BorderSizePixel = 0
-ProgressTrack.ZIndex = 503
+ProgressTrack.ZIndex = 502
 Instance.new("UICorner", ProgressTrack).CornerRadius = UDim.new(1, 0)
 
 local ProgressFill = Instance.new("Frame", ProgressTrack)
-ProgressFill.Name = "ProgressFill"
 ProgressFill.Size = UDim2.new(0, 0, 1, 0)
-ProgressFill.BackgroundColor3 = getThemeAccent()
+ProgressFill.BackgroundColor3 = Color3.fromRGB(0, 206, 209)
 ProgressFill.BorderSizePixel = 0
-ProgressFill.ZIndex = 504
+ProgressFill.ZIndex = 503
 Instance.new("UICorner", ProgressFill).CornerRadius = UDim.new(1, 0)
 
-local PercentLabel = Instance.new("TextLabel", LoadingCard)
-PercentLabel.Name = "PercentLabel"
-PercentLabel.Size = UDim2.new(1, -40, 0, 14)
-PercentLabel.Position = UDim2.new(0, 20, 0, 138)
-PercentLabel.Text = "0%"
-PercentLabel.Font = Enum.Font.Gotham
-PercentLabel.TextColor3 = Color3.fromRGB(120, 120, 130)
-PercentLabel.TextSize = 10
-PercentLabel.TextXAlignment = Enum.TextXAlignment.Right
-PercentLabel.BackgroundTransparency = 1
-PercentLabel.ZIndex = 503
+local VersionLabel = Instance.new("TextLabel", LoadingCard)
+VersionLabel.Size = UDim2.new(1, 0, 0, 14)
+VersionLabel.Position = UDim2.new(0, 0, 1, -22)
+VersionLabel.Text = "v2.0 Settings Edition"
+VersionLabel.Font = Enum.Font.GothamMedium
+VersionLabel.TextColor3 = Color3.fromRGB(70, 70, 90)
+VersionLabel.TextSize = 9
+VersionLabel.TextTransparency = 1
+VersionLabel.BackgroundTransparency = 1
+VersionLabel.ZIndex = 502
 
--- Play Intro & Progress Sequence
+-- Sequence Animation
 task.spawn(function()
-    tween(LoadingCard, {BackgroundTransparency = 0.1}, 0.35)
-    tween(CardStroke, {Transparency = 0.85}, 0.35)
-    tween(CardScale, {Scale = 1}, 0.35)
+    -- Fade in overlay
+    tween(LoadingCard, {BackgroundTransparency = 0.05}, 0.3)
+    tween(CardStroke, {Transparency = 0.8}, 0.3)
+    tween(CardScale, {Scale = 1}, 0.3)
+    tween(LoadingTitle, {TextTransparency = 0}, 0.3)
+    tween(LoadingStatus, {TextTransparency = 0}, 0.3)
+    tween(ProgressTrack, {BackgroundTransparency = 0}, 0.3)
+    tween(VersionLabel, {TextTransparency = 0}, 0.3)
+    task.wait(0.3)
 
-    local steps = {
-        {progress = 0.25, text = "Initializing GUI elements..."},
-        {progress = 0.55, text = "Applying themes & localization..."},
-        {progress = 0.85, text = "Loading settings & configs..."},
-        {progress = 1.00, text = "Ready!"}
-    }
+    -- Progress steps
+    LoadingStatus.Text = "Initializing UI system..."
+    tween(ProgressFill, {Size = UDim2.new(0.35, 0, 1, 0)}, 0.35)
+    task.wait(0.35)
 
-    for _, step in ipairs(steps) do
-        StatusLabel.Text = step.text
-        PercentLabel.Text = string.format("%d%%", math.floor(step.progress * 100))
-        local t = tween(ProgressFill, {Size = UDim2.new(step.progress, 0, 1, 0)}, 0.3)
-        if t then t.Completed:Wait() else task.wait(0.3) end
-        task.wait(0.1)
-    end
+    LoadingStatus.Text = "Loading configurations..."
+    tween(ProgressFill, {Size = UDim2.new(0.75, 0, 1, 0)}, 0.35)
+    task.wait(0.35)
 
-    task.wait(0.2)
+    LoadingStatus.Text = "Applying Theme..."
+    tween(ProgressFill, {Size = UDim2.new(1, 0, 1, 0)}, 0.25)
+    task.wait(0.25)
 
-    -- Fade out loader
+    LoadingStatus.Text = "Ready!"
+    task.wait(0.15)
+
+    -- Fade out overlay
     tween(LoadingCard, {BackgroundTransparency = 1}, 0.3)
     tween(CardStroke, {Transparency = 1}, 0.3)
     tween(CardScale, {Scale = 0.8}, 0.3)
     tween(LoadingTitle, {TextTransparency = 1}, 0.3)
-    tween(StatusLabel, {TextTransparency = 1}, 0.3)
-    tween(PercentLabel, {TextTransparency = 1}, 0.3)
+    tween(LoadingStatus, {TextTransparency = 1}, 0.3)
     tween(ProgressTrack, {BackgroundTransparency = 1}, 0.3)
-    local fadeOut = tween(ProgressFill, {BackgroundTransparency = 1}, 0.3)
+    tween(ProgressFill, {BackgroundTransparency = 1}, 0.3)
+    local exitTween = tween(VersionLabel, {TextTransparency = 1}, 0.3)
 
-    if fadeOut then fadeOut.Completed:Wait() else task.wait(0.3) end
-
-    LoadingContainer:Destroy()
-
-    -- Show Main Hub Window
-    MainFrame.Visible = true
-    MainScale.Scale = 0.85
-    MainFrame.BackgroundTransparency = 1
-
-    tween(MainScale, {Scale = 1}, 0.35)
-    tween(MainFrame, {BackgroundTransparency = 0.15}, 0.35)
+    if exitTween then
+        exitTween.Completed:Connect(function()
+            LoadingContainer:Destroy()
+            
+            -- Open MainFrame seamlessly
+            MainFrame.Visible = true
+            MainScale.Scale = 0.85
+            MainFrame.BackgroundTransparency = 1
+            tween(MainScale, {Scale = 1}, 0.25)
+            tween(MainFrame, {BackgroundTransparency = 0.15}, 0.25)
+        end)
+    else
+        LoadingContainer:Destroy()
+        MainFrame.Visible = true
+    end
 end)
