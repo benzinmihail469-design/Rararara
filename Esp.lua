@@ -124,7 +124,7 @@ local function spawnWave(container, clickX, clickY)
 end
 
 -- ============================================================================
--- ОСНОВНОЙ GUI
+-- ОСНОВНОЙ GUI (СКРЫТ ДО ЗАВЕРШЕНИЯ ЗАГРУЗКИ)
 -- ============================================================================
 local MainFrame = Instance.new("Frame", DarkHub)
 MainFrame.Name = "MainFrame"
@@ -1584,11 +1584,13 @@ ConfigSystem.FolderPath = "DarkHub/Configs"
 ConfigSystem.LastConfigPath = "DarkHub/LastConfig.json"
 ConfigSystem.CurrentLoadedConfig = nil
 
+-- Создание директорий
 if makefolder and isfolder then
     if not isfolder("DarkHub") then makefolder("DarkHub") end
     if not isfolder(ConfigSystem.FolderPath) then makefolder(ConfigSystem.FolderPath) end
 end
 
+-- UI Элементы Системы Конфигураций
 local ConfigSectionHeader = Instance.new("TextLabel", SettingsPage)
 ConfigSectionHeader.Size = UDim2.new(1, -20, 0, 24)
 ConfigSectionHeader.Text = "Конфигурации"
@@ -1670,6 +1672,7 @@ local function ShowStatus(text, isError)
     end)
 end
 
+-- Сбор всех данных настроек
 function ConfigSystem:GetCurrentData()
     return {
         Language = LanguageDropdown.GetValue(),
@@ -1682,6 +1685,7 @@ function ConfigSystem:GetCurrentData()
     }
 end
 
+-- Применение сохранённых настроек
 function ConfigSystem:ApplyData(data)
     if type(data) ~= "table" then return end
     if data.Language then LanguageDropdown.SetValue(data.Language) end
@@ -1693,7 +1697,7 @@ function ConfigSystem:ApplyData(data)
     if data.Gradient ~= nil then GradientToggle.SetValue(data.Gradient) end
 end
 
--- Модальное окно
+-- Модальное окно для ввода имени или подтверждения удаления
 local ModalOverlay = Instance.new("Frame", DarkHub)
 ModalOverlay.Size = UDim2.new(1, 0, 1, 0)
 ModalOverlay.BackgroundColor3 = Color3.fromRGB(0, 0, 0)
@@ -1750,247 +1754,513 @@ ModalBtnCancel.Size = UDim2.new(0.45, -5, 0, 30)
 ModalBtnCancel.Position = UDim2.new(0.55, -5, 1, -40)
 ModalBtnCancel.BackgroundColor3 = Color3.fromRGB(60, 60, 70)
 ModalBtnCancel.Text = "Отмена"
-ModalBtnCancel.Font = Enum.Font.GothamBold
+ModalBtnCancel.Font = Enum.Font.Gotham
 ModalBtnCancel.TextColor3 = Color3.fromRGB(220, 220, 220)
 ModalBtnCancel.TextSize = 12
 ModalBtnCancel.ZIndex = 302
 Instance.new("UICorner", ModalBtnCancel).CornerRadius = UDim.new(0, 6)
 
-local currentModalCallback = nil
-
-local function OpenModal(titleText, defaultInputText, callback)
-    ModalTitle.Text = titleText
-    ModalTextBox.Text = defaultInputText or ""
-    currentModalCallback = callback
-    ModalOverlay.Visible = true
-    ModalTextBox:CaptureFocus()
-end
-
-local function CloseModal()
+local function HideModal()
     ModalOverlay.Visible = false
-    currentModalCallback = nil
     ModalTextBox.Text = ""
 end
 
-ModalBtnCancel.Activated:Connect(CloseModal)
+ModalBtnCancel.Activated:Connect(HideModal)
 
-ModalBtnConfirm.Activated:Connect(function()
-    local text = ModalTextBox.Text
-    if text and text:gsub("%s+", "") ~= "" then
-        local cb = currentModalCallback
-        CloseModal()
-        if cb then cb(text) end
-    else
-        ShowStatus("Введите корректное имя!", true)
-    end
-end)
-
-function ConfigSystem:SaveConfig(configName)
-    if not writefile then
-        ShowStatus("Ваш эксплойт не поддерживает writefile!", true)
-        return
-    end
-
-    local cleanName = configName:gsub("[%p%s]", "_")
-    local fileName = ConfigSystem.FolderPath .. "/" .. cleanName .. ".json"
-    local data = ConfigSystem:GetCurrentData()
+-- Сохранение конфига
+function ConfigSystem:SaveToFile(name)
+    if name == "" then return end
+    local filepath = ConfigSystem.FolderPath .. "/" .. name .. ".json"
+    local timeStr = os.date("%d.%m.%Y %H:%M")
+    local saveData = {
+        Timestamp = timeStr,
+        Settings = ConfigSystem:GetCurrentData()
+    }
     
-    local success, encoded = pcall(function()
-        return HttpService:JSONEncode(data)
-    end)
-
-    if success then
-        local writeSuccess, err = pcall(function()
-            writefile(fileName, encoded)
-        end)
-
-        if writeSuccess then
-            ConfigSystem.CurrentLoadedConfig = cleanName
-            pcall(function()
-                writefile(ConfigSystem.LastConfigPath, HttpService:JSONEncode({LastConfig = cleanName}))
-            end)
-            
-            ShowStatus("Конфиг '" .. cleanName .. "' сохранен!", false)
-            ConfigSystem:RefreshList()
-        else
-            ShowStatus("Ошибка записи файла: " .. tostring(err), true)
+    local success, encoded = pcall(function() return HttpService:JSONEncode(saveData) end)
+    if success and writefile then
+        writefile(filepath, encoded)
+        ConfigSystem.CurrentLoadedConfig = name
+        
+        -- Запись последнего конфига
+        if writefile then
+            writefile(ConfigSystem.LastConfigPath, HttpService:JSONEncode({Last = name}))
         end
+        
+        ShowStatus("Конфиг '" .. name .. "' сохранён!", false)
+        ConfigSystem:RefreshList()
     else
-        ShowStatus("Ошибка сериализации данных!", true)
+        ShowStatus("Ошибка при сохранении конфига", true)
     end
 end
 
-function ConfigSystem:LoadConfig(configName)
-    if not readfile or not isfile then
-        ShowStatus("Функции чтения файлов недоступны!", true)
-        return
-    end
-
-    local fileName = ConfigSystem.FolderPath .. "/" .. configName .. ".json"
-    if not isfile(fileName) then
-        ShowStatus("Файл конфига не найден!", true)
-        return
-    end
-
-    local readSuccess, content = pcall(function()
-        return readfile(fileName)
-    end)
-
-    if readSuccess and content then
-        local decodeSuccess, data = pcall(function()
-            return HttpService:JSONDecode(content)
-        end)
-
-        if decodeSuccess and type(data) == "table" then
-            ConfigSystem:ApplyData(data)
-            ConfigSystem.CurrentLoadedConfig = configName
-            
-            pcall(function()
-                writefile(ConfigSystem.LastConfigPath, HttpService:JSONEncode({LastConfig = configName}))
-            end)
-            
-            ShowStatus("Конфиг '" .. configName .. "' загружен!", false)
-            ConfigSystem:RefreshList()
-        else
-            ShowStatus("Не удалось прочитать JSON конфига!", true)
+-- Функция переименования
+function ConfigSystem:RenameConfig(oldName, newName)
+    if newName == "" or newName == oldName then return end
+    local oldPath = ConfigSystem.FolderPath .. "/" .. oldName .. ".json"
+    local newPath = ConfigSystem.FolderPath .. "/" .. newName .. ".json"
+    
+    if isfile and isfile(oldPath) and readfile and writefile and delfile then
+        local content = readfile(oldPath)
+        writefile(newPath, content)
+        delfile(oldPath)
+        
+        if ConfigSystem.CurrentLoadedConfig == oldName then
+            ConfigSystem.CurrentLoadedConfig = newName
+            writefile(ConfigSystem.LastConfigPath, HttpService:JSONEncode({Last = newName}))
         end
-    else
-        ShowStatus("Ошибка чтения файла!", true)
-    end
-end
-
-function ConfigSystem:DeleteConfig(configName)
-    if not delfile or not isfile then
-        ShowStatus("Удаление файлов не поддерживается!", true)
-        return
-    end
-
-    local fileName = ConfigSystem.FolderPath .. "/" .. configName .. ".json"
-    if isfile(fileName) then
-        pcall(function() delfile(fileName) end)
-        if ConfigSystem.CurrentLoadedConfig == configName then
-            ConfigSystem.CurrentLoadedConfig = nil
-        end
-        ShowStatus("Конфиг '" .. configName .. "' удален!", false)
+        ShowStatus("Конфиг переименован в '" .. newName .. "'", false)
         ConfigSystem:RefreshList()
     end
 end
 
+-- Отрисовка списка конфигов
 function ConfigSystem:RefreshList()
     for _, child in ipairs(ConfigsScrollFrame:GetChildren()) do
         if child:IsA("Frame") then child:Destroy() end
     end
-
-    if not listfiles or not isfolder then
-        EmptyConfigLabel.Text = "Функция listfiles недоступна"
-        EmptyConfigLabel.Visible = true
-        return
-    end
-
+    
     local files = {}
-    pcall(function()
-        files = listfiles(ConfigSystem.FolderPath)
-    end)
-
-    local configNames = {}
-    for _, filePath in ipairs(files) do
-        if filePath:sub(-5) == ".json" then
-            local name = filePath:match("([^/%\\]+)%.json$")
-            if name then table.insert(configNames, name) end
-        end
-    end
-
-    if #configNames == 0 then
-        EmptyConfigLabel.Text = "Нет сохранённых конфигов"
-        EmptyConfigLabel.Visible = true
-    else
-        EmptyConfigLabel.Visible = false
-        table.sort(configNames)
-
-        for i, name in ipairs(configNames) do
-            local ItemFrame = Instance.new("Frame", ConfigsScrollFrame)
-            ItemFrame.Size = UDim2.new(1, -12, 0, 36)
-            ItemFrame.BackgroundColor3 = (ConfigSystem.CurrentLoadedConfig == name) and Color3.fromRGB(30, 45, 60) or Color3.fromRGB(24, 24, 30)
-            ItemFrame.LayoutOrder = i
-            Instance.new("UICorner", ItemFrame).CornerRadius = UDim.new(0, 6)
-            
-            local ItemStroke = Instance.new("UIStroke", ItemFrame)
-            ItemStroke.Color = (ConfigSystem.CurrentLoadedConfig == name) and Library.CurrentThemeData.Accent or Color3.fromRGB(45, 45, 55)
-            ItemStroke.Thickness = 1
-
-            local NameLabel = Instance.new("TextLabel", ItemFrame)
-            NameLabel.Size = UDim2.new(1, -110, 1, 0)
-            NameLabel.Position = UDim2.new(0, 10, 0, 0)
-            NameLabel.Text = name
-            NameLabel.Font = Enum.Font.GothamMedium
-            NameLabel.TextColor3 = Color3.fromRGB(240, 240, 240)
-            NameLabel.TextSize = 12
-            NameLabel.TextXAlignment = Enum.TextXAlignment.Left
-            NameLabel.TextTruncate = Enum.TextTruncate.AtEnd
-            NameLabel.BackgroundTransparency = 1
-
-            local LoadBtn = Instance.new("TextButton", ItemFrame)
-            LoadBtn.Size = UDim2.new(0, 45, 0, 24)
-            LoadBtn.Position = UDim2.new(1, -98, 0.5, -12)
-            LoadBtn.BackgroundColor3 = Color3.fromRGB(0, 120, 215)
-            LoadBtn.Text = "Load"
-            LoadBtn.Font = Enum.Font.GothamBold
-            LoadBtn.TextColor3 = Color3.fromRGB(255, 255, 255)
-            LoadBtn.TextSize = 10
-            Instance.new("UICorner", LoadBtn).CornerRadius = UDim.new(0, 4)
-
-            LoadBtn.Activated:Connect(function()
-                ConfigSystem:LoadConfig(name)
-            end)
-
-            local DelBtn = Instance.new("TextButton", ItemFrame)
-            DelBtn.Size = UDim2.new(0, 45, 0, 24)
-            DelBtn.Position = UDim2.new(1, -48, 0.5, -12)
-            DelBtn.BackgroundColor3 = Color3.fromRGB(180, 45, 45)
-            DelBtn.Text = "Del"
-            DelBtn.Font = Enum.Font.GothamBold
-            DelBtn.TextColor3 = Color3.fromRGB(255, 255, 255)
-            DelBtn.TextSize = 10
-            Instance.new("UICorner", DelBtn).CornerRadius = UDim.new(0, 4)
-
-            DelBtn.Activated:Connect(function()
-                ConfigSystem:DeleteConfig(name)
-            end)
-        end
-    end
-end
-
-function ConfigSystem:LoadLastConfig()
-    if isfile and isfile(ConfigSystem.LastConfigPath) and readfile then
-        pcall(function()
-            local raw = readfile(ConfigSystem.LastConfigPath)
-            local data = HttpService:JSONDecode(raw)
-            if data and data.LastConfig then
-                ConfigSystem:LoadConfig(data.LastConfig)
+    if listfiles and isfolder and isfolder(ConfigSystem.FolderPath) then
+        for _, file in ipairs(listfiles(ConfigSystem.FolderPath)) do
+            if string.sub(file, -5) == ".json" then
+                local fileName = string.gsub(file, "\\", "/")
+                fileName = string.match(fileName, "([^/]+)%.json$")
+                if fileName then table.insert(files, fileName) end
             end
+        end
+    end
+    
+    EmptyConfigLabel.Visible = (#files == 0)
+    
+    for i, configName in ipairs(files) do
+        local isCurrent = (configName == ConfigSystem.CurrentLoadedConfig)
+        
+        local Card = Instance.new("Frame", ConfigsScrollFrame)
+        Card.Size = UDim2.new(1, -12, 0, 48)
+        Card.BackgroundColor3 = Color3.fromRGB(26, 26, 32)
+        Card.LayoutOrder = i
+        Card.ZIndex = 8
+        Instance.new("UICorner", Card).CornerRadius = UDim.new(0, 6)
+        
+        local CardStroke = Instance.new("UIStroke", Card)
+        CardStroke.Thickness = 1
+        CardStroke.Color = isCurrent and Color3.fromRGB(80, 220, 120) or Color3.fromRGB(45, 45, 50)
+        
+        if isCurrent then
+            local ActiveBar = Instance.new("Frame", Card)
+            ActiveBar.Size = UDim2.new(0, 4, 1, 0)
+            ActiveBar.Position = UDim2.new(0, 0, 0, 0)
+            ActiveBar.BackgroundColor3 = Color3.fromRGB(80, 220, 120)
+            ActiveBar.BorderSizePixel = 0
+            ActiveBar.ZIndex = 9
+            Instance.new("UICorner", ActiveBar).CornerRadius = UDim.new(0, 2)
+        end
+        
+        -- Чтение даты создания/обновления
+        local timestampText = "00.00.0000 00:00"
+        local filePath = ConfigSystem.FolderPath .. "/" .. configName .. ".json"
+        if isfile and isfile(filePath) and readfile then
+            pcall(function()
+                local data = HttpService:JSONDecode(readfile(filePath))
+                if data and data.Timestamp then timestampText = data.Timestamp end
+            end)
+        end
+        
+        local TitleBox = Instance.new("TextBox", Card)
+        TitleBox.Size = UDim2.new(1, -140, 0, 20)
+        TitleBox.Position = UDim2.new(0, 10, 0, 6)
+        TitleBox.Text = configName
+        TitleBox.Font = Enum.Font.GothamBold
+        TitleBox.TextColor3 = Color3.fromRGB(255, 255, 255)
+        TitleBox.TextSize = 12
+        TitleBox.TextXAlignment = Enum.TextXAlignment.Left
+        TitleBox.BackgroundTransparency = 1
+        TitleBox.ClearTextOnFocus = false
+        TitleBox.ZIndex = 9
+        
+        TitleBox.FocusLost:Connect(function(enterPressed)
+            if TitleBox.Text ~= configName then
+                ConfigSystem:RenameConfig(configName, TitleBox.Text)
+            end
+        end)
+        
+        local DateLabel = Instance.new("TextLabel", Card)
+        DateLabel.Size = UDim2.new(1, -140, 0, 14)
+        DateLabel.Position = UDim2.new(0, 10, 0, 26)
+        DateLabel.Text = timestampText
+        DateLabel.Font = Enum.Font.Gotham
+        DateLabel.TextColor3 = Color3.fromRGB(130, 130, 135)
+        DateLabel.TextSize = 10
+        DateLabel.TextXAlignment = Enum.TextXAlignment.Left
+        DateLabel.BackgroundTransparency = 1
+        DateLabel.ZIndex = 9
+        
+        -- Кнопки действий
+        local ActionsContainer = Instance.new("Frame", Card)
+        ActionsContainer.Size = UDim2.new(0, 125, 0, 28)
+        ActionsContainer.Position = UDim2.new(1, -130, 0.5, -14)
+        ActionsContainer.BackgroundTransparency = 1
+        ActionsContainer.ZIndex = 9
+        
+        local ActionLayout = Instance.new("UIListLayout", ActionsContainer)
+        ActionLayout.FillDirection = Enum.FillDirection.Horizontal
+        ActionLayout.Padding = UDim.new(0, 4)
+        ActionLayout.HorizontalAlignment = Enum.HorizontalAlignment.Right
+        
+        local function createSmallBtn(btnText, color, callback)
+            local btn = Instance.new("TextButton", ActionsContainer)
+            btn.Size = UDim2.new(0, 38, 1, 0)
+            btn.BackgroundColor3 = color
+            btn.Text = btnText
+            btn.Font = Enum.Font.GothamBold
+            btn.TextColor3 = Color3.fromRGB(255, 255, 255)
+            btn.TextSize = 10
+            btn.ZIndex = 10
+            Instance.new("UICorner", btn).CornerRadius = UDim.new(0, 4)
+            btn.Activated:Connect(callback)
+            return btn
+        end
+        
+        -- Load Button
+        createSmallBtn("Load", Color3.fromRGB(0, 120, 215), function()
+            if readfile and isfile and isfile(filePath) then
+                local success, decoded = pcall(function() return HttpService:JSONDecode(readfile(filePath)) end)
+                if success and decoded and decoded.Settings then
+                    ConfigSystem:ApplyData(decoded.Settings)
+                    ConfigSystem.CurrentLoadedConfig = configName
+                    if writefile then
+                        writefile(ConfigSystem.LastConfigPath, HttpService:JSONEncode({Last = configName}))
+                    end
+                    ShowStatus("Конфиг '" .. configName .. "' загружен!", false)
+                    ConfigSystem:RefreshList()
+                end
+            end
+        end)
+        
+        -- Update Button
+        createSmallBtn("Upd", Color3.fromRGB(180, 130, 20), function()
+            ConfigSystem:SaveToFile(configName)
+            ShowStatus("Конфиг '" .. configName .. "' обновлён!", false)
+        end)
+        
+        -- Delete Button
+        createSmallBtn("Del", Color3.fromRGB(180, 40, 40), function()
+            ModalTitle.Text = "Удалить конфиг?"
+            ModalTextBox.Visible = false
+            ModalBtnConfirm.Text = "Да"
+            ModalBtnConfirm.BackgroundColor3 = Color3.fromRGB(180, 40, 40)
+            ModalOverlay.Visible = true
+            
+            local confirmConn
+            confirmConn = ModalBtnConfirm.Activated:Connect(function()
+                confirmConn:Disconnect()
+                if delfile and isfile and isfile(filePath) then
+                    delfile(filePath)
+                    if ConfigSystem.CurrentLoadedConfig == configName then
+                        ConfigSystem.CurrentLoadedConfig = nil
+                        if isfile(ConfigSystem.LastConfigPath) then delfile(ConfigSystem.LastConfigPath) end
+                    end
+                    ShowStatus("Конфиг удалён", true)
+                    ConfigSystem:RefreshList()
+                end
+                HideModal()
+            end)
         end)
     end
 end
 
+-- Обработка клика "Save Config"
 SaveConfigBtn.Activated:Connect(function()
-    OpenModal("Сохранить конфиг", "", function(configName)
-        ConfigSystem:SaveConfig(configName)
+    ModalTitle.Text = "Создать новый конфиг"
+    ModalTextBox.Visible = true
+    ModalTextBox.Text = ""
+    ModalBtnConfirm.Text = "Сохранить"
+    ModalBtnConfirm.BackgroundColor3 = Color3.fromRGB(0, 140, 90)
+    ModalOverlay.Visible = true
+    
+    local confirmConn
+    confirmConn = ModalBtnConfirm.Activated:Connect(function()
+        confirmConn:Disconnect()
+        local name = ModalTextBox.Text
+        if name ~= "" then
+            ConfigSystem:SaveToFile(name)
+        end
+        HideModal()
     end)
 end)
 
-ConfigSystem:RefreshList()
-ConfigSystem:LoadLastConfig()
+-- Авто-загрузка последнего сохранённого конфига при старте
+task.spawn(function()
+    ConfigSystem:RefreshList()
+    if isfile and readfile and isfile(ConfigSystem.LastConfigPath) then
+        pcall(function()
+            local lastData = HttpService:JSONDecode(readfile(ConfigSystem.LastConfigPath))
+            if lastData and lastData.Last then
+                local lastConfigPath = ConfigSystem.FolderPath .. "/" .. lastData.Last .. ".json"
+                if isfile(lastConfigPath) then
+                    local cfgData = HttpService:JSONDecode(readfile(lastConfigPath))
+                    if cfgData and cfgData.Settings then
+                        ConfigSystem:ApplyData(cfgData.Settings)
+                        ConfigSystem.CurrentLoadedConfig = lastData.Last
+                        ConfigSystem:RefreshList()
+                        ShowStatus("Автозагрузка: '" .. lastData.Last .. "'", false)
+                    end
+                end
+            end
+        end)
+    end
+end)
 
--- ============================================================================
--- АКТИВАЦИЯ И ОТОБРАЖЕНИЕ ОКНА
--- ============================================================================
-MainFrame.Visible = true
-MainFrame.Size = UDim2.new(0, 0, 0, 0)
-tween(MainFrame, {Size = UDim2.new(0, 550, 0, 350)}, 0.4)
-
--- Автоматически открываем первую вкладку
-if allTabButtons["Settings"] then
-    setActiveTab(allTabButtons["Settings"])
-    currentActiveTab = allTabButtons["Settings"]
-    allPages["Settings"].Visible = true
+-- ИНИЦИАЛИЗАЦИЯ ПЕРВОЙ ВКЛАДКИ И ТЕМЫ
+SettingsPage.Visible = true
+local settingsButton = allTabButtons["Settings"]
+if settingsButton then
+    setActiveTab(settingsButton)
+    currentActiveTab = settingsButton
 end
+
+Library:UpdateTheme("Deep Ocean")
+
+-- ============================================================================
+-- ЭКРАН ЗАГРУЗКИ (ПРОФЕССИОНАЛЬНЫЙ И АНИМИРОВАННЫЙ)
+-- ============================================================================
+local LoadingContainer = Instance.new("Frame")
+LoadingContainer.Name = "LoadingContainer"
+LoadingContainer.Size = UDim2.new(1, 0, 1, 0)
+LoadingContainer.Position = UDim2.new(0, 0, 0, 0)
+LoadingContainer.BackgroundTransparency = 1
+LoadingContainer.ZIndex = 500
+LoadingContainer.Parent = DarkHub
+
+local LoadingCard = Instance.new("Frame")
+LoadingCard.Name = "LoadingCard"
+LoadingCard.Size = UDim2.new(0, 310, 0, 185)
+LoadingCard.Position = UDim2.new(0.5, 0, 0.5, 0)
+LoadingCard.AnchorPoint = Vector2.new(0.5, 0.5)
+LoadingCard.BackgroundColor3 = Color3.fromRGB(18, 18, 26)
+LoadingCard.BackgroundTransparency = 1
+LoadingCard.ClipsDescendants = false
+LoadingCard.ZIndex = 501
+LoadingCard.Parent = LoadingContainer
+
+local CardCorner = Instance.new("UICorner", LoadingCard)
+CardCorner.CornerRadius = UDim.new(0, 16)
+
+local CardStroke = Instance.new("UIStroke", LoadingCard)
+CardStroke.Color = Color3.fromRGB(255, 255, 255)
+CardStroke.Transparency = 1
+CardStroke.Thickness = 1
+
+local CardScale = Instance.new("UIScale", LoadingCard)
+CardScale.Scale = 0.8
+
+local IconFrame = Instance.new("Frame")
+IconFrame.Name = "IconFrame"
+IconFrame.Size = UDim2.new(0, 44, 0, 44)
+IconFrame.Position = UDim2.new(0.5, 0, 0, 16)
+IconFrame.AnchorPoint = Vector2.new(0.5, 0)
+IconFrame.BackgroundColor3 = Color3.fromRGB(255, 255, 255)
+IconFrame.BackgroundTransparency = 1
+IconFrame.ZIndex = 502
+IconFrame.Parent = LoadingCard
+
+local IconCorner = Instance.new("UICorner", IconFrame)
+IconCorner.CornerRadius = UDim.new(0, 10)
+
+local IconScale = Instance.new("UIScale", IconFrame)
+IconScale.Scale = 1.0
+
+local IconImage = Instance.new("ImageLabel", IconFrame)
+IconImage.Size = UDim2.new(1, 0, 1, 0)
+IconImage.BackgroundTransparency = 1
+IconImage.Image = "rbxthumb://type=Asset&id=" .. CustomIconID .. "&w=150&h=150"
+IconImage.ScaleType = Enum.ScaleType.Fit
+IconImage.ZIndex = 503
+Instance.new("UICorner", IconImage).CornerRadius = UDim.new(0, 10)
+
+local pulseInfo = TweenInfo.new(1.2, Enum.EasingStyle.Sine, Enum.EasingDirection.InOut, -1, true)
+local pulseTween = TweenService:Create(IconScale, pulseInfo, {Scale = 1.08})
+pulseTween:Play()
+
+local LoadingTitle = Instance.new("TextLabel", LoadingCard)
+LoadingTitle.Size = UDim2.new(1, 0, 0, 22)
+LoadingTitle.Position = UDim2.new(0, 0, 0, 66)
+LoadingTitle.Text = "Dark Hub"
+LoadingTitle.Font = Enum.Font.GothamBold
+LoadingTitle.TextSize = 18
+LoadingTitle.TextColor3 = Color3.fromRGB(255, 255, 255)
+LoadingTitle.BackgroundTransparency = 1
+LoadingTitle.TextTransparency = 1
+LoadingTitle.ZIndex = 502
+
+local ProgressBarBg = Instance.new("Frame", LoadingCard)
+ProgressBarBg.Size = UDim2.new(0, 250, 0, 20)
+ProgressBarBg.Position = UDim2.new(0.5, 0, 0, 100)
+ProgressBarBg.AnchorPoint = Vector2.new(0.5, 0)
+ProgressBarBg.BackgroundColor3 = Color3.fromRGB(40, 40, 50)
+ProgressBarBg.BackgroundTransparency = 1
+ProgressBarBg.ClipsDescendants = true
+ProgressBarBg.ZIndex = 502
+Instance.new("UICorner", ProgressBarBg).CornerRadius = UDim.new(0, 8)
+
+local ProgressBarFill = Instance.new("Frame", ProgressBarBg)
+ProgressBarFill.Size = UDim2.new(0, 0, 1, 0)
+ProgressBarFill.BackgroundColor3 = Color3.fromRGB(255, 255, 255)
+ProgressBarFill.ZIndex = 503
+Instance.new("UICorner", ProgressBarFill).CornerRadius = UDim.new(0, 8)
+
+local BarGradient = Instance.new("UIGradient", ProgressBarFill)
+BarGradient.Color = ColorSequence.new({
+    ColorSequenceKeypoint.new(0, Color3.fromRGB(0, 120, 255)),
+    ColorSequenceKeypoint.new(0.5, Color3.fromRGB(60, 180, 255)),
+    ColorSequenceKeypoint.new(1, Color3.fromRGB(0, 230, 210))
+})
+
+local waveTweenInfo = TweenInfo.new(1.8, Enum.EasingStyle.Linear, Enum.EasingDirection.InOut, -1, true)
+local waveTween = TweenService:Create(BarGradient, waveTweenInfo, {Offset = Vector2.new(1, 0)})
+waveTween:Play()
+
+local BarText = Instance.new("TextLabel", ProgressBarBg)
+BarText.Size = UDim2.new(1, 0, 1, 0)
+BarText.Text = "0%"
+BarText.Font = Enum.Font.GothamBold
+BarText.TextSize = 12
+BarText.TextColor3 = Color3.fromRGB(255, 255, 255)
+BarText.TextTransparency = 1
+BarText.BackgroundTransparency = 1
+BarText.ZIndex = 504
+
+local LoadingStatus = Instance.new("TextLabel", LoadingCard)
+LoadingStatus.Size = UDim2.new(1, -20, 0, 18)
+LoadingStatus.Position = UDim2.new(0, 10, 0, 130)
+LoadingStatus.Text = "Инициализация ядра..."
+LoadingStatus.Font = Enum.Font.Gotham
+LoadingStatus.TextSize = 12
+LoadingStatus.TextColor3 = Color3.fromRGB(180, 180, 200)
+LoadingStatus.BackgroundTransparency = 1
+LoadingStatus.TextTransparency = 1
+LoadingStatus.ZIndex = 502
+
+local particlesActive = true
+local function spawnParticle()
+    if not particlesActive or not LoadingCard or not LoadingCard.Parent then return end
+    
+    local p = Instance.new("Frame")
+    p.Size = UDim2.new(0, math.random(4, 6), 0, math.random(4, 6))
+    p.Position = UDim2.new(math.random(10, 90) / 100, 0, math.random(70, 95) / 100, 0)
+    p.BackgroundColor3 = Color3.fromRGB(255, 255, 255)
+    p.BackgroundTransparency = 0.5
+    p.BorderSizePixel = 0
+    p.ZIndex = 500
+    p.Parent = LoadingCard
+    Instance.new("UICorner", p).CornerRadius = UDim.new(1, 0)
+    
+    local targetY = p.Position.Y.Scale - math.random(30, 60) / 100
+    local targetX = p.Position.X.Scale + (math.random(-15, 15) / 100)
+    
+    local pTween = TweenService:Create(p, TweenInfo.new(math.random(15, 25) / 10, Enum.EasingStyle.Quad, Enum.EasingDirection.Out), {
+        Position = UDim2.new(targetX, 0, targetY, 0),
+        BackgroundTransparency = 1
+    })
+    pTween:Play()
+    pTween.Completed:Connect(function()
+        p:Destroy()
+    end)
+end
+
+task.spawn(function()
+    while particlesActive do
+        spawnParticle()
+        task.wait(math.random(2, 4) / 10)
+    end
+end)
+
+TweenService:Create(LoadingCard, TweenInfo.new(0.35, Enum.EasingStyle.Back, Enum.EasingDirection.Out), {BackgroundTransparency = 0.15}):Play()
+TweenService:Create(CardScale, TweenInfo.new(0.35, Enum.EasingStyle.Back, Enum.EasingDirection.Out), {Scale = 1}):Play()
+TweenService:Create(CardStroke, TweenInfo.new(0.35), {Transparency = 0.85}):Play()
+
+TweenService:Create(LoadingTitle, TweenInfo.new(0.3), {TextTransparency = 0}):Play()
+TweenService:Create(ProgressBarBg, TweenInfo.new(0.3), {BackgroundTransparency = 0.3}):Play()
+TweenService:Create(BarText, TweenInfo.new(0.3), {TextTransparency = 0}):Play()
+TweenService:Create(LoadingStatus, TweenInfo.new(0.3), {TextTransparency = 0}):Play()
+
+local currentStatusText = LoadingStatus.Text
+local function setStatus(newText, color)
+    if currentStatusText == newText then return end
+    currentStatusText = newText
+    
+    local fadeOut = TweenService:Create(LoadingStatus, TweenInfo.new(0.15), {TextTransparency = 1})
+    fadeOut:Play()
+    fadeOut.Completed:Wait()
+    
+    LoadingStatus.Text = newText
+    if color then
+        LoadingStatus.TextColor3 = color
+    end
+    
+    TweenService:Create(LoadingStatus, TweenInfo.new(0.15), {TextTransparency = 0}):Play()
+end
+
+task.spawn(function()
+    local stages = {
+        { target = 0.30, duration = 1.0, status = "Инициализация ядра..." },
+        { target = 0.60, duration = 1.2, status = "Загрузка интерфейса..." },
+        { target = 0.85, duration = 0.8, status = "Подготовка настроек..." },
+        { target = 0.95, duration = 0.6, status = "Загрузка конфигураций..." },
+        { target = 1.00, duration = 0.4, status = "Запуск..." }
+    }
+
+    local currentProgress = 0
+
+    for _, stage in ipairs(stages) do
+        setStatus(stage.status)
+        
+        local fillTween = TweenService:Create(ProgressBarFill, TweenInfo.new(stage.duration, Enum.EasingStyle.Quad, Enum.EasingDirection.Out), {
+            Size = UDim2.new(stage.target, 0, 1, 0)
+        })
+        fillTween:Play()
+        
+        local startTimeStage = os.clock()
+        local startProgress = currentProgress
+        local targetProgress = stage.target
+        
+        while os.clock() - startTimeStage < stage.duration do
+            local elapsed = os.clock() - startTimeStage
+            local alpha = math.clamp(elapsed / stage.duration, 0, 1)
+            local quadAlpha = 1 - (1 - alpha) * (1 - alpha)
+            currentProgress = startProgress + (targetProgress - startProgress) * quadAlpha
+            BarText.Text = string.format("%d%%", math.floor(currentProgress * 100))
+            task.wait()
+        end
+        
+        currentProgress = stage.target
+        BarText.Text = string.format("%d%%", math.floor(currentProgress * 100))
+    end
+
+    setStatus("ГОТОВО!", Color3.fromRGB(100, 255, 130))
+    BarText.Text = "100%"
+    task.wait(0.5)
+
+    particlesActive = false
+
+    TweenService:Create(CardScale, TweenInfo.new(0.5, Enum.EasingStyle.Quad, Enum.EasingDirection.In), {Scale = 0.8}):Play()
+    TweenService:Create(LoadingCard, TweenInfo.new(0.5), {BackgroundTransparency = 1}):Play()
+    TweenService:Create(CardStroke, TweenInfo.new(0.5), {Transparency = 1}):Play()
+    TweenService:Create(IconFrame, TweenInfo.new(0.5), {BackgroundTransparency = 1}):Play()
+    TweenService:Create(IconImage, TweenInfo.new(0.5), {ImageTransparency = 1}):Play()
+    TweenService:Create(LoadingTitle, TweenInfo.new(0.5), {TextTransparency = 1}):Play()
+    TweenService:Create(ProgressBarBg, TweenInfo.new(0.5), {BackgroundTransparency = 1}):Play()
+    TweenService:Create(ProgressBarFill, TweenInfo.new(0.5), {BackgroundTransparency = 1}):Play()
+    TweenService:Create(BarText, TweenInfo.new(0.5), {TextTransparency = 1}):Play()
+    local finalFade = TweenService:Create(LoadingStatus, TweenInfo.new(0.5), {TextTransparency = 1})
+    finalFade:Play()
+
+    finalFade.Completed:Wait()
+
+    pulseTween:Cancel()
+    waveTween:Cancel()
+    LoadingContainer:Destroy()
+
+    MainFrame.Visible = true
+end)
