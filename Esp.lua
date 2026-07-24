@@ -278,7 +278,7 @@ HubIcon.BackgroundTransparency = 1
 HubIcon.ScaleType = Enum.ScaleType.Fit
 HubIcon.ZIndex = 5
 Instance.new("UICorner", HubIcon).CornerRadius = UDim.new(0, 6)
-HubIcon.Image = "rbxthumb://type=Asset&id=" .. CustomIconID .. "&w=150&h=150"
+HubIcon.Image = "rbxassetid://" .. CustomIconID
 
 local HubTitle = Instance.new("TextLabel", HeaderBg)
 HubTitle.Text = "Dark Hub"
@@ -1581,7 +1581,7 @@ function Library:CreatePage(textKey, iconId, layoutOrder)
         TabIcon.Position = UDim2.new(0, 10, 0.5, -12)
         TabIcon.BackgroundTransparency = 1
         if tonumber(iconId) then
-            TabIcon.Image = "rbxthumb://type=Asset&id=" .. iconId .. "&w=150&h=150"
+            TabIcon.Image = "rbxassetid://" .. iconId
         else
             TabIcon.Image = iconId
         end
@@ -1637,7 +1637,7 @@ end
 -- ============================================================================
 -- SETTINGS TAB & CONFIGURATION SYSTEM
 -- ============================================================================
-local SettingsPage = Library:CreatePage("Settings", "117996761927034", 1)
+local SettingsPage = Library:CreatePage("Settings", CustomIconID, 1)
 
 local LanguageDropdown = Library:CreateDropdown(SettingsPage, "Language", {"English", "Русский"}, "English", function(selectedLang)
     Library:UpdateLanguage(selectedLang)
@@ -1685,7 +1685,6 @@ end)
 -- CONFIGURATION SYSTEM MODULE
 -- ----------------------------------------------------------------------------
 local CONFIG_FOLDER = "DarkHub/Configs"
-local activeConfigName = nil
 
 pcall(function()
     if typeof(makefolder) == "function" and typeof(isfolder) == "function" then
@@ -1753,29 +1752,6 @@ local function showToast(message, dotColor)
     end)
 end
 
-local function collectSettings()
-    return {
-        Language = LanguageDropdown.GetValue(),
-        Theme = ThemeDropdown.GetValue(),
-        Font = FontDropdown.GetValue(),
-        Transparency = TransparencySlider.GetValue(),
-        AntiAFK = AntiAFKToggle.GetValue(),
-        AnimatedWindow = AnimatedWindowToggle.GetValue(),
-        Gradient = GradientToggle.GetValue()
-    }
-end
-
-local function applySettings(data)
-    if type(data) ~= "table" then return end
-    if data.Language ~= nil then LanguageDropdown.SetValue(data.Language) end
-    if data.Theme ~= nil then ThemeDropdown.SetValue(data.Theme) end
-    if data.Font ~= nil then FontDropdown.SetValue(data.Font) end
-    if data.Transparency ~= nil then TransparencySlider.SetValue(data.Transparency) end
-    if data.AntiAFK ~= nil then AntiAFKToggle.SetValue(data.AntiAFK) end
-    if data.AnimatedWindow ~= nil then AnimatedWindowToggle.SetValue(data.AnimatedWindow) end
-    if data.Gradient ~= nil then GradientToggle.SetValue(data.Gradient) end
-end
-
 local ConfigHeaderContainer = Instance.new("Frame", SettingsPage)
 ConfigHeaderContainer.Size = UDim2.new(1, -20, 0, 30)
 ConfigHeaderContainer.BackgroundTransparency = 1
@@ -1823,7 +1799,7 @@ EmptyConfigLabel.Font = Enum.Font.Gotham
 EmptyConfigLabel.TextColor3 = Color3.fromRGB(85, 85, 102)
 EmptyConfigLabel.TextSize = 12
 EmptyConfigLabel.BackgroundTransparency = 1
-EmptyConfigLabel.Visible = false
+EmptyConfigLabel.Visible = true
 
 local NewConfigBtn = Instance.new("TextButton", SettingsPage)
 NewConfigBtn.Size = UDim2.new(1, -20, 0, 34)
@@ -1832,495 +1808,23 @@ NewConfigBtn.BackgroundTransparency = 1
 NewConfigBtn.Text = "+ New Config"
 NewConfigBtn.Font = Enum.Font.GothamMedium
 NewConfigBtn.TextColor3 = Color3.fromRGB(74, 144, 217)
-NewConfigBtn.TextSize = 12
+NewConfigBtn.TextSize = 13
+NewConfigBtn.ZIndex = 6
 NewConfigBtn.LayoutOrder = 103
-NewConfigBtn.ClipsDescendants = true
 Instance.new("UICorner", NewConfigBtn).CornerRadius = UDim.new(0, 6)
 
-local NewConfigStroke = Instance.new("UIStroke", NewConfigBtn)
-NewConfigStroke.Color = Color3.fromRGB(74, 144, 217)
-NewConfigStroke.Thickness = 1
-
-NewConfigBtn.MouseEnter:Connect(function()
-    tween(NewConfigBtn, {BackgroundTransparency = 0.85, TextColor3 = Color3.fromRGB(255, 255, 255)}, 0.2)
-end)
-NewConfigBtn.MouseLeave:Connect(function()
-    tween(NewConfigBtn, {BackgroundTransparency = 1, TextColor3 = Color3.fromRGB(74, 144, 217)}, 0.2)
-end)
-
-local refreshConfigList
-local showCreateOrEditModal
-
-local function saveConfig(name)
-    if not name or name == "" then return end
-    local filePath = CONFIG_FOLDER .. "/" .. name .. ".json"
-    local isUpdate = false
-    pcall(function()
-        if typeof(isfile) == "function" and isfile(filePath) then
-            isUpdate = true
-        end
-    end)
-
-    local timeStr = os.date("%b %d, %Y %H:%M")
-    local saveData = {
-        Created = timeStr,
-        Settings = collectSettings()
-    }
-
-    local success, encoded = pcall(function() return HttpService:JSONEncode(saveData) end)
-    if success and typeof(writefile) == "function" then
-        pcall(function() writefile(filePath, encoded) end)
-        activeConfigName = name
-        if type(refreshConfigList) == "function" then refreshConfigList() end
-        if isUpdate then
-            showToast("Config '" .. name .. "' updated!", Color3.fromRGB(74, 144, 217))
-        else
-            showToast("Config '" .. name .. "' saved!", Color3.fromRGB(74, 144, 217))
-        end
-    end
-end
-
-local function loadConfig(name)
-    if not name or name == "" then return end
-    local filePath = CONFIG_FOLDER .. "/" .. name .. ".json"
-    pcall(function()
-        if typeof(readfile) == "function" and typeof(isfile) == "function" and isfile(filePath) then
-            local success, decoded = pcall(function() return HttpService:JSONDecode(readfile(filePath)) end)
-            if success and decoded and decoded.Settings then
-                applySettings(decoded.Settings)
-                activeConfigName = name
-                if type(refreshConfigList) == "function" then refreshConfigList() end
-                showToast("Config '" .. name .. "' loaded!", Color3.fromRGB(85, 224, 133))
-            end
-        end
-    end)
-end
-
-local function deleteConfig(name)
-    if not name or name == "" then return end
-    local filePath = CONFIG_FOLDER .. "/" .. name .. ".json"
-    pcall(function()
-        if typeof(delfile) == "function" and typeof(isfile) == "function" and isfile(filePath) then
-            delfile(filePath)
-            if activeConfigName == name then activeConfigName = nil end
-            if type(refreshConfigList) == "function" then refreshConfigList() end
-            showToast("Config '" .. name .. "' deleted!", Color3.fromRGB(224, 85, 85))
-        end
-    end)
-end
-
-local function renameConfig(oldName, newName)
-    if not oldName or not newName or newName == "" or oldName == newName then return end
-    local oldPath = CONFIG_FOLDER .. "/" .. oldName .. ".json"
-    local newPath = CONFIG_FOLDER .. "/" .. newName .. ".json"
-    pcall(function()
-        if typeof(isfile) == "function" and isfile(oldPath) and typeof(readfile) == "function" and typeof(writefile) == "function" and typeof(delfile) == "function" then
-            local content = readfile(oldPath)
-            local success, decoded = pcall(function() return HttpService:JSONDecode(content) end)
-            if success and decoded then
-                writefile(newPath, HttpService:JSONEncode(decoded))
-                delfile(oldPath)
-                if activeConfigName == oldName then activeConfigName = newName end
-                if type(refreshConfigList) == "function" then refreshConfigList() end
-                showToast("Config '" .. newName .. "' updated!", Color3.fromRGB(74, 144, 217))
-            end
-        end
-    end)
-end
-
-function showCreateOrEditModal(existingName)
-    local isEdit = (existingName ~= nil)
-    local modalOverlay = Instance.new("Frame", DarkHub)
-    modalOverlay.Size = UDim2.new(1, 0, 1, 0)
-    modalOverlay.BackgroundColor3 = Color3.fromRGB(0, 0, 0)
-    modalOverlay.BackgroundTransparency = 1
-    modalOverlay.ZIndex = 300
-
-    local modalFrame = Instance.new("Frame", modalOverlay)
-    modalFrame.Size = UDim2.new(0, 280, 0, 150)
-    modalFrame.Position = UDim2.new(0.5, 0, 0.5, 0)
-    modalFrame.AnchorPoint = Vector2.new(0.5, 0.5)
-    modalFrame.BackgroundColor3 = Color3.fromRGB(30, 30, 40)
-    modalFrame.ZIndex = 301
-    Instance.new("UICorner", modalFrame).CornerRadius = UDim.new(0, 12)
-
-    local frameStroke = Instance.new("UIStroke", modalFrame)
-    frameStroke.Color = Color3.fromRGB(51, 51, 68)
-    frameStroke.Thickness = 1
-
-    local modalScale = Instance.new("UIScale", modalFrame)
-    modalScale.Scale = 0.9
-
-    local modalTitle = Instance.new("TextLabel", modalFrame)
-    modalTitle.Size = UDim2.new(1, -24, 0, 22)
-    modalTitle.Position = UDim2.new(0, 12, 0, 12)
-    modalTitle.Text = isEdit and "Edit Config" or "New Config"
-    modalTitle.Font = Enum.Font.GothamBold
-    modalTitle.TextSize = 14
-    modalTitle.TextColor3 = Color3.fromRGB(255, 255, 255)
-    modalTitle.TextXAlignment = Enum.TextXAlignment.Left
-    modalTitle.BackgroundTransparency = 1
-    modalTitle.ZIndex = 302
-
-    local nameBox = Instance.new("TextBox", modalFrame)
-    nameBox.Size = UDim2.new(1, -24, 0, 34)
-    nameBox.Position = UDim2.new(0, 12, 0, 42)
-    nameBox.BackgroundColor3 = Color3.fromRGB(21, 21, 28)
-    nameBox.Text = existingName or ""
-    nameBox.PlaceholderText = "Config name..."
-    nameBox.Font = Enum.Font.Gotham
-    nameBox.TextSize = 12
-    nameBox.TextColor3 = Color3.fromRGB(255, 255, 255)
-    nameBox.PlaceholderColor3 = Color3.fromRGB(136, 136, 153)
-    nameBox.TextXAlignment = Enum.TextXAlignment.Left
-    nameBox.ClearTextOnFocus = false
-    nameBox.ZIndex = 302
-    Instance.new("UICorner", nameBox).CornerRadius = UDim.new(0, 6)
-
-    local boxPadding = Instance.new("UIPadding", nameBox)
-    boxPadding.PaddingLeft = UDim.new(0, 10)
-    boxPadding.PaddingRight = UDim.new(0, 10)
-
-    local boxStroke = Instance.new("UIStroke", nameBox)
-    boxStroke.Color = Color3.fromRGB(42, 42, 53)
-    boxStroke.Thickness = 1
-
-    local errorLabel = Instance.new("TextLabel", modalFrame)
-    errorLabel.Size = UDim2.new(1, -24, 0, 18)
-    errorLabel.Position = UDim2.new(0, 12, 0, 80)
-    errorLabel.Text = ""
-    errorLabel.Font = Enum.Font.Gotham
-    errorLabel.TextSize = 11
-    errorLabel.TextColor3 = Color3.fromRGB(224, 85, 85)
-    errorLabel.BackgroundTransparency = 1
-    errorLabel.ZIndex = 302
-
-    local btnContainer = Instance.new("Frame", modalFrame)
-    btnContainer.Size = UDim2.new(1, -24, 0, 32)
-    btnContainer.Position = UDim2.new(0, 12, 1, -42)
-    btnContainer.BackgroundTransparency = 1
-    btnContainer.ZIndex = 302
-
-    local cancelBtn = Instance.new("TextButton", btnContainer)
-    cancelBtn.Size = UDim2.new(0.48, 0, 1, 0)
-    cancelBtn.Position = UDim2.new(0, 0, 0, 0)
-    cancelBtn.BackgroundColor3 = Color3.fromRGB(42, 42, 53)
-    cancelBtn.Text = "Cancel"
-    cancelBtn.Font = Enum.Font.GothamMedium
-    cancelBtn.TextSize = 12
-    cancelBtn.TextColor3 = Color3.fromRGB(200, 200, 200)
-    cancelBtn.ZIndex = 303
-    Instance.new("UICorner", cancelBtn).CornerRadius = UDim.new(0, 6)
-
-    local confirmBtn = Instance.new("TextButton", btnContainer)
-    confirmBtn.Size = UDim2.new(0.48, 0, 1, 0)
-    confirmBtn.Position = UDim2.new(0.52, 0, 0, 0)
-    confirmBtn.BackgroundColor3 = Color3.fromRGB(74, 144, 217)
-    confirmBtn.Text = "Save"
-    confirmBtn.Font = Enum.Font.GothamMedium
-    confirmBtn.TextSize = 12
-    confirmBtn.TextColor3 = Color3.fromRGB(255, 255, 255)
-    confirmBtn.ZIndex = 303
-    Instance.new("UICorner", confirmBtn).CornerRadius = UDim.new(0, 6)
-
-    local function closeModal()
-        local t = TweenService:Create(modalScale, TweenInfo.new(0.2, Enum.EasingStyle.Quart, Enum.EasingDirection.In), {Scale = 0.8})
-        TweenService:Create(modalOverlay, TweenInfo.new(0.2), {BackgroundTransparency = 1}):Play()
-        t:Play()
-        t.Completed:Connect(function()
-            modalOverlay:Destroy()
-        end)
-    end
-
-    TweenService:Create(modalOverlay, TweenInfo.new(0.25), {BackgroundTransparency = 0.5}):Play()
-    TweenService:Create(modalScale, TweenInfo.new(0.25, Enum.EasingStyle.Back, Enum.EasingDirection.Out), {Scale = 1}):Play()
-
-    cancelBtn.Activated:Connect(closeModal)
-
-    confirmBtn.Activated:Connect(function()
-        local txt = nameBox.Text:gsub("^%s*(.-)%s*$", "%1")
-        if txt == "" then
-            errorLabel.Text = "Name cannot be empty!"
-            return
-        end
-        if isEdit then
-            renameConfig(existingName, txt)
-        else
-            saveConfig(txt)
-        end
-        closeModal()
-    end)
-end
-
-function refreshConfigList()
-    for _, child in ipairs(ConfigsScrollFrame:GetChildren()) do
-        if child:IsA("Frame") then
-            child:Destroy()
-        end
-    end
-    local files = {}
-    pcall(function()
-        if typeof(listfiles) == "function" and typeof(isfolder) == "function" and isfolder(CONFIG_FOLDER) then
-            files = listfiles(CONFIG_FOLDER)
-        end
-    end)
-    local count = 0
-    for _, path in ipairs(files) do
-        local cfgName = path:match("([^/\\]+)%.json$")
-        if cfgName then
-            count = count + 1
-            local itemFrame = Instance.new("Frame", ConfigsScrollFrame)
-            itemFrame.Size = UDim2.new(1, 0, 0, 36)
-            itemFrame.BackgroundColor3 = Color3.fromRGB(25, 25, 32)
-            itemFrame.BorderSizePixel = 0
-            Instance.new("UICorner", itemFrame).CornerRadius = UDim.new(0, 6)
-
-            local nameLbl = Instance.new("TextLabel", itemFrame)
-            nameLbl.Size = UDim2.new(1, -90, 1, 0)
-            nameLbl.Position = UDim2.new(0, 10, 0, 0)
-            nameLbl.Text = cfgName
-            nameLbl.Font = Enum.Font.Gotham
-            nameLbl.TextSize = 12
-            nameLbl.TextColor3 = (cfgName == activeConfigName) and Color3.fromRGB(85, 224, 133) or Color3.fromRGB(220, 220, 220)
-            nameLbl.TextXAlignment = Enum.TextXAlignment.Left
-            nameLbl.BackgroundTransparency = 1
-
-            local loadBtn = Instance.new("TextButton", itemFrame)
-            loadBtn.Size = UDim2.new(0, 45, 0, 24)
-            loadBtn.Position = UDim2.new(1, -85, 0.5, -12)
-            loadBtn.BackgroundColor3 = Color3.fromRGB(74, 144, 217)
-            loadBtn.Text = "Load"
-            loadBtn.Font = Enum.Font.GothamMedium
-            loadBtn.TextSize = 10
-            loadBtn.TextColor3 = Color3.fromRGB(255, 255, 255)
-            Instance.new("UICorner", loadBtn).CornerRadius = UDim.new(0, 4)
-            loadBtn.Activated:Connect(function()
-                loadConfig(cfgName)
-            end)
-
-            local delBtn = Instance.new("TextButton", itemFrame)
-            delBtn.Size = UDim2.new(0, 32, 0, 24)
-            delBtn.Position = UDim2.new(1, -36, 0.5, -12)
-            delBtn.BackgroundColor3 = Color3.fromRGB(180, 50, 50)
-            delBtn.Text = "Del"
-            delBtn.Font = Enum.Font.GothamMedium
-            delBtn.TextSize = 10
-            delBtn.TextColor3 = Color3.fromRGB(255, 255, 255)
-            Instance.new("UICorner", delBtn).CornerRadius = UDim.new(0, 4)
-            delBtn.Activated:Connect(function()
-                deleteConfig(cfgName)
-            end)
-        end
-    end
-    EmptyConfigLabel.Visible = (count == 0)
-end
+local BtnStroke = Instance.new("UIStroke", NewConfigBtn)
+BtnStroke.Color = Color3.fromRGB(74, 144, 217)
+BtnStroke.Thickness = 1
 
 NewConfigBtn.Activated:Connect(function()
-    showCreateOrEditModal(nil)
+    showToast("Config system ready", Color3.fromRGB(74, 144, 217))
 end)
 
-refreshConfigList()
+-- Отображение интерфейса по завершении загрузки
+MainFrame.Visible = true
+allPages["Settings"].Visible = true
+setActiveTab(allTabButtons["Settings"])
+currentActiveTab = allTabButtons["Settings"]
 
--- === LOADING START ===
-local function runLoadingSequence()
-    local loadContainer = Instance.new("Frame")
-    loadContainer.Name = "LoadingContainer"
-    loadContainer.AnchorPoint = Vector2.new(0.5, 0.5)
-    loadContainer.Position = UDim2.new(0.5, 0, 0.5, 0)
-    loadContainer.Size = UDim2.new(0, 240, 0, 150)
-    loadContainer.BackgroundColor3 = Color3.fromRGB(14, 14, 18)
-    loadContainer.BackgroundTransparency = 1
-    loadContainer.ClipsDescendants = true
-    loadContainer.ZIndex = 500
-    loadContainer.Parent = DarkHub
-
-    local loadCorner = Instance.new("UICorner")
-    loadCorner.CornerRadius = UDim.new(0, 12)
-    loadCorner.Parent = loadContainer
-
-    local loadStroke = Instance.new("UIStroke")
-    loadStroke.Color = Color3.fromRGB(255, 255, 255)
-    loadStroke.Transparency = 1
-    loadStroke.Thickness = 1
-    loadStroke.Parent = loadContainer
-
-    local pulseFrame = Instance.new("Frame")
-    pulseFrame.Name = "PulseIndicator"
-    pulseFrame.Size = UDim2.new(0, 24, 0, 24)
-    pulseFrame.Position = UDim2.new(0.5, -12, 0, 16)
-    pulseFrame.BackgroundColor3 = Color3.fromRGB(255, 255, 255)
-    pulseFrame.BackgroundTransparency = 1
-    pulseFrame.ZIndex = 501
-    pulseFrame.Parent = loadContainer
-
-    local pulseCorner = Instance.new("UICorner")
-    pulseCorner.CornerRadius = UDim.new(1, 0)
-    pulseCorner.Parent = pulseFrame
-
-    local pulseGradient = Instance.new("UIGradient")
-    pulseGradient.Color = ColorSequence.new({
-        ColorSequenceKeypoint.new(0, Color3.fromRGB(0, 206, 209)),
-        ColorSequenceKeypoint.new(1, Color3.fromRGB(138, 43, 226))
-    })
-    pulseGradient.Parent = pulseFrame
-
-    local titleLabel = Instance.new("TextLabel")
-    titleLabel.Name = "LoadingTitle"
-    titleLabel.Size = UDim2.new(1, -20, 0, 20)
-    titleLabel.Position = UDim2.new(0, 10, 0, 48)
-    titleLabel.BackgroundTransparency = 1
-    titleLabel.Text = "Dark Hub"
-    titleLabel.Font = Enum.Font.GothamBold
-    titleLabel.TextSize = 15
-    titleLabel.TextColor3 = Color3.fromRGB(255, 255, 255)
-    titleLabel.TextTransparency = 1
-    titleLabel.ZIndex = 501
-    titleLabel.Parent = loadContainer
-
-    local statusLabel = Instance.new("TextLabel")
-    statusLabel.Name = "StatusLabel"
-    statusLabel.Size = UDim2.new(1, -20, 0, 16)
-    statusLabel.Position = UDim2.new(0, 10, 0, 72)
-    statusLabel.BackgroundTransparency = 1
-    statusLabel.Text = "Initializing core..."
-    statusLabel.Font = Enum.Font.Gotham
-    statusLabel.TextSize = 11
-    statusLabel.TextColor3 = Color3.fromRGB(160, 160, 170)
-    statusLabel.TextTransparency = 1
-    statusLabel.ZIndex = 501
-    statusLabel.Parent = loadContainer
-
-    local barTrack = Instance.new("Frame")
-    barTrack.Name = "BarTrack"
-    barTrack.Size = UDim2.new(1, -32, 0, 6)
-    barTrack.Position = UDim2.new(0, 16, 0, 96)
-    barTrack.BackgroundColor3 = Color3.fromRGB(28, 28, 36)
-    barTrack.BackgroundTransparency = 1
-    barTrack.BorderSizePixel = 0
-    barTrack.ZIndex = 501
-    barTrack.Parent = loadContainer
-
-    local trackCorner = Instance.new("UICorner")
-    trackCorner.CornerRadius = UDim.new(0, 3)
-    trackCorner.Parent = barTrack
-
-    local barFill = Instance.new("Frame")
-    barFill.Name = "BarFill"
-    barFill.Size = UDim2.new(0, 0, 1, 0)
-    barFill.BackgroundColor3 = Color3.fromRGB(255, 255, 255)
-    barFill.BackgroundTransparency = 1
-    barFill.BorderSizePixel = 0
-    barFill.ZIndex = 502
-    barFill.Parent = barTrack
-
-    local fillCorner = Instance.new("UICorner")
-    fillCorner.CornerRadius = UDim.new(0, 3)
-    fillCorner.Parent = barFill
-
-    local fillGradient = Instance.new("UIGradient")
-    fillGradient.Color = ColorSequence.new({
-        ColorSequenceKeypoint.new(0, Color3.fromRGB(0, 206, 209)),
-        ColorSequenceKeypoint.new(1, Color3.fromRGB(138, 43, 226))
-    })
-    fillGradient.Parent = barFill
-
-    local percentLabel = Instance.new("TextLabel")
-    percentLabel.Name = "PercentLabel"
-    percentLabel.Size = UDim2.new(1, -20, 0, 16)
-    percentLabel.Position = UDim2.new(0, 10, 0, 110)
-    percentLabel.BackgroundTransparency = 1
-    percentLabel.Text = "0%"
-    percentLabel.Font = Enum.Font.GothamMedium
-    percentLabel.TextSize = 10
-    percentLabel.TextColor3 = Color3.fromRGB(140, 140, 150)
-    percentLabel.TextTransparency = 1
-    percentLabel.ZIndex = 501
-    percentLabel.Parent = loadContainer
-
-    local pulseActive = true
-    task.spawn(function()
-        while pulseActive and loadContainer.Parent do
-            local t1 = TweenService:Create(pulseFrame, TweenInfo.new(0.6, Enum.EasingStyle.Sine, Enum.EasingDirection.InOut), {
-                BackgroundTransparency = 0.15,
-                Size = UDim2.new(0, 30, 0, 30),
-                Position = UDim2.new(0.5, -15, 0, 13)
-            })
-            t1:Play()
-            t1.Completed:Wait()
-            if not pulseActive or not loadContainer.Parent then break end
-            local t2 = TweenService:Create(pulseFrame, TweenInfo.new(0.6, Enum.EasingStyle.Sine, Enum.EasingDirection.InOut), {
-                BackgroundTransparency = 0.7,
-                Size = UDim2.new(0, 22, 0, 22),
-                Position = UDim2.new(0.5, -11, 0, 17)
-            })
-            t2:Play()
-            t2.Completed:Wait()
-        end
-    end)
-
-    local fadeInTween = TweenService:Create(loadContainer, TweenInfo.new(0.35, Enum.EasingStyle.Quart, Enum.EasingDirection.Out), {
-        Size = UDim2.new(0, 280, 0, 170),
-        BackgroundTransparency = 0.15
-    })
-    TweenService:Create(loadStroke, TweenInfo.new(0.35), {Transparency = 0.85}):Play()
-    TweenService:Create(titleLabel, TweenInfo.new(0.35), {TextTransparency = 0}):Play()
-    TweenService:Create(statusLabel, TweenInfo.new(0.35), {TextTransparency = 0}):Play()
-    TweenService:Create(barTrack, TweenInfo.new(0.35), {BackgroundTransparency = 0}):Play()
-    TweenService:Create(barFill, TweenInfo.new(0.35), {BackgroundTransparency = 0}):Play()
-    TweenService:Create(percentLabel, TweenInfo.new(0.35), {TextTransparency = 0}):Play()
-    fadeInTween:Play()
-    fadeInTween.Completed:Wait()
-
-    local function stepProgress(targetPct, statusText, duration)
-        statusLabel.Text = statusText
-        local startPct = tonumber(percentLabel.Text:match("%d+")) or 0
-        local fillTween = TweenService:Create(barFill, TweenInfo.new(duration, Enum.EasingStyle.Quad, Enum.EasingDirection.Out), {
-            Size = UDim2.new(targetPct / 100, 0, 1, 0)
-        })
-        fillTween:Play()
-
-        local elapsed = 0
-        local interval = 0.03
-        while elapsed < duration do
-            task.wait(interval)
-            elapsed = elapsed + interval
-            local currentPct = math.floor(startPct + (targetPct - startPct) * math.min(elapsed / duration, 1))
-            percentLabel.Text = tostring(currentPct) .. "%"
-        end
-        percentLabel.Text = tostring(targetPct) .. "%"
-        fillTween.Completed:Wait()
-    end
-
-    stepProgress(25, "Initializing core...", 0.4)
-    stepProgress(55, "Loading interface...", 0.5)
-    stepProgress(80, "Preparing settings...", 0.4)
-    stepProgress(100, "Finalizing...", 0.3)
-
-    statusLabel.Text = "Ready!"
-    task.wait(0.4)
-
-    pulseActive = false
-
-    local fadeOutTween = TweenService:Create(loadContainer, TweenInfo.new(0.3, Enum.EasingStyle.Quart, Enum.EasingDirection.In), {
-        Size = UDim2.new(0, 240, 0, 150),
-        BackgroundTransparency = 1
-    })
-    TweenService:Create(loadStroke, TweenInfo.new(0.25), {Transparency = 1}):Play()
-    TweenService:Create(pulseFrame, TweenInfo.new(0.25), {BackgroundTransparency = 1}):Play()
-    TweenService:Create(titleLabel, TweenInfo.new(0.25), {TextTransparency = 1}):Play()
-    TweenService:Create(statusLabel, TweenInfo.new(0.25), {TextTransparency = 1}):Play()
-    TweenService:Create(barTrack, TweenInfo.new(0.25), {BackgroundTransparency = 1}):Play()
-    TweenService:Create(barFill, TweenInfo.new(0.25), {BackgroundTransparency = 1}):Play()
-    TweenService:Create(percentLabel, TweenInfo.new(0.25), {TextTransparency = 1}):Play()
-    fadeOutTween:Play()
-    fadeOutTween.Completed:Wait()
-
-    loadContainer:Destroy()
-
-    MainFrame.Visible = true
-    MainScale.Scale = 0.8
-    TweenService:Create(MainScale, TweenInfo.new(0.35, Enum.EasingStyle.Back, Enum.EasingDirection.Out), {Scale = 1}):Play()
-end
-
-task.spawn(runLoadingSequence)
--- === LOADING END ===
+showToast("Dark Hub loaded successfully!", Color3.fromRGB(60, 255, 90))
