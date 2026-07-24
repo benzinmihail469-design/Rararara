@@ -974,14 +974,14 @@ local FontMapping = {
 }
 
 -- ============================================================================
--- ДРОПДАУН (ВСFloat/Overlay СИСТЕМА)
+-- ДРОПДАУН (АККОРДЕОН / ДИНАМИЧЕСКИЙ СДВИГ ЭЛЕМЕНТОВ)
 -- ============================================================================
 function Library:CreateDropdown(parentPage, textKey, options, default, callback)
     local initialText = Localization[Library.CurrentLanguage][textKey] or textKey
     local DropdownFrame = Instance.new("Frame", parentPage)
     DropdownFrame.Size = UDim2.new(1, -20, 0, 36)
     DropdownFrame.BackgroundColor3 = Library.CurrentThemeData.ElementBg
-    DropdownFrame.ClipsDescendants = false -- Выпадающий список выходит за границы родителя
+    DropdownFrame.ClipsDescendants = true -- Обрезаем содержимое по границам Frame при анимировании высоты
     DropdownFrame.ZIndex = 6
     DropdownFrame.LayoutOrder = #parentPage:GetChildren()
     Instance.new("UICorner", DropdownFrame).CornerRadius = UDim.new(0, 6)
@@ -993,7 +993,7 @@ function Library:CreateDropdown(parentPage, textKey, options, default, callback)
     table.insert(Library.TrackedStrokes, DropdownStroke)
     
     local HeaderBtn = Instance.new("TextButton", DropdownFrame)
-    HeaderBtn.Size = UDim2.new(1, 0, 1, 0)
+    HeaderBtn.Size = UDim2.new(1, 0, 0, 36)
     HeaderBtn.BackgroundTransparency = 1
     HeaderBtn.Text = ""
     HeaderBtn.ZIndex = 7
@@ -1037,25 +1037,17 @@ function Library:CreateDropdown(parentPage, textKey, options, default, callback)
     
     table.insert(Library.TrackedSubText, Arrow)
     
-    -- Всплывающий оверлей для вариантов выбора
+    -- Контейнер опций размещен внутри DropdownFrame
     local OptionsContainer = Instance.new("ScrollingFrame", DropdownFrame)
     OptionsContainer.Size = UDim2.new(1, 0, 0, 0)
-    OptionsContainer.Position = UDim2.new(0, 0, 1, 4)
-    OptionsContainer.BackgroundColor3 = Library.CurrentThemeData.ElementBg
+    OptionsContainer.Position = UDim2.new(0, 0, 0, 36)
+    OptionsContainer.BackgroundTransparency = 1
     OptionsContainer.BorderSizePixel = 0
     OptionsContainer.ScrollBarThickness = 3
     OptionsContainer.ScrollBarImageColor3 = Library.CurrentThemeData.Accent
-    OptionsContainer.ZIndex = 30
+    OptionsContainer.ZIndex = 8
     OptionsContainer.ClipsDescendants = true
     OptionsContainer.Visible = false
-    
-    Instance.new("UICorner", OptionsContainer).CornerRadius = UDim.new(0, 6)
-    local OptContainerStroke = Instance.new("UIStroke", OptionsContainer)
-    OptContainerStroke.Color = Color3.fromRGB(45, 45, 45)
-    OptContainerStroke.Thickness = 1
-    
-    table.insert(Library.TrackedElementBg, OptionsContainer)
-    table.insert(Library.TrackedStrokes, OptContainerStroke)
     
     local ListLayout = Instance.new("UIListLayout", OptionsContainer)
     ListLayout.SortOrder = Enum.SortOrder.LayoutOrder
@@ -1067,20 +1059,6 @@ function Library:CreateDropdown(parentPage, textKey, options, default, callback)
     
     local isExpanded = false
     local optionButtons = {}
-    
-    local function setDropdownZIndex(zIndex)
-        DropdownFrame.ZIndex = zIndex
-        HeaderBtn.ZIndex = zIndex + 1
-        TitleLabel.ZIndex = zIndex + 2
-        SelectedLabel.ZIndex = zIndex + 2
-        Arrow.ZIndex = zIndex + 2
-        OptionsContainer.ZIndex = zIndex + 10
-        for _, optData in pairs(optionButtons) do
-            if optData.Button then optData.Button.ZIndex = zIndex + 11 end
-            if optData.Label then optData.Label.ZIndex = zIndex + 12 end
-            if optData.Check then optData.Check.ZIndex = zIndex + 12 end
-        end
-    end
 
     local function toggleDropdown()
         isExpanded = not isExpanded
@@ -1093,9 +1071,9 @@ function Library:CreateDropdown(parentPage, textKey, options, default, callback)
             end
             Library.ActiveDropdownClose = toggleDropdown
             
-            setDropdownZIndex(30)
             OptionsContainer.Visible = true
-            tween(OptionsContainer, {Size = UDim2.new(1, 0, 0, contentHeight)}, 0.2)
+            OptionsContainer.Size = UDim2.new(1, 0, 0, contentHeight)
+            tween(DropdownFrame, {Size = UDim2.new(1, -20, 0, 36 + contentHeight + 4)}, 0.2)
             tween(Arrow, {Rotation = 180}, 0.2)
             task.defer(updateCanvas)
         else
@@ -1103,17 +1081,15 @@ function Library:CreateDropdown(parentPage, textKey, options, default, callback)
                 Library.ActiveDropdownClose = nil
             end
             tween(Arrow, {Rotation = 0}, 0.2)
-            local closeTween = tween(OptionsContainer, {Size = UDim2.new(1, 0, 0, 0)}, 0.2)
+            local closeTween = tween(DropdownFrame, {Size = UDim2.new(1, -20, 0, 36)}, 0.2)
             if closeTween then
                 closeTween.Completed:Connect(function()
                     if not isExpanded then
                         OptionsContainer.Visible = false
-                        setDropdownZIndex(6)
                     end
                 end)
             else
                 OptionsContainer.Visible = false
-                setDropdownZIndex(6)
             end
         end
     end
@@ -1125,8 +1101,6 @@ function Library:CreateDropdown(parentPage, textKey, options, default, callback)
             if child:IsA("TextButton") then child:Destroy() end
         end
         table.clear(optionButtons)
-        
-        local baseZ = 30
 
         for i, option in ipairs(options) do
             local OptBtn = Instance.new("TextButton", OptionsContainer)
@@ -1135,7 +1109,7 @@ function Library:CreateDropdown(parentPage, textKey, options, default, callback)
             OptBtn.BackgroundColor3 = Color3.fromRGB(255, 255, 255)
             OptBtn.Text = ""
             OptBtn.LayoutOrder = i
-            OptBtn.ZIndex = baseZ + 11
+            OptBtn.ZIndex = 9
             
             local OptLabel = Instance.new("TextLabel", OptBtn)
             OptLabel.Size = UDim2.new(1, -40, 1, 0)
@@ -1145,7 +1119,7 @@ function Library:CreateDropdown(parentPage, textKey, options, default, callback)
             OptLabel.TextXAlignment = Enum.TextXAlignment.Left
             OptLabel.TextTruncate = Enum.TextTruncate.AtEnd
             OptLabel.BackgroundTransparency = 1
-            OptLabel.ZIndex = baseZ + 12
+            OptLabel.ZIndex = 10
             
             local bgL = (Library.CurrentThemeData.MainBg.R * 0.299 + Library.CurrentThemeData.MainBg.G * 0.587 + Library.CurrentThemeData.MainBg.B * 0.114)
             local defaultSubText = (bgL > 0.5) and Color3.fromRGB(110, 110, 110) or Color3.fromRGB(140, 140, 140)
@@ -1166,7 +1140,7 @@ function Library:CreateDropdown(parentPage, textKey, options, default, callback)
             Checkmark.TextSize = 12
             Checkmark.BackgroundTransparency = 1
             Checkmark.Visible = (option == SelectedLabel.Text)
-            Checkmark.ZIndex = baseZ + 12
+            Checkmark.ZIndex = 10
             
             OptBtn.MouseEnter:Connect(function()
                 tween(OptBtn, {BackgroundTransparency = 0.96}, 0.15)
