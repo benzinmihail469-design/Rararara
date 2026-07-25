@@ -1789,173 +1789,58 @@ task.spawn(function()
 	LoadingFrame.Size = UDim2.new(0, 320, 0, 210)
 	LoadingFrame.AnchorPoint = Vector2.new(0.5, 0.5)
 	LoadingFrame.Position = UDim2.new(0.5, 0, 0.5, 0)
-	LoadingFrame.BackgroundColor3 = Color3.fromRGB(16, 18, 24)
-	LoadingFrame.GroupTransparency = 1
-	LoadingFrame.BorderSizePixel = 0
-	LoadingFrame.ZIndex = 1000
+	LoadingFrame.BackgroundColor3 = Color3.fromRGB(18, 18, 18)
 	LoadingFrame.Parent = DarkHub
 
-	local LoadingScale = Instance.new("UIScale", LoadingFrame)
-	LoadingScale.Scale = 0.85
-
 	local LoadingCorner = Instance.new("UICorner", LoadingFrame)
-	LoadingCorner.CornerRadius = UDim.new(0, 12)
+	LoadingCorner.CornerRadius = UDim.new(0, 14)
 
 	local LoadingStroke = Instance.new("UIStroke", LoadingFrame)
-	LoadingStroke.Color = Color3.fromRGB(50, 55, 70)
+	LoadingStroke.Color = Color3.fromRGB(45, 45, 45)
 	LoadingStroke.Thickness = 1.5
 
-	-- Floating Bubbles Container
-	local BubbleContainer = Instance.new("Frame", LoadingFrame)
-	BubbleContainer.Name = "BubbleContainer"
-	BubbleContainer.Size = UDim2.new(1, 0, 1, 0)
-	BubbleContainer.BackgroundTransparency = 1
-	BubbleContainer.ZIndex = 1001
+	local LoadingTitle = Instance.new("TextLabel", LoadingFrame)
+	LoadingTitle.Text = "Dark Hub"
+	LoadingTitle.Font = Enum.Font.GothamBold
+	LoadingTitle.TextSize = 20
+	LoadingTitle.TextColor3 = Color3.fromRGB(255, 255, 255)
+	LoadingTitle.Position = UDim2.new(0, 0, 0, 45)
+	LoadingTitle.Size = UDim2.new(1, 0, 0, 30)
+	LoadingTitle.BackgroundTransparency = 1
 
-	-- Custom Icon
-	local Icon = Instance.new("ImageLabel", LoadingFrame)
-	Icon.Name = "LoadingIcon"
-	Icon.Size = UDim2.new(0, 60, 0, 60)
-	Icon.Position = UDim2.new(0.5, -30, 0, 20)
-	Icon.BackgroundTransparency = 1
-	Icon.Image = "rbxthumb://type=Asset&id=" .. CustomIconID .. "&w=150&h=150"
-	Icon.ScaleType = Enum.ScaleType.Fit
-	Icon.ZIndex = 1002
+	local LoadingStatus = Instance.new("TextLabel", LoadingFrame)
+	LoadingStatus.Text = "Loading script resources..."
+	LoadingStatus.Font = Enum.Font.Gotham
+	LoadingStatus.TextSize = 12
+	LoadingStatus.TextColor3 = Color3.fromRGB(150, 150, 150)
+	LoadingStatus.Position = UDim2.new(0, 0, 0, 80)
+	LoadingStatus.Size = UDim2.new(1, 0, 0, 20)
+	LoadingStatus.BackgroundTransparency = 1
 
-	local IconCorner = Instance.new("UICorner", Icon)
-	IconCorner.CornerRadius = UDim.new(1, 0)
+	local BarBg = Instance.new("Frame", LoadingFrame)
+	BarBg.Size = UDim2.new(0, 240, 0, 6)
+	BarBg.Position = UDim2.new(0.5, -120, 0, 130)
+	BarBg.BackgroundColor3 = Color3.fromRGB(35, 35, 35)
+	Instance.new("UICorner", BarBg).CornerRadius = UDim.new(1, 0)
 
-	local IconStroke = Instance.new("UIStroke", Icon)
-	IconStroke.Color = Color3.fromRGB(255, 255, 255)
-	IconStroke.Transparency = 0.5
-	IconStroke.Thickness = 1.5
-
-	-- Percentage Label & Shadow
-	local PercentShadow = Instance.new("TextLabel", LoadingFrame)
-	PercentShadow.Size = UDim2.new(1, -40, 0, 22)
-	PercentShadow.Position = UDim2.new(0, 21, 0, 93)
-	PercentShadow.BackgroundTransparency = 1
-	PercentShadow.Font = Enum.Font.GothamBold
-	PercentShadow.TextSize = 16
-	PercentShadow.TextColor3 = Color3.fromRGB(0, 0, 0)
-	PercentShadow.TextTransparency = 0.3
-	PercentShadow.Text = "0%"
-	PercentShadow.ZIndex = 1002
-
-	local PercentLabel = Instance.new("TextLabel", LoadingFrame)
-	PercentLabel.Size = UDim2.new(1, -40, 0, 22)
-	PercentLabel.Position = UDim2.new(0, 20, 0, 92)
-	PercentLabel.BackgroundTransparency = 1
-	PercentLabel.Font = Enum.Font.GothamBold
-	PercentLabel.TextSize = 16
-	PercentLabel.TextColor3 = Color3.fromRGB(255, 255, 255)
-	PercentLabel.Text = "0%"
-	PercentLabel.ZIndex = 1003
-
-	-- Progress Bar Track
-	local BarTrack = Instance.new("Frame", LoadingFrame)
-	BarTrack.Name = "BarTrack"
-	BarTrack.Size = UDim2.new(1, -50, 0, 10)
-	BarTrack.Position = UDim2.new(0, 25, 0, 122)
-	BarTrack.BackgroundColor3 = Color3.fromRGB(28, 32, 42)
-	BarTrack.BorderSizePixel = 0
-	BarTrack.ZIndex = 1002
-	Instance.new("UICorner", BarTrack).CornerRadius = UDim.new(1, 0)
-
-	-- Fill / Progress Bar (Использует динамический акцентный цвет темы!)
-	local BarFill = Instance.new("Frame", BarTrack)
-	BarFill.Name = "BarFill"
+	local BarFill = Instance.new("Frame", BarBg)
 	BarFill.Size = UDim2.new(0, 0, 1, 0)
 	BarFill.BackgroundColor3 = getThemeAccent()
-	BarFill.BorderSizePixel = 0
-	BarFill.ZIndex = 1003
 	Instance.new("UICorner", BarFill).CornerRadius = UDim.new(1, 0)
 
-	-- Status Label
-	local StatusLabel = Instance.new("TextLabel", LoadingFrame)
-	StatusLabel.Name = "StatusLabel"
-	StatusLabel.Size = UDim2.new(1, -40, 0, 20)
-	StatusLabel.Position = UDim2.new(0, 20, 0, 145)
-	StatusLabel.BackgroundTransparency = 1
-	StatusLabel.Font = Library.CurrentFont
-	StatusLabel.TextSize = 12
-	StatusLabel.TextColor3 = Color3.fromRGB(150, 160, 180)
-	StatusLabel.Text = "Initializing UI..."
-	StatusLabel.ZIndex = 1003
+	tween(BarFill, {Size = UDim2.new(1, 0, 1, 0)}, 1.2)
+	task.wait(1.4)
 
-	-- Background Floating Particles
-	task.spawn(function()
-		while loadingActive and LoadingFrame and LoadingFrame.Parent do
-			local bubble = Instance.new("Frame", BubbleContainer)
-			local size = math.random(4, 10)
-			bubble.Size = UDim2.new(0, size, 0, size)
-			bubble.Position = UDim2.new(math.random(), 0, 1, 0)
-			bubble.BackgroundColor3 = getThemeAccent()
-			bubble.BackgroundTransparency = 0.6
-			bubble.BorderSizePixel = 0
-			Instance.new("UICorner", bubble).CornerRadius = UDim.new(1, 0)
+	tween(LoadingFrame, {GroupTransparency = 1}, 0.3)
+	task.wait(0.3)
+	LoadingFrame:Destroy()
 
-			tween(bubble, {
-				Position = UDim2.new(bubble.Position.X.Scale, 0, -0.2, 0),
-				BackgroundTransparency = 1
-			}, math.random(2, 4))
-
-			task.delay(4, function()
-				if bubble and bubble.Parent then
-					bubble:Destroy()
-				end
-			end)
-			task.wait(0.3)
-		end
-	end)
-
-	-- Entrance Animation
-	tween(LoadingFrame, {GroupTransparency = 0}, 0.4)
-	tween(LoadingScale, {Scale = 1}, 0.4)
-
-	-- Loading Steps Simulation
-	local steps = {
-		{progress = 0.25, text = "Loading Modules..."},
-		{progress = 0.50, text = "Applying Theme & Fonts..."},
-		{progress = 0.80, text = "Configuring Controls..."},
-		{progress = 1.00, text = "Ready!"}
-	}
-
-	for _, step in ipairs(steps) do
-		StatusLabel.Text = step.text
-		tween(BarFill, {Size = UDim2.new(step.progress, 0, 1, 0)}, 0.4)
-		
-		local currentPct = math.floor(step.progress * 100)
-		PercentLabel.Text = currentPct .. "%"
-		PercentShadow.Text = currentPct .. "%"
-		
-		task.wait(0.45)
-	end
-
-	loadingActive = false
-	task.wait(0.2)
-
-	-- Exit Animation & Open Main Hub
-	local exitTween = tween(LoadingFrame, {GroupTransparency = 1}, 0.3)
-	tween(LoadingScale, {Scale = 0.85}, 0.3)
-
-	if exitTween then
-		exitTween.Completed:Connect(function()
-			if LoadingFrame and LoadingFrame.Parent then
-				LoadingFrame:Destroy()
-			end
-		end)
-	end
-
-	-- Reveal Main Hub
 	MainFrame.Visible = true
-	MainScale.Scale = 0.85
-	MainFrame.BackgroundTransparency = 1
-	
-	tween(MainScale, {Scale = 1}, 0.3)
-	tween(MainFrame, {BackgroundTransparency = 0.15}, 0.3)
-	showToast("Dark Hub loaded successfully!", getThemeAccent())
+	if allTabButtons["Settings"] then
+		setActiveTab(allTabButtons["Settings"])
+		currentActiveTab = allTabButtons["Settings"]
+	end
+	if allPages["Settings"] then
+		allPages["Settings"].Visible = true
+	end
 end)
-
--- Применяем тему Deep Ocean
-Library:UpdateTheme("Deep Ocean")
