@@ -1222,7 +1222,7 @@ function Library:CreateDropdown(parentPage, textKey, options, default, callback)
 			local Checkmark = Instance.new("TextLabel", OptBtn)
 			Checkmark.Size = UDim2.new(0, 20, 1, 0)
 			Checkmark.Position = UDim2.new(1, -30, 0, 0)
-			Checkmark.Text = "v"
+			Checkmark.Text = "√"
 			Checkmark.Font = Enum.Font.GothamBold
 			Checkmark.TextColor3 = accent
 			Checkmark.TextSize = 12
