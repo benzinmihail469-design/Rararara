@@ -173,6 +173,73 @@ local function spawnWave(container, clickX, clickY)
 end
 
 -- ============================================================================
+-- LOADING SCREEN SYSTEM
+-- ============================================================================
+local LoadingFrame = Instance.new("Frame", DarkHub)
+LoadingFrame.Name = "LoadingFrame"
+LoadingFrame.Size = UDim2.new(0, 320, 0, 170)
+LoadingFrame.Position = UDim2.new(0.5, 0, 0.5, 0)
+LoadingFrame.AnchorPoint = Vector2.new(0.5, 0.5)
+LoadingFrame.BackgroundColor3 = Color3.fromRGB(14, 14, 20)
+LoadingFrame.ZIndex = 100
+Instance.new("UICorner", LoadingFrame).CornerRadius = UDim.new(0, 12)
+
+local LoadingStroke = Instance.new("UIStroke", LoadingFrame)
+LoadingStroke.Color = Color3.fromRGB(45, 45, 60)
+LoadingStroke.Thickness = 1.5
+
+local LoadIcon = Instance.new("ImageLabel", LoadingFrame)
+LoadIcon.Size = UDim2.new(0, 32, 0, 32)
+LoadIcon.Position = UDim2.new(0.5, -16, 0, 20)
+LoadIcon.BackgroundTransparency = 1
+LoadIcon.Image = "rbxthumb://type=Asset&id=" .. CustomIconID .. "&w=150&h=150"
+LoadIcon.ZIndex = 101
+Instance.new("UICorner", LoadIcon).CornerRadius = UDim.new(0, 8)
+
+local LoadTitle = Instance.new("TextLabel", LoadingFrame)
+LoadTitle.Size = UDim2.new(1, 0, 0, 22)
+LoadTitle.Position = UDim2.new(0, 0, 0, 58)
+LoadTitle.Text = "Dark Hub"
+LoadTitle.Font = Enum.Font.GothamBold
+LoadTitle.TextColor3 = Color3.fromRGB(255, 255, 255)
+LoadTitle.TextSize = 16
+LoadTitle.BackgroundTransparency = 1
+LoadTitle.ZIndex = 101
+
+local LoadSub = Instance.new("TextLabel", LoadingFrame)
+LoadSub.Size = UDim2.new(1, 0, 0, 16)
+LoadSub.Position = UDim2.new(0, 0, 0, 80)
+LoadSub.Text = "Settings Edition"
+LoadSub.Font = Enum.Font.Gotham
+LoadSub.TextColor3 = Color3.fromRGB(140, 140, 150)
+LoadSub.TextSize = 11
+LoadSub.BackgroundTransparency = 1
+LoadSub.ZIndex = 101
+
+local BarTrack = Instance.new("Frame", LoadingFrame)
+BarTrack.Size = UDim2.new(0.82, 0, 0, 6)
+BarTrack.Position = UDim2.new(0.09, 0, 0, 108)
+BarTrack.BackgroundColor3 = Color3.fromRGB(28, 28, 38)
+BarTrack.ZIndex = 101
+Instance.new("UICorner", BarTrack).CornerRadius = UDim.new(0, 3)
+
+local BarFill = Instance.new("Frame", BarTrack)
+BarFill.Size = UDim2.new(0, 0, 1, 0)
+BarFill.BackgroundColor3 = Color3.fromRGB(0, 206, 209)
+BarFill.ZIndex = 102
+Instance.new("UICorner", BarFill).CornerRadius = UDim.new(0, 3)
+
+local StatusText = Instance.new("TextLabel", LoadingFrame)
+StatusText.Size = UDim2.new(1, 0, 0, 18)
+StatusText.Position = UDim2.new(0, 0, 0, 122)
+StatusText.Text = "Loading... 0%"
+StatusText.Font = Enum.Font.GothamMedium
+StatusText.TextColor3 = Color3.fromRGB(160, 160, 175)
+StatusText.TextSize = 10
+StatusText.BackgroundTransparency = 1
+StatusText.ZIndex = 101
+
+-- ============================================================================
 -- MAIN GUI FRAMEWORK
 -- ============================================================================
 local MainFrame = Instance.new("Frame", DarkHub)
@@ -1620,10 +1687,10 @@ function Library:CreateDropdown(parentPage, textKey, options, default, callback)
 			local Checkmark = Instance.new("TextLabel", OptBtn)
 			Checkmark.Size = UDim2.new(0, 20, 1, 0)
 			Checkmark.Position = UDim2.new(1, -30, 0, 0)
-			Checkmark.Text = "o"
+			Checkmark.Text = "✓" -- ИСПРАВЛЕНО: Буква 'o' заменена на галочку '✓'
 			Checkmark.Font = Enum.Font.GothamBold
 			Checkmark.TextColor3 = accent
-			Checkmark.TextSize = 12
+			Checkmark.TextSize = 13
 			Checkmark.BackgroundTransparency = 1
 			Checkmark.Visible = (option == SelectedLabel.Text)
 			Checkmark.ZIndex = 10
@@ -2621,7 +2688,50 @@ NewConfigBtn.Activated:Connect(function()
 	saveConfig(defaultConfigName)
 end)
 
--- Initialize UI & Configs
+-- ИНИЦИАЛИЗАЦИЯ И ТЕМА
 refreshConfigList()
+Library:UpdateTheme("Deep Ocean")
+
+local settingsTabBtn = allTabButtons["Settings"]
+if settingsTabBtn then
+	currentActiveTab = settingsTabBtn
+	setActiveTab(settingsTabBtn)
+end
+
 SettingsPage.Visible = true
-MainFrame.Visible = true
+
+-- Запуск системы загрузки
+task.spawn(function()
+	local steps = {
+		{ pct = 0.25, text = "Loading Modules... 25%" },
+		{ pct = 0.55, text = "Applying Theme UI... 55%" },
+		{ pct = 0.85, text = "Initializing Configurations... 85%" },
+		{ pct = 1.00, text = "Ready! 100%" },
+	}
+
+	for _, step in ipairs(steps) do
+		tween(BarFill, { Size = UDim2.new(step.pct, 0, 1, 0) }, 0.3)
+		StatusText.Text = step.text
+		task.wait(0.3)
+	end
+
+	task.wait(0.2)
+
+	-- Анимация плавного исчезновения загрузчика
+	tween(LoadingFrame, { BackgroundTransparency = 1 }, 0.3)
+	tween(BarTrack, { BackgroundTransparency = 1 }, 0.3)
+	tween(BarFill, { BackgroundTransparency = 1 }, 0.3)
+	tween(LoadTitle, { TextTransparency = 1 }, 0.3)
+	tween(LoadSub, { TextTransparency = 1 }, 0.3)
+	tween(StatusText, { TextTransparency = 1 }, 0.3)
+	tween(LoadIcon, { ImageTransparency = 1 }, 0.3)
+	tween(LoadingStroke, { Transparency = 1 }, 0.3)
+
+	task.wait(0.35)
+	LoadingFrame:Destroy()
+
+	-- Открытие главного интерфейса
+	MainFrame.Visible = true
+	MainScale.Scale = 0.85
+	tween(MainScale, { Scale = 1 }, 0.3)
+end)
