@@ -182,7 +182,7 @@ PagesContainer.ZIndex = 5
 
 local TabTitle = Instance.new("TextLabel", MainFrame)
 TabTitle.Text = "Settings"
-TabTitle.Font = Enum.Font.GothamBold
+TabTitle.Font = Enum.Font.FredokaOne
 TabTitle.TextColor3 = Color3.fromRGB(255, 255, 255)
 TabTitle.TextSize = 16
 TabTitle.Position = UDim2.new(0, 185, 0, 18)
@@ -201,7 +201,7 @@ local MinBtn = Instance.new("TextButton", ControlsContainer)
 MinBtn.Size = UDim2.new(0, 24, 0, 24)
 MinBtn.Position = UDim2.new(0, 0, 0, 3)
 MinBtn.Text = "—"
-MinBtn.Font = Enum.Font.GothamBold
+MinBtn.Font = Enum.Font.FredokaOne
 MinBtn.TextSize = 12
 MinBtn.TextColor3 = Color3.fromRGB(180, 180, 180)
 MinBtn.BackgroundTransparency = 1
@@ -211,7 +211,7 @@ local CloseBtn = Instance.new("TextButton", ControlsContainer)
 CloseBtn.Size = UDim2.new(0, 24, 0, 24)
 CloseBtn.Position = UDim2.new(0, 30, 0, 0)
 CloseBtn.Text = "×"
-CloseBtn.Font = Enum.Font.Arial
+CloseBtn.Font = Enum.Font.FredokaOne
 CloseBtn.TextSize = 22
 CloseBtn.TextColor3 = Color3.fromRGB(180, 180, 180)
 CloseBtn.BackgroundTransparency = 1
@@ -241,7 +241,7 @@ ClearSearchBtn.Size = UDim2.new(0, 16, 0, 16)
 ClearSearchBtn.Position = UDim2.new(1, -22, 0.5, -8)
 ClearSearchBtn.BackgroundTransparency = 1
 ClearSearchBtn.Text = "×"
-ClearSearchBtn.Font = Enum.Font.Gotham
+ClearSearchBtn.Font = Enum.Font.FredokaOne
 ClearSearchBtn.TextSize = 16
 ClearSearchBtn.TextColor3 = Color3.fromRGB(150, 150, 150)
 ClearSearchBtn.Visible = false
@@ -253,7 +253,7 @@ SearchBox.Position = UDim2.new(0, 30, 0, 0)
 SearchBox.BackgroundTransparency = 1
 SearchBox.Text = ""
 SearchBox.PlaceholderText = "Search..."
-SearchBox.Font = Enum.Font.Gotham
+SearchBox.Font = Enum.Font.FredokaOne
 SearchBox.TextSize = 12
 SearchBox.TextColor3 = Color3.fromRGB(230, 230, 230)
 SearchBox.PlaceholderColor3 = Color3.fromRGB(130, 130, 130)
@@ -286,7 +286,7 @@ HubIcon.Image = "rbxthumb://type=Asset&id=" .. CustomIconID .. "&w=150&h=150"
 
 local HubTitle = Instance.new("TextLabel", HeaderBg)
 HubTitle.Text = "Dark Hub"
-HubTitle.Font = Enum.Font.GothamBold
+HubTitle.Font = Enum.Font.FredokaOne
 HubTitle.TextColor3 = Color3.fromRGB(255, 255, 255)
 HubTitle.TextSize = 13
 HubTitle.Position = UDim2.new(0, 44, 0, 7)
@@ -297,7 +297,7 @@ HubTitle.ZIndex = 5
 
 local SubTitle = Instance.new("TextLabel", HeaderBg)
 SubTitle.Text = "Settings Panel"
-SubTitle.Font = Enum.Font.Gotham
+SubTitle.Font = Enum.Font.FredokaOne
 SubTitle.TextColor3 = Color3.fromRGB(130, 130, 130)
 SubTitle.TextSize = 9
 SubTitle.Position = UDim2.new(0, 44, 0, 23)
@@ -317,7 +317,7 @@ local EmbMinBtn = Instance.new("TextButton", EmbeddedControls)
 EmbMinBtn.Size = UDim2.new(0, 20, 0, 20)
 EmbMinBtn.Position = UDim2.new(0, 0, 0, 5)
 EmbMinBtn.Text = "—"
-EmbMinBtn.Font = Enum.Font.GothamBold
+EmbMinBtn.Font = Enum.Font.FredokaOne
 EmbMinBtn.TextSize = 11
 EmbMinBtn.TextColor3 = Color3.fromRGB(180, 180, 180)
 EmbMinBtn.BackgroundTransparency = 1
@@ -327,7 +327,7 @@ local EmbCloseBtn = Instance.new("TextButton", EmbeddedControls)
 EmbCloseBtn.Size = UDim2.new(0, 20, 0, 20)
 EmbCloseBtn.Position = UDim2.new(0, 25, 0, 2)
 EmbCloseBtn.Text = "×"
-EmbCloseBtn.Font = Enum.Font.Arial
+EmbCloseBtn.Font = Enum.Font.FredokaOne
 EmbCloseBtn.TextSize = 20
 EmbCloseBtn.TextColor3 = Color3.fromRGB(180, 180, 180)
 EmbCloseBtn.BackgroundTransparency = 1
@@ -364,7 +364,7 @@ FooterStroke.Color = Color3.fromRGB(45, 45, 45)
 local DiscordLabel = Instance.new("TextLabel", FooterBg)
 DiscordLabel.Position = UDim2.new(0, 10, 0, 7)
 DiscordLabel.Size = UDim2.new(1, -20, 0, 15)
-DiscordLabel.Font = Enum.Font.GothamMedium
+DiscordLabel.Font = Enum.Font.FredokaOne
 DiscordLabel.Text = "discord.gg/pulsezone"
 DiscordLabel.TextColor3 = Color3.fromRGB(255, 255, 255)
 DiscordLabel.TextSize = 10
@@ -374,7 +374,7 @@ DiscordLabel.BackgroundTransparency = 1
 local StatsLabel = Instance.new("TextLabel", FooterBg)
 StatsLabel.Position = UDim2.new(0, 10, 0, 23)
 StatsLabel.Size = UDim2.new(1, -20, 0, 15)
-StatsLabel.Font = Enum.Font.Gotham
+StatsLabel.Font = Enum.Font.FredokaOne
 StatsLabel.Text = "FPS: ... | Session: 00:00:00"
 StatsLabel.TextColor3 = Color3.fromRGB(130, 130, 130)
 StatsLabel.TextSize = 10
@@ -493,7 +493,7 @@ end)
 -- UI LIBRARY & THEMES
 -- ============================================================================
 local Library = {}
-Library.CurrentFont = Enum.Font.Gotham
+Library.CurrentFont = Enum.Font.FredokaOne  -- ИЗМЕНЕНО: Fredoka One вместо Gotham
 Library.CurrentLanguage = "English"
 Library.CurrentTabKey = "Settings"
 Library.ActiveDropdownClose = nil
@@ -526,8 +526,8 @@ local ThemeConfig = {
 	["AMOLED"] = { Accent = Color3.fromRGB(255, 255, 255), MainBg = Color3.fromRGB(0, 0, 0), ElementBg = Color3.fromRGB(15, 15, 15) }
 }
 
-local DefaultTheme = { Accent = Color3.fromRGB(0, 206, 209), MainBg = Color3.fromRGB(10, 20, 30), ElementBg = Color3.fromRGB(15, 30, 45) }
-Library.CurrentThemeData = ThemeConfig["Deep Ocean"] or DefaultTheme
+local DefaultTheme = { Accent = Color3.fromRGB(255, 255, 255), MainBg = Color3.fromRGB(0, 0, 0), ElementBg = Color3.fromRGB(15, 15, 15) }
+Library.CurrentThemeData = ThemeConfig["AMOLED"] or DefaultTheme  -- ИЗМЕНЕНО: AMOLED вместо Deep Ocean
 
 local function getThemeAccent()
 	if Library.CurrentThemeData and typeof(Library.CurrentThemeData.Accent) == "Color3" then
@@ -634,7 +634,7 @@ local function setActiveTab(tabButton)
 		local corner = Instance.new("UICorner", indicator)
 		corner.CornerRadius = UDim.new(0, 2)
 	end
-	tabButton.Font = Enum.Font.GothamBold
+	tabButton.Font = Enum.Font.FredokaOne
 	local isL = isLightColor(mainBg)
 	local activeTextColor = isL and Color3.fromRGB(20, 20, 20) or Color3.fromRGB(255, 255, 255)
 	local activeBgColor = isL and Color3.fromRGB(215, 215, 215) or Color3.fromRGB(35, 35, 35)
@@ -662,7 +662,7 @@ local function clearActiveTab(tabButton)
 			end)
 		end
 	end
-	tabButton.Font = Library.CurrentFont or Enum.Font.Gotham
+	tabButton.Font = Library.CurrentFont or Enum.Font.FredokaOne
 	local isL = isLightColor(getThemeMainBg())
 	local normalTextColor = isL and Color3.fromRGB(110, 110, 110) or Color3.fromRGB(140, 140, 140)
 	tween(tabButton, {TextColor3 = normalTextColor}, 0.25)
@@ -1083,7 +1083,7 @@ function Library:CreateDropdown(parentPage, textKey, options, default, callback)
 	Arrow.Name = "Arrow"
 	Arrow.Size = UDim2.new(0, 20, 1, 0)
 	Arrow.Text = "v"
-	Arrow.Font = Enum.Font.GothamBold
+	Arrow.Font = Enum.Font.FredokaOne
 	Arrow.TextColor3 = Color3.fromRGB(150, 150, 150)
 	Arrow.TextSize = 10
 	Arrow.BackgroundTransparency = 1
@@ -1219,12 +1219,12 @@ function Library:CreateDropdown(parentPage, textKey, options, default, callback)
 				OptLabel.Font = Library.CurrentFont
 			end
 
-			-- ГАЛОЧКА: изменена на символ ✓
+			-- ГАЛОЧКА: символ ✓
 			local Checkmark = Instance.new("TextLabel", OptBtn)
 			Checkmark.Size = UDim2.new(0, 20, 1, 0)
 			Checkmark.Position = UDim2.new(1, -26, 0, 0)
-			Checkmark.Text = "✓"  -- Символ галочки
-			Checkmark.Font = Enum.Font.GothamBold
+			Checkmark.Text = "✓"
+			Checkmark.Font = Enum.Font.FredokaOne
 			Checkmark.TextColor3 = accent
 			Checkmark.TextSize = 14
 			Checkmark.BackgroundTransparency = 1
@@ -1664,7 +1664,7 @@ local LanguageDropdown = Library:CreateDropdown(SettingsPage, "Language", {"Engl
 	Library:UpdateLanguage(selectedLang)
 end)
 
-local ThemeDropdown = Library:CreateDropdown(SettingsPage, "UITheme", ThemeNamesList, "Deep Ocean", function(selectedTheme)
+local ThemeDropdown = Library:CreateDropdown(SettingsPage, "UITheme", ThemeNamesList, "AMOLED", function(selectedTheme)  -- ИЗМЕНЕНО: AMOLED по умолчанию
 	Library:UpdateTheme(selectedTheme)
 end)
 
@@ -1674,7 +1674,7 @@ for name, _ in pairs(FontMapping) do
 end
 table.sort(FontKeys)
 
-local FontDropdown = Library:CreateDropdown(SettingsPage, "MenuFont", FontKeys, "Gotham", function(selectedFont)
+local FontDropdown = Library:CreateDropdown(SettingsPage, "MenuFont", FontKeys, "Fredoka One", function(selectedFont)  -- ИЗМЕНЕНО: Fredoka One по умолчанию
 	if FontMapping[selectedFont] then
 		Library.CurrentFont = FontMapping[selectedFont]
 		for _, obj in ipairs(Library.TrackedMainText) do
@@ -1836,7 +1836,7 @@ task.spawn(function()
 	PercentShadow.Size = UDim2.new(1, -40, 0, 22)
 	PercentShadow.Position = UDim2.new(0, 21, 0, 93)
 	PercentShadow.BackgroundTransparency = 1
-	PercentShadow.Font = Enum.Font.GothamBold
+	PercentShadow.Font = Enum.Font.FredokaOne
 	PercentShadow.TextSize = 16
 	PercentShadow.TextColor3 = Color3.fromRGB(0, 0, 0)
 	PercentShadow.TextTransparency = 0.3
@@ -1847,7 +1847,7 @@ task.spawn(function()
 	PercentLabel.Size = UDim2.new(1, -40, 0, 22)
 	PercentLabel.Position = UDim2.new(0, 20, 0, 92)
 	PercentLabel.BackgroundTransparency = 1
-	PercentLabel.Font = Enum.Font.GothamBold
+	PercentLabel.Font = Enum.Font.FredokaOne
 	PercentLabel.TextSize = 16
 	PercentLabel.TextColor3 = Color3.fromRGB(255, 255, 255)
 	PercentLabel.Text = "0%"
@@ -1958,5 +1958,5 @@ task.spawn(function()
 	showToast("Dark Hub loaded successfully!", getThemeAccent())
 end)
 
--- Применяем тему Deep Ocean
-Library:UpdateTheme("Deep Ocean")
+-- Применяем тему AMOLED
+Library:UpdateTheme("AMOLED")
