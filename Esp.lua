@@ -1,7 +1,6 @@
 -- ============================================================================
 -- Dark Hub - Settings Edition (Fixed & Optimized)
 -- ============================================================================
-
 local TweenService = game:GetService("TweenService")
 local UserInputService = game:GetService("UserInputService")
 local RunService = game:GetService("RunService")
@@ -115,74 +114,10 @@ local function NormalizeText(str)
 	end
 	local lowerStr = str:lower()
 	local cyrUpper = {
-		"А",
-		"Б",
-		"В",
-		"Г",
-		"Д",
-		"Е",
-		"Ё",
-		"Ж",
-		"З",
-		"И",
-		"Й",
-		"К",
-		"Л",
-		"М",
-		"Н",
-		"О",
-		"П",
-		"Р",
-		"С",
-		"Т",
-		"У",
-		"Ф",
-		"Х",
-		"Ц",
-		"Ч",
-		"Ш",
-		"Щ",
-		"Ъ",
-		"Ы",
-		"Ь",
-		"Э",
-		"Ю",
-		"Я",
+		"А", "Б", "В", "Г", "Д", "Е", "Ё", "Ж", "З", "И", "Й", "К", "Л", "М", "Н", "О", "П", "Р", "С", "Т", "У", "Ф", "Х", "Ц", "Ч", "Ш", "Щ", "Ъ", "Ы", "Ь", "Э", "Ю", "Я",
 	}
 	local cyrLower = {
-		"а",
-		"б",
-		"в",
-		"г",
-		"д",
-		"е",
-		"ё",
-		"ж",
-		"з",
-		"и",
-		"й",
-		"к",
-		"л",
-		"м",
-		"н",
-		"о",
-		"п",
-		"р",
-		"с",
-		"т",
-		"у",
-		"ф",
-		"х",
-		"ц",
-		"ч",
-		"ш",
-		"щ",
-		"ъ",
-		"ы",
-		"ь",
-		"э",
-		"ю",
-		"я",
+		"а", "б", "в", "г", "д", "е", "ё", "ж", "з", "и", "й", "к", "л", "м", "н", "о", "п", "р", "с", "т", "у", "ф", "х", "ц", "ч", "ш", "щ", "ъ", "ы", "ь", "э", "ю", "я",
 	}
 	for i = 1, #cyrUpper do
 		lowerStr = lowerStr:gsub(cyrUpper[i], cyrLower[i])
@@ -2459,6 +2394,7 @@ ConfigListLayout:GetPropertyChangedSignal("AbsoluteContentSize"):Connect(
 )
 
 local EmptyConfigLabel = Instance.new("TextLabel", ConfigsScrollFrame)
+EmptyConfigLabel.Name = "EmptyConfigLabel"
 EmptyConfigLabel.Size = UDim2.new(1, 0, 1, 0)
 EmptyConfigLabel.Text = "No configurations saved"
 EmptyConfigLabel.Font = Enum.Font.Gotham
@@ -2504,10 +2440,7 @@ NewConfigBtn.MouseLeave:Connect(function()
 	)
 end)
 
--- Forward declarations for list refresh & modals
 local refreshConfigList
-local showCreateOrEditModal
-local showDeleteModal
 
 -- Save config
 local function saveConfig(name)
@@ -2537,7 +2470,9 @@ local function saveConfig(name)
 			writefile(filePath, encoded)
 		end)
 		activeConfigName = name
-		refreshConfigList()
+		if refreshConfigList then
+			refreshConfigList()
+		end
 		if isUpdate then
 			showToast(
 				"Config '" .. name .. "' updated!",
@@ -2570,7 +2505,9 @@ local function loadConfig(name)
 			if success and decoded and decoded.Settings then
 				applySettings(decoded.Settings)
 				activeConfigName = name
-				refreshConfigList()
+				if refreshConfigList then
+					refreshConfigList()
+				end
 				showToast(
 					"Config '" .. name .. "' loaded!",
 					Color3.fromRGB(85, 224, 133)
@@ -2596,6 +2533,95 @@ local function deleteConfig(name)
 			if activeConfigName == name then
 				activeConfigName = nil
 			end
-			refreshConfigList()
+			if refreshConfigList then
+				refreshConfigList()
+			end
 			showToast(
-				"Config '"Я просто языковая модель. К сожалению, с такими вопросами я помочь не могу.
+				"Config '" .. name .. "' deleted!",
+				Color3.fromRGB(255, 70, 70)
+			)
+		end
+	end)
+end
+
+-- Refresh List
+refreshConfigList = function()
+	for _, child in ipairs(ConfigsScrollFrame:GetChildren()) do
+		if child:IsA("Frame") and child.Name ~= "EmptyConfigLabel" then
+			child:Destroy()
+		end
+	end
+
+	local files = {}
+	pcall(function()
+		if
+			typeof(listfiles) == "function"
+			and typeof(isfolder) == "function"
+			and isfolder(CONFIG_FOLDER)
+		then
+			files = listfiles(CONFIG_FOLDER)
+		end
+	end)
+
+	local configCount = 0
+	for _, file in ipairs(files) do
+		local fileName = file:match("([^/\\]+)%.json$")
+		if fileName then
+			configCount = configCount + 1
+			local itemFrame = Instance.new("Frame", ConfigsScrollFrame)
+			itemFrame.Size = UDim2.new(1, -10, 0, 36)
+			itemFrame.BackgroundColor3 = Color3.fromRGB(28, 28, 38)
+			Instance.new("UICorner", itemFrame).CornerRadius = UDim.new(0, 6)
+
+			local itemLabel = Instance.new("TextLabel", itemFrame)
+			itemLabel.Size = UDim2.new(0.5, 0, 1, 0)
+			itemLabel.Position = UDim2.new(0, 10, 0, 0)
+			itemLabel.Text = fileName
+			itemLabel.Font = Enum.Font.GothamMedium
+			itemLabel.TextColor3 = Color3.fromRGB(255, 255, 255)
+			itemLabel.TextSize = 12
+			itemLabel.TextXAlignment = Enum.TextXAlignment.Left
+			itemLabel.BackgroundTransparency = 1
+
+			local loadBtn = Instance.new("TextButton", itemFrame)
+			loadBtn.Size = UDim2.new(0, 50, 0, 24)
+			loadBtn.Position = UDim2.new(1, -115, 0.5, -12)
+			loadBtn.Text = "Load"
+			loadBtn.Font = Enum.Font.Gotham
+			loadBtn.TextSize = 11
+			loadBtn.TextColor3 = Color3.fromRGB(255, 255, 255)
+			loadBtn.BackgroundColor3 = Color3.fromRGB(74, 144, 217)
+			Instance.new("UICorner", loadBtn).CornerRadius = UDim.new(0, 4)
+
+			loadBtn.Activated:Connect(function()
+				loadConfig(fileName)
+			end)
+
+			local delBtn = Instance.new("TextButton", itemFrame)
+			delBtn.Size = UDim2.new(0, 50, 0, 24)
+			delBtn.Position = UDim2.new(1, -60, 0.5, -12)
+			delBtn.Text = "Delete"
+			delBtn.Font = Enum.Font.Gotham
+			delBtn.TextSize = 11
+			delBtn.TextColor3 = Color3.fromRGB(255, 255, 255)
+			delBtn.BackgroundColor3 = Color3.fromRGB(217, 74, 74)
+			Instance.new("UICorner", delBtn).CornerRadius = UDim.new(0, 4)
+
+			delBtn.Activated:Connect(function()
+				deleteConfig(fileName)
+			end)
+		end
+	end
+
+	EmptyConfigLabel.Visible = (configCount == 0)
+end
+
+NewConfigBtn.Activated:Connect(function()
+	local defaultConfigName = "Config_" .. tostring(#ConfigsScrollFrame:GetChildren())
+	saveConfig(defaultConfigName)
+end)
+
+-- Initialize UI & Configs
+refreshConfigList()
+SettingsPage.Visible = true
+MainFrame.Visible = true
