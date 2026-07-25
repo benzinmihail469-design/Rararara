@@ -132,7 +132,7 @@ local function spawnWave(container, clickX, clickY)
 	Wave.AnchorPoint = Vector2.new(0.5, 0.5)
 	Wave.Position = UDim2.new(0, startX, 0, startY)
 	Wave.Size = UDim2.new(0, 0, 0, 0)
-	Wave.BackgroundColor3 = Color3.fromRGB(100, 180, 255)
+	Wave.BackgroundColor3 = Color3.fromRGB(255, 255, 255)
 	Wave.BackgroundTransparency = 0.4
 	Wave.BorderSizePixel = 0
 	Wave.ZIndex = 20
@@ -156,7 +156,7 @@ end
 -- ============================================================================
 local MainFrame = Instance.new("Frame", DarkHub)
 MainFrame.Name = "MainFrame"
-MainFrame.BackgroundColor3 = Color3.fromRGB(14, 14, 14)
+MainFrame.BackgroundColor3 = Color3.fromRGB(0, 0, 0)
 MainFrame.BackgroundTransparency = 0.15
 MainFrame.AnchorPoint = Vector2.new(0.5, 0.5)
 MainFrame.Position = UDim2.new(0.5, 0, 0.5, 0)
@@ -170,7 +170,7 @@ local MainCorner = Instance.new("UICorner", MainFrame)
 MainCorner.CornerRadius = UDim.new(0, 14)
 
 local MainStroke = Instance.new("UIStroke", MainFrame)
-MainStroke.Color = Color3.fromRGB(40, 40, 40)
+MainStroke.Color = Color3.fromRGB(45, 45, 45)
 MainStroke.Thickness = 1.5
 
 local PagesContainer = Instance.new("Frame", MainFrame)
@@ -220,7 +220,7 @@ CloseBtn.ZIndex = 11
 local SearchContainer = Instance.new("Frame", MainFrame)
 SearchContainer.Size = UDim2.new(0, 160, 0, 30)
 SearchContainer.Position = UDim2.new(1, -240, 0, 12)
-SearchContainer.BackgroundColor3 = Color3.fromRGB(22, 22, 22)
+SearchContainer.BackgroundColor3 = Color3.fromRGB(15, 15, 15)
 SearchContainer.ZIndex = 6
 Instance.new("UICorner", SearchContainer).CornerRadius = UDim.new(0, 8)
 
@@ -268,7 +268,7 @@ SidebarContainer.ZIndex = 3
 local HeaderBg = Instance.new("Frame", SidebarContainer)
 HeaderBg.Size = UDim2.new(0, 150, 0, 46)
 HeaderBg.Position = UDim2.new(0, 10, 0, 10)
-HeaderBg.BackgroundColor3 = Color3.fromRGB(22, 22, 22)
+HeaderBg.BackgroundColor3 = Color3.fromRGB(15, 15, 15)
 HeaderBg.ZIndex = 4
 Instance.new("UICorner", HeaderBg).CornerRadius = UDim.new(0, 10)
 
@@ -354,7 +354,7 @@ NavLayout:GetPropertyChangedSignal("AbsoluteContentSize"):Connect(UpdateNavCanva
 local FooterBg = Instance.new("Frame", SidebarContainer)
 FooterBg.Size = UDim2.new(0, 150, 0, 46)
 FooterBg.Position = UDim2.new(0, 10, 1, -56)
-FooterBg.BackgroundColor3 = Color3.fromRGB(22, 22, 22)
+FooterBg.BackgroundColor3 = Color3.fromRGB(15, 15, 15)
 FooterBg.ZIndex = 4
 Instance.new("UICorner", FooterBg).CornerRadius = UDim.new(0, 10)
 
@@ -493,7 +493,7 @@ end)
 -- UI LIBRARY & THEMES
 -- ============================================================================
 local Library = {}
-Library.CurrentFont = Enum.Font.FredokaOne  -- ИЗМЕНЕНО: Fredoka One вместо Gotham
+Library.CurrentFont = Enum.Font.FredokaOne
 Library.CurrentLanguage = "English"
 Library.CurrentTabKey = "Settings"
 Library.ActiveDropdownClose = nil
@@ -527,7 +527,7 @@ local ThemeConfig = {
 }
 
 local DefaultTheme = { Accent = Color3.fromRGB(255, 255, 255), MainBg = Color3.fromRGB(0, 0, 0), ElementBg = Color3.fromRGB(15, 15, 15) }
-Library.CurrentThemeData = ThemeConfig["AMOLED"] or DefaultTheme  -- ИЗМЕНЕНО: AMOLED вместо Deep Ocean
+Library.CurrentThemeData = ThemeConfig["AMOLED"] or DefaultTheme
 
 local function getThemeAccent()
 	if Library.CurrentThemeData and typeof(Library.CurrentThemeData.Accent) == "Color3" then
@@ -1219,7 +1219,6 @@ function Library:CreateDropdown(parentPage, textKey, options, default, callback)
 				OptLabel.Font = Library.CurrentFont
 			end
 
-			-- ГАЛОЧКА: символ ✓
 			local Checkmark = Instance.new("TextLabel", OptBtn)
 			Checkmark.Size = UDim2.new(0, 20, 1, 0)
 			Checkmark.Position = UDim2.new(1, -26, 0, 0)
@@ -1664,7 +1663,7 @@ local LanguageDropdown = Library:CreateDropdown(SettingsPage, "Language", {"Engl
 	Library:UpdateLanguage(selectedLang)
 end)
 
-local ThemeDropdown = Library:CreateDropdown(SettingsPage, "UITheme", ThemeNamesList, "AMOLED", function(selectedTheme)  -- ИЗМЕНЕНО: AMOLED по умолчанию
+local ThemeDropdown = Library:CreateDropdown(SettingsPage, "UITheme", ThemeNamesList, "AMOLED", function(selectedTheme)
 	Library:UpdateTheme(selectedTheme)
 end)
 
@@ -1674,7 +1673,7 @@ for name, _ in pairs(FontMapping) do
 end
 table.sort(FontKeys)
 
-local FontDropdown = Library:CreateDropdown(SettingsPage, "MenuFont", FontKeys, "Fredoka One", function(selectedFont)  -- ИЗМЕНЕНО: Fredoka One по умолчанию
+local FontDropdown = Library:CreateDropdown(SettingsPage, "MenuFont", FontKeys, "Fredoka One", function(selectedFont)
 	if FontMapping[selectedFont] then
 		Library.CurrentFont = FontMapping[selectedFont]
 		for _, obj in ipairs(Library.TrackedMainText) do
@@ -1790,7 +1789,7 @@ task.spawn(function()
 	LoadingFrame.Size = UDim2.new(0, 320, 0, 210)
 	LoadingFrame.AnchorPoint = Vector2.new(0.5, 0.5)
 	LoadingFrame.Position = UDim2.new(0.5, 0, 0.5, 0)
-	LoadingFrame.BackgroundColor3 = Color3.fromRGB(16, 18, 24)
+	LoadingFrame.BackgroundColor3 = Color3.fromRGB(0, 0, 0)  -- AMOLED черный
 	LoadingFrame.GroupTransparency = 1
 	LoadingFrame.BorderSizePixel = 0
 	LoadingFrame.ZIndex = 1000
@@ -1803,10 +1802,10 @@ task.spawn(function()
 	LoadingCorner.CornerRadius = UDim.new(0, 12)
 
 	local LoadingStroke = Instance.new("UIStroke", LoadingFrame)
-	LoadingStroke.Color = Color3.fromRGB(50, 55, 70)
+	LoadingStroke.Color = Color3.fromRGB(45, 45, 45)
 	LoadingStroke.Thickness = 1.5
 
-	-- Floating Bubbles Container
+	-- Floating Bubbles Container (белые пузырьки)
 	local BubbleContainer = Instance.new("Frame", LoadingFrame)
 	BubbleContainer.Name = "BubbleContainer"
 	BubbleContainer.Size = UDim2.new(1, 0, 1, 0)
@@ -1831,7 +1830,7 @@ task.spawn(function()
 	IconStroke.Transparency = 0.5
 	IconStroke.Thickness = 1.5
 
-	-- Percentage Label & Shadow
+	-- Percentage Label & Shadow (белый текст)
 	local PercentShadow = Instance.new("TextLabel", LoadingFrame)
 	PercentShadow.Size = UDim2.new(1, -40, 0, 22)
 	PercentShadow.Position = UDim2.new(0, 21, 0, 93)
@@ -1853,45 +1852,45 @@ task.spawn(function()
 	PercentLabel.Text = "0%"
 	PercentLabel.ZIndex = 1003
 
-	-- Progress Bar Track
+	-- Progress Bar Track (темно-серый)
 	local BarTrack = Instance.new("Frame", LoadingFrame)
 	BarTrack.Name = "BarTrack"
 	BarTrack.Size = UDim2.new(1, -50, 0, 10)
 	BarTrack.Position = UDim2.new(0, 25, 0, 122)
-	BarTrack.BackgroundColor3 = Color3.fromRGB(28, 32, 42)
+	BarTrack.BackgroundColor3 = Color3.fromRGB(28, 28, 28)
 	BarTrack.BorderSizePixel = 0
 	BarTrack.ZIndex = 1002
 	Instance.new("UICorner", BarTrack).CornerRadius = UDim.new(1, 0)
 
-	-- Fill / Progress Bar (Использует динамический акцентный цвет темы!)
+	-- Fill / Progress Bar (белый)
 	local BarFill = Instance.new("Frame", BarTrack)
 	BarFill.Name = "BarFill"
 	BarFill.Size = UDim2.new(0, 0, 1, 0)
-	BarFill.BackgroundColor3 = getThemeAccent()
+	BarFill.BackgroundColor3 = Color3.fromRGB(255, 255, 255)
 	BarFill.BorderSizePixel = 0
 	BarFill.ZIndex = 1003
 	Instance.new("UICorner", BarFill).CornerRadius = UDim.new(1, 0)
 
-	-- Status Label
+	-- Status Label (белый текст)
 	local StatusLabel = Instance.new("TextLabel", LoadingFrame)
 	StatusLabel.Name = "StatusLabel"
 	StatusLabel.Size = UDim2.new(1, -40, 0, 20)
 	StatusLabel.Position = UDim2.new(0, 20, 0, 145)
 	StatusLabel.BackgroundTransparency = 1
-	StatusLabel.Font = Library.CurrentFont
+	StatusLabel.Font = Enum.Font.FredokaOne
 	StatusLabel.TextSize = 12
-	StatusLabel.TextColor3 = Color3.fromRGB(150, 160, 180)
+	StatusLabel.TextColor3 = Color3.fromRGB(255, 255, 255)
 	StatusLabel.Text = "Initializing UI..."
 	StatusLabel.ZIndex = 1003
 
-	-- Background Floating Particles
+	-- Background Floating Particles (белые)
 	task.spawn(function()
 		while loadingActive and LoadingFrame and LoadingFrame.Parent do
 			local bubble = Instance.new("Frame", BubbleContainer)
 			local size = math.random(4, 10)
 			bubble.Size = UDim2.new(0, size, 0, size)
 			bubble.Position = UDim2.new(math.random(), 0, 1, 0)
-			bubble.BackgroundColor3 = getThemeAccent()
+			bubble.BackgroundColor3 = Color3.fromRGB(255, 255, 255)
 			bubble.BackgroundTransparency = 0.6
 			bubble.BorderSizePixel = 0
 			Instance.new("UICorner", bubble).CornerRadius = UDim.new(1, 0)
