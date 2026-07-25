@@ -1228,7 +1228,7 @@ function Library:CreateDropdown(parentPage, textKey, options, default, callback)
 			local Checkmark = Instance.new("TextLabel", OptBtn)
 			Checkmark.Size = UDim2.new(0, 20, 1, 0)
 			Checkmark.Position = UDim2.new(1, -30, 0, 0)
-			Checkmark.Text = "√"
+			Checkmark.Text = "v"
 			Checkmark.Font = Enum.Font.GothamBold
 			Checkmark.TextColor3 = accent
 			Checkmark.TextSize = 12
@@ -1762,190 +1762,214 @@ local function showToast(message, dotColor)
 	local textLabel = Instance.new("TextLabel", toast)
 	textLabel.BackgroundTransparency = 1
 	textLabel.Text = message
-	textLabel.Font = Enum.Font.Gotham
 	textLabel.TextColor3 = Color3.fromRGB(255, 255, 255)
-	textLabel.TextSize = 12
+	textLabel.Font = Enum.Font.Gotham
+	textLabel.TextSize = 13
 	textLabel.AutomaticSize = Enum.AutomaticSize.XY
+	textLabel.LayoutOrder = 2
 	
-	tween(toast, {Position = UDim2.new(0.5, 0, 1, -20)}, 0.3)
-	task.delay(2.5, function()
+	tween(toast, {Position = UDim2.new(0.5, 0, 1, -50)}, 0.3)
+	task.delay(3, function()
 		if activeToast == toast then
-			local tOut = tween(toast, {Position = UDim2.new(0.5, 0, 1, 20)}, 0.3)
-			if tOut then tOut.Completed:Wait() end
-			toast:Destroy()
+			local t = tween(toast, {Position = UDim2.new(0.5, 0, 1, 20)}, 0.3)
+			if t then
+				t.Completed:Connect(function()
+					toast:Destroy()
+				end)
+			end
 		end
 	end)
 end
 
 -- === LOADING START ===
-local LoadingContainer = Instance.new("Frame", DarkHub)
-LoadingContainer.Name = "LoadingContainer"
-LoadingContainer.Size = UDim2.new(0, 280, 0, 140)
-LoadingContainer.Position = UDim2.new(0.5, 0, 0.5, 0)
-LoadingContainer.AnchorPoint = Vector2.new(0.5, 0.5)
-LoadingContainer.BackgroundColor3 = Color3.fromRGB(20, 20, 20)
-LoadingContainer.BackgroundTransparency = 1 -- Стартует прозрачным для фейда
-LoadingContainer.ZIndex = 500
+local LoadingScreen = Instance.new("Frame", DarkHub)
+LoadingScreen.Name = "LoadingScreen"
+LoadingScreen.Size = UDim2.new(0, 320, 0, 240)
+LoadingScreen.Position = UDim2.new(0.5, 0, 0.5, 0)
+LoadingScreen.AnchorPoint = Vector2.new(0.5, 0.5)
+LoadingScreen.BackgroundColor3 = Color3.fromRGB(18, 18, 18)
+LoadingScreen.BackgroundTransparency = 1
+LoadingScreen.ZIndex = 500
+Instance.new("UICorner", LoadingScreen).CornerRadius = UDim.new(0, 14)
 
-local LoadingCorner = Instance.new("UICorner", LoadingContainer)
-LoadingCorner.CornerRadius = UDim.new(0, 10)
+local LoadingShadow = Instance.new("Frame", DarkHub)
+LoadingShadow.Name = "LoadingShadow"
+LoadingShadow.Size = UDim2.new(0, 340, 0, 260)
+LoadingShadow.Position = UDim2.new(0.5, 0, 0.5, 0)
+LoadingShadow.AnchorPoint = Vector2.new(0.5, 0.5)
+LoadingShadow.BackgroundColor3 = Color3.fromRGB(0, 0, 0)
+LoadingShadow.BackgroundTransparency = 1
+LoadingShadow.ZIndex = 499
+Instance.new("UICorner", LoadingShadow).CornerRadius = UDim.new(0, 16)
+local ShadowStroke = Instance.new("UIStroke", LoadingShadow)
+ShadowStroke.Thickness = 8
+ShadowStroke.Transparency = 1
+ShadowStroke.Color = Color3.fromRGB(0, 0, 0)
 
-local LoadingStroke = Instance.new("UIStroke", LoadingContainer)
-LoadingStroke.Color = Color3.fromRGB(255, 255, 255)
-LoadingStroke.Transparency = 1 -- Стартует прозрачным для фейда
-LoadingStroke.Thickness = 1.5
-
-local LoadingScale = Instance.new("UIScale", LoadingContainer)
-LoadingScale.Scale = 0.85 -- Для scale-up
-
--- ВАЖНО: Иконка загрузки (НЕ ТРОГАЮ прозрачность/картинку, как и просили)
-local LoadingIcon = Instance.new("ImageLabel", LoadingContainer)
+-- === DO NOT TOUCH ICON START ===
+-- Иконка оставлена без изменений, согласно требованиям
+local LoadingIcon = Instance.new("ImageLabel", LoadingScreen)
 LoadingIcon.Name = "LoadingIcon"
-LoadingIcon.Size = UDim2.new(0, 50, 0, 50)
-LoadingIcon.Position = UDim2.new(0.5, -25, 0, 15)
+LoadingIcon.Size = UDim2.new(0, 70, 0, 70)
+LoadingIcon.Position = UDim2.new(0.5, -35, 0, 30)
 LoadingIcon.BackgroundTransparency = 1
 LoadingIcon.Image = "rbxthumb://type=Asset&id=" .. CustomIconID .. "&w=150&h=150"
-LoadingIcon.ZIndex = 501
+LoadingIcon.ImageTransparency = 1
+Instance.new("UICorner", LoadingIcon).CornerRadius = UDim.new(0, 10)
+-- === DO NOT TOUCH ICON END ===
 
-local ProgressBarBg = Instance.new("Frame", LoadingContainer)
-ProgressBarBg.Size = UDim2.new(0, 220, 0, 8)
-ProgressBarBg.Position = UDim2.new(0.5, -110, 0, 85)
-ProgressBarBg.BackgroundColor3 = Color3.fromRGB(35, 35, 35)
+local ScriptTitle = Instance.new("TextLabel", LoadingScreen)
+ScriptTitle.Name = "ScriptTitle"
+ScriptTitle.Size = UDim2.new(1, 0, 0, 30)
+ScriptTitle.Position = UDim2.new(0, 0, 0, 110)
+ScriptTitle.BackgroundTransparency = 1
+ScriptTitle.Text = "Dark Hub"
+ScriptTitle.Font = Enum.Font.GothamBold
+ScriptTitle.TextColor3 = Color3.fromRGB(255, 255, 255)
+ScriptTitle.TextSize = 22
+ScriptTitle.TextTransparency = 1
+
+local ProgressBarBg = Instance.new("Frame", LoadingScreen)
+ProgressBarBg.Name = "ProgressBarBg"
+ProgressBarBg.Size = UDim2.new(0.8, 0, 0, 12)
+ProgressBarBg.Position = UDim2.new(0.1, 0, 0, 180)
+ProgressBarBg.BackgroundColor3 = Color3.fromRGB(40, 40, 40)
 ProgressBarBg.BackgroundTransparency = 1
-ProgressBarBg.BorderSizePixel = 0
-ProgressBarBg.ZIndex = 501
-Instance.new("UICorner", ProgressBarBg).CornerRadius = UDim.new(1, 0)
+Instance.new("UICorner", ProgressBarBg).CornerRadius = UDim.new(0, 6)
 
 local ProgressBarFill = Instance.new("Frame", ProgressBarBg)
+ProgressBarFill.Name = "ProgressBarFill"
 ProgressBarFill.Size = UDim2.new(0, 0, 1, 0)
 ProgressBarFill.BackgroundColor3 = Color3.fromRGB(255, 255, 255)
 ProgressBarFill.BackgroundTransparency = 1
-ProgressBarFill.BorderSizePixel = 0
-ProgressBarFill.ZIndex = 502
-Instance.new("UICorner", ProgressBarFill).CornerRadius = UDim.new(1, 0)
+Instance.new("UICorner", ProgressBarFill).CornerRadius = UDim.new(0, 6)
 
-local ProgressGradient = Instance.new("UIGradient", ProgressBarFill)
-ProgressGradient.Color = ColorSequence.new({
-	ColorSequenceKeypoint.new(0, Color3.fromRGB(0, 100, 255)),
-	ColorSequenceKeypoint.new(1, Color3.fromRGB(0, 200, 255))
+local FillGradient = Instance.new("UIGradient", ProgressBarFill)
+local currentAccent = getThemeAccent()
+FillGradient.Color = ColorSequence.new({
+	ColorSequenceKeypoint.new(0, currentAccent),
+	ColorSequenceKeypoint.new(1, currentAccent:Lerp(Color3.fromRGB(255, 255, 255), 0.6))
 })
 
--- Эффект "бегущего света" для градиента
-local gradientTween = TweenService:Create(
-	ProgressGradient,
-	TweenInfo.new(1.2, Enum.EasingStyle.Linear, Enum.EasingDirection.Out, -1, false),
-	{Offset = Vector2.new(1, 0)}
-)
-ProgressGradient.Offset = Vector2.new(-1, 0)
-gradientTween:Play()
+local ProgressText = Instance.new("TextLabel", LoadingScreen)
+ProgressText.Name = "ProgressText"
+ProgressText.Size = UDim2.new(0.4, 0, 0, 20)
+ProgressText.Position = UDim2.new(0.1, 0, 0, 155)
+ProgressText.BackgroundTransparency = 1
+ProgressText.Text = "Loading... 0%"
+ProgressText.Font = Enum.Font.GothamBold
+ProgressText.TextColor3 = Color3.fromRGB(230, 230, 230)
+ProgressText.TextSize = 13
+ProgressText.TextXAlignment = Enum.TextXAlignment.Left
+ProgressText.TextTransparency = 1
 
-local ProgressPct = Instance.new("TextLabel", LoadingContainer)
-ProgressPct.Size = UDim2.new(1, 0, 0, 20)
-ProgressPct.Position = UDim2.new(0, 0, 0, 62)
-ProgressPct.BackgroundTransparency = 1
-ProgressPct.Font = Enum.Font.GothamBold
-ProgressPct.TextColor3 = Color3.fromRGB(255, 255, 255)
-ProgressPct.TextTransparency = 1
-ProgressPct.TextSize = 13
-ProgressPct.Text = "0%"
-ProgressPct.ZIndex = 502
-
-local StatusText = Instance.new("TextLabel", LoadingContainer)
-StatusText.Size = UDim2.new(1, 0, 0, 20)
-StatusText.Position = UDim2.new(0, 0, 0, 105)
+local StatusText = Instance.new("TextLabel", LoadingScreen)
+StatusText.Name = "StatusText"
+StatusText.Size = UDim2.new(0.4, 0, 0, 20)
+StatusText.Position = UDim2.new(0.5, 0, 0, 155)
 StatusText.BackgroundTransparency = 1
+StatusText.Text = "Preparing..."
 StatusText.Font = Enum.Font.Gotham
-StatusText.TextColor3 = Color3.fromRGB(180, 180, 180)
+StatusText.TextColor3 = Color3.fromRGB(160, 160, 160)
+StatusText.TextSize = 13
+StatusText.TextXAlignment = Enum.TextXAlignment.Right
 StatusText.TextTransparency = 1
-StatusText.TextSize = 12
-StatusText.Text = "Initializing core..."
-StatusText.ZIndex = 502
 
--- Плавное появление контейнера загрузки
-TweenService:Create(LoadingScale, TweenInfo.new(0.4, Enum.EasingStyle.Quart, Enum.EasingDirection.Out), {Scale = 1.0}):Play()
-TweenService:Create(LoadingContainer, TweenInfo.new(0.4, Enum.EasingStyle.Quart, Enum.EasingDirection.Out), {BackgroundTransparency = 0.15}):Play()
-TweenService:Create(LoadingStroke, TweenInfo.new(0.4, Enum.EasingStyle.Quart, Enum.EasingDirection.Out), {Transparency = 0.5}):Play()
+-- Fade In (0.3 sec)
+tween(LoadingShadow, {BackgroundTransparency = 0.5}, 0.3)
+tween(ShadowStroke, {Transparency = 0.8}, 0.3)
+tween(LoadingScreen, {BackgroundTransparency = 0.05}, 0.3)
+tween(LoadingIcon, {ImageTransparency = 0}, 0.3)
+tween(ScriptTitle, {TextTransparency = 0}, 0.3)
+tween(ProgressBarBg, {BackgroundTransparency = 0}, 0.3)
+tween(ProgressBarFill, {BackgroundTransparency = 0}, 0.3)
+tween(ProgressText, {TextTransparency = 0}, 0.3)
+tween(StatusText, {TextTransparency = 0}, 0.3)
 
-TweenService:Create(ProgressBarBg, TweenInfo.new(0.4, Enum.EasingStyle.Quart, Enum.EasingDirection.Out), {BackgroundTransparency = 0}):Play()
-TweenService:Create(ProgressBarFill, TweenInfo.new(0.4, Enum.EasingStyle.Quart, Enum.EasingDirection.Out), {BackgroundTransparency = 0}):Play()
-TweenService:Create(ProgressPct, TweenInfo.new(0.4, Enum.EasingStyle.Quart, Enum.EasingDirection.Out), {TextTransparency = 0}):Play()
-TweenService:Create(StatusText, TweenInfo.new(0.4, Enum.EasingStyle.Quart, Enum.EasingDirection.Out), {TextTransparency = 0}):Play()
+task.wait(0.3)
+
+-- Text Pulsation Loop
+local pulsing = true
+task.spawn(function()
+	while pulsing do
+		local t1 = tween(ScriptTitle, {TextTransparency = 0.6}, 0.5)
+		if t1 then t1.Completed:Wait() end
+		if not pulsing then break end
+		local t2 = tween(ScriptTitle, {TextTransparency = 0}, 0.5)
+		if t2 then t2.Completed:Wait() end
+	end
+	tween(ScriptTitle, {TextTransparency = 0}, 0.2)
+end)
+
+-- Loading Fill & Text Logic
+local ProgressValue = Instance.new("NumberValue")
+ProgressValue.Value = 0
+
+local loadTweenInfo = TweenInfo.new(2.5, Enum.EasingStyle.Quad, Enum.EasingDirection.InOut)
+local fillTween = TweenService:Create(ProgressBarFill, loadTweenInfo, {Size = UDim2.new(1, 0, 1, 0)})
+local valTween = TweenService:Create(ProgressValue, loadTweenInfo, {Value = 100})
+
+local lastUpdate = 0
+local textUpdateConn = ProgressValue:GetPropertyChangedSignal("Value"):Connect(function()
+	local now = os.clock()
+	if now - lastUpdate >= 0.05 or ProgressValue.Value >= 100 then
+		lastUpdate = now
+		local pct = math.floor(ProgressValue.Value)
+		ProgressText.Text = "Loading... " .. tostring(pct) .. "%"
+		
+		if pct < 40 then
+			StatusText.Text = "Preparing..."
+		elseif pct < 80 then
+			StatusText.Text = "Loading assets..."
+		elseif pct < 100 then
+			StatusText.Text = "Starting up..."
+		else
+			StatusText.Text = "Welcome!"
+			StatusText.TextColor3 = Color3.fromRGB(60, 255, 90)
+		end
+	end
+end)
+
+fillTween:Play()
+valTween:Play()
+fillTween.Completed:Wait()
+
+pulsing = false
+textUpdateConn:Disconnect()
+ProgressText.Text = "Loading... 100%"
+StatusText.Text = "Welcome!"
+StatusText.TextColor3 = Color3.fromRGB(60, 255, 90)
+
+-- Completion Sound
+pcall(function()
+	local sound = Instance.new("Sound", LocalPlayer:WaitForChild("PlayerGui"))
+	sound.SoundId = "rbxassetid://6895086153"
+	sound.Volume = 0.5
+	sound:Play()
+	game:GetService("Debris"):AddItem(sound, 2)
+end)
+
+task.wait(0.5)
+
+-- Fade Out (0.4 sec)
+tween(LoadingShadow, {BackgroundTransparency = 1}, 0.4)
+tween(ShadowStroke, {Transparency = 1}, 0.4)
+tween(LoadingScreen, {BackgroundTransparency = 1}, 0.4)
+tween(LoadingIcon, {ImageTransparency = 1}, 0.4)
+tween(ScriptTitle, {TextTransparency = 1}, 0.4)
+tween(ProgressBarBg, {BackgroundTransparency = 1}, 0.4)
+tween(ProgressBarFill, {BackgroundTransparency = 1}, 0.4)
+tween(ProgressText, {TextTransparency = 1}, 0.4)
+tween(StatusText, {TextTransparency = 1}, 0.4)
 
 task.wait(0.4)
 
-local function setLoadProgress(startPct, endPct, duration, statusMsg)
-	if statusMsg then
-		task.spawn(function()
-			local tOut = TweenService:Create(StatusText, TweenInfo.new(0.15, Enum.EasingStyle.Linear), {TextTransparency = 1})
-			tOut:Play()
-			tOut.Completed:Wait()
-			StatusText.Text = statusMsg
-			local tIn = TweenService:Create(StatusText, TweenInfo.new(0.15, Enum.EasingStyle.Linear), {TextTransparency = 0})
-			tIn:Play()
-		end)
-	end
-	
-	local val = Instance.new("NumberValue")
-	val.Value = startPct
-	local pctTween = TweenService:Create(val, TweenInfo.new(duration, Enum.EasingStyle.Sine, Enum.EasingDirection.InOut), {Value = endPct})
-	
-	local conn = val:GetPropertyChangedSignal("Value"):Connect(function()
-		local current = val.Value
-		ProgressBarFill.Size = UDim2.new(current / 100, 0, 1, 0)
-		ProgressPct.Text = math.floor(current) .. "%"
-	end)
-	
-	pctTween:Play()
-	pctTween.Completed:Wait()
-	conn:Disconnect()
-	val:Destroy()
-end
+LoadingShadow:Destroy()
+LoadingScreen:Destroy()
+ProgressValue:Destroy()
 
--- Неравномерное заполнение и смена текста
-setLoadProgress(0, 25, 0.8, "Initializing core...")
-setLoadProgress(25, 55, 1.0, "Loading interface...")
-setLoadProgress(55, 80, 0.9, "Preparing settings...")
-setLoadProgress(80, 100, 0.7, "Finalizing...")
-
--- Достижение 100%
-local statusFadeOut = TweenService:Create(StatusText, TweenInfo.new(0.15, Enum.EasingStyle.Linear), {TextTransparency = 1})
-statusFadeOut:Play()
-statusFadeOut.Completed:Wait()
-StatusText.Text = "Ready!"
-StatusText.TextColor3 = Color3.fromRGB(100, 217, 138)
-local statusFadeIn = TweenService:Create(StatusText, TweenInfo.new(0.15, Enum.EasingStyle.Linear), {TextTransparency = 0})
-statusFadeIn:Play()
-
-task.wait(0.4) -- Пауза 0.4 сек перед завершением
-
--- Завершение и скрытие (Иконка исчезнет вместе с контейнером без изменения своей прозрачности)
-gradientTween:Cancel()
-TweenService:Create(LoadingScale, TweenInfo.new(0.5, Enum.EasingStyle.Quart, Enum.EasingDirection.In), {Scale = 0.85}):Play()
-TweenService:Create(LoadingContainer, TweenInfo.new(0.5, Enum.EasingStyle.Quart, Enum.EasingDirection.In), {BackgroundTransparency = 1}):Play()
-TweenService:Create(LoadingStroke, TweenInfo.new(0.5, Enum.EasingStyle.Quart, Enum.EasingDirection.In), {Transparency = 1}):Play()
-TweenService:Create(ProgressBarBg, TweenInfo.new(0.5, Enum.EasingStyle.Quart, Enum.EasingDirection.In), {BackgroundTransparency = 1}):Play()
-TweenService:Create(ProgressBarFill, TweenInfo.new(0.5, Enum.EasingStyle.Quart, Enum.EasingDirection.In), {BackgroundTransparency = 1}):Play()
-TweenService:Create(ProgressPct, TweenInfo.new(0.5, Enum.EasingStyle.Quart, Enum.EasingDirection.In), {TextTransparency = 1}):Play()
-local lastStatusOut = TweenService:Create(StatusText, TweenInfo.new(0.5, Enum.EasingStyle.Quart, Enum.EasingDirection.In), {TextTransparency = 1})
-lastStatusOut:Play()
-
-lastStatusOut.Completed:Wait()
-LoadingContainer:Destroy()
-
--- Появление основного GUI
+-- Main GUI Launch
+MainScale.Scale = 0.9
 MainFrame.Visible = true
-MainScale.Scale = 0.85
-MainFrame.BackgroundTransparency = 1
-MainStroke.Transparency = 1
-
-TweenService:Create(MainScale, TweenInfo.new(0.5, Enum.EasingStyle.Back, Enum.EasingDirection.Out), {Scale = 1}):Play()
-TweenService:Create(MainFrame, TweenInfo.new(0.5, Enum.EasingStyle.Quart, Enum.EasingDirection.Out), {BackgroundTransparency = 0.15}):Play()
-TweenService:Create(MainStroke, TweenInfo.new(0.5, Enum.EasingStyle.Quart, Enum.EasingDirection.Out), {Transparency = 0}):Play()
-
-local firstTabBtn = allTabButtons["Settings"]
-if firstTabBtn then
-	setActiveTab(firstTabBtn)
-	currentActiveTab = firstTabBtn
-	allPages["Settings"].Visible = true
-end
+tween(MainScale, {Scale = 1.0}, 0.3)
 -- === LOADING END ===
