@@ -197,7 +197,6 @@ ControlsContainer.Position = UDim2.new(1, -65, 0, 10)
 ControlsContainer.BackgroundTransparency = 1
 ControlsContainer.ZIndex = 10
 
--- FIXED TEXT: кнопка сворачивания (длинное тире)
 local MinBtn = Instance.new("TextButton", ControlsContainer)
 MinBtn.Size = UDim2.new(0, 24, 0, 24)
 MinBtn.Position = UDim2.new(0, 0, 0, 3)
@@ -208,7 +207,6 @@ MinBtn.TextColor3 = Color3.fromRGB(180, 180, 180)
 MinBtn.BackgroundTransparency = 1
 MinBtn.ZIndex = 11
 
--- FIXED TEXT: кнопка закрытия (крестик)
 local CloseBtn = Instance.new("TextButton", ControlsContainer)
 CloseBtn.Size = UDim2.new(0, 24, 0, 24)
 CloseBtn.Position = UDim2.new(0, 30, 0, 0)
@@ -238,7 +236,6 @@ SearchIcon.Image = "rbxassetid://6031154871"
 SearchIcon.ImageColor3 = Color3.fromRGB(150, 150, 150)
 SearchIcon.ZIndex = 7
 
--- FIXED TEXT: кнопка очистки поиска (крестик)
 local ClearSearchBtn = Instance.new("TextButton", SearchContainer)
 ClearSearchBtn.Size = UDim2.new(0, 16, 0, 16)
 ClearSearchBtn.Position = UDim2.new(1, -22, 0.5, -8)
@@ -316,7 +313,6 @@ EmbeddedControls.BackgroundTransparency = 1
 EmbeddedControls.ZIndex = 6
 EmbeddedControls.Visible = false
 
--- FIXED TEXT: кнопка сворачивания в заголовке (длинное тире)
 local EmbMinBtn = Instance.new("TextButton", EmbeddedControls)
 EmbMinBtn.Size = UDim2.new(0, 20, 0, 20)
 EmbMinBtn.Position = UDim2.new(0, 0, 0, 5)
@@ -327,7 +323,6 @@ EmbMinBtn.TextColor3 = Color3.fromRGB(180, 180, 180)
 EmbMinBtn.BackgroundTransparency = 1
 EmbMinBtn.ZIndex = 7
 
--- FIXED TEXT: кнопка закрытия в заголовке (крестик)
 local EmbCloseBtn = Instance.new("TextButton", EmbeddedControls)
 EmbCloseBtn.Size = UDim2.new(0, 20, 0, 20)
 EmbCloseBtn.Position = UDim2.new(0, 25, 0, 2)
@@ -854,7 +849,6 @@ table.insert(Library.TrackedMainText, EmbCloseBtn)
 local SearchableElements = {}
 local LocaleObjects = {}
 
--- FIXED TEXT: локализация с правильными русскими буквами
 local Localization = {
 	["English"] = {
 		["Settings"] = "Settings",
@@ -1665,7 +1659,6 @@ end
 -- ============================================================================
 local SettingsPage = Library:CreatePage("Settings", "117996761927034", 1)
 
--- FIXED TEXT: правильные русские названия языков
 local LanguageDropdown = Library:CreateDropdown(SettingsPage, "Language", {"English", "Русский"}, "English", function(selectedLang)
 	Library:UpdateLanguage(selectedLang)
 end)
@@ -1730,7 +1723,6 @@ pcall(function()
 	end
 end)
 
--- Toast notification (Safe closure included)
 local activeToast = nil
 local function showToast(message, dotColor)
 	if activeToast and activeToast.Parent then
@@ -1757,7 +1749,7 @@ local function showToast(message, dotColor)
 
 	local Dot = Instance.new("Frame", toast)
 	Dot.Size = UDim2.new(0, 8, 0, 8)
-	Dot.BackgroundColor3 = dotColor or Color3.fromRGB(0, 206, 209)
+	Dot.BackgroundColor3 = dotColor or getThemeAccent()
 	Instance.new("UICorner", Dot).CornerRadius = UDim.new(1, 0)
 
 	local Label = Instance.new("TextLabel", toast)
@@ -1788,7 +1780,7 @@ local function showToast(message, dotColor)
 	end)
 end
 
--- === LOADING START ===
+-- === LOADING SCREEN IMPLEMENTATION ===
 task.spawn(function()
 	local loadingActive = true
 
@@ -1864,160 +1856,103 @@ task.spawn(function()
 	local BarTrack = Instance.new("Frame", LoadingFrame)
 	BarTrack.Name = "BarTrack"
 	BarTrack.Size = UDim2.new(1, -50, 0, 10)
-	BarTrack.Position = UDim2.new(0, 25, 0, 120)
-	BarTrack.BackgroundColor3 = Color3.fromRGB(25, 28, 36)
+	BarTrack.Position = UDim2.new(0, 25, 0, 122)
+	BarTrack.BackgroundColor3 = Color3.fromRGB(28, 32, 42)
 	BarTrack.BorderSizePixel = 0
 	BarTrack.ZIndex = 1002
+	Instance.new("UICorner", BarTrack).CornerRadius = UDim.new(1, 0)
 
-	local TrackCorner = Instance.new("UICorner", BarTrack)
-	TrackCorner.CornerRadius = UDim.new(0, 6)
-
-	-- Progress Bar Fill
+	-- Fill / Progress Bar (Использует динамический акцентный цвет темы!)
 	local BarFill = Instance.new("Frame", BarTrack)
 	BarFill.Name = "BarFill"
 	BarFill.Size = UDim2.new(0, 0, 1, 0)
-	BarFill.BackgroundColor3 = Color3.fromRGB(255, 255, 255)
+	BarFill.BackgroundColor3 = getThemeAccent()
 	BarFill.BorderSizePixel = 0
-	BarFill.ClipsDescendants = true
 	BarFill.ZIndex = 1003
+	Instance.new("UICorner", BarFill).CornerRadius = UDim.new(1, 0)
 
-	local FillCorner = Instance.new("UICorner", BarFill)
-	FillCorner.CornerRadius = UDim.new(0, 6)
-
-	local BarGradient = Instance.new("UIGradient", BarFill)
-	BarGradient.Color = ColorSequence.new({
-		ColorSequenceKeypoint.new(0, Color3.fromRGB(0, 180, 255)),
-		ColorSequenceKeypoint.new(1, Color3.fromRGB(0, 255, 190))
-	})
-
-	-- Status Label & Shadow
-	local StatusShadow = Instance.new("TextLabel", LoadingFrame)
-	StatusShadow.Size = UDim2.new(1, -40, 0, 20)
-	StatusShadow.Position = UDim2.new(0, 21, 0, 141)
-	StatusShadow.BackgroundTransparency = 1
-	StatusShadow.Font = Enum.Font.GothamBold
-	StatusShadow.TextSize = 14
-	StatusShadow.TextColor3 = Color3.fromRGB(0, 0, 0)
-	StatusShadow.TextTransparency = 0.3
-	StatusShadow.Text = "Initializing..."
-	StatusShadow.ZIndex = 1002
-
+	-- Status Label
 	local StatusLabel = Instance.new("TextLabel", LoadingFrame)
+	StatusLabel.Name = "StatusLabel"
 	StatusLabel.Size = UDim2.new(1, -40, 0, 20)
-	StatusLabel.Position = UDim2.new(0, 20, 0, 140)
+	StatusLabel.Position = UDim2.new(0, 20, 0, 145)
 	StatusLabel.BackgroundTransparency = 1
-	StatusLabel.Font = Enum.Font.GothamBold
-	StatusLabel.TextSize = 14
-	StatusLabel.TextColor3 = Color3.fromRGB(180, 190, 210)
-	StatusLabel.Text = "Initializing..."
+	StatusLabel.Font = Library.CurrentFont
+	StatusLabel.TextSize = 12
+	StatusLabel.TextColor3 = Color3.fromRGB(150, 160, 180)
+	StatusLabel.Text = "Initializing UI..."
 	StatusLabel.ZIndex = 1003
 
-	-- Animated Gradient Effect
-	local gradientConnection = RunService.RenderStepped:Connect(function()
-		if BarGradient and BarGradient.Parent then
-			BarGradient.Offset = Vector2.new((os.clock() * 0.8) % 2 - 1, 0)
-		end
-	end)
-
-	-- Floating Bubble Spawner Loop
+	-- Background Floating Particles
 	task.spawn(function()
-		while loadingActive do
+		while loadingActive and LoadingFrame and LoadingFrame.Parent do
 			local bubble = Instance.new("Frame", BubbleContainer)
-			local size = math.random(6, 10)
-			local startX = math.random(10, 310)
-			local startY = math.random(160, 200)
-			local endX = startX + math.random(-30, 30)
-			local endY = startY - math.random(100, 150)
-			local duration = math.random(18, 28) / 10
-
+			local size = math.random(4, 10)
 			bubble.Size = UDim2.new(0, size, 0, size)
-			bubble.Position = UDim2.new(0, startX, 0, startY)
-			bubble.BackgroundColor3 = (math.random() > 0.5) and Color3.fromRGB(255, 255, 255) or Color3.fromRGB(100, 220, 255)
-			bubble.BackgroundTransparency = math.random(5, 7) / 10
+			bubble.Position = UDim2.new(math.random(), 0, 1, 0)
+			bubble.BackgroundColor3 = getThemeAccent()
+			bubble.BackgroundTransparency = 0.6
 			bubble.BorderSizePixel = 0
-			bubble.ZIndex = 1001
+			Instance.new("UICorner", bubble).CornerRadius = UDim.new(1, 0)
 
-			local bCorner = Instance.new("UICorner", bubble)
-			bCorner.CornerRadius = UDim.new(1, 0)
-
-			local moveTween = TweenService:Create(bubble, TweenInfo.new(duration, Enum.EasingStyle.Quad, Enum.EasingDirection.Out), {
-				Position = UDim2.new(0, endX, 0, endY),
+			tween(bubble, {
+				Position = UDim2.new(bubble.Position.X.Scale, 0, -0.2, 0),
 				BackgroundTransparency = 1
-			})
-			moveTween:Play()
-			moveTween.Completed:Connect(function()
-				bubble:Destroy()
-			end)
+			}, math.random(2, 4))
 
-			task.wait(math.random(30, 50) / 100)
+			task.delay(4, function()
+				if bubble and bubble.Parent then
+					bubble:Destroy()
+				end
+			end)
+			task.wait(0.3)
 		end
 	end)
 
-	-- Fade In & Scale Up Loading Screen
-	local fadeInInfo = TweenInfo.new(0.4, Enum.EasingStyle.Quart, Enum.EasingDirection.Out)
-	TweenService:Create(LoadingFrame, fadeInInfo, {GroupTransparency = 0}):Play()
-	TweenService:Create(LoadingScale, fadeInInfo, {Scale = 1.0}):Play()
-	task.wait(0.4)
+	-- Entrance Animation
+	tween(LoadingFrame, {GroupTransparency = 0}, 0.4)
+	tween(LoadingScale, {Scale = 1}, 0.4)
 
-	-- Smooth Step Progress Function
-	local function setProgress(targetPercent, duration, statusText)
-		StatusLabel.Text = statusText
-		StatusShadow.Text = statusText
+	-- Loading Steps Simulation
+	local steps = {
+		{progress = 0.25, text = "Loading Modules..."},
+		{progress = 0.50, text = "Applying Theme & Fonts..."},
+		{progress = 0.80, text = "Configuring Controls..."},
+		{progress = 1.00, text = "Ready!"}
+	}
 
-		local startClock = os.clock()
-		local startPercent = tonumber(string.match(PercentLabel.Text, "%d+")) or 0
-
-		TweenService:Create(BarFill, TweenInfo.new(duration, Enum.EasingStyle.Quad, Enum.EasingDirection.Out), {
-			Size = UDim2.new(targetPercent / 100, 0, 1, 0)
-		}):Play()
-
-		while (os.clock() - startClock) < duration do
-			local elapsed = os.clock() - startClock
-			local alpha = math.clamp(elapsed / duration, 0, 1)
-			local currentP = math.floor(startPercent + (targetPercent - startPercent) * alpha)
-			PercentLabel.Text = currentP .. "%"
-			PercentShadow.Text = currentP .. "%"
-			task.wait()
-		end
-		PercentLabel.Text = targetPercent .. "%"
-		PercentShadow.Text = targetPercent .. "%"
+	for _, step in ipairs(steps) do
+		StatusLabel.Text = step.text
+		tween(BarFill, {Size = UDim2.new(step.progress, 0, 1, 0)}, 0.4)
+		
+		local currentPct = math.floor(step.progress * 100)
+		PercentLabel.Text = currentPct .. "%"
+		PercentShadow.Text = currentPct .. "%"
+		
+		task.wait(0.45)
 	end
-
-	-- Stages:
-	-- 0% -> 25% in 0.8s
-	-- 25% -> 55% in 1.0s
-	-- 55% -> 80% in 0.9s
-	-- 80% -> 100% in 0.7s
-	setProgress(25, 0.8, "Initializing system...")
-	setProgress(55, 1.0, "Loading UI modules...")
-	setProgress(80, 0.9, "Applying configurations...")
-	setProgress(100, 0.7, "Ready!")
 
 	loadingActive = false
-	if gradientConnection then
-		gradientConnection:Disconnect()
+	task.wait(0.2)
+
+	-- Exit Animation & Open Main Hub
+	local exitTween = tween(LoadingFrame, {GroupTransparency = 1}, 0.3)
+	tween(LoadingScale, {Scale = 0.85}, 0.3)
+
+	if exitTween then
+		exitTween.Completed:Connect(function()
+			if LoadingFrame and LoadingFrame.Parent then
+				LoadingFrame:Destroy()
+			end
+		end)
 	end
 
-	-- Pause 0.4s
-	task.wait(0.4)
-
-	-- Fade Out & Scale Down
-	local fadeOutInfo = TweenInfo.new(0.5, Enum.EasingStyle.Quart, Enum.EasingDirection.In)
-	local fadeTween = TweenService:Create(LoadingFrame, fadeOutInfo, {GroupTransparency = 1})
-	TweenService:Create(LoadingScale, fadeOutInfo, {Scale = 0.85}):Play()
-	fadeTween:Play()
-
-	fadeTween.Completed:Connect(function()
-		LoadingFrame:Destroy()
-
-		-- Show Main GUI Smoothly
-		if MainFrame and MainFrame.Parent then
-			MainFrame.Visible = true
-			MainScale.Scale = 0.85
-			MainFrame.BackgroundTransparency = 1
-			TweenService:Create(MainScale, TweenInfo.new(0.4, Enum.EasingStyle.Quart, Enum.EasingDirection.Out), {Scale = 1}):Play()
-			TweenService:Create(MainFrame, TweenInfo.new(0.4, Enum.EasingStyle.Quart, Enum.EasingDirection.Out), {BackgroundTransparency = 0.15}):Play()
-		end
-	end)
+	-- Reveal Main Hub
+	MainFrame.Visible = true
+	MainScale.Scale = 0.85
+	MainFrame.BackgroundTransparency = 1
+	
+	tween(MainScale, {Scale = 1}, 0.3)
+	tween(MainFrame, {BackgroundTransparency = 0.15}, 0.3)
+	showToast("Dark Hub loaded successfully!", getThemeAccent())
 end)
--- === LOADING END ===
