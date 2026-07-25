@@ -1956,3 +1956,6 @@ task.spawn(function()
 	tween(MainFrame, {BackgroundTransparency = 0.15}, 0.3)
 	showToast("Dark Hub loaded successfully!", getThemeAccent())
 end)
+
+-- Применяем тему Deep Ocean
+Library:UpdateTheme("Deep Ocean")
