@@ -1780,17 +1780,19 @@ local function showToast(message, dotColor)
 	end)
 end
 
--- === LOADING SCREEN IMPLEMENTATION ===
+-- ============================================================================
+-- LOADING SCREEN IMPLEMENTATION
+-- ============================================================================
 task.spawn(function()
-	local loadingActive = true
-
 	local LoadingFrame = Instance.new("CanvasGroup")
 	LoadingFrame.Name = "LoadingFrame"
 	LoadingFrame.Size = UDim2.new(0, 320, 0, 210)
 	LoadingFrame.AnchorPoint = Vector2.new(0.5, 0.5)
 	LoadingFrame.Position = UDim2.new(0.5, 0, 0.5, 0)
-	LoadingFrame.BackgroundColor3 = Color3.fromRGB(18, 18, 18)
+	LoadingFrame.BackgroundColor3 = Color3.fromRGB(14, 14, 14)
+	LoadingFrame.BackgroundTransparency = 0
 	LoadingFrame.Parent = DarkHub
+	LoadingFrame.ZIndex = 50
 
 	local LoadingCorner = Instance.new("UICorner", LoadingFrame)
 	LoadingCorner.CornerRadius = UDim.new(0, 14)
@@ -1799,48 +1801,83 @@ task.spawn(function()
 	LoadingStroke.Color = Color3.fromRGB(45, 45, 45)
 	LoadingStroke.Thickness = 1.5
 
+	local LoadingIcon = Instance.new("ImageLabel", LoadingFrame)
+	LoadingIcon.Size = UDim2.new(0, 60, 0, 60)
+	LoadingIcon.Position = UDim2.new(0.5, -30, 0, 22)
+	LoadingIcon.BackgroundTransparency = 1
+	LoadingIcon.ScaleType = Enum.ScaleType.Fit
+	LoadingIcon.Image = "rbxthumb://type=Asset&id=" .. CustomIconID .. "&w=150&h=150"
+	Instance.new("UICorner", LoadingIcon).CornerRadius = UDim.new(0, 12)
+
 	local LoadingTitle = Instance.new("TextLabel", LoadingFrame)
 	LoadingTitle.Text = "Dark Hub"
 	LoadingTitle.Font = Enum.Font.GothamBold
-	LoadingTitle.TextSize = 20
 	LoadingTitle.TextColor3 = Color3.fromRGB(255, 255, 255)
-	LoadingTitle.Position = UDim2.new(0, 0, 0, 45)
-	LoadingTitle.Size = UDim2.new(1, 0, 0, 30)
+	LoadingTitle.TextSize = 18
+	LoadingTitle.Position = UDim2.new(0, 0, 0, 92)
+	LoadingTitle.Size = UDim2.new(1, 0, 0, 20)
 	LoadingTitle.BackgroundTransparency = 1
 
 	local LoadingStatus = Instance.new("TextLabel", LoadingFrame)
-	LoadingStatus.Text = "Loading script resources..."
+	LoadingStatus.Text = "Initializing Interface..."
 	LoadingStatus.Font = Enum.Font.Gotham
-	LoadingStatus.TextSize = 12
 	LoadingStatus.TextColor3 = Color3.fromRGB(150, 150, 150)
-	LoadingStatus.Position = UDim2.new(0, 0, 0, 80)
-	LoadingStatus.Size = UDim2.new(1, 0, 0, 20)
+	LoadingStatus.TextSize = 12
+	LoadingStatus.Position = UDim2.new(0, 0, 0, 118)
+	LoadingStatus.Size = UDim2.new(1, 0, 0, 18)
 	LoadingStatus.BackgroundTransparency = 1
 
-	local BarBg = Instance.new("Frame", LoadingFrame)
-	BarBg.Size = UDim2.new(0, 240, 0, 6)
-	BarBg.Position = UDim2.new(0.5, -120, 0, 130)
-	BarBg.BackgroundColor3 = Color3.fromRGB(35, 35, 35)
-	Instance.new("UICorner", BarBg).CornerRadius = UDim.new(1, 0)
+	local BarBackground = Instance.new("Frame", LoadingFrame)
+	BarBackground.Size = UDim2.new(0.8, 0, 0, 6)
+	BarBackground.Position = UDim2.new(0.1, 0, 0, 155)
+	BarBackground.BackgroundColor3 = Color3.fromRGB(30, 30, 30)
+	BarBackground.BorderSizePixel = 0
+	Instance.new("UICorner", BarBackground).CornerRadius = UDim.new(1, 0)
 
-	local BarFill = Instance.new("Frame", BarBg)
+	local BarFill = Instance.new("Frame", BarBackground)
 	BarFill.Size = UDim2.new(0, 0, 1, 0)
 	BarFill.BackgroundColor3 = getThemeAccent()
+	BarFill.BorderSizePixel = 0
 	Instance.new("UICorner", BarFill).CornerRadius = UDim.new(1, 0)
 
-	tween(BarFill, {Size = UDim2.new(1, 0, 1, 0)}, 1.2)
-	task.wait(1.4)
+	-- Имитация этапов загрузки
+	local steps = {
+		{progress = 0.25, status = "Loading Assets..."},
+		{progress = 0.60, status = "Applying Theme & Language..."},
+		{progress = 0.85, status = "Configuring Security..."},
+		{progress = 1.00, status = "Ready!"}
+	}
 
-	tween(LoadingFrame, {GroupTransparency = 1}, 0.3)
-	task.wait(0.3)
-	LoadingFrame:Destroy()
+	for _, step in ipairs(steps) do
+		LoadingStatus.Text = step.status
+		BarFill.BackgroundColor3 = getThemeAccent()
+		tween(BarFill, {Size = UDim2.new(step.progress, 0, 1, 0)}, 0.4)
+		task.wait(0.45)
+	end
+
+	task.wait(0.2)
+
+	-- Плавное исчезновение загрузочного экрана и показ меню
+	local fadeTween = tween(LoadingFrame, {GroupTransparency = 1}, 0.4)
+	if fadeTween then
+		fadeTween.Completed:Connect(function()
+			LoadingFrame:Destroy()
+		end)
+	else
+		LoadingFrame:Destroy()
+	end
 
 	MainFrame.Visible = true
-	if allTabButtons["Settings"] then
-		setActiveTab(allTabButtons["Settings"])
-		currentActiveTab = allTabButtons["Settings"]
-	end
-	if allPages["Settings"] then
-		allPages["Settings"].Visible = true
-	end
 end)
+
+-- Активация вкладки по умолчанию
+if allTabButtons["Settings"] then
+	local defaultBtn = allTabButtons["Settings"]
+	if defaultBtn then
+		currentActiveTab = defaultBtn
+		setActiveTab(defaultBtn)
+		if allPages["Settings"] then
+			allPages["Settings"].Visible = true
+		end
+	end
+end
