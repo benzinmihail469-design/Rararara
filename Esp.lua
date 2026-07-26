@@ -1818,236 +1818,153 @@ ConfigNameBox.Size = UDim2.new(1, -20, 1, 0)
 ConfigNameBox.Position = UDim2.new(0, 10, 0, 0)
 ConfigNameBox.BackgroundTransparency = 1
 ConfigNameBox.Text = ""
-ConfigNameBox.PlaceholderText = "Config Name"
+ConfigNameBox.PlaceholderText = "Config Name..."
 ConfigNameBox.Font = Library.CurrentFont or Enum.Font.FredokaOne
-ConfigNameBox.TextSize = 13
+ConfigNameBox.TextSize = 12
 ConfigNameBox.TextColor3 = Color3.fromRGB(230, 230, 230)
 ConfigNameBox.PlaceholderColor3 = Color3.fromRGB(130, 130, 130)
 ConfigNameBox.TextXAlignment = Enum.TextXAlignment.Left
 table.insert(Library.TrackedMainText, ConfigNameBox)
 
-local ConfigListFrame = Instance.new("Frame", SettingsPage)
-ConfigListFrame.Name = "ConfigListFrame"
-ConfigListFrame.Size = UDim2.new(1, -20, 0, 120)
-ConfigListFrame.BackgroundColor3 = Library.CurrentThemeData.ElementBg or DefaultTheme.ElementBg
-ConfigListFrame.LayoutOrder = #SettingsPage:GetChildren() + 1
-Instance.new("UICorner", ConfigListFrame).CornerRadius = UDim.new(0, 6)
-local ConfigListStroke = Instance.new("UIStroke", ConfigListFrame)
-ConfigListStroke.Color = Color3.fromRGB(40, 40, 40)
-table.insert(Library.TrackedElementBg, ConfigListFrame)
-table.insert(Library.TrackedStrokes, ConfigListStroke)
+local selectedConfig = "default"
+local ConfigDropdown = nil
 
-local ConfigScroll = Instance.new("ScrollingFrame", ConfigListFrame)
-ConfigScroll.Name = "ConfigScroll"
-ConfigScroll.Size = UDim2.new(1, -8, 1, -8)
-ConfigScroll.Position = UDim2.new(0, 4, 0, 4)
-ConfigScroll.BackgroundTransparency = 1
-ConfigScroll.BorderSizePixel = 0
-ConfigScroll.ScrollBarThickness = 3
-ConfigScroll.ScrollBarImageColor3 = getThemeAccent()
-
-local ConfigListLayout = Instance.new("UIListLayout", ConfigScroll)
-ConfigListLayout.Padding = UDim.new(0, 4)
-ConfigListLayout.SortOrder = Enum.SortOrder.LayoutOrder
-
-ConfigListLayout:GetPropertyChangedSignal("AbsoluteContentSize"):Connect(function()
-	if ConfigScroll and ConfigScroll.Parent then
-		ConfigScroll.CanvasSize = UDim2.new(0, 0, 0, ConfigListLayout.AbsoluteContentSize.Y + 4)
-	end
-end)
-
-local function refreshConfigsList()
-	for _, child in ipairs(ConfigScroll:GetChildren()) do
-		if child:IsA("Frame") or child:IsA("TextLabel") then
-			child:Destroy()
-		end
-	end
-
-	if typeof(listfiles) ~= "function" then
-		local errLabel = Instance.new("TextLabel", ConfigScroll)
-		errLabel.Size = UDim2.new(1, 0, 0, 30)
-		errLabel.Text = "File system unsupported"
-		errLabel.Font = Library.CurrentFont or Enum.Font.FredokaOne
-		errLabel.TextColor3 = Color3.fromRGB(150, 150, 150)
-		errLabel.TextSize = 12
-		errLabel.BackgroundTransparency = 1
-		return
-	end
-
-	local success, files = pcall(function()
-		return listfiles(CONFIG_FOLDER)
-	end)
-
-	if not success or type(files) ~= "table" then
-		showToast("Failed to search configs", Color3.fromRGB(255, 70, 70))
-		return
-	end
-
-	local jsonFiles = {}
-	for _, filePath in ipairs(files) do
-		if string.sub(filePath, -5) == ".json" then
-			table.insert(jsonFiles, filePath)
-		end
-	end
-
-	if #jsonFiles == 0 then
-		local emptyLabel = Instance.new("TextLabel", ConfigScroll)
-		emptyLabel.Size = UDim2.new(1, 0, 0, 30)
-		emptyLabel.Text = "No configs found"
-		emptyLabel.Font = Library.CurrentFont or Enum.Font.FredokaOne
-		emptyLabel.TextColor3 = Color3.fromRGB(130, 130, 130)
-		emptyLabel.TextSize = 12
-		emptyLabel.BackgroundTransparency = 1
-		table.insert(Library.TrackedSubText, emptyLabel)
-		return
-	end
-
-	table.sort(jsonFiles)
-
-	for i, filePath in ipairs(jsonFiles) do
-		local fileName = filePath:match("([^/\\]+)%.json$") or filePath:match("([^/\\]+)$") or filePath
-		if fileName:sub(-5) == ".json" then
-			fileName = fileName:sub(1, -6)
-		end
-
-		local ItemFrame = Instance.new("Frame", ConfigScroll)
-		ItemFrame.Name = fileName
-		ItemFrame.Size = UDim2.new(1, 0, 0, 30)
-		ItemFrame.BackgroundColor3 = Color3.fromRGB(25, 25, 25)
-		ItemFrame.BackgroundTransparency = 0.5
-		ItemFrame.LayoutOrder = i
-		Instance.new("UICorner", ItemFrame).CornerRadius = UDim.new(0, 6)
-
-		local NameLabel = Instance.new("TextLabel", ItemFrame)
-		NameLabel.Size = UDim2.new(1, -75, 1, 0)
-		NameLabel.Position = UDim2.new(0, 10, 0, 0)
-		NameLabel.Text = fileName
-		NameLabel.Font = Library.CurrentFont or Enum.Font.FredokaOne
-		NameLabel.TextColor3 = Color3.fromRGB(230, 230, 230)
-		NameLabel.TextSize = 12
-		NameLabel.TextXAlignment = Enum.TextXAlignment.Left
-		NameLabel.TextTruncate = Enum.TextTruncate.AtEnd
-		NameLabel.BackgroundTransparency = 1
-		table.insert(Library.TrackedMainText, NameLabel)
-
-		local ApplyBtn = Instance.new("TextButton", ItemFrame)
-		ApplyBtn.Size = UDim2.new(0, 60, 0, 22)
-		ApplyBtn.Position = UDim2.new(1, -65, 0.5, -11)
-		ApplyBtn.BackgroundColor3 = getThemeAccent()
-		ApplyBtn.Text = "Apply"
-		ApplyBtn.Font = Library.CurrentFont or Enum.Font.FredokaOne
-		ApplyBtn.TextColor3 = Color3.fromRGB(15, 15, 15)
-		ApplyBtn.TextSize = 11
-		Instance.new("UICorner", ApplyBtn).CornerRadius = UDim.new(0, 4)
-
-		ApplyBtn.Activated:Connect(function()
-			local readSuccess, fileData = pcall(function()
-				return readfile(filePath)
-			end)
-
-			if not readSuccess or not fileData then
-				showToast("Failed to read config", Color3.fromRGB(255, 70, 70))
-				return
+local function getConfigsList()
+	local list = {}
+	if typeof(listfiles) == "function" and typeof(isfolder) == "function" and isfolder(CONFIG_FOLDER) then
+		pcall(function()
+			for _, file in ipairs(listfiles(CONFIG_FOLDER)) do
+				local name = file:match("([^/\\]+)%.json$")
+				if name then
+					table.insert(list, name)
+				end
 			end
-
-			local parseSuccess, configObj = pcall(function()
-				return HttpService:JSONDecode(fileData)
-			end)
-
-			if not parseSuccess or type(configObj) ~= "table" then
-				showToast("Invalid config format", Color3.fromRGB(255, 70, 70))
-				return
-			end
-
-			pcall(function()
-				if configObj.language and LanguageDropdown then
-					LanguageDropdown.SetValue(configObj.language)
-				end
-				if configObj.theme and ThemeDropdown then
-					ThemeDropdown.SetValue(configObj.theme)
-				end
-				if configObj.font and FontDropdown then
-					FontDropdown.SetValue(configObj.font)
-				end
-				if configObj.transparency and TransparencySlider then
-					TransparencySlider.SetValue(configObj.transparency)
-				end
-				if configObj.antiAFK ~= nil and AntiAFKToggle then
-					AntiAFKToggle.SetValue(configObj.antiAFK)
-				end
-				if configObj.animatedWindow ~= nil and AnimatedWindowToggle then
-					AnimatedWindowToggle.SetValue(configObj.animatedWindow)
-				end
-				if configObj.gradient ~= nil and GradientToggle then
-					GradientToggle.SetValue(configObj.gradient)
-				end
-			end)
-
-			showToast("Config applied!", Color3.fromRGB(60, 255, 90))
 		end)
+	end
+	if #list == 0 then
+		table.insert(list, "default")
+	end
+	return list
+end
+
+local function refreshConfigDropdown()
+	if ConfigDropdown then
+		local configs = getConfigsList()
+		ConfigDropdown.UpdateOptions(configs)
+		if not table.find(configs, selectedConfig) then
+			selectedConfig = configs[1] or "default"
+			ConfigDropdown.SetValue(selectedConfig)
+		end
 	end
 end
 
-Library:CreateButton(SettingsPage, "Create Config", function()
-	local name = ConfigNameBox.Text
-	if not name or name:match("^%s*$") then
-		showToast("Enter config name!", Color3.fromRGB(255, 180, 50))
+ConfigDropdown = Library:CreateDropdown(SettingsPage, "Select Config", getConfigsList(), "default", function(val)
+	selectedConfig = val
+	ConfigNameBox.Text = val
+end)
+
+local function SaveConfig(name)
+	if not name or name == "" then
+		name = selectedConfig
+	end
+	if not name or name == "" then
+		showToast("Invalid Config Name", Color3.fromRGB(255, 70, 70))
 		return
 	end
-
-	name = name:gsub("[%p%s]", "_")
-
-	local configData = {
-		theme = ThemeDropdown.GetValue(),
-		font = FontDropdown.GetValue(),
-		transparency = TransparencySlider.GetValue(),
-		antiAFK = AntiAFKToggle.GetValue(),
-		animatedWindow = AnimatedWindowToggle.GetValue(),
-		gradient = GradientToggle.GetValue(),
-		language = Library.CurrentLanguage
+	local fontName = "Fredoka One"
+	for k, v in pairs(FontMapping) do
+		if v == Library.CurrentFont then
+			fontName = k
+			break
+		end
+	end
+	local data = {
+		Language = Library.CurrentLanguage,
+		Theme = ThemeDropdown.GetValue(),
+		Font = fontName,
+		Transparency = TransparencySlider.GetValue(),
+		AntiAFK = AntiAFKToggle.GetValue(),
+		AnimatedWindow = AnimatedWindowToggle.GetValue(),
+		Gradient = GradientToggle.GetValue()
 	}
-
-	local encodeSuccess, jsonStr = pcall(function()
-		return HttpService:JSONEncode(configData)
-	end)
-
-	if not encodeSuccess or not jsonStr then
-		showToast("Encoding error", Color3.fromRGB(255, 70, 70))
-		return
-	end
-
-	if typeof(writefile) ~= "function" then
-		showToast("writefile unsupported", Color3.fromRGB(255, 70, 70))
-		return
-	end
-
-	local filePath = CONFIG_FOLDER .. "/" .. name .. ".json"
-	local writeSuccess, err = pcall(function()
-		writefile(filePath, jsonStr)
-	end)
-
-	if writeSuccess then
-		showToast("Config saved!", Color3.fromRGB(60, 255, 90))
-		ConfigNameBox.Text = ""
-		refreshConfigsList()
+	if typeof(writefile) == "function" then
+		pcall(function()
+			writefile(CONFIG_FOLDER .. "/" .. name .. ".json", HttpService:JSONEncode(data))
+			showToast("Config Saved: " .. name, Color3.fromRGB(60, 255, 90))
+			selectedConfig = name
+			refreshConfigDropdown()
+		end)
 	else
-		showToast("Save error: " .. tostring(err), Color3.fromRGB(255, 70, 70))
+		showToast("File System Not Supported", Color3.fromRGB(255, 70, 70))
 	end
+end
+
+local function LoadConfig(name)
+	if not name or name == "" then
+		name = selectedConfig
+	end
+	local filePath = CONFIG_FOLDER .. "/" .. name .. ".json"
+	if typeof(readfile) == "function" and typeof(isfile) == "function" and isfile(filePath) then
+		pcall(function()
+			local raw = readfile(filePath)
+			local data = HttpService:JSONDecode(raw)
+			if data then
+				if data.Language then LanguageDropdown.SetValue(data.Language) end
+				if data.Theme then ThemeDropdown.SetValue(data.Theme) end
+				if data.Font then FontDropdown.SetValue(data.Font) end
+				if data.Transparency then TransparencySlider.SetValue(data.Transparency) end
+				if data.AntiAFK ~= nil then AntiAFKToggle.SetValue(data.AntiAFK) end
+				if data.AnimatedWindow ~= nil then AnimatedWindowToggle.SetValue(data.AnimatedWindow) end
+				if data.Gradient ~= nil then GradientToggle.SetValue(data.Gradient) end
+				showToast("Config Loaded: " .. name, Color3.fromRGB(60, 255, 90))
+			end
+		end)
+	else
+		showToast("Config File Not Found", Color3.fromRGB(255, 70, 70))
+	end
+end
+
+local function DeleteConfig(name)
+	if not name or name == "" then
+		name = selectedConfig
+	end
+	local filePath = CONFIG_FOLDER .. "/" .. name .. ".json"
+	if typeof(delfile) == "function" and typeof(isfile) == "function" and isfile(filePath) then
+		pcall(function()
+			delfile(filePath)
+			showToast("Config Deleted: " .. name, Color3.fromRGB(255, 180, 40))
+			refreshConfigDropdown()
+		end)
+	else
+		showToast("Cannot Delete Config", Color3.fromRGB(255, 70, 70))
+	end
+end
+
+Library:CreateButton(SettingsPage, "Save Config", function()
+	local inputName = ConfigNameBox.Text
+	if inputName == "" then inputName = selectedConfig end
+	SaveConfig(inputName)
 end)
 
-Library:CreateButton(SettingsPage, "Refresh Configs", function()
-	refreshConfigsList()
-	showToast("Configs updated", Color3.fromRGB(180, 180, 180))
+Library:CreateButton(SettingsPage, "Load Config", function()
+	LoadConfig(selectedConfig)
 end)
 
--- Initial population of settings and configs
-refreshConfigsList()
+Library:CreateButton(SettingsPage, "Delete Config", function()
+	DeleteConfig(selectedConfig)
+end)
 
--- Make main page visible & activate default tab
-SettingsPage.Visible = true
-if allTabButtons["Settings"] then
+-- ============================================================================
+-- INITIALIZATION & SHOW GUI
+-- ============================================================================
+if SettingsPage and allTabButtons["Settings"] then
+	SettingsPage.Visible = true
 	setActiveTab(allTabButtons["Settings"])
 	currentActiveTab = allTabButtons["Settings"]
 end
 
 MainFrame.Visible = true
+MainFrame.Size = UDim2.new(0, 0, 0, 0)
+tween(MainFrame, {Size = UDim2.new(0, 550, 0, 350)}, 0.35)
+
+showToast("Dark Hub Loaded", Color3.fromRGB(60, 255, 90))
