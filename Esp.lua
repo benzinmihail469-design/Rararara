@@ -1,5 +1,5 @@
 -- ============================================================================
--- Dark Hub - Settings & Configs Edition (Fixed, Optimized & Expanded)
+-- Dark Hub - Settings Edition (Fixed & Optimized + Config System)
 -- ============================================================================
 local TweenService = game:GetService("TweenService")
 local UserInputService = game:GetService("UserInputService")
@@ -99,36 +99,6 @@ local function tween(obj, props, dur)
 	return nil
 end
 
--- BASE64 ENCODER / DECODER
-local b64_chars = 'ABCDEFGHIJKLMNOPQRSTUVWXYZabcdefghijklmnopqrstuvwxyz0123456789+/'
-
-local function base64Encode(data)
-	return ((data:gsub('.', function(x)
-		local r, b_str = '', x:byte()
-		for i = 8, 1, -1 do r = r .. (b_str % 2^i - b_str % 2^(i-1) >= 2^(i-1) and '1' or '0') end
-		return r
-	end) .. '0000'):gsub('%d%d%d?%d?%d?%d?', function(x)
-		if (#x < 6) then return '' end
-		local c = 0
-		for i = 1, 6 do c = c + (x:sub(i,i) == '1' and 2^(6-i) or 0) end
-		return b64_chars:sub(c+1, c+1)
-	end) .. ({ '', '==', '=' })[#data % 3 + 1])
-end
-
-local function base64Decode(data)
-	data = string.gsub(data, '[^'..b64_chars..'=]', '')
-	return (data:gsub('.', function(x)
-		if (x == '=') then return '' end
-		local r, f = '', (b64_chars:find(x) - 1)
-		for i = 6, 1, -1 do r = r .. (f % 2^i - f % 2^(i-1) >= 2^(i-1) and '1' or '0') end
-		return r
-	end):gsub('%d%d%d%d%d%d%d%d', function(x)
-		local c = 0
-		for i = 1, 8 do c = c + (x:sub(i,i) == '1' and 2^(8-i) or 0) end
-		return string.char(c)
-	end))
-end
-
 -- FIXED TEXT: нормализация текста с правильными русскими буквами
 local function NormalizeText(str)
 	if type(str) ~= "string" then
@@ -137,7 +107,6 @@ local function NormalizeText(str)
 	local lowerStr = str:lower()
 	local synonyms = {
 		["настройки"] = "settings",
-		["конфиги"] = "configs",
 		["язык"] = "language",
 		["тема"] = "theme",
 		["шрифт"] = "font"
@@ -438,56 +407,6 @@ RunService.RenderStepped:Connect(function(dt)
 		StatsLabel.Text = string.format("FPS: %d | Session: %s", math.floor(averageFps + 0.5), formatSessionTime(passedTime))
 	end
 end)
-
--- TOAST NOTIFICATION SYSTEM
-local ToastContainer = Instance.new("Frame", DarkHub)
-ToastContainer.Name = "ToastContainer"
-ToastContainer.Size = UDim2.new(0, 220, 1, -20)
-ToastContainer.Position = UDim2.new(1, -230, 0, 10)
-ToastContainer.BackgroundTransparency = 1
-ToastContainer.ZIndex = 100
-
-local ToastLayout = Instance.new("UIListLayout", ToastContainer)
-ToastLayout.VerticalAlignment = Enum.VerticalAlignment.Bottom
-ToastLayout.Padding = UDim.new(0, 6)
-
-local function showToast(message)
-	pcall(function()
-		local Toast = Instance.new("Frame", ToastContainer)
-		Toast.Size = UDim2.new(1, 0, 0, 32)
-		Toast.BackgroundColor3 = Color3.fromRGB(20, 20, 20)
-		Toast.BackgroundTransparency = 0.15
-		Toast.ZIndex = 101
-		Instance.new("UICorner", Toast).CornerRadius = UDim.new(0, 6)
-		local ToastStroke = Instance.new("UIStroke", Toast)
-		ToastStroke.Color = Color3.fromRGB(60, 60, 60)
-		ToastStroke.Thickness = 1
-
-		local Label = Instance.new("TextLabel", Toast)
-		Label.Size = UDim2.new(1, -16, 1, 0)
-		Label.Position = UDim2.new(0, 8, 0, 0)
-		Label.Text = message
-		Label.Font = Enum.Font.FredokaOne
-		Label.TextColor3 = Color3.fromRGB(255, 255, 255)
-		Label.TextSize = 11
-		Label.TextXAlignment = Enum.TextXAlignment.Left
-		Label.BackgroundTransparency = 1
-		Label.ZIndex = 102
-
-		task.delay(2.5, function()
-			if Toast and Toast.Parent then
-				local t = tween(Toast, {BackgroundTransparency = 1}, 0.3)
-				tween(Label, {TextTransparency = 1}, 0.3)
-				tween(ToastStroke, {Transparency = 1}, 0.3)
-				if t then
-					t.Completed:Connect(function()
-						if Toast and Toast.Parent then Toast:Destroy() end
-					end)
-				end
-			end
-		end)
-	end)
-end
 
 local isMinimized = false
 local LastMinimizedPos = UDim2.new(0.5, 0, 0.5, 0)
@@ -942,14 +861,7 @@ local Localization = {
 		["AntiAFK"] = "Anti-AFK",
 		["UITheme"] = "UI Theme",
 		["AnimatedWindow"] = "Animated Window",
-		["Gradient"] = "Gradient Background",
-		["Configs"] = "Configs",
-		["Create Config"] = "Create Config",
-		["Config Name"] = "Config Name",
-		["Import Config"] = "Import",
-		["Config Key"] = "Config Key (Pulse_)",
-		["Apply"] = "Apply",
-		["Copy"] = "Copy"
+		["Gradient"] = "Gradient Background"
 	},
 	["Русский"] = {
 		["Settings"] = "Настройки",
@@ -962,14 +874,7 @@ local Localization = {
 		["AntiAFK"] = "Анти-АФК",
 		["UITheme"] = "Тема UI",
 		["AnimatedWindow"] = "Анимированное окно",
-		["Gradient"] = "Градиентный фон",
-		["Configs"] = "Конфиги",
-		["Create Config"] = "Создать конфиг",
-		["Config Name"] = "Имя конфига",
-		["Import Config"] = "Импорт",
-		["Config Key"] = "Ключ конфига (Pulse_)",
-		["Apply"] = "Применить",
-		["Copy"] = "Копировать"
+		["Gradient"] = "Градиентный фон"
 	}
 }
 
@@ -1750,7 +1655,7 @@ function Library:CreatePage(textKey, iconId, layoutOrder)
 end
 
 -- ============================================================================
--- SETTINGS TAB
+-- SETTINGS TAB & CONFIGURATION SYSTEM
 -- ============================================================================
 local SettingsPage = Library:CreatePage("Settings", "117996761927034", 1)
 
@@ -1802,264 +1707,280 @@ local GradientToggle = Library:CreateToggle(SettingsPage, "Gradient", false, fun
 	toggleGradientEffect(state)
 end)
 
--- ============================================================================
--- CONFIGURATION SYSTEM (DarkHub/Configs)
--- ============================================================================
-local isfolder = isfolder or function(path)
-	local s, r = pcall(listfiles, path)
-	return s
-end
-local makefolder = makefolder or function() end
-local writefile = writefile or function() end
-local readfile = readfile or function() end
-local listfiles = listfiles or function() return {} end
-local setclipboard = setclipboard or toclipboard or set_clipboard or function() end
-
-local function ensureConfigFolder()
-	pcall(function()
-		if not isfolder("DarkHub") then makefolder("DarkHub") end
-		if not isfolder("DarkHub/Configs") then makefolder("DarkHub/Configs") end
-	end)
-end
-ensureConfigFolder()
-
-local function getSettingsData(configName)
-	return {
-		ConfigName = configName or "Default",
-		UITheme = ThemeDropdown:GetValue(),
-		MenuFont = FontDropdown:GetValue(),
-		UITransparency = TransparencySlider:GetValue(),
-		AntiAFK = AntiAFKToggle:GetValue(),
-		AnimatedWindow = AnimatedWindowToggle:GetValue(),
-		Gradient = GradientToggle:GetValue(),
-		Language = LanguageDropdown:GetValue()
-	}
-end
-
-local function applySettingsData(data)
-	if type(data) ~= "table" then return end
-	pcall(function()
-		if data.UITheme then
-			ThemeDropdown:SetValue(data.UITheme)
-			Library:UpdateTheme(data.UITheme)
+-- ----------------------------------------------------------------------------
+-- FILE SYSTEM PREPARATION
+-- ----------------------------------------------------------------------------
+local CONFIG_FOLDER = "DarkHub/Configs"
+pcall(function()
+	if typeof(makefolder) == "function" and typeof(isfolder) == "function" then
+		if not isfolder("DarkHub") then
+			makefolder("DarkHub")
 		end
-		if data.MenuFont then
-			FontDropdown:SetValue(data.MenuFont)
+		if not isfolder(CONFIG_FOLDER) then
+			makefolder(CONFIG_FOLDER)
 		end
-		if data.UITransparency then
-			TransparencySlider:SetValue(data.UITransparency)
-		end
-		if data.AntiAFK ~= nil then
-			AntiAFKToggle:SetValue(data.AntiAFK)
-		end
-		if data.AnimatedWindow ~= nil then
-			AnimatedWindowToggle:SetValue(data.AnimatedWindow)
-		end
-		if data.Gradient ~= nil then
-			GradientToggle:SetValue(data.Gradient)
-		end
-		if data.Language then
-			LanguageDropdown:SetValue(data.Language)
-			Library:UpdateLanguage(data.Language)
-		end
-	end)
-end
-
--- Configs Page GUI Layout
-local ConfigsPage = Library:CreatePage("Configs", "117996761927034", 2)
-
--- Config Name Input Container
-local NameInputFrame = Instance.new("Frame", ConfigsPage)
-NameInputFrame.Name = "NameInputFrame"
-NameInputFrame.Size = UDim2.new(1, -20, 0, 36)
-NameInputFrame.BackgroundColor3 = Library.CurrentThemeData.ElementBg or DefaultTheme.ElementBg
-NameInputFrame.LayoutOrder = 1
-Instance.new("UICorner", NameInputFrame).CornerRadius = UDim.new(0, 6)
-local NameStroke = Instance.new("UIStroke", NameInputFrame)
-NameStroke.Color = Color3.fromRGB(40, 40, 40)
-table.insert(Library.TrackedElementBg, NameInputFrame)
-table.insert(Library.TrackedStrokes, NameStroke)
-
-local NameBox = Instance.new("TextBox", NameInputFrame)
-NameBox.Size = UDim2.new(1, -24, 1, 0)
-NameBox.Position = UDim2.new(0, 12, 0, 0)
-NameBox.BackgroundTransparency = 1
-NameBox.Text = ""
-NameBox.PlaceholderText = "Config Name"
-NameBox.Font = Library.CurrentFont
-NameBox.TextSize = 13
-NameBox.TextColor3 = Color3.fromRGB(230, 230, 230)
-NameBox.PlaceholderColor3 = Color3.fromRGB(130, 130, 130)
-NameBox.TextXAlignment = Enum.TextXAlignment.Left
-table.insert(Library.TrackedMainText, NameBox)
-
--- Create Config Button
-Library:CreateButton(ConfigsPage, "Create Config", function()
-	local cfgName = NameBox.Text
-	if cfgName == "" then
-		showToast("Enter a config name!")
-		return
-	end
-	ensureConfigFolder()
-	local success, err = pcall(function()
-		local data = getSettingsData(cfgName)
-		local json = HttpService:JSONEncode(data)
-		writefile("DarkHub/Configs/" .. cfgName .. ".json", json)
-	end)
-	if success then
-		showToast("Config '" .. cfgName .. "' saved!")
-		NameBox.Text = ""
-		refreshConfigsList()
-	else
-		showToast("Failed to save config!")
 	end
 end)
 
--- Saved Configs List Container
-local ConfigListContainer = Instance.new("Frame", ConfigsPage)
-ConfigListContainer.Name = "ConfigListContainer"
-ConfigListContainer.Size = UDim2.new(1, -20, 0, 100)
-ConfigListContainer.BackgroundTransparency = 1
-ConfigListContainer.LayoutOrder = 3
+-- ----------------------------------------------------------------------------
+-- TOAST NOTIFICATION (Восстановленная и закрытая функция)
+-- ----------------------------------------------------------------------------
+local activeToast = nil
+local function showToast(message, dotColor)
+	if activeToast and activeToast.Parent then
+		activeToast:Destroy()
+		activeToast = nil
+	end
+	local toast = Instance.new("Frame", DarkHub)
+	activeToast = toast
+	toast.Name = "ToastNotification"
+	toast.Size = UDim2.new(0, 0, 0, 30)
+	toast.Position = UDim2.new(0.5, 0, 1, 20)
+	toast.AnchorPoint = Vector2.new(0.5, 1)
+	toast.BackgroundColor3 = Color3.fromRGB(42, 42, 56)
+	toast.ZIndex = 400
+	toast.AutomaticSize = Enum.AutomaticSize.X
+	Instance.new("UICorner", toast).CornerRadius = UDim.new(0, 6)
+	
+	local toastPadding = Instance.new("UIPadding", toast)
+	toastPadding.PaddingLeft = UDim.new(0, 12)
+	toastPadding.PaddingRight = UDim.new(0, 14)
+	
+	local layout = Instance.new("UIListLayout", toast)
+	layout.FillDirection = Enum.FillDirection.Horizontal
+	layout.VerticalAlignment = Enum.VerticalAlignment.Center
+	layout.Padding = UDim.new(0, 8)
 
-local ConfigListLayout = Instance.new("UIListLayout", ConfigListContainer)
-ConfigListLayout.Padding = UDim.new(0, 6)
-ConfigListLayout.SortOrder = Enum.SortOrder.LayoutOrder
+	local Dot = Instance.new("Frame", toast)
+	Dot.Size = UDim2.new(0, 8, 0, 8)
+	Dot.BackgroundColor3 = dotColor or getThemeAccent()
+	Instance.new("UICorner", Dot).CornerRadius = UDim.new(1, 0)
+	
+	local Msg = Instance.new("TextLabel", toast)
+	Msg.BackgroundTransparency = 1
+	Msg.Text = message
+	Msg.Font = Library.CurrentFont or Enum.Font.FredokaOne
+	Msg.TextColor3 = Color3.fromRGB(230, 230, 230)
+	Msg.TextSize = 13
+	Msg.AutomaticSize = Enum.AutomaticSize.X
+	Msg.TextYAlignment = Enum.TextYAlignment.Center
+	
+	-- Появление тоста
+	tween(toast, {Position = UDim2.new(0.5, 0, 1, -20)}, 0.3)
+	
+	-- Скрытие через время
+	task.delay(3, function()
+		if toast and toast.Parent then
+			local t = tween(toast, {Position = UDim2.new(0.5, 0, 1, 20)}, 0.3)
+			if t then
+				t.Completed:Connect(function()
+					if toast and toast.Parent then
+						toast:Destroy()
+					end
+				end)
+			end
+		end
+	end)
+end
 
-ConfigListLayout:GetPropertyChangedSignal("AbsoluteContentSize"):Connect(function()
-	ConfigListContainer.Size = UDim2.new(1, -20, 0, ConfigListLayout.AbsoluteContentSize.Y)
+-- ============================================================================
+-- CONFIGURATION SYSTEM (NEW)
+-- ============================================================================
+
+-- Section Title
+local ConfigSectionHeader = Instance.new("TextLabel", SettingsPage)
+ConfigSectionHeader.Size = UDim2.new(1, -20, 0, 24)
+ConfigSectionHeader.BackgroundTransparency = 1
+ConfigSectionHeader.Text = "Configurations"
+ConfigSectionHeader.Font = Enum.Font.FredokaOne
+ConfigSectionHeader.TextColor3 = Color3.fromRGB(255, 255, 255)
+ConfigSectionHeader.TextSize = 14
+ConfigSectionHeader.TextXAlignment = Enum.TextXAlignment.Left
+ConfigSectionHeader.LayoutOrder = #SettingsPage:GetChildren()
+table.insert(Library.TrackedMainText, ConfigSectionHeader)
+
+-- Config Name Input (Стилизован как другие элементы)
+local ConfigInputFrame = Instance.new("Frame", SettingsPage)
+ConfigInputFrame.Size = UDim2.new(1, -20, 0, 36)
+ConfigInputFrame.BackgroundColor3 = Library.CurrentThemeData.ElementBg or DefaultTheme.ElementBg
+ConfigInputFrame.LayoutOrder = #SettingsPage:GetChildren()
+Instance.new("UICorner", ConfigInputFrame).CornerRadius = UDim.new(0, 6)
+local CInpStroke = Instance.new("UIStroke", ConfigInputFrame)
+CInpStroke.Color = Color3.fromRGB(40, 40, 40)
+table.insert(Library.TrackedElementBg, ConfigInputFrame)
+table.insert(Library.TrackedStrokes, CInpStroke)
+
+local ConfigBox = Instance.new("TextBox", ConfigInputFrame)
+ConfigBox.Size = UDim2.new(1, -20, 1, 0)
+ConfigBox.Position = UDim2.new(0, 10, 0, 0)
+ConfigBox.BackgroundTransparency = 1
+ConfigBox.Text = ""
+ConfigBox.PlaceholderText = "Config Name"
+ConfigBox.Font = Enum.Font.FredokaOne
+ConfigBox.TextSize = 13
+ConfigBox.TextColor3 = Color3.fromRGB(230, 230, 230)
+ConfigBox.TextXAlignment = Enum.TextXAlignment.Left
+table.insert(Library.TrackedMainText, ConfigBox)
+
+-- Контейнер со списком конфигов
+local ConfigListFrame = Instance.new("Frame", SettingsPage)
+ConfigListFrame.Size = UDim2.new(1, -20, 0, 130)
+ConfigListFrame.BackgroundColor3 = Library.CurrentThemeData.ElementBg or DefaultTheme.ElementBg
+ConfigListFrame.LayoutOrder = #SettingsPage:GetChildren() + 1 -- Подготовим для списка под кнопкой (сместится вниз)
+Instance.new("UICorner", ConfigListFrame).CornerRadius = UDim.new(0, 6)
+local CListStroke = Instance.new("UIStroke", ConfigListFrame)
+CListStroke.Color = Color3.fromRGB(40, 40, 40)
+table.insert(Library.TrackedElementBg, ConfigListFrame)
+table.insert(Library.TrackedStrokes, CListStroke)
+
+local ConfigScroll = Instance.new("ScrollingFrame", ConfigListFrame)
+ConfigScroll.Size = UDim2.new(1, -10, 1, -10)
+ConfigScroll.Position = UDim2.new(0, 5, 0, 5)
+ConfigScroll.BackgroundTransparency = 1
+ConfigScroll.ScrollBarThickness = 2
+ConfigScroll.ScrollBarImageColor3 = Color3.fromRGB(180, 180, 180)
+ConfigScroll.BorderSizePixel = 0
+
+local CListLayout = Instance.new("UIListLayout", ConfigScroll)
+CListLayout.Padding = UDim.new(0, 5)
+CListLayout.SortOrder = Enum.SortOrder.LayoutOrder
+CListLayout:GetPropertyChangedSignal("AbsoluteContentSize"):Connect(function()
+	ConfigScroll.CanvasSize = UDim2.new(0, 0, 0, CListLayout.AbsoluteContentSize.Y)
 end)
 
-function refreshConfigsList()
-	ensureConfigFolder()
-	for _, child in ipairs(ConfigListContainer:GetChildren()) do
+-- Функция обновления списка конфигураций
+local function refreshConfigsList()
+	-- Очищаем текущий список
+	for _, child in ipairs(ConfigScroll:GetChildren()) do
 		if child:IsA("Frame") then
 			child:Destroy()
 		end
 	end
-
-	local files = {}
-	pcall(function()
-		files = listfiles("DarkHub/Configs")
-	end)
-
-	for _, filePath in ipairs(files) do
-		if string.sub(filePath, -5) == ".json" then
-			local fileName = string.match(filePath, "([^/\\]+)%.json$") or "Config"
-			
-			local ItemFrame = Instance.new("Frame", ConfigListContainer)
-			ItemFrame.Name = fileName
-			ItemFrame.Size = UDim2.new(1, 0, 0, 36)
-			ItemFrame.BackgroundColor3 = Library.CurrentThemeData.ElementBg or DefaultTheme.ElementBg
-			Instance.new("UICorner", ItemFrame).CornerRadius = UDim.new(0, 6)
-			local ItemStroke = Instance.new("UIStroke", ItemFrame)
-			ItemStroke.Color = Color3.fromRGB(40, 40, 40)
-			table.insert(Library.TrackedElementBg, ItemFrame)
-			table.insert(Library.TrackedStrokes, ItemStroke)
-
-			local NameLbl = Instance.new("TextLabel", ItemFrame)
-			NameLbl.Size = UDim2.new(1, -130, 1, 0)
-			NameLbl.Position = UDim2.new(0, 12, 0, 0)
-			NameLbl.Text = fileName
-			NameLbl.Font = Library.CurrentFont
-			NameLbl.TextColor3 = Color3.fromRGB(230, 230, 230)
-			NameLbl.TextSize = 13
-			NameLbl.TextXAlignment = Enum.TextXAlignment.Left
-			NameLbl.BackgroundTransparency = 1
-			table.insert(Library.TrackedMainText, NameLbl)
-
-			local ApplyBtn = Instance.new("TextButton", ItemFrame)
-			ApplyBtn.Size = UDim2.new(0, 52, 0, 24)
-			ApplyBtn.Position = UDim2.new(1, -116, 0.5, -12)
-			ApplyBtn.BackgroundColor3 = Color3.fromRGB(30, 30, 30)
-			ApplyBtn.Text = "Apply"
-			ApplyBtn.Font = Library.CurrentFont
-			ApplyBtn.TextColor3 = getThemeAccent()
-			ApplyBtn.TextSize = 11
-			Instance.new("UICorner", ApplyBtn).CornerRadius = UDim.new(0, 4)
-			
-			ApplyBtn.Activated:Connect(function()
-				pcall(function()
-					local raw = readfile("DarkHub/Configs/" .. fileName .. ".json")
-					local data = HttpService:JSONDecode(raw)
-					applySettingsData(data)
-					showToast("Config '" .. fileName .. "' applied!")
+	
+	local success, files = pcall(function() return listfiles(CONFIG_FOLDER) end)
+	if not success then
+		showToast("Error loading configs!", Color3.fromRGB(255, 50, 50))
+		return
+	end
+	
+	for i, filePath in ipairs(files) do
+		-- Проверка на .json
+		if filePath:sub(-5) == ".json" then
+			-- Вытаскиваем имя файла из полного пути (работает на любых экзекьюторах)
+			local fileName = filePath:match("([^/\\]+)%.json$")
+			if fileName then
+				-- Элемент списка конфига
+				local Item = Instance.new("Frame", ConfigScroll)
+				Item.Size = UDim2.new(1, -10, 0, 30)
+				Item.BackgroundColor3 = Color3.fromRGB(25, 25, 25)
+				Item.BackgroundTransparency = 0.5
+				Instance.new("UICorner", Item).CornerRadius = UDim.new(0, 4)
+				
+				local NameLabel = Instance.new("TextLabel", Item)
+				NameLabel.Size = UDim2.new(1, -70, 1, 0)
+				NameLabel.Position = UDim2.new(0, 10, 0, 0)
+				NameLabel.BackgroundTransparency = 1
+				NameLabel.Text = fileName
+				NameLabel.Font = Enum.Font.FredokaOne
+				NameLabel.TextColor3 = Color3.fromRGB(230, 230, 230)
+				NameLabel.TextSize = 12
+				NameLabel.TextXAlignment = Enum.TextXAlignment.Left
+				
+				local ApplyBtn = Instance.new("TextButton", Item)
+				ApplyBtn.Size = UDim2.new(0, 60, 0, 24)
+				ApplyBtn.Position = UDim2.new(1, -65, 0.5, -12)
+				ApplyBtn.BackgroundColor3 = getThemeAccent()
+				ApplyBtn.Text = "Apply"
+				ApplyBtn.Font = Enum.Font.FredokaOne
+				ApplyBtn.TextColor3 = Color3.fromRGB(255, 255, 255)
+				ApplyBtn.TextSize = 11
+				Instance.new("UICorner", ApplyBtn).CornerRadius = UDim.new(0, 4)
+				
+				ApplyBtn.Activated:Connect(function()
+					local readSuccess, content = pcall(function() return readfile(filePath) end)
+					if not readSuccess then
+						showToast("Failed to read config!", Color3.fromRGB(255, 50, 50))
+						return
+					end
+					
+					local jsonSuccess, decoded = pcall(function() return HttpService:JSONDecode(content) end)
+					if not jsonSuccess or type(decoded) ~= "table" then
+						showToast("Config is corrupted!", Color3.fromRGB(255, 50, 50))
+						return
+					end
+					
+					-- Применяем настройки
+					pcall(function()
+						if decoded.language then LanguageDropdown:SetValue(decoded.language) end
+						if decoded.theme then ThemeDropdown:SetValue(decoded.theme) end
+						if decoded.font then FontDropdown:SetValue(decoded.font) end
+						if decoded.transparency then TransparencySlider:SetValue(decoded.transparency) end
+						if decoded.antiAFK ~= nil then AntiAFKToggle:SetValue(decoded.antiAFK) end
+						if decoded.animatedWindow ~= nil then AnimatedWindowToggle:SetValue(decoded.animatedWindow) end
+						if decoded.gradient ~= nil then GradientToggle:SetValue(decoded.gradient) end
+					end)
+					
+					showToast("Config applied!", Color3.fromRGB(50, 255, 50))
 				end)
-			end)
-
-			local CopyBtn = Instance.new("TextButton", ItemFrame)
-			CopyBtn.Size = UDim2.new(0, 52, 0, 24)
-			CopyBtn.Position = UDim2.new(1, -58, 0.5, -12)
-			CopyBtn.BackgroundColor3 = Color3.fromRGB(30, 30, 30)
-			CopyBtn.Text = "Copy"
-			CopyBtn.Font = Library.CurrentFont
-			CopyBtn.TextColor3 = Color3.fromRGB(180, 180, 180)
-			CopyBtn.TextSize = 11
-			Instance.new("UICorner", CopyBtn).CornerRadius = UDim.new(0, 4)
-
-			CopyBtn.Activated:Connect(function()
-				pcall(function()
-					local raw = readfile("DarkHub/Configs/" .. fileName .. ".json")
-					local key = "Pulse_" .. base64Encode(raw)
-					setclipboard(key)
-					showToast("Config copied!")
-				end)
-			end)
+			end
 		end
 	end
 end
 
--- Key Input Container
-local KeyInputFrame = Instance.new("Frame", ConfigsPage)
-KeyInputFrame.Name = "KeyInputFrame"
-KeyInputFrame.Size = UDim2.new(1, -20, 0, 36)
-KeyInputFrame.BackgroundColor3 = Library.CurrentThemeData.ElementBg or DefaultTheme.ElementBg
-KeyInputFrame.LayoutOrder = 4
-Instance.new("UICorner", KeyInputFrame).CornerRadius = UDim.new(0, 6)
-local KeyStroke = Instance.new("UIStroke", KeyInputFrame)
-KeyStroke.Color = Color3.fromRGB(40, 40, 40)
-table.insert(Library.TrackedElementBg, KeyInputFrame)
-table.insert(Library.TrackedStrokes, KeyStroke)
-
-local KeyBox = Instance.new("TextBox", KeyInputFrame)
-KeyBox.Size = UDim2.new(1, -24, 1, 0)
-KeyBox.Position = UDim2.new(0, 12, 0, 0)
-KeyBox.BackgroundTransparency = 1
-KeyBox.Text = ""
-KeyBox.PlaceholderText = "Config Key (Pulse_)"
-KeyBox.Font = Library.CurrentFont
-KeyBox.TextSize = 13
-KeyBox.TextColor3 = Color3.fromRGB(230, 230, 230)
-KeyBox.PlaceholderColor3 = Color3.fromRGB(130, 130, 130)
-KeyBox.TextXAlignment = Enum.TextXAlignment.Left
-table.insert(Library.TrackedMainText, KeyBox)
-
--- Import Button
-Library:CreateButton(ConfigsPage, "Import Config", function()
-	local keyText = KeyBox.Text
-	if string.sub(keyText, 1, 6) ~= "Pulse_" then
-		showToast("Invalid Key format!")
+-- Кнопка создания конфигурации (вызовется после инпута, перед списком)
+Library:CreateButton(SettingsPage, "Create Config", function()
+	local cfgName = ConfigBox.Text
+	-- Проверка на пустое имя и на спец. символы, ломающие файловую систему
+	if cfgName == "" or cfgName:match("[%\\%/:%*%?\"<>|]") then
+		showToast("Invalid or empty config name!", Color3.fromRGB(255, 200, 50))
 		return
 	end
-	ensureConfigFolder()
-	local success, err = pcall(function()
-		local encoded = string.sub(keyText, 7)
-		local rawJson = base64Decode(encoded)
-		local data = HttpService:JSONDecode(rawJson)
-		local importedName = data.ConfigName or "Imported"
-		writefile("DarkHub/Configs/" .. importedName .. ".json", rawJson)
-		refreshConfigsList()
+	
+	local dataToSave = {
+		language = LanguageDropdown:GetValue(),
+		theme = ThemeDropdown:GetValue(),
+		font = FontDropdown:GetValue(),
+		transparency = TransparencySlider:GetValue(),
+		antiAFK = AntiAFKToggle:GetValue(),
+		animatedWindow = AnimatedWindowToggle:GetValue(),
+		gradient = GradientToggle:GetValue()
+	}
+	
+	local jsonSuccess, encodedData = pcall(function() return HttpService:JSONEncode(dataToSave) end)
+	if not jsonSuccess then
+		showToast("Failed to compile config!", Color3.fromRGB(255, 50, 50))
+		return
+	end
+	
+	local saveSuccess, err = pcall(function()
+		writefile(CONFIG_FOLDER .. "/" .. cfgName .. ".json", encodedData)
 	end)
-	if success then
-		showToast("Config imported successfully!")
-		KeyBox.Text = ""
+	
+	if saveSuccess then
+		showToast("Config saved!", Color3.fromRGB(50, 255, 50))
+		ConfigBox.Text = ""
+		refreshConfigsList()
 	else
-		showToast("Failed to import key!")
+		showToast("Error writing to file!", Color3.fromRGB(255, 50, 50))
 	end
 end)
 
--- Initial population of configs list
+-- Инициализируем список конфигов
 refreshConfigsList()
 
--- Make default page active
+-- ============================================================================
+-- INITIALIZE UI
+-- ============================================================================
 MainFrame.Visible = true
+
+-- Автоматически открываем вкладку Settings
+if allTabButtons["Settings"] then
+	for _, page in pairs(allPages) do
+		if page and page.Parent then
+			page.Visible = false
+		end
+	end
+	allPages["Settings"].Visible = true
+	setActiveTab(allTabButtons["Settings"])
+	currentActiveTab = allTabButtons["Settings"]
+end
