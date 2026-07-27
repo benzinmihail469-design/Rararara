@@ -175,14 +175,14 @@ OverlayStroke.Color = Color3.fromRGB(255, 255, 255)
 OverlayStroke.Thickness = 1
 OverlayStroke.Transparency = 0.3
 
--- Иконка в центре (круглая, с ID)
+-- Иконка в центре (круглая, с ID 76579925188009)
 local LoadingIcon = Instance.new("ImageLabel", LoadingOverlay)
 LoadingIcon.Name = "LoadingIcon"
-LoadingIcon.Size = UDim2.new(0, 56, 0, 56)
+LoadingIcon.Size = UDim2.new(0, 60, 0, 60)
 LoadingIcon.AnchorPoint = Vector2.new(0.5, 0.5)
 LoadingIcon.Position = UDim2.new(0.5, 0, 0.25, 0)
 LoadingIcon.BackgroundTransparency = 1
-LoadingIcon.Image = "rbxassetid://" .. CustomIconID
+LoadingIcon.Image = "rbxassetid://76579925188009"
 LoadingIcon.ScaleType = Enum.ScaleType.Fit
 LoadingIcon.ZIndex = 1001
 
@@ -215,7 +215,7 @@ LoadingPercent.TextColor3 = Color3.fromRGB(255, 255, 255)
 LoadingPercent.TextSize = 24
 LoadingPercent.ZIndex = 1001
 
--- Прогресс-бар (чуть больше)
+-- Прогресс-бар
 local ProgressBarBg = Instance.new("Frame", LoadingOverlay)
 ProgressBarBg.Name = "ProgressBarBg"
 ProgressBarBg.Size = UDim2.new(0.8, 0, 0, 6)
@@ -317,7 +317,7 @@ pulseConnection = RunService.RenderStepped:Connect(function(dt)
 		pulseDirection = 1
 	end
 	if LoadingIcon and LoadingIcon.Parent then
-		LoadingIcon.Size = UDim2.new(0, 56 * pulseScale, 0, 56 * pulseScale)
+		LoadingIcon.Size = UDim2.new(0, 60 * pulseScale, 0, 60 * pulseScale)
 	end
 end)
 
@@ -471,7 +471,7 @@ HubIcon.BackgroundTransparency = 1
 HubIcon.ScaleType = Enum.ScaleType.Fit
 HubIcon.ZIndex = 5
 Instance.new("UICorner", HubIcon).CornerRadius = UDim.new(0, 6)
-HubIcon.Image = "rbxthumb://type=Asset&id=" .. CustomIconID .. "&w=150&h=150"
+HubIcon.Image = "rbxthumb://type=Asset&id=76579925188009&w=150&h=150"
 
 local HubTitle = Instance.new("TextLabel", HeaderBg)
 HubTitle.Text = "Dark Hub"
