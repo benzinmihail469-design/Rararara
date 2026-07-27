@@ -1,5 +1,5 @@
 -- ============================================================================
--- Dark Hub - Settings Edition (With Loading Screen & Configuration System)
+-- Dark Hub - Settings Edition (With AMOLED Loading Screen & Config System)
 -- ============================================================================
 local TweenService = game:GetService("TweenService")
 local UserInputService = game:GetService("UserInputService")
@@ -9,7 +9,7 @@ local Players = game:GetService("Players")
 local VirtualUser = game:GetService("VirtualUser")
 local HttpService = game:GetService("HttpService")
 
--- Wait for LocalPlayer
+-- Ожидание загрузки LocalPlayer
 local LocalPlayer = Players.LocalPlayer
 while not LocalPlayer do
 	task.wait()
@@ -26,6 +26,7 @@ local function formatSessionTime(seconds)
 	return string.format("%02d:%02d:%02d", hours, minutes, secs)
 end
 
+-- Система Анти-АФК
 local antiAfkConnection = nil
 local function toggleAntiAFK(state)
 	if state then
@@ -46,7 +47,7 @@ local function toggleAntiAFK(state)
 end
 toggleAntiAFK(true)
 
--- Safe GUI Parent Resolution
+-- Безопасный поиск родительского контейнера для GUI (Защита от дубликатов)
 local SafeParent = nil
 if typeof(gethui) == "function" then
 	pcall(function()
@@ -68,6 +69,8 @@ end
 if not SafeParent then
 	return
 end
+
+-- Проверка и удаление старой версии хаба (Защита от повторного запуска)
 if SafeParent:FindFirstChild("DarkHub") then
 	SafeParent.DarkHub:Destroy()
 end
@@ -99,7 +102,7 @@ local function tween(obj, props, dur)
 	return nil
 end
 
--- FIXED TEXT: нормализация текста с правильными русскими буквами
+-- Нормализация текста (для корректного поиска)
 local function NormalizeText(str)
 	if type(str) ~= "string" then
 		return ""
@@ -117,6 +120,7 @@ local function NormalizeText(str)
 	return string.gsub(lowerStr, "[%p%s%c]", "")
 end
 
+-- Анимация клика (Волна/Tsunami)
 local function spawnWave(container, clickX, clickY)
 	if not container or typeof(container) ~= "Instance" or not container.Parent then
 		return
@@ -152,199 +156,182 @@ local function spawnWave(container, clickX, clickY)
 end
 
 -- ============================================================================
--- LOADING SCREEN (FULLSCREEN AMOLED STYLE)
--- Требования: Чистый чёрный фон, неоновая акцентная полоса, пузырьки, динамический текст, иконка 76579925188009.
+-- AMOLED PREMIER LOADING SCREEN (С Пузырьками и Пульсирующей Иконкой)
 -- ============================================================================
-local LoadingScreen = Instance.new("Frame")
+local LoadingScreen = Instance.new("Frame", DarkHub)
 LoadingScreen.Name = "LoadingScreen"
 LoadingScreen.Size = UDim2.new(1, 0, 1, 0)
-LoadingScreen.BackgroundColor3 = Color3.fromRGB(10, 10, 10) -- Очень тёмный фон #0A0A0A
+LoadingScreen.Position = UDim2.new(0, 0, 0, 0)
+LoadingScreen.BackgroundColor3 = Color3.fromRGB(0, 0, 0) -- Идеально черный (AMOLED)
 LoadingScreen.BorderSizePixel = 0
-LoadingScreen.ZIndex = 100
-LoadingScreen.Parent = DarkHub
+LoadingScreen.ZIndex = 200
 
--- Затемняющий градиент для AMOLED-эффекта
-local LoadingGradient = Instance.new("UIGradient")
-LoadingGradient.Color = ColorSequence.new({
-	ColorSequenceKeypoint.new(0, Color3.fromRGB(0, 0, 0)),
-	ColorSequenceKeypoint.new(0.5, Color3.fromRGB(8, 8, 8)),
-	ColorSequenceKeypoint.new(1, Color3.fromRGB(0, 0, 0))
-})
-LoadingGradient.Parent = LoadingScreen
+-- Контейнер для летающих пузырьков
+local BubbleContainer = Instance.new("Frame", LoadingScreen)
+BubbleContainer.Name = "BubbleContainer"
+BubbleContainer.Size = UDim2.new(1, 0, 1, 0)
+BubbleContainer.BackgroundTransparency = 1
+BubbleContainer.ClipsDescendants = true
+BubbleContainer.ZIndex = 201
 
--- Контейнер для иконки и прогресса
-local LoadingContainer = Instance.new("Frame")
-LoadingContainer.Size = UDim2.new(0, 320, 0, 180)
-LoadingContainer.Position = UDim2.new(0.5, -160, 0.5, -90)
-LoadingContainer.BackgroundTransparency = 1
-LoadingContainer.ZIndex = 101
-LoadingContainer.Parent = LoadingScreen
-
--- Пульсирующая иконка (rbxassetid://76579925188009)
-local LoadingIcon = Instance.new("ImageLabel")
-LoadingIcon.Name = "LoadingIcon"
-LoadingIcon.Size = UDim2.new(0, 80, 0, 80)
-LoadingIcon.Position = UDim2.new(0.5, -40, 0, 10)
-LoadingIcon.BackgroundTransparency = 1
-LoadingIcon.Image = "rbxassetid://76579925188009"
-LoadingIcon.ScaleType = Enum.ScaleType.Fit
-LoadingIcon.ZIndex = 102
-LoadingIcon.Parent = LoadingContainer
-
--- Текст статуса загрузки (меняется динамически)
-local LoadingStatusText = Instance.new("TextLabel")
-LoadingStatusText.Size = UDim2.new(1, 0, 0, 24)
-LoadingStatusText.Position = UDim2.new(0, 0, 0, 100)
-LoadingStatusText.Text = "ЗАГРУЗКА ИНТЕРФЕЙСА"
-LoadingStatusText.Font = Enum.Font.FredokaOne
-LoadingStatusText.TextColor3 = Color3.fromRGB(220, 220, 220)
-LoadingStatusText.TextSize = 16
-LoadingStatusText.BackgroundTransparency = 1
-LoadingStatusText.ZIndex = 102
-LoadingStatusText.Parent = LoadingContainer
-
--- Процент загрузки (крупная надпись)
-local LoadingPercentText = Instance.new("TextLabel")
-LoadingPercentText.Size = UDim2.new(1, 0, 0, 30)
-LoadingPercentText.Position = UDim2.new(0, 0, 0, 128)
-LoadingPercentText.Text = "0%"
-LoadingPercentText.Font = Enum.Font.FredokaOne
-LoadingPercentText.TextColor3 = Color3.fromRGB(138, 43, 226) -- Неоново-фиолетовый
-LoadingPercentText.TextSize = 24
-LoadingPercentText.BackgroundTransparency = 1
-LoadingPercentText.ZIndex = 102
-LoadingPercentText.Parent = LoadingContainer
-
--- Тонкий AMOLED-прогресс-бар (фон)
-local LoadingBarBg = Instance.new("Frame")
-LoadingBarBg.Size = UDim2.new(1, 0, 0, 8)
-LoadingBarBg.Position = UDim2.new(0, 0, 0, 170)
-LoadingBarBg.BackgroundColor3 = Color3.fromRGB(25, 25, 25)
-LoadingBarBg.BorderSizePixel = 0
-LoadingBarBg.ZIndex = 102
-LoadingBarBg.Parent = LoadingContainer
-Instance.new("UICorner", LoadingBarBg).CornerRadius = UDim.new(1, 0)
-
--- Тонкий AMOLED-прогресс-бар (заливка)
-local LoadingBarFill = Instance.new("Frame")
-LoadingBarFill.Size = UDim2.new(0, 0, 1, 0)
-LoadingBarFill.BackgroundColor3 = Color3.fromRGB(138, 43, 226)
-LoadingBarFill.BorderSizePixel = 0
-LoadingBarFill.ZIndex = 103
-LoadingBarFill.Parent = LoadingBarBg
-Instance.new("UICorner", LoadingBarFill).CornerRadius = UDim.new(1, 0)
-
--- Анимация пузырьков (8-12 кругов, хаотичное движение)
+-- Создание 10 хаотичных прозрачных пузырьков
 local bubbles = {}
+local bubbleColors = {
+	Color3.fromRGB(0, 191, 255),  -- Неоново-голубой
+	Color3.fromRGB(138, 43, 226), -- Неоново-фиолетовый
+	Color3.fromRGB(0, 255, 200)   -- Бирюзовый акцент
+}
+
 for i = 1, 10 do
-	local bubble = Instance.new("Frame")
-	bubble.Name = "Bubble"
-	bubble.Size = UDim2.new(0, math.random(15, 40), 0, math.random(15, 40))
-	bubble.Position = UDim2.new(math.random(), 0, math.random(), 0)
-	bubble.BackgroundColor3 = Color3.fromRGB(138, 43, 226)
-	bubble.BackgroundTransparency = 0.7 + math.random() * 0.25
-	bubble.BorderSizePixel = 0
-	bubble.ZIndex = 101
-	bubble.Parent = LoadingScreen
-	Instance.new("UICorner", bubble).CornerRadius = UDim.new(1, 0)
+	local size = math.random(15, 45)
+	local b = Instance.new("Frame", BubbleContainer)
+	b.Name = "Bubble_" .. i
+	b.Size = UDim2.new(0, size, 0, size)
+	b.Position = UDim2.new(math.random(), 0, math.random(), 0)
+	b.BackgroundColor3 = bubbleColors[math.random(1, #bubbleColors)]
+	b.BackgroundTransparency = math.random(75, 90) / 100
+	b.BorderSizePixel = 0
+	b.ZIndex = 201
+	
+	local corner = Instance.new("UICorner", b)
+	corner.CornerRadius = UDim.new(1, 0)
+	
+	-- Добавление тонкого неон-свечения вокруг пузырька
+	local stroke = Instance.new("UIStroke", b)
+	stroke.Color = b.BackgroundColor3
+	stroke.Transparency = 0.7
+	stroke.Thickness = 1
+	
 	table.insert(bubbles, {
-		Object = bubble,
-		Speed = 0.4 + math.random() * 1.2,
-		Direction = Vector2.new((math.random() - 0.5) * 2, (math.random() - 0.5) * 2).Unit,
-		Amplitude = math.random(20, 60)
+		Frame = b,
+		SpeedX = (math.random() - 0.5) * 0.0015,
+		SpeedY = (math.random(-20, -5) / 10000), -- Движение преимущественно вверх
+		Size = size
 	})
 end
 
--- Основная логика загрузки (прогресс, пузырьки, пульсация)
-local loadProgress = 0
-local targetProgress = 0
-local loadComplete = false
-
--- Подключение к RenderStepped для плавного обновления
-local loadingConnection
-loadingConnection = RunService.RenderStepped:Connect(function(dt)
-	-- 1. Плавное увеличение прогресса до целевого значения
-	if loadProgress < targetProgress then
-		loadProgress = math.min(loadProgress + (targetProgress - loadProgress) * 0.1, targetProgress)
-		if loadProgress >= 99.9 and targetProgress >= 100 then
-			loadProgress = 100
-		end
-		local percent = math.floor(loadProgress)
-		LoadingPercentText.Text = percent .. "%"
-		LoadingBarFill.Size = UDim2.new(loadProgress / 100, 0, 1, 0)
-
-		-- Динамическая текстовая логика
-		if loadProgress < 25 then
-			LoadingStatusText.Text = "ЗАГРУЗКА ИНТЕРФЕЙСА"
-		elseif loadProgress < 50 then
-			LoadingStatusText.Text = "ИНИЦИАЛИЗАЦИЯ МОДУЛЕЙ"
-		elseif loadProgress < 75 then
-			LoadingStatusText.Text = "НАСТРОЙКА АНИМАЦИЙ"
-		elseif loadProgress < 100 then
-			LoadingStatusText.Text = "ПОДГОТОВКА К ЗАПУСКУ"
-		else
-			LoadingStatusText.Text = "ГОТОВО!"
-		end
+-- Анимационный цикл движения пузырьков
+local bubbleConnection
+bubbleConnection = RunService.RenderStepped:Connect(function()
+	if not LoadingScreen or not LoadingScreen.Parent then
+		if bubbleConnection then bubbleConnection:Disconnect() end
+		return
 	end
-
-	-- 2. Анимация пузырьков
-	for _, b in ipairs(bubbles) do
-		local bubble = b.Object
-		local pos = bubble.Position
-		local newX = pos.X.Scale + math.sin(os.clock() * b.Speed) * 0.01 * b.Direction.X
-		local newY = pos.Y.Scale + math.cos(os.clock() * b.Speed * 1.3) * 0.01 * b.Direction.Y
-		-- Зацикливание при выходе за экран
-		if newX > 1.05 then newX = -0.05 elseif newX < -0.05 then newX = 1.05 end
-		if newY > 1.05 then newY = -0.05 elseif newY < -0.05 then newY = 1.05 end
-		bubble.Position = UDim2.new(newX, 0, newY, 0)
-	end
-
-	-- 3. Пульсация иконки
-	if LoadingIcon and LoadingIcon.Parent then
-		local scale = 1 + 0.08 * math.sin(os.clock() * 3)
-		LoadingIcon.Size = UDim2.new(0, 80 * scale, 0, 80 * scale)
-		LoadingIcon.Position = UDim2.new(0.5, -40 * scale, 0, 5 + 10 * (1 - scale))
+	
+	for _, data in ipairs(bubbles) do
+		local b = data.Frame
+		if b and b.Parent then
+			local currentPos = b.Position
+			local newX = currentPos.X.Scale + data.SpeedX
+			local newY = currentPos.Y.Scale + data.SpeedY
+			
+			-- Перенос пузырьков при выходе за границы экрана (эффект кипения)
+			if newY < -0.1 then newY = 1.1 end
+			if newX < -0.1 then newX = 1.1 elseif newX > 1.1 then newX = -0.1 end
+			
+			b.Position = UDim2.new(newX, 0, newY, 0)
+		end
 	end
 end)
 
--- Функция установки целевого прогресса
-local function SetLoadProgress(value)
-	targetProgress = math.clamp(value, 0, 100)
-end
+-- Карточка загрузки по центру
+local LoadCard = Instance.new("Frame", LoadingScreen)
+LoadCard.Name = "LoadCard"
+LoadCard.Size = UDim2.new(0, 340, 0, 240)
+LoadCard.AnchorPoint = Vector2.new(0.5, 0.5)
+LoadCard.Position = UDim2.new(0.5, 0, 0.5, 0)
+LoadCard.BackgroundColor3 = Color3.fromRGB(10, 10, 10)
+LoadCard.BackgroundTransparency = 0.2
+LoadCard.ZIndex = 202
 
--- Автоматический таймер демонстрации загрузки (0% -> 100% за 4 секунды)
-task.spawn(function()
-	for i = 0, 100, 2 do
-		SetLoadProgress(i)
-		task.wait(0.08) -- Общая длительность ~4 секунды
+local CardCorner = Instance.new("UICorner", LoadCard)
+CardCorner.CornerRadius = UDim.new(0, 16)
+
+local CardStroke = Instance.new("UIStroke", LoadCard)
+CardStroke.Color = Color3.fromRGB(0, 191, 255)
+CardStroke.Thickness = 1.5
+
+-- Градиент рамки карточки
+local StrokeGradient = Instance.new("UIGradient", CardStroke)
+StrokeGradient.Color = ColorSequence.new({
+	ColorSequenceKeypoint.new(0, Color3.fromRGB(0, 191, 255)),
+	ColorSequenceKeypoint.new(1, Color3.fromRGB(138, 43, 226))
+})
+
+-- Круглая иконка с пульсацией
+local IconHolder = Instance.new("Frame", LoadCard)
+IconHolder.Size = UDim2.new(0, 70, 0, 70)
+IconHolder.AnchorPoint = Vector2.new(0.5, 0.5)
+IconHolder.Position = UDim2.new(0.5, 0, 0.3, 0)
+IconHolder.BackgroundTransparency = 1
+IconHolder.ZIndex = 203
+
+local LoadingIcon = Instance.new("ImageLabel", IconHolder)
+LoadingIcon.Size = UDim2.new(1, 0, 1, 0)
+LoadingIcon.BackgroundTransparency = 1
+LoadingIcon.Image = "rbxassetid://" .. CustomIconID
+LoadingIcon.ZIndex = 204
+Instance.new("UICorner", LoadingIcon).CornerRadius = UDim.new(1, 0)
+
+local IconStroke = Instance.new("UIStroke", LoadingIcon)
+IconStroke.Color = Color3.fromRGB(0, 191, 255)
+IconStroke.Thickness = 2
+
+-- Пульсация иконки
+local pulseConnection
+pulseConnection = RunService.RenderStepped:Connect(function()
+	if not LoadingIcon or not LoadingIcon.Parent then
+		if pulseConnection then pulseConnection:Disconnect() end
+		return
 	end
-	task.wait(0.5) -- Задержка после 100% для отображения "ГОТОВО!"
-	loadComplete = true
-	if loadingConnection then
-		loadingConnection:Disconnect()
-		loadingConnection = nil
-	end
-	-- Плавное исчезновение экрана загрузки
-	local fadeTween = tween(LoadingScreen, {BackgroundTransparency = 1}, 0.4)
-	if fadeTween then
-		fadeTween.Completed:Connect(function()
-			if LoadingScreen and LoadingScreen.Parent then
-				LoadingScreen:Destroy()
-			end
-		end)
-	else
-		if LoadingScreen and LoadingScreen.Parent then
-			LoadingScreen:Destroy()
-		end
-	end
-	-- Показываем основной GUI
-	if MainFrame and MainFrame.Parent then
-		MainFrame.Visible = true
-		MainFrame.Size = UDim2.new(0, 0, 0, 0)
-		tween(MainFrame, {Size = UDim2.new(0, 550, 0, 350)}, 0.35)
-	end
-	showToast("Dark Hub Loaded", Color3.fromRGB(60, 255, 90))
+	local scale = 1 + math.sin(os.clock() * 4) * 0.08
+	IconHolder.Size = UDim2.new(0, 70 * scale, 0, 70 * scale)
 end)
+
+-- Текстовый статус фаз загрузки
+local StatusLabel = Instance.new("TextLabel", LoadCard)
+StatusLabel.Size = UDim2.new(1, -20, 0, 22)
+StatusLabel.Position = UDim2.new(0, 10, 0, 122)
+StatusLabel.Text = "ЗАГРУЗКА ИНТЕРФЕЙСА"
+StatusLabel.Font = Enum.Font.FredokaOne
+StatusLabel.TextColor3 = Color3.fromRGB(255, 255, 255)
+StatusLabel.TextSize = 13
+StatusLabel.BackgroundTransparency = 1
+StatusLabel.ZIndex = 203
+
+-- Задний фон прогресс-бара
+local ProgressBarBg = Instance.new("Frame", LoadCard)
+ProgressBarBg.Size = UDim2.new(1, -50, 0, 8)
+ProgressBarBg.Position = UDim2.new(0, 25, 0, 158)
+ProgressBarBg.BackgroundColor3 = Color3.fromRGB(20, 20, 20)
+ProgressBarBg.BorderSizePixel = 0
+ProgressBarBg.ZIndex = 203
+Instance.new("UICorner", ProgressBarBg).CornerRadius = UDim.new(1, 0)
+
+-- Заливка прогресс-бара
+local ProgressBarFill = Instance.new("Frame", ProgressBarBg)
+ProgressBarFill.Size = UDim2.new(0, 0, 1, 0)
+ProgressBarFill.BackgroundColor3 = Color3.fromRGB(0, 191, 255)
+ProgressBarFill.BorderSizePixel = 0
+ProgressBarFill.ZIndex = 204
+Instance.new("UICorner", ProgressBarFill).CornerRadius = UDim.new(1, 0)
+
+local BarGradient = Instance.new("UIGradient", ProgressBarFill)
+BarGradient.Color = ColorSequence.new({
+	ColorSequenceKeypoint.new(0, Color3.fromRGB(0, 191, 255)),
+	ColorSequenceKeypoint.new(1, Color3.fromRGB(138, 43, 226))
+})
+
+-- Надпись с процентом
+local PercentText = Instance.new("TextLabel", LoadCard)
+PercentText.Size = UDim2.new(1, 0, 0, 20)
+PercentText.Position = UDim2.new(0, 0, 0, 172)
+PercentText.Text = "0%"
+PercentText.Font = Enum.Font.FredokaOne
+PercentText.TextColor3 = Color3.fromRGB(160, 160, 160)
+PercentText.TextSize = 14
+PercentText.BackgroundTransparency = 1
+PercentText.ZIndex = 203
 
 -- ============================================================================
 -- MAIN GUI FRAMEWORK
@@ -356,7 +343,7 @@ MainFrame.BackgroundTransparency = 0.15
 MainFrame.AnchorPoint = Vector2.new(0.5, 0.5)
 MainFrame.Position = UDim2.new(0.5, 0, 0.5, 0)
 MainFrame.Size = UDim2.new(0, 550, 0, 350)
-MainFrame.Visible = false -- Скрыт до окончания загрузки
+MainFrame.Visible = false
 
 local MainScale = Instance.new("UIScale", MainFrame)
 MainScale.Scale = 1
@@ -477,7 +464,7 @@ HubIcon.BackgroundTransparency = 1
 HubIcon.ScaleType = Enum.ScaleType.Fit
 HubIcon.ZIndex = 5
 Instance.new("UICorner", HubIcon).CornerRadius = UDim.new(0, 6)
-HubIcon.Image = "rbxthumb://type=Asset&id=" .. CustomIconID .. "&w=150&h=150"
+HubIcon.Image = "rbxassetid://" .. CustomIconID
 
 local HubTitle = Instance.new("TextLabel", HeaderBg)
 HubTitle.Text = "Dark Hub"
@@ -718,10 +705,10 @@ local ThemeConfig = {
 	["Deep Violet"] = { Accent = Color3.fromRGB(102, 51, 153), MainBg = Color3.fromRGB(13, 11, 20), ElementBg = Color3.fromRGB(23, 19, 36) },
 	["Cyanic"] = { Accent = Color3.fromRGB(0, 255, 200), MainBg = Color3.fromRGB(10, 22, 26), ElementBg = Color3.fromRGB(18, 38, 46) },
 	["Blood Red"] = { Accent = Color3.fromRGB(170, 0, 0), MainBg = Color3.fromRGB(14, 4, 4), ElementBg = Color3.fromRGB(28, 8, 8) },
-	["AMOLED"] = { Accent = Color3.fromRGB(255, 255, 255), MainBg = Color3.fromRGB(0, 0, 0), ElementBg = Color3.fromRGB(15, 15, 15) }
+	["AMOLED"] = { Accent = Color3.fromRGB(0, 191, 255), MainBg = Color3.fromRGB(0, 0, 0), ElementBg = Color3.fromRGB(15, 15, 15) }
 }
 
-local DefaultTheme = { Accent = Color3.fromRGB(255, 255, 255), MainBg = Color3.fromRGB(0, 0, 0), ElementBg = Color3.fromRGB(15, 15, 15) }
+local DefaultTheme = { Accent = Color3.fromRGB(0, 191, 255), MainBg = Color3.fromRGB(0, 0, 0), ElementBg = Color3.fromRGB(15, 15, 15) }
 Library.CurrentThemeData = ThemeConfig["AMOLED"] or DefaultTheme
 
 local function getThemeAccent()
@@ -1786,7 +1773,7 @@ function Library:CreatePage(textKey, iconId, layoutOrder)
 		TabIcon.Position = UDim2.new(0, 10, 0.5, -12)
 		TabIcon.BackgroundTransparency = 1
 		if tonumber(iconId) then
-			TabIcon.Image = "rbxthumb://type=Asset&id=" .. iconId .. "&w=150&h=150"
+			TabIcon.Image = "rbxassetid://" .. iconId
 		else
 			TabIcon.Image = iconId
 		end
@@ -1903,7 +1890,7 @@ local GradientToggle = Library:CreateToggle(SettingsPage, "Gradient", false, fun
 end)
 
 -- ============================================================================
--- CONFIGURATION SYSTEM & TOAST NOTIFICATIONS
+-- CONFIGURATION SYSTEM & TOAST NOTIFICATIONS (ПОЛНОСТЬЮ ВОССТАНОВЛЕНО)
 -- ============================================================================
 local CONFIG_FOLDER = "DarkHub/Configs"
 
@@ -1979,7 +1966,6 @@ local function showToast(message, dotColor)
 end
 
 -- --- UI CONFIGURATIONS SECTION INSIDE SETTINGS ---
-
 local ConfigSectionHeader = Instance.new("Frame", SettingsPage)
 ConfigSectionHeader.Name = "ConfigSectionHeader"
 ConfigSectionHeader.Size = UDim2.new(1, -20, 0, 24)
@@ -2058,6 +2044,7 @@ ConfigDropdown = Library:CreateDropdown(SettingsPage, "Select Config", getConfig
 	ConfigNameBox.Text = val
 end)
 
+-- Логика сохранения конфига (Завершено!)
 local function SaveConfig(name)
 	if not name or name == "" then
 		name = selectedConfig
@@ -2066,59 +2053,61 @@ local function SaveConfig(name)
 		showToast("Invalid Config Name", Color3.fromRGB(255, 70, 70))
 		return
 	end
-	local fontName = "Fredoka One"
-	for k, v in pairs(FontMapping) do
-		if v == Library.CurrentFont then
-			fontName = k
-			break
-		end
-	end
-	local data = {
+
+	local configData = {
 		Language = Library.CurrentLanguage,
-		Theme = ThemeDropdown.GetValue(),
-		Font = fontName,
-		Transparency = TransparencySlider.GetValue(),
-		AntiAFK = AntiAFKToggle.GetValue(),
-		AnimatedWindow = AnimatedWindowToggle.GetValue(),
-		Gradient = GradientToggle.GetValue()
+		Theme = ThemeDropdown and ThemeDropdown.GetValue() or "AMOLED",
+		Font = FontDropdown and FontDropdown.GetValue() or "Fredoka One",
+		Transparency = TransparencySlider and TransparencySlider.GetValue() or 15,
+		AntiAFK = AntiAFKToggle and AntiAFKToggle.GetValue() or true,
+		AnimatedWindow = AnimatedWindowToggle and AnimatedWindowToggle.GetValue() or false,
+		Gradient = GradientToggle and GradientToggle.GetValue() or false
 	}
+
 	if typeof(writefile) == "function" then
-		pcall(function()
-			writefile(CONFIG_FOLDER .. "/" .. name .. ".json", HttpService:JSONEncode(data))
-			showToast("Config Saved: " .. name, Color3.fromRGB(60, 255, 90))
-			selectedConfig = name
-			refreshConfigDropdown()
+		local success, err = pcall(function()
+			writefile(CONFIG_FOLDER .. "/" .. name .. ".json", HttpService:JSONEncode(configData))
 		end)
+		if success then
+			showToast("Config Saved: " .. name, Color3.fromRGB(0, 255, 120))
+			refreshConfigDropdown()
+		else
+			showToast("Save Error", Color3.fromRGB(255, 70, 70))
+		end
 	else
-		showToast("File System Not Supported", Color3.fromRGB(255, 70, 70))
+		showToast("Executor Not Supported", Color3.fromRGB(255, 70, 70))
 	end
 end
 
+-- Логика загрузки конфига
 local function LoadConfig(name)
 	if not name or name == "" then
 		name = selectedConfig
 	end
 	local filePath = CONFIG_FOLDER .. "/" .. name .. ".json"
 	if typeof(readfile) == "function" and typeof(isfile) == "function" and isfile(filePath) then
-		pcall(function()
-			local raw = readfile(filePath)
-			local data = HttpService:JSONDecode(raw)
-			if data then
-				if data.Language then LanguageDropdown.SetValue(data.Language) end
-				if data.Theme then ThemeDropdown.SetValue(data.Theme) end
-				if data.Font then FontDropdown.SetValue(data.Font) end
-				if data.Transparency then TransparencySlider.SetValue(data.Transparency) end
-				if data.AntiAFK ~= nil then AntiAFKToggle.SetValue(data.AntiAFK) end
-				if data.AnimatedWindow ~= nil then AnimatedWindowToggle.SetValue(data.AnimatedWindow) end
-				if data.Gradient ~= nil then GradientToggle.SetValue(data.Gradient) end
-				showToast("Config Loaded: " .. name, Color3.fromRGB(60, 255, 90))
-			end
+		local success, result = pcall(function()
+			local content = readfile(filePath)
+			local data = HttpService:JSONDecode(content)
+			if data.Language then Library:UpdateLanguage(data.Language) end
+			if data.Theme then ThemeDropdown.SetValue(data.Theme) end
+			if data.Font then FontDropdown.SetValue(data.Font) end
+			if data.Transparency then TransparencySlider.SetValue(data.Transparency) end
+			if data.AntiAFK ~= nil then AntiAFKToggle.SetValue(data.AntiAFK) end
+			if data.AnimatedWindow ~= nil then AnimatedWindowToggle.SetValue(data.AnimatedWindow) end
+			if data.Gradient ~= nil then GradientToggle.SetValue(data.Gradient) end
 		end)
+		if success then
+			showToast("Config Loaded: " .. name, Color3.fromRGB(0, 191, 255))
+		else
+			showToast("Load Failed", Color3.fromRGB(255, 70, 70))
+		end
 	else
 		showToast("Config File Not Found", Color3.fromRGB(255, 70, 70))
 	end
 end
 
+-- Логика удаления конфига
 local function DeleteConfig(name)
 	if not name or name == "" then
 		name = selectedConfig
@@ -2127,18 +2116,17 @@ local function DeleteConfig(name)
 	if typeof(delfile) == "function" and typeof(isfile) == "function" and isfile(filePath) then
 		pcall(function()
 			delfile(filePath)
-			showToast("Config Deleted: " .. name, Color3.fromRGB(255, 180, 40))
-			refreshConfigDropdown()
 		end)
+		showToast("Config Deleted", Color3.fromRGB(255, 150, 0))
+		refreshConfigDropdown()
 	else
-		showToast("Cannot Delete Config", Color3.fromRGB(255, 70, 70))
+		showToast("Cannot Delete File", Color3.fromRGB(255, 70, 70))
 	end
 end
 
+-- Кнопки управления конфигами
 Library:CreateButton(SettingsPage, "Save Config", function()
-	local inputName = ConfigNameBox.Text
-	if inputName == "" then inputName = selectedConfig end
-	SaveConfig(inputName)
+	SaveConfig(ConfigNameBox.Text)
 end)
 
 Library:CreateButton(SettingsPage, "Load Config", function()
@@ -2149,14 +2137,68 @@ Library:CreateButton(SettingsPage, "Delete Config", function()
 	DeleteConfig(selectedConfig)
 end)
 
--- ============================================================================
--- INITIALIZATION (Запуск загрузочного экрана, после него — показ Settings)
--- ============================================================================
-if SettingsPage and allTabButtons["Settings"] then
-	-- Активируем вкладку Settings сразу после загрузки
-	SettingsPage.Visible = true
-	setActiveTab(allTabButtons["Settings"])
-	currentActiveTab = allTabButtons["Settings"]
+-- Инициализация первой вкладки по умолчанию
+if allPages["Settings"] then
+	allPages["Settings"].Visible = true
+	if allTabButtons["Settings"] then
+		setActiveTab(allTabButtons["Settings"])
+		currentActiveTab = allTabButtons["Settings"]
+	end
 end
 
--- Загрузка начнется автоматически, MainFrame.Visible = false до завершения.
+-- ============================================================================
+-- ЗАПУСК ТАЙМЕРА ЗАГРУЗКИ (0% -> 100%)
+-- ============================================================================
+task.spawn(function()
+	local duration = 3.8 -- Длительность загрузки (секунды)
+	local elapsed = 0
+	
+	while elapsed < duration do
+		local dt = task.wait()
+		elapsed = elapsed + dt
+		local progress = math.clamp(elapsed / duration, 0, 1)
+		local percent = math.floor(progress * 100)
+		
+		-- Обновление UI загрузки
+		ProgressBarFill.Size = UDim2.new(progress, 0, 1, 0)
+		PercentText.Text = percent .. "%"
+		
+		-- Динамическая логика текстов согласно ТЗ
+		if percent <= 25 then
+			StatusLabel.Text = "ЗАГРУЗКА ИНТЕРФЕЙСА"
+		elseif percent <= 50 then
+			StatusLabel.Text = "ИНИЦИАЛИЗАЦИЯ МОДУЛЕЙ"
+		elseif percent <= 75 then
+			StatusLabel.Text = "НАСТРОЙКА АНИМАЦИЙ"
+		elseif percent <= 99 then
+			StatusLabel.Text = "ПОДГОТОВКА К ЗАПУСКУ"
+		else
+			StatusLabel.Text = "ГОТОВО!"
+		end
+	end
+	
+	-- По завершению 100%
+	StatusLabel.Text = "ГОТОВО!"
+	PercentText.Text = "100%"
+	ProgressBarFill.Size = UDim2.new(1, 0, 1, 0)
+	
+	task.wait(0.5) -- Небольшая пауза на 100%
+	
+	-- Исчезновение экрана загрузки и открытие Главного Меню
+	if bubbleConnection then bubbleConnection:Disconnect() end
+	if pulseConnection then pulseConnection:Disconnect() end
+	
+	local fadeOut = tween(LoadingScreen, {BackgroundTransparency = 1}, 0.4)
+	tween(LoadCard, {BackgroundTransparency = 1}, 0.4)
+	
+	if fadeOut then
+		fadeOut.Completed:Connect(function()
+			LoadingScreen:Destroy()
+			MainFrame.Visible = true
+			showToast("Dark Hub Loaded Successfully!", Color3.fromRGB(0, 255, 120))
+		end)
+	else
+		LoadingScreen:Destroy()
+		MainFrame.Visible = true
+	end
+end)
