@@ -152,70 +152,75 @@ local function spawnWave(container, clickX, clickY)
 end
 
 -- ============================================================================
--- LOADING SCREEN (0 - 100%)
+-- LOADING SCREEN (0 - 100%) - AMOLED стиль
 -- ============================================================================
--- Создаём оверлей для загрузки (весь экран)
+-- Затемнённый фон (не на весь экран, а небольшой блок)
 local LoadingOverlay = Instance.new("Frame", DarkHub)
 LoadingOverlay.Name = "LoadingOverlay"
-LoadingOverlay.Size = UDim2.new(1, 0, 1, 0)
-LoadingOverlay.BackgroundColor3 = Color3.fromRGB(0, 0, 0)
+LoadingOverlay.Size = UDim2.new(0, 420, 0, 280)
+LoadingOverlay.AnchorPoint = Vector2.new(0.5, 0.5)
+LoadingOverlay.Position = UDim2.new(0.5, 0, 0.5, 0)
+LoadingOverlay.BackgroundColor3 = Color3.fromRGB(10, 10, 10)
 LoadingOverlay.BackgroundTransparency = 0
 LoadingOverlay.ZIndex = 999
+LoadingOverlay.ClipsDescendants = true
 
--- Контейнер для элементов загрузки
-local LoadingContainer = Instance.new("Frame", LoadingOverlay)
-LoadingContainer.Name = "LoadingContainer"
-LoadingContainer.Size = UDim2.new(0, 400, 0, 250)
-LoadingContainer.AnchorPoint = Vector2.new(0.5, 0.5)
-LoadingContainer.Position = UDim2.new(0.5, 0, 0.5, 0)
-LoadingContainer.BackgroundTransparency = 1
-LoadingContainer.ZIndex = 1000
+-- Скругление углов
+local OverlayCorner = Instance.new("UICorner", LoadingOverlay)
+OverlayCorner.CornerRadius = UDim.new(0, 16)
 
--- Иконка в центре (пульсирующая)
-local LoadingIcon = Instance.new("ImageLabel", LoadingContainer)
+-- Обводка
+local OverlayStroke = Instance.new("UIStroke", LoadingOverlay)
+OverlayStroke.Color = Color3.fromRGB(45, 45, 45)
+OverlayStroke.Thickness = 1.5
+
+-- Иконка в центре (круглая, с ID)
+local LoadingIcon = Instance.new("ImageLabel", LoadingOverlay)
 LoadingIcon.Name = "LoadingIcon"
-LoadingIcon.Size = UDim2.new(0, 80, 0, 80)
+LoadingIcon.Size = UDim2.new(0, 72, 0, 72)
 LoadingIcon.AnchorPoint = Vector2.new(0.5, 0.5)
-LoadingIcon.Position = UDim2.new(0.5, 0, 0.35, 0)
+LoadingIcon.Position = UDim2.new(0.5, 0, 0.32, 0)
 LoadingIcon.BackgroundTransparency = 1
 LoadingIcon.Image = "rbxassetid://" .. CustomIconID
 LoadingIcon.ScaleType = Enum.ScaleType.Fit
 LoadingIcon.ZIndex = 1001
+
+-- Скругление иконки (круглая)
 local IconCorner = Instance.new("UICorner", LoadingIcon)
 IconCorner.CornerRadius = UDim.new(1, 0)
 
 -- Текст статуса загрузки (меняется в зависимости от процента)
-local LoadingStatus = Instance.new("TextLabel", LoadingContainer)
+local LoadingStatus = Instance.new("TextLabel", LoadingOverlay)
 LoadingStatus.Name = "LoadingStatus"
-LoadingStatus.Size = UDim2.new(1, 0, 0, 30)
-LoadingStatus.Position = UDim2.new(0, 0, 0.55, 0)
+LoadingStatus.Size = UDim2.new(1, -20, 0, 28)
+LoadingStatus.Position = UDim2.new(0, 10, 0.52, 0)
 LoadingStatus.BackgroundTransparency = 1
 LoadingStatus.Text = "ЗАГРУЗКА ИНТЕРФЕЙСА"
 LoadingStatus.Font = Enum.Font.FredokaOne
 LoadingStatus.TextColor3 = Color3.fromRGB(0, 191, 255)
-LoadingStatus.TextSize = 16
+LoadingStatus.TextSize = 14
 LoadingStatus.TextScaled = false
 LoadingStatus.ZIndex = 1001
 
--- Процент загрузки (крупная надпись под/внутри бара)
-local LoadingPercent = Instance.new("TextLabel", LoadingContainer)
+-- Процент загрузки (крупная надпись)
+local LoadingPercent = Instance.new("TextLabel", LoadingOverlay)
 LoadingPercent.Name = "LoadingPercent"
-LoadingPercent.Size = UDim2.new(1, 0, 0, 40)
-LoadingPercent.Position = UDim2.new(0, 0, 0.7, 0)
+LoadingPercent.Size = UDim2.new(1, 0, 0, 38)
+LoadingPercent.Position = UDim2.new(0, 0, 0.68, 0)
 LoadingPercent.BackgroundTransparency = 1
 LoadingPercent.Text = "0%"
 LoadingPercent.Font = Enum.Font.FredokaOne
 LoadingPercent.TextColor3 = Color3.fromRGB(255, 255, 255)
-LoadingPercent.TextSize = 28
+LoadingPercent.TextSize = 30
 LoadingPercent.ZIndex = 1001
 
 -- Прогресс-бар (тонкая полоска)
-local ProgressBarBg = Instance.new("Frame", LoadingContainer)
+local ProgressBarBg = Instance.new("Frame", LoadingOverlay)
 ProgressBarBg.Name = "ProgressBarBg"
-ProgressBarBg.Size = UDim2.new(0.8, 0, 0, 6)
+ProgressBarBg.Size = UDim2.new(0.8, 0, 0, 5)
 ProgressBarBg.AnchorPoint = Vector2.new(0.5, 0.5)
 ProgressBarBg.Position = UDim2.new(0.5, 0, 0.85, 0)
-ProgressBarBg.BackgroundColor3 = Color3.fromRGB(30, 30, 30)
+ProgressBarBg.BackgroundColor3 = Color3.fromRGB(25, 25, 25)
 ProgressBarBg.BorderSizePixel = 0
 ProgressBarBg.ZIndex = 1001
 local BarCorner = Instance.new("UICorner", ProgressBarBg)
@@ -230,34 +235,30 @@ ProgressBarFill.ZIndex = 1002
 local FillCorner = Instance.new("UICorner", ProgressBarFill)
 FillCorner.CornerRadius = UDim.new(1, 0)
 
--- Пузырьки (8-12 штук)
+-- Пузырьки (8-12 штук) внутри окна загрузки
 local Bubbles = {}
 local bubbleCount = 10
-local screenSize = Instance.new("ScreenGui", DarkHub).AbsoluteSize
-if screenSize.X == 0 then
-	screenSize = Vector2.new(1920, 1080)
-end
 
 for i = 1, bubbleCount do
 	local bubble = Instance.new("Frame", LoadingOverlay)
 	bubble.Name = "Bubble_" .. i
 	bubble.BackgroundColor3 = Color3.fromRGB(0, 191, 255)
-	bubble.BackgroundTransparency = 0.6
+	bubble.BackgroundTransparency = 0.5
 	bubble.BorderSizePixel = 0
 	bubble.ZIndex = 998
-	local size = math.random(8, 25)
+	local size = math.random(6, 20)
 	bubble.Size = UDim2.new(0, size, 0, size)
 	local corner = Instance.new("UICorner", bubble)
 	corner.CornerRadius = UDim.new(1, 0)
 	
-	-- Случайная начальная позиция
-	local x = math.random(0, screenSize.X)
-	local y = math.random(0, screenSize.Y)
+	-- Случайная начальная позиция внутри окна
+	local x = math.random(10, 400)
+	local y = math.random(10, 260)
 	bubble.Position = UDim2.new(0, x, 0, y)
 	
 	-- Случайная скорость и направление
-	local speedX = (math.random() * 2 - 1) * (math.random(30, 80))
-	local speedY = (math.random() * 2 - 1) * (math.random(30, 80))
+	local speedX = (math.random() * 2 - 1) * (math.random(20, 60))
+	local speedY = (math.random() * 2 - 1) * (math.random(20, 60))
 	
 	table.insert(Bubbles, {
 		Object = bubble,
@@ -276,19 +277,19 @@ local bubbleConnection = RunService.RenderStepped:Connect(function(dt)
 			b.X = b.X + b.SpeedX * dt
 			b.Y = b.Y + b.SpeedY * dt
 			
-			-- Отражение от границ
-			if b.X < 0 then
-				b.X = 0
+			-- Отражение от границ окна
+			if b.X < 5 then
+				b.X = 5
 				b.SpeedX = -b.SpeedX
-			elseif b.X > screenSize.X then
-				b.X = screenSize.X
+			elseif b.X > 415 then
+				b.X = 415
 				b.SpeedX = -b.SpeedX
 			end
-			if b.Y < 0 then
-				b.Y = 0
+			if b.Y < 5 then
+				b.Y = 5
 				b.SpeedY = -b.SpeedY
-			elseif b.Y > screenSize.Y then
-				b.Y = screenSize.Y
+			elseif b.Y > 275 then
+				b.Y = 275
 				b.SpeedY = -b.SpeedY
 			end
 			
@@ -306,17 +307,16 @@ pulseConnection = RunService.RenderStepped:Connect(function(dt)
 		if pulseConnection then pulseConnection:Disconnect() end
 		return
 	end
-	pulseScale = pulseScale + (dt * 0.5 * pulseDirection)
-	if pulseScale > 1.15 then
-		pulseScale = 1.15
+	pulseScale = pulseScale + (dt * 0.6 * pulseDirection)
+	if pulseScale > 1.12 then
+		pulseScale = 1.12
 		pulseDirection = -1
-	elseif pulseScale < 0.85 then
-		pulseScale = 0.85
+	elseif pulseScale < 0.88 then
+		pulseScale = 0.88
 		pulseDirection = 1
 	end
 	if LoadingIcon and LoadingIcon.Parent then
-		LoadingIcon.ScaleType = Enum.ScaleType.Fit
-		LoadingIcon.Size = UDim2.new(0, 80 * pulseScale, 0, 80 * pulseScale)
+		LoadingIcon.Size = UDim2.new(0, 72 * pulseScale, 0, 72 * pulseScale)
 	end
 end)
 
@@ -711,10 +711,10 @@ local ThemeConfig = {
 	["Deep Violet"] = { Accent = Color3.fromRGB(102, 51, 153), MainBg = Color3.fromRGB(13, 11, 20), ElementBg = Color3.fromRGB(23, 19, 36) },
 	["Cyanic"] = { Accent = Color3.fromRGB(0, 255, 200), MainBg = Color3.fromRGB(10, 22, 26), ElementBg = Color3.fromRGB(18, 38, 46) },
 	["Blood Red"] = { Accent = Color3.fromRGB(170, 0, 0), MainBg = Color3.fromRGB(14, 4, 4), ElementBg = Color3.fromRGB(28, 8, 8) },
-	["AMOLED"] = { Accent = Color3.fromRGB(255, 255, 255), MainBg = Color3.fromRGB(0, 0, 0), ElementBg = Color3.fromRGB(15, 15, 15) }
+	["AMOLED"] = { Accent = Color3.fromRGB(0, 191, 255), MainBg = Color3.fromRGB(0, 0, 0), ElementBg = Color3.fromRGB(15, 15, 15) }
 }
 
-local DefaultTheme = { Accent = Color3.fromRGB(255, 255, 255), MainBg = Color3.fromRGB(0, 0, 0), ElementBg = Color3.fromRGB(15, 15, 15) }
+local DefaultTheme = { Accent = Color3.fromRGB(0, 191, 255), MainBg = Color3.fromRGB(0, 0, 0), ElementBg = Color3.fromRGB(15, 15, 15) }
 Library.CurrentThemeData = ThemeConfig["AMOLED"] or DefaultTheme
 
 local function getThemeAccent()
@@ -2171,8 +2171,7 @@ task.spawn(function()
 		ProgressBarFill.BackgroundColor3 = color
 		
 		task.wait(stepDelay)
-	end
-	
+	end	
 	-- Достигли 100% - показываем "ГОТОВО!"
 	updateLoadingText(100)
 	ProgressBarFill.BackgroundColor3 = Color3.fromRGB(0, 255, 100)
@@ -2191,12 +2190,6 @@ task.spawn(function()
 		pulseConnection:Disconnect()
 		pulseConnection = nil
 	end
-	
-	-- Плавное исчезновение экрана загрузки
-	local fadeOut = tween(LoadingOverlay, {BackgroundTransparency = 1}, 0.3)
-	tween(LoadingContainer, {BackgroundTransparency = 1}, 0.3)
-	
-	task.wait(0.3)
 	
 	-- Удаляем загрузочный экран
 	LoadingOverlay:Destroy()
