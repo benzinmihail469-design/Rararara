@@ -172,14 +172,14 @@ OverlayStroke.Color = Color3.fromRGB(255, 255, 255)
 OverlayStroke.Thickness = 1
 OverlayStroke.Transparency = 0.3
 
--- Иконка загрузки с вашим ID 76579925188009
+-- Иконка загрузки с правильным форматом rbxthumb для надежной загрузки
 local LoadingIcon = Instance.new("ImageLabel", LoadingOverlay)
 LoadingIcon.Name = "LoadingIcon"
 LoadingIcon.Size = UDim2.new(0, 60, 0, 60)
 LoadingIcon.AnchorPoint = Vector2.new(0.5, 0.5)
 LoadingIcon.Position = UDim2.new(0.5, 0, 0.25, 0)
 LoadingIcon.BackgroundTransparency = 1
-LoadingIcon.Image = "rbxassetid://76579925188009"
+LoadingIcon.Image = "rbxthumb://type=Asset&id=" .. CustomIconID .. "&w=150&h=150"
 LoadingIcon.ScaleType = Enum.ScaleType.Fit
 LoadingIcon.ZIndex = 1001
 
@@ -458,7 +458,7 @@ HubIcon.BackgroundTransparency = 1
 HubIcon.ScaleType = Enum.ScaleType.Fit
 HubIcon.ZIndex = 5
 Instance.new("UICorner", HubIcon).CornerRadius = UDim.new(0, 6)
-HubIcon.Image = "rbxthumb://type=Asset&id=76579925188009&w=150&h=150"
+HubIcon.Image = "rbxthumb://type=Asset&id=" .. CustomIconID .. "&w=150&h=150"
 
 local HubTitle = Instance.new("TextLabel", HeaderBg)
 HubTitle.Text = "Dark Hub"
