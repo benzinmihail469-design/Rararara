@@ -152,7 +152,7 @@ local function spawnWave(container, clickX, clickY)
 end
 
 -- ============================================================================
--- LOADING SCREEN (0 - 100%) - AMOLED стиль с вашей картинкой
+-- LOADING SCREEN (0 - 100%) - AMOLED стиль с исправленной иконкой
 -- ============================================================================
 local LoadingOverlay = Instance.new("Frame", DarkHub)
 LoadingOverlay.Name = "LoadingOverlay"
@@ -172,7 +172,7 @@ OverlayStroke.Color = Color3.fromRGB(255, 255, 255)
 OverlayStroke.Thickness = 1
 OverlayStroke.Transparency = 0.3
 
--- Иконка загрузки с правильным форматом rbxthumb для надежной загрузки
+-- ИСПРАВЛЕНО: Используем надежный формат rbxthumb для корректного отображения иконки
 local LoadingIcon = Instance.new("ImageLabel", LoadingOverlay)
 LoadingIcon.Name = "LoadingIcon"
 LoadingIcon.Size = UDim2.new(0, 60, 0, 60)
@@ -743,53 +743,6 @@ local allPages = {}
 local currentActiveTab = nil
 local currentHoveredTab = nil
 
-local function applyHover(button)
-	if not button or typeof(button) ~= "Instance" or not button.Parent then return end
-	local parentContainer = button.Parent
-	if not parentContainer or typeof(parentContainer) ~= "Instance" or not parentContainer.Parent then return end
-	local accent = getThemeAccent()
-	local mainBg = getThemeMainBg()
-	local stroke = parentContainer:FindFirstChild("HoverStroke")
-	if not stroke then
-		stroke = Instance.new("UIStroke")
-		stroke.Name = "HoverStroke"
-		stroke.Color = accent
-		stroke.Thickness = 1
-		stroke.Transparency = 1
-		stroke.ApplyStrokeMode = Enum.ApplyStrokeMode.Border
-		stroke.Parent = parentContainer
-	else
-		stroke.Color = accent
-	end
-	local isL = isLightColor(mainBg)
-	local hoverBg = isL and Color3.fromRGB(200, 200, 200) or Color3.fromRGB(50, 50, 50)
-	local hoverText = isL and Color3.fromRGB(20, 20, 20) or Color3.fromRGB(255, 255, 255)
-	tween(parentContainer, {BackgroundColor3 = hoverBg, BackgroundTransparency = 0.5}, 0.18)
-	tween(stroke, {Transparency = 0.5}, 0.18)
-	tween(button, {TextColor3 = hoverText}, 0.18)
-end
-
-local function removeHover(button)
-	if not button or typeof(button) ~= "Instance" or not button.Parent then return end
-	local parentContainer = button.Parent
-	if not parentContainer or typeof(parentContainer) ~= "Instance" then return end
-	local stroke = parentContainer:FindFirstChild("HoverStroke")
-	if stroke then
-		local t = tween(stroke, {Transparency = 1}, 0.18)
-		if t then
-			t.Completed:Connect(function()
-				if stroke and stroke.Parent and stroke.Transparency >= 0.99 then
-					stroke:Destroy()
-				end
-			end)
-		end
-	end
-	local isL = isLightColor(getThemeMainBg())
-	local normalTextColor = isL and Color3.fromRGB(110, 110, 110) or Color3.fromRGB(140, 140, 140)
-	tween(parentContainer, {BackgroundTransparency = 1}, 0.18)
-	tween(button, {TextColor3 = normalTextColor}, 0.18)
-end
-
 local function setActiveTab(tabButton)
 	if not tabButton or typeof(tabButton) ~= "Instance" or not tabButton.Parent then return end
 	local parentContainer = tabButton.Parent
@@ -1205,7 +1158,7 @@ local FontMapping = {
 -- ============================================================================
 -- INTERFACE CONTROLS (DROPDOWN, BUTTON, TOGGLE, SLIDER)
 -- ============================================================================
-function Library:CreateDropdown(parentPage, textKey, options, default, callback)
+local function CreateDropdown(parentPage, textKey, options, default, callback)
 	local initialText = Localization[Library.CurrentLanguage] and Localization[Library.CurrentLanguage][textKey] or textKey
 	local DropdownFrame = Instance.new("Frame", parentPage)
 	DropdownFrame.Name = textKey
@@ -1443,7 +1396,7 @@ function Library:CreateDropdown(parentPage, textKey, options, default, callback)
 	}
 end
 
-function Library:CreateButton(parentPage, textKey, callback)
+local function CreateButton(parentPage, textKey, callback)
 	local initialText = Localization[Library.CurrentLanguage] and Localization[Library.CurrentLanguage][textKey] or textKey
 	local Btn = Instance.new("TextButton", parentPage)
 	Btn.Name = textKey
@@ -1477,7 +1430,7 @@ function Library:CreateButton(parentPage, textKey, callback)
 	table.insert(LocaleObjects, {Object = Btn, Key = textKey, SearchItem = searchItem})
 end
 
-function Library:CreateToggle(parentPage, textKey, default, callback)
+local function CreateToggle(parentPage, textKey, default, callback)
 	local initialText = Localization[Library.CurrentLanguage] and Localization[Library.CurrentLanguage][textKey] or textKey
 	local TglFrame = Instance.new("Frame", parentPage)
 	TglFrame.Name = textKey
@@ -1557,7 +1510,7 @@ function Library:CreateToggle(parentPage, textKey, default, callback)
 	}
 end
 
-function Library:CreateSlider(parentPage, textKey, min, max, default, callback)
+local function CreateSlider(parentPage, textKey, min, max, default, callback)
 	local initialText = Localization[Library.CurrentLanguage] and Localization[Library.CurrentLanguage][textKey] or textKey
 	local SliderFrame = Instance.new("Frame", parentPage)
 	SliderFrame.Name = textKey
@@ -1714,7 +1667,7 @@ function Library:CreateSlider(parentPage, textKey, min, max, default, callback)
 	}
 end
 
-function Library:CreatePage(textKey, iconId, layoutOrder)
+local function CreatePage(textKey, iconId, layoutOrder)
 	local initialText = Localization[Library.CurrentLanguage] and Localization[Library.CurrentLanguage][textKey] or textKey
 	local PageFrame = Instance.new("ScrollingFrame", PagesContainer)
 	PageFrame.Name = textKey
@@ -1833,13 +1786,13 @@ end
 -- ============================================================================
 -- SETTINGS TAB & CONTROL INITIALIZATION
 -- ============================================================================
-local SettingsPage = Library:CreatePage("Settings", "117996761927034", 1)
+local SettingsPage = CreatePage("Settings", "117996761927034", 1)
 
-local LanguageDropdown = Library:CreateDropdown(SettingsPage, "Language", {"English", "Русский"}, "English", function(selectedLang)
+local LanguageDropdown = CreateDropdown(SettingsPage, "Language", {"English", "Русский"}, "English", function(selectedLang)
 	Library:UpdateLanguage(selectedLang)
 end)
 
-local ThemeDropdown = Library:CreateDropdown(SettingsPage, "UITheme", ThemeNamesList, "AMOLED", function(selectedTheme)
+local ThemeDropdown = CreateDropdown(SettingsPage, "UITheme", ThemeNamesList, "AMOLED", function(selectedTheme)
 	Library:UpdateTheme(selectedTheme)
 end)
 
@@ -1849,7 +1802,7 @@ for name, _ in pairs(FontMapping) do
 end
 table.sort(FontKeys)
 
-local FontDropdown = Library:CreateDropdown(SettingsPage, "MenuFont", FontKeys, "Fredoka One", function(selectedFont)
+local FontDropdown = CreateDropdown(SettingsPage, "MenuFont", FontKeys, "Fredoka One", function(selectedFont)
 	if FontMapping[selectedFont] then
 		Library.CurrentFont = FontMapping[selectedFont]
 		for _, obj in ipairs(Library.TrackedMainText) do
@@ -1865,21 +1818,21 @@ local FontDropdown = Library:CreateDropdown(SettingsPage, "MenuFont", FontKeys, 
 	end
 end)
 
-local TransparencySlider = Library:CreateSlider(SettingsPage, "UITransparency", 0, 90, 15, function(value)
+local TransparencySlider = CreateSlider(SettingsPage, "UITransparency", 0, 90, 15, function(value)
 	if MainFrame and MainFrame.Parent then
 		MainFrame.BackgroundTransparency = value / 100
 	end
 end)
 
-local AntiAFKToggle = Library:CreateToggle(SettingsPage, "AntiAFK", true, function(state)
+local AntiAFKToggle = CreateToggle(SettingsPage, "AntiAFK", true, function(state)
 	toggleAntiAFK(state)
 end)
 
-local AnimatedWindowToggle = Library:CreateToggle(SettingsPage, "AnimatedWindow", false, function(state)
+local AnimatedWindowToggle = CreateToggle(SettingsPage, "AnimatedWindow", false, function(state)
 	toggleAnimatedWindow(state)
 end)
 
-local GradientToggle = Library:CreateToggle(SettingsPage, "Gradient", false, function(state)
+local GradientToggle = CreateToggle(SettingsPage, "Gradient", false, function(state)
 	toggleGradientEffect(state)
 end)
 
@@ -2034,7 +1987,7 @@ local function refreshConfigDropdown()
 	end
 end
 
-ConfigDropdown = Library:CreateDropdown(SettingsPage, "Select Config", getConfigsList(), "default", function(val)
+ConfigDropdown = CreateDropdown(SettingsPage, "Select Config", getConfigsList(), "default", function(val)
 	selectedConfig = val
 	ConfigNameBox.Text = val
 end)
@@ -2116,17 +2069,17 @@ local function DeleteConfig(name)
 	end
 end
 
-Library:CreateButton(SettingsPage, "Save Config", function()
+CreateButton(SettingsPage, "Save Config", function()
 	local inputName = ConfigNameBox.Text
 	if inputName == "" then inputName = selectedConfig end
 	SaveConfig(inputName)
 end)
 
-Library:CreateButton(SettingsPage, "Load Config", function()
+CreateButton(SettingsPage, "Load Config", function()
 	LoadConfig(selectedConfig)
 end)
 
-Library:CreateButton(SettingsPage, "Delete Config", function()
+CreateButton(SettingsPage, "Delete Config", function()
 	DeleteConfig(selectedConfig)
 end)
 
