@@ -196,7 +196,6 @@ for i = 1, 10 do
 	local corner = Instance.new("UICorner", b)
 	corner.CornerRadius = UDim.new(1, 0)
 	
-	-- Добавление тонкого неон-свечения вокруг пузырька
 	local stroke = Instance.new("UIStroke", b)
 	stroke.Color = b.BackgroundColor3
 	stroke.Transparency = 0.7
@@ -225,7 +224,6 @@ bubbleConnection = RunService.RenderStepped:Connect(function()
 			local newX = currentPos.X.Scale + data.SpeedX
 			local newY = currentPos.Y.Scale + data.SpeedY
 			
-			-- Перенос пузырьков при выходе за границы экрана (эффект кипения)
 			if newY < -0.1 then newY = 1.1 end
 			if newX < -0.1 then newX = 1.1 elseif newX > 1.1 then newX = -0.1 end
 			
@@ -251,7 +249,6 @@ local CardStroke = Instance.new("UIStroke", LoadCard)
 CardStroke.Color = Color3.fromRGB(0, 191, 255)
 CardStroke.Thickness = 1.5
 
--- Градиент рамки карточки
 local StrokeGradient = Instance.new("UIGradient", CardStroke)
 StrokeGradient.Color = ColorSequence.new({
 	ColorSequenceKeypoint.new(0, Color3.fromRGB(0, 191, 255)),
@@ -1839,7 +1836,7 @@ end
 -- ============================================================================
 -- SETTINGS TAB & CONTROL INITIALIZATION
 -- ============================================================================
-local SettingsPage = Library:CreatePage("Settings", "117996761927034", 1)
+local SettingsPage = Library:CreatePage("Settings", CustomIconID, 1)
 
 local LanguageDropdown = Library:CreateDropdown(SettingsPage, "Language", {"English", "Русский"}, "English", function(selectedLang)
 	Library:UpdateLanguage(selectedLang)
@@ -1890,7 +1887,7 @@ local GradientToggle = Library:CreateToggle(SettingsPage, "Gradient", false, fun
 end)
 
 -- ============================================================================
--- CONFIGURATION SYSTEM & TOAST NOTIFICATIONS (ПОЛНОСТЬЮ ВОССТАНОВЛЕНО)
+-- CONFIGURATION SYSTEM & TOAST NOTIFICATIONS
 -- ============================================================================
 local CONFIG_FOLDER = "DarkHub/Configs"
 
@@ -1972,20 +1969,22 @@ ConfigSectionHeader.Size = UDim2.new(1, -20, 0, 24)
 ConfigSectionHeader.BackgroundTransparency = 1
 ConfigSectionHeader.LayoutOrder = #SettingsPage:GetChildren()
 
-local ConfigHeaderText = Instance.new("TextLabel", ConfigSectionHeader)
-ConfigHeaderText.Size = UDim2.new(1, 0, 1, 0)
-ConfigHeaderText.Text = "Configurations"
-ConfigHeaderText.Font = Library.CurrentFont or Enum.Font.FredokaOne
-ConfigHeaderText.TextColor3 = Color3.fromRGB(200, 200, 200)
-ConfigHeaderText.TextSize = 14
-ConfigHeaderText.TextXAlignment = Enum.TextXAlignment.Left
-ConfigHeaderText.BackgroundTransparency = 1
-table.insert(Library.TrackedMainText, ConfigHeaderText)
+local ConfigHeaderLabel = Instance.new("TextLabel", ConfigSectionHeader)
+ConfigHeaderLabel.Size = UDim2.new(1, 0, 1, 0)
+ConfigHeaderLabel.Text = "— CONFIGURATIONS —"
+ConfigHeaderLabel.Font = Library.CurrentFont
+ConfigHeaderLabel.TextColor3 = getThemeAccent()
+ConfigHeaderLabel.TextSize = 12
+ConfigHeaderLabel.BackgroundTransparency = 1
+table.insert(Library.TrackedSubText, ConfigHeaderLabel)
+
+local currentConfigName = "Default"
 
 local ConfigInputFrame = Instance.new("Frame", SettingsPage)
 ConfigInputFrame.Name = "ConfigInputFrame"
 ConfigInputFrame.Size = UDim2.new(1, -20, 0, 36)
 ConfigInputFrame.BackgroundColor3 = Library.CurrentThemeData.ElementBg or DefaultTheme.ElementBg
+ConfigInputFrame.ZIndex = 6
 ConfigInputFrame.LayoutOrder = #SettingsPage:GetChildren()
 Instance.new("UICorner", ConfigInputFrame).CornerRadius = UDim.new(0, 6)
 local ConfigInputStroke = Instance.new("UIStroke", ConfigInputFrame)
@@ -1994,211 +1993,170 @@ table.insert(Library.TrackedElementBg, ConfigInputFrame)
 table.insert(Library.TrackedStrokes, ConfigInputStroke)
 
 local ConfigNameBox = Instance.new("TextBox", ConfigInputFrame)
-ConfigNameBox.Name = "ConfigNameBox"
 ConfigNameBox.Size = UDim2.new(1, -20, 1, 0)
 ConfigNameBox.Position = UDim2.new(0, 10, 0, 0)
 ConfigNameBox.BackgroundTransparency = 1
-ConfigNameBox.Text = ""
-ConfigNameBox.PlaceholderText = "Config Name..."
-ConfigNameBox.Font = Library.CurrentFont or Enum.Font.FredokaOne
-ConfigNameBox.TextSize = 12
+ConfigNameBox.Text = "Default"
+ConfigNameBox.PlaceholderText = "Enter Config Name..."
+ConfigNameBox.Font = Library.CurrentFont
+ConfigNameBox.TextSize = 13
 ConfigNameBox.TextColor3 = Color3.fromRGB(230, 230, 230)
-ConfigNameBox.PlaceholderColor3 = Color3.fromRGB(130, 130, 130)
+ConfigNameBox.PlaceholderColor3 = Color3.fromRGB(120, 120, 120)
 ConfigNameBox.TextXAlignment = Enum.TextXAlignment.Left
+ConfigNameBox.ZIndex = 7
 table.insert(Library.TrackedMainText, ConfigNameBox)
 
-local selectedConfig = "default"
-local ConfigDropdown = nil
-
-local function getConfigsList()
-	local list = {}
-	if typeof(listfiles) == "function" and typeof(isfolder) == "function" and isfolder(CONFIG_FOLDER) then
-		pcall(function()
-			for _, file in ipairs(listfiles(CONFIG_FOLDER)) do
-				local name = file:match("([^/\\]+)%.json$")
-				if name then
-					table.insert(list, name)
-				end
-			end
-		end)
-	end
-	if #list == 0 then
-		table.insert(list, "default")
-	end
-	return list
-end
-
-local function refreshConfigDropdown()
-	if ConfigDropdown then
-		local configs = getConfigsList()
-		ConfigDropdown.UpdateOptions(configs)
-		if not table.find(configs, selectedConfig) then
-			selectedConfig = configs[1] or "default"
-			ConfigDropdown.SetValue(selectedConfig)
-		end
-	end
-end
-
-ConfigDropdown = Library:CreateDropdown(SettingsPage, "Select Config", getConfigsList(), "default", function(val)
-	selectedConfig = val
-	ConfigNameBox.Text = val
+ConfigNameBox:GetPropertyChangedSignal("Text"):Connect(function()
+	currentConfigName = ConfigNameBox.Text
 end)
 
--- Логика сохранения конфига (Завершено!)
-local function SaveConfig(name)
-	if not name or name == "" then
-		name = selectedConfig
-	end
-	if not name or name == "" then
-		showToast("Invalid Config Name", Color3.fromRGB(255, 70, 70))
-		return
-	end
-
-	local configData = {
-		Language = Library.CurrentLanguage,
-		Theme = ThemeDropdown and ThemeDropdown.GetValue() or "AMOLED",
-		Font = FontDropdown and FontDropdown.GetValue() or "Fredoka One",
-		Transparency = TransparencySlider and TransparencySlider.GetValue() or 15,
-		AntiAFK = AntiAFKToggle and AntiAFKToggle.GetValue() or true,
-		AnimatedWindow = AnimatedWindowToggle and AnimatedWindowToggle.GetValue() or false,
-		Gradient = GradientToggle and GradientToggle.GetValue() or false
-	}
-
-	if typeof(writefile) == "function" then
-		local success, err = pcall(function()
-			writefile(CONFIG_FOLDER .. "/" .. name .. ".json", HttpService:JSONEncode(configData))
-		end)
-		if success then
-			showToast("Config Saved: " .. name, Color3.fromRGB(0, 255, 120))
-			refreshConfigDropdown()
-		else
-			showToast("Save Error", Color3.fromRGB(255, 70, 70))
+local function getSavedConfigs()
+	local cfgList = {}
+	pcall(function()
+		if typeof(listfiles) == "function" and typeof(isfolder) == "function" and isfolder(CONFIG_FOLDER) then
+			local files = listfiles(CONFIG_FOLDER)
+			for _, file in ipairs(files) do
+				local name = file:match("([^/\\]+)%.json$")
+				if name then
+					table.insert(cfgList, name)
+				end
+			end
 		end
-	else
-		showToast("Executor Not Supported", Color3.fromRGB(255, 70, 70))
+	end)
+	if #cfgList == 0 then
+		table.insert(cfgList, "Default")
 	end
+	return cfgList
 end
 
--- Логика загрузки конфига
-local function LoadConfig(name)
-	if not name or name == "" then
-		name = selectedConfig
-	end
-	local filePath = CONFIG_FOLDER .. "/" .. name .. ".json"
-	if typeof(readfile) == "function" and typeof(isfile) == "function" and isfile(filePath) then
-		local success, result = pcall(function()
-			local content = readfile(filePath)
-			local data = HttpService:JSONDecode(content)
-			if data.Language then Library:UpdateLanguage(data.Language) end
-			if data.Theme then ThemeDropdown.SetValue(data.Theme) end
-			if data.Font then FontDropdown.SetValue(data.Font) end
-			if data.Transparency then TransparencySlider.SetValue(data.Transparency) end
-			if data.AntiAFK ~= nil then AntiAFKToggle.SetValue(data.AntiAFK) end
-			if data.AnimatedWindow ~= nil then AnimatedWindowToggle.SetValue(data.AnimatedWindow) end
-			if data.Gradient ~= nil then GradientToggle.SetValue(data.Gradient) end
-		end)
-		if success then
-			showToast("Config Loaded: " .. name, Color3.fromRGB(0, 191, 255))
-		else
-			showToast("Load Failed", Color3.fromRGB(255, 70, 70))
-		end
-	else
-		showToast("Config File Not Found", Color3.fromRGB(255, 70, 70))
-	end
-end
+local ConfigDropdown = Library:CreateDropdown(SettingsPage, "Select Config", getSavedConfigs(), "Default", function(selected)
+	currentConfigName = selected
+	ConfigNameBox.Text = selected
+end)
 
--- Логика удаления конфига
-local function DeleteConfig(name)
-	if not name or name == "" then
-		name = selectedConfig
-	end
-	local filePath = CONFIG_FOLDER .. "/" .. name .. ".json"
-	if typeof(delfile) == "function" and typeof(isfile) == "function" and isfile(filePath) then
-		pcall(function()
-			delfile(filePath)
-		end)
-		showToast("Config Deleted", Color3.fromRGB(255, 150, 0))
-		refreshConfigDropdown()
-	else
-		showToast("Cannot Delete File", Color3.fromRGB(255, 70, 70))
-	end
-end
-
--- Кнопки управления конфигами
 Library:CreateButton(SettingsPage, "Save Config", function()
-	SaveConfig(ConfigNameBox.Text)
+	local name = currentConfigName ~= "" and currentConfigName or "Default"
+	local data = {
+		Theme = ThemeDropdown.GetValue(),
+		Language = Library.CurrentLanguage,
+		Font = FontDropdown.GetValue(),
+		Transparency = TransparencySlider.GetValue(),
+		AntiAFK = AntiAFKToggle.GetValue(),
+		AnimatedWindow = AnimatedWindowToggle.GetValue(),
+		Gradient = GradientToggle.GetValue()
+	}
+	local success, err = pcall(function()
+		if typeof(writefile) == "function" then
+			writefile(CONFIG_FOLDER .. "/" .. name .. ".json", HttpService:JSONEncode(data))
+		end
+	end)
+	if success then
+		showToast("Config '" .. name .. "' Saved!", Color3.fromRGB(50, 255, 100))
+		ConfigDropdown.UpdateOptions(getSavedConfigs())
+	else
+		showToast("Failed to save config!", Color3.fromRGB(255, 50, 50))
+	end
 end)
 
 Library:CreateButton(SettingsPage, "Load Config", function()
-	LoadConfig(selectedConfig)
+	local name = currentConfigName ~= "" and currentConfigName or "Default"
+	local filePath = CONFIG_FOLDER .. "/" .. name .. ".json"
+	local success, result = pcall(function()
+		if typeof(isfile) == "function" and isfile(filePath) and typeof(readfile) == "function" then
+			return HttpService:JSONDecode(readfile(filePath))
+		end
+	end)
+	if success and type(result) == "table" then
+		if result.Theme then ThemeDropdown.SetValue(result.Theme) end
+		if result.Language then Library:UpdateLanguage(result.Language) end
+		if result.Font then FontDropdown.SetValue(result.Font) end
+		if result.Transparency then TransparencySlider.SetValue(result.Transparency) end
+		if result.AntiAFK ~= nil then AntiAFKToggle.SetValue(result.AntiAFK) end
+		if result.AnimatedWindow ~= nil then AnimatedWindowToggle.SetValue(result.AnimatedWindow) end
+		if result.Gradient ~= nil then GradientToggle.SetValue(result.Gradient) end
+		showToast("Config '" .. name .. "' Loaded!", Color3.fromRGB(0, 191, 255))
+	else
+		showToast("Config not found!", Color3.fromRGB(255, 50, 50))
+	end
 end)
 
 Library:CreateButton(SettingsPage, "Delete Config", function()
-	DeleteConfig(selectedConfig)
+	local name = currentConfigName ~= "" and currentConfigName or "Default"
+	local filePath = CONFIG_FOLDER .. "/" .. name .. ".json"
+	local success = pcall(function()
+		if typeof(isfile) == "function" and isfile(filePath) and typeof(delfile) == "function" then
+			delfile(filePath)
+		end
+	end)
+	if success then
+		showToast("Config '" .. name .. "' Deleted!", Color3.fromRGB(255, 150, 50))
+		ConfigDropdown.UpdateOptions(getSavedConfigs())
+	else
+		showToast("Failed to delete config!", Color3.fromRGB(255, 50, 50))
+	end
 end)
 
--- Инициализация первой вкладки по умолчанию
-if allPages["Settings"] then
-	allPages["Settings"].Visible = true
+-- Активация первой вкладки по умолчанию
+task.defer(function()
 	if allTabButtons["Settings"] then
 		setActiveTab(allTabButtons["Settings"])
 		currentActiveTab = allTabButtons["Settings"]
-	end
-end
-
--- ============================================================================
--- ЗАПУСК ТАЙМЕРА ЗАГРУЗКИ (0% -> 100%)
--- ============================================================================
-task.spawn(function()
-	local duration = 3.8 -- Длительность загрузки (секунды)
-	local elapsed = 0
-	
-	while elapsed < duration do
-		local dt = task.wait()
-		elapsed = elapsed + dt
-		local progress = math.clamp(elapsed / duration, 0, 1)
-		local percent = math.floor(progress * 100)
-		
-		-- Обновление UI загрузки
-		ProgressBarFill.Size = UDim2.new(progress, 0, 1, 0)
-		PercentText.Text = percent .. "%"
-		
-		-- Динамическая логика текстов согласно ТЗ
-		if percent <= 25 then
-			StatusLabel.Text = "ЗАГРУЗКА ИНТЕРФЕЙСА"
-		elseif percent <= 50 then
-			StatusLabel.Text = "ИНИЦИАЛИЗАЦИЯ МОДУЛЕЙ"
-		elseif percent <= 75 then
-			StatusLabel.Text = "НАСТРОЙКА АНИМАЦИЙ"
-		elseif percent <= 99 then
-			StatusLabel.Text = "ПОДГОТОВКА К ЗАПУСКУ"
-		else
-			StatusLabel.Text = "ГОТОВО!"
+		if allPages["Settings"] then
+			allPages["Settings"].Visible = true
 		end
 	end
+end)
+
+-- ============================================================================
+-- ЛОГИКА АНИМАЦИИ ЗАГРУЗКИ И ПЕРЕХОДА К ИНТЕРФЕЙСУ
+-- ============================================================================
+task.spawn(function()
+	local phases = {
+		{Text = "ИНИЦИАЛИЗАЦИЯ...", Target = 0.25, Duration = 0.4},
+		{Text = "ЗАГРУЗКА НАСТРОЕК...", Target = 0.60, Duration = 0.5},
+		{Text = "ПОДГОТОВКА ИНТЕРФЕЙСА...", Target = 0.85, Duration = 0.4},
+		{Text = "ГОТОВО!", Target = 1.00, Duration = 0.3}
+	}
 	
-	-- По завершению 100%
-	StatusLabel.Text = "ГОТОВО!"
-	PercentText.Text = "100%"
-	ProgressBarFill.Size = UDim2.new(1, 0, 1, 0)
+	for _, phase in ipairs(phases) do
+		StatusLabel.Text = phase.Text
+		local startVal = ProgressBarFill.Size.X.Scale
+		local endVal = phase.Target
+		local startTime = os.clock()
+		while os.clock() - startTime < phase.Duration do
+			local elapsed = os.clock() - startTime
+			local alpha = math.clamp(elapsed / phase.Duration, 0, 1)
+			local currentScale = startVal + (endVal - startVal) * alpha
+			ProgressBarFill.Size = UDim2.new(currentScale, 0, 1, 0)
+			PercentText.Text = string.format("%d%%", math.floor(currentScale * 100))
+			task.wait()
+		end
+		ProgressBarFill.Size = UDim2.new(endVal, 0, 1, 0)
+		PercentText.Text = string.format("%d%%", math.floor(endVal * 100))
+	end
 	
-	task.wait(0.5) -- Небольшая пауза на 100%
+	task.wait(0.2)
 	
-	-- Исчезновение экрана загрузки и открытие Главного Меню
 	if bubbleConnection then bubbleConnection:Disconnect() end
 	if pulseConnection then pulseConnection:Disconnect() end
 	
 	local fadeOut = tween(LoadingScreen, {BackgroundTransparency = 1}, 0.4)
 	tween(LoadCard, {BackgroundTransparency = 1}, 0.4)
+	tween(LoadingIcon, {ImageTransparency = 1}, 0.4)
+	tween(StatusLabel, {TextTransparency = 1}, 0.4)
+	tween(PercentText, {TextTransparency = 1}, 0.4)
+	tween(ProgressBarBg, {BackgroundTransparency = 1}, 0.4)
+	tween(ProgressBarFill, {BackgroundTransparency = 1}, 0.4)
 	
 	if fadeOut then
 		fadeOut.Completed:Connect(function()
-			LoadingScreen:Destroy()
-			MainFrame.Visible = true
-			showToast("Dark Hub Loaded Successfully!", Color3.fromRGB(0, 255, 120))
+			if LoadingScreen and LoadingScreen.Parent then
+				LoadingScreen:Destroy()
+			end
 		end)
 	else
 		LoadingScreen:Destroy()
-		MainFrame.Visible = true
 	end
+	
+	MainFrame.Visible = true
 end)
