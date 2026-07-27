@@ -1,5 +1,5 @@
 -- ============================================================================
--- Dark Hub - Settings Edition (With AMOLED Loading Screen & Config System)
+-- Dark Hub - Settings Edition (With Loading Screen & Configuration System)
 -- ============================================================================
 local TweenService = game:GetService("TweenService")
 local UserInputService = game:GetService("UserInputService")
@@ -9,7 +9,7 @@ local Players = game:GetService("Players")
 local VirtualUser = game:GetService("VirtualUser")
 local HttpService = game:GetService("HttpService")
 
--- Ожидание загрузки LocalPlayer
+-- Wait for LocalPlayer
 local LocalPlayer = Players.LocalPlayer
 while not LocalPlayer do
 	task.wait()
@@ -26,7 +26,6 @@ local function formatSessionTime(seconds)
 	return string.format("%02d:%02d:%02d", hours, minutes, secs)
 end
 
--- Система Анти-АФК
 local antiAfkConnection = nil
 local function toggleAntiAFK(state)
 	if state then
@@ -47,7 +46,7 @@ local function toggleAntiAFK(state)
 end
 toggleAntiAFK(true)
 
--- Безопасный поиск родительского контейнера для GUI (Защита от дубликатов)
+-- Safe GUI Parent Resolution
 local SafeParent = nil
 if typeof(gethui) == "function" then
 	pcall(function()
@@ -69,8 +68,6 @@ end
 if not SafeParent then
 	return
 end
-
--- Проверка и удаление старой версии хаба (Защита от повторного запуска)
 if SafeParent:FindFirstChild("DarkHub") then
 	SafeParent.DarkHub:Destroy()
 end
@@ -102,7 +99,7 @@ local function tween(obj, props, dur)
 	return nil
 end
 
--- Нормализация текста (для корректного поиска)
+-- FIXED TEXT: нормализация текста с правильными русскими буквами
 local function NormalizeText(str)
 	if type(str) ~= "string" then
 		return ""
@@ -120,7 +117,6 @@ local function NormalizeText(str)
 	return string.gsub(lowerStr, "[%p%s%c]", "")
 end
 
--- Анимация клика (Волна/Tsunami)
 local function spawnWave(container, clickX, clickY)
 	if not container or typeof(container) ~= "Instance" or not container.Parent then
 		return
@@ -156,179 +152,192 @@ local function spawnWave(container, clickX, clickY)
 end
 
 -- ============================================================================
--- AMOLED PREMIER LOADING SCREEN (С Пузырьками и Пульсирующей Иконкой)
+-- LOADING SCREEN (0 - 100%)
 -- ============================================================================
-local LoadingScreen = Instance.new("Frame", DarkHub)
-LoadingScreen.Name = "LoadingScreen"
-LoadingScreen.Size = UDim2.new(1, 0, 1, 0)
-LoadingScreen.Position = UDim2.new(0, 0, 0, 0)
-LoadingScreen.BackgroundColor3 = Color3.fromRGB(0, 0, 0) -- Идеально черный (AMOLED)
-LoadingScreen.BorderSizePixel = 0
-LoadingScreen.ZIndex = 200
+-- Создаём оверлей для загрузки (весь экран)
+local LoadingOverlay = Instance.new("Frame", DarkHub)
+LoadingOverlay.Name = "LoadingOverlay"
+LoadingOverlay.Size = UDim2.new(1, 0, 1, 0)
+LoadingOverlay.BackgroundColor3 = Color3.fromRGB(0, 0, 0)
+LoadingOverlay.BackgroundTransparency = 0
+LoadingOverlay.ZIndex = 999
 
--- Контейнер для летающих пузырьков
-local BubbleContainer = Instance.new("Frame", LoadingScreen)
-BubbleContainer.Name = "BubbleContainer"
-BubbleContainer.Size = UDim2.new(1, 0, 1, 0)
-BubbleContainer.BackgroundTransparency = 1
-BubbleContainer.ClipsDescendants = true
-BubbleContainer.ZIndex = 201
+-- Контейнер для элементов загрузки
+local LoadingContainer = Instance.new("Frame", LoadingOverlay)
+LoadingContainer.Name = "LoadingContainer"
+LoadingContainer.Size = UDim2.new(0, 400, 0, 250)
+LoadingContainer.AnchorPoint = Vector2.new(0.5, 0.5)
+LoadingContainer.Position = UDim2.new(0.5, 0, 0.5, 0)
+LoadingContainer.BackgroundTransparency = 1
+LoadingContainer.ZIndex = 1000
 
--- Создание 10 хаотичных прозрачных пузырьков
-local bubbles = {}
-local bubbleColors = {
-	Color3.fromRGB(0, 191, 255),  -- Неоново-голубой
-	Color3.fromRGB(138, 43, 226), -- Неоново-фиолетовый
-	Color3.fromRGB(0, 255, 200)   -- Бирюзовый акцент
-}
+-- Иконка в центре (пульсирующая)
+local LoadingIcon = Instance.new("ImageLabel", LoadingContainer)
+LoadingIcon.Name = "LoadingIcon"
+LoadingIcon.Size = UDim2.new(0, 80, 0, 80)
+LoadingIcon.AnchorPoint = Vector2.new(0.5, 0.5)
+LoadingIcon.Position = UDim2.new(0.5, 0, 0.35, 0)
+LoadingIcon.BackgroundTransparency = 1
+LoadingIcon.Image = "rbxassetid://" .. CustomIconID
+LoadingIcon.ScaleType = Enum.ScaleType.Fit
+LoadingIcon.ZIndex = 1001
+local IconCorner = Instance.new("UICorner", LoadingIcon)
+IconCorner.CornerRadius = UDim.new(1, 0)
 
-for i = 1, 10 do
-	local size = math.random(15, 45)
-	local b = Instance.new("Frame", BubbleContainer)
-	b.Name = "Bubble_" .. i
-	b.Size = UDim2.new(0, size, 0, size)
-	b.Position = UDim2.new(math.random(), 0, math.random(), 0)
-	b.BackgroundColor3 = bubbleColors[math.random(1, #bubbleColors)]
-	b.BackgroundTransparency = math.random(75, 90) / 100
-	b.BorderSizePixel = 0
-	b.ZIndex = 201
-	
-	local corner = Instance.new("UICorner", b)
+-- Текст статуса загрузки (меняется в зависимости от процента)
+local LoadingStatus = Instance.new("TextLabel", LoadingContainer)
+LoadingStatus.Name = "LoadingStatus"
+LoadingStatus.Size = UDim2.new(1, 0, 0, 30)
+LoadingStatus.Position = UDim2.new(0, 0, 0.55, 0)
+LoadingStatus.BackgroundTransparency = 1
+LoadingStatus.Text = "ЗАГРУЗКА ИНТЕРФЕЙСА"
+LoadingStatus.Font = Enum.Font.FredokaOne
+LoadingStatus.TextColor3 = Color3.fromRGB(0, 191, 255)
+LoadingStatus.TextSize = 16
+LoadingStatus.TextScaled = false
+LoadingStatus.ZIndex = 1001
+
+-- Процент загрузки (крупная надпись под/внутри бара)
+local LoadingPercent = Instance.new("TextLabel", LoadingContainer)
+LoadingPercent.Name = "LoadingPercent"
+LoadingPercent.Size = UDim2.new(1, 0, 0, 40)
+LoadingPercent.Position = UDim2.new(0, 0, 0.7, 0)
+LoadingPercent.BackgroundTransparency = 1
+LoadingPercent.Text = "0%"
+LoadingPercent.Font = Enum.Font.FredokaOne
+LoadingPercent.TextColor3 = Color3.fromRGB(255, 255, 255)
+LoadingPercent.TextSize = 28
+LoadingPercent.ZIndex = 1001
+
+-- Прогресс-бар (тонкая полоска)
+local ProgressBarBg = Instance.new("Frame", LoadingContainer)
+ProgressBarBg.Name = "ProgressBarBg"
+ProgressBarBg.Size = UDim2.new(0.8, 0, 0, 6)
+ProgressBarBg.AnchorPoint = Vector2.new(0.5, 0.5)
+ProgressBarBg.Position = UDim2.new(0.5, 0, 0.85, 0)
+ProgressBarBg.BackgroundColor3 = Color3.fromRGB(30, 30, 30)
+ProgressBarBg.BorderSizePixel = 0
+ProgressBarBg.ZIndex = 1001
+local BarCorner = Instance.new("UICorner", ProgressBarBg)
+BarCorner.CornerRadius = UDim.new(1, 0)
+
+local ProgressBarFill = Instance.new("Frame", ProgressBarBg)
+ProgressBarFill.Name = "ProgressBarFill"
+ProgressBarFill.Size = UDim2.new(0, 0, 1, 0)
+ProgressBarFill.BackgroundColor3 = Color3.fromRGB(0, 191, 255)
+ProgressBarFill.BorderSizePixel = 0
+ProgressBarFill.ZIndex = 1002
+local FillCorner = Instance.new("UICorner", ProgressBarFill)
+FillCorner.CornerRadius = UDim.new(1, 0)
+
+-- Пузырьки (8-12 штук)
+local Bubbles = {}
+local bubbleCount = 10
+local screenSize = Instance.new("ScreenGui", DarkHub).AbsoluteSize
+if screenSize.X == 0 then
+	screenSize = Vector2.new(1920, 1080)
+end
+
+for i = 1, bubbleCount do
+	local bubble = Instance.new("Frame", LoadingOverlay)
+	bubble.Name = "Bubble_" .. i
+	bubble.BackgroundColor3 = Color3.fromRGB(0, 191, 255)
+	bubble.BackgroundTransparency = 0.6
+	bubble.BorderSizePixel = 0
+	bubble.ZIndex = 998
+	local size = math.random(8, 25)
+	bubble.Size = UDim2.new(0, size, 0, size)
+	local corner = Instance.new("UICorner", bubble)
 	corner.CornerRadius = UDim.new(1, 0)
 	
-	local stroke = Instance.new("UIStroke", b)
-	stroke.Color = b.BackgroundColor3
-	stroke.Transparency = 0.7
-	stroke.Thickness = 1
+	-- Случайная начальная позиция
+	local x = math.random(0, screenSize.X)
+	local y = math.random(0, screenSize.Y)
+	bubble.Position = UDim2.new(0, x, 0, y)
 	
-	table.insert(bubbles, {
-		Frame = b,
-		SpeedX = (math.random() - 0.5) * 0.0015,
-		SpeedY = (math.random(-20, -5) / 10000), -- Движение преимущественно вверх
-		Size = size
+	-- Случайная скорость и направление
+	local speedX = (math.random() * 2 - 1) * (math.random(30, 80))
+	local speedY = (math.random() * 2 - 1) * (math.random(30, 80))
+	
+	table.insert(Bubbles, {
+		Object = bubble,
+		SpeedX = speedX,
+		SpeedY = speedY,
+		Size = size,
+		X = x,
+		Y = y
 	})
 end
 
--- Анимационный цикл движения пузырьков
-local bubbleConnection
-bubbleConnection = RunService.RenderStepped:Connect(function()
-	if not LoadingScreen or not LoadingScreen.Parent then
-		if bubbleConnection then bubbleConnection:Disconnect() end
-		return
-	end
-	
-	for _, data in ipairs(bubbles) do
-		local b = data.Frame
-		if b and b.Parent then
-			local currentPos = b.Position
-			local newX = currentPos.X.Scale + data.SpeedX
-			local newY = currentPos.Y.Scale + data.SpeedY
+-- Анимация пузырьков
+local bubbleConnection = RunService.RenderStepped:Connect(function(dt)
+	for _, b in ipairs(Bubbles) do
+		if b.Object and b.Object.Parent then
+			b.X = b.X + b.SpeedX * dt
+			b.Y = b.Y + b.SpeedY * dt
 			
-			if newY < -0.1 then newY = 1.1 end
-			if newX < -0.1 then newX = 1.1 elseif newX > 1.1 then newX = -0.1 end
+			-- Отражение от границ
+			if b.X < 0 then
+				b.X = 0
+				b.SpeedX = -b.SpeedX
+			elseif b.X > screenSize.X then
+				b.X = screenSize.X
+				b.SpeedX = -b.SpeedX
+			end
+			if b.Y < 0 then
+				b.Y = 0
+				b.SpeedY = -b.SpeedY
+			elseif b.Y > screenSize.Y then
+				b.Y = screenSize.Y
+				b.SpeedY = -b.SpeedY
+			end
 			
-			b.Position = UDim2.new(newX, 0, newY, 0)
+			b.Object.Position = UDim2.new(0, b.X, 0, b.Y)
 		end
 	end
 end)
 
--- Карточка загрузки по центру
-local LoadCard = Instance.new("Frame", LoadingScreen)
-LoadCard.Name = "LoadCard"
-LoadCard.Size = UDim2.new(0, 340, 0, 240)
-LoadCard.AnchorPoint = Vector2.new(0.5, 0.5)
-LoadCard.Position = UDim2.new(0.5, 0, 0.5, 0)
-LoadCard.BackgroundColor3 = Color3.fromRGB(10, 10, 10)
-LoadCard.BackgroundTransparency = 0.2
-LoadCard.ZIndex = 202
-
-local CardCorner = Instance.new("UICorner", LoadCard)
-CardCorner.CornerRadius = UDim.new(0, 16)
-
-local CardStroke = Instance.new("UIStroke", LoadCard)
-CardStroke.Color = Color3.fromRGB(0, 191, 255)
-CardStroke.Thickness = 1.5
-
-local StrokeGradient = Instance.new("UIGradient", CardStroke)
-StrokeGradient.Color = ColorSequence.new({
-	ColorSequenceKeypoint.new(0, Color3.fromRGB(0, 191, 255)),
-	ColorSequenceKeypoint.new(1, Color3.fromRGB(138, 43, 226))
-})
-
--- Круглая иконка с пульсацией
-local IconHolder = Instance.new("Frame", LoadCard)
-IconHolder.Size = UDim2.new(0, 70, 0, 70)
-IconHolder.AnchorPoint = Vector2.new(0.5, 0.5)
-IconHolder.Position = UDim2.new(0.5, 0, 0.3, 0)
-IconHolder.BackgroundTransparency = 1
-IconHolder.ZIndex = 203
-
-local LoadingIcon = Instance.new("ImageLabel", IconHolder)
-LoadingIcon.Size = UDim2.new(1, 0, 1, 0)
-LoadingIcon.BackgroundTransparency = 1
-LoadingIcon.Image = "rbxassetid://" .. CustomIconID
-LoadingIcon.ZIndex = 204
-Instance.new("UICorner", LoadingIcon).CornerRadius = UDim.new(1, 0)
-
-local IconStroke = Instance.new("UIStroke", LoadingIcon)
-IconStroke.Color = Color3.fromRGB(0, 191, 255)
-IconStroke.Thickness = 2
-
 -- Пульсация иконки
-local pulseConnection
-pulseConnection = RunService.RenderStepped:Connect(function()
+local pulseConnection = nil
+local pulseDirection = 1
+local pulseScale = 1
+pulseConnection = RunService.RenderStepped:Connect(function(dt)
 	if not LoadingIcon or not LoadingIcon.Parent then
 		if pulseConnection then pulseConnection:Disconnect() end
 		return
 	end
-	local scale = 1 + math.sin(os.clock() * 4) * 0.08
-	IconHolder.Size = UDim2.new(0, 70 * scale, 0, 70 * scale)
+	pulseScale = pulseScale + (dt * 0.5 * pulseDirection)
+	if pulseScale > 1.15 then
+		pulseScale = 1.15
+		pulseDirection = -1
+	elseif pulseScale < 0.85 then
+		pulseScale = 0.85
+		pulseDirection = 1
+	end
+	if LoadingIcon and LoadingIcon.Parent then
+		LoadingIcon.ScaleType = Enum.ScaleType.Fit
+		LoadingIcon.Size = UDim2.new(0, 80 * pulseScale, 0, 80 * pulseScale)
+	end
 end)
 
--- Текстовый статус фаз загрузки
-local StatusLabel = Instance.new("TextLabel", LoadCard)
-StatusLabel.Size = UDim2.new(1, -20, 0, 22)
-StatusLabel.Position = UDim2.new(0, 10, 0, 122)
-StatusLabel.Text = "ЗАГРУЗКА ИНТЕРФЕЙСА"
-StatusLabel.Font = Enum.Font.FredokaOne
-StatusLabel.TextColor3 = Color3.fromRGB(255, 255, 255)
-StatusLabel.TextSize = 13
-StatusLabel.BackgroundTransparency = 1
-StatusLabel.ZIndex = 203
-
--- Задний фон прогресс-бара
-local ProgressBarBg = Instance.new("Frame", LoadCard)
-ProgressBarBg.Size = UDim2.new(1, -50, 0, 8)
-ProgressBarBg.Position = UDim2.new(0, 25, 0, 158)
-ProgressBarBg.BackgroundColor3 = Color3.fromRGB(20, 20, 20)
-ProgressBarBg.BorderSizePixel = 0
-ProgressBarBg.ZIndex = 203
-Instance.new("UICorner", ProgressBarBg).CornerRadius = UDim.new(1, 0)
-
--- Заливка прогресс-бара
-local ProgressBarFill = Instance.new("Frame", ProgressBarBg)
-ProgressBarFill.Size = UDim2.new(0, 0, 1, 0)
-ProgressBarFill.BackgroundColor3 = Color3.fromRGB(0, 191, 255)
-ProgressBarFill.BorderSizePixel = 0
-ProgressBarFill.ZIndex = 204
-Instance.new("UICorner", ProgressBarFill).CornerRadius = UDim.new(1, 0)
-
-local BarGradient = Instance.new("UIGradient", ProgressBarFill)
-BarGradient.Color = ColorSequence.new({
-	ColorSequenceKeypoint.new(0, Color3.fromRGB(0, 191, 255)),
-	ColorSequenceKeypoint.new(1, Color3.fromRGB(138, 43, 226))
-})
-
--- Надпись с процентом
-local PercentText = Instance.new("TextLabel", LoadCard)
-PercentText.Size = UDim2.new(1, 0, 0, 20)
-PercentText.Position = UDim2.new(0, 0, 0, 172)
-PercentText.Text = "0%"
-PercentText.Font = Enum.Font.FredokaOne
-PercentText.TextColor3 = Color3.fromRGB(160, 160, 160)
-PercentText.TextSize = 14
-PercentText.BackgroundTransparency = 1
-PercentText.ZIndex = 203
+-- Функция обновления текста в зависимости от процента
+local function updateLoadingText(percent)
+	local statusText = ""
+	if percent <= 25 then
+		statusText = "ЗАГРУЗКА ИНТЕРФЕЙСА"
+	elseif percent <= 50 then
+		statusText = "ИНИЦИАЛИЗАЦИЯ МОДУЛЕЙ"
+	elseif percent <= 75 then
+		statusText = "НАСТРОЙКА АНИМАЦИЙ"
+	elseif percent <= 99 then
+		statusText = "ПОДГОТОВКА К ЗАПУСКУ"
+	else
+		statusText = "ГОТОВО!"
+	end
+	LoadingStatus.Text = statusText
+	LoadingPercent.Text = string.format("%d%%", percent)
+	ProgressBarFill.Size = UDim2.new(percent / 100, 0, 1, 0)
+end
 
 -- ============================================================================
 -- MAIN GUI FRAMEWORK
@@ -461,7 +470,7 @@ HubIcon.BackgroundTransparency = 1
 HubIcon.ScaleType = Enum.ScaleType.Fit
 HubIcon.ZIndex = 5
 Instance.new("UICorner", HubIcon).CornerRadius = UDim.new(0, 6)
-HubIcon.Image = "rbxassetid://" .. CustomIconID
+HubIcon.Image = "rbxthumb://type=Asset&id=" .. CustomIconID .. "&w=150&h=150"
 
 local HubTitle = Instance.new("TextLabel", HeaderBg)
 HubTitle.Text = "Dark Hub"
@@ -702,10 +711,10 @@ local ThemeConfig = {
 	["Deep Violet"] = { Accent = Color3.fromRGB(102, 51, 153), MainBg = Color3.fromRGB(13, 11, 20), ElementBg = Color3.fromRGB(23, 19, 36) },
 	["Cyanic"] = { Accent = Color3.fromRGB(0, 255, 200), MainBg = Color3.fromRGB(10, 22, 26), ElementBg = Color3.fromRGB(18, 38, 46) },
 	["Blood Red"] = { Accent = Color3.fromRGB(170, 0, 0), MainBg = Color3.fromRGB(14, 4, 4), ElementBg = Color3.fromRGB(28, 8, 8) },
-	["AMOLED"] = { Accent = Color3.fromRGB(0, 191, 255), MainBg = Color3.fromRGB(0, 0, 0), ElementBg = Color3.fromRGB(15, 15, 15) }
+	["AMOLED"] = { Accent = Color3.fromRGB(255, 255, 255), MainBg = Color3.fromRGB(0, 0, 0), ElementBg = Color3.fromRGB(15, 15, 15) }
 }
 
-local DefaultTheme = { Accent = Color3.fromRGB(0, 191, 255), MainBg = Color3.fromRGB(0, 0, 0), ElementBg = Color3.fromRGB(15, 15, 15) }
+local DefaultTheme = { Accent = Color3.fromRGB(255, 255, 255), MainBg = Color3.fromRGB(0, 0, 0), ElementBg = Color3.fromRGB(15, 15, 15) }
 Library.CurrentThemeData = ThemeConfig["AMOLED"] or DefaultTheme
 
 local function getThemeAccent()
@@ -1770,7 +1779,7 @@ function Library:CreatePage(textKey, iconId, layoutOrder)
 		TabIcon.Position = UDim2.new(0, 10, 0.5, -12)
 		TabIcon.BackgroundTransparency = 1
 		if tonumber(iconId) then
-			TabIcon.Image = "rbxassetid://" .. iconId
+			TabIcon.Image = "rbxthumb://type=Asset&id=" .. iconId .. "&w=150&h=150"
 		else
 			TabIcon.Image = iconId
 		end
@@ -1836,7 +1845,7 @@ end
 -- ============================================================================
 -- SETTINGS TAB & CONTROL INITIALIZATION
 -- ============================================================================
-local SettingsPage = Library:CreatePage("Settings", CustomIconID, 1)
+local SettingsPage = Library:CreatePage("Settings", "117996761927034", 1)
 
 local LanguageDropdown = Library:CreateDropdown(SettingsPage, "Language", {"English", "Русский"}, "English", function(selectedLang)
 	Library:UpdateLanguage(selectedLang)
@@ -1963,28 +1972,27 @@ local function showToast(message, dotColor)
 end
 
 -- --- UI CONFIGURATIONS SECTION INSIDE SETTINGS ---
+
 local ConfigSectionHeader = Instance.new("Frame", SettingsPage)
 ConfigSectionHeader.Name = "ConfigSectionHeader"
 ConfigSectionHeader.Size = UDim2.new(1, -20, 0, 24)
 ConfigSectionHeader.BackgroundTransparency = 1
 ConfigSectionHeader.LayoutOrder = #SettingsPage:GetChildren()
 
-local ConfigHeaderLabel = Instance.new("TextLabel", ConfigSectionHeader)
-ConfigHeaderLabel.Size = UDim2.new(1, 0, 1, 0)
-ConfigHeaderLabel.Text = "— CONFIGURATIONS —"
-ConfigHeaderLabel.Font = Library.CurrentFont
-ConfigHeaderLabel.TextColor3 = getThemeAccent()
-ConfigHeaderLabel.TextSize = 12
-ConfigHeaderLabel.BackgroundTransparency = 1
-table.insert(Library.TrackedSubText, ConfigHeaderLabel)
-
-local currentConfigName = "Default"
+local ConfigHeaderText = Instance.new("TextLabel", ConfigSectionHeader)
+ConfigHeaderText.Size = UDim2.new(1, 0, 1, 0)
+ConfigHeaderText.Text = "Configurations"
+ConfigHeaderText.Font = Library.CurrentFont or Enum.Font.FredokaOne
+ConfigHeaderText.TextColor3 = Color3.fromRGB(200, 200, 200)
+ConfigHeaderText.TextSize = 14
+ConfigHeaderText.TextXAlignment = Enum.TextXAlignment.Left
+ConfigHeaderText.BackgroundTransparency = 1
+table.insert(Library.TrackedMainText, ConfigHeaderText)
 
 local ConfigInputFrame = Instance.new("Frame", SettingsPage)
 ConfigInputFrame.Name = "ConfigInputFrame"
 ConfigInputFrame.Size = UDim2.new(1, -20, 0, 36)
 ConfigInputFrame.BackgroundColor3 = Library.CurrentThemeData.ElementBg or DefaultTheme.ElementBg
-ConfigInputFrame.ZIndex = 6
 ConfigInputFrame.LayoutOrder = #SettingsPage:GetChildren()
 Instance.new("UICorner", ConfigInputFrame).CornerRadius = UDim.new(0, 6)
 local ConfigInputStroke = Instance.new("UIStroke", ConfigInputFrame)
@@ -1993,170 +2001,211 @@ table.insert(Library.TrackedElementBg, ConfigInputFrame)
 table.insert(Library.TrackedStrokes, ConfigInputStroke)
 
 local ConfigNameBox = Instance.new("TextBox", ConfigInputFrame)
+ConfigNameBox.Name = "ConfigNameBox"
 ConfigNameBox.Size = UDim2.new(1, -20, 1, 0)
 ConfigNameBox.Position = UDim2.new(0, 10, 0, 0)
 ConfigNameBox.BackgroundTransparency = 1
-ConfigNameBox.Text = "Default"
-ConfigNameBox.PlaceholderText = "Enter Config Name..."
-ConfigNameBox.Font = Library.CurrentFont
-ConfigNameBox.TextSize = 13
+ConfigNameBox.Text = ""
+ConfigNameBox.PlaceholderText = "Config Name..."
+ConfigNameBox.Font = Library.CurrentFont or Enum.Font.FredokaOne
+ConfigNameBox.TextSize = 12
 ConfigNameBox.TextColor3 = Color3.fromRGB(230, 230, 230)
-ConfigNameBox.PlaceholderColor3 = Color3.fromRGB(120, 120, 120)
+ConfigNameBox.PlaceholderColor3 = Color3.fromRGB(130, 130, 130)
 ConfigNameBox.TextXAlignment = Enum.TextXAlignment.Left
-ConfigNameBox.ZIndex = 7
 table.insert(Library.TrackedMainText, ConfigNameBox)
 
-ConfigNameBox:GetPropertyChangedSignal("Text"):Connect(function()
-	currentConfigName = ConfigNameBox.Text
-end)
+local selectedConfig = "default"
+local ConfigDropdown = nil
 
-local function getSavedConfigs()
-	local cfgList = {}
-	pcall(function()
-		if typeof(listfiles) == "function" and typeof(isfolder) == "function" and isfolder(CONFIG_FOLDER) then
-			local files = listfiles(CONFIG_FOLDER)
-			for _, file in ipairs(files) do
+local function getConfigsList()
+	local list = {}
+	if typeof(listfiles) == "function" and typeof(isfolder) == "function" and isfolder(CONFIG_FOLDER) then
+		pcall(function()
+			for _, file in ipairs(listfiles(CONFIG_FOLDER)) do
 				local name = file:match("([^/\\]+)%.json$")
 				if name then
-					table.insert(cfgList, name)
+					table.insert(list, name)
 				end
 			end
-		end
-	end)
-	if #cfgList == 0 then
-		table.insert(cfgList, "Default")
+		end)
 	end
-	return cfgList
+	if #list == 0 then
+		table.insert(list, "default")
+	end
+	return list
 end
 
-local ConfigDropdown = Library:CreateDropdown(SettingsPage, "Select Config", getSavedConfigs(), "Default", function(selected)
-	currentConfigName = selected
-	ConfigNameBox.Text = selected
+local function refreshConfigDropdown()
+	if ConfigDropdown then
+		local configs = getConfigsList()
+		ConfigDropdown.UpdateOptions(configs)
+		if not table.find(configs, selectedConfig) then
+			selectedConfig = configs[1] or "default"
+			ConfigDropdown.SetValue(selectedConfig)
+		end
+	end
+end
+
+ConfigDropdown = Library:CreateDropdown(SettingsPage, "Select Config", getConfigsList(), "default", function(val)
+	selectedConfig = val
+	ConfigNameBox.Text = val
 end)
 
-Library:CreateButton(SettingsPage, "Save Config", function()
-	local name = currentConfigName ~= "" and currentConfigName or "Default"
+local function SaveConfig(name)
+	if not name or name == "" then
+		name = selectedConfig
+	end
+	if not name or name == "" then
+		showToast("Invalid Config Name", Color3.fromRGB(255, 70, 70))
+		return
+	end
+	local fontName = "Fredoka One"
+	for k, v in pairs(FontMapping) do
+		if v == Library.CurrentFont then
+			fontName = k
+			break
+		end
+	end
 	local data = {
-		Theme = ThemeDropdown.GetValue(),
 		Language = Library.CurrentLanguage,
-		Font = FontDropdown.GetValue(),
+		Theme = ThemeDropdown.GetValue(),
+		Font = fontName,
 		Transparency = TransparencySlider.GetValue(),
 		AntiAFK = AntiAFKToggle.GetValue(),
 		AnimatedWindow = AnimatedWindowToggle.GetValue(),
 		Gradient = GradientToggle.GetValue()
 	}
-	local success, err = pcall(function()
-		if typeof(writefile) == "function" then
+	if typeof(writefile) == "function" then
+		pcall(function()
 			writefile(CONFIG_FOLDER .. "/" .. name .. ".json", HttpService:JSONEncode(data))
-		end
-	end)
-	if success then
-		showToast("Config '" .. name .. "' Saved!", Color3.fromRGB(50, 255, 100))
-		ConfigDropdown.UpdateOptions(getSavedConfigs())
+			showToast("Config Saved: " .. name, Color3.fromRGB(60, 255, 90))
+			selectedConfig = name
+			refreshConfigDropdown()
+		end)
 	else
-		showToast("Failed to save config!", Color3.fromRGB(255, 50, 50))
+		showToast("File System Not Supported", Color3.fromRGB(255, 70, 70))
 	end
-end)
+end
 
-Library:CreateButton(SettingsPage, "Load Config", function()
-	local name = currentConfigName ~= "" and currentConfigName or "Default"
+local function LoadConfig(name)
+	if not name or name == "" then
+		name = selectedConfig
+	end
 	local filePath = CONFIG_FOLDER .. "/" .. name .. ".json"
-	local success, result = pcall(function()
-		if typeof(isfile) == "function" and isfile(filePath) and typeof(readfile) == "function" then
-			return HttpService:JSONDecode(readfile(filePath))
-		end
-	end)
-	if success and type(result) == "table" then
-		if result.Theme then ThemeDropdown.SetValue(result.Theme) end
-		if result.Language then Library:UpdateLanguage(result.Language) end
-		if result.Font then FontDropdown.SetValue(result.Font) end
-		if result.Transparency then TransparencySlider.SetValue(result.Transparency) end
-		if result.AntiAFK ~= nil then AntiAFKToggle.SetValue(result.AntiAFK) end
-		if result.AnimatedWindow ~= nil then AnimatedWindowToggle.SetValue(result.AnimatedWindow) end
-		if result.Gradient ~= nil then GradientToggle.SetValue(result.Gradient) end
-		showToast("Config '" .. name .. "' Loaded!", Color3.fromRGB(0, 191, 255))
-	else
-		showToast("Config not found!", Color3.fromRGB(255, 50, 50))
-	end
-end)
-
-Library:CreateButton(SettingsPage, "Delete Config", function()
-	local name = currentConfigName ~= "" and currentConfigName or "Default"
-	local filePath = CONFIG_FOLDER .. "/" .. name .. ".json"
-	local success = pcall(function()
-		if typeof(isfile) == "function" and isfile(filePath) and typeof(delfile) == "function" then
-			delfile(filePath)
-		end
-	end)
-	if success then
-		showToast("Config '" .. name .. "' Deleted!", Color3.fromRGB(255, 150, 50))
-		ConfigDropdown.UpdateOptions(getSavedConfigs())
-	else
-		showToast("Failed to delete config!", Color3.fromRGB(255, 50, 50))
-	end
-end)
-
--- Активация первой вкладки по умолчанию
-task.defer(function()
-	if allTabButtons["Settings"] then
-		setActiveTab(allTabButtons["Settings"])
-		currentActiveTab = allTabButtons["Settings"]
-		if allPages["Settings"] then
-			allPages["Settings"].Visible = true
-		end
-	end
-end)
-
--- ============================================================================
--- ЛОГИКА АНИМАЦИИ ЗАГРУЗКИ И ПЕРЕХОДА К ИНТЕРФЕЙСУ
--- ============================================================================
-task.spawn(function()
-	local phases = {
-		{Text = "ИНИЦИАЛИЗАЦИЯ...", Target = 0.25, Duration = 0.4},
-		{Text = "ЗАГРУЗКА НАСТРОЕК...", Target = 0.60, Duration = 0.5},
-		{Text = "ПОДГОТОВКА ИНТЕРФЕЙСА...", Target = 0.85, Duration = 0.4},
-		{Text = "ГОТОВО!", Target = 1.00, Duration = 0.3}
-	}
-	
-	for _, phase in ipairs(phases) do
-		StatusLabel.Text = phase.Text
-		local startVal = ProgressBarFill.Size.X.Scale
-		local endVal = phase.Target
-		local startTime = os.clock()
-		while os.clock() - startTime < phase.Duration do
-			local elapsed = os.clock() - startTime
-			local alpha = math.clamp(elapsed / phase.Duration, 0, 1)
-			local currentScale = startVal + (endVal - startVal) * alpha
-			ProgressBarFill.Size = UDim2.new(currentScale, 0, 1, 0)
-			PercentText.Text = string.format("%d%%", math.floor(currentScale * 100))
-			task.wait()
-		end
-		ProgressBarFill.Size = UDim2.new(endVal, 0, 1, 0)
-		PercentText.Text = string.format("%d%%", math.floor(endVal * 100))
-	end
-	
-	task.wait(0.2)
-	
-	if bubbleConnection then bubbleConnection:Disconnect() end
-	if pulseConnection then pulseConnection:Disconnect() end
-	
-	local fadeOut = tween(LoadingScreen, {BackgroundTransparency = 1}, 0.4)
-	tween(LoadCard, {BackgroundTransparency = 1}, 0.4)
-	tween(LoadingIcon, {ImageTransparency = 1}, 0.4)
-	tween(StatusLabel, {TextTransparency = 1}, 0.4)
-	tween(PercentText, {TextTransparency = 1}, 0.4)
-	tween(ProgressBarBg, {BackgroundTransparency = 1}, 0.4)
-	tween(ProgressBarFill, {BackgroundTransparency = 1}, 0.4)
-	
-	if fadeOut then
-		fadeOut.Completed:Connect(function()
-			if LoadingScreen and LoadingScreen.Parent then
-				LoadingScreen:Destroy()
+	if typeof(readfile) == "function" and typeof(isfile) == "function" and isfile(filePath) then
+		pcall(function()
+			local raw = readfile(filePath)
+			local data = HttpService:JSONDecode(raw)
+			if data then
+				if data.Language then LanguageDropdown.SetValue(data.Language) end
+				if data.Theme then ThemeDropdown.SetValue(data.Theme) end
+				if data.Font then FontDropdown.SetValue(data.Font) end
+				if data.Transparency then TransparencySlider.SetValue(data.Transparency) end
+				if data.AntiAFK ~= nil then AntiAFKToggle.SetValue(data.AntiAFK) end
+				if data.AnimatedWindow ~= nil then AnimatedWindowToggle.SetValue(data.AnimatedWindow) end
+				if data.Gradient ~= nil then GradientToggle.SetValue(data.Gradient) end
+				showToast("Config Loaded: " .. name, Color3.fromRGB(60, 255, 90))
 			end
 		end)
 	else
-		LoadingScreen:Destroy()
+		showToast("Config File Not Found", Color3.fromRGB(255, 70, 70))
+	end
+end
+
+local function DeleteConfig(name)
+	if not name or name == "" then
+		name = selectedConfig
+	end
+	local filePath = CONFIG_FOLDER .. "/" .. name .. ".json"
+	if typeof(delfile) == "function" and typeof(isfile) == "function" and isfile(filePath) then
+		pcall(function()
+			delfile(filePath)
+			showToast("Config Deleted: " .. name, Color3.fromRGB(255, 180, 40))
+			refreshConfigDropdown()
+		end)
+	else
+		showToast("Cannot Delete Config", Color3.fromRGB(255, 70, 70))
+	end
+end
+
+Library:CreateButton(SettingsPage, "Save Config", function()
+	local inputName = ConfigNameBox.Text
+	if inputName == "" then inputName = selectedConfig end
+	SaveConfig(inputName)
+end)
+
+Library:CreateButton(SettingsPage, "Load Config", function()
+	LoadConfig(selectedConfig)
+end)
+
+Library:CreateButton(SettingsPage, "Delete Config", function()
+	DeleteConfig(selectedConfig)
+end)
+
+-- ============================================================================
+-- ИНИЦИАЛИЗАЦИЯ И АНИМАЦИЯ ЗАГРУЗКИ (0 - 100%)
+-- ============================================================================
+
+-- Стартовая инициализация: показываем страницу настроек по умолчанию
+if SettingsPage and allTabButtons["Settings"] then
+	SettingsPage.Visible = true
+	setActiveTab(allTabButtons["Settings"])
+	currentActiveTab = allTabButtons["Settings"]
+end
+
+-- Скрываем главный фрейм до завершения загрузки
+MainFrame.Visible = false
+
+-- Запускаем анимацию загрузки от 0 до 100%
+task.spawn(function()
+	local totalSteps = 100
+	local stepDelay = 0.04 -- ~4 секунды на всю загрузку
+	
+	for i = 0, totalSteps do
+		-- Обновляем прогресс
+		updateLoadingText(i)
+		
+		-- Обновляем цвет прогресс-бара (градиент от фиолетового к голубому)
+		local hue = 0.6 + (i / totalSteps) * 0.2 -- от фиолетового к голубому
+		local color = Color3.fromHSV(hue, 0.8, 1)
+		ProgressBarFill.BackgroundColor3 = color
+		
+		task.wait(stepDelay)
 	end
 	
+	-- Достигли 100% - показываем "ГОТОВО!"
+	updateLoadingText(100)
+	ProgressBarFill.BackgroundColor3 = Color3.fromRGB(0, 255, 100)
+	
+	-- Ждём 0.5 секунды перед скрытием
+	task.wait(0.5)
+	
+	-- Останавливаем анимацию пузырьков
+	if bubbleConnection then
+		bubbleConnection:Disconnect()
+		bubbleConnection = nil
+	end
+	
+	-- Останавливаем пульсацию иконки
+	if pulseConnection then
+		pulseConnection:Disconnect()
+		pulseConnection = nil
+	end
+	
+	-- Плавное исчезновение экрана загрузки
+	local fadeOut = tween(LoadingOverlay, {BackgroundTransparency = 1}, 0.3)
+	tween(LoadingContainer, {BackgroundTransparency = 1}, 0.3)
+	
+	task.wait(0.3)
+	
+	-- Удаляем загрузочный экран
+	LoadingOverlay:Destroy()
+	
+	-- Показываем главный интерфейс с анимацией появления
 	MainFrame.Visible = true
+	MainFrame.Size = UDim2.new(0, 0, 0, 0)
+	tween(MainFrame, {Size = UDim2.new(0, 550, 0, 350)}, 0.35)
+	
+	-- Показываем уведомление о загрузке
+	showToast("Dark Hub Loaded Successfully", Color3.fromRGB(0, 255, 100))
 end)
