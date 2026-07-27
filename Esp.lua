@@ -152,9 +152,8 @@ local function spawnWave(container, clickX, clickY)
 end
 
 -- ============================================================================
--- LOADING SCREEN (0 - 100%) - AMOLED стиль
+-- LOADING SCREEN (0 - 100%) - AMOLED стиль с вашей картинкой
 -- ============================================================================
--- Компактный блок загрузки
 local LoadingOverlay = Instance.new("Frame", DarkHub)
 LoadingOverlay.Name = "LoadingOverlay"
 LoadingOverlay.Size = UDim2.new(0, 320, 0, 220)
@@ -165,17 +164,15 @@ LoadingOverlay.BackgroundTransparency = 0
 LoadingOverlay.ZIndex = 999
 LoadingOverlay.ClipsDescendants = true
 
--- Скругление углов
 local OverlayCorner = Instance.new("UICorner", LoadingOverlay)
 OverlayCorner.CornerRadius = UDim.new(0, 12)
 
--- Обводка белая (AMOLED стиль)
 local OverlayStroke = Instance.new("UIStroke", LoadingOverlay)
 OverlayStroke.Color = Color3.fromRGB(255, 255, 255)
 OverlayStroke.Thickness = 1
 OverlayStroke.Transparency = 0.3
 
--- Иконка в центре (круглая, с ID 76579925188009)
+-- Иконка загрузки с вашим ID 76579925188009
 local LoadingIcon = Instance.new("ImageLabel", LoadingOverlay)
 LoadingIcon.Name = "LoadingIcon"
 LoadingIcon.Size = UDim2.new(0, 60, 0, 60)
@@ -186,11 +183,9 @@ LoadingIcon.Image = "rbxassetid://76579925188009"
 LoadingIcon.ScaleType = Enum.ScaleType.Fit
 LoadingIcon.ZIndex = 1001
 
--- Скругление иконки (круглая)
 local IconCorner = Instance.new("UICorner", LoadingIcon)
 IconCorner.CornerRadius = UDim.new(1, 0)
 
--- Текст статуса загрузки
 local LoadingStatus = Instance.new("TextLabel", LoadingOverlay)
 LoadingStatus.Name = "LoadingStatus"
 LoadingStatus.Size = UDim2.new(1, -20, 0, 22)
@@ -203,7 +198,6 @@ LoadingStatus.TextSize = 12
 LoadingStatus.TextScaled = false
 LoadingStatus.ZIndex = 1001
 
--- Процент загрузки
 local LoadingPercent = Instance.new("TextLabel", LoadingOverlay)
 LoadingPercent.Name = "LoadingPercent"
 LoadingPercent.Size = UDim2.new(1, 0, 0, 32)
@@ -215,7 +209,6 @@ LoadingPercent.TextColor3 = Color3.fromRGB(255, 255, 255)
 LoadingPercent.TextSize = 24
 LoadingPercent.ZIndex = 1001
 
--- Прогресс-бар
 local ProgressBarBg = Instance.new("Frame", LoadingOverlay)
 ProgressBarBg.Name = "ProgressBarBg"
 ProgressBarBg.Size = UDim2.new(0.8, 0, 0, 6)
@@ -236,7 +229,7 @@ ProgressBarFill.ZIndex = 1002
 local FillCorner = Instance.new("UICorner", ProgressBarFill)
 FillCorner.CornerRadius = UDim.new(1, 0)
 
--- Пузырьки (белые, прозрачные)
+-- Пузырьки
 local Bubbles = {}
 local bubbleCount = 10
 
@@ -252,12 +245,10 @@ for i = 1, bubbleCount do
 	local corner = Instance.new("UICorner", bubble)
 	corner.CornerRadius = UDim.new(1, 0)
 	
-	-- Случайная начальная позиция внутри окна
 	local x = math.random(10, 310)
 	local y = math.random(10, 210)
 	bubble.Position = UDim2.new(0, x, 0, y)
 	
-	-- Случайная скорость и направление
 	local speedX = (math.random() * 2 - 1) * (math.random(15, 50))
 	local speedY = (math.random() * 2 - 1) * (math.random(15, 50))
 	
@@ -271,14 +262,12 @@ for i = 1, bubbleCount do
 	})
 end
 
--- Анимация пузырьков
 local bubbleConnection = RunService.RenderStepped:Connect(function(dt)
 	for _, b in ipairs(Bubbles) do
 		if b.Object and b.Object.Parent then
 			b.X = b.X + b.SpeedX * dt
 			b.Y = b.Y + b.SpeedY * dt
 			
-			-- Отражение от границ окна
 			if b.X < 5 then
 				b.X = 5
 				b.SpeedX = -b.SpeedX
@@ -299,7 +288,6 @@ local bubbleConnection = RunService.RenderStepped:Connect(function(dt)
 	end
 end)
 
--- Пульсация иконки
 local pulseConnection = nil
 local pulseDirection = 1
 local pulseScale = 1
@@ -321,7 +309,6 @@ pulseConnection = RunService.RenderStepped:Connect(function(dt)
 	end
 end)
 
--- Функция обновления текста в зависимости от процента
 local function updateLoadingText(percent)
 	local statusText = ""
 	if percent <= 25 then
@@ -2147,58 +2134,44 @@ end)
 -- ИНИЦИАЛИЗАЦИЯ И АНИМАЦИЯ ЗАГРУЗКИ (0 - 100%)
 -- ============================================================================
 
--- Стартовая инициализация: показываем страницу настроек по умолчанию
 if SettingsPage and allTabButtons["Settings"] then
 	SettingsPage.Visible = true
 	setActiveTab(allTabButtons["Settings"])
 	currentActiveTab = allTabButtons["Settings"]
 end
 
--- Скрываем главный фрейм до завершения загрузки
 MainFrame.Visible = false
 
--- Запускаем анимацию загрузки от 0 до 100%
 task.spawn(function()
 	local totalSteps = 100
-	local stepDelay = 0.035 -- ~3.5 секунды на всю загрузку
+	local stepDelay = 0.035
 	
 	for i = 0, totalSteps do
-		-- Обновляем прогресс
 		updateLoadingText(i)
-		
-		-- Цвет прогресс-бара (белый)
 		ProgressBarFill.BackgroundColor3 = Color3.fromRGB(255, 255, 255)
-		
 		task.wait(stepDelay)
 	end
 	
-	-- Достигли 100% - показываем "ГОТОВО!"
 	updateLoadingText(100)
 	ProgressBarFill.BackgroundColor3 = Color3.fromRGB(0, 255, 100)
 	
-	-- Ждём 0.5 секунды перед скрытием
 	task.wait(0.5)
 	
-	-- Останавливаем анимацию пузырьков
 	if bubbleConnection then
 		bubbleConnection:Disconnect()
 		bubbleConnection = nil
 	end
 	
-	-- Останавливаем пульсацию иконки
 	if pulseConnection then
 		pulseConnection:Disconnect()
 		pulseConnection = nil
 	end
 	
-	-- Удаляем загрузочный экран
 	LoadingOverlay:Destroy()
 	
-	-- Показываем главный интерфейс с анимацией появления
 	MainFrame.Visible = true
 	MainFrame.Size = UDim2.new(0, 0, 0, 0)
 	tween(MainFrame, {Size = UDim2.new(0, 550, 0, 350)}, 0.35)
 	
-	-- Показываем уведомление о загрузке
 	showToast("Dark Hub Loaded Successfully", Color3.fromRGB(0, 255, 100))
 end)
