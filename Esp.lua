@@ -1,5 +1,5 @@
 -- ============================================================================
--- Dark Hub - Settings Edition (AMOLED Style with UI, Theme & Configs Sub-Tabs)
+-- Dark Hub - Settings Edition (AMOLED Style with Separate UI, Theme & Configs Tabs)
 -- ============================================================================
 local TweenService = game:GetService("TweenService")
 local UserInputService = game:GetService("UserInputService")
@@ -326,7 +326,7 @@ PagesContainer.BackgroundTransparency = 1
 PagesContainer.ZIndex = 5
 
 local TabTitle = Instance.new("TextLabel", MainFrame)
-TabTitle.Text = "Settings"
+TabTitle.Text = "UI"
 TabTitle.Font = Enum.Font.SourceSansBold
 TabTitle.TextColor3 = Color3.fromRGB(255, 255, 255)
 TabTitle.TextSize = 16
@@ -640,7 +640,7 @@ end)
 local Library = {}
 Library.CurrentFont = Enum.Font.SourceSansBold
 Library.CurrentLanguage = "English"
-Library.CurrentTabKey = "Settings"
+Library.CurrentTabKey = "UI"
 Library.ActiveDropdownClose = nil
 Library.TrackedMainBg = {}
 Library.TrackedElementBg = {}
@@ -895,7 +895,6 @@ local LocaleObjects = {}
 
 local Localization = {
     ["English"] = {
-        ["Settings"] = "Settings",
         ["UI"] = "UI",
         ["Theme"] = "Theme",
         ["Configs"] = "Configs",
@@ -926,7 +925,6 @@ local Localization = {
         ["HubLoaded"] = "Dark Hub loaded successfully!"
     },
     ["Русский"] = {
-        ["Settings"] = "Настройки",
         ["UI"] = "Интерфейс",
         ["Theme"] = "Тема",
         ["Configs"] = "Конфиги",
@@ -1642,95 +1640,18 @@ function Library:CreatePage(textKey, iconId, layoutOrder)
 end
 
 -- ============================================================================
--- SETTINGS TAB & 3 STYLISH SUB-TABS (UI, Theme, Configs) - AMOLED STYLE
+-- SEPARATE MAIN TABS: UI, Theme, Configs
 -- ============================================================================
-local SettingsPage = Library:CreatePage("Settings", "117996761927034", 1)
-
--- Sub-tab Bar Container
-local SubTabNav = Instance.new("Frame", SettingsPage)
-SubTabNav.Name = "SubTabNav"
-SubTabNav.Size = UDim2.new(1, -20, 0, 36)
-SubTabNav.BackgroundColor3 = Color3.fromRGB(12, 12, 12)
-SubTabNav.LayoutOrder = 1
-SubTabNav.ZIndex = 6
-Instance.new("UICorner", SubTabNav).CornerRadius = UDim.new(0, 8)
-local SubTabStroke = Instance.new("UIStroke", SubTabNav)
-SubTabStroke.Color = Color3.fromRGB(35, 35, 35)
-table.insert(Library.TrackedElementBg, SubTabNav)
-table.insert(Library.TrackedStrokes, SubTabStroke)
-
-local SubTabListLayout = Instance.new("UIListLayout", SubTabNav)
-SubTabListLayout.FillDirection = Enum.FillDirection.Horizontal
-SubTabListLayout.HorizontalAlignment = Enum.HorizontalAlignment.Center
-SubTabListLayout.SortOrder = Enum.SortOrder.LayoutOrder
-
-local subTabsData = {
-    {Name = "UI", Order = 1},
-    {Name = "Theme", Order = 2},
-    {Name = "Configs", Order = 3}
-}
-
-local subPages = {}
-local subTabButtons = {}
-
-local function createSubPage(name, order)
-    local subPageFrame = Instance.new("ScrollingFrame", SettingsPage)
-    subPageFrame.Name = name .. "SubPage"
-    subPageFrame.Size = UDim2.new(1, 0, 0, 240)
-    subPageFrame.BackgroundTransparency = 1
-    subPageFrame.Visible = false
-    subPageFrame.ScrollBarThickness = 2
-    subPageFrame.ScrollBarImageColor3 = Color3.fromRGB(50, 50, 50)
-    subPageFrame.LayoutOrder = order
-    subPageFrame.ZIndex = 5
-
-    local layout = Instance.new("UIListLayout", subPageFrame)
-    layout.Padding = UDim.new(0, 8)
-    layout.HorizontalAlignment = Enum.HorizontalAlignment.Center
-    layout.SortOrder = Enum.SortOrder.LayoutOrder
-    layout:GetPropertyChangedSignal("AbsoluteContentSize"):Connect(function()
-        if subPageFrame and subPageFrame.Parent then
-            subPageFrame.CanvasSize = UDim2.new(0, 0, 0, layout.AbsoluteContentSize.Y + 15)
-        end
-    end)
-    return subPageFrame
-end
-
-for _, data in ipairs(subTabsData) do
-    local subPage = createSubPage(data.Name, data.Order + 1)
-    subPages[data.Name] = subPage
-
-    local btn = Instance.new("TextButton", SubTabNav)
-    btn.Name = data.Name .. "Btn"
-    btn.Size = UDim2.new(1 / #subTabsData, 0, 1, 0)
-    btn.BackgroundTransparency = 1
-    btn.Text = data.Name
-    btn.Font = Library.CurrentFont
-    btn.TextColor3 = Color3.fromRGB(140, 140, 140)
-    btn.TextSize = 12
-    btn.ZIndex = 7
-    subTabButtons[data.Name] = btn
-
-    btn.Activated:Connect(function()
-        for name, page in pairs(subPages) do
-            page.Visible = (name == data.Name)
-        end
-        for name, b in pairs(subTabButtons) do
-            tween(b, {TextColor3 = (name == data.Name) and Color3.fromRGB(255, 255, 255) or Color3.fromRGB(140, 140, 140)}, 0.2)
-        end
-    end)
-end
-
--- Default active sub-tab: UI
-subPages["UI"].Visible = true
-subTabButtons["UI"].TextColor3 = Color3.fromRGB(255, 255, 255)
+local UIPage = Library:CreatePage("UI", "117996761927034", 1)
+local ThemePage = Library:CreatePage("Theme", nil, 2)
+local ConfigsPage = Library:CreatePage("Configs", nil, 3)
 
 -- ============================================================================
--- POPULATE SUB-TABS (UI, Theme, Configs)
+-- POPULATE TABS (UI, Theme, Configs)
 -- ============================================================================
 
--- 1. UI SUB-TAB FUNCTIONS
-local LanguageDropdown = Library:CreateDropdown(subPages["UI"], "Language", {"English", "Русский"}, "English", function(selectedLang)
+-- 1. UI TAB CONTENT
+local LanguageDropdown = Library:CreateDropdown(UIPage, "Language", {"English", "Русский"}, "English", function(selectedLang)
     Library:UpdateLanguage(selectedLang)
 end)
 
@@ -1740,49 +1661,49 @@ for name, _ in pairs(FontMapping) do
 end
 table.sort(FontKeys)
 
-local FontDropdown = Library:CreateDropdown(subPages["UI"], "MenuFont", FontKeys, "Source Sans", function(selectedFont)
+local FontDropdown = Library:CreateDropdown(UIPage, "MenuFont", FontKeys, "Source Sans", function(selectedFont)
     if FontMapping[selectedFont] then
         applyFontToAll(FontMapping[selectedFont])
     end
 end)
 
-local UISizeSlider = Library:CreateSlider(subPages["UI"], "UISize", 50, 150, 100, function(value)
+local UISizeSlider = Library:CreateSlider(UIPage, "UISize", 50, 150, 100, function(value)
     if MainScale and MainScale.Parent then
         MainScale.Scale = value / 100
     end
 end)
 
-local TransparencySlider = Library:CreateSlider(subPages["UI"], "UITransparency", 0, 90, 15, function(value)
+local TransparencySlider = Library:CreateSlider(UIPage, "UITransparency", 0, 90, 15, function(value)
     if MainFrame and MainFrame.Parent then
         MainFrame.BackgroundTransparency = value / 100
     end
 end)
 
-local FOVSlider = Library:CreateSlider(subPages["UI"], "FOV", 30, 120, 70, function(value)
+local FOVSlider = Library:CreateSlider(UIPage, "FOV", 30, 120, 70, function(value)
     local camera = workspace.CurrentCamera
     if camera then
         camera.FieldOfView = value
     end
 end)
 
-local AntiAFKToggle = Library:CreateToggle(subPages["UI"], "AntiAFK", true, function(state)
+local AntiAFKToggle = Library:CreateToggle(UIPage, "AntiAFK", true, function(state)
     toggleAntiAFK(state)
 end)
 
-local AnimatedWindowToggle = Library:CreateToggle(subPages["UI"], "AnimatedWindow", false, function(state)
+local AnimatedWindowToggle = Library:CreateToggle(UIPage, "AnimatedWindow", false, function(state)
     toggleAnimatedWindow(state)
 end)
 
-local GradientToggle = Library:CreateToggle(subPages["UI"], "Gradient", false, function(state)
+local GradientToggle = Library:CreateToggle(UIPage, "Gradient", false, function(state)
     toggleGradientEffect(state)
 end)
 
--- 2. THEME SUB-TAB FUNCTIONS
-local ThemeDropdown = Library:CreateDropdown(subPages["Theme"], "UITheme", ThemeNamesList, "AMOLED", function(selectedTheme)
+-- 2. THEME TAB CONTENT
+local ThemeDropdown = Library:CreateDropdown(ThemePage, "UITheme", ThemeNamesList, "AMOLED", function(selectedTheme)
     Library:UpdateTheme(selectedTheme)
 end)
 
--- 3. CONFIGS SUB-TAB FUNCTIONS
+-- 3. CONFIGS TAB CONTENT
 local CONFIG_FOLDER = "DarkHub/Configs"
 pcall(function()
     if typeof(makefolder) == "function" and typeof(isfolder) == "function" then
@@ -1928,11 +1849,11 @@ local function applyUIState(state)
     if state.gradient ~= nil and GradientToggle and GradientToggle.SetValue then GradientToggle.SetValue(state.gradient) end
 end
 
-local ConfigInputFrame = Instance.new("Frame", subPages["Configs"])
+local ConfigInputFrame = Instance.new("Frame", ConfigsPage)
 ConfigInputFrame.Name = "ConfigInputFrame"
 ConfigInputFrame.Size = UDim2.new(1, -20, 0, 36)
 ConfigInputFrame.BackgroundColor3 = Library.CurrentThemeData.ElementBg or DefaultTheme.ElementBg
-ConfigInputFrame.LayoutOrder = #subPages["Configs"]:GetChildren()
+ConfigInputFrame.LayoutOrder = #ConfigsPage:GetChildren()
 Instance.new("UICorner", ConfigInputFrame).CornerRadius = UDim.new(0, 6)
 local ConfigInputStroke = Instance.new("UIStroke", ConfigInputFrame)
 ConfigInputStroke.Color = Color3.fromRGB(35, 35, 35)
@@ -1954,17 +1875,17 @@ ConfigNameBox.TextXAlignment = Enum.TextXAlignment.Left
 table.insert(Library.TrackedMainText, ConfigNameBox)
 table.insert(LocaleObjects, {Object = ConfigNameBox, Key = "ConfigName"})
 
-local ConfigDropdown = Library:CreateDropdown(subPages["Configs"], "Load", getConfigList(), "", function(selected)
+local ConfigDropdown = Library:CreateDropdown(ConfigsPage, "Load", getConfigList(), "", function(selected)
     if selected and selected ~= "" then
         ConfigNameBox.Text = selected
     end
 end)
 
-local ConfigButtonRow = Instance.new("Frame", subPages["Configs"])
+local ConfigButtonRow = Instance.new("Frame", ConfigsPage)
 ConfigButtonRow.Name = "ConfigButtonRow"
 ConfigButtonRow.Size = UDim2.new(1, -20, 0, 36)
 ConfigButtonRow.BackgroundTransparency = 1
-ConfigButtonRow.LayoutOrder = #subPages["Configs"]:GetChildren()
+ConfigButtonRow.LayoutOrder = #ConfigsPage:GetChildren()
 ConfigButtonRow.ZIndex = 6
 
 local function createConfigButton(parent, textKey, callback, position)
@@ -2121,9 +2042,9 @@ task.spawn(function()
     end
     
     MainFrame.Visible = true
-    setActiveTab(allTabButtons["Settings"])
-    currentActiveTab = allTabButtons["Settings"]
-    allPages["Settings"].Visible = true
+    setActiveTab(allTabButtons["UI"])
+    currentActiveTab = allTabButtons["UI"]
+    UIPage.Visible = true
     
     Library:UpdateTheme("AMOLED")
     showToast(getLocalizedMessage("HubLoaded"), Color3.fromRGB(255, 255, 255))
