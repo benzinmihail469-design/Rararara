@@ -156,7 +156,7 @@ end
 -- ============================================================================
 local LoadingOverlay = Instance.new("Frame", DarkHub)
 LoadingOverlay.Name = "LoadingOverlay"
-LoadingOverlay.Size = UDim2.new(0, 280, 0, 195) -- Слегка уменьшено
+LoadingOverlay.Size = UDim2.new(0, 280, 0, 195)
 LoadingOverlay.AnchorPoint = Vector2.new(0.5, 0.5)
 LoadingOverlay.Position = UDim2.new(0.5, 0, 0.5, 0)
 LoadingOverlay.BackgroundColor3 = Color3.fromRGB(0, 0, 0)
@@ -214,7 +214,7 @@ LoadingPercent.ZIndex = 1001
 -- Увеличенная полоска прогресса
 local ProgressBarBg = Instance.new("Frame", LoadingOverlay)
 ProgressBarBg.Name = "ProgressBarBg"
-ProgressBarBg.Size = UDim2.new(0.85, 0, 0, 10) -- Увеличена ширина и высота
+ProgressBarBg.Size = UDim2.new(0.85, 0, 0, 10)
 ProgressBarBg.AnchorPoint = Vector2.new(0.5, 0.5)
 ProgressBarBg.Position = UDim2.new(0.5, 0, 0.80, 0)
 ProgressBarBg.BackgroundColor3 = Color3.fromRGB(22, 22, 22)
@@ -1047,8 +1047,7 @@ local Localization = {
         ["ConfigName"] = "Config Name",
         ["Save"] = "Save Config",
         ["Load"] = "Load Config",
-        ["Delete"] = "Delete Config",
-        ["Create"] = "Create New Config"
+        ["Delete"] = "Delete Config"
     },
     ["Русский"] = {
         ["Settings"] = "Настройки",
@@ -1066,8 +1065,7 @@ local Localization = {
         ["ConfigName"] = "Имя конфига",
         ["Save"] = "Сохранить конфиг",
         ["Load"] = "Загрузить конфиг",
-        ["Delete"] = "Удалить конфиг",
-        ["Create"] = "Создать новый конфиг"
+        ["Delete"] = "Удалить конфиг"
     }
 }
 
@@ -1401,9 +1399,7 @@ function Library:CreateDropdown(parentPage, textKey, options, default, callback)
             OptLabel.TextXAlignment = Enum.TextXAlignment.Left
             OptLabel.TextTruncate = Enum.TextTruncate.AtEnd
             OptLabel.BackgroundTransparency = 1
-            OptLabel.ZIndex = 10
-
-            local curBgL = getLuminance(getThemeMainBg())
+            OptLabel.ZIndex = 10            local curBgL = getLuminance(getThemeMainBg())
             local defaultSubText = (curBgL > 0.5) and Color3.fromRGB(110, 110, 110) or Color3.fromRGB(140, 140, 140)
             OptLabel.TextColor3 = (option == SelectedLabel.Text) and accent or defaultSubText
             if FontMapping and FontMapping[option] then
@@ -1976,7 +1972,7 @@ local function showToast(message, dotColor)
     end)
 end
 
--- === CONFIG SYSTEM: SAVE / LOAD / DELETE / CREATE ===
+-- === CONFIG SYSTEM: SAVE / LOAD / DELETE ===
 
 local function getConfigPath(name)
     return CONFIG_FOLDER .. "/" .. name .. ".json"
@@ -2130,7 +2126,6 @@ local function saveConfig(name)
         if ConfigNameBox then
             ConfigNameBox.Text = ""
         end
-        -- Update ConfigDropdown if exists
         if ConfigDropdown and ConfigDropdown.UpdateOptions then
             ConfigDropdown.UpdateOptions(getConfigList())
         end
@@ -2263,10 +2258,11 @@ ConfigButtonRow.BackgroundTransparency = 1
 ConfigButtonRow.LayoutOrder = #SettingsPage:GetChildren()
 ConfigButtonRow.ZIndex = 6
 
-local function createConfigButton(parent, textKey, callback, color)
+-- Helper function to create styled config buttons
+local function createConfigButton(parent, textKey, callback, color, position)
     local Btn = Instance.new("TextButton", parent)
-    Btn.Size = UDim2.new(0.23, 0, 0.85, 0)
-    Btn.Position = UDim2.new(0, 0, 0, 0)
+    Btn.Size = UDim2.new(0.3, -4, 0.85, 0)
+    Btn.Position = UDim2.new(position, 0, 0, 0)
     Btn.BackgroundColor3 = color or Library.CurrentThemeData.ElementBg or DefaultTheme.ElementBg
     Btn.Text = textKey
     Btn.Font = Library.CurrentFont
@@ -2280,6 +2276,15 @@ local function createConfigButton(parent, textKey, callback, color)
     table.insert(Library.TrackedElementBg, Btn)
     table.insert(Library.TrackedMainText, Btn)
     table.insert(Library.TrackedStrokes, BtnStroke)
+    
+    -- Hover effects
+    Btn.MouseEnter:Connect(function()
+        tween(Btn, {BackgroundTransparency = 0.3}, 0.15)
+    end)
+    Btn.MouseLeave:Connect(function()
+        tween(Btn, {BackgroundTransparency = 0}, 0.15)
+    end)
+    
     Btn.Activated:Connect(function()
         if type(callback) == "function" then
             pcall(callback)
@@ -2288,7 +2293,7 @@ local function createConfigButton(parent, textKey, callback, color)
     return Btn
 end
 
--- Create buttons with proper positioning
+-- Create 3 buttons: Save, Load, Delete (equal width, spaced evenly)
 local saveBtn = createConfigButton(ConfigButtonRow, "Save", function()
     local name = ConfigNameBox.Text
     if name == "" then
@@ -2296,13 +2301,11 @@ local saveBtn = createConfigButton(ConfigButtonRow, "Save", function()
         return
     end
     saveConfig(name)
-end, Color3.fromRGB(30, 60, 30))
-saveBtn.Position = UDim2.new(0, 0, 0, 0)
+end, Color3.fromRGB(30, 60, 30), 0)
 
 local loadBtn = createConfigButton(ConfigButtonRow, "Load", function()
     local name = ConfigNameBox.Text
     if name == "" then
-        -- Try to use selected from dropdown
         if ConfigDropdown and ConfigDropdown.GetValue then
             name = ConfigDropdown.GetValue()
         end
@@ -2312,8 +2315,7 @@ local loadBtn = createConfigButton(ConfigButtonRow, "Load", function()
         end
     end
     loadConfig(name)
-end, Color3.fromRGB(30, 30, 60))
-loadBtn.Position = UDim2.new(0.26, 0, 0, 0)
+end, Color3.fromRGB(30, 30, 60), 0.35)
 
 local deleteBtn = createConfigButton(ConfigButtonRow, "Delete", function()
     local name = ConfigNameBox.Text
@@ -2327,27 +2329,14 @@ local deleteBtn = createConfigButton(ConfigButtonRow, "Delete", function()
         end
     end
     deleteConfig(name)
-end, Color3.fromRGB(60, 30, 30))
-deleteBtn.Position = UDim2.new(0.52, 0, 0, 0)
-
-local createBtn = createConfigButton(ConfigButtonRow, "Create", function()
-    local name = ConfigNameBox.Text
-    if name == "" then
-        showToast("Please enter a config name", Color3.fromRGB(255, 200, 50))
-        return
-    end
-    -- Save with the name, overwriting if exists
-    saveConfig(name)
-end, Color3.fromRGB(30, 45, 60))
-createBtn.Position = UDim2.new(0.77, 0, 0, 0)
+end, Color3.fromRGB(60, 30, 30), 0.7)
 
 -- Store locale objects for buttons
 table.insert(LocaleObjects, {Object = saveBtn, Key = "Save"})
 table.insert(LocaleObjects, {Object = loadBtn, Key = "Load"})
 table.insert(LocaleObjects, {Object = deleteBtn, Key = "Delete"})
-table.insert(LocaleObjects, {Object = createBtn, Key = "Create"})
 
--- Update ConfigDropdown options when language changes or configs change
+-- Update ConfigDropdown options when configs change
 local function refreshConfigDropdown()
     if ConfigDropdown and ConfigDropdown.UpdateOptions then
         ConfigDropdown.UpdateOptions(getConfigList())
