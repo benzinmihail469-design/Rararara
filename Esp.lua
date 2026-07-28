@@ -1030,8 +1030,7 @@ local Localization = {
         ["SettingAnimations"] = "SETTING UP ANIMATIONS",
         ["PrepLaunch"] = "PREPARING FOR LAUNCH",
         ["Ready"] = "READY!",
-        ["HubLoaded"] = "Dark Hub loaded successfully!",
-        ["CyrillicFontWarning"] = "This font does not support Cyrillic (switched to Gotham)"
+        ["HubLoaded"] = "Dark Hub loaded successfully!"
     },
     ["Русский"] = {
         ["Settings"] = "Настройки",
@@ -1066,8 +1065,7 @@ local Localization = {
         ["SettingAnimations"] = "НАСТРОЙКА АНИМАЦИЙ",
         ["PrepLaunch"] = "ПОДГОТОВКА К ЗАПУСКУ",
         ["Ready"] = "ГОТОВО!",
-        ["HubLoaded"] = "Dark Hub успешно запущен!",
-        ["CyrillicFontWarning"] = "Этот шрифт не поддерживает русский язык (выбран Gotham)"
+        ["HubLoaded"] = "Dark Hub успешно запущен!"
     }
 }
 
@@ -1088,23 +1086,6 @@ local FontMapping = {
 local showToast
 
 local function applyFontToAll(font)
-    -- Проверка на поддержку кириллицы при русском языке
-    local nonCyrillicFonts = {
-        [Enum.Font.FredokaOne] = true,
-        [Enum.Font.Code] = true,
-        [Enum.Font.Michroma] = true,
-        [Enum.Font.Fantasy] = true
-    }
-    
-    if Library.CurrentLanguage == "Русский" and nonCyrillicFonts[font] then
-        font = Enum.Font.Gotham
-        if showToast then
-            pcall(function()
-                showToast(Localization["Русский"]["CyrillicFontWarning"], Color3.fromRGB(255, 200, 50))
-            end)
-        end
-    end
-
     Library.CurrentFont = font
     
     local allTextElements = {}
@@ -1141,19 +1122,7 @@ function Library:UpdateLanguage(lang)
     if not Localization[lang] then return end
     Library.CurrentLanguage = lang
     
-    -- Если включен русский, а текущий шрифт не поддерживает кириллицу - автоматически переключаем на Gotham
-    local nonCyrillicFonts = {
-        [Enum.Font.FredokaOne] = true,
-        [Enum.Font.Code] = true,
-        [Enum.Font.Michroma] = true,
-        [Enum.Font.Fantasy] = true
-    }
-    if lang == "Русский" and nonCyrillicFonts[Library.CurrentFont] then
-        Library.CurrentFont = Enum.Font.Gotham
-        applyFontToAll(Enum.Font.Gotham)
-    else
-        applyFontToAll(Library.CurrentFont)
-    end
+    applyFontToAll(Library.CurrentFont)
     
     for _, loc in ipairs(LocaleObjects) do
         if loc.Object and typeof(loc.Object) == "Instance" and loc.Object.Parent then
@@ -2389,43 +2358,58 @@ local function updateLoadingText(percent)
     
     LoadingStatus.Text = statusText
     LoadingPercent.Text = string.format("%d%%", percent)
-    tween(ProgressBarFill, {Size = UDim2.new(math.clamp(percent / 100, 0, 1), 0, 1, 0)}, 0.3)
+    tween(ProgressBarFill, {Size = UDim2.new(math.clamp(percent / 100, 0, 1), 0, 1, 0)}, 0.15)
 end
 
 task.spawn(function()
-    for i = 1, 100 do
-        updateLoadingText(i)
-        task.wait(0.012)
+    local totalSteps = 40
+    for i = 1, totalSteps do
+        task.wait(0.03)
+        local pct = math.floor((i / totalSteps) * 100)
+        updateLoadingText(pct)
     end
     
-    tween(LoadingOverlay, {BackgroundTransparency = 1}, 0.4)
-    for _, child in ipairs(LoadingOverlay:GetChildren()) do
-        if child:IsA("GuiObject") then
-            pcall(function()
-                if child:IsA("TextLabel") then
-                    tween(child, {TextTransparency = 1}, 0.4)
-                elseif child:IsA("ImageLabel") then
-                    tween(child, {ImageTransparency = 1}, 0.4)
-                elseif child:IsA("UIStroke") then
-                    tween(child, {Transparency = 1}, 0.4)
-                else
-                    tween(child, {BackgroundTransparency = 1}, 0.4)
-                end
-            end)
-        end
-    end
-    
-    task.wait(0.4)
     if bubbleConnection then
         bubbleConnection:Disconnect()
         bubbleConnection = nil
     end
-    LoadingOverlay:Destroy()
     
-    MainFrame.Visible = true
-    setActiveTab(allTabButtons["Settings"])
-    currentActiveTab = allTabButtons["Settings"]
-    allPages["Settings"].Visible = true
+    for _, b in ipairs(Bubbles) do
+        if b.Object and b.Object.Parent then
+            b.Object:Destroy()
+        end
+    end
     
-    showToast(getLocalizedMessage("HubLoaded"), Color3.fromRGB(50, 255, 50))
+    if LoadingOverlay and LoadingOverlay.Parent then
+        local fadeTween = tween(LoadingOverlay, {BackgroundTransparency = 1}, 0.4)
+        for _, child in ipairs(LoadingOverlay:GetChildren()) do
+            if child:IsA("GuiObject") then
+                pcall(function()
+                    if child:IsA("TextLabel") or child:IsA("TextBox") or child:IsA("TextButton") then
+                        tween(child, {TextTransparency = 1}, 0.4)
+                    elseif child:IsA("ImageLabel") then
+                        tween(child, {ImageTransparency = 1}, 0.4)
+                    elseif child:IsA("Frame") then
+                        tween(child, {BackgroundTransparency = 1}, 0.4)
+                    end
+                end)
+            end
+        end
+        task.wait(0.4)
+        LoadingOverlay:Destroy()
+    end
+    
+    if MainFrame and MainFrame.Parent then
+        MainFrame.Visible = true
+        MainFrame.Size = UDim2.new(0, 550, 0, 350)
+        MainFrame.Position = UDim2.new(0.5, 0, 0.5, 0)
+        if allTabButtons["Settings"] then
+            setActiveTab(allTabButtons["Settings"])
+            currentActiveTab = allTabButtons["Settings"]
+            if allPages["Settings"] then
+                allPages["Settings"].Visible = true
+            end
+        end
+        showToast(getLocalizedMessage("HubLoaded"), Color3.fromRGB(50, 255, 50))
+    end
 end)
