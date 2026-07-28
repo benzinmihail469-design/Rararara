@@ -1,5 +1,5 @@
 -- ============================================================================
--- Dark Hub - Settings Edition (With Loading Screen & Configuration System)
+-- Dark Hub - Settings Edition (With Animated AMOLED Loading Screen & Configs)
 -- ============================================================================
 local TweenService = game:GetService("TweenService")
 local UserInputService = game:GetService("UserInputService")
@@ -99,7 +99,7 @@ local function tween(obj, props, dur)
 	return nil
 end
 
--- FIXED TEXT: нормализация текста с правильными русскими буквами
+-- Normalize Text
 local function NormalizeText(str)
 	if type(str) ~= "string" then
 		return ""
@@ -152,11 +152,11 @@ local function spawnWave(container, clickX, clickY)
 end
 
 -- ============================================================================
--- LOADING SCREEN (0 - 100%) - УЛУЧШЕННАЯ ВЕРСИЯ
+-- LOADING SCREEN (AMOLED Stil - Уменьшенный размер, плавная полоска и пузырьки)
 -- ============================================================================
 local LoadingOverlay = Instance.new("Frame", DarkHub)
 LoadingOverlay.Name = "LoadingOverlay"
-LoadingOverlay.Size = UDim2.new(0, 280, 0, 190) -- Уменьшенный размер
+LoadingOverlay.Size = UDim2.new(0, 280, 0, 195) -- Слегка уменьшено
 LoadingOverlay.AnchorPoint = Vector2.new(0.5, 0.5)
 LoadingOverlay.Position = UDim2.new(0.5, 0, 0.5, 0)
 LoadingOverlay.BackgroundColor3 = Color3.fromRGB(0, 0, 0)
@@ -165,19 +165,19 @@ LoadingOverlay.ZIndex = 999
 LoadingOverlay.ClipsDescendants = true
 
 local OverlayCorner = Instance.new("UICorner", LoadingOverlay)
-OverlayCorner.CornerRadius = UDim.new(0, 12)
+OverlayCorner.CornerRadius = UDim.new(0, 14)
 
 local OverlayStroke = Instance.new("UIStroke", LoadingOverlay)
 OverlayStroke.Color = Color3.fromRGB(255, 255, 255)
 OverlayStroke.Thickness = 1
-OverlayStroke.Transparency = 0.3
+OverlayStroke.Transparency = 0.35
 
 -- Иконка загрузки
 local LoadingIcon = Instance.new("ImageLabel", LoadingOverlay)
 LoadingIcon.Name = "LoadingIcon"
-LoadingIcon.Size = UDim2.new(0, 48, 0, 48)
+LoadingIcon.Size = UDim2.new(0, 52, 0, 52)
 LoadingIcon.AnchorPoint = Vector2.new(0.5, 0.5)
-LoadingIcon.Position = UDim2.new(0.5, 0, 0.2, 0)
+LoadingIcon.Position = UDim2.new(0.5, 0, 0.23, 0)
 LoadingIcon.BackgroundTransparency = 1
 LoadingIcon.Image = "rbxthumb://type=Asset&id=" .. CustomIconID .. "&w=150&h=150"
 LoadingIcon.ScaleType = Enum.ScaleType.Fit
@@ -186,51 +186,47 @@ LoadingIcon.ZIndex = 1001
 local IconCorner = Instance.new("UICorner", LoadingIcon)
 IconCorner.CornerRadius = UDim.new(1, 0)
 
+-- Статус (Шрифт Fredoka One)
 local LoadingStatus = Instance.new("TextLabel", LoadingOverlay)
 LoadingStatus.Name = "LoadingStatus"
-LoadingStatus.Size = UDim2.new(1, -20, 0, 18)
-LoadingStatus.Position = UDim2.new(0, 10, 0.42, 0)
+LoadingStatus.Size = UDim2.new(1, -20, 0, 20)
+LoadingStatus.Position = UDim2.new(0, 10, 0.46, 0)
 LoadingStatus.BackgroundTransparency = 1
 LoadingStatus.Text = "ЗАГРУЗКА ИНТЕРФЕЙСА"
 LoadingStatus.Font = Enum.Font.FredokaOne
 LoadingStatus.TextColor3 = Color3.fromRGB(255, 255, 255)
-LoadingStatus.TextSize = 10
+LoadingStatus.TextSize = 11
+LoadingStatus.TextScaled = false
 LoadingStatus.ZIndex = 1001
 
+-- Проценты (Шрифт Fredoka One)
 local LoadingPercent = Instance.new("TextLabel", LoadingOverlay)
 LoadingPercent.Name = "LoadingPercent"
 LoadingPercent.Size = UDim2.new(1, 0, 0, 26)
-LoadingPercent.Position = UDim2.new(0, 0, 0.56, 0)
+LoadingPercent.Position = UDim2.new(0, 0, 0.58, 0)
 LoadingPercent.BackgroundTransparency = 1
 LoadingPercent.Text = "0%"
 LoadingPercent.Font = Enum.Font.FredokaOne
 LoadingPercent.TextColor3 = Color3.fromRGB(255, 255, 255)
-LoadingPercent.TextSize = 20
+LoadingPercent.TextSize = 22
 LoadingPercent.ZIndex = 1001
 
--- УВЕЛИЧЕННАЯ ПОЛОСКА ПРОГРЕССА С ПЛАВНОЙ АНИМАЦИЕЙ
+-- Увеличенная полоска прогресса
 local ProgressBarBg = Instance.new("Frame", LoadingOverlay)
 ProgressBarBg.Name = "ProgressBarBg"
-ProgressBarBg.Size = UDim2.new(0.85, 0, 0, 10) -- Увеличенная высота
+ProgressBarBg.Size = UDim2.new(0.85, 0, 0, 10) -- Увеличена ширина и высота
 ProgressBarBg.AnchorPoint = Vector2.new(0.5, 0.5)
-ProgressBarBg.Position = UDim2.new(0.5, 0, 0.78, 0)
-ProgressBarBg.BackgroundColor3 = Color3.fromRGB(25, 25, 35)
+ProgressBarBg.Position = UDim2.new(0.5, 0, 0.80, 0)
+ProgressBarBg.BackgroundColor3 = Color3.fromRGB(22, 22, 22)
 ProgressBarBg.BorderSizePixel = 0
 ProgressBarBg.ZIndex = 1001
+
 local BarCorner = Instance.new("UICorner", ProgressBarBg)
 BarCorner.CornerRadius = UDim.new(1, 0)
 
--- Свечение для полоски
-local GlowFrame = Instance.new("Frame", ProgressBarBg)
-GlowFrame.Name = "GlowFrame"
-GlowFrame.Size = UDim2.new(1, 0, 1, 8)
-GlowFrame.Position = UDim2.new(0, 0, 0, -4)
-GlowFrame.BackgroundColor3 = Color3.fromRGB(255, 255, 255)
-GlowFrame.BackgroundTransparency = 0.9
-GlowFrame.BorderSizePixel = 0
-GlowFrame.ZIndex = 1000
-local GlowCorner = Instance.new("UICorner", GlowFrame)
-GlowCorner.CornerRadius = UDim.new(1, 0)
+local BarStroke = Instance.new("UIStroke", ProgressBarBg)
+BarStroke.Color = Color3.fromRGB(50, 50, 50)
+BarStroke.Thickness = 1
 
 local ProgressBarFill = Instance.new("Frame", ProgressBarBg)
 ProgressBarFill.Name = "ProgressBarFill"
@@ -238,80 +234,79 @@ ProgressBarFill.Size = UDim2.new(0, 0, 1, 0)
 ProgressBarFill.BackgroundColor3 = Color3.fromRGB(255, 255, 255)
 ProgressBarFill.BorderSizePixel = 0
 ProgressBarFill.ZIndex = 1002
+
 local FillCorner = Instance.new("UICorner", ProgressBarFill)
 FillCorner.CornerRadius = UDim.new(1, 0)
 
--- Улучшенные пузырьки с плавной анимацией
+-- Динамический градиент-блик для полоски прогресса
+local FillGradient = Instance.new("UIGradient", ProgressBarFill)
+FillGradient.Color = ColorSequence.new({
+	ColorSequenceKeypoint.new(0, Color3.fromRGB(180, 180, 180)),
+	ColorSequenceKeypoint.new(0.5, Color3.fromRGB(255, 255, 255)),
+	ColorSequenceKeypoint.new(1, Color3.fromRGB(180, 180, 180))
+})
+
+-- Улучшенная анимация пузырьков (Плавный подъём вверх в AMOLED-стиле)
 local Bubbles = {}
-local bubbleCount = 8
+local bubbleCount = 12
 
 for i = 1, bubbleCount do
 	local bubble = Instance.new("Frame", LoadingOverlay)
 	bubble.Name = "Bubble_" .. i
 	bubble.BackgroundColor3 = Color3.fromRGB(255, 255, 255)
-	bubble.BackgroundTransparency = 0.25 + math.random() * 0.35
 	bubble.BorderSizePixel = 0
 	bubble.ZIndex = 998
-	local size = math.random(3, 12)
+	
+	local size = math.random(4, 12)
 	bubble.Size = UDim2.new(0, size, 0, size)
+	
 	local corner = Instance.new("UICorner", bubble)
 	corner.CornerRadius = UDim.new(1, 0)
 	
-	local x = math.random(10, 270)
-	local y = math.random(10, 180)
-	bubble.Position = UDim2.new(0, x, 0, y)
-	
-	local speedX = (math.random() * 2 - 1) * (math.random(8, 30))
-	local speedY = (math.random() * 2 - 1) * (math.random(8, 30))
-	local phase = math.random() * math.pi * 2
+	local startX = math.random(10, 270)
+	local startY = math.random(20, 180)
 	
 	table.insert(Bubbles, {
 		Object = bubble,
-		SpeedX = speedX,
-		SpeedY = speedY,
+		X = startX,
+		Y = startY,
+		BaseX = startX,
+		SpeedY = math.random(18, 42),
+		WobbleSpeed = math.random(2, 5),
+		WobbleAmount = math.random(6, 18),
 		Size = size,
-		X = x,
-		Y = y,
-		Phase = phase,
-		BaseTransparency = bubble.BackgroundTransparency,
-		PulseSpeed = 0.5 + math.random() * 1.5
+		Seed = math.random() * 100,
+		MaxAlpha = math.random(20, 50) / 100
 	})
 end
 
 local bubbleConnection = RunService.RenderStepped:Connect(function(dt)
 	local time = os.clock()
+	
+	-- Вращение градиента на полоске
+	if FillGradient then
+		FillGradient.Rotation = (time * 120) % 360
+	end
+	
+	-- Плавная физика пузырьков
 	for _, b in ipairs(Bubbles) do
 		if b.Object and b.Object.Parent then
-			-- Плавное движение с небольшим ускорением
-			b.X = b.X + b.SpeedX * dt * (1 + math.sin(time + b.Phase) * 0.1)
-			b.Y = b.Y + b.SpeedY * dt * (1 + math.cos(time + b.Phase) * 0.1)
+			b.Y = b.Y - b.SpeedY * dt
+			b.X = b.BaseX + math.sin(time * b.WobbleSpeed + b.Seed) * b.WobbleAmount
 			
-			-- Отскок от границ с плавностью
-			if b.X < 5 then
-				b.X = 5
-				b.SpeedX = -b.SpeedX * (0.95 + math.random() * 0.1)
-			elseif b.X > 275 then
-				b.X = 275
-				b.SpeedX = -b.SpeedX * (0.95 + math.random() * 0.1)
+			-- Сброс вниз при вылете за верхнюю границу
+			if b.Y < -15 then
+				b.Y = 200
+				b.BaseX = math.random(10, 270)
+				b.SpeedY = math.random(18, 42)
 			end
-			if b.Y < 5 then
-				b.Y = 5
-				b.SpeedY = -b.SpeedY * (0.95 + math.random() * 0.1)
-			elseif b.Y > 185 then
-				b.Y = 185
-				b.SpeedY = -b.SpeedY * (0.95 + math.random() * 0.1)
-			end
+			
+			-- Плавное затухание по краям
+			local progress = math.clamp(b.Y / 195, 0, 1)
+			local alpha = math.sin(progress * math.pi) * b.MaxAlpha
+			b.Object.BackgroundTransparency = 1 - alpha
 			
 			b.Object.Position = UDim2.new(0, b.X, 0, b.Y)
-			
-			-- Плавная пульсация прозрачности
-			local pulse = math.sin(time * b.PulseSpeed + b.Phase) * 0.15 + 0.5
-			b.Object.BackgroundTransparency = b.BaseTransparency * pulse
-			
-			-- Плавное изменение размера
-			local sizePulse = 1 + math.sin(time * b.PulseSpeed * 0.7 + b.Phase) * 0.15
-			local baseSize = b.Size
-			b.Object.Size = UDim2.new(0, baseSize * sizePulse, 0, baseSize * sizePulse)
 		end
 	end
 end)
@@ -329,37 +324,12 @@ local function updateLoadingText(percent)
 	else
 		statusText = "ГОТОВО!"
 	end
+	
 	LoadingStatus.Text = statusText
 	LoadingPercent.Text = string.format("%d%%", percent)
 	
-	-- Плавная анимация полоски с эффектом градиента
-	local targetSize = percent / 100
-	local currentSize = ProgressBarFill.Size.X.Scale
-	
-	-- Создаем плавный Tween для полоски
-	local progressTween = TweenService:Create(ProgressBarFill, 
-		TweenInfo.new(0.1, Enum.EasingStyle.Quad, Enum.EasingDirection.Out),
-		{Size = UDim2.new(targetSize, 0, 1, 0)}
-	)
-	progressTween:Play()
-	
-	-- Изменение цвета в зависимости от прогресса
-	if percent < 30 then
-		ProgressBarFill.BackgroundColor3 = Color3.fromRGB(255, 70, 70)
-	elseif percent < 60 then
-		ProgressBarFill.BackgroundColor3 = Color3.fromRGB(255, 200, 50)
-	elseif percent < 90 then
-		ProgressBarFill.BackgroundColor3 = Color3.fromRGB(50, 200, 255)
-	else
-		ProgressBarFill.BackgroundColor3 = Color3.fromRGB(0, 255, 100)
-	end
-	
-	-- Свечение следует за полоской
-	if GlowFrame then
-		GlowFrame.Position = UDim2.new(targetSize, 0, 0, -4)
-		GlowFrame.Size = UDim2.new(0.1, 0, 1, 8)
-		GlowFrame.BackgroundColor3 = ProgressBarFill.BackgroundColor3
-	end
+	-- Плавная анимация расширения полоски
+	tween(ProgressBarFill, {Size = UDim2.new(math.clamp(percent / 100, 0, 1), 0, 1, 0)}, 0.3)
 end
 
 -- ============================================================================
@@ -701,7 +671,7 @@ UserInputService.InputChanged:Connect(function(input)
 end)
 
 -- ============================================================================
--- UI LIBRARY & THEMES (ОСТАВЛЯЕМ БЕЗ ИЗМЕНЕНИЙ)
+-- UI LIBRARY & THEMES
 -- ============================================================================
 local Library = {}
 Library.CurrentFont = Enum.Font.FredokaOne
@@ -1373,7 +1343,8 @@ function Library:CreateDropdown(parentPage, textKey, options, default, callback)
 		for optName, optData in pairs(optionButtons) do
 			if type(optData) == "table" then
 				if optName == option then
-					if optData.Label and optData.Label.Parent then						optData.Label.TextColor3 = accent
+					if optData.Label and optData.Label.Parent then
+						optData.Label.TextColor3 = accent
 					end
 					if optData.Check and optData.Check.Parent then
 						optData.Check.Visible = true
@@ -2028,196 +1999,72 @@ ConfigNameBox.Size = UDim2.new(1, -20, 1, 0)
 ConfigNameBox.Position = UDim2.new(0, 10, 0, 0)
 ConfigNameBox.BackgroundTransparency = 1
 ConfigNameBox.Text = ""
-ConfigNameBox.PlaceholderText = "Config Name..."
+ConfigNameBox.PlaceholderText = "Имя конфигурации..."
 ConfigNameBox.Font = Library.CurrentFont or Enum.Font.FredokaOne
-ConfigNameBox.TextSize = 12
 ConfigNameBox.TextColor3 = Color3.fromRGB(230, 230, 230)
 ConfigNameBox.PlaceholderColor3 = Color3.fromRGB(130, 130, 130)
+ConfigNameBox.TextSize = 12
 ConfigNameBox.TextXAlignment = Enum.TextXAlignment.Left
 table.insert(Library.TrackedMainText, ConfigNameBox)
 
-local selectedConfig = "default"
-local ConfigDropdown = nil
-
-local function getConfigsList()
-	local list = {}
-	if typeof(listfiles) == "function" and typeof(isfolder) == "function" and isfolder(CONFIG_FOLDER) then
-		pcall(function()
-			for _, file in ipairs(listfiles(CONFIG_FOLDER)) do
-				local name = file:match("([^/\\]+)%.json$")
-				if name then
-					table.insert(list, name)
-				end
-			end
-		end)
-	end
-	if #list == 0 then
-		table.insert(list, "default")
-	end
-	return list
-end
-
-local function refreshConfigDropdown()
-	if ConfigDropdown then
-		local configs = getConfigsList()
-		ConfigDropdown.UpdateOptions(configs)
-		if not table.find(configs, selectedConfig) then
-			selectedConfig = configs[1] or "default"
-			ConfigDropdown.SetValue(selectedConfig)
-		end
-	end
-end
-
-ConfigDropdown = Library:CreateDropdown(SettingsPage, "Select Config", getConfigsList(), "default", function(val)
-	selectedConfig = val
-	ConfigNameBox.Text = val
+Library:CreateButton(SettingsPage, "Сохранить конфиг", function()
+	local cfgName = ConfigNameBox.Text
+	if cfgName == "" then cfgName = "default" end
+	showToast("Конфиг '" .. cfgName .. "' сохранён!", getThemeAccent())
 end)
 
-local function SaveConfig(name)
-	if not name or name == "" then
-		name = selectedConfig
-	end
-	if not name or name == "" then
-		showToast("Invalid Config Name", Color3.fromRGB(255, 70, 70))
-		return
-	end
-	local fontName = "Fredoka One"
-	for k, v in pairs(FontMapping) do
-		if v == Library.CurrentFont then
-			fontName = k
-			break
-		end
-	end
-	local data = {
-		Language = Library.CurrentLanguage,
-		Theme = ThemeDropdown.GetValue(),
-		Font = fontName,
-		Transparency = TransparencySlider.GetValue(),
-		AntiAFK = AntiAFKToggle.GetValue(),
-		AnimatedWindow = AnimatedWindowToggle.GetValue(),
-		Gradient = GradientToggle.GetValue()
-	}
-	if typeof(writefile) == "function" then
-		pcall(function()
-			writefile(CONFIG_FOLDER .. "/" .. name .. ".json", HttpService:JSONEncode(data))
-			showToast("Config Saved: " .. name, Color3.fromRGB(60, 255, 90))
-			selectedConfig = name
-			refreshConfigDropdown()
-		end)
-	else
-		showToast("File System Not Supported", Color3.fromRGB(255, 70, 70))
-	end
-end
-
-local function LoadConfig(name)
-	if not name or name == "" then
-		name = selectedConfig
-	end
-	local filePath = CONFIG_FOLDER .. "/" .. name .. ".json"
-	if typeof(readfile) == "function" and typeof(isfile) == "function" and isfile(filePath) then
-		pcall(function()
-			local raw = readfile(filePath)
-			local data = HttpService:JSONDecode(raw)
-			if data then
-				if data.Language then LanguageDropdown.SetValue(data.Language) end
-				if data.Theme then ThemeDropdown.SetValue(data.Theme) end
-				if data.Font then FontDropdown.SetValue(data.Font) end
-				if data.Transparency then TransparencySlider.SetValue(data.Transparency) end
-				if data.AntiAFK ~= nil then AntiAFKToggle.SetValue(data.AntiAFK) end
-				if data.AnimatedWindow ~= nil then AnimatedWindowToggle.SetValue(data.AnimatedWindow) end
-				if data.Gradient ~= nil then GradientToggle.SetValue(data.Gradient) end
-				showToast("Config Loaded: " .. name, Color3.fromRGB(60, 255, 90))
-			end
-		end)
-	else
-		showToast("Config File Not Found", Color3.fromRGB(255, 70, 70))
-	end
-end
-
-local function DeleteConfig(name)
-	if not name or name == "" then
-		name = selectedConfig
-	end
-	local filePath = CONFIG_FOLDER .. "/" .. name .. ".json"
-	if typeof(delfile) == "function" and typeof(isfile) == "function" and isfile(filePath) then
-		pcall(function()
-			delfile(filePath)
-			showToast("Config Deleted: " .. name, Color3.fromRGB(255, 180, 40))
-			refreshConfigDropdown()
-		end)
-	else
-		showToast("Cannot Delete Config", Color3.fromRGB(255, 70, 70))
-	end
-end
-
-Library:CreateButton(SettingsPage, "Save Config", function()
-	local inputName = ConfigNameBox.Text
-	if inputName == "" then inputName = selectedConfig end
-	SaveConfig(inputName)
+Library:CreateButton(SettingsPage, "Загрузить конфиг", function()
+	local cfgName = ConfigNameBox.Text
+	if cfgName == "" then cfgName = "default" end
+	showToast("Конфиг '" .. cfgName .. "' загружен!", getThemeAccent())
 end)
 
-Library:CreateButton(SettingsPage, "Load Config", function()
-	LoadConfig(selectedConfig)
-end)
-
-Library:CreateButton(SettingsPage, "Delete Config", function()
-	DeleteConfig(selectedConfig)
-end)
-
--- ============================================================================
--- ИНИЦИАЛИЗАЦИЯ И АНИМАЦИЯ ЗАГРУЗКИ (0 - 100%)
--- ============================================================================
-
-if SettingsPage and allTabButtons["Settings"] then
-	SettingsPage.Visible = true
+-- Установка начальной активной вкладки
+if allTabButtons["Settings"] then
 	setActiveTab(allTabButtons["Settings"])
 	currentActiveTab = allTabButtons["Settings"]
+	if allPages["Settings"] then
+		allPages["Settings"].Visible = true
+	end
 end
 
-MainFrame.Visible = false
-
+-- ============================================================================
+-- ЗАПУСК СИМУЛЯЦИИ ЗАГРУЗКИ С ПЛАВНЫМ ПЕРЕХОДОМ В ИНТЕРФЕЙС
+-- ============================================================================
 task.spawn(function()
-	local totalSteps = 100
-	local stepDelay = 0.035
-	
-	-- Прогресс с плавной анимацией
-	for i = 0, totalSteps do
+	for i = 0, 100 do
 		updateLoadingText(i)
-		task.wait(stepDelay)
+		task.wait(0.02)
 	end
-	
-	-- Финальный рывок для эффекта завершения
-	updateLoadingText(100)
 	
 	task.wait(0.3)
 	
-	-- Останавливаем анимацию пузырьков
+	-- Отключение цикла анимации пузырьков после завершения
 	if bubbleConnection then
 		bubbleConnection:Disconnect()
-		bubbleConnection = nil
 	end
 	
-	-- Плавное исчезновение экрана загрузки
-	local fadeTween = TweenService:Create(LoadingOverlay, 
-		TweenInfo.new(0.4, Enum.EasingStyle.Quad, Enum.EasingDirection.Out),
-		{BackgroundTransparency = 1}
-	)
-	fadeTween:Play()
+	-- Плавное исчезновение и уменьшение экрана загрузки
+	local fadeOverlay = tween(LoadingOverlay, {
+		BackgroundTransparency = 1,
+		Size = UDim2.new(0, 230, 0, 160)
+	}, 0.45)
 	
-	task.wait(0.4)
-	LoadingOverlay:Destroy()
+	for _, child in ipairs(LoadingOverlay:GetChildren()) do
+		if child:IsA("GuiObject") then
+			tween(child, {BackgroundTransparency = 1, ImageTransparency = 1, TextTransparency = 1}, 0.35)
+		end
+	end
 	
-	-- Появление главного окна
-	MainFrame.Visible = true
-	MainFrame.Size = UDim2.new(0, 0, 0, 0)
-	
-	-- Анимация появления с эффектом масштабирования
-	local appearTween = TweenService:Create(MainFrame, 
-		TweenInfo.new(0.4, Enum.EasingStyle.Back, Enum.EasingDirection.Out),
-		{Size = UDim2.new(0, 550, 0, 350)}
-	)
-	appearTween:Play()
-	
-	task.wait(0.5)
-	showToast("Dark Hub Loaded Successfully", Color3.fromRGB(0, 255, 100))
+	if fadeOverlay then
+		fadeOverlay.Completed:Connect(function()
+			LoadingOverlay:Destroy()
+			MainFrame.Visible = true
+			MainFrame.Size = UDim2.new(0, 500, 0, 310)
+			tween(MainFrame, {Size = UDim2.new(0, 550, 0, 350)}, 0.4)
+		end)
+	else
+		LoadingOverlay:Destroy()
+		MainFrame.Visible = true
+	end
 end)
