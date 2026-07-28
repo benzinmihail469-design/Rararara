@@ -78,7 +78,7 @@ DarkHub.Parent = SafeParent
 DarkHub.ZIndexBehavior = Enum.ZIndexBehavior.Sibling
 
 local activeTweens = {}
-local function tween(obj, props, dur)
+local function tween(obj, props, dur, easingStyle, easingDirection)
 	if not obj or typeof(obj) ~= "Instance" or not obj.Parent then
 		return nil
 	end
@@ -89,7 +89,7 @@ local function tween(obj, props, dur)
 		activeTweens[obj] = nil
 	end
 	local success, t = pcall(function()
-		return TweenService:Create(obj, TweenInfo.new(dur or 0.25, Enum.EasingStyle.Quart, Enum.EasingDirection.Out), props)
+		return TweenService:Create(obj, TweenInfo.new(dur or 0.25, easingStyle or Enum.EasingStyle.Quart, easingDirection or Enum.EasingDirection.Out), props)
 	end)
 	if success and t then
 		activeTweens[obj] = t
@@ -152,11 +152,11 @@ local function spawnWave(container, clickX, clickY)
 end
 
 -- ============================================================================
--- LOADING SCREEN (0 - 100%) - AMOLED стиль с исправленной иконкой (БЕЗ ПУЛЬСАЦИИ)
+-- LOADING SCREEN (0 - 100%) - УВЕЛИЧЕННАЯ ПОЛОСКА ПРОГРЕССА С ПЛАВНОЙ АНИМАЦИЕЙ
 -- ============================================================================
 local LoadingOverlay = Instance.new("Frame", DarkHub)
 LoadingOverlay.Name = "LoadingOverlay"
-LoadingOverlay.Size = UDim2.new(0, 320, 0, 220)
+LoadingOverlay.Size = UDim2.new(0, 300, 0, 200) -- УМЕНЬШЕННЫЙ РАЗМЕР
 LoadingOverlay.AnchorPoint = Vector2.new(0.5, 0.5)
 LoadingOverlay.Position = UDim2.new(0.5, 0, 0.5, 0)
 LoadingOverlay.BackgroundColor3 = Color3.fromRGB(0, 0, 0)
@@ -175,7 +175,7 @@ OverlayStroke.Transparency = 0.3
 -- Иконка загрузки (БЕЗ ПУЛЬСАЦИИ - фиксированный размер)
 local LoadingIcon = Instance.new("ImageLabel", LoadingOverlay)
 LoadingIcon.Name = "LoadingIcon"
-LoadingIcon.Size = UDim2.new(0, 60, 0, 60)
+LoadingIcon.Size = UDim2.new(0, 45, 0, 45) -- Уменьшена иконка
 LoadingIcon.AnchorPoint = Vector2.new(0.5, 0.5)
 LoadingIcon.Position = UDim2.new(0.5, 0, 0.25, 0)
 LoadingIcon.BackgroundTransparency = 1
@@ -189,30 +189,31 @@ IconCorner.CornerRadius = UDim.new(1, 0)
 
 local LoadingStatus = Instance.new("TextLabel", LoadingOverlay)
 LoadingStatus.Name = "LoadingStatus"
-LoadingStatus.Size = UDim2.new(1, -20, 0, 22)
-LoadingStatus.Position = UDim2.new(0, 10, 0.48, 0)
+LoadingStatus.Size = UDim2.new(1, -20, 0, 18)
+LoadingStatus.Position = UDim2.new(0, 10, 0.46, 0)
 LoadingStatus.BackgroundTransparency = 1
 LoadingStatus.Text = "ЗАГРУЗКА ИНТЕРФЕЙСА"
 LoadingStatus.Font = Enum.Font.FredokaOne
 LoadingStatus.TextColor3 = Color3.fromRGB(255, 255, 255)
-LoadingStatus.TextSize = 12
+LoadingStatus.TextSize = 11
 LoadingStatus.TextScaled = false
 LoadingStatus.ZIndex = 1001
 
 local LoadingPercent = Instance.new("TextLabel", LoadingOverlay)
 LoadingPercent.Name = "LoadingPercent"
-LoadingPercent.Size = UDim2.new(1, 0, 0, 32)
-LoadingPercent.Position = UDim2.new(0, 0, 0.62, 0)
+LoadingPercent.Size = UDim2.new(1, 0, 0, 28)
+LoadingPercent.Position = UDim2.new(0, 0, 0.60, 0)
 LoadingPercent.BackgroundTransparency = 1
 LoadingPercent.Text = "0%"
 LoadingPercent.Font = Enum.Font.FredokaOne
 LoadingPercent.TextColor3 = Color3.fromRGB(255, 255, 255)
-LoadingPercent.TextSize = 24
+LoadingPercent.TextSize = 22
 LoadingPercent.ZIndex = 1001
 
+-- УВЕЛИЧЕННАЯ ПОЛОСКА ПРОГРЕССА
 local ProgressBarBg = Instance.new("Frame", LoadingOverlay)
 ProgressBarBg.Name = "ProgressBarBg"
-ProgressBarBg.Size = UDim2.new(0.8, 0, 0, 6)
+ProgressBarBg.Size = UDim2.new(0.85, 0, 0, 8) -- УВЕЛИЧЕННАЯ ВЫСОТА
 ProgressBarBg.AnchorPoint = Vector2.new(0.5, 0.5)
 ProgressBarBg.Position = UDim2.new(0.5, 0, 0.82, 0)
 ProgressBarBg.BackgroundColor3 = Color3.fromRGB(30, 30, 30)
@@ -230,67 +231,99 @@ ProgressBarFill.ZIndex = 1002
 local FillCorner = Instance.new("UICorner", ProgressBarFill)
 FillCorner.CornerRadius = UDim.new(1, 0)
 
--- Пузырьки
+-- Добавляем свечение для полоски прогресса
+local Glow = Instance.new("Frame", ProgressBarBg)
+Glow.Name = "Glow"
+Glow.Size = UDim2.new(1, 0, 1, 4)
+Glow.Position = UDim2.new(0, 0, 1, 0)
+Glow.BackgroundColor3 = Color3.fromRGB(255, 255, 255)
+Glow.BackgroundTransparency = 0.3
+Glow.BorderSizePixel = 0
+Glow.ZIndex = 1001
+local GlowCorner = Instance.new("UICorner", Glow)
+GlowCorner.CornerRadius = UDim.new(1, 0)
+
+-- Пузырьки с улучшенной анимацией
 local Bubbles = {}
-local bubbleCount = 10
+local bubbleCount = 12
 
 for i = 1, bubbleCount do
 	local bubble = Instance.new("Frame", LoadingOverlay)
 	bubble.Name = "Bubble_" .. i
 	bubble.BackgroundColor3 = Color3.fromRGB(255, 255, 255)
-	bubble.BackgroundTransparency = 0.4
+	bubble.BackgroundTransparency = 0.3
 	bubble.BorderSizePixel = 0
 	bubble.ZIndex = 998
-	local size = math.random(5, 16)
+	local size = math.random(4, 14)
 	bubble.Size = UDim2.new(0, size, 0, size)
 	local corner = Instance.new("UICorner", bubble)
 	corner.CornerRadius = UDim.new(1, 0)
 	
-	local x = math.random(10, 310)
-	local y = math.random(10, 210)
+	local x = math.random(5, 295)
+	local y = math.random(5, 195)
 	bubble.Position = UDim2.new(0, x, 0, y)
 	
-	local speedX = (math.random() * 2 - 1) * (math.random(15, 50))
-	local speedY = (math.random() * 2 - 1) * (math.random(15, 50))
+	local speedX = (math.random() * 2 - 1) * (math.random(20, 60))
+	local speedY = (math.random() * 2 - 1) * (math.random(20, 60))
+	
+	-- Случайный размер для анимации
+	local targetSize = math.random(6, 18)
 	
 	table.insert(Bubbles, {
 		Object = bubble,
 		SpeedX = speedX,
 		SpeedY = speedY,
 		Size = size,
+		TargetSize = targetSize,
 		X = x,
-		Y = y
+		Y = y,
+		PulseTime = math.random() * 2,
+		Transparency = 0.2 + math.random() * 0.3
 	})
 end
 
+-- Улучшенная анимация пузырьков
 local bubbleConnection = RunService.RenderStepped:Connect(function(dt)
 	for _, b in ipairs(Bubbles) do
 		if b.Object and b.Object.Parent then
+			-- Движение
 			b.X = b.X + b.SpeedX * dt
 			b.Y = b.Y + b.SpeedY * dt
 			
+			-- Отскок от границ с небольшим случайным изменением скорости
 			if b.X < 5 then
 				b.X = 5
-				b.SpeedX = -b.SpeedX
-			elseif b.X > 315 then
-				b.X = 315
-				b.SpeedX = -b.SpeedX
+				b.SpeedX = -b.SpeedX * (1 + (math.random() - 0.5) * 0.2)
+			elseif b.X > 295 then
+				b.X = 295
+				b.SpeedX = -b.SpeedX * (1 + (math.random() - 0.5) * 0.2)
 			end
 			if b.Y < 5 then
 				b.Y = 5
-				b.SpeedY = -b.SpeedY
-			elseif b.Y > 215 then
-				b.Y = 215
-				b.SpeedY = -b.SpeedY
+				b.SpeedY = -b.SpeedY * (1 + (math.random() - 0.5) * 0.2)
+			elseif b.Y > 195 then
+				b.Y = 195
+				b.SpeedY = -b.SpeedY * (1 + (math.random() - 0.5) * 0.2)
 			end
 			
 			b.Object.Position = UDim2.new(0, b.X, 0, b.Y)
+			
+			-- Пульсация размера
+			b.PulseTime = b.PulseTime + dt * 1.5
+			local pulse = math.sin(b.PulseTime) * 0.3 + 0.7
+			local currentSize = b.Size * (0.6 + pulse * 0.4)
+			b.Object.Size = UDim2.new(0, currentSize, 0, currentSize)
+			
+			-- Изменение прозрачности
+			local alphaPulse = math.sin(b.PulseTime * 0.8) * 0.2 + 0.6
+			b.Object.BackgroundTransparency = b.Transparency * alphaPulse
 		end
 	end
 end)
 
 -- ПУЛЬСАЦИЯ ОТКЛЮЧЕНА - иконка статична
 
+-- Плавное обновление полоски прогресса с анимацией
 local function updateLoadingText(percent)
 	local statusText = ""
 	if percent <= 25 then
@@ -306,7 +339,30 @@ local function updateLoadingText(percent)
 	end
 	LoadingStatus.Text = statusText
 	LoadingPercent.Text = string.format("%d%%", percent)
-	ProgressBarFill.Size = UDim2.new(percent / 100, 0, 1, 0)
+	
+	-- Плавная анимация для полоски прогресса с эффектом свечения
+	local targetWidth = percent / 100
+	tween(ProgressBarFill, {Size = UDim2.new(targetWidth, 0, 1, 0)}, 0.2, Enum.EasingStyle.Sine, Enum.EasingDirection.Out)
+	
+	-- Изменение цвета полоски в зависимости от прогресса
+	local color
+	if percent < 30 then
+		color = Color3.fromRGB(255, 80, 80)
+	elseif percent < 60 then
+		color = Color3.fromRGB(255, 200, 80)
+	elseif percent < 85 then
+		color = Color3.fromRGB(80, 255, 200)
+	else
+		color = Color3.fromRGB(80, 255, 120)
+	end
+	tween(ProgressBarFill, {BackgroundColor3 = color}, 0.3)
+	tween(Glow, {BackgroundColor3 = color}, 0.3)
+	
+	-- Эффект свечения при заполнении
+	if percent > 0 then
+		local glowIntensity = 0.1 + (percent / 100) * 0.3
+		tween(Glow, {BackgroundTransparency = 1 - glowIntensity}, 0.2)
+	end
 end
 
 -- ============================================================================
@@ -2130,12 +2186,10 @@ task.spawn(function()
 	
 	for i = 0, totalSteps do
 		updateLoadingText(i)
-		ProgressBarFill.BackgroundColor3 = Color3.fromRGB(255, 255, 255)
 		task.wait(stepDelay)
 	end
 	
 	updateLoadingText(100)
-	ProgressBarFill.BackgroundColor3 = Color3.fromRGB(0, 255, 100)
 	
 	task.wait(0.5)
 	
