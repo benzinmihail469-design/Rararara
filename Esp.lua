@@ -76,6 +76,7 @@ local DarkHub = Instance.new("ScreenGui")
 DarkHub.Name = "DarkHub"
 DarkHub.Parent = SafeParent
 DarkHub.ZIndexBehavior = Enum.ZIndexBehavior.Sibling
+DarkHub.IgnoreGuiInset = true
 
 local activeTweens = {}
 local function tween(obj, props, dur)
@@ -1036,7 +1037,6 @@ local Localization = {
         ["UI"] = "UI",
         ["Theme"] = "Theme",
         ["UISize"] = "UI Size",
-        ["ScreenStretch"] = "Screen Stretch",
         ["UITransparency"] = "UI Transparency",
         ["MenuFont"] = "Menu Font",
         ["Language"] = "Language",
@@ -1048,14 +1048,14 @@ local Localization = {
         ["ConfigName"] = "Config Name",
         ["Save"] = "Save Config",
         ["Load"] = "Load Config",
-        ["Delete"] = "Delete Config"
+        ["Delete"] = "Delete Config",
+        ["ScreenStretch"] = "Screen Stretch"
     },
     ["Русский"] = {
         ["Settings"] = "Настройки",
         ["UI"] = "Интерфейс",
         ["Theme"] = "Тема",
         ["UISize"] = "Размер интерфейса",
-        ["ScreenStretch"] = "Растяжение экрана",
         ["UITransparency"] = "Прозрачность меню",
         ["MenuFont"] = "Шрифт меню",
         ["Language"] = "Язык",
@@ -1067,7 +1067,8 @@ local Localization = {
         ["ConfigName"] = "Имя конфига",
         ["Save"] = "Сохранить конфиг",
         ["Load"] = "Загрузить конфиг",
-        ["Delete"] = "Удалить конфиг"
+        ["Delete"] = "Удалить конфиг",
+        ["ScreenStretch"] = "Растяжение экрана"
     }
 }
 
@@ -1881,31 +1882,25 @@ local FontDropdown = Library:CreateDropdown(SettingsPage, "MenuFont", FontKeys, 
     end
 end)
 
--- Размер интерфейса (UI Size)
+-- UI Size Slider (0.5 to 1.5 scale)
 local UISizeSlider = Library:CreateSlider(SettingsPage, "UISize", 50, 150, 100, function(value)
-    if MainScale then
+    if MainScale and MainScale.Parent then
         MainScale.Scale = value / 100
-    end
-end)
-
--- Растяжение экрана (Screen Stretch / FOV)
-local currentStretchFOV = 70
-local ScreenStretchSlider = Library:CreateSlider(SettingsPage, "ScreenStretch", 50, 120, 70, function(value)
-    currentStretchFOV = value
-    if workspace.CurrentCamera then
-        workspace.CurrentCamera.FieldOfView = value
-    end
-end)
-
-workspace:GetPropertyChangedSignal("CurrentCamera"):Connect(function()
-    if workspace.CurrentCamera then
-        workspace.CurrentCamera.FieldOfView = currentStretchFOV
     end
 end)
 
 local TransparencySlider = Library:CreateSlider(SettingsPage, "UITransparency", 0, 90, 15, function(value)
     if MainFrame and MainFrame.Parent then
         MainFrame.BackgroundTransparency = value / 100
+    end
+end)
+
+-- Screen Stretch Toggle
+local ScreenStretchToggle = Library:CreateToggle(SettingsPage, "ScreenStretch", false, function(state)
+    if state then
+        DarkHub.IgnoreGuiInset = true
+    else
+        DarkHub.IgnoreGuiInset = false
     end
 end)
 
@@ -2009,42 +2004,467 @@ local function getConfigList()
         if typeof(listfiles) == "function" then
             local files = listfiles(CONFIG_FOLDER)
             for _, file in ipairs(files) do
-                if string.sub(file, -5) == ".json" then
-                    local name = string.match(file, "([^/\\]+)%.json$")
-                    if name then
-                        table.insert(configs, name)
-                    end
+                local name = file:match("^.+/(.+)%.json$")
+                if name then
+                    table.insert(configs, name)
                 end
             end
         end
     end)
+    table.sort(configs)
     return configs
 end
 
--- Запуск анимации загрузки
-task.spawn(function()
-    for i = 1, 100 do
-        updateLoadingText(i)
-        task.wait(0.015)
+-- UI state to save/load
+local function getCurrentUIState()
+    local state = {
+        theme = Library.CurrentThemeData and "AMOLED" or "AMOLED",
+        language = Library.CurrentLanguage or "English",
+        font = "Fredoka One",
+        ui_size = MainScale and MainScale.Scale or 1,
+        transparency = MainFrame and MainFrame.BackgroundTransparency or 0.15,
+        screen_stretch = DarkHub.IgnoreGuiInset or false,
+        anti_afk = true,
+        animated_window = animatedWindowConnection ~= nil,
+        gradient = uiGradientInstance ~= nil,
+        settings = {}
+    }
+
+    -- Get theme name
+    for name, data in pairs(ThemeConfig) do
+        if data == Library.CurrentThemeData then
+            state.theme = name
+            break
+        end
     end
-    task.wait(0.2)
+
+    -- Get font name
+    for name, font in pairs(FontMapping) do
+        if font == Library.CurrentFont then
+            state.font = name
+            break
+        end
+    end
+
+    -- Get toggle states
+    state.anti_afk = antiAfkConnection ~= nil
+    state.animated_window = animatedWindowConnection ~= nil
+    state.gradient = uiGradientInstance ~= nil
+
+    -- Get dropdown selections
+    if LanguageDropdown and LanguageDropdown.GetValue then
+        state.language = LanguageDropdown.GetValue()
+    end
+
+    if ThemeDropdown and ThemeDropdown.GetValue then
+        state.theme = ThemeDropdown.GetValue()
+    end
+
+    if FontDropdown and FontDropdown.GetValue then
+        state.font = FontDropdown.GetValue()
+    end
+
+    if UISizeSlider and UISizeSlider.GetValue then
+        state.ui_size = UISizeSlider.GetValue() / 100
+    end
+
+    if TransparencySlider and TransparencySlider.GetValue then
+        state.transparency = TransparencySlider.GetValue() / 100
+    end
+
+    if ScreenStretchToggle and ScreenStretchToggle.GetValue then
+        state.screen_stretch = ScreenStretchToggle.GetValue()
+    end
+
+    if AntiAFKToggle and AntiAFKToggle.GetValue then
+        state.anti_afk = AntiAFKToggle.GetValue()
+    end
+
+    if AnimatedWindowToggle and AnimatedWindowToggle.GetValue then
+        state.animated_window = AnimatedWindowToggle.GetValue()
+    end
+
+    if GradientToggle and GradientToggle.GetValue then
+        state.gradient = GradientToggle.GetValue()
+    end
+
+    return state
+end
+
+local function applyUIState(state)
+    if not state then return end
+
+    if state.theme and ThemeConfig[state.theme] then
+        Library:UpdateTheme(state.theme)
+        if ThemeDropdown and ThemeDropdown.SetValue then
+            ThemeDropdown.SetValue(state.theme)
+        end
+    end
+
+    if state.language and Localization[state.language] then
+        Library:UpdateLanguage(state.language)
+        if LanguageDropdown and LanguageDropdown.SetValue then
+            LanguageDropdown.SetValue(state.language)
+        end
+    end
+
+    if state.font and FontMapping[state.font] then
+        Library.CurrentFont = FontMapping[state.font]
+        if FontDropdown and FontDropdown.SetValue then
+            FontDropdown.SetValue(state.font)
+        end
+    end
+
+    if state.ui_size ~= nil and UISizeSlider and UISizeSlider.SetValue then
+        local val = math.floor(state.ui_size * 100 + 0.5)
+        UISizeSlider.SetValue(val)
+        if MainScale and MainScale.Parent then
+            MainScale.Scale = state.ui_size
+        end
+    end
+
+    if state.transparency ~= nil and TransparencySlider and TransparencySlider.SetValue then
+        local val = math.floor(state.transparency * 100 + 0.5)
+        TransparencySlider.SetValue(val)
+    end
+
+    if state.screen_stretch ~= nil and ScreenStretchToggle and ScreenStretchToggle.SetValue then
+        ScreenStretchToggle.SetValue(state.screen_stretch)
+        DarkHub.IgnoreGuiInset = state.screen_stretch
+    end
+
+    if state.anti_afk ~= nil and AntiAFKToggle and AntiAFKToggle.SetValue then
+        AntiAFKToggle.SetValue(state.anti_afk)
+    end
+
+    if state.animated_window ~= nil and AnimatedWindowToggle and AnimatedWindowToggle.SetValue then
+        AnimatedWindowToggle.SetValue(state.animated_window)
+    end
+
+    if state.gradient ~= nil and GradientToggle and GradientToggle.SetValue then
+        GradientToggle.SetValue(state.gradient)
+    end
+end
+
+local function saveConfig(name)
+    if not name or name == "" then
+        showToast("Error: Config name cannot be empty", Color3.fromRGB(255, 50, 50))
+        return
+    end
+
+    local state = getCurrentUIState()
+    local json = HttpService:JSONEncode(state)
+    local path = getConfigPath(name)
+
+    local success, err = pcall(function()
+        if typeof(writefile) == "function" then
+            writefile(path, json)
+            return true
+        end
+        return false
+    end)
+
+    if success then
+        showToast("Config '" .. name .. "' saved successfully!", Color3.fromRGB(50, 255, 50))
+        if ConfigNameBox then
+            ConfigNameBox.Text = ""
+        end
+        if ConfigDropdown and ConfigDropdown.UpdateOptions then
+            ConfigDropdown.UpdateOptions(getConfigList())
+        end
+    else
+        showToast("Failed to save config '" .. name .. "'", Color3.fromRGB(255, 50, 50))
+    end
+end
+
+local function loadConfig(name)
+    if not name or name == "" then
+        showToast("Error: Config name cannot be empty", Color3.fromRGB(255, 50, 50))
+        return
+    end
+
+    local path = getConfigPath(name)
+    local success, content = pcall(function()
+        if typeof(readfile) == "function" then
+            return readfile(path)
+        end
+        return nil
+    end)
+
+    if not success or not content then
+        showToast("Config '" .. name .. "' not found", Color3.fromRGB(255, 200, 50))
+        return
+    end
+
+    local success, state = pcall(function()
+        return HttpService:JSONDecode(content)
+    end)
+
+    if success and state then
+        applyUIState(state)
+        showToast("Config '" .. name .. "' loaded successfully!", Color3.fromRGB(50, 255, 50))
+        if ConfigNameBox then
+            ConfigNameBox.Text = ""
+        end
+    else
+        showToast("Failed to load config '" .. name .. "'", Color3.fromRGB(255, 50, 50))
+    end
+end
+
+local function deleteConfig(name)
+    if not name or name == "" then
+        showToast("Error: Config name cannot be empty", Color3.fromRGB(255, 50, 50))
+        return
+    end
+
+    local path = getConfigPath(name)
+    local success, err = pcall(function()
+        if typeof(delfile) == "function" then
+            delfile(path)
+            return true
+        end
+        return false
+    end)
+
+    if success then
+        showToast("Config '" .. name .. "' deleted!", Color3.fromRGB(255, 200, 50))
+        if ConfigNameBox then
+            ConfigNameBox.Text = ""
+        end
+        -- Обновляем дропдаун и сбрасываем выбранное значение
+        if ConfigDropdown and ConfigDropdown.UpdateOptions then
+            ConfigDropdown.UpdateOptions(getConfigList())
+            -- Сбрасываем выбранное значение в дропдауне
+            if ConfigDropdown.SetValue then
+                ConfigDropdown.SetValue("")
+            end
+        end
+    else
+        showToast("Failed to delete config '" .. name .. "'", Color3.fromRGB(255, 50, 50))
+    end
+end
+
+-- === Config UI Elements ===
+
+-- Config Section Header
+local ConfigSectionHeader = Instance.new("Frame", SettingsPage)
+ConfigSectionHeader.Name = "ConfigSectionHeader"
+ConfigSectionHeader.Size = UDim2.new(1, -20, 0, 24)
+ConfigSectionHeader.BackgroundTransparency = 1
+ConfigSectionHeader.LayoutOrder = #SettingsPage:GetChildren()
+
+local ConfigHeaderText = Instance.new("TextLabel", ConfigSectionHeader)
+ConfigHeaderText.Size = UDim2.new(1, 0, 1, 0)
+ConfigHeaderText.Text = "Configurations"
+ConfigHeaderText.Font = Library.CurrentFont or Enum.Font.FredokaOne
+ConfigHeaderText.TextColor3 = Color3.fromRGB(200, 200, 200)
+ConfigHeaderText.TextSize = 14
+ConfigHeaderText.TextXAlignment = Enum.TextXAlignment.Left
+ConfigHeaderText.BackgroundTransparency = 1
+table.insert(Library.TrackedMainText, ConfigHeaderText)
+table.insert(LocaleObjects, {Object = ConfigHeaderText, Key = "Configurations"})
+
+-- Config Name Input
+local ConfigInputFrame = Instance.new("Frame", SettingsPage)
+ConfigInputFrame.Name = "ConfigInputFrame"
+ConfigInputFrame.Size = UDim2.new(1, -20, 0, 36)
+ConfigInputFrame.BackgroundColor3 = Library.CurrentThemeData.ElementBg or DefaultTheme.ElementBg
+ConfigInputFrame.LayoutOrder = #SettingsPage:GetChildren()
+Instance.new("UICorner", ConfigInputFrame).CornerRadius = UDim.new(0, 6)
+local ConfigInputStroke = Instance.new("UIStroke", ConfigInputFrame)
+ConfigInputStroke.Color = Color3.fromRGB(40, 40, 40)
+table.insert(Library.TrackedElementBg, ConfigInputFrame)
+table.insert(Library.TrackedStrokes, ConfigInputStroke)
+
+local ConfigNameBox = Instance.new("TextBox", ConfigInputFrame)
+ConfigNameBox.Name = "ConfigNameBox"
+ConfigNameBox.Size = UDim2.new(1, -20, 1, 0)
+ConfigNameBox.Position = UDim2.new(0, 10, 0, 0)
+ConfigNameBox.BackgroundTransparency = 1
+ConfigNameBox.Text = ""
+ConfigNameBox.PlaceholderText = "Config name..."
+ConfigNameBox.Font = Library.CurrentFont or Enum.Font.FredokaOne
+ConfigNameBox.TextColor3 = Color3.fromRGB(230, 230, 230)
+ConfigNameBox.PlaceholderColor3 = Color3.fromRGB(130, 130, 130)
+ConfigNameBox.TextSize = 12
+ConfigNameBox.TextXAlignment = Enum.TextXAlignment.Left
+table.insert(Library.TrackedMainText, ConfigNameBox)
+table.insert(LocaleObjects, {Object = ConfigNameBox, Key = "ConfigName"})
+
+-- Config Dropdown for loading/deleting existing configs
+local ConfigDropdown = Library:CreateDropdown(SettingsPage, "Load", getConfigList(), "", function(selected)
+    if selected and selected ~= "" then
+        ConfigNameBox.Text = selected
+    end
+end)
+
+-- Config Buttons Row
+local ConfigButtonRow = Instance.new("Frame", SettingsPage)
+ConfigButtonRow.Name = "ConfigButtonRow"
+ConfigButtonRow.Size = UDim2.new(1, -20, 0, 40)
+ConfigButtonRow.BackgroundTransparency = 1
+ConfigButtonRow.LayoutOrder = #SettingsPage:GetChildren()
+ConfigButtonRow.ZIndex = 6
+
+-- Helper function to create styled config buttons
+local function createConfigButton(parent, textKey, callback, color, position)
+    local Btn = Instance.new("TextButton", parent)
+    Btn.Size = UDim2.new(0.3, -4, 0.85, 0)
+    Btn.Position = UDim2.new(position, 0, 0, 0)
+    Btn.BackgroundColor3 = color or Library.CurrentThemeData.ElementBg or DefaultTheme.ElementBg
+    Btn.Text = textKey
+    Btn.Font = Library.CurrentFont
+    Btn.TextColor3 = Color3.fromRGB(230, 230, 230)
+    Btn.TextSize = 12
+    Btn.ClipsDescendants = true
+    Btn.ZIndex = 7
+    Instance.new("UICorner", Btn).CornerRadius = UDim.new(0, 6)
+    local BtnStroke = Instance.new("UIStroke", Btn)
+    BtnStroke.Color = Color3.fromRGB(40, 40, 40)
+    table.insert(Library.TrackedElementBg, Btn)
+    table.insert(Library.TrackedMainText, Btn)
+    table.insert(Library.TrackedStrokes, BtnStroke)
+    
+    -- Hover effects
+    Btn.MouseEnter:Connect(function()
+        tween(Btn, {BackgroundTransparency = 0.3}, 0.15)
+    end)
+    Btn.MouseLeave:Connect(function()
+        tween(Btn, {BackgroundTransparency = 0}, 0.15)
+    end)
+    
+    Btn.Activated:Connect(function()
+        if type(callback) == "function" then
+            pcall(callback)
+        end
+    end)
+    return Btn
+end
+
+-- Create 3 buttons: Save, Load, Delete (equal width, spaced evenly)
+local saveBtn = createConfigButton(ConfigButtonRow, "Save", function()
+    local name = ConfigNameBox.Text
+    if name == "" then
+        showToast("Please enter a config name", Color3.fromRGB(255, 200, 50))
+        return
+    end
+    saveConfig(name)
+end, Color3.fromRGB(30, 60, 30), 0)
+
+local loadBtn = createConfigButton(ConfigButtonRow, "Load", function()
+    local name = ConfigNameBox.Text
+    if name == "" then
+        if ConfigDropdown and ConfigDropdown.GetValue then
+            name = ConfigDropdown.GetValue()
+        end
+        if name == "" then
+            showToast("Please select or enter a config name", Color3.fromRGB(255, 200, 50))
+            return
+        end
+    end
+    loadConfig(name)
+end, Color3.fromRGB(30, 30, 60), 0.35)
+
+local deleteBtn = createConfigButton(ConfigButtonRow, "Delete", function()
+    local name = ConfigNameBox.Text
+    if name == "" then
+        if ConfigDropdown and ConfigDropdown.GetValue then
+            name = ConfigDropdown.GetValue()
+        end
+        if name == "" then
+            showToast("Please select or enter a config name", Color3.fromRGB(255, 200, 50))
+            return
+        end
+    end
+    deleteConfig(name)
+end, Color3.fromRGB(60, 30, 30), 0.7)
+
+-- Store locale objects for buttons
+table.insert(LocaleObjects, {Object = saveBtn, Key = "Save"})
+table.insert(LocaleObjects, {Object = loadBtn, Key = "Load"})
+table.insert(LocaleObjects, {Object = deleteBtn, Key = "Delete"})
+
+-- Update ConfigDropdown options when configs change
+local function refreshConfigDropdown()
+    if ConfigDropdown and ConfigDropdown.UpdateOptions then
+        ConfigDropdown.UpdateOptions(getConfigList())
+    end
+end
+
+-- Hook to update dropdown when configs change
+local origSaveConfig = saveConfig
+saveConfig = function(name)
+    origSaveConfig(name)
+    refreshConfigDropdown()
+end
+
+local origDeleteConfig = deleteConfig
+deleteConfig = function(name)
+    origDeleteConfig(name)
+    refreshConfigDropdown()
+end
+
+-- Initial refresh
+refreshConfigDropdown()
+
+-- Fix ConfigNameBox placeholder when language changes
+local origUpdateLanguage = Library.UpdateLanguage
+Library.UpdateLanguage = function(lang)
+    origUpdateLanguage(lang)
+    if ConfigNameBox then
+        local placeholderText = Localization[lang] and Localization[lang]["ConfigName"] or "Config name..."
+        ConfigNameBox.PlaceholderText = placeholderText
+    end
+end
+
+-- ============================================================================
+-- УСТАНОВКА НАЧАЛЬНОЙ АКТИВНОЙ ВКЛАДКИ
+-- ============================================================================
+if allTabButtons["Settings"] then
+    setActiveTab(allTabButtons["Settings"])
+    currentActiveTab = allTabButtons["Settings"]
+    if allPages["Settings"] then
+        allPages["Settings"].Visible = true
+    end
+end
+
+-- ============================================================================
+-- ЗАПУСК СИМУЛЯЦИИ ЗАГРУЗКИ С ПЛАВНЫМ ПЕРЕХОДОМ В ИНТЕРФЕЙС
+-- ============================================================================
+task.spawn(function()
+    for i = 0, 100 do
+        updateLoadingText(i)
+        task.wait(0.02)
+    end
+    
+    task.wait(0.3)
+    
+    -- Отключение цикла анимации пузырьков после завершения
     if bubbleConnection then
         bubbleConnection:Disconnect()
     end
-    tween(LoadingOverlay, {BackgroundTransparency = 1}, 0.3)
+    
+    -- Плавное исчезновение и уменьшение экрана загрузки
+    local fadeOverlay = tween(LoadingOverlay, {
+        BackgroundTransparency = 1,
+        Size = UDim2.new(0, 230, 0, 160)
+    }, 0.45)
+    
     for _, child in ipairs(LoadingOverlay:GetChildren()) do
         if child:IsA("GuiObject") then
-            tween(child, {BackgroundTransparency = 1, TextTransparency = 1, ImageTransparency = 1}, 0.25)
+            tween(child, {BackgroundTransparency = 1, ImageTransparency = 1, TextTransparency = 1}, 0.35)
         end
     end
-    task.wait(0.3)
-    LoadingOverlay:Destroy()
-    MainFrame.Visible = true
     
-    -- Выбор первой вкладки по умолчанию
-    if allTabButtons["Settings"] then
-        allTabButtons["Settings"].Activated:Fire()
+    if fadeOverlay then
+        fadeOverlay.Completed:Connect(function()
+            LoadingOverlay:Destroy()
+            MainFrame.Visible = true
+            MainFrame.Size = UDim2.new(0, 500, 0, 310)
+            tween(MainFrame, {Size = UDim2.new(0, 550, 0, 350)}, 0.4)
+        end)
+    else
+        LoadingOverlay:Destroy()
+        MainFrame.Visible = true
     end
-    
-    showToast("Dark Hub loaded successfully!", getThemeAccent())
 end)
