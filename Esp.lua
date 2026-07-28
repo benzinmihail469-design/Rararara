@@ -1049,7 +1049,7 @@ local Localization = {
         ["Save"] = "Save Config",
         ["Load"] = "Load Config",
         ["Delete"] = "Delete Config",
-        ["ScreenStretch"] = "Screen Stretch"
+        ["FOV"] = "Field of View"
     },
     ["Русский"] = {
         ["Settings"] = "Настройки",
@@ -1068,7 +1068,7 @@ local Localization = {
         ["Save"] = "Сохранить конфиг",
         ["Load"] = "Загрузить конфиг",
         ["Delete"] = "Удалить конфиг",
-        ["ScreenStretch"] = "Растяжение экрана"
+        ["FOV"] = "Угол обзора"
     }
 }
 
@@ -1895,12 +1895,11 @@ local TransparencySlider = Library:CreateSlider(SettingsPage, "UITransparency", 
     end
 end)
 
--- Screen Stretch Toggle
-local ScreenStretchToggle = Library:CreateToggle(SettingsPage, "ScreenStretch", false, function(state)
-    if state then
-        DarkHub.IgnoreGuiInset = true
-    else
-        DarkHub.IgnoreGuiInset = false
+-- FOV Slider (30 to 120)
+local FOVSlider = Library:CreateSlider(SettingsPage, "FOV", 30, 120, 70, function(value)
+    local camera = workspace.CurrentCamera
+    if camera then
+        camera.FieldOfView = value
     end
 end)
 
@@ -2023,7 +2022,7 @@ local function getCurrentUIState()
         font = "Fredoka One",
         ui_size = MainScale and MainScale.Scale or 1,
         transparency = MainFrame and MainFrame.BackgroundTransparency or 0.15,
-        screen_stretch = DarkHub.IgnoreGuiInset or false,
+        fov = workspace.CurrentCamera and workspace.CurrentCamera.FieldOfView or 70,
         anti_afk = true,
         animated_window = animatedWindowConnection ~= nil,
         gradient = uiGradientInstance ~= nil,
@@ -2072,8 +2071,8 @@ local function getCurrentUIState()
         state.transparency = TransparencySlider.GetValue() / 100
     end
 
-    if ScreenStretchToggle and ScreenStretchToggle.GetValue then
-        state.screen_stretch = ScreenStretchToggle.GetValue()
+    if FOVSlider and FOVSlider.GetValue then
+        state.fov = FOVSlider.GetValue()
     end
 
     if AntiAFKToggle and AntiAFKToggle.GetValue then
@@ -2128,9 +2127,12 @@ local function applyUIState(state)
         TransparencySlider.SetValue(val)
     end
 
-    if state.screen_stretch ~= nil and ScreenStretchToggle and ScreenStretchToggle.SetValue then
-        ScreenStretchToggle.SetValue(state.screen_stretch)
-        DarkHub.IgnoreGuiInset = state.screen_stretch
+    if state.fov ~= nil and FOVSlider and FOVSlider.SetValue then
+        FOVSlider.SetValue(state.fov)
+        local camera = workspace.CurrentCamera
+        if camera then
+            camera.FieldOfView = state.fov
+        end
     end
 
     if state.anti_afk ~= nil and AntiAFKToggle and AntiAFKToggle.SetValue then
