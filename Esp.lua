@@ -153,7 +153,7 @@ local function spawnWave(container, clickX, clickY)
 end
 
 -- ============================================================================
--- LOADING SCREEN (AMOLED Stil - Уменьшенный размер, плавная полоска и пузырьки)
+-- LOADING SCREEN
 -- ============================================================================
 local LoadingOverlay = Instance.new("Frame", DarkHub)
 LoadingOverlay.Name = "LoadingOverlay"
@@ -173,7 +173,6 @@ OverlayStroke.Color = Color3.fromRGB(255, 255, 255)
 OverlayStroke.Thickness = 1
 OverlayStroke.Transparency = 0.35
 
--- Иконка загрузки
 local LoadingIcon = Instance.new("ImageLabel", LoadingOverlay)
 LoadingIcon.Name = "LoadingIcon"
 LoadingIcon.Size = UDim2.new(0, 52, 0, 52)
@@ -187,32 +186,29 @@ LoadingIcon.ZIndex = 1001
 local IconCorner = Instance.new("UICorner", LoadingIcon)
 IconCorner.CornerRadius = UDim.new(1, 0)
 
--- Статус
 local LoadingStatus = Instance.new("TextLabel", LoadingOverlay)
 LoadingStatus.Name = "LoadingStatus"
 LoadingStatus.Size = UDim2.new(1, -20, 0, 20)
 LoadingStatus.Position = UDim2.new(0, 10, 0.46, 0)
 LoadingStatus.BackgroundTransparency = 1
 LoadingStatus.Text = "ЗАГРУЗКА ИНТЕРФЕЙСА"
-LoadingStatus.Font = Enum.Font.FredokaOne
+LoadingStatus.Font = Enum.Font.SourceSansBold
 LoadingStatus.TextColor3 = Color3.fromRGB(255, 255, 255)
 LoadingStatus.TextSize = 11
 LoadingStatus.TextScaled = false
 LoadingStatus.ZIndex = 1001
 
--- Проценты
 local LoadingPercent = Instance.new("TextLabel", LoadingOverlay)
 LoadingPercent.Name = "LoadingPercent"
 LoadingPercent.Size = UDim2.new(1, 0, 0, 26)
 LoadingPercent.Position = UDim2.new(0, 0, 0.58, 0)
 LoadingPercent.BackgroundTransparency = 1
 LoadingPercent.Text = "0%"
-LoadingPercent.Font = Enum.Font.FredokaOne
+LoadingPercent.Font = Enum.Font.SourceSansBold
 LoadingPercent.TextColor3 = Color3.fromRGB(255, 255, 255)
 LoadingPercent.TextSize = 22
 LoadingPercent.ZIndex = 1001
 
--- Полоска прогресса
 local ProgressBarBg = Instance.new("Frame", LoadingOverlay)
 ProgressBarBg.Name = "ProgressBarBg"
 ProgressBarBg.Size = UDim2.new(0.85, 0, 0, 10)
@@ -246,7 +242,6 @@ FillGradient.Color = ColorSequence.new({
     ColorSequenceKeypoint.new(1, Color3.fromRGB(180, 180, 180))
 })
 
--- Пузырьки
 local Bubbles = {}
 local bubbleCount = 12
 
@@ -333,7 +328,7 @@ PagesContainer.ZIndex = 5
 
 local TabTitle = Instance.new("TextLabel", MainFrame)
 TabTitle.Text = "Settings"
-TabTitle.Font = Enum.Font.FredokaOne
+TabTitle.Font = Enum.Font.SourceSansBold
 TabTitle.TextColor3 = Color3.fromRGB(255, 255, 255)
 TabTitle.TextSize = 16
 TabTitle.Position = UDim2.new(0, 185, 0, 18)
@@ -352,7 +347,7 @@ local MinBtn = Instance.new("TextButton", ControlsContainer)
 MinBtn.Size = UDim2.new(0, 24, 0, 24)
 MinBtn.Position = UDim2.new(0, 0, 0, 3)
 MinBtn.Text = "—"
-MinBtn.Font = Enum.Font.FredokaOne
+MinBtn.Font = Enum.Font.SourceSansBold
 MinBtn.TextSize = 12
 MinBtn.TextColor3 = Color3.fromRGB(180, 180, 180)
 MinBtn.BackgroundTransparency = 1
@@ -362,7 +357,7 @@ local CloseBtn = Instance.new("TextButton", ControlsContainer)
 CloseBtn.Size = UDim2.new(0, 24, 0, 24)
 CloseBtn.Position = UDim2.new(0, 30, 0, 0)
 CloseBtn.Text = "×"
-CloseBtn.Font = Enum.Font.FredokaOne
+CloseBtn.Font = Enum.Font.SourceSansBold
 CloseBtn.TextSize = 22
 CloseBtn.TextColor3 = Color3.fromRGB(180, 180, 180)
 CloseBtn.BackgroundTransparency = 1
@@ -392,7 +387,7 @@ ClearSearchBtn.Size = UDim2.new(0, 16, 0, 16)
 ClearSearchBtn.Position = UDim2.new(1, -22, 0.5, -8)
 ClearSearchBtn.BackgroundTransparency = 1
 ClearSearchBtn.Text = "×"
-ClearSearchBtn.Font = Enum.Font.FredokaOne
+ClearSearchBtn.Font = Enum.Font.SourceSansBold
 ClearSearchBtn.TextSize = 16
 ClearSearchBtn.TextColor3 = Color3.fromRGB(150, 150, 150)
 ClearSearchBtn.Visible = false
@@ -404,7 +399,7 @@ SearchBox.Position = UDim2.new(0, 30, 0, 0)
 SearchBox.BackgroundTransparency = 1
 SearchBox.Text = ""
 SearchBox.PlaceholderText = "Search..."
-SearchBox.Font = Enum.Font.FredokaOne
+SearchBox.Font = Enum.Font.SourceSansBold
 SearchBox.TextSize = 12
 SearchBox.TextColor3 = Color3.fromRGB(230, 230, 230)
 SearchBox.PlaceholderColor3 = Color3.fromRGB(130, 130, 130)
@@ -437,7 +432,7 @@ HubIcon.Image = "rbxthumb://type=Asset&id=" .. CustomIconID .. "&w=150&h=150"
 
 local HubTitle = Instance.new("TextLabel", HeaderBg)
 HubTitle.Text = "Dark Hub"
-HubTitle.Font = Enum.Font.FredokaOne
+HubTitle.Font = Enum.Font.SourceSansBold
 HubTitle.TextColor3 = Color3.fromRGB(255, 255, 255)
 HubTitle.TextSize = 13
 HubTitle.Position = UDim2.new(0, 44, 0, 7)
@@ -448,7 +443,7 @@ HubTitle.ZIndex = 5
 
 local SubTitle = Instance.new("TextLabel", HeaderBg)
 SubTitle.Text = "Settings Panel"
-SubTitle.Font = Enum.Font.FredokaOne
+SubTitle.Font = Enum.Font.SourceSansBold
 SubTitle.TextColor3 = Color3.fromRGB(130, 130, 130)
 SubTitle.TextSize = 9
 SubTitle.Position = UDim2.new(0, 44, 0, 23)
@@ -468,7 +463,7 @@ local EmbMinBtn = Instance.new("TextButton", EmbeddedControls)
 EmbMinBtn.Size = UDim2.new(0, 20, 0, 20)
 EmbMinBtn.Position = UDim2.new(0, 0, 0, 5)
 EmbMinBtn.Text = "—"
-EmbMinBtn.Font = Enum.Font.FredokaOne
+EmbMinBtn.Font = Enum.Font.SourceSansBold
 EmbMinBtn.TextSize = 11
 EmbMinBtn.TextColor3 = Color3.fromRGB(180, 180, 180)
 EmbMinBtn.BackgroundTransparency = 1
@@ -478,7 +473,7 @@ local EmbCloseBtn = Instance.new("TextButton", EmbeddedControls)
 EmbCloseBtn.Size = UDim2.new(0, 20, 0, 20)
 EmbCloseBtn.Position = UDim2.new(0, 25, 0, 2)
 EmbCloseBtn.Text = "×"
-EmbCloseBtn.Font = Enum.Font.FredokaOne
+EmbCloseBtn.Font = Enum.Font.SourceSansBold
 EmbCloseBtn.TextSize = 20
 EmbCloseBtn.TextColor3 = Color3.fromRGB(180, 180, 180)
 EmbCloseBtn.BackgroundTransparency = 1
@@ -515,7 +510,7 @@ FooterStroke.Color = Color3.fromRGB(45, 45, 45)
 local DiscordLabel = Instance.new("TextLabel", FooterBg)
 DiscordLabel.Position = UDim2.new(0, 10, 0, 7)
 DiscordLabel.Size = UDim2.new(1, -20, 0, 15)
-DiscordLabel.Font = Enum.Font.FredokaOne
+DiscordLabel.Font = Enum.Font.SourceSansBold
 DiscordLabel.Text = "discord.gg/pulsezone"
 DiscordLabel.TextColor3 = Color3.fromRGB(255, 255, 255)
 DiscordLabel.TextSize = 10
@@ -525,7 +520,7 @@ DiscordLabel.BackgroundTransparency = 1
 local StatsLabel = Instance.new("TextLabel", FooterBg)
 StatsLabel.Position = UDim2.new(0, 10, 0, 23)
 StatsLabel.Size = UDim2.new(1, -20, 0, 15)
-StatsLabel.Font = Enum.Font.FredokaOne
+StatsLabel.Font = Enum.Font.SourceSansBold
 StatsLabel.Text = "FPS: ... | Session: 00:00:00"
 StatsLabel.TextColor3 = Color3.fromRGB(130, 130, 130)
 StatsLabel.TextSize = 10
@@ -644,7 +639,7 @@ end)
 -- UI LIBRARY & THEMES
 -- ============================================================================
 local Library = {}
-Library.CurrentFont = Enum.Font.FredokaOne
+Library.CurrentFont = Enum.Font.SourceSansBold
 Library.CurrentLanguage = "English"
 Library.CurrentTabKey = "Settings"
 Library.ActiveDropdownClose = nil
@@ -654,6 +649,7 @@ Library.TrackedAccents = {}
 Library.TrackedMainText = {}
 Library.TrackedSubText = {}
 Library.TrackedStrokes = {}
+Library.TrackedDropdownLabels = {}
 
 local ThemeConfig = {
     ["Black"] = { Accent = Color3.fromRGB(180, 180, 180), MainBg = Color3.fromRGB(12, 12, 12), ElementBg = Color3.fromRGB(22, 22, 22) },
@@ -813,7 +809,7 @@ local function clearActiveTab(tabButton)
             end)
         end
     end
-    tabButton.Font = Library.CurrentFont or Enum.Font.FredokaOne
+    tabButton.Font = Library.CurrentFont or Enum.Font.SourceSansBold
     local isL = isLightColor(getThemeMainBg())
     local normalTextColor = isL and Color3.fromRGB(110, 110, 110) or Color3.fromRGB(140, 140, 140)
     tween(tabButton, {TextColor3 = normalTextColor}, 0.25)
@@ -1034,7 +1030,8 @@ local Localization = {
         ["SettingAnimations"] = "SETTING UP ANIMATIONS",
         ["PrepLaunch"] = "PREPARING FOR LAUNCH",
         ["Ready"] = "READY!",
-        ["HubLoaded"] = "Dark Hub loaded successfully!"
+        ["HubLoaded"] = "Dark Hub loaded successfully!",
+        ["CyrillicFontWarning"] = "This font does not support Cyrillic (switched to Gotham)"
     },
     ["Русский"] = {
         ["Settings"] = "Настройки",
@@ -1069,13 +1066,94 @@ local Localization = {
         ["SettingAnimations"] = "НАСТРОЙКА АНИМАЦИЙ",
         ["PrepLaunch"] = "ПОДГОТОВКА К ЗАПУСКУ",
         ["Ready"] = "ГОТОВО!",
-        ["HubLoaded"] = "Dark Hub успешно запущен!"
+        ["HubLoaded"] = "Dark Hub успешно запущен!",
+        ["CyrillicFontWarning"] = "Этот шрифт не поддерживает русский язык (выбран Gotham)"
     }
 }
+
+local FontMapping = {
+    ["Gotham"] = Enum.Font.Gotham,
+    ["Gotham Bold"] = Enum.Font.GothamBold,
+    ["Source Sans"] = Enum.Font.SourceSans,
+    ["Roboto"] = Enum.Font.Roboto,
+    ["Roboto Mono"] = Enum.Font.RobotoMono,
+    ["Ubuntu"] = Enum.Font.Ubuntu,
+    ["Michroma"] = Enum.Font.Michroma,
+    ["Code"] = Enum.Font.Code,
+    ["Fantasy"] = Enum.Font.Fantasy,
+    ["Fredoka One"] = Enum.Font.FredokaOne
+}
+
+-- Forward declaration for toast notification
+local showToast
+
+local function applyFontToAll(font)
+    -- Проверка на поддержку кириллицы при русском языке
+    local nonCyrillicFonts = {
+        [Enum.Font.FredokaOne] = true,
+        [Enum.Font.Code] = true,
+        [Enum.Font.Michroma] = true,
+        [Enum.Font.Fantasy] = true
+    }
+    
+    if Library.CurrentLanguage == "Русский" and nonCyrillicFonts[font] then
+        font = Enum.Font.Gotham
+        if showToast then
+            pcall(function()
+                showToast(Localization["Русский"]["CyrillicFontWarning"], Color3.fromRGB(255, 200, 50))
+            end)
+        end
+    end
+
+    Library.CurrentFont = font
+    
+    local allTextElements = {}
+    for _, obj in ipairs(Library.TrackedMainText) do
+        if obj and typeof(obj) == "Instance" and obj.Parent and (obj:IsA("TextLabel") or obj:IsA("TextButton") or obj:IsA("TextBox")) then
+            table.insert(allTextElements, obj)
+        end
+    end
+    for _, obj in ipairs(Library.TrackedSubText) do
+        if obj and typeof(obj) == "Instance" and obj.Parent and (obj:IsA("TextLabel") or obj:IsA("TextButton") or obj:IsA("TextBox")) then
+            table.insert(allTextElements, obj)
+        end
+    end
+    for _, obj in ipairs(Library.TrackedDropdownLabels) do
+        if obj and typeof(obj) == "Instance" and obj.Parent then
+            table.insert(allTextElements, obj)
+        end
+    end
+    
+    for _, obj in ipairs(allTextElements) do
+        pcall(function() obj.Font = font end)
+    end
+    for textKey, tabBtn in pairs(allTabButtons) do
+        if tabBtn and typeof(tabBtn) == "Instance" and tabBtn.Parent then
+            pcall(function() tabBtn.Font = font end)
+        end
+    end
+    if TabTitle and TabTitle.Parent then pcall(function() TabTitle.Font = font end) end
+    if HubTitle and HubTitle.Parent then pcall(function() HubTitle.Font = font end) end
+    if SubTitle and SubTitle.Parent then pcall(function() SubTitle.Font = font end) end
+end
 
 function Library:UpdateLanguage(lang)
     if not Localization[lang] then return end
     Library.CurrentLanguage = lang
+    
+    -- Если включен русский, а текущий шрифт не поддерживает кириллицу - автоматически переключаем на Gotham
+    local nonCyrillicFonts = {
+        [Enum.Font.FredokaOne] = true,
+        [Enum.Font.Code] = true,
+        [Enum.Font.Michroma] = true,
+        [Enum.Font.Fantasy] = true
+    }
+    if lang == "Русский" and nonCyrillicFonts[Library.CurrentFont] then
+        Library.CurrentFont = Enum.Font.Gotham
+        applyFontToAll(Enum.Font.Gotham)
+    else
+        applyFontToAll(Library.CurrentFont)
+    end
     
     for _, loc in ipairs(LocaleObjects) do
         if loc.Object and typeof(loc.Object) == "Instance" and loc.Object.Parent then
@@ -1094,32 +1172,6 @@ function Library:UpdateLanguage(lang)
     if SearchBox then
         SearchBox.PlaceholderText = (lang == "Русский") and "Поиск..." or "Search..."
     end
-end
-
-local function applyFontToAll(font)
-    Library.CurrentFont = font
-    local allTextElements = {}
-    for _, obj in ipairs(Library.TrackedMainText) do
-        if obj and typeof(obj) == "Instance" and obj.Parent and (obj:IsA("TextLabel") or obj:IsA("TextButton") or obj:IsA("TextBox")) then
-            table.insert(allTextElements, obj)
-        end
-    end
-    for _, obj in ipairs(Library.TrackedSubText) do
-        if obj and typeof(obj) == "Instance" and obj.Parent and (obj:IsA("TextLabel") or obj:IsA("TextButton") or obj:IsA("TextBox")) then
-            table.insert(allTextElements, obj)
-        end
-    end
-    for _, obj in ipairs(allTextElements) do
-        pcall(function() obj.Font = font end)
-    end
-    for textKey, tabBtn in pairs(allTabButtons) do
-        if tabBtn and typeof(tabBtn) == "Instance" and tabBtn.Parent then
-            pcall(function() tabBtn.Font = font end)
-        end
-    end
-    if TabTitle and TabTitle.Parent then pcall(function() TabTitle.Font = font end) end
-    if HubTitle and HubTitle.Parent then pcall(function() HubTitle.Font = font end) end
-    if SubTitle and SubTitle.Parent then pcall(function() SubTitle.Font = font end) end
 end
 
 local animatedWindowConnection = nil
@@ -1240,19 +1292,6 @@ ClearSearchBtn.Activated:Connect(function()
     SearchBox.Text = ""
 end)
 
-local FontMapping = {
-    ["Gotham"] = Enum.Font.Gotham,
-    ["Gotham Bold"] = Enum.Font.GothamBold,
-    ["Source Sans"] = Enum.Font.SourceSans,
-    ["Roboto"] = Enum.Font.Roboto,
-    ["Roboto Mono"] = Enum.Font.RobotoMono,
-    ["Ubuntu"] = Enum.Font.Ubuntu,
-    ["Michroma"] = Enum.Font.Michroma,
-    ["Code"] = Enum.Font.Code,
-    ["Fantasy"] = Enum.Font.Fantasy,
-    ["Fredoka One"] = Enum.Font.FredokaOne
-}
-
 -- ============================================================================
 -- INTERFACE CONTROLS (DROPDOWN, BUTTON, TOGGLE, SLIDER)
 -- ============================================================================
@@ -1305,12 +1344,13 @@ function Library:CreateDropdown(parentPage, textKey, options, default, callback)
     SelectedLabel.TextTruncate = Enum.TextTruncate.AtEnd
     SelectedLabel.BackgroundTransparency = 1
     SelectedLabel.ZIndex = 8
+    table.insert(Library.TrackedDropdownLabels, SelectedLabel)
 
     local Arrow = Instance.new("TextLabel", HeaderBtn)
     Arrow.Name = "Arrow"
     Arrow.Size = UDim2.new(0, 20, 1, 0)
     Arrow.Text = "v"
-    Arrow.Font = Enum.Font.FredokaOne
+    Arrow.Font = Enum.Font.SourceSansBold
     Arrow.TextColor3 = Color3.fromRGB(150, 150, 150)
     Arrow.TextSize = 10
     Arrow.BackgroundTransparency = 1
@@ -1436,20 +1476,23 @@ function Library:CreateDropdown(parentPage, textKey, options, default, callback)
             OptLabel.TextTruncate = Enum.TextTruncate.AtEnd
             OptLabel.BackgroundTransparency = 1
             OptLabel.ZIndex = 10
-            local curBgL = getLuminance(getThemeMainBg())
-            local defaultSubText = (curBgL > 0.5) and Color3.fromRGB(110, 110, 110) or Color3.fromRGB(140, 140, 140)
-            OptLabel.TextColor3 = (option == SelectedLabel.Text) and accent or defaultSubText
-            if FontMapping and FontMapping[option] then
+            
+            if textKey == "MenuFont" and FontMapping and FontMapping[option] then
                 OptLabel.Font = FontMapping[option]
             else
                 OptLabel.Font = Library.CurrentFont
+                table.insert(Library.TrackedDropdownLabels, OptLabel)
             end
+
+            local curBgL = getLuminance(getThemeMainBg())
+            local defaultSubText = (curBgL > 0.5) and Color3.fromRGB(110, 110, 110) or Color3.fromRGB(140, 140, 140)
+            OptLabel.TextColor3 = (option == SelectedLabel.Text) and accent or defaultSubText
 
             local Checkmark = Instance.new("TextLabel", OptBtn)
             Checkmark.Size = UDim2.new(0, 20, 1, 0)
             Checkmark.Position = UDim2.new(1, -26, 0, 0)
             Checkmark.Text = "✓"
-            Checkmark.Font = Enum.Font.FredokaOne
+            Checkmark.Font = Enum.Font.SourceSansBold
             Checkmark.TextColor3 = accent
             Checkmark.TextSize = 14
             Checkmark.BackgroundTransparency = 1
@@ -1899,7 +1942,7 @@ for name, _ in pairs(FontMapping) do
 end
 table.sort(FontKeys)
 
-local FontDropdown = Library:CreateDropdown(SettingsPage, "MenuFont", FontKeys, "Fredoka One", function(selectedFont)
+local FontDropdown = Library:CreateDropdown(SettingsPage, "MenuFont", FontKeys, "Source Sans", function(selectedFont)
     if FontMapping[selectedFont] then
         applyFontToAll(FontMapping[selectedFont])
     end
@@ -1953,7 +1996,7 @@ pcall(function()
 end)
 
 local activeToast = nil
-local function showToast(message, dotColor)
+showToast = function(message, dotColor)
     if activeToast and activeToast.Parent then
         activeToast:Destroy()
         activeToast = nil
@@ -1985,11 +2028,12 @@ local function showToast(message, dotColor)
     label.Size = UDim2.new(1, -30, 1, 0)
     label.Position = UDim2.new(0, 26, 0, 0)
     label.Text = message or ""
-    label.Font = Library.CurrentFont or Enum.Font.FredokaOne
+    label.Font = Library.CurrentFont or Enum.Font.SourceSansBold
     label.TextColor3 = Color3.fromRGB(240, 240, 240)
     label.TextSize = 12
     label.TextXAlignment = Enum.TextXAlignment.Left
     label.BackgroundTransparency = 1
+    table.insert(Library.TrackedDropdownLabels, label)
 
     tween(toast, {Position = UDim2.new(0.5, 0, 1, -20)}, 0.3)
 
@@ -2043,7 +2087,7 @@ local function getCurrentUIState()
     local state = {
         theme = Library.CurrentThemeData and "AMOLED" or "AMOLED",
         language = Library.CurrentLanguage or "English",
-        font = "Fredoka One",
+        font = "Source Sans",
         ui_size = MainScale and MainScale.Scale or 1,
         transparency = MainFrame and MainFrame.BackgroundTransparency or 0.15,
         fov = workspace.CurrentCamera and workspace.CurrentCamera.FieldOfView or 70,
@@ -2210,7 +2254,7 @@ ConfigSectionHeader.LayoutOrder = #SettingsPage:GetChildren()
 local ConfigHeaderText = Instance.new("TextLabel", ConfigSectionHeader)
 ConfigHeaderText.Size = UDim2.new(1, 0, 1, 0)
 ConfigHeaderText.Text = "Configurations"
-ConfigHeaderText.Font = Library.CurrentFont or Enum.Font.FredokaOne
+ConfigHeaderText.Font = Library.CurrentFont or Enum.Font.SourceSansBold
 ConfigHeaderText.TextColor3 = Color3.fromRGB(200, 200, 200)
 ConfigHeaderText.TextSize = 14
 ConfigHeaderText.TextXAlignment = Enum.TextXAlignment.Left
@@ -2236,7 +2280,7 @@ ConfigNameBox.Position = UDim2.new(0, 10, 0, 0)
 ConfigNameBox.BackgroundTransparency = 1
 ConfigNameBox.Text = ""
 ConfigNameBox.PlaceholderText = "Config name..."
-ConfigNameBox.Font = Library.CurrentFont or Enum.Font.FredokaOne
+ConfigNameBox.Font = Library.CurrentFont or Enum.Font.SourceSansBold
 ConfigNameBox.TextColor3 = Color3.fromRGB(230, 230, 230)
 ConfigNameBox.PlaceholderColor3 = Color3.fromRGB(130, 130, 130)
 ConfigNameBox.TextSize = 12
@@ -2326,7 +2370,7 @@ table.insert(LocaleObjects, {Object = loadBtn, Key = "Load"})
 table.insert(LocaleObjects, {Object = deleteBtn, Key = "Delete"})
 
 -- ============================================================================
--- ЗАПУСК И ИНИЦИАЛИЗАЦИЯ (ИСПРАВЛЕНО И ДОПОЛНЕНО)
+-- LAUNCH & INITIALIZATION
 -- ============================================================================
 local function updateLoadingText(percent)
     local lang = Library.CurrentLanguage or "English"
@@ -2385,4 +2429,3 @@ task.spawn(function()
     
     showToast(getLocalizedMessage("HubLoaded"), Color3.fromRGB(50, 255, 50))
 end)
-
