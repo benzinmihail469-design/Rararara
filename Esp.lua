@@ -1,5 +1,5 @@
 -- ============================================================================
--- Dark Hub - Settings Edition (AMOLED Style with Separate UI, Theme & Configs Tabs)
+-- Dark Hub - Settings Edition (AMOLED Style - All Settings on One Page)
 -- ============================================================================
 local TweenService = game:GetService("TweenService")
 local UserInputService = game:GetService("UserInputService")
@@ -326,7 +326,7 @@ PagesContainer.BackgroundTransparency = 1
 PagesContainer.ZIndex = 5
 
 local TabTitle = Instance.new("TextLabel", MainFrame)
-TabTitle.Text = "UI"
+TabTitle.Text = "Settings"
 TabTitle.Font = Enum.Font.SourceSansBold
 TabTitle.TextColor3 = Color3.fromRGB(255, 255, 255)
 TabTitle.TextSize = 16
@@ -640,7 +640,7 @@ end)
 local Library = {}
 Library.CurrentFont = Enum.Font.SourceSansBold
 Library.CurrentLanguage = "English"
-Library.CurrentTabKey = "UI"
+Library.CurrentTabKey = "Settings"
 Library.ActiveDropdownClose = nil
 Library.TrackedMainBg = {}
 Library.TrackedElementBg = {}
@@ -895,6 +895,7 @@ local LocaleObjects = {}
 
 local Localization = {
     ["English"] = {
+        ["Settings"] = "Settings",
         ["UI"] = "UI",
         ["Theme"] = "Theme",
         ["Configs"] = "Configs",
@@ -925,6 +926,7 @@ local Localization = {
         ["HubLoaded"] = "Dark Hub loaded successfully!"
     },
     ["Русский"] = {
+        ["Settings"] = "Настройки",
         ["UI"] = "Интерфейс",
         ["Theme"] = "Тема",
         ["Configs"] = "Конфиги",
@@ -1640,18 +1642,15 @@ function Library:CreatePage(textKey, iconId, layoutOrder)
 end
 
 -- ============================================================================
--- SEPARATE MAIN TABS: UI, Theme, Configs
+-- SETTINGS TAB - ALL CONTROLS DIRECTLY ON SETTINGS PAGE (AMOLED STYLE)
 -- ============================================================================
-local UIPage = Library:CreatePage("UI", "117996761927034", 1)
-local ThemePage = Library:CreatePage("Theme", nil, 2)
-local ConfigsPage = Library:CreatePage("Configs", nil, 3)
+local SettingsPage = Library:CreatePage("Settings", "117996761927034", 1)
 
 -- ============================================================================
--- POPULATE TABS (UI, Theme, Configs)
+-- POPULATE SETTINGS PAGE CONTROLS
 -- ============================================================================
 
--- 1. UI TAB CONTENT
-local LanguageDropdown = Library:CreateDropdown(UIPage, "Language", {"English", "Русский"}, "English", function(selectedLang)
+local LanguageDropdown = Library:CreateDropdown(SettingsPage, "Language", {"English", "Русский"}, "English", function(selectedLang)
     Library:UpdateLanguage(selectedLang)
 end)
 
@@ -1661,49 +1660,48 @@ for name, _ in pairs(FontMapping) do
 end
 table.sort(FontKeys)
 
-local FontDropdown = Library:CreateDropdown(UIPage, "MenuFont", FontKeys, "Source Sans", function(selectedFont)
+local FontDropdown = Library:CreateDropdown(SettingsPage, "MenuFont", FontKeys, "Source Sans", function(selectedFont)
     if FontMapping[selectedFont] then
         applyFontToAll(FontMapping[selectedFont])
     end
 end)
 
-local UISizeSlider = Library:CreateSlider(UIPage, "UISize", 50, 150, 100, function(value)
+local UISizeSlider = Library:CreateSlider(SettingsPage, "UISize", 50, 150, 100, function(value)
     if MainScale and MainScale.Parent then
         MainScale.Scale = value / 100
     end
 end)
 
-local TransparencySlider = Library:CreateSlider(UIPage, "UITransparency", 0, 90, 15, function(value)
+local TransparencySlider = Library:CreateSlider(SettingsPage, "UITransparency", 0, 90, 15, function(value)
     if MainFrame and MainFrame.Parent then
         MainFrame.BackgroundTransparency = value / 100
     end
 end)
 
-local FOVSlider = Library:CreateSlider(UIPage, "FOV", 30, 120, 70, function(value)
+local FOVSlider = Library:CreateSlider(SettingsPage, "FOV", 30, 120, 70, function(value)
     local camera = workspace.CurrentCamera
     if camera then
         camera.FieldOfView = value
     end
 end)
 
-local AntiAFKToggle = Library:CreateToggle(UIPage, "AntiAFK", true, function(state)
+local AntiAFKToggle = Library:CreateToggle(SettingsPage, "AntiAFK", true, function(state)
     toggleAntiAFK(state)
 end)
 
-local AnimatedWindowToggle = Library:CreateToggle(UIPage, "AnimatedWindow", false, function(state)
+local AnimatedWindowToggle = Library:CreateToggle(SettingsPage, "AnimatedWindow", false, function(state)
     toggleAnimatedWindow(state)
 end)
 
-local GradientToggle = Library:CreateToggle(UIPage, "Gradient", false, function(state)
+local GradientToggle = Library:CreateToggle(SettingsPage, "Gradient", false, function(state)
     toggleGradientEffect(state)
 end)
 
--- 2. THEME TAB CONTENT
-local ThemeDropdown = Library:CreateDropdown(ThemePage, "UITheme", ThemeNamesList, "AMOLED", function(selectedTheme)
+local ThemeDropdown = Library:CreateDropdown(SettingsPage, "UITheme", ThemeNamesList, "AMOLED", function(selectedTheme)
     Library:UpdateTheme(selectedTheme)
 end)
 
--- 3. CONFIGS TAB CONTENT
+-- Configs Section
 local CONFIG_FOLDER = "DarkHub/Configs"
 pcall(function()
     if typeof(makefolder) == "function" and typeof(isfolder) == "function" then
@@ -1849,11 +1847,11 @@ local function applyUIState(state)
     if state.gradient ~= nil and GradientToggle and GradientToggle.SetValue then GradientToggle.SetValue(state.gradient) end
 end
 
-local ConfigInputFrame = Instance.new("Frame", ConfigsPage)
+local ConfigInputFrame = Instance.new("Frame", SettingsPage)
 ConfigInputFrame.Name = "ConfigInputFrame"
 ConfigInputFrame.Size = UDim2.new(1, -20, 0, 36)
 ConfigInputFrame.BackgroundColor3 = Library.CurrentThemeData.ElementBg or DefaultTheme.ElementBg
-ConfigInputFrame.LayoutOrder = #ConfigsPage:GetChildren()
+ConfigInputFrame.LayoutOrder = #SettingsPage:GetChildren()
 Instance.new("UICorner", ConfigInputFrame).CornerRadius = UDim.new(0, 6)
 local ConfigInputStroke = Instance.new("UIStroke", ConfigInputFrame)
 ConfigInputStroke.Color = Color3.fromRGB(35, 35, 35)
@@ -1875,17 +1873,17 @@ ConfigNameBox.TextXAlignment = Enum.TextXAlignment.Left
 table.insert(Library.TrackedMainText, ConfigNameBox)
 table.insert(LocaleObjects, {Object = ConfigNameBox, Key = "ConfigName"})
 
-local ConfigDropdown = Library:CreateDropdown(ConfigsPage, "Load", getConfigList(), "", function(selected)
+local ConfigDropdown = Library:CreateDropdown(SettingsPage, "Load", getConfigList(), "", function(selected)
     if selected and selected ~= "" then
         ConfigNameBox.Text = selected
     end
 end)
 
-local ConfigButtonRow = Instance.new("Frame", ConfigsPage)
+local ConfigButtonRow = Instance.new("Frame", SettingsPage)
 ConfigButtonRow.Name = "ConfigButtonRow"
 ConfigButtonRow.Size = UDim2.new(1, -20, 0, 36)
 ConfigButtonRow.BackgroundTransparency = 1
-ConfigButtonRow.LayoutOrder = #ConfigsPage:GetChildren()
+ConfigButtonRow.LayoutOrder = #SettingsPage:GetChildren()
 ConfigButtonRow.ZIndex = 6
 
 local function createConfigButton(parent, textKey, callback, position)
@@ -2042,9 +2040,9 @@ task.spawn(function()
     end
     
     MainFrame.Visible = true
-    setActiveTab(allTabButtons["UI"])
-    currentActiveTab = allTabButtons["UI"]
-    UIPage.Visible = true
+    setActiveTab(allTabButtons["Settings"])
+    currentActiveTab = allTabButtons["Settings"]
+    allPages["Settings"].Visible = true
     
     Library:UpdateTheme("AMOLED")
     showToast(getLocalizedMessage("HubLoaded"), Color3.fromRGB(255, 255, 255))
