@@ -257,16 +257,16 @@ for i = 1, bubbleCount do
     bubble.BackgroundColor3 = Color3.fromRGB(255, 255, 255)
     bubble.BorderSizePixel = 0
     bubble.ZIndex = 998
-    
+
     local size = math.random(4, 12)
     bubble.Size = UDim2.new(0, size, 0, size)
-    
+
     local corner = Instance.new("UICorner", bubble)
     corner.CornerRadius = UDim.new(1, 0)
-    
+
     local startX = math.random(10, 270)
     local startY = math.random(20, 180)
-    
+
     table.insert(Bubbles, {
         Object = bubble,
         X = startX,
@@ -283,30 +283,30 @@ end
 
 local bubbleConnection = RunService.RenderStepped:Connect(function(dt)
     local time = os.clock()
-    
+
     -- Вращение градиента на полоске
     if FillGradient then
         FillGradient.Rotation = (time * 120) % 360
     end
-    
+
     -- Плавная физика пузырьков
     for _, b in ipairs(Bubbles) do
         if b.Object and b.Object.Parent then
             b.Y = b.Y - b.SpeedY * dt
             b.X = b.BaseX + math.sin(time * b.WobbleSpeed + b.Seed) * b.WobbleAmount
-            
+
             -- Сброс вниз при вылете за верхнюю границу
             if b.Y < -15 then
                 b.Y = 200
                 b.BaseX = math.random(10, 270)
                 b.SpeedY = math.random(18, 42)
             end
-            
+
             -- Плавное затухание по краям
             local progress = math.clamp(b.Y / 195, 0, 1)
             local alpha = math.sin(progress * math.pi) * b.MaxAlpha
             b.Object.BackgroundTransparency = 1 - alpha
-            
+
             b.Object.Position = UDim2.new(0, b.X, 0, b.Y)
         end
     end
@@ -325,10 +325,10 @@ local function updateLoadingText(percent)
     else
         statusText = "ГОТОВО!"
     end
-    
+
     LoadingStatus.Text = statusText
     LoadingPercent.Text = string.format("%d%%", percent)
-    
+
     -- Плавная анимация расширения полоски
     tween(ProgressBarFill, {Size = UDim2.new(math.clamp(percent / 100, 0, 1), 0, 1, 0)}, 0.3)
 end
@@ -626,6 +626,10 @@ EmbMinBtn.Activated:Connect(ToggleMinimize)
 local function CloseGui()
     if DarkHub and DarkHub.Parent then
         DarkHub:Destroy()
+    end
+    -- Очистка ресурсов после закрытия
+    if bubbleConnection then
+        bubbleConnection:Disconnect()
     end
 end
 CloseBtn.Activated:Connect(CloseGui)
@@ -1076,7 +1080,7 @@ local Localization = {
 function Library:UpdateLanguage(lang)
     if not Localization[lang] then return end
     Library.CurrentLanguage = lang
-    
+
     -- Обновляем все зарегистрированные объекты локализации
     for _, loc in ipairs(LocaleObjects) do
         if loc.Object and typeof(loc.Object) == "Instance" and loc.Object.Parent then
@@ -1087,12 +1091,12 @@ function Library:UpdateLanguage(lang)
             end
         end
     end
-    
+
     -- Обновляем заголовок таба
     if allPages[Library.CurrentTabKey] and typeof(allPages[Library.CurrentTabKey]) == "Instance" and allPages[Library.CurrentTabKey].Parent then
         TabTitle.Text = Localization[lang][Library.CurrentTabKey] or Library.CurrentTabKey
     end
-    
+
     -- Обновляем текст Placeholder для SearchBox
     if SearchBox then
         if lang == "Русский" then
@@ -1101,7 +1105,7 @@ function Library:UpdateLanguage(lang)
             SearchBox.PlaceholderText = "Search..."
         end
     end
-    
+
     -- Обновляем текст в ConfigNameBox если он пустой
     if ConfigNameBox and ConfigNameBox.Text == "" then
         if lang == "Русский" then
@@ -1115,10 +1119,10 @@ end
 -- ИСПРАВЛЕНО: Функция смены шрифта теперь обновляет ВСЕ элементы интерфейса
 local function applyFontToAll(font)
     Library.CurrentFont = font
-    
+
     -- Обновляем шрифт для всех отслеживаемых текстовых элементов
     local allTextElements = {}
-    
+
     -- Собираем все текстовые элементы в один список
     for _, obj in ipairs(Library.TrackedMainText) do
         if obj and typeof(obj) == "Instance" and obj.Parent and (obj:IsA("TextLabel") or obj:IsA("TextButton") or obj:IsA("TextBox")) then
@@ -1130,14 +1134,14 @@ local function applyFontToAll(font)
             table.insert(allTextElements, obj)
         end
     end
-    
+
     -- Обновляем шрифт для всех собранных элементов
     for _, obj in ipairs(allTextElements) do
         pcall(function()
             obj.Font = font
         end)
     end
-    
+
     -- Обновляем шрифт для табов
     for textKey, tabBtn in pairs(allTabButtons) do
         if tabBtn and typeof(tabBtn) == "Instance" and tabBtn.Parent then
@@ -1146,14 +1150,14 @@ local function applyFontToAll(font)
             end)
         end
     end
-    
+
     -- Обновляем шрифт для заголовка
     if TabTitle and TabTitle.Parent then
         pcall(function()
             TabTitle.Font = font
         end)
     end
-    
+
     -- Обновляем шрифт для HubTitle и SubTitle
     if HubTitle and HubTitle.Parent then
         pcall(function()
@@ -1165,14 +1169,14 @@ local function applyFontToAll(font)
             SubTitle.Font = font
         end)
     end
-    
+
     -- Обновляем шрифт для ConfigHeaderText
     if ConfigHeaderText and ConfigHeaderText.Parent then
         pcall(function()
             ConfigHeaderText.Font = font
         end)
     end
-    
+
     -- Обновляем шрифт для кнопок конфигов
     if saveBtn and saveBtn.Parent then
         pcall(function() saveBtn.Font = font end)
@@ -2102,18 +2106,7 @@ end
 
 -- UI state to save/load
 local function getCurrentUIState()
-    local state = {
-        theme = Library.CurrentThemeData and "AMOLED" or "AMOLED",
-        language = Library.CurrentLanguage or "English",
-        font = "Fredoka One",
-        ui_size = MainScale and MainScale.Scale or 1,
-        transparency = MainFrame and MainFrame.BackgroundTransparency or 0.15,
-        fov = workspace.CurrentCamera and workspace.CurrentCamera.FieldOfView or 70,
-        anti_afk = true,
-        animated_window = animatedWindowConnection ~= nil,
-        gradient = uiGradientInstance ~= nil,
-        settings = {}
-    }
+    local state = {}
 
     -- Get theme name
     for name, data in pairs(ThemeConfig) do
@@ -2122,6 +2115,7 @@ local function getCurrentUIState()
             break
         end
     end
+    if not state.theme then state.theme = "AMOLED" end
 
     -- Get font name
     for name, font in pairs(FontMapping) do
@@ -2130,15 +2124,13 @@ local function getCurrentUIState()
             break
         end
     end
-
-    -- Get toggle states
-    state.anti_afk = antiAfkConnection ~= nil
-    state.animated_window = animatedWindowConnection ~= nil
-    state.gradient = uiGradientInstance ~= nil
+    if not state.font then state.font = "Fredoka One" end
 
     -- Get dropdown selections
     if LanguageDropdown and LanguageDropdown.GetValue then
         state.language = LanguageDropdown.GetValue()
+    else
+        state.language = Library.CurrentLanguage or "English"
     end
 
     if ThemeDropdown and ThemeDropdown.GetValue then
@@ -2151,26 +2143,38 @@ local function getCurrentUIState()
 
     if UISizeSlider and UISizeSlider.GetValue then
         state.ui_size = UISizeSlider.GetValue() / 100
+    else
+        state.ui_size = MainScale and MainScale.Scale or 1
     end
 
     if TransparencySlider and TransparencySlider.GetValue then
         state.transparency = TransparencySlider.GetValue() / 100
+    else
+        state.transparency = MainFrame and MainFrame.BackgroundTransparency or 0.15
     end
 
     if FOVSlider and FOVSlider.GetValue then
         state.fov = FOVSlider.GetValue()
+    else
+        state.fov = workspace.CurrentCamera and workspace.CurrentCamera.FieldOfView or 70
     end
 
     if AntiAFKToggle and AntiAFKToggle.GetValue then
         state.anti_afk = AntiAFKToggle.GetValue()
+    else
+        state.anti_afk = antiAfkConnection ~= nil
     end
 
     if AnimatedWindowToggle and AnimatedWindowToggle.GetValue then
         state.animated_window = AnimatedWindowToggle.GetValue()
+    else
+        state.animated_window = animatedWindowConnection ~= nil
     end
 
     if GradientToggle and GradientToggle.GetValue then
         state.gradient = GradientToggle.GetValue()
+    else
+        state.gradient = uiGradientInstance ~= nil
     end
 
     return state
@@ -2211,6 +2215,9 @@ local function applyUIState(state)
     if state.transparency ~= nil and TransparencySlider and TransparencySlider.SetValue then
         local val = math.floor(state.transparency * 100 + 0.5)
         TransparencySlider.SetValue(val)
+        if MainFrame and MainFrame.Parent then
+            MainFrame.BackgroundTransparency = state.transparency
+        end
     end
 
     if state.fov ~= nil and FOVSlider and FOVSlider.SetValue then
@@ -2241,15 +2248,20 @@ local function saveConfig(name)
     end
 
     local state = getCurrentUIState()
-    local json = HttpService:JSONEncode(state)
-    local path = getConfigPath(name)
+    local jsonSuccess, json = pcall(HttpService.JSONEncode, HttpService, state)
+    if not jsonSuccess then
+        showToast("Failed to encode config data", Color3.fromRGB(255, 50, 50))
+        return
+    end
 
+    local path = getConfigPath(name)
     local success, err = pcall(function()
         if typeof(writefile) == "function" then
             writefile(path, json)
             return true
+        else
+            error("writefile not available")
         end
-        return false
     end)
 
     if success then
@@ -2261,7 +2273,7 @@ local function saveConfig(name)
             ConfigDropdown.UpdateOptions(getConfigList())
         end
     else
-        showToast("Failed to save config '" .. name .. "'", Color3.fromRGB(255, 50, 50))
+        showToast("Failed to save config '" .. name .. "': " .. tostring(err), Color3.fromRGB(255, 50, 50))
     end
 end
 
@@ -2275,27 +2287,25 @@ local function loadConfig(name)
     local success, content = pcall(function()
         if typeof(readfile) == "function" then
             return readfile(path)
+        else
+            error("readfile not available")
         end
-        return nil
     end)
 
-    if not success or not content then
-        showToast("Config '" .. name .. "' not found", Color3.fromRGB(255, 200, 50))
+    if not success then
+        showToast("Config '" .. name .. "' not found or cannot be read", Color3.fromRGB(255, 200, 50))
         return
     end
 
-    local success, state = pcall(function()
-        return HttpService:JSONDecode(content)
-    end)
-
-    if success and state then
+    local decodeSuccess, state = pcall(HttpService.JSONDecode, HttpService, content)
+    if decodeSuccess and type(state) == "table" then
         applyUIState(state)
         showToast("Config '" .. name .. "' loaded successfully!", Color3.fromRGB(50, 255, 50))
         if ConfigNameBox then
             ConfigNameBox.Text = ""
         end
     else
-        showToast("Failed to load config '" .. name .. "'", Color3.fromRGB(255, 50, 50))
+        showToast("Failed to parse config '" .. name .. "'. It might be corrupted.", Color3.fromRGB(255, 50, 50))
     end
 end
 
@@ -2310,8 +2320,9 @@ local function deleteConfig(name)
         if typeof(delfile) == "function" then
             delfile(path)
             return true
+        else
+            error("delfile not available")
         end
-        return false
     end)
 
     if success then
@@ -2320,15 +2331,16 @@ local function deleteConfig(name)
             ConfigNameBox.Text = ""
         end
         -- Обновляем дропдаун и сбрасываем выбранное значение
-        if ConfigDropdown and ConfigDropdown.UpdateOptions then
-            ConfigDropdown.UpdateOptions(getConfigList())
-            -- Сбрасываем выбранное значение в дропдауне
+        if ConfigDropdown then
+            if ConfigDropdown.UpdateOptions then
+                ConfigDropdown.UpdateOptions(getConfigList())
+            end
             if ConfigDropdown.SetValue then
                 ConfigDropdown.SetValue("")
             end
         end
     else
-        showToast("Failed to delete config '" .. name .. "'", Color3.fromRGB(255, 50, 50))
+        showToast("Failed to delete config '" .. name .. "': " .. tostring(err), Color3.fromRGB(255, 50, 50))
     end
 end
 
@@ -2412,7 +2424,7 @@ local function createConfigButton(parent, textKey, callback, color, position)
     table.insert(Library.TrackedElementBg, Btn)
     table.insert(Library.TrackedMainText, Btn)
     table.insert(Library.TrackedStrokes, BtnStroke)
-    
+
     -- Hover effects
     Btn.MouseEnter:Connect(function()
         tween(Btn, {BackgroundTransparency = 0.3}, 0.15)
@@ -2420,7 +2432,7 @@ local function createConfigButton(parent, textKey, callback, color, position)
     Btn.MouseLeave:Connect(function()
         tween(Btn, {BackgroundTransparency = 0}, 0.15)
     end)
-    
+
     Btn.Activated:Connect(function()
         if type(callback) == "function" then
             pcall(callback)
@@ -2524,26 +2536,26 @@ task.spawn(function()
         updateLoadingText(i)
         task.wait(0.02)
     end
-    
+
     task.wait(0.3)
-    
+
     -- Отключение цикла анимации пузырьков после завершения
     if bubbleConnection then
         bubbleConnection:Disconnect()
     end
-    
+
     -- Плавное исчезновение и уменьшение экрана загрузки
     local fadeOverlay = tween(LoadingOverlay, {
         BackgroundTransparency = 1,
         Size = UDim2.new(0, 230, 0, 160)
     }, 0.45)
-    
+
     for _, child in ipairs(LoadingOverlay:GetChildren()) do
         if child:IsA("GuiObject") then
             tween(child, {BackgroundTransparency = 1, ImageTransparency = 1, TextTransparency = 1}, 0.35)
         end
     end
-    
+
     if fadeOverlay then
         fadeOverlay.Completed:Connect(function()
             LoadingOverlay:Destroy()
