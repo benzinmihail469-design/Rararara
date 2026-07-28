@@ -2113,7 +2113,7 @@ local function saveConfig(name)
     local json = HttpService:JSONEncode(state)
     local path = getConfigPath(name)
 
-    local success = pcall(function()
+    local success, err = pcall(function()
         if typeof(writefile) == "function" then
             writefile(path, json)
             return true
@@ -2175,7 +2175,7 @@ local function deleteConfig(name)
     end
 
     local path = getConfigPath(name)
-    local success = pcall(function()
+    local success, err = pcall(function()
         if typeof(delfile) == "function" then
             delfile(path)
             return true
@@ -2343,7 +2343,7 @@ local function refreshConfigDropdown()
     end
 end
 
--- Add hook to update dropdown when configs change
+-- Hook to update dropdown when configs change
 local origSaveConfig = saveConfig
 saveConfig = function(name)
     origSaveConfig(name)
@@ -2358,6 +2358,16 @@ end
 
 -- Initial refresh
 refreshConfigDropdown()
+
+-- Fix ConfigNameBox placeholder when language changes
+local origUpdateLanguage = Library.UpdateLanguage
+Library.UpdateLanguage = function(lang)
+    origUpdateLanguage(lang)
+    if ConfigNameBox then
+        local placeholderText = Localization[lang] and Localization[lang]["ConfigName"] or "Config name..."
+        ConfigNameBox.PlaceholderText = placeholderText
+    end
+end
 
 -- ============================================================================
 -- УСТАНОВКА НАЧАЛЬНОЙ АКТИВНОЙ ВКЛАДКИ
