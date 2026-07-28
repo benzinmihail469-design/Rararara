@@ -816,7 +816,7 @@ local function setActiveTab(tabButton)
         local corner = Instance.new("UICorner", indicator)
         corner.CornerRadius = UDim.new(0, 2)
     end
-    tabButton.Font = Enum.Font.FredokaOne
+    tabButton.Font = Library.CurrentFont
     local isL = isLightColor(mainBg)
     local activeTextColor = isL and Color3.fromRGB(20, 20, 20) or Color3.fromRGB(255, 255, 255)
     local activeBgColor = isL and Color3.fromRGB(215, 215, 215) or Color3.fromRGB(35, 35, 35)
@@ -1072,9 +1072,12 @@ local Localization = {
     }
 }
 
+-- ИСПРАВЛЕНО: Обновление языка теперь также обновляет табы и шрифт
 function Library:UpdateLanguage(lang)
     if not Localization[lang] then return end
     Library.CurrentLanguage = lang
+    
+    -- Обновляем все зарегистрированные объекты локализации
     for _, loc in ipairs(LocaleObjects) do
         if loc.Object and typeof(loc.Object) == "Instance" and loc.Object.Parent then
             local newText = Localization[lang][loc.Key] or loc.Key
@@ -1084,8 +1087,101 @@ function Library:UpdateLanguage(lang)
             end
         end
     end
+    
+    -- Обновляем заголовок таба
     if allPages[Library.CurrentTabKey] and typeof(allPages[Library.CurrentTabKey]) == "Instance" and allPages[Library.CurrentTabKey].Parent then
         TabTitle.Text = Localization[lang][Library.CurrentTabKey] or Library.CurrentTabKey
+    end
+    
+    -- Обновляем текст Placeholder для SearchBox
+    if SearchBox then
+        if lang == "Русский" then
+            SearchBox.PlaceholderText = "Поиск..."
+        else
+            SearchBox.PlaceholderText = "Search..."
+        end
+    end
+    
+    -- Обновляем текст в ConfigNameBox если он пустой
+    if ConfigNameBox and ConfigNameBox.Text == "" then
+        if lang == "Русский" then
+            ConfigNameBox.PlaceholderText = "Имя конфига..."
+        else
+            ConfigNameBox.PlaceholderText = "Config name..."
+        end
+    end
+end
+
+-- ИСПРАВЛЕНО: Функция смены шрифта теперь обновляет ВСЕ элементы интерфейса
+local function applyFontToAll(font)
+    Library.CurrentFont = font
+    
+    -- Обновляем шрифт для всех отслеживаемых текстовых элементов
+    local allTextElements = {}
+    
+    -- Собираем все текстовые элементы в один список
+    for _, obj in ipairs(Library.TrackedMainText) do
+        if obj and typeof(obj) == "Instance" and obj.Parent and (obj:IsA("TextLabel") or obj:IsA("TextButton") or obj:IsA("TextBox")) then
+            table.insert(allTextElements, obj)
+        end
+    end
+    for _, obj in ipairs(Library.TrackedSubText) do
+        if obj and typeof(obj) == "Instance" and obj.Parent and (obj:IsA("TextLabel") or obj:IsA("TextButton") or obj:IsA("TextBox")) then
+            table.insert(allTextElements, obj)
+        end
+    end
+    
+    -- Обновляем шрифт для всех собранных элементов
+    for _, obj in ipairs(allTextElements) do
+        pcall(function()
+            obj.Font = font
+        end)
+    end
+    
+    -- Обновляем шрифт для табов
+    for textKey, tabBtn in pairs(allTabButtons) do
+        if tabBtn and typeof(tabBtn) == "Instance" and tabBtn.Parent then
+            pcall(function()
+                tabBtn.Font = font
+            end)
+        end
+    end
+    
+    -- Обновляем шрифт для заголовка
+    if TabTitle and TabTitle.Parent then
+        pcall(function()
+            TabTitle.Font = font
+        end)
+    end
+    
+    -- Обновляем шрифт для HubTitle и SubTitle
+    if HubTitle and HubTitle.Parent then
+        pcall(function()
+            HubTitle.Font = font
+        end)
+    end
+    if SubTitle and SubTitle.Parent then
+        pcall(function()
+            SubTitle.Font = font
+        end)
+    end
+    
+    -- Обновляем шрифт для ConfigHeaderText
+    if ConfigHeaderText and ConfigHeaderText.Parent then
+        pcall(function()
+            ConfigHeaderText.Font = font
+        end)
+    end
+    
+    -- Обновляем шрифт для кнопок конфигов
+    if saveBtn and saveBtn.Parent then
+        pcall(function() saveBtn.Font = font end)
+    end
+    if loadBtn and loadBtn.Parent then
+        pcall(function() loadBtn.Font = font end)
+    end
+    if deleteBtn and deleteBtn.Parent then
+        pcall(function() deleteBtn.Font = font end)
     end
 end
 
@@ -1868,17 +1964,7 @@ table.sort(FontKeys)
 
 local FontDropdown = Library:CreateDropdown(SettingsPage, "MenuFont", FontKeys, "Fredoka One", function(selectedFont)
     if FontMapping[selectedFont] then
-        Library.CurrentFont = FontMapping[selectedFont]
-        for _, obj in ipairs(Library.TrackedMainText) do
-            if obj and typeof(obj) == "Instance" and obj.Parent then
-                obj.Font = Library.CurrentFont
-            end
-        end
-        for _, obj in ipairs(Library.TrackedSubText) do
-            if obj and typeof(obj) == "Instance" and obj.Parent then
-                obj.Font = Library.CurrentFont
-            end
-        end
+        applyFontToAll(FontMapping[selectedFont])
     end
 end)
 
@@ -2108,7 +2194,7 @@ local function applyUIState(state)
     end
 
     if state.font and FontMapping[state.font] then
-        Library.CurrentFont = FontMapping[state.font]
+        applyFontToAll(FontMapping[state.font])
         if FontDropdown and FontDropdown.SetValue then
             FontDropdown.SetValue(state.font)
         end
