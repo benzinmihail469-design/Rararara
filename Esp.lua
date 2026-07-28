@@ -1043,6 +1043,7 @@ local Localization = {
         ["UITheme"] = "UI Theme",
         ["AnimatedWindow"] = "Animated Window",
         ["Gradient"] = "Gradient Background",
+        ["ScreenStretch"] = "Screen Stretch",
         ["Configurations"] = "Configurations",
         ["ConfigName"] = "Config Name",
         ["Save"] = "Save Config",
@@ -1061,6 +1062,7 @@ local Localization = {
         ["UITheme"] = "Тема UI",
         ["AnimatedWindow"] = "Анимированное окно",
         ["Gradient"] = "Градиентный фон",
+        ["ScreenStretch"] = "Растяжение экрана",
         ["Configurations"] = "Конфигурации",
         ["ConfigName"] = "Имя конфига",
         ["Save"] = "Сохранить конфиг",
@@ -1142,6 +1144,26 @@ local function toggleGradientEffect(state)
         if uiGradientInstance then
             uiGradientInstance:Destroy()
             uiGradientInstance = nil
+        end
+    end
+end
+
+-- UI Size functions
+local function setUISize(scale)
+    if MainScale then
+        MainScale.Scale = scale
+    end
+end
+
+-- Screen Stretch functions
+local function setScreenStretch(enabled)
+    if MainFrame then
+        if enabled then
+            MainFrame.Size = UDim2.new(1, -20, 1, -20)
+            MainFrame.Position = UDim2.new(0.5, 0, 0.5, 0)
+        else
+            MainFrame.Size = UDim2.new(0, 550, 0, 350)
+            MainFrame.Position = UDim2.new(0.5, 0, 0.5, 0)
         end
     end
 end
@@ -1848,14 +1870,17 @@ end
 -- ============================================================================
 local SettingsPage = Library:CreatePage("Settings", "117996761927034", 1)
 
+-- Language Dropdown
 local LanguageDropdown = Library:CreateDropdown(SettingsPage, "Language", {"English", "Русский"}, "English", function(selectedLang)
     Library:UpdateLanguage(selectedLang)
 end)
 
+-- Theme Dropdown
 local ThemeDropdown = Library:CreateDropdown(SettingsPage, "UITheme", ThemeNamesList, "AMOLED", function(selectedTheme)
     Library:UpdateTheme(selectedTheme)
 end)
 
+-- Font Dropdown
 local FontKeys = {}
 for name, _ in pairs(FontMapping) do
     table.insert(FontKeys, name)
@@ -1878,20 +1903,35 @@ local FontDropdown = Library:CreateDropdown(SettingsPage, "MenuFont", FontKeys, 
     end
 end)
 
+-- UI Size Slider (50% to 150%)
+local UISizeSlider = Library:CreateSlider(SettingsPage, "UISize", 50, 150, 100, function(value)
+    local scale = value / 100
+    setUISize(scale)
+end)
+
+-- UI Transparency Slider
 local TransparencySlider = Library:CreateSlider(SettingsPage, "UITransparency", 0, 90, 15, function(value)
     if MainFrame and MainFrame.Parent then
         MainFrame.BackgroundTransparency = value / 100
     end
 end)
 
+-- Screen Stretch Toggle
+local ScreenStretchToggle = Library:CreateToggle(SettingsPage, "ScreenStretch", false, function(state)
+    setScreenStretch(state)
+end)
+
+-- Anti-AFK Toggle
 local AntiAFKToggle = Library:CreateToggle(SettingsPage, "AntiAFK", true, function(state)
     toggleAntiAFK(state)
 end)
 
+-- Animated Window Toggle
 local AnimatedWindowToggle = Library:CreateToggle(SettingsPage, "AnimatedWindow", false, function(state)
     toggleAnimatedWindow(state)
 end)
 
+-- Gradient Toggle
 local GradientToggle = Library:CreateToggle(SettingsPage, "Gradient", false, function(state)
     toggleGradientEffect(state)
 end)
@@ -2001,7 +2041,9 @@ local function getCurrentUIState()
         theme = Library.CurrentThemeData and "AMOLED" or "AMOLED",
         language = Library.CurrentLanguage or "English",
         font = "Fredoka One",
+        ui_size = 100,
         transparency = MainFrame and MainFrame.BackgroundTransparency or 0.15,
+        screen_stretch = false,
         anti_afk = true,
         animated_window = animatedWindowConnection ~= nil,
         gradient = uiGradientInstance ~= nil,
@@ -2028,6 +2070,16 @@ local function getCurrentUIState()
     state.anti_afk = antiAfkConnection ~= nil
     state.animated_window = animatedWindowConnection ~= nil
     state.gradient = uiGradientInstance ~= nil
+
+    -- Get UI Size
+    if UISizeSlider and UISizeSlider.GetValue then
+        state.ui_size = UISizeSlider.GetValue()
+    end
+
+    -- Get Screen Stretch
+    if ScreenStretchToggle and ScreenStretchToggle.GetValue then
+        state.screen_stretch = ScreenStretchToggle.GetValue()
+    end
 
     -- Get dropdown selections
     if LanguageDropdown and LanguageDropdown.GetValue then
@@ -2085,9 +2137,17 @@ local function applyUIState(state)
         end
     end
 
+    if state.ui_size and UISizeSlider and UISizeSlider.SetValue then
+        UISizeSlider.SetValue(state.ui_size)
+    end
+
     if state.transparency ~= nil and TransparencySlider and TransparencySlider.SetValue then
         local val = math.floor(state.transparency * 100 + 0.5)
         TransparencySlider.SetValue(val)
+    end
+
+    if state.screen_stretch and ScreenStretchToggle and ScreenStretchToggle.SetValue then
+        ScreenStretchToggle.SetValue(state.screen_stretch)
     end
 
     if state.anti_afk ~= nil and AntiAFKToggle and AntiAFKToggle.SetValue then
@@ -2188,10 +2248,8 @@ local function deleteConfig(name)
         if ConfigNameBox then
             ConfigNameBox.Text = ""
         end
-        -- Обновляем дропдаун и сбрасываем выбранное значение
         if ConfigDropdown and ConfigDropdown.UpdateOptions then
             ConfigDropdown.UpdateOptions(getConfigList())
-            -- Сбрасываем выбранное значение в дропдауне
             if ConfigDropdown.SetValue then
                 ConfigDropdown.SetValue("")
             end
@@ -2282,7 +2340,6 @@ local function createConfigButton(parent, textKey, callback, color, position)
     table.insert(Library.TrackedMainText, Btn)
     table.insert(Library.TrackedStrokes, BtnStroke)
     
-    -- Hover effects
     Btn.MouseEnter:Connect(function()
         tween(Btn, {BackgroundTransparency = 0.3}, 0.15)
     end)
@@ -2298,7 +2355,7 @@ local function createConfigButton(parent, textKey, callback, color, position)
     return Btn
 end
 
--- Create 3 buttons: Save, Load, Delete (equal width, spaced evenly)
+-- Create 3 buttons: Save, Load, Delete
 local saveBtn = createConfigButton(ConfigButtonRow, "Save", function()
     local name = ConfigNameBox.Text
     if name == "" then
