@@ -2188,8 +2188,13 @@ local function deleteConfig(name)
         if ConfigNameBox then
             ConfigNameBox.Text = ""
         end
+        -- Обновляем дропдаун и сбрасываем выбранное значение
         if ConfigDropdown and ConfigDropdown.UpdateOptions then
             ConfigDropdown.UpdateOptions(getConfigList())
+            -- Сбрасываем выбранное значение в дропдауне
+            if ConfigDropdown.SetValue then
+                ConfigDropdown.SetValue("")
+            end
         end
     else
         showToast("Failed to delete config '" .. name .. "'", Color3.fromRGB(255, 50, 50))
