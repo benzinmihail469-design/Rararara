@@ -187,7 +187,7 @@ LoadingIcon.ZIndex = 1001
 local IconCorner = Instance.new("UICorner", LoadingIcon)
 IconCorner.CornerRadius = UDim.new(1, 0)
 
--- Статус (Шрифт Fredoka One)
+-- Статус
 local LoadingStatus = Instance.new("TextLabel", LoadingOverlay)
 LoadingStatus.Name = "LoadingStatus"
 LoadingStatus.Size = UDim2.new(1, -20, 0, 20)
@@ -200,7 +200,7 @@ LoadingStatus.TextSize = 11
 LoadingStatus.TextScaled = false
 LoadingStatus.ZIndex = 1001
 
--- Проценты (Шрифт Fredoka One)
+-- Проценты
 local LoadingPercent = Instance.new("TextLabel", LoadingOverlay)
 LoadingPercent.Name = "LoadingPercent"
 LoadingPercent.Size = UDim2.new(1, 0, 0, 26)
@@ -212,7 +212,7 @@ LoadingPercent.TextColor3 = Color3.fromRGB(255, 255, 255)
 LoadingPercent.TextSize = 22
 LoadingPercent.ZIndex = 1001
 
--- Увеличенная полоска прогресса
+-- Полоска прогресса
 local ProgressBarBg = Instance.new("Frame", LoadingOverlay)
 ProgressBarBg.Name = "ProgressBarBg"
 ProgressBarBg.Size = UDim2.new(0.85, 0, 0, 10)
@@ -239,7 +239,6 @@ ProgressBarFill.ZIndex = 1002
 local FillCorner = Instance.new("UICorner", ProgressBarFill)
 FillCorner.CornerRadius = UDim.new(1, 0)
 
--- Динамический градиент-блик для полоски прогресса
 local FillGradient = Instance.new("UIGradient", ProgressBarFill)
 FillGradient.Color = ColorSequence.new({
     ColorSequenceKeypoint.new(0, Color3.fromRGB(180, 180, 180)),
@@ -247,7 +246,7 @@ FillGradient.Color = ColorSequence.new({
     ColorSequenceKeypoint.new(1, Color3.fromRGB(180, 180, 180))
 })
 
--- Улучшенная анимация пузырьков (Плавный подъём вверх в AMOLED-стиле)
+-- Пузырьки
 local Bubbles = {}
 local bubbleCount = 12
 
@@ -257,16 +256,16 @@ for i = 1, bubbleCount do
     bubble.BackgroundColor3 = Color3.fromRGB(255, 255, 255)
     bubble.BorderSizePixel = 0
     bubble.ZIndex = 998
-
+    
     local size = math.random(4, 12)
     bubble.Size = UDim2.new(0, size, 0, size)
-
+    
     local corner = Instance.new("UICorner", bubble)
     corner.CornerRadius = UDim.new(1, 0)
-
+    
     local startX = math.random(10, 270)
     local startY = math.random(20, 180)
-
+    
     table.insert(Bubbles, {
         Object = bubble,
         X = startX,
@@ -283,55 +282,25 @@ end
 
 local bubbleConnection = RunService.RenderStepped:Connect(function(dt)
     local time = os.clock()
-
-    -- Вращение градиента на полоске
     if FillGradient then
         FillGradient.Rotation = (time * 120) % 360
     end
-
-    -- Плавная физика пузырьков
     for _, b in ipairs(Bubbles) do
         if b.Object and b.Object.Parent then
             b.Y = b.Y - b.SpeedY * dt
             b.X = b.BaseX + math.sin(time * b.WobbleSpeed + b.Seed) * b.WobbleAmount
-
-            -- Сброс вниз при вылете за верхнюю границу
             if b.Y < -15 then
                 b.Y = 200
                 b.BaseX = math.random(10, 270)
                 b.SpeedY = math.random(18, 42)
             end
-
-            -- Плавное затухание по краям
             local progress = math.clamp(b.Y / 195, 0, 1)
             local alpha = math.sin(progress * math.pi) * b.MaxAlpha
             b.Object.BackgroundTransparency = 1 - alpha
-
             b.Object.Position = UDim2.new(0, b.X, 0, b.Y)
         end
     end
 end)
-
-local function updateLoadingText(percent)
-    local statusText = ""
-    if percent <= 25 then
-        statusText = "ЗАГРУЗКА ИНТЕРФЕЙСА"
-    elseif percent <= 50 then
-        statusText = "ИНИЦИАЛИЗАЦИЯ МОДУЛЕЙ"
-    elseif percent <= 75 then
-        statusText = "НАСТРОЙКА АНИМАЦИЙ"
-    elseif percent <= 99 then
-        statusText = "ПОДГОТОВКА К ЗАПУСКУ"
-    else
-        statusText = "ГОТОВО!"
-    end
-
-    LoadingStatus.Text = statusText
-    LoadingPercent.Text = string.format("%d%%", percent)
-
-    -- Плавная анимация расширения полоски
-    tween(ProgressBarFill, {Size = UDim2.new(math.clamp(percent / 100, 0, 1), 0, 1, 0)}, 0.3)
-end
 
 -- ============================================================================
 -- MAIN GUI FRAMEWORK
@@ -626,10 +595,6 @@ EmbMinBtn.Activated:Connect(ToggleMinimize)
 local function CloseGui()
     if DarkHub and DarkHub.Parent then
         DarkHub:Destroy()
-    end
-    -- Очистка ресурсов после закрытия
-    if bubbleConnection then
-        bubbleConnection:Disconnect()
     end
 end
 CloseBtn.Activated:Connect(CloseGui)
@@ -1053,7 +1018,23 @@ local Localization = {
         ["Save"] = "Save Config",
         ["Load"] = "Load Config",
         ["Delete"] = "Delete Config",
-        ["FOV"] = "Field of View"
+        ["FOV"] = "Field of View",
+        ["ConfigEmptyError"] = "Error: Config name cannot be empty",
+        ["PleaseEnterName"] = "Please enter a config name",
+        ["PleaseSelectName"] = "Please select or enter a config name",
+        ["ConfigSaved"] = "Config '%s' saved successfully!",
+        ["ConfigSaveFailed"] = "Failed to save config '%s'",
+        ["ConfigNotFound"] = "Config '%s' not found",
+        ["ConfigLoadFailed"] = "Failed to load config '%s'",
+        ["ConfigLoaded"] = "Config '%s' loaded successfully!",
+        ["ConfigDeleted"] = "Config '%s' deleted!",
+        ["ConfigDeleteFailed"] = "Failed to delete config '%s'",
+        ["LoadingUI"] = "LOADING INTERFACES",
+        ["InitModules"] = "INITIALIZING MODULES",
+        ["SettingAnimations"] = "SETTING UP ANIMATIONS",
+        ["PrepLaunch"] = "PREPARING FOR LAUNCH",
+        ["Ready"] = "READY!",
+        ["HubLoaded"] = "Dark Hub loaded successfully!"
     },
     ["Русский"] = {
         ["Settings"] = "Настройки",
@@ -1072,16 +1053,30 @@ local Localization = {
         ["Save"] = "Сохранить конфиг",
         ["Load"] = "Загрузить конфиг",
         ["Delete"] = "Удалить конфиг",
-        ["FOV"] = "Угол обзора"
+        ["FOV"] = "Угол обзора",
+        ["ConfigEmptyError"] = "Ошибка: Имя конфига не может быть пустым",
+        ["PleaseEnterName"] = "Пожалуйста, введите имя конфига",
+        ["PleaseSelectName"] = "Выберите или введите имя конфига",
+        ["ConfigSaved"] = "Конфиг '%s' успешно сохранен!",
+        ["ConfigSaveFailed"] = "Не удалось сохранить конфиг '%s'",
+        ["ConfigNotFound"] = "Конфиг '%s' не найден",
+        ["ConfigLoadFailed"] = "Не удалось загрузить конфиг '%s'",
+        ["ConfigLoaded"] = "Конфиг '%s' успешно загружен!",
+        ["ConfigDeleted"] = "Конфиг '%s' удален!",
+        ["ConfigDeleteFailed"] = "Не удалось удалить конфиг '%s'",
+        ["LoadingUI"] = "ЗАГРУЗКА ИНТЕРФЕЙСА",
+        ["InitModules"] = "ИНИЦИАЛИЗАЦИЯ МОДУЛЕЙ",
+        ["SettingAnimations"] = "НАСТРОЙКА АНИМАЦИЙ",
+        ["PrepLaunch"] = "ПОДГОТОВКА К ЗАПУСКУ",
+        ["Ready"] = "ГОТОВО!",
+        ["HubLoaded"] = "Dark Hub успешно запущен!"
     }
 }
 
--- ИСПРАВЛЕНО: Обновление языка теперь также обновляет табы и шрифт
 function Library:UpdateLanguage(lang)
     if not Localization[lang] then return end
     Library.CurrentLanguage = lang
-
-    -- Обновляем все зарегистрированные объекты локализации
+    
     for _, loc in ipairs(LocaleObjects) do
         if loc.Object and typeof(loc.Object) == "Instance" and loc.Object.Parent then
             local newText = Localization[lang][loc.Key] or loc.Key
@@ -1091,39 +1086,19 @@ function Library:UpdateLanguage(lang)
             end
         end
     end
-
-    -- Обновляем заголовок таба
+    
     if allPages[Library.CurrentTabKey] and typeof(allPages[Library.CurrentTabKey]) == "Instance" and allPages[Library.CurrentTabKey].Parent then
         TabTitle.Text = Localization[lang][Library.CurrentTabKey] or Library.CurrentTabKey
     end
-
-    -- Обновляем текст Placeholder для SearchBox
+    
     if SearchBox then
-        if lang == "Русский" then
-            SearchBox.PlaceholderText = "Поиск..."
-        else
-            SearchBox.PlaceholderText = "Search..."
-        end
-    end
-
-    -- Обновляем текст в ConfigNameBox если он пустой
-    if ConfigNameBox and ConfigNameBox.Text == "" then
-        if lang == "Русский" then
-            ConfigNameBox.PlaceholderText = "Имя конфига..."
-        else
-            ConfigNameBox.PlaceholderText = "Config name..."
-        end
+        SearchBox.PlaceholderText = (lang == "Русский") and "Поиск..." or "Search..."
     end
 end
 
--- ИСПРАВЛЕНО: Функция смены шрифта теперь обновляет ВСЕ элементы интерфейса
 local function applyFontToAll(font)
     Library.CurrentFont = font
-
-    -- Обновляем шрифт для всех отслеживаемых текстовых элементов
     local allTextElements = {}
-
-    -- Собираем все текстовые элементы в один список
     for _, obj in ipairs(Library.TrackedMainText) do
         if obj and typeof(obj) == "Instance" and obj.Parent and (obj:IsA("TextLabel") or obj:IsA("TextButton") or obj:IsA("TextBox")) then
             table.insert(allTextElements, obj)
@@ -1134,59 +1109,17 @@ local function applyFontToAll(font)
             table.insert(allTextElements, obj)
         end
     end
-
-    -- Обновляем шрифт для всех собранных элементов
     for _, obj in ipairs(allTextElements) do
-        pcall(function()
-            obj.Font = font
-        end)
+        pcall(function() obj.Font = font end)
     end
-
-    -- Обновляем шрифт для табов
     for textKey, tabBtn in pairs(allTabButtons) do
         if tabBtn and typeof(tabBtn) == "Instance" and tabBtn.Parent then
-            pcall(function()
-                tabBtn.Font = font
-            end)
+            pcall(function() tabBtn.Font = font end)
         end
     end
-
-    -- Обновляем шрифт для заголовка
-    if TabTitle and TabTitle.Parent then
-        pcall(function()
-            TabTitle.Font = font
-        end)
-    end
-
-    -- Обновляем шрифт для HubTitle и SubTitle
-    if HubTitle and HubTitle.Parent then
-        pcall(function()
-            HubTitle.Font = font
-        end)
-    end
-    if SubTitle and SubTitle.Parent then
-        pcall(function()
-            SubTitle.Font = font
-        end)
-    end
-
-    -- Обновляем шрифт для ConfigHeaderText
-    if ConfigHeaderText and ConfigHeaderText.Parent then
-        pcall(function()
-            ConfigHeaderText.Font = font
-        end)
-    end
-
-    -- Обновляем шрифт для кнопок конфигов
-    if saveBtn and saveBtn.Parent then
-        pcall(function() saveBtn.Font = font end)
-    end
-    if loadBtn and loadBtn.Parent then
-        pcall(function() loadBtn.Font = font end)
-    end
-    if deleteBtn and deleteBtn.Parent then
-        pcall(function() deleteBtn.Font = font end)
-    end
+    if TabTitle and TabTitle.Parent then pcall(function() TabTitle.Font = font end) end
+    if HubTitle and HubTitle.Parent then pcall(function() HubTitle.Font = font end) end
+    if SubTitle and SubTitle.Parent then pcall(function() SubTitle.Font = font end) end
 end
 
 local animatedWindowConnection = nil
@@ -1972,7 +1905,6 @@ local FontDropdown = Library:CreateDropdown(SettingsPage, "MenuFont", FontKeys, 
     end
 end)
 
--- UI Size Slider (0.5 to 1.5 scale)
 local UISizeSlider = Library:CreateSlider(SettingsPage, "UISize", 50, 150, 100, function(value)
     if MainScale and MainScale.Parent then
         MainScale.Scale = value / 100
@@ -1985,7 +1917,6 @@ local TransparencySlider = Library:CreateSlider(SettingsPage, "UITransparency", 
     end
 end)
 
--- FOV Slider (30 to 120)
 local FOVSlider = Library:CreateSlider(SettingsPage, "FOV", 30, 120, 70, function(value)
     local camera = workspace.CurrentCamera
     if camera then
@@ -2081,7 +2012,11 @@ local function showToast(message, dotColor)
     end)
 end
 
--- === CONFIG SYSTEM: SAVE / LOAD / DELETE ===
+local function getLocalizedMessage(key, ...)
+    local lang = Library.CurrentLanguage or "English"
+    local template = Localization[lang] and Localization[lang][key] or Localization["English"][key] or key
+    return string.format(template, ...)
+end
 
 local function getConfigPath(name)
     return CONFIG_FOLDER .. "/" .. name .. ".json"
@@ -2104,77 +2039,64 @@ local function getConfigList()
     return configs
 end
 
--- UI state to save/load
 local function getCurrentUIState()
-    local state = {}
+    local state = {
+        theme = Library.CurrentThemeData and "AMOLED" or "AMOLED",
+        language = Library.CurrentLanguage or "English",
+        font = "Fredoka One",
+        ui_size = MainScale and MainScale.Scale or 1,
+        transparency = MainFrame and MainFrame.BackgroundTransparency or 0.15,
+        fov = workspace.CurrentCamera and workspace.CurrentCamera.FieldOfView or 70,
+        anti_afk = true,
+        animated_window = animatedWindowConnection ~= nil,
+        gradient = uiGradientInstance ~= nil,
+        settings = {}
+    }
 
-    -- Get theme name
     for name, data in pairs(ThemeConfig) do
         if data == Library.CurrentThemeData then
             state.theme = name
             break
         end
     end
-    if not state.theme then state.theme = "AMOLED" end
 
-    -- Get font name
     for name, font in pairs(FontMapping) do
         if font == Library.CurrentFont then
             state.font = name
             break
         end
     end
-    if not state.font then state.font = "Fredoka One" end
 
-    -- Get dropdown selections
+    state.anti_afk = antiAfkConnection ~= nil
+    state.animated_window = animatedWindowConnection ~= nil
+    state.gradient = uiGradientInstance ~= nil
+
     if LanguageDropdown and LanguageDropdown.GetValue then
         state.language = LanguageDropdown.GetValue()
-    else
-        state.language = Library.CurrentLanguage or "English"
     end
-
     if ThemeDropdown and ThemeDropdown.GetValue then
         state.theme = ThemeDropdown.GetValue()
     end
-
     if FontDropdown and FontDropdown.GetValue then
         state.font = FontDropdown.GetValue()
     end
-
     if UISizeSlider and UISizeSlider.GetValue then
         state.ui_size = UISizeSlider.GetValue() / 100
-    else
-        state.ui_size = MainScale and MainScale.Scale or 1
     end
-
     if TransparencySlider and TransparencySlider.GetValue then
         state.transparency = TransparencySlider.GetValue() / 100
-    else
-        state.transparency = MainFrame and MainFrame.BackgroundTransparency or 0.15
     end
-
     if FOVSlider and FOVSlider.GetValue then
         state.fov = FOVSlider.GetValue()
-    else
-        state.fov = workspace.CurrentCamera and workspace.CurrentCamera.FieldOfView or 70
     end
-
     if AntiAFKToggle and AntiAFKToggle.GetValue then
         state.anti_afk = AntiAFKToggle.GetValue()
-    else
-        state.anti_afk = antiAfkConnection ~= nil
     end
-
     if AnimatedWindowToggle and AnimatedWindowToggle.GetValue then
         state.animated_window = AnimatedWindowToggle.GetValue()
-    else
-        state.animated_window = animatedWindowConnection ~= nil
     end
-
     if GradientToggle and GradientToggle.GetValue then
         state.gradient = GradientToggle.GetValue()
-    else
-        state.gradient = uiGradientInstance ~= nil
     end
 
     return state
@@ -2182,171 +2104,103 @@ end
 
 local function applyUIState(state)
     if not state then return end
-
     if state.theme and ThemeConfig[state.theme] then
         Library:UpdateTheme(state.theme)
-        if ThemeDropdown and ThemeDropdown.SetValue then
-            ThemeDropdown.SetValue(state.theme)
-        end
+        if ThemeDropdown and ThemeDropdown.SetValue then ThemeDropdown.SetValue(state.theme) end
     end
-
     if state.language and Localization[state.language] then
         Library:UpdateLanguage(state.language)
-        if LanguageDropdown and LanguageDropdown.SetValue then
-            LanguageDropdown.SetValue(state.language)
-        end
+        if LanguageDropdown and LanguageDropdown.SetValue then LanguageDropdown.SetValue(state.language) end
     end
-
     if state.font and FontMapping[state.font] then
         applyFontToAll(FontMapping[state.font])
-        if FontDropdown and FontDropdown.SetValue then
-            FontDropdown.SetValue(state.font)
-        end
+        if FontDropdown and FontDropdown.SetValue then FontDropdown.SetValue(state.font) end
     end
-
     if state.ui_size ~= nil and UISizeSlider and UISizeSlider.SetValue then
-        local val = math.floor(state.ui_size * 100 + 0.5)
-        UISizeSlider.SetValue(val)
-        if MainScale and MainScale.Parent then
-            MainScale.Scale = state.ui_size
-        end
+        UISizeSlider.SetValue(math.floor(state.ui_size * 100 + 0.5))
+        if MainScale and MainScale.Parent then MainScale.Scale = state.ui_size end
     end
-
     if state.transparency ~= nil and TransparencySlider and TransparencySlider.SetValue then
-        local val = math.floor(state.transparency * 100 + 0.5)
-        TransparencySlider.SetValue(val)
-        if MainFrame and MainFrame.Parent then
-            MainFrame.BackgroundTransparency = state.transparency
-        end
+        TransparencySlider.SetValue(math.floor(state.transparency * 100 + 0.5))
     end
-
     if state.fov ~= nil and FOVSlider and FOVSlider.SetValue then
         FOVSlider.SetValue(state.fov)
         local camera = workspace.CurrentCamera
-        if camera then
-            camera.FieldOfView = state.fov
-        end
+        if camera then camera.FieldOfView = state.fov end
     end
-
-    if state.anti_afk ~= nil and AntiAFKToggle and AntiAFKToggle.SetValue then
-        AntiAFKToggle.SetValue(state.anti_afk)
-    end
-
-    if state.animated_window ~= nil and AnimatedWindowToggle and AnimatedWindowToggle.SetValue then
-        AnimatedWindowToggle.SetValue(state.animated_window)
-    end
-
-    if state.gradient ~= nil and GradientToggle and GradientToggle.SetValue then
-        GradientToggle.SetValue(state.gradient)
-    end
+    if state.anti_afk ~= nil and AntiAFKToggle and AntiAFKToggle.SetValue then AntiAFKToggle.SetValue(state.anti_afk) end
+    if state.animated_window ~= nil and AnimatedWindowToggle and AnimatedWindowToggle.SetValue then AnimatedWindowToggle.SetValue(state.animated_window) end
+    if state.gradient ~= nil and GradientToggle and GradientToggle.SetValue then GradientToggle.SetValue(state.gradient) end
 end
 
 local function saveConfig(name)
     if not name or name == "" then
-        showToast("Error: Config name cannot be empty", Color3.fromRGB(255, 50, 50))
+        showToast(getLocalizedMessage("ConfigEmptyError"), Color3.fromRGB(255, 50, 50))
         return
     end
-
     local state = getCurrentUIState()
-    local jsonSuccess, json = pcall(HttpService.JSONEncode, HttpService, state)
-    if not jsonSuccess then
-        showToast("Failed to encode config data", Color3.fromRGB(255, 50, 50))
-        return
-    end
-
+    local json = HttpService:JSONEncode(state)
     local path = getConfigPath(name)
-    local success, err = pcall(function()
+    local success = pcall(function()
         if typeof(writefile) == "function" then
             writefile(path, json)
             return true
-        else
-            error("writefile not available")
         end
+        return false
     end)
-
     if success then
-        showToast("Config '" .. name .. "' saved successfully!", Color3.fromRGB(50, 255, 50))
-        if ConfigNameBox then
-            ConfigNameBox.Text = ""
-        end
-        if ConfigDropdown and ConfigDropdown.UpdateOptions then
-            ConfigDropdown.UpdateOptions(getConfigList())
-        end
+        showToast(getLocalizedMessage("ConfigSaved", name), Color3.fromRGB(50, 255, 50))
+        if ConfigNameBox then ConfigNameBox.Text = "" end
     else
-        showToast("Failed to save config '" .. name .. "': " .. tostring(err), Color3.fromRGB(255, 50, 50))
+        showToast(getLocalizedMessage("ConfigSaveFailed", name), Color3.fromRGB(255, 50, 50))
     end
 end
 
 local function loadConfig(name)
     if not name or name == "" then
-        showToast("Error: Config name cannot be empty", Color3.fromRGB(255, 50, 50))
+        showToast(getLocalizedMessage("ConfigEmptyError"), Color3.fromRGB(255, 50, 50))
         return
     end
-
     local path = getConfigPath(name)
     local success, content = pcall(function()
-        if typeof(readfile) == "function" then
-            return readfile(path)
-        else
-            error("readfile not available")
-        end
+        if typeof(readfile) == "function" then return readfile(path) end
+        return nil
     end)
-
-    if not success then
-        showToast("Config '" .. name .. "' not found or cannot be read", Color3.fromRGB(255, 200, 50))
+    if not success or not content then
+        showToast(getLocalizedMessage("ConfigNotFound", name), Color3.fromRGB(255, 200, 50))
         return
     end
-
-    local decodeSuccess, state = pcall(HttpService.JSONDecode, HttpService, content)
-    if decodeSuccess and type(state) == "table" then
+    local decSuccess, state = pcall(function() return HttpService:JSONDecode(content) end)
+    if decSuccess and state then
         applyUIState(state)
-        showToast("Config '" .. name .. "' loaded successfully!", Color3.fromRGB(50, 255, 50))
-        if ConfigNameBox then
-            ConfigNameBox.Text = ""
-        end
+        showToast(getLocalizedMessage("ConfigLoaded", name), Color3.fromRGB(50, 255, 50))
+        if ConfigNameBox then ConfigNameBox.Text = "" end
     else
-        showToast("Failed to parse config '" .. name .. "'. It might be corrupted.", Color3.fromRGB(255, 50, 50))
+        showToast(getLocalizedMessage("ConfigLoadFailed", name), Color3.fromRGB(255, 50, 50))
     end
 end
 
 local function deleteConfig(name)
     if not name or name == "" then
-        showToast("Error: Config name cannot be empty", Color3.fromRGB(255, 50, 50))
+        showToast(getLocalizedMessage("ConfigEmptyError"), Color3.fromRGB(255, 50, 50))
         return
     end
-
     local path = getConfigPath(name)
-    local success, err = pcall(function()
+    local success = pcall(function()
         if typeof(delfile) == "function" then
             delfile(path)
             return true
-        else
-            error("delfile not available")
         end
+        return false
     end)
-
     if success then
-        showToast("Config '" .. name .. "' deleted!", Color3.fromRGB(255, 200, 50))
-        if ConfigNameBox then
-            ConfigNameBox.Text = ""
-        end
-        -- Обновляем дропдаун и сбрасываем выбранное значение
-        if ConfigDropdown then
-            if ConfigDropdown.UpdateOptions then
-                ConfigDropdown.UpdateOptions(getConfigList())
-            end
-            if ConfigDropdown.SetValue then
-                ConfigDropdown.SetValue("")
-            end
-        end
+        showToast(getLocalizedMessage("ConfigDeleted", name), Color3.fromRGB(255, 200, 50))
+        if ConfigNameBox then ConfigNameBox.Text = "" end
     else
-        showToast("Failed to delete config '" .. name .. "': " .. tostring(err), Color3.fromRGB(255, 50, 50))
+        showToast(getLocalizedMessage("ConfigDeleteFailed", name), Color3.fromRGB(255, 50, 50))
     end
 end
 
--- === Config UI Elements ===
-
--- Config Section Header
 local ConfigSectionHeader = Instance.new("Frame", SettingsPage)
 ConfigSectionHeader.Name = "ConfigSectionHeader"
 ConfigSectionHeader.Size = UDim2.new(1, -20, 0, 24)
@@ -2364,7 +2218,6 @@ ConfigHeaderText.BackgroundTransparency = 1
 table.insert(Library.TrackedMainText, ConfigHeaderText)
 table.insert(LocaleObjects, {Object = ConfigHeaderText, Key = "Configurations"})
 
--- Config Name Input
 local ConfigInputFrame = Instance.new("Frame", SettingsPage)
 ConfigInputFrame.Name = "ConfigInputFrame"
 ConfigInputFrame.Size = UDim2.new(1, -20, 0, 36)
@@ -2391,14 +2244,12 @@ ConfigNameBox.TextXAlignment = Enum.TextXAlignment.Left
 table.insert(Library.TrackedMainText, ConfigNameBox)
 table.insert(LocaleObjects, {Object = ConfigNameBox, Key = "ConfigName"})
 
--- Config Dropdown for loading/deleting existing configs
 local ConfigDropdown = Library:CreateDropdown(SettingsPage, "Load", getConfigList(), "", function(selected)
     if selected and selected ~= "" then
         ConfigNameBox.Text = selected
     end
 end)
 
--- Config Buttons Row
 local ConfigButtonRow = Instance.new("Frame", SettingsPage)
 ConfigButtonRow.Name = "ConfigButtonRow"
 ConfigButtonRow.Size = UDim2.new(1, -20, 0, 40)
@@ -2406,7 +2257,6 @@ ConfigButtonRow.BackgroundTransparency = 1
 ConfigButtonRow.LayoutOrder = #SettingsPage:GetChildren()
 ConfigButtonRow.ZIndex = 6
 
--- Helper function to create styled config buttons
 local function createConfigButton(parent, textKey, callback, color, position)
     local Btn = Instance.new("TextButton", parent)
     Btn.Size = UDim2.new(0.3, -4, 0.85, 0)
@@ -2424,147 +2274,115 @@ local function createConfigButton(parent, textKey, callback, color, position)
     table.insert(Library.TrackedElementBg, Btn)
     table.insert(Library.TrackedMainText, Btn)
     table.insert(Library.TrackedStrokes, BtnStroke)
-
-    -- Hover effects
-    Btn.MouseEnter:Connect(function()
-        tween(Btn, {BackgroundTransparency = 0.3}, 0.15)
-    end)
-    Btn.MouseLeave:Connect(function()
-        tween(Btn, {BackgroundTransparency = 0}, 0.15)
-    end)
-
-    Btn.Activated:Connect(function()
-        if type(callback) == "function" then
-            pcall(callback)
-        end
-    end)
+    
+    Btn.MouseEnter:Connect(function() tween(Btn, {BackgroundTransparency = 0.3}, 0.15) end)
+    Btn.MouseLeave:Connect(function() tween(Btn, {BackgroundTransparency = 0}, 0.15) end)
+    Btn.Activated:Connect(function() if type(callback) == "function" then pcall(callback) end end)
     return Btn
 end
 
--- Create 3 buttons: Save, Load, Delete (equal width, spaced evenly)
 local saveBtn = createConfigButton(ConfigButtonRow, "Save", function()
     local name = ConfigNameBox.Text
     if name == "" then
-        showToast("Please enter a config name", Color3.fromRGB(255, 200, 50))
+        showToast(getLocalizedMessage("PleaseEnterName"), Color3.fromRGB(255, 200, 50))
         return
     end
     saveConfig(name)
+    if ConfigDropdown and ConfigDropdown.UpdateOptions then
+        ConfigDropdown.UpdateOptions(getConfigList())
+    end
 end, Color3.fromRGB(30, 60, 30), 0)
 
 local loadBtn = createConfigButton(ConfigButtonRow, "Load", function()
     local name = ConfigNameBox.Text
+    if name == "" and ConfigDropdown and ConfigDropdown.GetValue then
+        name = ConfigDropdown.GetValue()
+    end
     if name == "" then
-        if ConfigDropdown and ConfigDropdown.GetValue then
-            name = ConfigDropdown.GetValue()
-        end
-        if name == "" then
-            showToast("Please select or enter a config name", Color3.fromRGB(255, 200, 50))
-            return
-        end
+        showToast(getLocalizedMessage("PleaseSelectName"), Color3.fromRGB(255, 200, 50))
+        return
     end
     loadConfig(name)
 end, Color3.fromRGB(30, 30, 60), 0.35)
 
 local deleteBtn = createConfigButton(ConfigButtonRow, "Delete", function()
     local name = ConfigNameBox.Text
+    if name == "" and ConfigDropdown and ConfigDropdown.GetValue then
+        name = ConfigDropdown.GetValue()
+    end
     if name == "" then
-        if ConfigDropdown and ConfigDropdown.GetValue then
-            name = ConfigDropdown.GetValue()
-        end
-        if name == "" then
-            showToast("Please select or enter a config name", Color3.fromRGB(255, 200, 50))
-            return
-        end
+        showToast(getLocalizedMessage("PleaseSelectName"), Color3.fromRGB(255, 200, 50))
+        return
     end
     deleteConfig(name)
+    if ConfigDropdown and ConfigDropdown.UpdateOptions then
+        ConfigDropdown.UpdateOptions(getConfigList())
+        if ConfigDropdown.SetValue then ConfigDropdown.SetValue("") end
+    end
 end, Color3.fromRGB(60, 30, 30), 0.7)
 
--- Store locale objects for buttons
 table.insert(LocaleObjects, {Object = saveBtn, Key = "Save"})
 table.insert(LocaleObjects, {Object = loadBtn, Key = "Load"})
 table.insert(LocaleObjects, {Object = deleteBtn, Key = "Delete"})
 
--- Update ConfigDropdown options when configs change
-local function refreshConfigDropdown()
-    if ConfigDropdown and ConfigDropdown.UpdateOptions then
-        ConfigDropdown.UpdateOptions(getConfigList())
+-- ============================================================================
+-- ЗАПУСК И ИНИЦИАЛИЗАЦИЯ (ИСПРАВЛЕНО И ДОПОЛНЕНО)
+-- ============================================================================
+local function updateLoadingText(percent)
+    local lang = Library.CurrentLanguage or "English"
+    local statusText = ""
+    if percent <= 25 then
+        statusText = Localization[lang]["LoadingUI"] or "LOADING INTERFACES"
+    elseif percent <= 50 then
+        statusText = Localization[lang]["InitModules"] or "INITIALIZING MODULES"
+    elseif percent <= 75 then
+        statusText = Localization[lang]["SettingAnimations"] or "SETTING UP ANIMATIONS"
+    elseif percent <= 99 then
+        statusText = Localization[lang]["PrepLaunch"] or "PREPARING FOR LAUNCH"
+    else
+        statusText = Localization[lang]["Ready"] or "READY!"
     end
+    
+    LoadingStatus.Text = statusText
+    LoadingPercent.Text = string.format("%d%%", percent)
+    tween(ProgressBarFill, {Size = UDim2.new(math.clamp(percent / 100, 0, 1), 0, 1, 0)}, 0.3)
 end
 
--- Hook to update dropdown when configs change
-local origSaveConfig = saveConfig
-saveConfig = function(name)
-    origSaveConfig(name)
-    refreshConfigDropdown()
-end
-
-local origDeleteConfig = deleteConfig
-deleteConfig = function(name)
-    origDeleteConfig(name)
-    refreshConfigDropdown()
-end
-
--- Initial refresh
-refreshConfigDropdown()
-
--- Fix ConfigNameBox placeholder when language changes
-local origUpdateLanguage = Library.UpdateLanguage
-Library.UpdateLanguage = function(lang)
-    origUpdateLanguage(lang)
-    if ConfigNameBox then
-        local placeholderText = Localization[lang] and Localization[lang]["ConfigName"] or "Config name..."
-        ConfigNameBox.PlaceholderText = placeholderText
-    end
-end
-
--- ============================================================================
--- УСТАНОВКА НАЧАЛЬНОЙ АКТИВНОЙ ВКЛАДКИ
--- ============================================================================
-if allTabButtons["Settings"] then
-    setActiveTab(allTabButtons["Settings"])
-    currentActiveTab = allTabButtons["Settings"]
-    if allPages["Settings"] then
-        allPages["Settings"].Visible = true
-    end
-end
-
--- ============================================================================
--- ЗАПУСК СИМУЛЯЦИИ ЗАГРУЗКИ С ПЛАВНЫМ ПЕРЕХОДОМ В ИНТЕРФЕЙС
--- ============================================================================
 task.spawn(function()
-    for i = 0, 100 do
+    for i = 1, 100 do
         updateLoadingText(i)
-        task.wait(0.02)
+        task.wait(0.012)
     end
-
-    task.wait(0.3)
-
-    -- Отключение цикла анимации пузырьков после завершения
-    if bubbleConnection then
-        bubbleConnection:Disconnect()
-    end
-
-    -- Плавное исчезновение и уменьшение экрана загрузки
-    local fadeOverlay = tween(LoadingOverlay, {
-        BackgroundTransparency = 1,
-        Size = UDim2.new(0, 230, 0, 160)
-    }, 0.45)
-
+    
+    tween(LoadingOverlay, {BackgroundTransparency = 1}, 0.4)
     for _, child in ipairs(LoadingOverlay:GetChildren()) do
         if child:IsA("GuiObject") then
-            tween(child, {BackgroundTransparency = 1, ImageTransparency = 1, TextTransparency = 1}, 0.35)
+            pcall(function()
+                if child:IsA("TextLabel") then
+                    tween(child, {TextTransparency = 1}, 0.4)
+                elseif child:IsA("ImageLabel") then
+                    tween(child, {ImageTransparency = 1}, 0.4)
+                elseif child:IsA("UIStroke") then
+                    tween(child, {Transparency = 1}, 0.4)
+                else
+                    tween(child, {BackgroundTransparency = 1}, 0.4)
+                end
+            end)
         end
     end
-
-    if fadeOverlay then
-        fadeOverlay.Completed:Connect(function()
-            LoadingOverlay:Destroy()
-            MainFrame.Visible = true
-            MainFrame.Size = UDim2.new(0, 500, 0, 310)
-            tween(MainFrame, {Size = UDim2.new(0, 550, 0, 350)}, 0.4)
-        end)
-    else
-        LoadingOverlay:Destroy()
-        MainFrame.Visible = true
+    
+    task.wait(0.4)
+    if bubbleConnection then
+        bubbleConnection:Disconnect()
+        bubbleConnection = nil
     end
+    LoadingOverlay:Destroy()
+    
+    MainFrame.Visible = true
+    setActiveTab(allTabButtons["Settings"])
+    currentActiveTab = allTabButtons["Settings"]
+    allPages["Settings"].Visible = true
+    
+    showToast(getLocalizedMessage("HubLoaded"), Color3.fromRGB(50, 255, 50))
 end)
+
