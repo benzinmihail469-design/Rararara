@@ -111,8 +111,7 @@ local function NormalizeText(str)
         ["настройки"] = "settings",
         ["язык"] = "language",
         ["тема"] = "theme",
-        ["шрифт"] = "font",
-        ["небо"] = "sky"
+        ["шрифт"] = "font"
     }
     for ru, en in pairs(synonyms) do
         lowerStr = string.gsub(lowerStr, ru, en)
@@ -675,171 +674,6 @@ local ThemeConfig = {
 }
 
 -- ============================================================================
--- SKY SYSTEM
--- ============================================================================
-local SkyPresets = {
-    ["Default"] = { 
-        SkyboxBk = "", SkyboxDn = "", SkyboxFt = "", 
-        SkyboxLf = "", SkyboxRt = "", SkyboxUp = "",
-        Description = "Стандартное небо"
-    },
-    ["Space"] = {
-        SkyboxBk = "rbxassetid://155734327", SkyboxDn = "rbxassetid://155734331",
-        SkyboxFt = "rbxassetid://155734336", SkyboxLf = "rbxassetid://155734335",
-        SkyboxRt = "rbxassetid://155734339", SkyboxUp = "rbxassetid://155734343",
-        Description = "Космическое небо"
-    },
-    ["Sunset"] = {
-        SkyboxBk = "rbxassetid://600830600", SkyboxDn = "rbxassetid://600830620",
-        SkyboxFt = "rbxassetid://600830643", SkyboxLf = "rbxassetid://600830667",
-        SkyboxRt = "rbxassetid://600830705", SkyboxUp = "rbxassetid://600830744",
-        Description = "Закатное небо"
-    },
-    ["Night Stars"] = {
-        SkyboxBk = "rbxassetid://12064107", SkyboxDn = "rbxassetid://12064115",
-        SkyboxFt = "rbxassetid://12064121", SkyboxLf = "rbxassetid://12064131",
-        SkyboxRt = "rbxassetid://12064139", SkyboxUp = "rbxassetid://12064148",
-        Description = "Ночное звездное небо"
-    },
-    ["Vaporwave"] = {
-        SkyboxBk = "rbxassetid://271042516", SkyboxDn = "rbxassetid://271042556",
-        SkyboxFt = "rbxassetid://271042586", SkyboxLf = "rbxassetid://271042615",
-        SkyboxRt = "rbxassetid://271042651", SkyboxUp = "rbxassetid://271042699",
-        Description = "Vaporwave небо"
-    },
-    ["Anime Sky"] = {
-        SkyboxBk = "rbxassetid://248555622", SkyboxDn = "rbxassetid://248555710",
-        SkyboxFt = "rbxassetid://248555930", SkyboxLf = "rbxassetid://248555819",
-        SkyboxRt = "rbxassetid://248556015", SkyboxUp = "rbxassetid://248556116",
-        Description = "Аниме небо"
-    },
-    ["Cyberpunk"] = {
-        SkyboxBk = "rbxassetid://1603652066", SkyboxDn = "rbxassetid://1603652759",
-        SkyboxFt = "rbxassetid://1603653395", SkyboxLf = "rbxassetid://1603654175",
-        SkyboxRt = "rbxassetid://1603655017", SkyboxUp = "rbxassetid://1603655718",
-        Description = "Киберпанк небо"
-    },
-    ["Dreamy Clouds"] = {
-        SkyboxBk = "rbxassetid://199059579", SkyboxDn = "rbxassetid://199059758",
-        SkyboxFt = "rbxassetid://199059835", SkyboxLf = "rbxassetid://199059912",
-        SkyboxRt = "rbxassetid://199060114", SkyboxUp = "rbxassetid://199060246",
-        Description = "Облачное небо"
-    },
-    ["Fantasy"] = {
-        SkyboxBk = "rbxassetid://196151162", SkyboxDn = "rbxassetid://196151135",
-        SkyboxFt = "rbxassetid://196151100", SkyboxLf = "rbxassetid://196151183",
-        SkyboxRt = "rbxassetid://196151208", SkyboxUp = "rbxassetid://196151212",
-        Description = "Фэнтези небо"
-    },
-    ["Morning Light"] = {
-        SkyboxBk = "rbxassetid://1390465822", SkyboxDn = "rbxassetid://1390466833",
-        SkyboxFt = "rbxassetid://1390465836", SkyboxLf = "rbxassetid://1390466243",
-        SkyboxRt = "rbxassetid://1390466281", SkyboxUp = "rbxassetid://1390466403",
-        Description = "Утреннее небо"
-    },
-    ["Winter"] = {
-        SkyboxBk = "rbxassetid://1379435620", SkyboxDn = "rbxassetid://1379435933",
-        SkyboxFt = "rbxassetid://1379435960", SkyboxLf = "rbxassetid://1379435975",
-        SkyboxRt = "rbxassetid://1379436014", SkyboxUp = "rbxassetid://1379436122",
-        Description = "Зимнее небо"
-    },
-    ["Alien Planet"] = {
-        SkyboxBk = "rbxassetid://1372116225", SkyboxDn = "rbxassetid://1372116258",
-        SkyboxFt = "rbxassetid://1372116269", SkyboxLf = "rbxassetid://1372116285",
-        SkyboxRt = "rbxassetid://1372116295", SkyboxUp = "rbxassetid://1372116304",
-        Description = "Чужая планета"
-    },
-    ["Purple Sky"] = {
-        SkyboxBk = "rbxassetid://89533939541361", 
-        SkyboxDn = "rbxassetid://89533939541361",
-        SkyboxFt = "rbxassetid://89533939541361",
-        SkyboxLf = "rbxassetid://89533939541361",
-        SkyboxRt = "rbxassetid://89533939541361",
-        SkyboxUp = "rbxassetid://89533939541361",
-        Description = "Фиолетовое небо (кастом)"
-    },
-    ["Purple Nebula"] = {
-        SkyboxBk = "rbxassetid://12787802044", 
-        SkyboxDn = "rbxassetid://12787802044",
-        SkyboxFt = "rbxassetid://12787802044",
-        SkyboxLf = "rbxassetid://12787802044",
-        SkyboxRt = "rbxassetid://12787802044",
-        SkyboxUp = "rbxassetid://12787802044",
-        Description = "Фиолетовая туманность"
-    },
-    ["Purple Galaxy"] = {
-        SkyboxBk = "rbxassetid://12679101637", 
-        SkyboxDn = "rbxassetid://12679101637",
-        SkyboxFt = "rbxassetid://12679101637",
-        SkyboxLf = "rbxassetid://12679101637",
-        SkyboxRt = "rbxassetid://12679101637",
-        SkyboxUp = "rbxassetid://12679101637",
-        Description = "Фиолетовая галактика"
-    }
-}
-
-local CurrentSkyInstance = nil
-local CurrentSkyName = "Default"
-
-local function ApplySky(skyName)
-    if not skyName or skyName == "" then
-        skyName = "Default"
-    end
-    
-    if CurrentSkyInstance then
-        pcall(function()
-            CurrentSkyInstance:Destroy()
-        end)
-        CurrentSkyInstance = nil
-    end
-    
-    local preset = SkyPresets[skyName]
-    if not preset then
-        preset = SkyPresets["Default"]
-        skyName = "Default"
-    end
-    
-    if skyName == "Default" then
-        local existingSky = Lighting:FindFirstChildOfClass("Sky")
-        if existingSky then
-            pcall(function()
-                existingSky:Destroy()
-            end)
-        end
-        CurrentSkyName = "Default"
-        return
-    end
-    
-    local existingSky = Lighting:FindFirstChildOfClass("Sky")
-    if existingSky then
-        CurrentSkyInstance = existingSky
-    else
-        CurrentSkyInstance = Instance.new("Sky")
-        CurrentSkyInstance.Parent = Lighting
-    end
-    
-    CurrentSkyInstance.SkyboxBk = preset.SkyboxBk or ""
-    CurrentSkyInstance.SkyboxDn = preset.SkyboxDn or ""
-    CurrentSkyInstance.SkyboxFt = preset.SkyboxFt or ""
-    CurrentSkyInstance.SkyboxLf = preset.SkyboxLf or ""
-    CurrentSkyInstance.SkyboxRt = preset.SkyboxRt or ""
-    CurrentSkyInstance.SkyboxUp = preset.SkyboxUp or ""
-    
-    CurrentSkyName = skyName
-end
-
-local function GetSkyNames()
-    local names = {}
-    for name, _ in pairs(SkyPresets) do
-        table.insert(names, name)
-    end
-    table.sort(names)
-    return names
-end
-
-local SkyNamesList = GetSkyNames()
-
--- ============================================================================
 -- LIBRARY UTILITIES & THEMING
 -- ============================================================================
 local DefaultTheme = { Accent = Color3.fromRGB(255, 255, 255), MainBg = Color3.fromRGB(0, 0, 0), ElementBg = Color3.fromRGB(15, 15, 15) }
@@ -1145,7 +979,6 @@ local Localization = {
         ["Language"] = "Language",
         ["AntiAFK"] = "Anti-AFK",
         ["UITheme"] = "UI Theme",
-        ["Sky"] = "Sky",
         ["AnimatedWindow"] = "Animated Window",
         ["Gradient"] = "Gradient Background",
         ["Configurations"] = "Configurations",
@@ -1177,7 +1010,6 @@ local Localization = {
         ["Language"] = "Язык",
         ["AntiAFK"] = "Анти-АФК",
         ["UITheme"] = "Тема UI",
-        ["Sky"] = "Небо",
         ["AnimatedWindow"] = "Анимированное окно",
         ["Gradient"] = "Градиентный фон",
         ["Configurations"] = "Конфигурации",
@@ -2086,14 +1918,6 @@ local ThemeDropdown = Library:CreateDropdown(subPages["Theme"], "UITheme", Theme
     end
 end)
 
-local SkyDropdown = Library:CreateDropdown(subPages["Theme"], "Sky", SkyNamesList, "Default", function(selectedSky)
-    ApplySky(selectedSky)
-    if showToast then
-        local desc = SkyPresets[selectedSky] and SkyPresets[selectedSky].Description or selectedSky
-        showToast("Небо: " .. desc, getThemeAccent())
-    end
-end)
-
 -- ============================================================================
 -- CONFIGURATIONS SYSTEM
 -- ============================================================================
@@ -2190,7 +2014,6 @@ end
 local function getCurrentUIState()
     local state = {
         theme = "AMOLED",
-        sky = "Default",
         language = Library.CurrentLanguage or "English",
         font = Library.CurrentFontKey or "Source Sans",
         ui_size = MainScale and MainScale.Scale or 1,
@@ -2201,7 +2024,6 @@ local function getCurrentUIState()
         gradient = uiGradientInstance ~= nil
     }
     if ThemeDropdown and ThemeDropdown.GetValue then state.theme = ThemeDropdown.GetValue() end
-    if SkyDropdown and SkyDropdown.GetValue then state.sky = SkyDropdown.GetValue() end
     if FontDropdown and FontDropdown.GetValue then state.font = FontDropdown.GetValue() end
     if UISizeSlider and UISizeSlider.GetValue then state.ui_size = UISizeSlider.GetValue() / 100 end
     if TransparencySlider and TransparencySlider.GetValue then state.transparency = TransparencySlider.GetValue() / 100 end
@@ -2217,10 +2039,6 @@ local function applyUIState(state)
     if state.theme and ThemeConfig[state.theme] then
         Library:UpdateTheme(state.theme)
         if ThemeDropdown and ThemeDropdown.SetValue then ThemeDropdown.SetValue(state.theme) end
-    end
-    if state.sky and SkyPresets[state.sky] then
-        if SkyDropdown and SkyDropdown.SetValue then SkyDropdown.SetValue(state.sky) end
-        ApplySky(state.sky)
     end
     if state.language and Localization[state.language] then
         Library:UpdateLanguage(state.language)
@@ -2350,10 +2168,10 @@ local loadBtn = createConfigButton(ConfigButtonRow, "Load", function()
         return nil
     end)
     if success and content then
-        local decodeSuccess, state = pcall(function()
+        local dataSuccess, state = pcall(function()
             return HttpService:JSONDecode(content)
         end)
-        if decodeSuccess and state then
+        if dataSuccess and state then
             applyUIState(state)
             showToast(getLocalizedMessage("ConfigLoaded", name), Color3.fromRGB(50, 255, 50))
         else
@@ -2362,7 +2180,7 @@ local loadBtn = createConfigButton(ConfigButtonRow, "Load", function()
     else
         showToast(getLocalizedMessage("ConfigNotFound", name), Color3.fromRGB(255, 50, 50))
     end
-end, 0.345)
+end, 0.33)
 
 local deleteBtn = createConfigButton(ConfigButtonRow, "Delete", function()
     local name = ConfigNameBox.Text
@@ -2382,7 +2200,7 @@ local deleteBtn = createConfigButton(ConfigButtonRow, "Delete", function()
         return false
     end)
     if success then
-        showToast(getLocalizedMessage("ConfigDeleted", name), Color3.fromRGB(255, 100, 100))
+        showToast(getLocalizedMessage("ConfigDeleted", name), Color3.fromRGB(255, 50, 50))
         ConfigNameBox.Text = ""
         if ConfigDropdown and ConfigDropdown.UpdateOptions then
             ConfigDropdown.UpdateOptions(getConfigList())
@@ -2390,25 +2208,17 @@ local deleteBtn = createConfigButton(ConfigButtonRow, "Delete", function()
     else
         showToast(getLocalizedMessage("ConfigDeleteFailed", name), Color3.fromRGB(255, 50, 50))
     end
-end, 0.69)
+end, 0.66)
 
--- ============================================================================
--- LOADING ANIMATION AND STARTUP FINISH
--- ============================================================================
+-- Show Main Frame after loading screen sequence
 task.spawn(function()
-    local duration = 1.5
-    local elapsed = 0
-    while elapsed < duration do
-        local dt = task.wait()
-        elapsed = elapsed + dt
-        local progress = math.clamp(elapsed / duration, 0, 1)
-        local percent = math.floor(progress * 100)
-        if LoadingPercent then
-            LoadingPercent.Text = percent .. "%"
-        end
-        if ProgressBarFill then
-            ProgressBarFill.Size = UDim2.new(progress, 0, 1, 0)
-        end
+    local currentProgress = 0
+    while currentProgress < 100 do
+        currentProgress = currentProgress + math.random(5, 15)
+        if currentProgress > 100 then currentProgress = 100 end
+        LoadingPercent.Text = currentProgress .. "%"
+        ProgressBarFill.Size = UDim2.new(currentProgress / 100, 0, 1, 0)
+        task.wait(0.05)
     end
     
     if bubbleConnection then
@@ -2417,30 +2227,24 @@ task.spawn(function()
     end
     
     if LoadingOverlay and LoadingOverlay.Parent then
-        tween(LoadingOverlay, {BackgroundTransparency = 1}, 0.3)
+        tween(LoadingOverlay, {BackgroundTransparency = 1}, 0.4)
         for _, child in ipairs(LoadingOverlay:GetDescendants()) do
             if child:IsA("GuiObject") then
                 pcall(function()
-                    if child:IsA("TextLabel") then
-                        tween(child, {TextTransparency = 1}, 0.3)
-                    elseif child:IsA("ImageLabel") then
-                        tween(child, {ImageTransparency = 1}, 0.3)
-                    elseif child:IsA("Frame") then
-                        tween(child, {BackgroundTransparency = 1}, 0.3)
+                    if child:IsA("TextLabel") or child:IsA("TextBox") or child:IsA("TextButton") then
+                        tween(child, {TextTransparency = 1}, 0.4)
                     end
+                    if child:IsA("ImageLabel") then
+                        tween(child, {ImageTransparency = 1}, 0.4)
+                    end
+                    tween(child, {BackgroundTransparency = 1}, 0.4)
                 end)
             end
         end
-        task.wait(0.35)
+        task.wait(0.4)
         LoadingOverlay:Destroy()
     end
     
-    if MainFrame then
-        MainFrame.Visible = true
-        MainFrame.Size = UDim2.new(0, 500, 0, 310)
-        MainFrame.BackgroundTransparency = 1
-        tween(MainFrame, {Size = UDim2.new(0, 550, 0, 350), BackgroundTransparency = 0.15}, 0.4)
-    end
-    
-    showToast(getLocalizedMessage("HubLoaded"), Color3.fromRGB(255, 255, 255))
+    MainFrame.Visible = true
+    showToast(getLocalizedMessage("HubLoaded"), getThemeAccent())
 end)
