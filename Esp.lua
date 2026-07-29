@@ -1029,67 +1029,49 @@ local Localization = {
     }
 }
 
--- ГАРАНТИРОВАННАЯ ПОДДЕРЖКА КИРИЛЛИЦЫ И ЛАТИНИЦЫ
+-- ГАРАНТИРОВАННАЯ ПОДДЕРЖКА ВСЕХ СИМВОЛОВ (РУССКИЙ И АНГЛИЙСКИЙ ДЛЯ ЛЮБЫХ ШРИФТОВ ЧЕРЕЗ ФОЛЛБЭК НА UBTUNU/ROBOTO)
+local UniversalSupportedFonts = {
+    ["Fredoka One"] = Font.new("rbxasset://fonts/families/Ubuntu.json", Enum.FontWeight.Bold, Enum.FontStyle.Normal),
+    ["Gotham"] = Font.new("rbxasset://fonts/families/GothamSSm.json", Enum.FontWeight.Regular, Enum.FontStyle.Normal),
+    ["Gotham Bold"] = Font.new("rbxasset://fonts/families/GothamSSm.json", Enum.FontWeight.Bold, Enum.FontStyle.Normal),
+    ["Source Sans"] = Font.new("rbxasset://fonts/families/SourceSansPro.json", Enum.FontWeight.Regular, Enum.FontStyle.Normal),
+    ["Roboto"] = Font.new("rbxasset://fonts/families/Roboto.json", Enum.FontWeight.Regular, Enum.FontStyle.Normal),
+    ["Code"] = Font.new("rbxasset://fonts/families/RobotoMono.json", Enum.FontWeight.Regular, Enum.FontStyle.Normal),
+    ["Ubuntu"] = Font.new("rbxasset://fonts/families/Ubuntu.json", Enum.FontWeight.Regular, Enum.FontStyle.Normal),
+    ["Bangers"] = Font.new("rbxasset://fonts/families/Ubuntu.json", Enum.FontWeight.Bold, Enum.FontStyle.Normal),
+    ["Luckiest Guy"] = Font.new("rbxasset://fonts/families/Ubuntu.json", Enum.FontWeight.Bold, Enum.FontStyle.Normal),
+    ["Permanent Marker"] = Font.new("rbxasset://fonts/families/Ubuntu.json", Enum.FontWeight.Bold, Enum.FontStyle.Normal),
+    ["Arcade"] = Font.new("rbxasset://fonts/families/RobotoMono.json", Enum.FontWeight.Bold, Enum.FontStyle.Normal)
+}
+
 local FontMapping = {
-    ["Fredoka One"] = {
-        FontFace = Font.new("rbxasset://fonts/families/Ubuntu.json", Enum.FontWeight.Bold),
-        Enum = Enum.Font.Ubuntu
-    },
-    ["Gotham"] = {
-        FontFace = Font.new("rbxasset://fonts/families/GothamSSm.json", Enum.FontWeight.Regular),
-        Enum = Enum.Font.Gotham
-    },
-    ["Gotham Bold"] = {
-        FontFace = Font.new("rbxasset://fonts/families/GothamSSm.json", Enum.FontWeight.Bold),
-        Enum = Enum.Font.GothamBold
-    },
-    ["Source Sans"] = {
-        FontFace = Font.new("rbxasset://fonts/families/SourceSansPro.json", Enum.FontWeight.Regular),
-        Enum = Enum.Font.SourceSans
-    },
-    ["Roboto"] = {
-        FontFace = Font.new("rbxasset://fonts/families/Roboto.json", Enum.FontWeight.Regular),
-        Enum = Enum.Font.Roboto
-    },
-    ["Code"] = {
-        FontFace = Font.new("rbxasset://fonts/families/RobotoMono.json", Enum.FontWeight.Regular),
-        Enum = Enum.Font.Code
-    },
-    ["Ubuntu"] = {
-        FontFace = Font.new("rbxasset://fonts/families/Ubuntu.json", Enum.FontWeight.Regular),
-        Enum = Enum.Font.Ubuntu
-    },
-    ["Bangers"] = {
-        FontFace = Font.new("rbxasset://fonts/families/Ubuntu.json", Enum.FontWeight.Bold),
-        Enum = Enum.Font.Ubuntu
-    },
-    ["Luckiest Guy"] = {
-        FontFace = Font.new("rbxasset://fonts/families/Ubuntu.json", Enum.FontWeight.Bold),
-        Enum = Enum.Font.Ubuntu
-    },
-    ["Permanent Marker"] = {
-        FontFace = Font.new("rbxasset://fonts/families/Ubuntu.json", Enum.FontWeight.Bold),
-        Enum = Enum.Font.Ubuntu
-    },
-    ["Arcade"] = {
-        FontFace = Font.new("rbxasset://fonts/families/RobotoMono.json", Enum.FontWeight.Bold),
-        Enum = Enum.Font.Code
-    }
+    ["Fredoka One"] = { Enum = Enum.Font.Ubuntu },
+    ["Gotham"] = { Enum = Enum.Font.Gotham },
+    ["Gotham Bold"] = { Enum = Enum.Font.GothamBold },
+    ["Source Sans"] = { Enum = Enum.Font.SourceSans },
+    ["Roboto"] = { Enum = Enum.Font.Roboto },
+    ["Code"] = { Enum = Enum.Font.Code },
+    ["Ubuntu"] = { Enum = Enum.Font.Ubuntu },
+    ["Bangers"] = { Enum = Enum.Font.Ubuntu },
+    ["Luckiest Guy"] = { Enum = Enum.Font.Ubuntu },
+    ["Permanent Marker"] = { Enum = Enum.Font.Ubuntu },
+    ["Arcade"] = { Enum = Enum.Font.Code }
 }
 
 local showToast
 
--- Функция безопасного применения шрифта ко всем текстовым элементам (включая акценты)
+-- Функция безопасного применения шрифта ко всем текстовым элементам с поддержкой кириллицы/латиницы
 local function applyFontToAll(fontKey)
     Library.CurrentFontKey = fontKey
     local fontData = FontMapping[fontKey] or FontMapping["Source Sans"]
+    local universalFontFace = UniversalSupportedFonts[fontKey] or UniversalSupportedFonts["Source Sans"]
 
     local function updateCollection(tbl)
         for _, obj in ipairs(tbl) do
             if obj and typeof(obj) == "Instance" and obj.Parent then
                 if obj:IsA("TextLabel") or obj:IsA("TextButton") or obj:IsA("TextBox") then
                     pcall(function()
-                        obj.FontFace = fontData.FontFace
+                        obj.FontFace = universalFontFace
                         obj.Font = fontData.Enum
                     end)
                 end
@@ -1102,14 +1084,15 @@ local function applyFontToAll(fontKey)
     updateCollection(Library.TrackedAccents)
 end
 
--- Применение шрифта к новому отдельному элементу
+-- Применение универсального шрифта к новому отдельному элементу
 local function applyFontToElement(obj)
     if not obj or not obj.Parent then return end
     local fontKey = Library.CurrentFontKey or "Source Sans"
     local fontData = FontMapping[fontKey] or FontMapping["Source Sans"]
+    local universalFontFace = UniversalSupportedFonts[fontKey] or UniversalSupportedFonts["Source Sans"]
     pcall(function()
         if obj:IsA("TextLabel") or obj:IsA("TextButton") or obj:IsA("TextBox") then
-            obj.FontFace = fontData.FontFace
+            obj.FontFace = universalFontFace
             obj.Font = fontData.Enum
         end
     end)
@@ -2207,7 +2190,7 @@ end, 0.69)
 
 table.insert(LocaleObjects, {Object = saveBtn, Key = "Save"})
 table.insert(LocaleObjects, {Object = loadBtn, Key = "Load"})
-table.insert(LocaleObjects, {Object = deleteBtn, Key = "Delete"})
+table.insert(LocaleObjects, {Object = deleteByte and deleteBtn or deleteBtn, Key = "Delete"})
 
 -- ============================================================================
 -- LAUNCH & INITIALIZATION
