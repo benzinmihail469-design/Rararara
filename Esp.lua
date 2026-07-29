@@ -649,16 +649,27 @@ Library.TrackedMainText = {}
 Library.TrackedSubText = {}
 Library.TrackedStrokes = {}
 Library.TrackedDropdownLabels = {}
+Library.TrackedCheckboxes = {}
+Library.TrackedSliderFills = {}
+Library.TrackedSliderHandles = {}
+Library.TrackedIndicators = {}
 
 local ThemeConfig = {
     ["AMOLED"] = { Accent = Color3.fromRGB(255, 255, 255), MainBg = Color3.fromRGB(0, 0, 0), ElementBg = Color3.fromRGB(15, 15, 15) },
-    ["Black"] = { Accent = Color3.fromRGB(180, 180, 180), MainBg = Color3.fromRGB(12, 12, 12), ElementBg = Color3.fromRGB(22, 22, 22) },
-    ["White"] = { Accent = Color3.fromRGB(0, 122, 255), MainBg = Color3.fromRGB(240, 240, 240), ElementBg = Color3.fromRGB(255, 255, 255) },
-    ["Red"] = { Accent = Color3.fromRGB(255, 50, 50), MainBg = Color3.fromRGB(20, 10, 10), ElementBg = Color3.fromRGB(35, 15, 15) },
-    ["Green"] = { Accent = Color3.fromRGB(50, 255, 50), MainBg = Color3.fromRGB(10, 20, 10), ElementBg = Color3.fromRGB(15, 35, 15) },
-    ["Blue"] = { Accent = Color3.fromRGB(0, 150, 255), MainBg = Color3.fromRGB(10, 15, 25), ElementBg = Color3.fromRGB(20, 25, 40) },
+    ["Dark Knight"] = { Accent = Color3.fromRGB(180, 180, 180), MainBg = Color3.fromRGB(12, 12, 12), ElementBg = Color3.fromRGB(22, 22, 22) },
+    ["Pure White"] = { Accent = Color3.fromRGB(0, 122, 255), MainBg = Color3.fromRGB(240, 240, 240), ElementBg = Color3.fromRGB(255, 255, 255) },
+    ["Crimson Red"] = { Accent = Color3.fromRGB(255, 50, 50), MainBg = Color3.fromRGB(20, 10, 10), ElementBg = Color3.fromRGB(35, 15, 15) },
+    ["Toxic Green"] = { Accent = Color3.fromRGB(50, 255, 50), MainBg = Color3.fromRGB(10, 20, 10), ElementBg = Color3.fromRGB(15, 35, 15) },
+    ["Ocean Blue"] = { Accent = Color3.fromRGB(0, 150, 255), MainBg = Color3.fromRGB(10, 15, 25), ElementBg = Color3.fromRGB(20, 25, 40) },
     ["Neon Cyber"] = { Accent = Color3.fromRGB(0, 255, 255), MainBg = Color3.fromRGB(10, 10, 12), ElementBg = Color3.fromRGB(20, 20, 25) },
-    ["Galaxy Purple"] = { Accent = Color3.fromRGB(138, 43, 226), MainBg = Color3.fromRGB(15, 10, 25), ElementBg = Color3.fromRGB(28, 18, 46) }
+    ["Galaxy Purple"] = { Accent = Color3.fromRGB(138, 43, 226), MainBg = Color3.fromRGB(15, 10, 25), ElementBg = Color3.fromRGB(28, 18, 46) },
+    ["Sunset Orange"] = { Accent = Color3.fromRGB(255, 140, 0), MainBg = Color3.fromRGB(25, 15, 5), ElementBg = Color3.fromRGB(40, 25, 10) },
+    ["Mint Fresh"] = { Accent = Color3.fromRGB(0, 255, 170), MainBg = Color3.fromRGB(5, 20, 15), ElementBg = Color3.fromRGB(10, 35, 25) },
+    ["Rose Gold"] = { Accent = Color3.fromRGB(255, 105, 180), MainBg = Color3.fromRGB(20, 10, 15), ElementBg = Color3.fromRGB(35, 18, 28) },
+    ["Midnight Blue"] = { Accent = Color3.fromRGB(25, 25, 112), MainBg = Color3.fromRGB(5, 5, 20), ElementBg = Color3.fromRGB(12, 12, 35) },
+    ["Lava Red"] = { Accent = Color3.fromRGB(255, 69, 0), MainBg = Color3.fromRGB(20, 5, 0), ElementBg = Color3.fromRGB(35, 10, 0) },
+    ["Aqua Marine"] = { Accent = Color3.fromRGB(127, 255, 212), MainBg = Color3.fromRGB(5, 15, 15), ElementBg = Color3.fromRGB(10, 28, 28) },
+    ["Golden Hour"] = { Accent = Color3.fromRGB(255, 215, 0), MainBg = Color3.fromRGB(20, 15, 0), ElementBg = Color3.fromRGB(35, 25, 0) }
 }
 
 local DefaultTheme = { Accent = Color3.fromRGB(255, 255, 255), MainBg = Color3.fromRGB(0, 0, 0), ElementBg = Color3.fromRGB(15, 15, 15) }
@@ -837,24 +848,32 @@ function Library:UpdateTheme(themeName)
     local mainTextColor = isLightMode and Color3.fromRGB(35, 35, 35) or Color3.fromRGB(255, 255, 255)
     local subTextColor = isLightMode and Color3.fromRGB(110, 110, 110) or Color3.fromRGB(140, 140, 140)
     local strokeColor = isLightMode and Color3.fromRGB(190, 190, 190) or Color3.fromRGB(35, 35, 35)
+    local elementBgColor = theme.ElementBg or DefaultTheme.ElementBg
     
+    -- Main Background
     for _, obj in ipairs(Library.TrackedMainBg) do
         if obj and typeof(obj) == "Instance" and obj.Parent then
             tween(obj, {BackgroundColor3 = mainBg})
         end
     end
+    
+    -- Element Backgrounds (excluding TabContainer)
     for _, obj in ipairs(Library.TrackedElementBg) do
         if obj and typeof(obj) == "Instance" and obj.Parent then
             if obj.Name ~= "TabContainer" then
-                tween(obj, {BackgroundColor3 = theme.ElementBg or DefaultTheme.ElementBg})
+                tween(obj, {BackgroundColor3 = elementBgColor})
             end
         end
     end
+    
+    -- Strokes
     for _, obj in ipairs(Library.TrackedStrokes) do
         if obj and typeof(obj) == "Instance" and obj.Parent then
             tween(obj, {Color = strokeColor})
         end
     end
+    
+    -- Main Text
     for _, obj in ipairs(Library.TrackedMainText) do
         if obj and typeof(obj) == "Instance" and obj.Parent then
             tween(obj, {TextColor3 = mainTextColor})
@@ -863,14 +882,58 @@ function Library:UpdateTheme(themeName)
             end
         end
     end
+    
+    -- Sub Text
     for _, obj in ipairs(Library.TrackedSubText) do
         if obj and typeof(obj) == "Instance" and obj.Parent then
             tween(obj, {TextColor3 = subTextColor})
         end
     end
+    
+    -- Accents (SelectedLabels in dropdowns, etc.)
+    for _, obj in ipairs(Library.TrackedAccents) do
+        if obj and typeof(obj) == "Instance" and obj.Parent then
+            tween(obj, {TextColor3 = accent})
+        end
+    end
+    
+    -- Checkboxes
+    for _, obj in ipairs(Library.TrackedCheckboxes) do
+        if obj and typeof(obj) == "Instance" and obj.Parent then
+            -- Don't force change, just update accent-related colors
+        end
+    end
+    
+    -- Slider Fills
+    for _, obj in ipairs(Library.TrackedSliderFills) do
+        if obj and typeof(obj) == "Instance" and obj.Parent then
+            tween(obj, {BackgroundColor3 = accent})
+        end
+    end
+    
+    -- Slider Handles
+    for _, obj in ipairs(Library.TrackedSliderHandles) do
+        if obj and typeof(obj) == "Instance" and obj.Parent then
+            tween(obj, {BackgroundColor3 = accent})
+        end
+    end
+    
+    -- Indicators (toggle indicators)
+    for _, obj in ipairs(Library.TrackedIndicators) do
+        if obj and typeof(obj) == "Instance" and obj.Parent then
+            -- Keep as-is, they toggle between colors
+        end
+    end
+    
     applyThemeToTabs(theme)
+    
+    -- Update SubTabNav
+    if SubTabNav and SubTabNav.Parent then
+        tween(SubTabNav, {BackgroundColor3 = elementBgColor})
+    end
 end
 
+-- Register core elements
 table.insert(Library.TrackedMainBg, MainFrame)
 table.insert(Library.TrackedElementBg, SearchContainer)
 table.insert(Library.TrackedElementBg, HeaderBg)
@@ -1023,10 +1086,10 @@ local function toggleAnimatedWindow(state)
         if animatedWindowConnection then
             animatedWindowConnection:Disconnect()
             animatedWindowConnection = nil
-            local defaultStrokeColor = Color3.fromRGB(35, 35, 35)
+            local strokeColor = isLightColor(getThemeMainBg()) and Color3.fromRGB(190, 190, 190) or Color3.fromRGB(35, 35, 35)
             for _, stroke in ipairs(Library.TrackedStrokes) do
                 if stroke and typeof(stroke) == "Instance" and stroke.Parent then
-                    stroke.Color = defaultStrokeColor
+                    stroke.Color = strokeColor
                 end
             end
         end
@@ -1040,9 +1103,9 @@ local function toggleGradientEffect(state)
         if not uiGradientInstance or typeof(uiGradientInstance) ~= "Instance" or not uiGradientInstance.Parent then
             uiGradientInstance = Instance.new("UIGradient")
             uiGradientInstance.Color = ColorSequence.new({
-                ColorSequenceKeypoint.new(0, Color3.fromRGB(15, 15, 15)),
-                ColorSequenceKeypoint.new(0.5, Color3.fromRGB(5, 5, 5)),
-                ColorSequenceKeypoint.new(1, Color3.fromRGB(20, 20, 20))
+                ColorSequenceKeypoint.new(0, getThemeMainBg()),
+                ColorSequenceKeypoint.new(0.5, getThemeAccent()),
+                ColorSequenceKeypoint.new(1, getThemeMainBg())
             })
             uiGradientInstance.Parent = MainFrame
         end
@@ -1167,6 +1230,7 @@ function Library:CreateDropdown(parentPage, textKey, options, default, callback)
     SelectedLabel.TextXAlignment = Enum.TextXAlignment.Right
     SelectedLabel.BackgroundTransparency = 1
     SelectedLabel.ZIndex = 8
+    table.insert(Library.TrackedAccents, SelectedLabel)
 
     local Arrow = Instance.new("TextLabel", HeaderBtn)
     Arrow.Name = "Arrow"
@@ -1347,10 +1411,11 @@ function Library:CreateToggle(parentPage, textKey, default, callback)
     local Checkbox = Instance.new("TextButton", TglFrame)
     Checkbox.Size = UDim2.new(0, 34, 0, 18)
     Checkbox.Position = UDim2.new(1, -44, 0.5, -9)
-    Checkbox.BackgroundColor3 = default and Color3.fromRGB(255, 255, 255) or Color3.fromRGB(35, 35, 35)
+    Checkbox.BackgroundColor3 = default and getThemeAccent() or Color3.fromRGB(35, 35, 35)
     Checkbox.Text = ""
     Checkbox.ZIndex = 7
     Instance.new("UICorner", Checkbox).CornerRadius = UDim.new(0, 9)
+    table.insert(Library.TrackedCheckboxes, Checkbox)
 
     local Indicator = Instance.new("Frame", Checkbox)
     Indicator.Size = UDim2.new(0, 14, 0, 14)
@@ -1358,16 +1423,19 @@ function Library:CreateToggle(parentPage, textKey, default, callback)
     Indicator.BackgroundColor3 = default and Color3.fromRGB(0, 0, 0) or Color3.fromRGB(255, 255, 255)
     Indicator.ZIndex = 8
     Instance.new("UICorner", Indicator).CornerRadius = UDim.new(1, 0)
+    table.insert(Library.TrackedIndicators, Indicator)
 
     local enabled = default
     local function setToggleState(state)
         enabled = state
         if enabled then
-            tween(Checkbox, {BackgroundColor3 = Color3.fromRGB(255, 255, 255)}, 0.2)
-            tween(Indicator, {Position = UDim2.new(1, -16, 0.5, -7), BackgroundColor3 = Color3.fromRGB(0, 0, 0)}, 0.2)
+            tween(Checkbox, {BackgroundColor3 = getThemeAccent()}, 0.2)
+            tween(Indicator, {Position = UDim2.new(1, -16, 0.5, -7), BackgroundColor3 = getThemeMainBg()}, 0.2)
         else
-            tween(Checkbox, {BackgroundColor3 = Color3.fromRGB(35, 35, 35)}, 0.2)
-            tween(Indicator, {Position = UDim2.new(0, 2, 0.5, -7), BackgroundColor3 = Color3.fromRGB(255, 255, 255)}, 0.2)
+            local isL = isLightColor(getThemeMainBg())
+            local offColor = isL and Color3.fromRGB(200, 200, 200) or Color3.fromRGB(35, 35, 35)
+            tween(Checkbox, {BackgroundColor3 = offColor}, 0.2)
+            tween(Indicator, {Position = UDim2.new(0, 2, 0.5, -7), BackgroundColor3 = getThemeAccent()}, 0.2)
         end
         if type(callback) == "function" then
             pcall(callback, enabled)
@@ -1440,17 +1508,19 @@ function Library:CreateSlider(parentPage, textKey, min, max, default, callback)
 
     local SliderFill = Instance.new("Frame", SliderTrack)
     SliderFill.Size = UDim2.new(0, 0, 1, 0)
-    SliderFill.BackgroundColor3 = Color3.fromRGB(255, 255, 255)
+    SliderFill.BackgroundColor3 = getThemeAccent()
     SliderFill.ZIndex = 8
     Instance.new("UICorner", SliderFill).CornerRadius = UDim.new(0, 3)
+    table.insert(Library.TrackedSliderFills, SliderFill)
 
     local SliderHandle = Instance.new("Frame", SliderTrack)
     SliderHandle.Size = UDim2.new(0, 14, 0, 14)
     SliderHandle.AnchorPoint = Vector2.new(0.5, 0.5)
     SliderHandle.Position = UDim2.new(0, 0, 0.5, 0)
-    SliderHandle.BackgroundColor3 = Color3.fromRGB(255, 255, 255)
+    SliderHandle.BackgroundColor3 = getThemeAccent()
     SliderHandle.ZIndex = 9
     Instance.new("UICorner", SliderHandle).CornerRadius = UDim.new(1, 0)
+    table.insert(Library.TrackedSliderHandles, SliderHandle)
 
     local dragging = false
     local currentPercent = (default - min) / (max - min)
@@ -1650,7 +1720,7 @@ local SettingsPage = Library:CreatePage("Settings", "117996761927034", 1)
 local SubTabNav = Instance.new("Frame", SettingsPage)
 SubTabNav.Name = "SubTabNav"
 SubTabNav.Size = UDim2.new(1, -20, 0, 36)
-SubTabNav.BackgroundColor3 = Color3.fromRGB(12, 12, 12)
+SubTabNav.BackgroundColor3 = Library.CurrentThemeData.ElementBg or DefaultTheme.ElementBg
 SubTabNav.LayoutOrder = 1
 SubTabNav.ZIndex = 6
 Instance.new("UICorner", SubTabNav).CornerRadius = UDim.new(0, 8)
@@ -1719,6 +1789,7 @@ for _, data in ipairs(subTabsData) do
     btn.TextSize = 12
     btn.ZIndex = 7
     subTabButtons[data.Name] = btn
+    table.insert(Library.TrackedMainText, btn)
 
     btn.Activated:Connect(function()
         -- Hide all sub-pages and show only the selected one
@@ -1727,14 +1798,14 @@ for _, data in ipairs(subTabsData) do
         end
         -- Update button colors
         for name, b in pairs(subTabButtons) do
-            tween(b, {TextColor3 = (name == data.Name) and Color3.fromRGB(255, 255, 255) or Color3.fromRGB(140, 140, 140)}, 0.2)
+            tween(b, {TextColor3 = (name == data.Name) and getThemeAccent() or Color3.fromRGB(140, 140, 140)}, 0.2)
         end
     end)
 end
 
 -- Default active sub-tab: UI
 subPages["UI"].Visible = true
-subTabButtons["UI"].TextColor3 = Color3.fromRGB(255, 255, 255)
+subTabButtons["UI"].TextColor3 = getThemeAccent()
 
 -- ============================================================================
 -- POPULATE SUB-TABS (UI, Theme, Configs)
@@ -1791,6 +1862,11 @@ end)
 -- 2. THEME SUB-TAB FUNCTIONS
 local ThemeDropdown = Library:CreateDropdown(subPages["Theme"], "UITheme", ThemeNamesList, "AMOLED", function(selectedTheme)
     Library:UpdateTheme(selectedTheme)
+    -- Update sub-tab button colors after theme change
+    for name, b in pairs(subTabButtons) do
+        local isActive = subPages[name].Visible
+        tween(b, {TextColor3 = isActive and getThemeAccent() or Color3.fromRGB(140, 140, 140)}, 0.2)
+    end
 end)
 
 -- 3. CONFIGS SUB-TAB FUNCTIONS
@@ -1814,7 +1890,7 @@ showToast = function(message, dotColor)
     toast.Size = UDim2.new(0, 230, 0, 32)
     toast.Position = UDim2.new(0.5, 0, 1, 40)
     toast.AnchorPoint = Vector2.new(0.5, 1)
-    toast.BackgroundColor3 = Color3.fromRGB(15, 15, 15)
+    toast.BackgroundColor3 = getThemeMainBg()
     toast.ZIndex = 100
     toast.ClipsDescendants = true
 
@@ -1822,13 +1898,13 @@ showToast = function(message, dotColor)
     corner.CornerRadius = UDim.new(0, 8)
 
     local stroke = Instance.new("UIStroke", toast)
-    stroke.Color = Color3.fromRGB(35, 35, 35)
+    stroke.Color = getThemeAccent()
     stroke.Thickness = 1
 
     local dot = Instance.new("Frame", toast)
     dot.Size = UDim2.new(0, 8, 0, 8)
     dot.Position = UDim2.new(0, 12, 0.5, -4)
-    dot.BackgroundColor3 = dotColor or Color3.fromRGB(255, 255, 255)
+    dot.BackgroundColor3 = dotColor or getThemeAccent()
     Instance.new("UICorner", dot).CornerRadius = UDim.new(1, 0)
 
     local label = Instance.new("TextLabel", toast)
@@ -1836,7 +1912,7 @@ showToast = function(message, dotColor)
     label.Position = UDim2.new(0, 26, 0, 0)
     label.Text = message or ""
     label.Font = Library.CurrentFont or Enum.Font.SourceSansBold
-    label.TextColor3 = Color3.fromRGB(240, 240, 240)
+    label.TextColor3 = getThemeAccent()
     label.TextSize = 12
     label.TextXAlignment = Enum.TextXAlignment.Left
     label.BackgroundTransparency = 1
