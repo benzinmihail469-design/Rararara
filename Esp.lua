@@ -1029,7 +1029,7 @@ local Localization = {
     }
 }
 
--- ГАРАНТИРОВАННАЯ ПОДДЕРЖКА КИРИЛЛИЦЫ ДЛЯ ВСЕХ ШРИФТОВ
+-- ГАРАНТИРОВАННАЯ ПОДДЕРЖКА КИРИЛЛИЦЫ И ЛАТИНИЦЫ
 local FontMapping = {
     ["Fredoka One"] = {
         FontFace = Font.new("rbxasset://fonts/families/Ubuntu.json", Enum.FontWeight.Bold),
@@ -1079,39 +1079,39 @@ local FontMapping = {
 
 local showToast
 
--- Функция применения шрифта со 100% поддержкой кириллицы
+-- Функция безопасного применения шрифта ко всем текстовым элементам (включая акценты)
 local function applyFontToAll(fontKey)
     Library.CurrentFontKey = fontKey
     local fontData = FontMapping[fontKey] or FontMapping["Source Sans"]
 
-    local allTextElements = {}
-    for _, obj in ipairs(Library.TrackedMainText) do
-        if obj and typeof(obj) == "Instance" and obj.Parent and (obj:IsA("TextLabel") or obj:IsA("TextButton") or obj:IsA("TextBox")) then
-            table.insert(allTextElements, obj)
+    local function updateCollection(tbl)
+        for _, obj in ipairs(tbl) do
+            if obj and typeof(obj) == "Instance" and obj.Parent then
+                if obj:IsA("TextLabel") or obj:IsA("TextButton") or obj:IsA("TextBox") then
+                    pcall(function()
+                        obj.FontFace = fontData.FontFace
+                        obj.Font = fontData.Enum
+                    end)
+                end
+            end
         end
     end
-    for _, obj in ipairs(Library.TrackedSubText) do
-        if obj and typeof(obj) == "Instance" and obj.Parent and (obj:IsA("TextLabel") or obj:IsA("TextButton") or obj:IsA("TextBox")) then
-            table.insert(allTextElements, obj)
-        end
-    end
-    
-    for _, obj in ipairs(allTextElements) do
-        pcall(function()
-            obj.FontFace = fontData.FontFace
-            obj.Font = fontData.Enum
-        end)
-    end
+
+    updateCollection(Library.TrackedMainText)
+    updateCollection(Library.TrackedSubText)
+    updateCollection(Library.TrackedAccents)
 end
 
--- Применение шрифта к новому элементу
+-- Применение шрифта к новому отдельному элементу
 local function applyFontToElement(obj)
     if not obj or not obj.Parent then return end
     local fontKey = Library.CurrentFontKey or "Source Sans"
     local fontData = FontMapping[fontKey] or FontMapping["Source Sans"]
     pcall(function()
-        obj.FontFace = fontData.FontFace
-        obj.Font = fontData.Enum
+        if obj:IsA("TextLabel") or obj:IsA("TextButton") or obj:IsA("TextBox") then
+            obj.FontFace = fontData.FontFace
+            obj.Font = fontData.Enum
+        end
     end)
 end
 
