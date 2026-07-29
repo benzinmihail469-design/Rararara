@@ -8,6 +8,7 @@ local GuiService = game:GetService("GuiService")
 local Players = game:GetService("Players")
 local VirtualUser = game:GetService("VirtualUser")
 local HttpService = game:GetService("HttpService")
+local Lighting = game:GetService("Lighting")
 
 -- Wait for LocalPlayer
 local LocalPlayer = Players.LocalPlayer
@@ -673,35 +674,158 @@ local ThemeConfig = {
     ["Golden Hour"] = { Accent = Color3.fromRGB(255, 215, 0), MainBg = Color3.fromRGB(20, 15, 0), ElementBg = Color3.fromRGB(35, 25, 0) }
 }
 
--- Пресеты неба
+-- ============================================================================
+-- SKY SYSTEM - РАБОТАЮЩАЯ ФУНКЦИЯ НЕБА
+-- ============================================================================
+-- Расширенные пресеты неба с кастомными вариантами
 local SkyPresets = {
-    ["Default"] = { SkyboxBk = "", SkyboxDn = "", SkyboxFt = "", SkyboxLf = "", SkyboxRt = "", SkyboxUp = "" },
+    ["Default"] = { 
+        SkyboxBk = "", SkyboxDn = "", SkyboxFt = "", 
+        SkyboxLf = "", SkyboxRt = "", SkyboxUp = "",
+        Description = "Стандартное небо"
+    },
     ["Space"] = {
         SkyboxBk = "rbxassetid://155734327", SkyboxDn = "rbxassetid://155734331",
         SkyboxFt = "rbxassetid://155734336", SkyboxLf = "rbxassetid://155734335",
-        SkyboxRt = "rbxassetid://155734339", SkyboxUp = "rbxassetid://155734343"
+        SkyboxRt = "rbxassetid://155734339", SkyboxUp = "rbxassetid://155734343",
+        Description = "Космическое небо"
     },
     ["Sunset"] = {
         SkyboxBk = "rbxassetid://600830600", SkyboxDn = "rbxassetid://600830620",
         SkyboxFt = "rbxassetid://600830643", SkyboxLf = "rbxassetid://600830667",
-        SkyboxRt = "rbxassetid://600830705", SkyboxUp = "rbxassetid://600830744"
+        SkyboxRt = "rbxassetid://600830705", SkyboxUp = "rbxassetid://600830744",
+        Description = "Закатное небо"
     },
     ["Night Stars"] = {
         SkyboxBk = "rbxassetid://12064107", SkyboxDn = "rbxassetid://12064115",
         SkyboxFt = "rbxassetid://12064121", SkyboxLf = "rbxassetid://12064131",
-        SkyboxRt = "rbxassetid://12064139", SkyboxUp = "rbxassetid://12064148"
+        SkyboxRt = "rbxassetid://12064139", SkyboxUp = "rbxassetid://12064148",
+        Description = "Ночное звездное небо"
     },
     ["Vaporwave"] = {
         SkyboxBk = "rbxassetid://271042516", SkyboxDn = "rbxassetid://271042556",
         SkyboxFt = "rbxassetid://271042586", SkyboxLf = "rbxassetid://271042615",
-        SkyboxRt = "rbxassetid://271042651", SkyboxUp = "rbxassetid://271042699"
+        SkyboxRt = "rbxassetid://271042651", SkyboxUp = "rbxassetid://271042699",
+        Description = "Vaporwave небо"
     },
     ["Anime Sky"] = {
         SkyboxBk = "rbxassetid://248555622", SkyboxDn = "rbxassetid://248555710",
         SkyboxFt = "rbxassetid://248555930", SkyboxLf = "rbxassetid://248555819",
-        SkyboxRt = "rbxassetid://248556015", SkyboxUp = "rbxassetid://248556116"
+        SkyboxRt = "rbxassetid://248556015", SkyboxUp = "rbxassetid://248556116",
+        Description = "Аниме небо"
+    },
+    -- ===== КАСТОМНЫЕ НЕБА =====
+    ["Cyberpunk"] = {
+        SkyboxBk = "rbxassetid://1603652066", SkyboxDn = "rbxassetid://1603652759",
+        SkyboxFt = "rbxassetid://1603653395", SkyboxLf = "rbxassetid://1603654175",
+        SkyboxRt = "rbxassetid://1603655017", SkyboxUp = "rbxassetid://1603655718",
+        Description = "Киберпанк небо"
+    },
+    ["Dreamy Clouds"] = {
+        SkyboxBk = "rbxassetid://199059579", SkyboxDn = "rbxassetid://199059758",
+        SkyboxFt = "rbxassetid://199059835", SkyboxLf = "rbxassetid://199059912",
+        SkyboxRt = "rbxassetid://199060114", SkyboxUp = "rbxassetid://199060246",
+        Description = "Облачное небо"
+    },
+    ["Fantasy"] = {
+        SkyboxBk = "rbxassetid://196151162", SkyboxDn = "rbxassetid://196151135",
+        SkyboxFt = "rbxassetid://196151100", SkyboxLf = "rbxassetid://196151183",
+        SkyboxRt = "rbxassetid://196151208", SkyboxUp = "rbxassetid://196151212",
+        Description = "Фэнтези небо"
+    },
+    ["Morning Light"] = {
+        SkyboxBk = "rbxassetid://1390465822", SkyboxDn = "rbxassetid://1390466833",
+        SkyboxFt = "rbxassetid://1390465836", SkyboxLf = "rbxassetid://1390466243",
+        SkyboxRt = "rbxassetid://1390466281", SkyboxUp = "rbxassetid://1390466403",
+        Description = "Утреннее небо"
+    },
+    ["Winter"] = {
+        SkyboxBk = "rbxassetid://1379435620", SkyboxDn = "rbxassetid://1379435933",
+        SkyboxFt = "rbxassetid://1379435960", SkyboxLf = "rbxassetid://1379435975",
+        SkyboxRt = "rbxassetid://1379436014", SkyboxUp = "rbxassetid://1379436122",
+        Description = "Зимнее небо"
+    },
+    ["Alien Planet"] = {
+        SkyboxBk = "rbxassetid://1372116225", SkyboxDn = "rbxassetid://1372116258",
+        SkyboxFt = "rbxassetid://1372116269", SkyboxLf = "rbxassetid://1372116285",
+        SkyboxRt = "rbxassetid://1372116295", SkyboxUp = "rbxassetid://1372116304",
+        Description = "Чужая планета"
     }
 }
+
+-- Переменная для хранения текущего неба
+local CurrentSkyInstance = nil
+local CurrentSkyName = "Default"
+
+-- Функция для применения неба
+local function ApplySky(skyName)
+    if not skyName or skyName == "" then
+        skyName = "Default"
+    end
+    
+    -- Удаляем старое небо
+    if CurrentSkyInstance then
+        pcall(function()
+            CurrentSkyInstance:Destroy()
+        end)
+        CurrentSkyInstance = nil
+    end
+    
+    local preset = SkyPresets[skyName]
+    if not preset then
+        preset = SkyPresets["Default"]
+        skyName = "Default"
+    end
+    
+    -- Если Default - удаляем небо полностью
+    if skyName == "Default" then
+        local existingSky = Lighting:FindFirstChildOfClass("Sky")
+        if existingSky then
+            pcall(function()
+                existingSky:Destroy()
+            end)
+        end
+        CurrentSkyName = "Default"
+        return
+    end
+    
+    -- Проверяем есть ли уже небо в Lighting
+    local existingSky = Lighting:FindFirstChildOfClass("Sky")
+    if existingSky then
+        CurrentSkyInstance = existingSky
+    else
+        -- Создаем новое небо
+        CurrentSkyInstance = Instance.new("Sky")
+        CurrentSkyInstance.Parent = Lighting
+    end
+    
+    -- Применяем пресет
+    CurrentSkyInstance.SkyboxBk = preset.SkyboxBk or ""
+    CurrentSkyInstance.SkyboxDn = preset.SkyboxDn or ""
+    CurrentSkyInstance.SkyboxFt = preset.SkyboxFt or ""
+    CurrentSkyInstance.SkyboxLf = preset.SkyboxLf or ""
+    CurrentSkyInstance.SkyboxRt = preset.SkyboxRt or ""
+    CurrentSkyInstance.SkyboxUp = preset.SkyboxUp or ""
+    
+    CurrentSkyName = skyName
+end
+
+-- Функция для получения списка доступных небес
+local function GetSkyNames()
+    local names = {}
+    for name, _ in pairs(SkyPresets) do
+        table.insert(names, name)
+    end
+    table.sort(names)
+    return names
+end
+
+-- Создаем список названий небес для дропдауна
+local SkyNamesList = GetSkyNames()
+
+-- ============================================================================
+-- ОСТАЛЬНАЯ ЧАСТЬ БИБЛИОТЕКИ
+-- ============================================================================
 
 local DefaultTheme = { Accent = Color3.fromRGB(255, 255, 255), MainBg = Color3.fromRGB(0, 0, 0), ElementBg = Color3.fromRGB(15, 15, 15) }
 Library.CurrentThemeData = ThemeConfig["AMOLED"]
@@ -736,8 +860,6 @@ for name, _ in pairs(ThemeConfig) do
     table.insert(ThemeNamesList, name)
 end
 table.sort(ThemeNamesList)
-
-local SkyNamesList = {"Default", "Space", "Sunset", "Night Stars", "Vaporwave", "Anime Sky"}
 
 local allTabs = {}
 local allTabButtons = {}
@@ -992,7 +1114,6 @@ table.insert(Library.TrackedMainText, MinBtn)
 table.insert(Library.TrackedMainText, CloseBtn)
 table.insert(Library.TrackedMainText, EmbMinBtn)
 table.insert(Library.TrackedMainText, EmbCloseBtn)
-table.insert(Library.TrackedScrollingFrames, SearchResultsPage)
 
 local SearchableElements = {}
 local LocaleObjects = {}
@@ -1217,6 +1338,7 @@ SearchResultsPage.Visible = false
 SearchResultsPage.ScrollBarThickness = 2
 SearchResultsPage.ScrollBarImageColor3 = Color3.fromRGB(50, 50, 50)
 SearchResultsPage.ZIndex = 5
+table.insert(Library.TrackedScrollingFrames, SearchResultsPage)
 
 local searchLayout = Instance.new("UIListLayout", SearchResultsPage)
 searchLayout.Padding = UDim.new(0, 8)
@@ -1950,31 +2072,20 @@ local ThemeDropdown = Library:CreateDropdown(subPages["Theme"], "UITheme", Theme
     end
 end)
 
--- Выбор неба (Sky Selector) в субвкладке Theme
+-- ============================================================================
+-- SKY SELECTOR В СУБВКЛАДКЕ THEME (ОБНОВЛЕННАЯ ВЕРСИЯ)
+-- ============================================================================
 local SkyDropdown = Library:CreateDropdown(subPages["Theme"], "Sky", SkyNamesList, "Default", function(selectedSky)
-    local Lighting = game:GetService("Lighting")
-    local sky = Lighting:FindFirstChildOfClass("Sky")
-    if selectedSky == "Default" then
-        if sky then
-            sky:Destroy()
-        end
-    else
-        if not sky then
-            sky = Instance.new("Sky")
-            sky.Parent = Lighting
-        end
-        local preset = SkyPresets[selectedSky]
-        if preset then
-            sky.SkyboxBk = preset.SkyboxBk
-            sky.SkyboxDn = preset.SkyboxDn
-            sky.SkyboxFt = preset.SkyboxFt
-            sky.SkyboxLf = preset.SkyboxLf
-            sky.SkyboxRt = preset.SkyboxRt
-            sky.SkyboxUp = preset.SkyboxUp
-        end
+    ApplySky(selectedSky)
+    if showToast then
+        local desc = SkyPresets[selectedSky] and SkyPresets[selectedSky].Description or selectedSky
+        showToast("Небо: " .. desc, getThemeAccent())
     end
 end)
 
+-- ============================================================================
+-- КОНФИГИ
+-- ============================================================================
 local CONFIG_FOLDER = "DarkHub/Configs"
 pcall(function()
     if typeof(makefolder) == "function" and typeof(isfolder) == "function" then
@@ -2099,25 +2210,7 @@ local function applyUIState(state)
     end
     if state.sky and SkyPresets[state.sky] then
         if SkyDropdown and SkyDropdown.SetValue then SkyDropdown.SetValue(state.sky) end
-        local Lighting = game:GetService("Lighting")
-        local sky = Lighting:FindFirstChildOfClass("Sky")
-        if state.sky == "Default" then
-            if sky then sky:Destroy() end
-        else
-            if not sky then
-                sky = Instance.new("Sky")
-                sky.Parent = Lighting
-            end
-            local preset = SkyPresets[state.sky]
-            if preset then
-                sky.SkyboxBk = preset.SkyboxBk
-                sky.SkyboxDn = preset.SkyboxDn
-                sky.SkyboxFt = preset.SkyboxFt
-                sky.SkyboxLf = preset.SkyboxLf
-                sky.SkyboxRt = preset.SkyboxRt
-                sky.SkyboxUp = preset.SkyboxUp
-            end
-        end
+        ApplySky(state.sky)
     end
     if state.language and Localization[state.language] then
         Library:UpdateLanguage(state.language)
@@ -2342,5 +2435,9 @@ task.spawn(function()
     allPages["Settings"].Visible = true
     
     Library:UpdateTheme("AMOLED")
+    
+    -- Инициализируем небо по умолчанию
+    ApplySky("Default")
+    
     showToast(getLocalizedMessage("HubLoaded"), Color3.fromRGB(255, 255, 255))
 end)
