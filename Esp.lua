@@ -648,11 +648,11 @@ Library.TrackedAccents = {}
 Library.TrackedMainText = {}
 Library.TrackedSubText = {}
 Library.TrackedStrokes = {}
-Library.TrackedDropdownLabels = {}
 Library.TrackedCheckboxes = {}
 Library.TrackedSliderFills = {}
 Library.TrackedSliderHandles = {}
-Library.TrackedIndicators = {}
+Library.TrackedSliderTracks = {}
+Library.TrackedScrollingFrames = {}
 
 local ThemeConfig = {
     ["AMOLED"] = { Accent = Color3.fromRGB(255, 255, 255), MainBg = Color3.fromRGB(0, 0, 0), ElementBg = Color3.fromRGB(15, 15, 15) },
@@ -712,6 +712,9 @@ local allTabIcons = {}
 local allPages = {}
 local currentActiveTab = nil
 local currentHoveredTab = nil
+local SubTabNav = nil
+local subPages = {}
+local subTabButtons = {}
 
 local function applyHover(button)
     if not button or typeof(button) ~= "Instance" or not button.Parent then return end
@@ -849,6 +852,7 @@ function Library:UpdateTheme(themeName)
     local subTextColor = isLightMode and Color3.fromRGB(110, 110, 110) or Color3.fromRGB(140, 140, 140)
     local strokeColor = isLightMode and Color3.fromRGB(190, 190, 190) or Color3.fromRGB(35, 35, 35)
     local elementBgColor = theme.ElementBg or DefaultTheme.ElementBg
+    local scrollBarColor = isLightMode and Color3.fromRGB(150, 150, 150) or Color3.fromRGB(50, 50, 50)
     
     -- Main Background
     for _, obj in ipairs(Library.TrackedMainBg) do
@@ -857,12 +861,10 @@ function Library:UpdateTheme(themeName)
         end
     end
     
-    -- Element Backgrounds (excluding TabContainer)
+    -- Element Backgrounds
     for _, obj in ipairs(Library.TrackedElementBg) do
         if obj and typeof(obj) == "Instance" and obj.Parent then
-            if obj.Name ~= "TabContainer" then
-                tween(obj, {BackgroundColor3 = elementBgColor})
-            end
+            tween(obj, {BackgroundColor3 = elementBgColor})
         end
     end
     
@@ -890,7 +892,7 @@ function Library:UpdateTheme(themeName)
         end
     end
     
-    -- Accents (SelectedLabels in dropdowns, etc.)
+    -- Accents
     for _, obj in ipairs(Library.TrackedAccents) do
         if obj and typeof(obj) == "Instance" and obj.Parent then
             tween(obj, {TextColor3 = accent})
@@ -898,30 +900,43 @@ function Library:UpdateTheme(themeName)
     end
     
     -- Checkboxes
-    for _, obj in ipairs(Library.TrackedCheckboxes) do
-        if obj and typeof(obj) == "Instance" and obj.Parent then
-            -- Don't force change, just update accent-related colors
+    for _, tgl in ipairs(Library.TrackedCheckboxes) do
+        if tgl.Checkbox and tgl.Checkbox.Parent then
+            if not tgl.GetState() then
+                local offColor = isLightMode and Color3.fromRGB(200, 200, 200) or Color3.fromRGB(35, 35, 35)
+                tween(tgl.Checkbox, {BackgroundColor3 = offColor})
+                tween(tgl.Indicator, {BackgroundColor3 = accent})
+            else
+                tween(tgl.Checkbox, {BackgroundColor3 = accent})
+                tween(tgl.Indicator, {BackgroundColor3 = mainBg})
+            end
         end
     end
     
-    -- Slider Fills
+    -- Slider Fills & Handles
     for _, obj in ipairs(Library.TrackedSliderFills) do
         if obj and typeof(obj) == "Instance" and obj.Parent then
             tween(obj, {BackgroundColor3 = accent})
         end
     end
-    
-    -- Slider Handles
     for _, obj in ipairs(Library.TrackedSliderHandles) do
         if obj and typeof(obj) == "Instance" and obj.Parent then
             tween(obj, {BackgroundColor3 = accent})
         end
     end
     
-    -- Indicators (toggle indicators)
-    for _, obj in ipairs(Library.TrackedIndicators) do
-        if obj and typeof(obj) == "Instance" and obj.Parent then
-            -- Keep as-is, they toggle between colors
+    -- Slider Tracks
+    local sliderTrackColor = isLightMode and Color3.fromRGB(210, 210, 210) or Color3.fromRGB(30, 30, 30)
+    for _, track in ipairs(Library.TrackedSliderTracks) do
+        if track and track.Parent then
+            tween(track, {BackgroundColor3 = sliderTrackColor})
+        end
+    end
+    
+    -- Scrolling Frames ScrollBar Color
+    for _, sf in ipairs(Library.TrackedScrollingFrames) do
+        if sf and sf.Parent then
+            sf.ScrollBarImageColor3 = scrollBarColor
         end
     end
     
@@ -930,6 +945,12 @@ function Library:UpdateTheme(themeName)
     -- Update SubTabNav
     if SubTabNav and SubTabNav.Parent then
         tween(SubTabNav, {BackgroundColor3 = elementBgColor})
+    end
+    
+    -- Update sub-tab button text colors
+    for name, b in pairs(subTabButtons) do
+        local isActive = subPages[name] and subPages[name].Visible
+        tween(b, {TextColor3 = isActive and accent or subTextColor}, 0.2)
     end
 end
 
@@ -952,6 +973,7 @@ table.insert(Library.TrackedMainText, MinBtn)
 table.insert(Library.TrackedMainText, CloseBtn)
 table.insert(Library.TrackedMainText, EmbMinBtn)
 table.insert(Library.TrackedMainText, EmbCloseBtn)
+table.insert(Library.TrackedScrollingFrames, SearchResultsPage)
 
 local SearchableElements = {}
 local LocaleObjects = {}
@@ -1021,13 +1043,19 @@ local Localization = {
     }
 }
 
+-- Расширенный список шрифтов с поддержкой Fredoka One
 local FontMapping = {
+    ["Fredoka One"] = Enum.Font.FredokaOne,
     ["Gotham"] = Enum.Font.Gotham,
     ["Gotham Bold"] = Enum.Font.GothamBold,
     ["Source Sans"] = Enum.Font.SourceSans,
     ["Roboto"] = Enum.Font.Roboto,
     ["Code"] = Enum.Font.Code,
-    ["Ubuntu"] = Enum.Font.Ubuntu
+    ["Ubuntu"] = Enum.Font.Ubuntu,
+    ["Bangers"] = Enum.Font.Bangers,
+    ["Luckiest Guy"] = Enum.Font.LuckiestGuy,
+    ["Permanent Marker"] = Enum.Font.PermanentMarker,
+    ["Arcade"] = Enum.Font.Arcade
 }
 
 local showToast
@@ -1255,12 +1283,12 @@ function Library:CreateDropdown(parentPage, textKey, options, default, callback)
     OptionsContainer.ZIndex = 8
     OptionsContainer.ClipsDescendants = true
     OptionsContainer.Visible = false
+    table.insert(Library.TrackedScrollingFrames, OptionsContainer)
 
     local ListLayout = Instance.new("UIListLayout", OptionsContainer)
     ListLayout.SortOrder = Enum.SortOrder.LayoutOrder
 
     local isExpanded = false
-    local optionButtons = {}
     local function toggleDropdown()
         if not DropdownFrame or not DropdownFrame.Parent then return end
         isExpanded = not isExpanded
@@ -1328,6 +1356,7 @@ function Library:CreateDropdown(parentPage, textKey, options, default, callback)
             OptLabel.TextXAlignment = Enum.TextXAlignment.Left
             OptLabel.BackgroundTransparency = 1
             OptLabel.ZIndex = 10
+            table.insert(Library.TrackedSubText, OptLabel)
 
             OptBtn.Activated:Connect(function()
                 selectValue(option)
@@ -1411,28 +1440,34 @@ function Library:CreateToggle(parentPage, textKey, default, callback)
     local Checkbox = Instance.new("TextButton", TglFrame)
     Checkbox.Size = UDim2.new(0, 34, 0, 18)
     Checkbox.Position = UDim2.new(1, -44, 0.5, -9)
-    Checkbox.BackgroundColor3 = default and getThemeAccent() or Color3.fromRGB(35, 35, 35)
+    Checkbox.BackgroundColor3 = default and getThemeAccent() or (isLightColor(getThemeMainBg()) and Color3.fromRGB(200, 200, 200) or Color3.fromRGB(35, 35, 35))
     Checkbox.Text = ""
     Checkbox.ZIndex = 7
     Instance.new("UICorner", Checkbox).CornerRadius = UDim.new(0, 9)
-    table.insert(Library.TrackedCheckboxes, Checkbox)
 
     local Indicator = Instance.new("Frame", Checkbox)
     Indicator.Size = UDim2.new(0, 14, 0, 14)
     Indicator.Position = default and UDim2.new(1, -16, 0.5, -7) or UDim2.new(0, 2, 0.5, -7)
-    Indicator.BackgroundColor3 = default and Color3.fromRGB(0, 0, 0) or Color3.fromRGB(255, 255, 255)
+    Indicator.BackgroundColor3 = default and getThemeMainBg() or getThemeAccent()
     Indicator.ZIndex = 8
     Instance.new("UICorner", Indicator).CornerRadius = UDim.new(1, 0)
-    table.insert(Library.TrackedIndicators, Indicator)
 
     local enabled = default
+    local toggleData = {
+        Checkbox = Checkbox,
+        Indicator = Indicator,
+        GetState = function() return enabled end
+    }
+    table.insert(Library.TrackedCheckboxes, toggleData)
+
     local function setToggleState(state)
         enabled = state
+        local mainBg = getThemeMainBg()
         if enabled then
             tween(Checkbox, {BackgroundColor3 = getThemeAccent()}, 0.2)
-            tween(Indicator, {Position = UDim2.new(1, -16, 0.5, -7), BackgroundColor3 = getThemeMainBg()}, 0.2)
+            tween(Indicator, {Position = UDim2.new(1, -16, 0.5, -7), BackgroundColor3 = mainBg}, 0.2)
         else
-            local isL = isLightColor(getThemeMainBg())
+            local isL = isLightColor(mainBg)
             local offColor = isL and Color3.fromRGB(200, 200, 200) or Color3.fromRGB(35, 35, 35)
             tween(Checkbox, {BackgroundColor3 = offColor}, 0.2)
             tween(Indicator, {Position = UDim2.new(0, 2, 0.5, -7), BackgroundColor3 = getThemeAccent()}, 0.2)
@@ -1495,9 +1530,10 @@ function Library:CreateSlider(parentPage, textKey, min, max, default, callback)
     local SliderTrack = Instance.new("Frame", SliderFrame)
     SliderTrack.Size = UDim2.new(1, -24, 0, 5)
     SliderTrack.Position = UDim2.new(0, 12, 0, 34)
-    SliderTrack.BackgroundColor3 = Color3.fromRGB(30, 30, 30)
+    SliderTrack.BackgroundColor3 = isLightColor(getThemeMainBg()) and Color3.fromRGB(210, 210, 210) or Color3.fromRGB(30, 30, 30)
     SliderTrack.ZIndex = 7
     Instance.new("UICorner", SliderTrack).CornerRadius = UDim.new(0, 3)
+    table.insert(Library.TrackedSliderTracks, SliderTrack)
 
     local SliderBtn = Instance.new("TextButton", SliderFrame)
     SliderBtn.Size = UDim2.new(1, 0, 1, 16)
@@ -1603,8 +1639,9 @@ function Library:CreatePage(textKey, iconId, layoutOrder)
     PageFrame.BackgroundTransparency = 1
     PageFrame.Visible = false
     PageFrame.ScrollBarThickness = 2
-    PageFrame.ScrollBarImageColor3 = Color3.fromRGB(50, 50, 50)
+    PageFrame.ScrollBarImageColor3 = isLightColor(getThemeMainBg()) and Color3.fromRGB(150, 150, 150) or Color3.fromRGB(50, 50, 50)
     PageFrame.ZIndex = 5
+    table.insert(Library.TrackedScrollingFrames, PageFrame)
 
     local layout = Instance.new("UIListLayout", PageFrame)
     layout.Padding = UDim.new(0, 8)
@@ -1716,8 +1753,7 @@ end
 -- ============================================================================
 local SettingsPage = Library:CreatePage("Settings", "117996761927034", 1)
 
--- Sub-tab Bar Container
-local SubTabNav = Instance.new("Frame", SettingsPage)
+SubTabNav = Instance.new("Frame", SettingsPage)
 SubTabNav.Name = "SubTabNav"
 SubTabNav.Size = UDim2.new(1, -20, 0, 36)
 SubTabNav.BackgroundColor3 = Library.CurrentThemeData.ElementBg or DefaultTheme.ElementBg
@@ -1740,13 +1776,9 @@ local subTabsData = {
     {Name = "Configs", Order = 3}
 }
 
-local subPages = {}
-local subTabButtons = {}
-
--- Create a container for sub-pages INSIDE the Settings page
 local SubPagesContainer = Instance.new("Frame", SettingsPage)
 SubPagesContainer.Name = "SubPagesContainer"
-SubPagesContainer.Size = UDim2.new(1, 0, 1, -40) -- Take all space below sub-tab nav
+SubPagesContainer.Size = UDim2.new(1, 0, 1, -40)
 SubPagesContainer.Position = UDim2.new(0, 0, 0, 40)
 SubPagesContainer.BackgroundTransparency = 1
 SubPagesContainer.LayoutOrder = 2
@@ -1760,8 +1792,9 @@ local function createSubPage(name, order)
     subPageFrame.BackgroundTransparency = 1
     subPageFrame.Visible = false
     subPageFrame.ScrollBarThickness = 2
-    subPageFrame.ScrollBarImageColor3 = Color3.fromRGB(50, 50, 50)
+    subPageFrame.ScrollBarImageColor3 = isLightColor(getThemeMainBg()) and Color3.fromRGB(150, 150, 150) or Color3.fromRGB(50, 50, 50)
     subPageFrame.ZIndex = 5
+    table.insert(Library.TrackedScrollingFrames, subPageFrame)
 
     local layout = Instance.new("UIListLayout", subPageFrame)
     layout.Padding = UDim.new(0, 8)
@@ -1792,18 +1825,15 @@ for _, data in ipairs(subTabsData) do
     table.insert(Library.TrackedMainText, btn)
 
     btn.Activated:Connect(function()
-        -- Hide all sub-pages and show only the selected one
         for name, page in pairs(subPages) do
             page.Visible = (name == data.Name)
         end
-        -- Update button colors
         for name, b in pairs(subTabButtons) do
             tween(b, {TextColor3 = (name == data.Name) and getThemeAccent() or Color3.fromRGB(140, 140, 140)}, 0.2)
         end
     end)
 end
 
--- Default active sub-tab: UI
 subPages["UI"].Visible = true
 subTabButtons["UI"].TextColor3 = getThemeAccent()
 
@@ -1811,7 +1841,6 @@ subTabButtons["UI"].TextColor3 = getThemeAccent()
 -- POPULATE SUB-TABS (UI, Theme, Configs)
 -- ============================================================================
 
--- 1. UI SUB-TAB FUNCTIONS
 local LanguageDropdown = Library:CreateDropdown(subPages["UI"], "Language", {"English", "Русский"}, "English", function(selectedLang)
     Library:UpdateLanguage(selectedLang)
 end)
@@ -1859,17 +1888,14 @@ local GradientToggle = Library:CreateToggle(subPages["UI"], "Gradient", false, f
     toggleGradientEffect(state)
 end)
 
--- 2. THEME SUB-TAB FUNCTIONS
 local ThemeDropdown = Library:CreateDropdown(subPages["Theme"], "UITheme", ThemeNamesList, "AMOLED", function(selectedTheme)
     Library:UpdateTheme(selectedTheme)
-    -- Update sub-tab button colors after theme change
     for name, b in pairs(subTabButtons) do
-        local isActive = subPages[name].Visible
+        local isActive = subPages[name] and subPages[name].Visible
         tween(b, {TextColor3 = isActive and getThemeAccent() or Color3.fromRGB(140, 140, 140)}, 0.2)
     end
 end)
 
--- 3. CONFIGS SUB-TAB FUNCTIONS
 local CONFIG_FOLDER = "DarkHub/Configs"
 pcall(function()
     if typeof(makefolder) == "function" and typeof(isfolder) == "function" then
