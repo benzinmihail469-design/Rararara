@@ -638,7 +638,7 @@ end)
 -- UI LIBRARY & THEMES (AMOLED FOCUSED)
 -- ============================================================================
 local Library = {}
-Library.CurrentFont = Enum.Font.SourceSansBold
+Library.CurrentFontKey = "Source Sans"
 Library.CurrentLanguage = "English"
 Library.CurrentTabKey = "Settings"
 Library.ActiveDropdownClose = nil
@@ -783,7 +783,6 @@ local function setActiveTab(tabButton)
         local corner = Instance.new("UICorner", indicator)
         corner.CornerRadius = UDim.new(0, 2)
     end
-    tabButton.Font = Library.CurrentFont
     local isL = isLightColor(mainBg)
     local activeTextColor = isL and Color3.fromRGB(20, 20, 20) or Color3.fromRGB(255, 255, 255)
     local activeBgColor = isL and Color3.fromRGB(215, 215, 215) or Color3.fromRGB(25, 25, 25)
@@ -854,28 +853,24 @@ function Library:UpdateTheme(themeName)
     local elementBgColor = theme.ElementBg or DefaultTheme.ElementBg
     local scrollBarColor = isLightMode and Color3.fromRGB(150, 150, 150) or Color3.fromRGB(50, 50, 50)
     
-    -- Main Background
     for _, obj in ipairs(Library.TrackedMainBg) do
         if obj and typeof(obj) == "Instance" and obj.Parent then
             tween(obj, {BackgroundColor3 = mainBg})
         end
     end
     
-    -- Element Backgrounds
     for _, obj in ipairs(Library.TrackedElementBg) do
         if obj and typeof(obj) == "Instance" and obj.Parent then
             tween(obj, {BackgroundColor3 = elementBgColor})
         end
     end
     
-    -- Strokes
     for _, obj in ipairs(Library.TrackedStrokes) do
         if obj and typeof(obj) == "Instance" and obj.Parent then
             tween(obj, {Color = strokeColor})
         end
     end
     
-    -- Main Text
     for _, obj in ipairs(Library.TrackedMainText) do
         if obj and typeof(obj) == "Instance" and obj.Parent then
             tween(obj, {TextColor3 = mainTextColor})
@@ -885,21 +880,18 @@ function Library:UpdateTheme(themeName)
         end
     end
     
-    -- Sub Text
     for _, obj in ipairs(Library.TrackedSubText) do
         if obj and typeof(obj) == "Instance" and obj.Parent then
             tween(obj, {TextColor3 = subTextColor})
         end
     end
     
-    -- Accents
     for _, obj in ipairs(Library.TrackedAccents) do
         if obj and typeof(obj) == "Instance" and obj.Parent then
             tween(obj, {TextColor3 = accent})
         end
     end
     
-    -- Checkboxes
     for _, tgl in ipairs(Library.TrackedCheckboxes) do
         if tgl.Checkbox and tgl.Checkbox.Parent then
             if not tgl.GetState() then
@@ -913,7 +905,6 @@ function Library:UpdateTheme(themeName)
         end
     end
     
-    -- Slider Fills & Handles
     for _, obj in ipairs(Library.TrackedSliderFills) do
         if obj and typeof(obj) == "Instance" and obj.Parent then
             tween(obj, {BackgroundColor3 = accent})
@@ -925,7 +916,6 @@ function Library:UpdateTheme(themeName)
         end
     end
     
-    -- Slider Tracks
     local sliderTrackColor = isLightMode and Color3.fromRGB(210, 210, 210) or Color3.fromRGB(30, 30, 30)
     for _, track in ipairs(Library.TrackedSliderTracks) do
         if track and track.Parent then
@@ -933,7 +923,6 @@ function Library:UpdateTheme(themeName)
         end
     end
     
-    -- Scrolling Frames ScrollBar Color
     for _, sf in ipairs(Library.TrackedScrollingFrames) do
         if sf and sf.Parent then
             sf.ScrollBarImageColor3 = scrollBarColor
@@ -942,19 +931,16 @@ function Library:UpdateTheme(themeName)
     
     applyThemeToTabs(theme)
     
-    -- Update SubTabNav
     if SubTabNav and SubTabNav.Parent then
         tween(SubTabNav, {BackgroundColor3 = elementBgColor})
     end
     
-    -- Update sub-tab button text colors
     for name, b in pairs(subTabButtons) do
         local isActive = subPages[name] and subPages[name].Visible
         tween(b, {TextColor3 = isActive and accent or subTextColor}, 0.2)
     end
 end
 
--- Register core elements
 table.insert(Library.TrackedMainBg, MainFrame)
 table.insert(Library.TrackedElementBg, SearchContainer)
 table.insert(Library.TrackedElementBg, HeaderBg)
@@ -1043,35 +1029,60 @@ local Localization = {
     }
 }
 
--- Расширенный список шрифтов
+-- Универсальная карта шрифтов с гарантированной поддержкой кириллицы (через Font.new)
 local FontMapping = {
-    ["Fredoka One"] = Enum.Font.FredokaOne,
-    ["Gotham"] = Enum.Font.Gotham,
-    ["Gotham Bold"] = Enum.Font.GothamBold,
-    ["Source Sans"] = Enum.Font.SourceSans,
-    ["Roboto"] = Enum.Font.Roboto,
-    ["Code"] = Enum.Font.Code,
-    ["Ubuntu"] = Enum.Font.Ubuntu,
-    ["Bangers"] = Enum.Font.Bangers,
-    ["Luckiest Guy"] = Enum.Font.LuckiestGuy,
-    ["Permanent Marker"] = Enum.Font.PermanentMarker,
-    ["Arcade"] = Enum.Font.Arcade
+    ["Fredoka One"] = {
+        FontFace = Font.new("rbxasset://fonts/families/FredokaOne.json", Enum.FontWeight.Bold),
+        Enum = Enum.Font.FredokaOne
+    },
+    ["Gotham"] = {
+        FontFace = Font.new("rbxasset://fonts/families/GothamSSm.json", Enum.FontWeight.Regular),
+        Enum = Enum.Font.Gotham
+    },
+    ["Gotham Bold"] = {
+        FontFace = Font.new("rbxasset://fonts/families/GothamSSm.json", Enum.FontWeight.Bold),
+        Enum = Enum.Font.GothamBold
+    },
+    ["Source Sans"] = {
+        FontFace = Font.new("rbxasset://fonts/families/SourceSansPro.json", Enum.FontWeight.Regular),
+        Enum = Enum.Font.SourceSans
+    },
+    ["Roboto"] = {
+        FontFace = Font.new("rbxasset://fonts/families/Roboto.json", Enum.FontWeight.Regular),
+        Enum = Enum.Font.Roboto
+    },
+    ["Code"] = {
+        FontFace = Font.new("rbxasset://fonts/families/RobotoMono.json", Enum.FontWeight.Regular),
+        Enum = Enum.Font.Code
+    },
+    ["Ubuntu"] = {
+        FontFace = Font.new("rbxasset://fonts/families/Ubuntu.json", Enum.FontWeight.Regular),
+        Enum = Enum.Font.Ubuntu
+    },
+    ["Bangers"] = {
+        FontFace = Font.new("rbxasset://fonts/families/FredokaOne.json", Enum.FontWeight.Bold),
+        Enum = Enum.Font.Bangers
+    },
+    ["Luckiest Guy"] = {
+        FontFace = Font.new("rbxasset://fonts/families/FredokaOne.json", Enum.FontWeight.Bold),
+        Enum = Enum.Font.LuckiestGuy
+    },
+    ["Permanent Marker"] = {
+        FontFace = Font.new("rbxasset://fonts/families/FredokaOne.json", Enum.FontWeight.Bold),
+        Enum = Enum.Font.PermanentMarker
+    },
+    ["Arcade"] = {
+        FontFace = Font.new("rbxasset://fonts/families/RobotoMono.json", Enum.FontWeight.Bold),
+        Enum = Enum.Font.Arcade
+    }
 }
 
 local showToast
 
--- Интеллектуальное применение шрифтов с поддержкой кириллицы для всех вариантов
-local function applyFontToAll(font)
-    Library.CurrentFont = font
-    
-    -- Автоматический фоллбек для шрифтов без нативной поддержки кириллицы в Roblox (Bangers, Luckiest Guy, Permanent Marker, Arcade)
-    -- при выборе русского языка, чтобы текст не превращался в квадраты/пустоту
-    local actualFont = font
-    if Library.CurrentLanguage == "Русский" then
-        if font == Enum.Font.Bangers or font == Enum.Font.LuckiestGuy or font == Enum.Font.PermanentMarker or font == Enum.Font.Arcade then
-            actualFont = Enum.Font.FredokaOne -- Поддерживает кириллицу и сохраняет стильный, объемный вид
-        end
-    end
+-- Функция применения шрифта ко всем элементам с гарантированной поддержкой кириллицы
+local function applyFontToAll(fontKey)
+    Library.CurrentFontKey = fontKey
+    local fontData = FontMapping[fontKey] or FontMapping["Source Sans"]
 
     local allTextElements = {}
     for _, obj in ipairs(Library.TrackedMainText) do
@@ -1084,15 +1095,30 @@ local function applyFontToAll(font)
             table.insert(allTextElements, obj)
         end
     end
+    
     for _, obj in ipairs(allTextElements) do
-        pcall(function() obj.Font = actualFont end)
+        pcall(function()
+            obj.FontFace = fontData.FontFace
+            obj.Font = fontData.Enum
+        end)
     end
+end
+
+-- Вспомогательная функция для применения текущего шрифта к вновь создаваемому элементу
+local function applyFontToElement(obj)
+    if not obj or not obj.Parent then return end
+    local fontKey = Library.CurrentFontKey or "Source Sans"
+    local fontData = FontMapping[fontKey] or FontMapping["Source Sans"]
+    pcall(function()
+        obj.FontFace = fontData.FontFace
+        obj.Font = fontData.Enum
+    end)
 end
 
 function Library:UpdateLanguage(lang)
     if not Localization[lang] then return end
     Library.CurrentLanguage = lang
-    applyFontToAll(Library.CurrentFont) -- Переприменяем текущий шрифт с учетом поддержки кириллицы
+    applyFontToAll(Library.CurrentFontKey)
     for _, loc in ipairs(LocaleObjects) do
         if loc.Object and typeof(loc.Object) == "Instance" and loc.Object.Parent then
             local newText = Localization[lang][loc.Key] or loc.Key
@@ -1250,7 +1276,7 @@ function Library:CreateDropdown(parentPage, textKey, options, default, callback)
     TitleLabel.Size = UDim2.new(0.45, 0, 1, 0)
     TitleLabel.Position = UDim2.new(0, 12, 0, 0)
     TitleLabel.Text = initialText
-    TitleLabel.Font = Library.CurrentFont
+    applyFontToElement(TitleLabel)
     TitleLabel.TextColor3 = Color3.fromRGB(230, 230, 230)
     TitleLabel.TextSize = 13
     TitleLabel.TextXAlignment = Enum.TextXAlignment.Left
@@ -1263,7 +1289,7 @@ function Library:CreateDropdown(parentPage, textKey, options, default, callback)
     SelectedLabel.Size = UDim2.new(0.55, -35, 1, 0)
     SelectedLabel.Position = UDim2.new(0.45, 0, 0, 0)
     SelectedLabel.Text = default
-    SelectedLabel.Font = Library.CurrentFont
+    applyFontToElement(SelectedLabel)
     SelectedLabel.TextColor3 = getThemeAccent()
     SelectedLabel.TextSize = 13
     SelectedLabel.TextXAlignment = Enum.TextXAlignment.Right
@@ -1275,7 +1301,7 @@ function Library:CreateDropdown(parentPage, textKey, options, default, callback)
     Arrow.Name = "Arrow"
     Arrow.Size = UDim2.new(0, 20, 1, 0)
     Arrow.Text = "v"
-    Arrow.Font = Enum.Font.SourceSansBold
+    applyFontToElement(Arrow)
     Arrow.TextColor3 = Color3.fromRGB(150, 150, 150)
     Arrow.TextSize = 10
     Arrow.BackgroundTransparency = 1
@@ -1361,7 +1387,7 @@ function Library:CreateDropdown(parentPage, textKey, options, default, callback)
             OptLabel.Size = UDim2.new(1, -20, 1, 0)
             OptLabel.Position = UDim2.new(0, 16, 0, 0)
             OptLabel.Text = option
-            OptLabel.Font = Library.CurrentFont
+            applyFontToElement(OptLabel)
             OptLabel.TextColor3 = Color3.fromRGB(180, 180, 180)
             OptLabel.TextSize = 12
             OptLabel.TextXAlignment = Enum.TextXAlignment.Left
@@ -1395,7 +1421,7 @@ function Library:CreateButton(parentPage, textKey, callback)
     Btn.Size = UDim2.new(1, -20, 0, 36)
     Btn.BackgroundColor3 = Library.CurrentThemeData.ElementBg or DefaultTheme.ElementBg
     Btn.Text = initialText
-    Btn.Font = Library.CurrentFont
+    applyFontToElement(Btn)
     Btn.TextColor3 = Color3.fromRGB(230, 230, 230)
     Btn.TextSize = 13
     Btn.ClipsDescendants = true
@@ -1440,7 +1466,7 @@ function Library:CreateToggle(parentPage, textKey, default, callback)
     TglLabel.Size = UDim2.new(1, -60, 1, 0)
     TglLabel.Position = UDim2.new(0, 12, 0, 0)
     TglLabel.Text = initialText
-    TglLabel.Font = Library.CurrentFont
+    applyFontToElement(TglLabel)
     TglLabel.TextColor3 = Color3.fromRGB(230, 230, 230)
     TglLabel.TextSize = 13
     TglLabel.TextXAlignment = Enum.TextXAlignment.Left
@@ -1519,7 +1545,7 @@ function Library:CreateSlider(parentPage, textKey, min, max, default, callback)
     SliderLabel.Size = UDim2.new(0.5, -12, 0, 22)
     SliderLabel.Position = UDim2.new(0, 12, 0, 6)
     SliderLabel.Text = initialText
-    SliderLabel.Font = Library.CurrentFont
+    applyFontToElement(SliderLabel)
     SliderLabel.TextColor3 = Color3.fromRGB(230, 230, 230)
     SliderLabel.TextSize = 13
     SliderLabel.TextXAlignment = Enum.TextXAlignment.Left
@@ -1530,7 +1556,7 @@ function Library:CreateSlider(parentPage, textKey, min, max, default, callback)
     local ValueLabel = Instance.new("TextLabel", SliderFrame)
     ValueLabel.Size = UDim2.new(0.5, -12, 0, 22)
     ValueLabel.Position = UDim2.new(0.5, 0, 0, 6)
-    ValueLabel.Font = Library.CurrentFont
+    applyFontToElement(ValueLabel)
     ValueLabel.TextColor3 = Color3.fromRGB(160, 160, 160)
     ValueLabel.TextSize = 13
     ValueLabel.TextXAlignment = Enum.TextXAlignment.Right
@@ -1680,7 +1706,7 @@ function Library:CreatePage(textKey, iconId, layoutOrder)
     TabBtn.Name = textKey
     TabBtn.Size = UDim2.new(1, 0, 1, 0)
     TabBtn.Text = initialText
-    TabBtn.Font = Library.CurrentFont
+    applyFontToElement(TabBtn)
     TabBtn.TextSize = 13
     TabBtn.TextColor3 = Color3.fromRGB(140, 140, 140)
     TabBtn.BackgroundTransparency = 1
@@ -1828,7 +1854,7 @@ for _, data in ipairs(subTabsData) do
     btn.Size = UDim2.new(1 / #subTabsData, 0, 1, 0)
     btn.BackgroundTransparency = 1
     btn.Text = data.Name
-    btn.Font = Library.CurrentFont
+    applyFontToElement(btn)
     btn.TextColor3 = Color3.fromRGB(140, 140, 140)
     btn.TextSize = 12
     btn.ZIndex = 7
@@ -1863,9 +1889,7 @@ end
 table.sort(FontKeys)
 
 local FontDropdown = Library:CreateDropdown(subPages["UI"], "MenuFont", FontKeys, "Source Sans", function(selectedFont)
-    if FontMapping[selectedFont] then
-        applyFontToAll(FontMapping[selectedFont])
-    end
+    applyFontToAll(selectedFont)
 end)
 
 local UISizeSlider = Library:CreateSlider(subPages["UI"], "UISize", 50, 150, 100, function(value)
@@ -1948,7 +1972,7 @@ showToast = function(message, dotColor)
     label.Size = UDim2.new(1, -30, 1, 0)
     label.Position = UDim2.new(0, 26, 0, 0)
     label.Text = message or ""
-    label.Font = Library.CurrentFont or Enum.Font.SourceSansBold
+    applyFontToElement(label)
     label.TextColor3 = getThemeAccent()
     label.TextSize = 12
     label.TextXAlignment = Enum.TextXAlignment.Left
@@ -2002,7 +2026,7 @@ local function getCurrentUIState()
     local state = {
         theme = "AMOLED",
         language = Library.CurrentLanguage or "English",
-        font = "Source Sans",
+        font = Library.CurrentFontKey or "Source Sans",
         ui_size = MainScale and MainScale.Scale or 1,
         transparency = MainFrame and MainFrame.BackgroundTransparency or 0.15,
         fov = workspace.CurrentCamera and workspace.CurrentCamera.FieldOfView or 70,
@@ -2032,7 +2056,7 @@ local function applyUIState(state)
         if LanguageDropdown and LanguageDropdown.SetValue then LanguageDropdown.SetValue(state.language) end
     end
     if state.font and FontMapping[state.font] then
-        applyFontToAll(FontMapping[state.font])
+        applyFontToAll(state.font)
         if FontDropdown and FontDropdown.SetValue then FontDropdown.SetValue(state.font) end
     end
     if state.ui_size ~= nil and UISizeSlider and UISizeSlider.SetValue then
@@ -2070,7 +2094,7 @@ ConfigNameBox.Position = UDim2.new(0, 10, 0, 0)
 ConfigNameBox.BackgroundTransparency = 1
 ConfigNameBox.Text = ""
 ConfigNameBox.PlaceholderText = "Config name..."
-ConfigNameBox.Font = Library.CurrentFont or Enum.Font.SourceSansBold
+applyFontToElement(ConfigNameBox)
 ConfigNameBox.TextColor3 = Color3.fromRGB(230, 230, 230)
 ConfigNameBox.PlaceholderColor3 = Color3.fromRGB(130, 130, 130)
 ConfigNameBox.TextSize = 12
@@ -2097,7 +2121,7 @@ local function createConfigButton(parent, textKey, callback, position)
     Btn.Position = UDim2.new(position, 0, 0, 0)
     Btn.BackgroundColor3 = Library.CurrentThemeData.ElementBg or DefaultTheme.ElementBg
     Btn.Text = textKey
-    Btn.Font = Library.CurrentFont
+    applyFontToElement(Btn)
     Btn.TextColor3 = Color3.fromRGB(230, 230, 230)
     Btn.TextSize = 12
     Btn.ClipsDescendants = true
