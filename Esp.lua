@@ -2064,28 +2064,39 @@ end)
 -- SKY SYSTEM (CUSTOM SKYBOX DROPDOWN IN THEME SUB-TAB)
 -- ============================================================================
 local skyAssets = {
-    Bk = "rbxassetid://15983968922",
-    Dn = "rbxassetid://15983966825",
-    Ft = "rbxassetid://15983965025",
-    Lf = "rbxassetid://15983967420",
-    Up = "rbxassetid://15983964246",
-    Rt = "rbxassetid://15983966246"
+    ["anime sky"] = {
+        Bk = "rbxassetid://15983968922",
+        Dn = "rbxassetid://15983966825",
+        Ft = "rbxassetid://15983965025",
+        Lf = "rbxassetid://15983967420",
+        Up = "rbxassetid://15983964246",
+        Rt = "rbxassetid://15983966246"
+    },
+    ["pink sky"] = {
+        Bk = "rbxassetid://271042516",
+        Dn = "rbxassetid://271077243",
+        Ft = "rbxassetid://271042556",
+        Lf = "rbxassetid://271042310",
+        Up = "rbxassetid://271077958",
+        Rt = "rbxassetid://271042467"
+    }
 }
 
 local function applySky(option)
     local currentSky = Lighting:FindFirstChild("DarkHubSky")
-    if option == "anime sky" then
+    local assets = skyAssets[option]
+    if assets then
         if not currentSky then
             currentSky = Instance.new("Sky")
             currentSky.Name = "DarkHubSky"
             currentSky.Parent = Lighting
         end
-        currentSky.SkyboxBk = skyAssets.Bk
-        currentSky.SkyboxDn = skyAssets.Dn
-        currentSky.SkyboxFt = skyAssets.Ft
-        currentSky.SkyboxLf = skyAssets.Lf
-        currentSky.SkyboxUp = skyAssets.Up
-        currentSky.SkyboxRt = skyAssets.Rt
+        currentSky.SkyboxBk = assets.Bk
+        currentSky.SkyboxDn = assets.Dn
+        currentSky.SkyboxFt = assets.Ft
+        currentSky.SkyboxLf = assets.Lf
+        currentSky.SkyboxUp = assets.Up
+        currentSky.SkyboxRt = assets.Rt
     else
         if currentSky then
             currentSky:Destroy()
@@ -2093,7 +2104,7 @@ local function applySky(option)
     end
 end
 
-local SkyDropdown = Library:CreateDropdown(subPages["Theme"], "Sky", {"Default", "anime sky"}, "Default", function(selectedSky)
+local SkyDropdown = Library:CreateDropdown(subPages["Theme"], "Sky", {"Default", "anime sky", "pink sky"}, "Default", function(selectedSky)
     applySky(selectedSky)
 end)
 
@@ -2410,11 +2421,7 @@ task.spawn(function()
     
     if bubbleConnection then
         bubbleConnection:Disconnect()
-        bubbleConnection = nil
     end
-
-    tween(LoadingOverlay, {BackgroundTransparency = 1}, 0.4)
-    task.wait(0.4)
     LoadingOverlay:Destroy()
     MainFrame.Visible = true
     showToast(getLocalizedMessage("HubLoaded"), Color3.fromRGB(50, 255, 50))
