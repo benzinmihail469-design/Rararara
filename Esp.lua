@@ -652,6 +652,11 @@ Library.TrackedSliderFills = {}
 Library.TrackedSliderHandles = {}
 Library.TrackedSliderTracks = {}
 Library.TrackedScrollingFrames = {}
+-- Новые списки для отслеживания дропдаунов, кнопок, тоглов и слайдеров
+Library.TrackedDropdowns = {}
+Library.TrackedButtons = {}
+Library.TrackedToggles = {}
+Library.TrackedSliders = {}
 
 local ThemeConfig = {
     ["AMOLED"] = { Accent = Color3.fromRGB(255, 255, 255), MainBg = Color3.fromRGB(0, 0, 0), ElementBg = Color3.fromRGB(15, 15, 15) },
@@ -689,6 +694,13 @@ local function getThemeMainBg()
         return Library.CurrentThemeData.MainBg
     end
     return DefaultTheme.MainBg
+end
+
+local function getThemeElementBg()
+    if Library.CurrentThemeData and typeof(Library.CurrentThemeData.ElementBg) == "Color3" then
+        return Library.CurrentThemeData.ElementBg
+    end
+    return DefaultTheme.ElementBg
 end
 
 local function getLuminance(color)
@@ -848,31 +860,37 @@ function Library:UpdateTheme(themeName)
     Library.CurrentThemeData = theme
     local mainBg = getThemeMainBg()
     local accent = getThemeAccent()
+    local elementBg = getThemeElementBg()
     local isLightMode = isLightColor(mainBg)
     local mainTextColor = isLightMode and Color3.fromRGB(35, 35, 35) or Color3.fromRGB(255, 255, 255)
     local subTextColor = isLightMode and Color3.fromRGB(110, 110, 110) or Color3.fromRGB(140, 140, 140)
     local strokeColor = isLightMode and Color3.fromRGB(190, 190, 190) or Color3.fromRGB(35, 35, 35)
-    local elementBgColor = theme.ElementBg or DefaultTheme.ElementBg
     local scrollBarColor = isLightMode and Color3.fromRGB(150, 150, 150) or Color3.fromRGB(50, 50, 50)
+    local offToggleColor = isLightMode and Color3.fromRGB(200, 200, 200) or Color3.fromRGB(35, 35, 35)
+    local sliderTrackColor = isLightMode and Color3.fromRGB(210, 210, 210) or Color3.fromRGB(30, 30, 30)
     
+    -- Обновление основных фонов
     for _, obj in ipairs(Library.TrackedMainBg) do
         if obj and typeof(obj) == "Instance" and obj.Parent then
             tween(obj, {BackgroundColor3 = mainBg})
         end
     end
     
+    -- Обновление фонов элементов
     for _, obj in ipairs(Library.TrackedElementBg) do
         if obj and typeof(obj) == "Instance" and obj.Parent then
-            tween(obj, {BackgroundColor3 = elementBgColor})
+            tween(obj, {BackgroundColor3 = elementBg})
         end
     end
     
+    -- Обновление обводок
     for _, obj in ipairs(Library.TrackedStrokes) do
         if obj and typeof(obj) == "Instance" and obj.Parent then
             tween(obj, {Color = strokeColor})
         end
     end
     
+    -- Обновление основного текста
     for _, obj in ipairs(Library.TrackedMainText) do
         if obj and typeof(obj) == "Instance" and obj.Parent then
             tween(obj, {TextColor3 = mainTextColor})
@@ -882,31 +900,34 @@ function Library:UpdateTheme(themeName)
         end
     end
     
+    -- Обновление вспомогательного текста
     for _, obj in ipairs(Library.TrackedSubText) do
         if obj and typeof(obj) == "Instance" and obj.Parent then
             tween(obj, {TextColor3 = subTextColor})
         end
     end
     
+    -- Обновление акцентов
     for _, obj in ipairs(Library.TrackedAccents) do
         if obj and typeof(obj) == "Instance" and obj.Parent then
             tween(obj, {TextColor3 = accent})
         end
     end
     
-    for _, tgl in ipairs(Library.TrackedCheckboxes) do
-        if tgl.Checkbox and tgl.Checkbox.Parent then
-            if not tgl.GetState() then
-                local offColor = isLightMode and Color3.fromRGB(200, 200, 200) or Color3.fromRGB(35, 35, 35)
-                tween(tgl.Checkbox, {BackgroundColor3 = offColor})
-                tween(tgl.Indicator, {BackgroundColor3 = accent})
+    -- Обновление чекбоксов (тоглов)
+    for _, tglData in ipairs(Library.TrackedCheckboxes) do
+        if tglData.Checkbox and tglData.Checkbox.Parent then
+            if not tglData.GetState() then
+                tween(tglData.Checkbox, {BackgroundColor3 = offToggleColor})
+                tween(tglData.Indicator, {BackgroundColor3 = accent})
             else
-                tween(tgl.Checkbox, {BackgroundColor3 = accent})
-                tween(tgl.Indicator, {BackgroundColor3 = mainBg})
+                tween(tglData.Checkbox, {BackgroundColor3 = accent})
+                tween(tglData.Indicator, {BackgroundColor3 = mainBg})
             end
         end
     end
     
+    -- Обновление заполнения и ручек слайдеров
     for _, obj in ipairs(Library.TrackedSliderFills) do
         if obj and typeof(obj) == "Instance" and obj.Parent then
             tween(obj, {BackgroundColor3 = accent})
@@ -918,23 +939,90 @@ function Library:UpdateTheme(themeName)
         end
     end
     
-    local sliderTrackColor = isLightMode and Color3.fromRGB(210, 210, 210) or Color3.fromRGB(30, 30, 30)
+    -- Обновление треков слайдеров
     for _, track in ipairs(Library.TrackedSliderTracks) do
         if track and track.Parent then
             tween(track, {BackgroundColor3 = sliderTrackColor})
         end
     end
     
+    -- Обновление скроллбаров
     for _, sf in ipairs(Library.TrackedScrollingFrames) do
         if sf and sf.Parent then
             sf.ScrollBarImageColor3 = scrollBarColor
         end
     end
     
+    -- Обновление дропдаунов
+    for _, dropdownData in ipairs(Library.TrackedDropdowns) do
+        if dropdownData.Frame and dropdownData.Frame.Parent then
+            tween(dropdownData.Frame, {BackgroundColor3 = elementBg})
+        end
+        if dropdownData.Stroke and dropdownData.Stroke.Parent then
+            tween(dropdownData.Stroke, {Color = strokeColor})
+        end
+        if dropdownData.TitleLabel and dropdownData.TitleLabel.Parent then
+            tween(dropdownData.TitleLabel, {TextColor3 = mainTextColor})
+        end
+        if dropdownData.SelectedLabel and dropdownData.SelectedLabel.Parent then
+            tween(dropdownData.SelectedLabel, {TextColor3 = accent})
+        end
+        if dropdownData.OptionsContainer and dropdownData.OptionsContainer.Parent then
+            dropdownData.OptionsContainer.ScrollBarImageColor3 = scrollBarColor
+            for _, optBtn in ipairs(dropdownData.OptionsContainer:GetChildren()) do
+                if optBtn:IsA("TextButton") then
+                    local optLabel = optBtn:FindFirstChildOfClass("TextLabel")
+                    if optLabel then
+                        tween(optLabel, {TextColor3 = subTextColor})
+                    end
+                end
+            end
+        end
+    end
+    
+    -- Обновление кнопок
+    for _, btnData in ipairs(Library.TrackedButtons) do
+        if btnData.Button and btnData.Button.Parent then
+            tween(btnData.Button, {BackgroundColor3 = elementBg, TextColor3 = mainTextColor})
+        end
+        if btnData.Stroke and btnData.Stroke.Parent then
+            tween(btnData.Stroke, {Color = strokeColor})
+        end
+    end
+    
+    -- Обновление тоглов
+    for _, tglData in ipairs(Library.TrackedToggles) do
+        if tglData.Frame and tglData.Frame.Parent then
+            tween(tglData.Frame, {BackgroundColor3 = elementBg})
+        end
+        if tglData.Stroke and tglData.Stroke.Parent then
+            tween(tglData.Stroke, {Color = strokeColor})
+        end
+        if tglData.Label and tglData.Label.Parent then
+            tween(tglData.Label, {TextColor3 = mainTextColor})
+        end
+    end
+    
+    -- Обновление слайдеров
+    for _, sldData in ipairs(Library.TrackedSliders) do
+        if sldData.Frame and sldData.Frame.Parent then
+            tween(sldData.Frame, {BackgroundColor3 = elementBg})
+        end
+        if sldData.Stroke and sldData.Stroke.Parent then
+            tween(sldData.Stroke, {Color = strokeColor})
+        end
+        if sldData.Label and sldData.Label.Parent then
+            tween(sldData.Label, {TextColor3 = mainTextColor})
+        end
+        if sldData.ValueLabel and sldData.ValueLabel.Parent then
+            tween(sldData.ValueLabel, {TextColor3 = subTextColor})
+        end
+    end
+    
     applyThemeToTabs(theme)
     
     if SubTabNav and SubTabNav.Parent then
-        tween(SubTabNav, {BackgroundColor3 = elementBgColor})
+        tween(SubTabNav, {BackgroundColor3 = elementBg})
     end
     
     for name, b in pairs(subTabButtons) do
@@ -1386,6 +1474,15 @@ function Library:CreateDropdown(parentPage, textKey, options, default, callback)
     end
     populateOptions(options)
 
+    -- Регистрируем дропдаун для отслеживания темы
+    table.insert(Library.TrackedDropdowns, {
+        Frame = DropdownFrame,
+        Stroke = DropdownStroke,
+        TitleLabel = TitleLabel,
+        SelectedLabel = SelectedLabel,
+        OptionsContainer = OptionsContainer
+    })
+
     local searchItem = {Instance = DropdownFrame, SearchText = NormalizeText(initialText), OriginalParent = parentPage}
     table.insert(SearchableElements, searchItem)
     table.insert(LocaleObjects, {Object = TitleLabel, Key = textKey, SearchItem = searchItem})
@@ -1416,6 +1513,13 @@ function Library:CreateButton(parentPage, textKey, callback)
     table.insert(Library.TrackedElementBg, Btn)
     table.insert(Library.TrackedMainText, Btn)
     table.insert(Library.TrackedStrokes, BtnStroke)
+    
+    -- Регистрируем кнопку для отслеживания темы
+    table.insert(Library.TrackedButtons, {
+        Button = Btn,
+        Stroke = BtnStroke
+    })
+    
     Btn.MouseButton1Down:Connect(function()
         local mousePos = UserInputService:GetMouseLocation()
         local inset = GuiService:GetGuiInset()
@@ -1479,6 +1583,13 @@ function Library:CreateToggle(parentPage, textKey, default, callback)
         GetState = function() return enabled end
     }
     table.insert(Library.TrackedCheckboxes, toggleData)
+    
+    -- Регистрируем тогл для отслеживания темы
+    table.insert(Library.TrackedToggles, {
+        Frame = TglFrame,
+        Stroke = TglStroke,
+        Label = TglLabel
+    })
 
     local function setToggleState(state)
         enabled = state
@@ -1577,6 +1688,14 @@ function Library:CreateSlider(parentPage, textKey, min, max, default, callback)
     SliderHandle.ZIndex = 9
     Instance.new("UICorner", SliderHandle).CornerRadius = UDim.new(1, 0)
     table.insert(Library.TrackedSliderHandles, SliderHandle)
+
+    -- Регистрируем слайдер для отслеживания темы
+    table.insert(Library.TrackedSliders, {
+        Frame = SliderFrame,
+        Stroke = SliderStroke,
+        Label = SliderLabel,
+        ValueLabel = ValueLabel
+    })
 
     local dragging = false
     local currentPercent = (default - min) / (max - min)
@@ -1927,6 +2046,7 @@ pcall(function()
     end
 end)
 
+local activeToast = nil
 showToast = function(message, dotColor)
     if activeToast and activeToast.Parent then
         activeToast:Destroy()
@@ -2119,6 +2239,12 @@ local function createConfigButton(parent, textKey, callback, position)
     table.insert(Library.TrackedElementBg, Btn)
     table.insert(Library.TrackedMainText, Btn)
     table.insert(Library.TrackedStrokes, BtnStroke)
+    
+    -- Регистрируем кнопку для отслеживания темы
+    table.insert(Library.TrackedButtons, {
+        Button = Btn,
+        Stroke = BtnStroke
+    })
     
     Btn.Activated:Connect(function() if type(callback) == "function" then pcall(callback) end end)
     return Btn
