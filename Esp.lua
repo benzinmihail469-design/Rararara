@@ -2278,4 +2278,3 @@ task.spawn(function()
     Library:UpdateTheme("AMOLED")
     showToast(getLocalizedMessage("HubLoaded"), Color3.fromRGB(255, 255, 255))
 end)
-ч
