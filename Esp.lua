@@ -2061,22 +2061,71 @@ local ThemeDropdown = Library:CreateDropdown(subPages["Theme"], "UITheme", Theme
 end)
 
 -- ============================================================================
--- CUSTOM SKY SYSTEM
+-- CUSTOM SKY SYSTEM (FIXED)
 -- ============================================================================
-local skyMap = {
+local skyPresets = {
     ["Default"] = nil,
-    ["Custom Sky 1"] = "89533939541361"
+    ["Purple Nebula"] = {
+        Bk = "rbxassetid://159454299",
+        Dn = "rbxassetid://159454153",
+        Ft = "rbxassetid://159454290",
+        Lf = "rbxassetid://159454286",
+        Rt = "rbxassetid://159454299",
+        Up = "rbxassetid://159454288"
+    },
+    ["Aesthetic Night"] = {
+        Bk = "rbxassetid://12064107",
+        Dn = "rbxassetid://12064152",
+        Ft = "rbxassetid://12064121",
+        Lf = "rbxassetid://12064131",
+        Rt = "rbxassetid://12064115",
+        Up = "rbxassetid://12064143"
+    },
+    ["Pink Sunset"] = {
+        Bk = "rbxassetid://271042516",
+        Dn = "rbxassetid://271041857",
+        Ft = "rbxassetid://271042306",
+        Lf = "rbxassetid://271042456",
+        Rt = "rbxassetid://271042167",
+        Up = "rbxassetid://271042668"
+    },
+    ["Space"] = {
+        Bk = "rbxassetid://159454299",
+        Dn = "rbxassetid://159454153",
+        Ft = "rbxassetid://159454290",
+        Lf = "rbxassetid://159454286",
+        Rt = "rbxassetid://159454299",
+        Up = "rbxassetid://159454288"
+    },
+    ["Custom Sky 1"] = {
+        Bk = "rbxassetid://89533939541361",
+        Dn = "rbxassetid://89533939541361",
+        Ft = "rbxassetid://89533939541361",
+        Lf = "rbxassetid://89533939541361",
+        Rt = "rbxassetid://89533939541361",
+        Up = "rbxassetid://89533939541361"
+    }
 }
 
 local function applySky(skyName)
-    local skyId = skyMap[skyName]
+    local preset = skyPresets[skyName]
     local currentSky = Lighting:FindFirstChildOfClass("Sky")
     
-    if not skyId then
+    if not preset then
         if currentSky and currentSky.Name == "DarkHubSky" then
             currentSky:Destroy()
         end
+        local atmo = Lighting:FindFirstChildOfClass("Atmosphere")
+        if atmo and atmo.Name == "DarkHubDisabledAtmo" then
+            atmo.Name = "Atmosphere"
+        end
         return
+    end
+
+    -- Отключаем Atmosphere, чтобы туман не перекрывал Skybox
+    local atmo = Lighting:FindFirstChildOfClass("Atmosphere")
+    if atmo then
+        atmo.Name = "DarkHubDisabledAtmo"
     end
 
     if not currentSky or currentSky.Name ~= "DarkHubSky" then
@@ -2088,16 +2137,31 @@ local function applySky(skyName)
         currentSky.Parent = Lighting
     end
 
-    local assetUrl = "rbxassetid://" .. skyId
-    currentSky.SkyboxBk = assetUrl
-    currentSky.SkyboxDn = assetUrl
-    currentSky.SkyboxFt = assetUrl
-    currentSky.SkyboxLf = assetUrl
-    currentSky.SkyboxRt = assetUrl
-    currentSky.SkyboxUp = assetUrl
+    if type(preset) == "table" then
+        currentSky.SkyboxBk = preset.Bk
+        currentSky.SkyboxDn = preset.Dn
+        currentSky.SkyboxFt = preset.Ft
+        currentSky.SkyboxLf = preset.Lf
+        currentSky.SkyboxRt = preset.Rt
+        currentSky.SkyboxUp = preset.Up
+    elseif type(preset) == "string" then
+        local url = "rbxassetid://" .. preset
+        currentSky.SkyboxBk = url
+        currentSky.SkyboxDn = url
+        currentSky.SkyboxFt = url
+        currentSky.SkyboxLf = url
+        currentSky.SkyboxRt = url
+        currentSky.SkyboxUp = url
+    end
 end
 
-local SkyDropdown = Library:CreateDropdown(subPages["Theme"], "Sky", {"Default", "Custom Sky 1"}, "Default", function(selectedSky)
+local skyNamesList = {}
+for name, _ in pairs(skyPresets) do
+    table.insert(skyNamesList, name)
+end
+table.sort(skyNamesList)
+
+local SkyDropdown = Library:CreateDropdown(subPages["Theme"], "Sky", skyNamesList, "Default", function(selectedSky)
     applySky(selectedSky)
 end)
 
