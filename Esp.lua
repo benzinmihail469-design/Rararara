@@ -1029,60 +1029,36 @@ local Localization = {
     }
 }
 
--- ГАРАНТИРОВАННАЯ ПОДДЕРЖКА ВСЕХ СИМВОЛОВ (РУССКИЙ И АНГЛИЙСКИЙ ДЛЯ ЛЮБЫХ ШРИФТОВ ЧЕРЕЗ ФОЛЛБЭК НА UBTUNU/ROBOTO)
+-- СПИСОК ВСЕХ ДОСТУПНЫХ ШРИФТОВ С КОРРЕКТНЫМИ ССЫЛКАМИ И ENUM
 local UniversalSupportedFonts = {
-    ["Fredoka One"] = Font.new("rbxasset://fonts/families/Ubuntu.json", Enum.FontWeight.Bold, Enum.FontStyle.Normal),
+    ["Fredoka One"] = Font.new("rbxasset://fonts/families/FredokaOne.json", Enum.FontWeight.Regular, Enum.FontStyle.Normal),
     ["Gotham"] = Font.new("rbxasset://fonts/families/GothamSSm.json", Enum.FontWeight.Regular, Enum.FontStyle.Normal),
     ["Gotham Bold"] = Font.new("rbxasset://fonts/families/GothamSSm.json", Enum.FontWeight.Bold, Enum.FontStyle.Normal),
     ["Source Sans"] = Font.new("rbxasset://fonts/families/SourceSansPro.json", Enum.FontWeight.Regular, Enum.FontStyle.Normal),
     ["Roboto"] = Font.new("rbxasset://fonts/families/Roboto.json", Enum.FontWeight.Regular, Enum.FontStyle.Normal),
     ["Code"] = Font.new("rbxasset://fonts/families/RobotoMono.json", Enum.FontWeight.Regular, Enum.FontStyle.Normal),
     ["Ubuntu"] = Font.new("rbxasset://fonts/families/Ubuntu.json", Enum.FontWeight.Regular, Enum.FontStyle.Normal),
-    ["Bangers"] = Font.new("rbxasset://fonts/families/Ubuntu.json", Enum.FontWeight.Bold, Enum.FontStyle.Normal),
-    ["Luckiest Guy"] = Font.new("rbxasset://fonts/families/Ubuntu.json", Enum.FontWeight.Bold, Enum.FontStyle.Normal),
-    ["Permanent Marker"] = Font.new("rbxasset://fonts/families/Ubuntu.json", Enum.FontWeight.Bold, Enum.FontStyle.Normal),
-    ["Arcade"] = Font.new("rbxasset://fonts/families/RobotoMono.json", Enum.FontWeight.Bold, Enum.FontStyle.Normal)
+    ["Bangers"] = Font.new("rbxasset://fonts/families/Bangers.json", Enum.FontWeight.Regular, Enum.FontStyle.Normal),
+    ["Luckiest Guy"] = Font.new("rbxasset://fonts/families/LuckiestGuy.json", Enum.FontWeight.Regular, Enum.FontStyle.Normal),
+    ["Permanent Marker"] = Font.new("rbxasset://fonts/families/PermanentMarker.json", Enum.FontWeight.Regular, Enum.FontStyle.Normal),
+    ["Arcade"] = Font.new("rbxasset://fonts/families/Arcade.json", Enum.FontWeight.Regular, Enum.FontStyle.Normal)
 }
 
 local FontMapping = {
-    ["Fredoka One"] = { Enum = Enum.Font.Ubuntu },
+    ["Fredoka One"] = { Enum = Enum.Font.FredokaOne },
     ["Gotham"] = { Enum = Enum.Font.Gotham },
     ["Gotham Bold"] = { Enum = Enum.Font.GothamBold },
     ["Source Sans"] = { Enum = Enum.Font.SourceSans },
     ["Roboto"] = { Enum = Enum.Font.Roboto },
     ["Code"] = { Enum = Enum.Font.Code },
     ["Ubuntu"] = { Enum = Enum.Font.Ubuntu },
-    ["Bangers"] = { Enum = Enum.Font.Ubuntu },
-    ["Luckiest Guy"] = { Enum = Enum.Font.Ubuntu },
-    ["Permanent Marker"] = { Enum = Enum.Font.Ubuntu },
-    ["Arcade"] = { Enum = Enum.Font.Code }
+    ["Bangers"] = { Enum = Enum.Font.Bangers },
+    ["Luckiest Guy"] = { Enum = Enum.Font.LuckiestGuy },
+    ["Permanent Marker"] = { Enum = Enum.Font.PermanentMarker },
+    ["Arcade"] = { Enum = Enum.Font.Arcade }
 }
 
 local showToast
-
--- Функция безопасного применения шрифта ко всем текстовым элементам с поддержкой кириллицы/латиницы
-local function applyFontToAll(fontKey)
-    Library.CurrentFontKey = fontKey
-    local fontData = FontMapping[fontKey] or FontMapping["Source Sans"]
-    local universalFontFace = UniversalSupportedFonts[fontKey] or UniversalSupportedFonts["Source Sans"]
-
-    local function updateCollection(tbl)
-        for _, obj in ipairs(tbl) do
-            if obj and typeof(obj) == "Instance" and obj.Parent then
-                if obj:IsA("TextLabel") or obj:IsA("TextButton") or obj:IsA("TextBox") then
-                    pcall(function()
-                        obj.FontFace = universalFontFace
-                        obj.Font = fontData.Enum
-                    end)
-                end
-            end
-        end
-    end
-
-    updateCollection(Library.TrackedMainText)
-    updateCollection(Library.TrackedSubText)
-    updateCollection(Library.TrackedAccents)
-end
 
 -- Применение универсального шрифта к новому отдельному элементу
 local function applyFontToElement(obj)
@@ -1096,6 +1072,28 @@ local function applyFontToElement(obj)
             obj.Font = fontData.Enum
         end
     end)
+end
+
+-- ИСПРАВЛЕННАЯ ФУНКЦИЯ: Применяет шрифт абсолютно ко всем текстовым объектам GUI через рекурсивный обход
+local function applyFontToAll(fontKey)
+    Library.CurrentFontKey = fontKey
+    local fontData = FontMapping[fontKey] or FontMapping["Source Sans"]
+    local universalFontFace = UniversalSupportedFonts[fontKey] or UniversalSupportedFonts["Source Sans"]
+
+    local function recursiveApply(parent)
+        for _, child in ipairs(parent:GetDescendants()) do
+            if child:IsA("TextLabel") or child:IsA("TextButton") or child:IsA("TextBox") then
+                pcall(function()
+                    child.FontFace = universalFontFace
+                    child.Font = fontData.Enum
+                end)
+            end
+        end
+    end
+
+    if DarkHub and DarkHub.Parent then
+        recursiveApply(DarkHub)
+    end
 end
 
 function Library:UpdateLanguage(lang)
@@ -2190,7 +2188,7 @@ end, 0.69)
 
 table.insert(LocaleObjects, {Object = saveBtn, Key = "Save"})
 table.insert(LocaleObjects, {Object = loadBtn, Key = "Load"})
-table.insert(LocaleObjects, {Object = deleteByte and deleteBtn or deleteBtn, Key = "Delete"})
+table.insert(LocaleObjects, {Object = deleteBtn, Key = "Delete"})
 
 -- ============================================================================
 -- LAUNCH & INITIALIZATION
