@@ -942,7 +942,6 @@ function Library:UpdateTheme(themeName)
         end
     end
     
-    -- Fully update all dropdowns (including UI Theme dropdown)
     for _, dropdownData in ipairs(Library.TrackedDropdowns) do
         if dropdownData.Frame and dropdownData.Frame.Parent then
             tween(dropdownData.Frame, {BackgroundColor3 = elementBg})
@@ -955,9 +954,6 @@ function Library:UpdateTheme(themeName)
         end
         if dropdownData.SelectedLabel and dropdownData.SelectedLabel.Parent then
             tween(dropdownData.SelectedLabel, {TextColor3 = accent})
-        end
-        if dropdownData.Arrow and dropdownData.Arrow.Parent then
-            tween(dropdownData.Arrow, {TextColor3 = subTextColor})
         end
         if dropdownData.OptionsContainer and dropdownData.OptionsContainer.Parent then
             dropdownData.OptionsContainer.ScrollBarImageColor3 = scrollBarColor
@@ -1448,7 +1444,9 @@ function Library:CreateDropdown(parentPage, textKey, options, default, callback)
             OptLabel.Position = UDim2.new(0, 16, 0, 0)
             OptLabel.Text = option
             applyFontToElement(OptLabel)
-            OptLabel.TextColor3 = Color3.fromRGB(180, 180, 180)
+            
+            local isL = isLightColor(getThemeMainBg())
+            OptLabel.TextColor3 = isL and Color3.fromRGB(80, 80, 80) or Color3.fromRGB(180, 180, 180)
             OptLabel.TextSize = 12
             OptLabel.TextXAlignment = Enum.TextXAlignment.Left
             OptLabel.BackgroundTransparency = 1
@@ -1468,7 +1466,6 @@ function Library:CreateDropdown(parentPage, textKey, options, default, callback)
         Stroke = DropdownStroke,
         TitleLabel = TitleLabel,
         SelectedLabel = SelectedLabel,
-        Arrow = Arrow,
         OptionsContainer = OptionsContainer
     })
 
@@ -2343,9 +2340,6 @@ task.spawn(function()
                     if child:IsA("TextLabel") or child:IsA("TextBox") or child:IsA("TextButton") then
                         tween(child, {TextTransparency = 1}, 0.4)
                     end
-                    if child:IsA("ImageLabel") then
-                        tween(child, {ImageTransparency = 1}, 0.4)
-                    end
                     tween(child, {BackgroundTransparency = 1}, 0.4)
                 end)
             end
@@ -2355,5 +2349,5 @@ task.spawn(function()
     end
     
     MainFrame.Visible = true
-    showToast(getLocalizedMessage("HubLoaded"), getThemeAccent())
+    showToast(Localization[Library.CurrentLanguage]["HubLoaded"], getThemeAccent())
 end)
