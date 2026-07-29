@@ -675,7 +675,7 @@ local ThemeConfig = {
 }
 
 -- ============================================================================
--- SKY SYSTEM - РАСШИРЕННАЯ ВЕРСИЯ С ВАШИМ НЕБОМ "PURPLE"
+-- SKY SYSTEM
 -- ============================================================================
 local SkyPresets = {
     ["Default"] = { 
@@ -758,7 +758,6 @@ local SkyPresets = {
         SkyboxUp = "rbxassetid://89533939541361",
         Description = "Фиолетовое небо (кастом)"
     },
-    -- Добавляем еще одно фиолетовое небо с другим ID на случай если первое не работает
     ["Purple Nebula"] = {
         SkyboxBk = "rbxassetid://12787802044", 
         SkyboxDn = "rbxassetid://12787802044",
@@ -779,17 +778,14 @@ local SkyPresets = {
     }
 }
 
--- Переменная для хранения текущего неба
 local CurrentSkyInstance = nil
 local CurrentSkyName = "Default"
 
--- Функция для применения неба
 local function ApplySky(skyName)
     if not skyName or skyName == "" then
         skyName = "Default"
     end
     
-    -- Удаляем старое небо
     if CurrentSkyInstance then
         pcall(function()
             CurrentSkyInstance:Destroy()
@@ -803,7 +799,6 @@ local function ApplySky(skyName)
         skyName = "Default"
     end
     
-    -- Если Default - удаляем небо полностью
     if skyName == "Default" then
         local existingSky = Lighting:FindFirstChildOfClass("Sky")
         if existingSky then
@@ -815,17 +810,14 @@ local function ApplySky(skyName)
         return
     end
     
-    -- Проверяем есть ли уже небо в Lighting
     local existingSky = Lighting:FindFirstChildOfClass("Sky")
     if existingSky then
         CurrentSkyInstance = existingSky
     else
-        -- Создаем новое небо
         CurrentSkyInstance = Instance.new("Sky")
         CurrentSkyInstance.Parent = Lighting
     end
     
-    -- Применяем пресет
     CurrentSkyInstance.SkyboxBk = preset.SkyboxBk or ""
     CurrentSkyInstance.SkyboxDn = preset.SkyboxDn or ""
     CurrentSkyInstance.SkyboxFt = preset.SkyboxFt or ""
@@ -836,7 +828,6 @@ local function ApplySky(skyName)
     CurrentSkyName = skyName
 end
 
--- Функция для получения списка доступных небес
 local function GetSkyNames()
     local names = {}
     for name, _ in pairs(SkyPresets) do
@@ -846,13 +837,11 @@ local function GetSkyNames()
     return names
 end
 
--- Создаем список названий небес для дропдауна
 local SkyNamesList = GetSkyNames()
 
 -- ============================================================================
--- ОСТАЛЬНАЯ ЧАСТЬ БИБЛИОТЕКИ
+-- LIBRARY UTILITIES & THEMING
 -- ============================================================================
-
 local DefaultTheme = { Accent = Color3.fromRGB(255, 255, 255), MainBg = Color3.fromRGB(0, 0, 0), ElementBg = Color3.fromRGB(15, 15, 15) }
 Library.CurrentThemeData = ThemeConfig["AMOLED"]
 
@@ -1211,7 +1200,6 @@ local Localization = {
     }
 }
 
--- СПИСОК ВСЕХ ДОСТУПНЫХ ШРИФТОВ С КОРРЕКТНЫМИ ССЫЛКАМИ И ENUM
 local UniversalSupportedFonts = {
     ["Fredoka One"] = Font.new("rbxasset://fonts/families/FredokaOne.json", Enum.FontWeight.Regular, Enum.FontStyle.Normal),
     ["Gotham"] = Font.new("rbxasset://fonts/families/GothamSSm.json", Enum.FontWeight.Regular, Enum.FontStyle.Normal),
@@ -2098,9 +2086,6 @@ local ThemeDropdown = Library:CreateDropdown(subPages["Theme"], "UITheme", Theme
     end
 end)
 
--- ============================================================================
--- SKY SELECTOR В СУБВКЛАДКЕ THEME (ОБНОВЛЕННАЯ ВЕРСИЯ С ВАШИМ НЕБОМ)
--- ============================================================================
 local SkyDropdown = Library:CreateDropdown(subPages["Theme"], "Sky", SkyNamesList, "Default", function(selectedSky)
     ApplySky(selectedSky)
     if showToast then
@@ -2110,7 +2095,7 @@ local SkyDropdown = Library:CreateDropdown(subPages["Theme"], "Sky", SkyNamesLis
 end)
 
 -- ============================================================================
--- КОНФИГИ
+-- CONFIGURATIONS SYSTEM
 -- ============================================================================
 local CONFIG_FOLDER = "DarkHub/Configs"
 pcall(function()
@@ -2120,7 +2105,6 @@ pcall(function()
     end
 end)
 
-local activeToast = nil
 showToast = function(message, dotColor)
     if activeToast and activeToast.Parent then
         activeToast:Destroy()
@@ -2305,7 +2289,7 @@ ConfigButtonRow.ZIndex = 6
 local function createConfigButton(parent, textKey, callback, position)
     local Btn = Instance.new("TextButton", parent)
     Btn.Size = UDim2.new(0.31, 0, 1, 0)
-    Btn.Position = UDim2.new(position, 0, 0, 0)
+    Btn.Position = UDim2.new(position or 0, 0, 0, 0)
     Btn.BackgroundColor3 = Library.CurrentThemeData.ElementBg or DefaultTheme.ElementBg
     Btn.Text = textKey
     applyFontToElement(Btn)
@@ -2333,12 +2317,17 @@ local saveBtn = createConfigButton(ConfigButtonRow, "Save", function()
     local state = getCurrentUIState()
     local json = HttpService:JSONEncode(state)
     local success = pcall(function()
-        if typeof(writefile) == "function" then writefile(getConfigPath(name), json) return true end
+        if typeof(writefile) == "function" then
+            writefile(getConfigPath(name), json)
+            return true
+        end
         return false
     end)
     if success then
         showToast(getLocalizedMessage("ConfigSaved", name), Color3.fromRGB(50, 255, 50))
-        if ConfigDropdown and ConfigDropdown.UpdateOptions then ConfigDropdown.UpdateOptions(getConfigList()) end
+        if ConfigDropdown and ConfigDropdown.UpdateOptions then
+            ConfigDropdown.UpdateOptions(getConfigList())
+        end
     else
         showToast(getLocalizedMessage("ConfigSaveFailed", name), Color3.fromRGB(255, 50, 50))
     end
@@ -2346,83 +2335,80 @@ end, 0)
 
 local loadBtn = createConfigButton(ConfigButtonRow, "Load", function()
     local name = ConfigNameBox.Text
-    if name == "" and ConfigDropdown and ConfigDropdown.GetValue then name = ConfigDropdown.GetValue() end
+    if name == "" then
+        name = ConfigDropdown.GetValue()
+    end
     if name == "" then
         showToast(getLocalizedMessage("PleaseSelectName"), Color3.fromRGB(255, 200, 50))
         return
     end
+    local path = getConfigPath(name)
     local success, content = pcall(function()
-        if typeof(readfile) == "function" then return readfile(getConfigPath(name)) end
+        if typeof(readfile) == "function" and typeof(isfile) == "function" and isfile(path) then
+            return readfile(path)
+        end
         return nil
     end)
-    if not success or not content then
-        showToast(getLocalizedMessage("ConfigNotFound", name), Color3.fromRGB(255, 200, 50))
-        return
-    end
-    local decSuccess, state = pcall(function() return HttpService:JSONDecode(content) end)
-    if decSuccess and state then
-        applyUIState(state)
-        showToast(getLocalizedMessage("ConfigLoaded", name), Color3.fromRGB(50, 255, 50))
+    if success and content then
+        local decodeSuccess, state = pcall(function()
+            return HttpService:JSONDecode(content)
+        end)
+        if decodeSuccess and state then
+            applyUIState(state)
+            showToast(getLocalizedMessage("ConfigLoaded", name), Color3.fromRGB(50, 255, 50))
+        else
+            showToast(getLocalizedMessage("ConfigLoadFailed", name), Color3.fromRGB(255, 50, 50))
+        end
     else
-        showToast(getLocalizedMessage("ConfigLoadFailed", name), Color3.fromRGB(255, 50, 50))
+        showToast(getLocalizedMessage("ConfigNotFound", name), Color3.fromRGB(255, 50, 50))
     end
 end, 0.345)
 
 local deleteBtn = createConfigButton(ConfigButtonRow, "Delete", function()
     local name = ConfigNameBox.Text
-    if name == "" and ConfigDropdown and ConfigDropdown.GetValue then name = ConfigDropdown.GetValue() end
+    if name == "" then
+        name = ConfigDropdown.GetValue()
+    end
     if name == "" then
         showToast(getLocalizedMessage("PleaseSelectName"), Color3.fromRGB(255, 200, 50))
         return
     end
+    local path = getConfigPath(name)
     local success = pcall(function()
-        if typeof(delfile) == "function" then delfile(getConfigPath(name)) return true end
+        if typeof(delfile) == "function" and typeof(isfile) == "function" and isfile(path) then
+            delfile(path)
+            return true
+        end
         return false
     end)
     if success then
-        showToast(getLocalizedMessage("ConfigDeleted", name), Color3.fromRGB(255, 200, 50))
+        showToast(getLocalizedMessage("ConfigDeleted", name), Color3.fromRGB(255, 100, 100))
+        ConfigNameBox.Text = ""
         if ConfigDropdown and ConfigDropdown.UpdateOptions then
             ConfigDropdown.UpdateOptions(getConfigList())
-            if ConfigDropdown.SetValue then ConfigDropdown.SetValue("") end
         end
     else
         showToast(getLocalizedMessage("ConfigDeleteFailed", name), Color3.fromRGB(255, 50, 50))
     end
 end, 0.69)
 
-table.insert(LocaleObjects, {Object = saveBtn, Key = "Save"})
-table.insert(LocaleObjects, {Object = loadBtn, Key = "Load"})
-table.insert(LocaleObjects, {Object = deleteBtn, Key = "Delete"})
-
 -- ============================================================================
--- LAUNCH & INITIALIZATION
+-- LOADING ANIMATION AND STARTUP FINISH
 -- ============================================================================
-local function updateLoadingText(percent)
-    local lang = Library.CurrentLanguage or "English"
-    local statusText = ""
-    if percent <= 25 then
-        statusText = Localization[lang]["LoadingUI"] or "LOADING INTERFACES"
-    elseif percent <= 50 then
-        statusText = Localization[lang]["InitModules"] or "INITIALIZING MODULES"
-    elseif percent <= 75 then
-        statusText = Localization[lang]["SettingAnimations"] or "SETTING UP ANIMATIONS"
-    elseif percent <= 99 then
-        statusText = Localization[lang]["PrepLaunch"] or "PREPARING FOR LAUNCH"
-    else
-        statusText = Localization[lang]["Ready"] or "READY!"
-    end
-    
-    LoadingStatus.Text = statusText
-    LoadingPercent.Text = string.format("%d%%", percent)
-    tween(ProgressBarFill, {Size = UDim2.new(math.clamp(percent / 100, 0, 1), 0, 1, 0)}, 0.15)
-end
-
 task.spawn(function()
-    local totalSteps = 30
-    for i = 1, totalSteps do
-        task.wait(0.03)
-        local pct = math.floor((i / totalSteps) * 100)
-        updateLoadingText(pct)
+    local duration = 1.5
+    local elapsed = 0
+    while elapsed < duration do
+        local dt = task.wait()
+        elapsed = elapsed + dt
+        local progress = math.clamp(elapsed / duration, 0, 1)
+        local percent = math.floor(progress * 100)
+        if LoadingPercent then
+            LoadingPercent.Text = percent .. "%"
+        end
+        if ProgressBarFill then
+            ProgressBarFill.Size = UDim2.new(progress, 0, 1, 0)
+        end
     end
     
     if bubbleConnection then
@@ -2430,40 +2416,31 @@ task.spawn(function()
         bubbleConnection = nil
     end
     
-    for _, b in ipairs(Bubbles) do
-        if b.Object and b.Object.Parent then
-            b.Object:Destroy()
-        end
-    end
-    
     if LoadingOverlay and LoadingOverlay.Parent then
-        tween(LoadingOverlay, {BackgroundTransparency = 1}, 0.4)
-        for _, child in ipairs(LoadingOverlay:GetChildren()) do
+        tween(LoadingOverlay, {BackgroundTransparency = 1}, 0.3)
+        for _, child in ipairs(LoadingOverlay:GetDescendants()) do
             if child:IsA("GuiObject") then
                 pcall(function()
-                    if child:IsA("TextLabel") or child:IsA("TextBox") or child:IsA("TextButton") then
-                        tween(child, {TextTransparency = 1}, 0.4)
+                    if child:IsA("TextLabel") then
+                        tween(child, {TextTransparency = 1}, 0.3)
                     elseif child:IsA("ImageLabel") then
-                        tween(child, {ImageTransparency = 1}, 0.4)
+                        tween(child, {ImageTransparency = 1}, 0.3)
                     elseif child:IsA("Frame") then
-                        tween(child, {BackgroundTransparency = 1}, 0.4)
+                        tween(child, {BackgroundTransparency = 1}, 0.3)
                     end
                 end)
             end
         end
-        task.wait(0.4)
+        task.wait(0.35)
         LoadingOverlay:Destroy()
     end
     
-    MainFrame.Visible = true
-    setActiveTab(allTabButtons["Settings"])
-    currentActiveTab = allTabButtons["Settings"]
-    allPages["Settings"].Visible = true
-    
-    Library:UpdateTheme("AMOLED")
-    
-    -- Инициализируем небо по умолчанию
-    ApplySky("Default")
+    if MainFrame then
+        MainFrame.Visible = true
+        MainFrame.Size = UDim2.new(0, 500, 0, 310)
+        MainFrame.BackgroundTransparency = 1
+        tween(MainFrame, {Size = UDim2.new(0, 550, 0, 350), BackgroundTransparency = 0.15}, 0.4)
+    end
     
     showToast(getLocalizedMessage("HubLoaded"), Color3.fromRGB(255, 255, 255))
 end)
