@@ -1043,7 +1043,7 @@ local Localization = {
     }
 }
 
--- Расширенный список шрифтов с поддержкой Fredoka One
+-- Расширенный список шрифтов
 local FontMapping = {
     ["Fredoka One"] = Enum.Font.FredokaOne,
     ["Gotham"] = Enum.Font.Gotham,
@@ -1060,8 +1060,19 @@ local FontMapping = {
 
 local showToast
 
+-- Интеллектуальное применение шрифтов с поддержкой кириллицы для всех вариантов
 local function applyFontToAll(font)
     Library.CurrentFont = font
+    
+    -- Автоматический фоллбек для шрифтов без нативной поддержки кириллицы в Roblox (Bangers, Luckiest Guy, Permanent Marker, Arcade)
+    -- при выборе русского языка, чтобы текст не превращался в квадраты/пустоту
+    local actualFont = font
+    if Library.CurrentLanguage == "Русский" then
+        if font == Enum.Font.Bangers or font == Enum.Font.LuckiestGuy or font == Enum.Font.PermanentMarker or font == Enum.Font.Arcade then
+            actualFont = Enum.Font.FredokaOne -- Поддерживает кириллицу и сохраняет стильный, объемный вид
+        end
+    end
+
     local allTextElements = {}
     for _, obj in ipairs(Library.TrackedMainText) do
         if obj and typeof(obj) == "Instance" and obj.Parent and (obj:IsA("TextLabel") or obj:IsA("TextButton") or obj:IsA("TextBox")) then
@@ -1074,14 +1085,14 @@ local function applyFontToAll(font)
         end
     end
     for _, obj in ipairs(allTextElements) do
-        pcall(function() obj.Font = font end)
+        pcall(function() obj.Font = actualFont end)
     end
 end
 
 function Library:UpdateLanguage(lang)
     if not Localization[lang] then return end
     Library.CurrentLanguage = lang
-    applyFontToAll(Library.CurrentFont)
+    applyFontToAll(Library.CurrentFont) -- Переприменяем текущий шрифт с учетом поддержки кириллицы
     for _, loc in ipairs(LocaleObjects) do
         if loc.Object and typeof(loc.Object) == "Instance" and loc.Object.Parent then
             local newText = Localization[lang][loc.Key] or loc.Key
