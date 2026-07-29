@@ -1,5 +1,5 @@
 -- ============================================================================
--- Dark Hub - Settings Edition (AMOLED Style with UI, Theme & Configs Sub-Tabs)
+-- Dark Hub - Settings Edition (AMOLED Style with UI, Theme & Configs)
 -- ============================================================================
 local TweenService = game:GetService("TweenService")
 local UserInputService = game:GetService("UserInputService")
@@ -8,7 +8,6 @@ local GuiService = game:GetService("GuiService")
 local Players = game:GetService("Players")
 local VirtualUser = game:GetService("VirtualUser")
 local HttpService = game:GetService("HttpService")
-local Lighting = game:GetService("Lighting")
 
 -- Wait for LocalPlayer
 local LocalPlayer = Players.LocalPlayer
@@ -101,7 +100,6 @@ local function tween(obj, props, dur)
     return nil
 end
 
--- Normalize Text
 local function NormalizeText(str)
     if type(str) ~= "string" then
         return ""
