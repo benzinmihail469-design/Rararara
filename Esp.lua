@@ -110,7 +110,8 @@ local function NormalizeText(str)
         ["настройки"] = "settings",
         ["язык"] = "language",
         ["тема"] = "theme",
-        ["шрифт"] = "font"
+        ["шрифт"] = "font",
+        ["небо"] = "sky"
     }
     for ru, en in pairs(synonyms) do
         lowerStr = string.gsub(lowerStr, ru, en)
@@ -672,6 +673,36 @@ local ThemeConfig = {
     ["Golden Hour"] = { Accent = Color3.fromRGB(255, 215, 0), MainBg = Color3.fromRGB(20, 15, 0), ElementBg = Color3.fromRGB(35, 25, 0) }
 }
 
+-- Пресеты неба
+local SkyPresets = {
+    ["Default"] = { SkyboxBk = "", SkyboxDn = "", SkyboxFt = "", SkyboxLf = "", SkyboxRt = "", SkyboxUp = "" },
+    ["Space"] = {
+        SkyboxBk = "rbxassetid://155734327", SkyboxDn = "rbxassetid://155734331",
+        SkyboxFt = "rbxassetid://155734336", SkyboxLf = "rbxassetid://155734335",
+        SkyboxRt = "rbxassetid://155734339", SkyboxUp = "rbxassetid://155734343"
+    },
+    ["Sunset"] = {
+        SkyboxBk = "rbxassetid://600830600", SkyboxDn = "rbxassetid://600830620",
+        SkyboxFt = "rbxassetid://600830643", SkyboxLf = "rbxassetid://600830667",
+        SkyboxRt = "rbxassetid://600830705", SkyboxUp = "rbxassetid://600830744"
+    },
+    ["Night Stars"] = {
+        SkyboxBk = "rbxassetid://12064107", SkyboxDn = "rbxassetid://12064115",
+        SkyboxFt = "rbxassetid://12064121", SkyboxLf = "rbxassetid://12064131",
+        SkyboxRt = "rbxassetid://12064139", SkyboxUp = "rbxassetid://12064148"
+    },
+    ["Vaporwave"] = {
+        SkyboxBk = "rbxassetid://271042516", SkyboxDn = "rbxassetid://271042556",
+        SkyboxFt = "rbxassetid://271042586", SkyboxLf = "rbxassetid://271042615",
+        SkyboxRt = "rbxassetid://271042651", SkyboxUp = "rbxassetid://271042699"
+    },
+    ["Anime Sky"] = {
+        SkyboxBk = "rbxassetid://248555622", SkyboxDn = "rbxassetid://248555710",
+        SkyboxFt = "rbxassetid://248555930", SkyboxLf = "rbxassetid://248555819",
+        SkyboxRt = "rbxassetid://248556015", SkyboxUp = "rbxassetid://248556116"
+    }
+}
+
 local DefaultTheme = { Accent = Color3.fromRGB(255, 255, 255), MainBg = Color3.fromRGB(0, 0, 0), ElementBg = Color3.fromRGB(15, 15, 15) }
 Library.CurrentThemeData = ThemeConfig["AMOLED"]
 
@@ -705,6 +736,8 @@ for name, _ in pairs(ThemeConfig) do
     table.insert(ThemeNamesList, name)
 end
 table.sort(ThemeNamesList)
+
+local SkyNamesList = {"Default", "Space", "Sunset", "Night Stars", "Vaporwave", "Anime Sky"}
 
 local allTabs = {}
 local allTabButtons = {}
@@ -976,6 +1009,7 @@ local Localization = {
         ["Language"] = "Language",
         ["AntiAFK"] = "Anti-AFK",
         ["UITheme"] = "UI Theme",
+        ["Sky"] = "Sky",
         ["AnimatedWindow"] = "Animated Window",
         ["Gradient"] = "Gradient Background",
         ["Configurations"] = "Configurations",
@@ -1007,6 +1041,7 @@ local Localization = {
         ["Language"] = "Язык",
         ["AntiAFK"] = "Анти-АФК",
         ["UITheme"] = "Тема UI",
+        ["Sky"] = "Небо",
         ["AnimatedWindow"] = "Анимированное окно",
         ["Gradient"] = "Градиентный фон",
         ["Configurations"] = "Конфигурации",
@@ -1060,7 +1095,6 @@ local FontMapping = {
 
 local showToast
 
--- Применение универсального шрифта к новому отдельному элементу
 local function applyFontToElement(obj)
     if not obj or not obj.Parent then return end
     local fontKey = Library.CurrentFontKey or "Source Sans"
@@ -1074,7 +1108,6 @@ local function applyFontToElement(obj)
     end)
 end
 
--- Применяет шрифт абсолютно ко всем текстовым объектам GUI через рекурсивный обход
 local function applyFontToAll(fontKey)
     Library.CurrentFontKey = fontKey
     local fontData = FontMapping[fontKey] or FontMapping["Source Sans"]
@@ -1096,12 +1129,10 @@ local function applyFontToAll(fontKey)
     end
 end
 
--- ИСПРАВЛЕННАЯ ФУНКЦИЯ ЯЗЫКА: Сначала меняет тексты, а затем жестко форсирует текущий шрифт
 function Library:UpdateLanguage(lang)
     if not Localization[lang] then return end
     Library.CurrentLanguage = lang
     
-    -- Сначала обновляем все тексты локализации
     for _, loc in ipairs(LocaleObjects) do
         if loc.Object and typeof(loc.Object) == "Instance" and loc.Object.Parent then
             local newText = Localization[lang][loc.Key] or loc.Key
@@ -1116,7 +1147,6 @@ function Library:UpdateLanguage(lang)
         SearchBox.PlaceholderText = (lang == "Русский") and "Поиск..." or "Search..."
     end
     
-    -- Применяем сохраненный шрифт ПОСЛЕ смены текста, чтобы он не сбрасывался
     applyFontToAll(Library.CurrentFontKey)
 end
 
@@ -1920,6 +1950,31 @@ local ThemeDropdown = Library:CreateDropdown(subPages["Theme"], "UITheme", Theme
     end
 end)
 
+-- Выбор неба (Sky Selector) в субвкладке Theme
+local SkyDropdown = Library:CreateDropdown(subPages["Theme"], "Sky", SkyNamesList, "Default", function(selectedSky)
+    local Lighting = game:GetService("Lighting")
+    local sky = Lighting:FindFirstChildOfClass("Sky")
+    if selectedSky == "Default" then
+        if sky then
+            sky:Destroy()
+        end
+    else
+        if not sky then
+            sky = Instance.new("Sky")
+            sky.Parent = Lighting
+        end
+        local preset = SkyPresets[selectedSky]
+        if preset then
+            sky.SkyboxBk = preset.SkyboxBk
+            sky.SkyboxDn = preset.SkyboxDn
+            sky.SkyboxFt = preset.SkyboxFt
+            sky.SkyboxLf = preset.SkyboxLf
+            sky.SkyboxRt = preset.SkyboxRt
+            sky.SkyboxUp = preset.SkyboxUp
+        end
+    end
+end)
+
 local CONFIG_FOLDER = "DarkHub/Configs"
 pcall(function()
     if typeof(makefolder) == "function" and typeof(isfolder) == "function" then
@@ -2014,6 +2069,7 @@ end
 local function getCurrentUIState()
     local state = {
         theme = "AMOLED",
+        sky = "Default",
         language = Library.CurrentLanguage or "English",
         font = Library.CurrentFontKey or "Source Sans",
         ui_size = MainScale and MainScale.Scale or 1,
@@ -2024,6 +2080,7 @@ local function getCurrentUIState()
         gradient = uiGradientInstance ~= nil
     }
     if ThemeDropdown and ThemeDropdown.GetValue then state.theme = ThemeDropdown.GetValue() end
+    if SkyDropdown and SkyDropdown.GetValue then state.sky = SkyDropdown.GetValue() end
     if FontDropdown and FontDropdown.GetValue then state.font = FontDropdown.GetValue() end
     if UISizeSlider and UISizeSlider.GetValue then state.ui_size = UISizeSlider.GetValue() / 100 end
     if TransparencySlider and TransparencySlider.GetValue then state.transparency = TransparencySlider.GetValue() / 100 end
@@ -2039,6 +2096,28 @@ local function applyUIState(state)
     if state.theme and ThemeConfig[state.theme] then
         Library:UpdateTheme(state.theme)
         if ThemeDropdown and ThemeDropdown.SetValue then ThemeDropdown.SetValue(state.theme) end
+    end
+    if state.sky and SkyPresets[state.sky] then
+        if SkyDropdown and SkyDropdown.SetValue then SkyDropdown.SetValue(state.sky) end
+        local Lighting = game:GetService("Lighting")
+        local sky = Lighting:FindFirstChildOfClass("Sky")
+        if state.sky == "Default" then
+            if sky then sky:Destroy() end
+        else
+            if not sky then
+                sky = Instance.new("Sky")
+                sky.Parent = Lighting
+            end
+            local preset = SkyPresets[state.sky]
+            if preset then
+                sky.SkyboxBk = preset.SkyboxBk
+                sky.SkyboxDn = preset.SkyboxDn
+                sky.SkyboxFt = preset.SkyboxFt
+                sky.SkyboxLf = preset.SkyboxLf
+                sky.SkyboxRt = preset.SkyboxRt
+                sky.SkyboxUp = preset.SkyboxUp
+            end
+        end
     end
     if state.language and Localization[state.language] then
         Library:UpdateLanguage(state.language)
@@ -2265,3 +2344,4 @@ task.spawn(function()
     Library:UpdateTheme("AMOLED")
     showToast(getLocalizedMessage("HubLoaded"), Color3.fromRGB(255, 255, 255))
 end)
+у
