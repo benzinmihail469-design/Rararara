@@ -78,22 +78,34 @@ DarkHub.Parent = SafeParent
 DarkHub.ZIndexBehavior = Enum.ZIndexBehavior.Sibling
 DarkHub.IgnoreGuiInset = true
 
+-- Fixed Tween Manager (Tracks tweens per object property)
 local activeTweens = {}
-local function tween(obj, props, dur)
+local function tween(obj, props, dur, easingStyle, easingDirection)
     if not obj or typeof(obj) ~= "Instance" or not obj.Parent then
         return nil
     end
-    if activeTweens[obj] then
-        pcall(function()
-            activeTweens[obj]:Cancel()
-        end)
-        activeTweens[obj] = nil
+    if not activeTweens[obj] then
+        activeTweens[obj] = {}
+    end
+    for prop, _ in pairs(props) do
+        if activeTweens[obj][prop] then
+            pcall(function()
+                activeTweens[obj][prop]:Cancel()
+            end)
+            activeTweens[obj][prop] = nil
+        end
     end
     local success, t = pcall(function()
-        return TweenService:Create(obj, TweenInfo.new(dur or 0.25, Enum.EasingStyle.Quart, Enum.EasingDirection.Out), props)
+        return TweenService:Create(
+            obj,
+            TweenInfo.new(dur or 0.25, easingStyle or Enum.EasingStyle.Quart, easingDirection or Enum.EasingDirection.Out),
+            props
+        )
     end)
     if success and t then
-        activeTweens[obj] = t
+        for prop, _ in pairs(props) do
+            activeTweens[obj][prop] = t
+        end
         t:Play()
         return t
     end
@@ -728,6 +740,7 @@ local currentHoveredTab = nil
 local SubTabNav = nil
 local subPages = {}
 local subTabButtons = {}
+local uiGradientInstance = nil
 
 local function applyHover(button)
     if not button or typeof(button) ~= "Instance" or not button.Parent then return end
@@ -955,9 +968,6 @@ function Library:UpdateTheme(themeName)
         if dropdownData.SelectedLabel and dropdownData.SelectedLabel.Parent then
             tween(dropdownData.SelectedLabel, {TextColor3 = accent})
         end
-        if dropdownData.Arrow and dropdownData.Arrow.Parent then
-            tween(dropdownData.Arrow, {TextColor3 = subTextColor})
-        end
         if dropdownData.OptionsContainer and dropdownData.OptionsContainer.Parent then
             dropdownData.OptionsContainer.ScrollBarImageColor3 = scrollBarColor
             for _, optBtn in ipairs(dropdownData.OptionsContainer:GetChildren()) do
@@ -1016,6 +1026,14 @@ function Library:UpdateTheme(themeName)
     for name, b in pairs(subTabButtons) do
         local isActive = subPages[name] and subPages[name].Visible
         tween(b, {TextColor3 = isActive and accent or subTextColor}, 0.2)
+    end
+
+    if uiGradientInstance and uiGradientInstance.Parent then
+        uiGradientInstance.Color = ColorSequence.new({
+            ColorSequenceKeypoint.new(0, mainBg),
+            ColorSequenceKeypoint.new(0.5, accent),
+            ColorSequenceKeypoint.new(1, mainBg)
+        })
     end
 end
 
@@ -1219,7 +1237,6 @@ local function toggleAnimatedWindow(state)
     end
 end
 
-local uiGradientInstance = nil
 local gradientRotateConnection = nil
 local function toggleGradientEffect(state)
     if state then
@@ -1317,10 +1334,11 @@ function Library:CreateDropdown(parentPage, textKey, options, default, callback)
     DropdownFrame.ZIndex = 6
     DropdownFrame.LayoutOrder = #parentPage:GetChildren()
     Instance.new("UICorner", DropdownFrame).CornerRadius = UDim.new(0, 6)
-    local isL = isLightColor(getThemeMainBg())
     local DropdownStroke = Instance.new("UIStroke", DropdownFrame)
-    DropdownStroke.Color = isL and Color3.fromRGB(190, 190, 190) or Color3.fromRGB(35, 35, 35)
+    DropdownStroke.Color = Color3.fromRGB(35, 35, 35)
     DropdownStroke.Thickness = 1
+    table.insert(Library.TrackedElementBg, DropdownFrame)
+    table.insert(Library.TrackedStrokes, DropdownStroke)
 
     local HeaderBtn = Instance.new("TextButton", DropdownFrame)
     HeaderBtn.Name = "HeaderBtn"
@@ -1335,11 +1353,12 @@ function Library:CreateDropdown(parentPage, textKey, options, default, callback)
     TitleLabel.Position = UDim2.new(0, 12, 0, 0)
     TitleLabel.Text = initialText
     applyFontToElement(TitleLabel)
-    TitleLabel.TextColor3 = isL and Color3.fromRGB(35, 35, 35) or Color3.fromRGB(230, 230, 230)
+    TitleLabel.TextColor3 = Color3.fromRGB(230, 230, 230)
     TitleLabel.TextSize = 13
     TitleLabel.TextXAlignment = Enum.TextXAlignment.Left
     TitleLabel.BackgroundTransparency = 1
     TitleLabel.ZIndex = 8
+    table.insert(Library.TrackedMainText, TitleLabel)
 
     local SelectedLabel = Instance.new("TextLabel", HeaderBtn)
     SelectedLabel.Name = "SelectedLabel"
@@ -1352,18 +1371,20 @@ function Library:CreateDropdown(parentPage, textKey, options, default, callback)
     SelectedLabel.TextXAlignment = Enum.TextXAlignment.Right
     SelectedLabel.BackgroundTransparency = 1
     SelectedLabel.ZIndex = 8
+    table.insert(Library.TrackedAccents, SelectedLabel)
 
     local Arrow = Instance.new("TextLabel", HeaderBtn)
     Arrow.Name = "Arrow"
     Arrow.Size = UDim2.new(0, 20, 1, 0)
     Arrow.Text = "v"
     applyFontToElement(Arrow)
-    Arrow.TextColor3 = isL and Color3.fromRGB(110, 110, 110) or Color3.fromRGB(150, 150, 150)
+    Arrow.TextColor3 = Color3.fromRGB(150, 150, 150)
     Arrow.TextSize = 10
     Arrow.BackgroundTransparency = 1
     Arrow.AnchorPoint = Vector2.new(0.5, 0.5)
     Arrow.Position = UDim2.new(1, -16, 0.5, 0)
     Arrow.ZIndex = 8
+    table.insert(Library.TrackedSubText, Arrow)
 
     local OptionsContainer = Instance.new("ScrollingFrame", DropdownFrame)
     OptionsContainer.Name = "OptionsContainer"
@@ -1419,7 +1440,10 @@ function Library:CreateDropdown(parentPage, textKey, options, default, callback)
             SelectedLabel.Text = option
         end
         if type(callback) == "function" then
-            pcall(callback, option)
+            local success, err = pcall(callback, option)
+            if not success then
+                warn("[Dark Hub Error in Dropdown Callback]:", err)
+            end
         end
     end
 
@@ -1444,12 +1468,22 @@ function Library:CreateDropdown(parentPage, textKey, options, default, callback)
             OptLabel.Text = option
             applyFontToElement(OptLabel)
             
-            local currentIsL = isLightColor(getThemeMainBg())
-            OptLabel.TextColor3 = currentIsL and Color3.fromRGB(80, 80, 80) or Color3.fromRGB(180, 180, 180)
+            local isL = isLightColor(getThemeMainBg())
+            OptLabel.TextColor3 = isL and Color3.fromRGB(80, 80, 80) or Color3.fromRGB(180, 180, 180)
             OptLabel.TextSize = 12
             OptLabel.TextXAlignment = Enum.TextXAlignment.Left
             OptLabel.BackgroundTransparency = 1
             OptLabel.ZIndex = 10
+            table.insert(Library.TrackedSubText, OptLabel)
+
+            OptBtn.MouseEnter:Connect(function()
+                local mainIsL = isLightColor(getThemeMainBg())
+                local hoverBg = mainIsL and Color3.fromRGB(220, 220, 220) or Color3.fromRGB(30, 30, 30)
+                tween(OptBtn, {BackgroundColor3 = hoverBg, BackgroundTransparency = 0.5}, 0.15)
+            end)
+            OptBtn.MouseLeave:Connect(function()
+                tween(OptBtn, {BackgroundTransparency = 1}, 0.15)
+            end)
 
             OptBtn.Activated:Connect(function()
                 selectValue(option)
@@ -1464,7 +1498,6 @@ function Library:CreateDropdown(parentPage, textKey, options, default, callback)
         Stroke = DropdownStroke,
         TitleLabel = TitleLabel,
         SelectedLabel = SelectedLabel,
-        Arrow = Arrow,
         OptionsContainer = OptionsContainer
     })
 
@@ -1487,15 +1520,17 @@ function Library:CreateButton(parentPage, textKey, callback)
     Btn.BackgroundColor3 = Library.CurrentThemeData.ElementBg or DefaultTheme.ElementBg
     Btn.Text = initialText
     applyFontToElement(Btn)
-    local isL = isLightColor(getThemeMainBg())
-    Btn.TextColor3 = isL and Color3.fromRGB(35, 35, 35) or Color3.fromRGB(230, 230, 230)
+    Btn.TextColor3 = Color3.fromRGB(230, 230, 230)
     Btn.TextSize = 13
     Btn.ClipsDescendants = true
     Btn.ZIndex = 6
     Btn.LayoutOrder = #parentPage:GetChildren()
     Instance.new("UICorner", Btn).CornerRadius = UDim.new(0, 6)
     local BtnStroke = Instance.new("UIStroke", Btn)
-    BtnStroke.Color = isL and Color3.fromRGB(190, 190, 190) or Color3.fromRGB(35, 35, 35)
+    BtnStroke.Color = Color3.fromRGB(35, 35, 35)
+    table.insert(Library.TrackedElementBg, Btn)
+    table.insert(Library.TrackedMainText, Btn)
+    table.insert(Library.TrackedStrokes, BtnStroke)
     
     table.insert(Library.TrackedButtons, {
         Button = Btn,
@@ -1526,25 +1561,27 @@ function Library:CreateToggle(parentPage, textKey, default, callback)
     TglFrame.ZIndex = 6
     TglFrame.LayoutOrder = #parentPage:GetChildren()
     Instance.new("UICorner", TglFrame).CornerRadius = UDim.new(0, 6)
-    local isL = isLightColor(getThemeMainBg())
     local TglStroke = Instance.new("UIStroke", TglFrame)
-    TglStroke.Color = isL and Color3.fromRGB(190, 190, 190) or Color3.fromRGB(35, 35, 35)
+    TglStroke.Color = Color3.fromRGB(35, 35, 35)
+    table.insert(Library.TrackedElementBg, TglFrame)
+    table.insert(Library.TrackedStrokes, TglStroke)
 
     local TglLabel = Instance.new("TextLabel", TglFrame)
     TglLabel.Size = UDim2.new(1, -60, 1, 0)
     TglLabel.Position = UDim2.new(0, 12, 0, 0)
     TglLabel.Text = initialText
     applyFontToElement(TglLabel)
-    TglLabel.TextColor3 = isL and Color3.fromRGB(35, 35, 35) or Color3.fromRGB(230, 230, 230)
+    TglLabel.TextColor3 = Color3.fromRGB(230, 230, 230)
     TglLabel.TextSize = 13
     TglLabel.TextXAlignment = Enum.TextXAlignment.Left
     TglLabel.BackgroundTransparency = 1
     TglLabel.ZIndex = 7
+    table.insert(Library.TrackedMainText, TglLabel)
 
     local Checkbox = Instance.new("TextButton", TglFrame)
     Checkbox.Size = UDim2.new(0, 34, 0, 18)
     Checkbox.Position = UDim2.new(1, -44, 0.5, -9)
-    Checkbox.BackgroundColor3 = default and getThemeAccent() or (isL and Color3.fromRGB(200, 200, 200) or Color3.fromRGB(35, 35, 35))
+    Checkbox.BackgroundColor3 = default and getThemeAccent() or (isLightColor(getThemeMainBg()) and Color3.fromRGB(200, 200, 200) or Color3.fromRGB(35, 35, 35))
     Checkbox.Text = ""
     Checkbox.ZIndex = 7
     Instance.new("UICorner", Checkbox).CornerRadius = UDim.new(0, 9)
@@ -1577,8 +1614,8 @@ function Library:CreateToggle(parentPage, textKey, default, callback)
             tween(Checkbox, {BackgroundColor3 = getThemeAccent()}, 0.2)
             tween(Indicator, {Position = UDim2.new(1, -16, 0.5, -7), BackgroundColor3 = mainBg}, 0.2)
         else
-            local currentIsL = isLightColor(mainBg)
-            local offColor = currentIsL and Color3.fromRGB(200, 200, 200) or Color3.fromRGB(35, 35, 35)
+            local isL = isLightColor(mainBg)
+            local offColor = isL and Color3.fromRGB(200, 200, 200) or Color3.fromRGB(35, 35, 35)
             tween(Checkbox, {BackgroundColor3 = offColor}, 0.2)
             tween(Indicator, {Position = UDim2.new(0, 2, 0.5, -7), BackgroundColor3 = getThemeAccent()}, 0.2)
         end
@@ -1609,35 +1646,38 @@ function Library:CreateSlider(parentPage, textKey, min, max, default, callback)
     SliderFrame.ZIndex = 6
     SliderFrame.LayoutOrder = #parentPage:GetChildren()
     Instance.new("UICorner", SliderFrame).CornerRadius = UDim.new(0, 8)
-    local isL = isLightColor(getThemeMainBg())
     local SliderStroke = Instance.new("UIStroke", SliderFrame)
-    SliderStroke.Color = isL and Color3.fromRGB(190, 190, 190) or Color3.fromRGB(35, 35, 35)
+    SliderStroke.Color = Color3.fromRGB(35, 35, 35)
+    table.insert(Library.TrackedElementBg, SliderFrame)
+    table.insert(Library.TrackedStrokes, SliderStroke)
 
     local SliderLabel = Instance.new("TextLabel", SliderFrame)
     SliderLabel.Size = UDim2.new(0.5, -12, 0, 22)
     SliderLabel.Position = UDim2.new(0, 12, 0, 6)
     SliderLabel.Text = initialText
     applyFontToElement(SliderLabel)
-    SliderLabel.TextColor3 = isL and Color3.fromRGB(35, 35, 35) or Color3.fromRGB(230, 230, 230)
+    SliderLabel.TextColor3 = Color3.fromRGB(230, 230, 230)
     SliderLabel.TextSize = 13
     SliderLabel.TextXAlignment = Enum.TextXAlignment.Left
     SliderLabel.BackgroundTransparency = 1
     SliderLabel.ZIndex = 7
+    table.insert(Library.TrackedMainText, SliderLabel)
 
     local ValueLabel = Instance.new("TextLabel", SliderFrame)
     ValueLabel.Size = UDim2.new(0.5, -12, 0, 22)
     ValueLabel.Position = UDim2.new(0.5, 0, 0, 6)
     applyFontToElement(ValueLabel)
-    ValueLabel.TextColor3 = isL and Color3.fromRGB(110, 110, 110) or Color3.fromRGB(160, 160, 160)
+    ValueLabel.TextColor3 = Color3.fromRGB(160, 160, 160)
     ValueLabel.TextSize = 13
     ValueLabel.TextXAlignment = Enum.TextXAlignment.Right
     ValueLabel.BackgroundTransparency = 1
     ValueLabel.ZIndex = 7
+    table.insert(Library.TrackedSubText, ValueLabel)
 
     local SliderTrack = Instance.new("Frame", SliderFrame)
     SliderTrack.Size = UDim2.new(1, -24, 0, 5)
     SliderTrack.Position = UDim2.new(0, 12, 0, 34)
-    SliderTrack.BackgroundColor3 = isL and Color3.fromRGB(210, 210, 210) or Color3.fromRGB(30, 30, 30)
+    SliderTrack.BackgroundColor3 = isLightColor(getThemeMainBg()) and Color3.fromRGB(210, 210, 210) or Color3.fromRGB(30, 30, 30)
     SliderTrack.ZIndex = 7
     Instance.new("UICorner", SliderTrack).CornerRadius = UDim.new(0, 3)
     table.insert(Library.TrackedSliderTracks, SliderTrack)
@@ -1777,6 +1817,7 @@ function Library:CreatePage(textKey, iconId, layoutOrder)
     TabContainer.LayoutOrder = layoutOrder or 0
     TabContainer.Name = "TabContainer"
     Instance.new("UICorner", TabContainer).CornerRadius = UDim.new(0, 8)
+    table.insert(Library.TrackedElementBg, TabContainer)
 
     local TabBtn = Instance.new("TextButton", TabContainer)
     TabBtn.Name = textKey
@@ -1788,6 +1829,8 @@ function Library:CreatePage(textKey, iconId, layoutOrder)
     TabBtn.BackgroundTransparency = 1
     TabBtn.TextXAlignment = Enum.TextXAlignment.Left
     TabBtn.ZIndex = 7
+    
+    table.insert(Library.TrackedMainText, TabBtn)
 
     local Padding = Instance.new("UIPadding", TabBtn)
     Padding.PaddingLeft = UDim.new(0, iconId and 42 or 12)
@@ -1866,6 +1909,13 @@ end
 -- ============================================================================
 local SettingsPage = Library:CreatePage("Settings", "117996761927034", 1)
 
+-- Auto-select Settings page as active default
+if allTabButtons["Settings"] then
+    currentActiveTab = allTabButtons["Settings"]
+    setActiveTab(allTabButtons["Settings"])
+    SettingsPage.Visible = true
+end
+
 SubTabNav = Instance.new("Frame", SettingsPage)
 SubTabNav.Name = "SubTabNav"
 SubTabNav.Size = UDim2.new(1, -20, 0, 36)
@@ -1935,6 +1985,7 @@ for _, data in ipairs(subTabsData) do
     btn.TextSize = 12
     btn.ZIndex = 7
     subTabButtons[data.Name] = btn
+    table.insert(Library.TrackedMainText, btn)
 
     btn.Activated:Connect(function()
         for name, page in pairs(subPages) do
@@ -2000,6 +2051,10 @@ end)
 
 local ThemeDropdown = Library:CreateDropdown(subPages["Theme"], "UITheme", ThemeNamesList, "AMOLED", function(selectedTheme)
     Library:UpdateTheme(selectedTheme)
+    for name, b in pairs(subTabButtons) do
+        local isActive = subPages[name] and subPages[name].Visible
+        tween(b, {TextColor3 = isActive and getThemeAccent() or Color3.fromRGB(140, 140, 140)}, 0.2)
+    end
 end)
 
 -- ============================================================================
@@ -2196,14 +2251,16 @@ local function createConfigButton(parent, textKey, callback, position)
     Btn.BackgroundColor3 = Library.CurrentThemeData.ElementBg or DefaultTheme.ElementBg
     Btn.Text = textKey
     applyFontToElement(Btn)
-    local isL = isLightColor(getThemeMainBg())
-    Btn.TextColor3 = isL and Color3.fromRGB(35, 35, 35) or Color3.fromRGB(230, 230, 230)
+    Btn.TextColor3 = Color3.fromRGB(230, 230, 230)
     Btn.TextSize = 12
     Btn.ClipsDescendants = true
     Btn.ZIndex = 7
     Instance.new("UICorner", Btn).CornerRadius = UDim.new(0, 6)
     local BtnStroke = Instance.new("UIStroke", Btn)
-    BtnStroke.Color = isL and Color3.fromRGB(190, 190, 190) or Color3.fromRGB(35, 35, 35)
+    BtnStroke.Color = Color3.fromRGB(35, 35, 35)
+    table.insert(Library.TrackedElementBg, Btn)
+    table.insert(Library.TrackedMainText, Btn)
+    table.insert(Library.TrackedStrokes, BtnStroke)
     
     table.insert(Library.TrackedButtons, {
         Button = Btn,
@@ -2331,23 +2388,5 @@ task.spawn(function()
     end
     
     MainFrame.Visible = true
-    
-    -- Activate default tab
-    if allTabButtons["Settings"] then
-        local btn = allTabButtons["Settings"]
-        for tName, pFrame in pairs(allPages) do
-            if pFrame and pFrame.Parent then
-                pFrame.Visible = false
-            end
-        end
-        Library.CurrentTabKey = "Settings"
-        TabTitle.Text = Localization[Library.CurrentLanguage] and Localization[Library.CurrentLanguage]["Settings"] or "Settings"
-        if allPages["Settings"] then
-            allPages["Settings"].Visible = true
-        end
-        setActiveTab(btn)
-        currentActiveTab = btn
-    end
-
     showToast(Localization[Library.CurrentLanguage]["HubLoaded"], getThemeAccent())
 end)
