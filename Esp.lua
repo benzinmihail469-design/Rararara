@@ -1073,6 +1073,10 @@ local Localization = {
         ["AntiAFK"] = "Anti-AFK",
         ["UITheme"] = "UI Theme",
         ["Sky"] = "Sky",
+        ["Fog"] = "Fog",
+        ["FogColor"] = "Fog Color",
+        ["FogStart"] = "Fog Start",
+        ["FogEnd"] = "Fog End",
         ["AnimatedWindow"] = "Animated Window",
         ["Gradient"] = "Gradient Background",
         ["Configurations"] = "Configurations",
@@ -1105,6 +1109,10 @@ local Localization = {
         ["AntiAFK"] = "Анти-АФК",
         ["UITheme"] = "Тема UI",
         ["Sky"] = "Небо",
+        ["Fog"] = "Туман",
+        ["FogColor"] = "Цвет тумана",
+        ["FogStart"] = "Начало тумана",
+        ["FogEnd"] = "Конец тумана",
         ["AnimatedWindow"] = "Анимированное окно",
         ["Gradient"] = "Градиентный фон",
         ["Configurations"] = "Конфигурации",
@@ -2117,6 +2125,37 @@ local SkyDropdown = Library:CreateDropdown(subPages["Theme"], "Sky", {"Default",
 end)
 
 -- ============================================================================
+-- FOG SYSTEM (IN THEME SUB-TAB)
+-- ============================================================================
+local FogToggle = Library:CreateToggle(subPages["Theme"], "Fog", false, function(state)
+    Lighting.Fog = state
+end)
+
+local FogColorDropdown = Library:CreateDropdown(subPages["Theme"], "FogColor", {"White", "Black", "Red", "Green", "Blue", "Yellow", "Orange", "Purple", "Cyan", "Pink"}, "White", function(selectedColor)
+    local colorMap = {
+        ["White"] = Color3.fromRGB(255, 255, 255),
+        ["Black"] = Color3.fromRGB(0, 0, 0),
+        ["Red"] = Color3.fromRGB(255, 0, 0),
+        ["Green"] = Color3.fromRGB(0, 255, 0),
+        ["Blue"] = Color3.fromRGB(0, 0, 255),
+        ["Yellow"] = Color3.fromRGB(255, 255, 0),
+        ["Orange"] = Color3.fromRGB(255, 165, 0),
+        ["Purple"] = Color3.fromRGB(128, 0, 128),
+        ["Cyan"] = Color3.fromRGB(0, 255, 255),
+        ["Pink"] = Color3.fromRGB(255, 192, 203)
+    }
+    Lighting.FogColor = colorMap[selectedColor] or Color3.fromRGB(255, 255, 255)
+end)
+
+local FogStartSlider = Library:CreateSlider(subPages["Theme"], "FogStart", 0, 500, 0, function(value)
+    Lighting.FogStart = value
+end)
+
+local FogEndSlider = Library:CreateSlider(subPages["Theme"], "FogEnd", 0, 1000, 500, function(value)
+    Lighting.FogEnd = value
+end)
+
+-- ============================================================================
 -- CONFIGURATIONS SYSTEM
 -- ============================================================================
 local CONFIG_FOLDER = "DarkHub/Configs"
@@ -2221,7 +2260,11 @@ local function getCurrentUIState()
         fov = workspace.CurrentCamera and workspace.CurrentCamera.FieldOfView or 70,
         anti_afk = true,
         animated_window = animatedWindowConnection ~= nil,
-        gradient = uiGradientInstance ~= nil
+        gradient = uiGradientInstance ~= nil,
+        fog = Lighting.Fog or false,
+        fog_color = Lighting.FogColor and tostring(Lighting.FogColor) or "White",
+        fog_start = Lighting.FogStart or 0,
+        fog_end = Lighting.FogEnd or 500
     }
     if ThemeDropdown and ThemeDropdown.GetValue then state.theme = ThemeDropdown.GetValue() end
     if SkyDropdown and SkyDropdown.GetValue then state.sky = SkyDropdown.GetValue() end
@@ -2232,6 +2275,10 @@ local function getCurrentUIState()
     if AntiAFKToggle and AntiAFKToggle.GetValue then state.anti_afk = AntiAFKToggle.GetValue() end
     if AnimatedWindowToggle and AnimatedWindowToggle.GetValue then state.animated_window = AnimatedWindowToggle.GetValue() end
     if GradientToggle and GradientToggle.GetValue then state.gradient = GradientToggle.GetValue() end
+    if FogToggle and FogToggle.GetValue then state.fog = FogToggle.GetValue() end
+    if FogColorDropdown and FogColorDropdown.GetValue then state.fog_color = FogColorDropdown.GetValue() end
+    if FogStartSlider and FogStartSlider.GetValue then state.fog_start = FogStartSlider.GetValue() end
+    if FogEndSlider and FogEndSlider.GetValue then state.fog_end = FogEndSlider.GetValue() end
     return state
 end
 
@@ -2268,6 +2315,10 @@ local function applyUIState(state)
     if state.anti_afk ~= nil and AntiAFKToggle and AntiAFKToggle.SetValue then AntiAFKToggle.SetValue(state.anti_afk) end
     if state.animated_window ~= nil and AnimatedWindowToggle and AnimatedWindowToggle.SetValue then AnimatedWindowToggle.SetValue(state.animated_window) end
     if state.gradient ~= nil and GradientToggle and GradientToggle.SetValue then GradientToggle.SetValue(state.gradient) end
+    if state.fog ~= nil and FogToggle and FogToggle.SetValue then FogToggle.SetValue(state.fog) end
+    if state.fog_color and FogColorDropdown and FogColorDropdown.SetValue then FogColorDropdown.SetValue(state.fog_color) end
+    if state.fog_start ~= nil and FogStartSlider and FogStartSlider.SetValue then FogStartSlider.SetValue(state.fog_start) end
+    if state.fog_end ~= nil and FogEndSlider and FogEndSlider.SetValue then FogEndSlider.SetValue(state.fog_end) end
 end
 
 local ConfigInputFrame = Instance.new("Frame", subPages["Configs"])
