@@ -675,7 +675,7 @@ local ThemeConfig = {
 }
 
 -- ============================================================================
--- SKY SYSTEM - РАБОТАЮЩАЯ ФУНКЦИЯ НЕБА
+-- SKY SYSTEM - РАСШИРЕННАЯ ВЕРСИЯ С ВАШИМ НЕБОМ "PURPLE"
 -- ============================================================================
 -- Расширенные пресеты неба с кастомными вариантами
 local SkyPresets = {
@@ -750,6 +750,16 @@ local SkyPresets = {
         SkyboxFt = "rbxassetid://1372116269", SkyboxLf = "rbxassetid://1372116285",
         SkyboxRt = "rbxassetid://1372116295", SkyboxUp = "rbxassetid://1372116304",
         Description = "Чужая планета"
+    },
+    -- ===== ВАШЕ КАСТОМНОЕ НЕБО "PURPLE" =====
+    ["Purple Sky"] = {
+        SkyboxBk = "rbxassetid://89533939541361", 
+        SkyboxDn = "rbxassetid://89533939541361",
+        SkyboxFt = "rbxassetid://89533939541361",
+        SkyboxLf = "rbxassetid://89533939541361",
+        SkyboxRt = "rbxassetid://89533939541361",
+        SkyboxUp = "rbxassetid://89533939541361",
+        Description = "Фиолетовое небо (кастом)"
     }
 }
 
@@ -2073,7 +2083,7 @@ local ThemeDropdown = Library:CreateDropdown(subPages["Theme"], "UITheme", Theme
 end)
 
 -- ============================================================================
--- SKY SELECTOR В СУБВКЛАДКЕ THEME (ОБНОВЛЕННАЯ ВЕРСИЯ)
+-- SKY SELECTOR В СУБВКЛАДКЕ THEME (ОБНОВЛЕННАЯ ВЕРСИЯ С ВАШИМ НЕБОМ)
 -- ============================================================================
 local SkyDropdown = Library:CreateDropdown(subPages["Theme"], "Sky", SkyNamesList, "Default", function(selectedSky)
     ApplySky(selectedSky)
