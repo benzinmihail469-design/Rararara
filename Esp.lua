@@ -1072,7 +1072,6 @@ local Localization = {
         ["Language"] = "Language",
         ["AntiAFK"] = "Anti-AFK",
         ["UITheme"] = "UI Theme",
-        ["Sky"] = "Sky",
         ["AnimatedWindow"] = "Animated Window",
         ["Gradient"] = "Gradient Background",
         ["Configurations"] = "Configurations",
@@ -1104,7 +1103,6 @@ local Localization = {
         ["Language"] = "Язык",
         ["AntiAFK"] = "Анти-АФК",
         ["UITheme"] = "Тема UI",
-        ["Sky"] = "Кастомное небо",
         ["AnimatedWindow"] = "Анимированное окно",
         ["Gradient"] = "Градиентный фон",
         ["Configurations"] = "Конфигурации",
@@ -2061,111 +2059,6 @@ local ThemeDropdown = Library:CreateDropdown(subPages["Theme"], "UITheme", Theme
 end)
 
 -- ============================================================================
--- CUSTOM SKY SYSTEM (FIXED)
--- ============================================================================
-local skyPresets = {
-    ["Default"] = nil,
-    ["Purple Nebula"] = {
-        Bk = "rbxassetid://159454299",
-        Dn = "rbxassetid://159454153",
-        Ft = "rbxassetid://159454290",
-        Lf = "rbxassetid://159454286",
-        Rt = "rbxassetid://159454299",
-        Up = "rbxassetid://159454288"
-    },
-    ["Aesthetic Night"] = {
-        Bk = "rbxassetid://12064107",
-        Dn = "rbxassetid://12064152",
-        Ft = "rbxassetid://12064121",
-        Lf = "rbxassetid://12064131",
-        Rt = "rbxassetid://12064115",
-        Up = "rbxassetid://12064143"
-    },
-    ["Pink Sunset"] = {
-        Bk = "rbxassetid://271042516",
-        Dn = "rbxassetid://271041857",
-        Ft = "rbxassetid://271042306",
-        Lf = "rbxassetid://271042456",
-        Rt = "rbxassetid://271042167",
-        Up = "rbxassetid://271042668"
-    },
-    ["Space"] = {
-        Bk = "rbxassetid://159454299",
-        Dn = "rbxassetid://159454153",
-        Ft = "rbxassetid://159454290",
-        Lf = "rbxassetid://159454286",
-        Rt = "rbxassetid://159454299",
-        Up = "rbxassetid://159454288"
-    },
-    ["Custom Sky 1"] = {
-        Bk = "rbxassetid://89533939541361",
-        Dn = "rbxassetid://89533939541361",
-        Ft = "rbxassetid://89533939541361",
-        Lf = "rbxassetid://89533939541361",
-        Rt = "rbxassetid://89533939541361",
-        Up = "rbxassetid://89533939541361"
-    }
-}
-
-local function applySky(skyName)
-    local preset = skyPresets[skyName]
-    local currentSky = Lighting:FindFirstChildOfClass("Sky")
-    
-    if not preset then
-        if currentSky and currentSky.Name == "DarkHubSky" then
-            currentSky:Destroy()
-        end
-        local atmo = Lighting:FindFirstChildOfClass("Atmosphere")
-        if atmo and atmo.Name == "DarkHubDisabledAtmo" then
-            atmo.Name = "Atmosphere"
-        end
-        return
-    end
-
-    -- Отключаем Atmosphere, чтобы туман не перекрывал Skybox
-    local atmo = Lighting:FindFirstChildOfClass("Atmosphere")
-    if atmo then
-        atmo.Name = "DarkHubDisabledAtmo"
-    end
-
-    if not currentSky or currentSky.Name ~= "DarkHubSky" then
-        if currentSky then
-            currentSky:Destroy()
-        end
-        currentSky = Instance.new("Sky")
-        currentSky.Name = "DarkHubSky"
-        currentSky.Parent = Lighting
-    end
-
-    if type(preset) == "table" then
-        currentSky.SkyboxBk = preset.Bk
-        currentSky.SkyboxDn = preset.Dn
-        currentSky.SkyboxFt = preset.Ft
-        currentSky.SkyboxLf = preset.Lf
-        currentSky.SkyboxRt = preset.Rt
-        currentSky.SkyboxUp = preset.Up
-    elseif type(preset) == "string" then
-        local url = "rbxassetid://" .. preset
-        currentSky.SkyboxBk = url
-        currentSky.SkyboxDn = url
-        currentSky.SkyboxFt = url
-        currentSky.SkyboxLf = url
-        currentSky.SkyboxRt = url
-        currentSky.SkyboxUp = url
-    end
-end
-
-local skyNamesList = {}
-for name, _ in pairs(skyPresets) do
-    table.insert(skyNamesList, name)
-end
-table.sort(skyNamesList)
-
-local SkyDropdown = Library:CreateDropdown(subPages["Theme"], "Sky", skyNamesList, "Default", function(selectedSky)
-    applySky(selectedSky)
-end)
-
--- ============================================================================
 -- CONFIGURATIONS SYSTEM
 -- ============================================================================
 local CONFIG_FOLDER = "DarkHub/Configs"
@@ -2433,7 +2326,7 @@ local loadBtn = createConfigButton(ConfigButtonRow, "Load", function()
     else
         showToast(getLocalizedMessage("ConfigNotFound", name), Color3.fromRGB(255, 50, 50))
     end
-end, 0.33)
+end, 0.345)
 
 local deleteBtn = createConfigButton(ConfigButtonRow, "Delete", function()
     local name = ConfigNameBox.Text
@@ -2453,48 +2346,31 @@ local deleteBtn = createConfigButton(ConfigButtonRow, "Delete", function()
         return false
     end)
     if success then
-        showToast(getLocalizedMessage("ConfigDeleted", name), Color3.fromRGB(255, 50, 50))
-        ConfigNameBox.Text = ""
+        showToast(getLocalizedMessage("ConfigDeleted", name), Color3.fromRGB(50, 255, 50))
         if ConfigDropdown and ConfigDropdown.UpdateOptions then
             ConfigDropdown.UpdateOptions(getConfigList())
         end
     else
         showToast(getLocalizedMessage("ConfigDeleteFailed", name), Color3.fromRGB(255, 50, 50))
     end
-end, 0.66)
+end, 0.69)
 
--- Show Main Frame after loading screen sequence
+-- Finish loading animation and reveal main UI
 task.spawn(function()
-    local currentProgress = 0
-    while currentProgress < 100 do
-        currentProgress = currentProgress + math.random(5, 15)
-        if currentProgress > 100 then currentProgress = 100 end
-        LoadingPercent.Text = currentProgress .. "%"
-        ProgressBarFill.Size = UDim2.new(currentProgress / 100, 0, 1, 0)
-        task.wait(0.05)
+    for i = 1, 100 do
+        LoadingPercent.Text = tostring(i) .. "%"
+        ProgressBarFill.Size = UDim2.new(i / 100, 0, 1, 0)
+        task.wait(0.01)
     end
     
     if bubbleConnection then
         bubbleConnection:Disconnect()
         bubbleConnection = nil
     end
-    
-    if LoadingOverlay and LoadingOverlay.Parent then
-        tween(LoadingOverlay, {BackgroundTransparency = 1}, 0.4)
-        for _, child in ipairs(LoadingOverlay:GetDescendants()) do
-            if child:IsA("GuiObject") then
-                pcall(function()
-                    if child:IsA("TextLabel") or child:IsA("TextBox") or child:IsA("TextButton") then
-                        tween(child, {TextTransparency = 1}, 0.4)
-                    end
-                    tween(child, {BackgroundTransparency = 1}, 0.4)
-                end)
-            end
-        end
-        task.wait(0.4)
-        LoadingOverlay:Destroy()
-    end
-    
+
+    tween(LoadingOverlay, {BackgroundTransparency = 1}, 0.4)
+    task.wait(0.4)
+    LoadingOverlay:Destroy()
     MainFrame.Visible = true
-    showToast(Localization[Library.CurrentLanguage]["HubLoaded"], getThemeAccent())
+    showToast(getLocalizedMessage("HubLoaded"), Color3.fromRGB(50, 255, 50))
 end)
