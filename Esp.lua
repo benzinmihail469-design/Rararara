@@ -1074,7 +1074,7 @@ local function applyFontToElement(obj)
     end)
 end
 
--- ИСПРАВЛЕННАЯ ФУНКЦИЯ: Применяет шрифт абсолютно ко всем текстовым объектам GUI через рекурсивный обход
+-- Применяет шрифт абсолютно ко всем текстовым объектам GUI через рекурсивный обход
 local function applyFontToAll(fontKey)
     Library.CurrentFontKey = fontKey
     local fontData = FontMapping[fontKey] or FontMapping["Source Sans"]
@@ -1096,10 +1096,12 @@ local function applyFontToAll(fontKey)
     end
 end
 
+-- ИСПРАВЛЕННАЯ ФУНКЦИЯ ЯЗЫКА: Сначала меняет тексты, а затем жестко форсирует текущий шрифт
 function Library:UpdateLanguage(lang)
     if not Localization[lang] then return end
     Library.CurrentLanguage = lang
-    applyFontToAll(Library.CurrentFontKey)
+    
+    -- Сначала обновляем все тексты локализации
     for _, loc in ipairs(LocaleObjects) do
         if loc.Object and typeof(loc.Object) == "Instance" and loc.Object.Parent then
             local newText = Localization[lang][loc.Key] or loc.Key
@@ -1109,9 +1111,13 @@ function Library:UpdateLanguage(lang)
             end
         end
     end
+    
     if SearchBox then
         SearchBox.PlaceholderText = (lang == "Русский") and "Поиск..." or "Search..."
     end
+    
+    -- Применяем сохраненный шрифт ПОСЛЕ смены текста, чтобы он не сбрасывался
+    applyFontToAll(Library.CurrentFontKey)
 end
 
 local animatedWindowConnection = nil
