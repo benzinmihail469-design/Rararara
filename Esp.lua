@@ -8,6 +8,7 @@ local GuiService = game:GetService("GuiService")
 local Players = game:GetService("Players")
 local VirtualUser = game:GetService("VirtualUser")
 local HttpService = game:GetService("HttpService")
+local Lighting = game:GetService("Lighting")
 
 -- Wait for LocalPlayer
 local LocalPlayer = Players.LocalPlayer
@@ -1071,6 +1072,7 @@ local Localization = {
         ["Language"] = "Language",
         ["AntiAFK"] = "Anti-AFK",
         ["UITheme"] = "UI Theme",
+        ["Sky"] = "Sky",
         ["AnimatedWindow"] = "Animated Window",
         ["Gradient"] = "Gradient Background",
         ["Configurations"] = "Configurations",
@@ -1102,6 +1104,7 @@ local Localization = {
         ["Language"] = "Язык",
         ["AntiAFK"] = "Анти-АФК",
         ["UITheme"] = "Тема UI",
+        ["Sky"] = "Кастомное небо",
         ["AnimatedWindow"] = "Анимированное окно",
         ["Gradient"] = "Градиентный фон",
         ["Configurations"] = "Конфигурации",
@@ -2055,6 +2058,47 @@ local ThemeDropdown = Library:CreateDropdown(subPages["Theme"], "UITheme", Theme
         local isActive = subPages[name] and subPages[name].Visible
         tween(b, {TextColor3 = isActive and getThemeAccent() or Color3.fromRGB(140, 140, 140)}, 0.2)
     end
+end)
+
+-- ============================================================================
+-- CUSTOM SKY SYSTEM
+-- ============================================================================
+local skyMap = {
+    ["Default"] = nil,
+    ["Custom Sky 1"] = "89533939541361"
+}
+
+local function applySky(skyName)
+    local skyId = skyMap[skyName]
+    local currentSky = Lighting:FindFirstChildOfClass("Sky")
+    
+    if not skyId then
+        if currentSky and currentSky.Name == "DarkHubSky" then
+            currentSky:Destroy()
+        end
+        return
+    end
+
+    if not currentSky or currentSky.Name ~= "DarkHubSky" then
+        if currentSky then
+            currentSky:Destroy()
+        end
+        currentSky = Instance.new("Sky")
+        currentSky.Name = "DarkHubSky"
+        currentSky.Parent = Lighting
+    end
+
+    local assetUrl = "rbxassetid://" .. skyId
+    currentSky.SkyboxBk = assetUrl
+    currentSky.SkyboxDn = assetUrl
+    currentSky.SkyboxFt = assetUrl
+    currentSky.SkyboxLf = assetUrl
+    currentSky.SkyboxRt = assetUrl
+    currentSky.SkyboxUp = assetUrl
+end
+
+local SkyDropdown = Library:CreateDropdown(subPages["Theme"], "Sky", {"Default", "Custom Sky 1"}, "Default", function(selectedSky)
+    applySky(selectedSky)
 end)
 
 -- ============================================================================
