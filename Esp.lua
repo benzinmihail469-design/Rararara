@@ -1072,6 +1072,7 @@ local Localization = {
         ["Language"] = "Language",
         ["AntiAFK"] = "Anti-AFK",
         ["UITheme"] = "UI Theme",
+        ["Sky"] = "Sky",
         ["AnimatedWindow"] = "Animated Window",
         ["Gradient"] = "Gradient Background",
         ["Configurations"] = "Configurations",
@@ -1103,6 +1104,7 @@ local Localization = {
         ["Language"] = "Язык",
         ["AntiAFK"] = "Анти-АФК",
         ["UITheme"] = "Тема UI",
+        ["Sky"] = "Небо",
         ["AnimatedWindow"] = "Анимированное окно",
         ["Gradient"] = "Градиентный фон",
         ["Configurations"] = "Конфигурации",
@@ -2059,6 +2061,43 @@ local ThemeDropdown = Library:CreateDropdown(subPages["Theme"], "UITheme", Theme
 end)
 
 -- ============================================================================
+-- SKY SYSTEM (CUSTOM SKYBOX DROPDOWN IN THEME SUB-TAB)
+-- ============================================================================
+local skyAssets = {
+    Bk = "rbxassetid://13107325341",
+    Dn = "rbxassetid://13107329809",
+    Ft = "rbxassetid://13107334845",
+    Lf = "rbxassetid://13107337703",
+    Up = "rbxassetid://13107344387",
+    Rt = "rbxassetid://13107340396"
+}
+
+local function applySky(option)
+    local currentSky = Lighting:FindFirstChild("DarkHubSky")
+    if option == "Custom Sky" then
+        if not currentSky then
+            currentSky = Instance.new("Sky")
+            currentSky.Name = "DarkHubSky"
+            currentSky.Parent = Lighting
+        end
+        currentSky.SkyboxBk = skyAssets.Bk
+        currentSky.SkyboxDn = skyAssets.Dn
+        currentSky.SkyboxFt = skyAssets.Ft
+        currentSky.SkyboxLf = skyAssets.Lf
+        currentSky.SkyboxUp = skyAssets.Up
+        currentSky.SkyboxRt = skyAssets.Rt
+    else
+        if currentSky then
+            currentSky:Destroy()
+        end
+    end
+end
+
+local SkyDropdown = Library:CreateDropdown(subPages["Theme"], "Sky", {"Default", "Custom Sky"}, "Default", function(selectedSky)
+    applySky(selectedSky)
+end)
+
+-- ============================================================================
 -- CONFIGURATIONS SYSTEM
 -- ============================================================================
 local CONFIG_FOLDER = "DarkHub/Configs"
@@ -2155,6 +2194,7 @@ end
 local function getCurrentUIState()
     local state = {
         theme = "AMOLED",
+        sky = "Default",
         language = Library.CurrentLanguage or "English",
         font = Library.CurrentFontKey or "Source Sans",
         ui_size = MainScale and MainScale.Scale or 1,
@@ -2165,6 +2205,7 @@ local function getCurrentUIState()
         gradient = uiGradientInstance ~= nil
     }
     if ThemeDropdown and ThemeDropdown.GetValue then state.theme = ThemeDropdown.GetValue() end
+    if SkyDropdown and SkyDropdown.GetValue then state.sky = SkyDropdown.GetValue() end
     if FontDropdown and FontDropdown.GetValue then state.font = FontDropdown.GetValue() end
     if UISizeSlider and UISizeSlider.GetValue then state.ui_size = UISizeSlider.GetValue() / 100 end
     if TransparencySlider and TransparencySlider.GetValue then state.transparency = TransparencySlider.GetValue() / 100 end
@@ -2180,6 +2221,10 @@ local function applyUIState(state)
     if state.theme and ThemeConfig[state.theme] then
         Library:UpdateTheme(state.theme)
         if ThemeDropdown and ThemeDropdown.SetValue then ThemeDropdown.SetValue(state.theme) end
+    end
+    if state.sky and SkyDropdown and SkyDropdown.SetValue then
+        SkyDropdown.SetValue(state.sky)
+        applySky(state.sky)
     end
     if state.language and Localization[state.language] then
         Library:UpdateLanguage(state.language)
