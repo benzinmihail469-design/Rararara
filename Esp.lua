@@ -1030,10 +1030,11 @@ local Localization = {
 }
 
 -- Универсальная карта шрифтов с гарантированной поддержкой кириллицы (через Font.new)
+-- (Fredoka One заменен на Ubuntu для полной поддержки русского языка)
 local FontMapping = {
     ["Fredoka One"] = {
-        FontFace = Font.new("rbxasset://fonts/families/FredokaOne.json", Enum.FontWeight.Bold),
-        Enum = Enum.Font.FredokaOne
+        FontFace = Font.new("rbxasset://fonts/families/Ubuntu.json", Enum.FontWeight.Bold),
+        Enum = Enum.Font.Ubuntu
     },
     ["Gotham"] = {
         FontFace = Font.new("rbxasset://fonts/families/GothamSSm.json", Enum.FontWeight.Regular),
@@ -1060,15 +1061,15 @@ local FontMapping = {
         Enum = Enum.Font.Ubuntu
     },
     ["Bangers"] = {
-        FontFace = Font.new("rbxasset://fonts/families/FredokaOne.json", Enum.FontWeight.Bold),
+        FontFace = Font.new("rbxasset://fonts/families/Ubuntu.json", Enum.FontWeight.Bold),
         Enum = Enum.Font.Bangers
     },
     ["Luckiest Guy"] = {
-        FontFace = Font.new("rbxasset://fonts/families/FredokaOne.json", Enum.FontWeight.Bold),
+        FontFace = Font.new("rbxasset://fonts/families/Ubuntu.json", Enum.FontWeight.Bold),
         Enum = Enum.Font.LuckiestGuy
     },
     ["Permanent Marker"] = {
-        FontFace = Font.new("rbxasset://fonts/families/FredokaOne.json", Enum.FontWeight.Bold),
+        FontFace = Font.new("rbxasset://fonts/families/Ubuntu.json", Enum.FontWeight.Bold),
         Enum = Enum.Font.PermanentMarker
     },
     ["Arcade"] = {
@@ -1712,6 +1713,9 @@ function Library:CreatePage(textKey, iconId, layoutOrder)
     TabBtn.BackgroundTransparency = 1
     TabBtn.TextXAlignment = Enum.TextXAlignment.Left
     TabBtn.ZIndex = 7
+    
+    -- Добавляем кнопку вкладки в отслеживаемые текстовые элементы для смены шрифта
+    table.insert(Library.TrackedMainText, TabBtn)
 
     local Padding = Instance.new("UIPadding", TabBtn)
     Padding.PaddingLeft = UDim.new(0, iconId and 42 or 12)
