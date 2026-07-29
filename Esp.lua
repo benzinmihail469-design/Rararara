@@ -2064,17 +2064,17 @@ end)
 -- SKY SYSTEM (CUSTOM SKYBOX DROPDOWN IN THEME SUB-TAB)
 -- ============================================================================
 local skyAssets = {
-    Bk = "rbxassetid://13107325341",
-    Dn = "rbxassetid://13107329809",
-    Ft = "rbxassetid://13107334845",
-    Lf = "rbxassetid://13107337703",
-    Up = "rbxassetid://13107344387",
-    Rt = "rbxassetid://13107340396"
+    Bk = "rbxassetid://15983968922",
+    Dn = "rbxassetid://15983966825",
+    Ft = "rbxassetid://15983965025",
+    Lf = "rbxassetid://15983967420",
+    Up = "rbxassetid://15983964246",
+    Rt = "rbxassetid://15983966246"
 }
 
 local function applySky(option)
     local currentSky = Lighting:FindFirstChild("DarkHubSky")
-    if option == "Custom Sky" then
+    if option == "anime sky" then
         if not currentSky then
             currentSky = Instance.new("Sky")
             currentSky.Name = "DarkHubSky"
@@ -2093,7 +2093,7 @@ local function applySky(option)
     end
 end
 
-local SkyDropdown = Library:CreateDropdown(subPages["Theme"], "Sky", {"Default", "Custom Sky"}, "Default", function(selectedSky)
+local SkyDropdown = Library:CreateDropdown(subPages["Theme"], "Sky", {"Default", "anime sky"}, "Default", function(selectedSky)
     applySky(selectedSky)
 end)
 
