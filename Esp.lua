@@ -942,6 +942,7 @@ function Library:UpdateTheme(themeName)
         end
     end
     
+    -- Fully update all dropdowns (including UI Theme dropdown)
     for _, dropdownData in ipairs(Library.TrackedDropdowns) do
         if dropdownData.Frame and dropdownData.Frame.Parent then
             tween(dropdownData.Frame, {BackgroundColor3 = elementBg})
@@ -954,6 +955,9 @@ function Library:UpdateTheme(themeName)
         end
         if dropdownData.SelectedLabel and dropdownData.SelectedLabel.Parent then
             tween(dropdownData.SelectedLabel, {TextColor3 = accent})
+        end
+        if dropdownData.Arrow and dropdownData.Arrow.Parent then
+            tween(dropdownData.Arrow, {TextColor3 = subTextColor})
         end
         if dropdownData.OptionsContainer and dropdownData.OptionsContainer.Parent then
             dropdownData.OptionsContainer.ScrollBarImageColor3 = scrollBarColor
@@ -1464,6 +1468,7 @@ function Library:CreateDropdown(parentPage, textKey, options, default, callback)
         Stroke = DropdownStroke,
         TitleLabel = TitleLabel,
         SelectedLabel = SelectedLabel,
+        Arrow = Arrow,
         OptionsContainer = OptionsContainer
     })
 
