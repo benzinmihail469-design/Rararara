@@ -1029,8 +1029,7 @@ local Localization = {
     }
 }
 
--- Универсальная карта шрифтов с гарантированной поддержкой кириллицы (через Font.new)
--- (Fredoka One заменен на Ubuntu для полной поддержки русского языка)
+-- ГАРАНТИРОВАННАЯ ПОДДЕРЖКА КИРИЛЛИЦЫ ДЛЯ ВСЕХ ШРИФТОВ
 local FontMapping = {
     ["Fredoka One"] = {
         FontFace = Font.new("rbxasset://fonts/families/Ubuntu.json", Enum.FontWeight.Bold),
@@ -1062,25 +1061,25 @@ local FontMapping = {
     },
     ["Bangers"] = {
         FontFace = Font.new("rbxasset://fonts/families/Ubuntu.json", Enum.FontWeight.Bold),
-        Enum = Enum.Font.Bangers
+        Enum = Enum.Font.Ubuntu
     },
     ["Luckiest Guy"] = {
         FontFace = Font.new("rbxasset://fonts/families/Ubuntu.json", Enum.FontWeight.Bold),
-        Enum = Enum.Font.LuckiestGuy
+        Enum = Enum.Font.Ubuntu
     },
     ["Permanent Marker"] = {
         FontFace = Font.new("rbxasset://fonts/families/Ubuntu.json", Enum.FontWeight.Bold),
-        Enum = Enum.Font.PermanentMarker
+        Enum = Enum.Font.Ubuntu
     },
     ["Arcade"] = {
         FontFace = Font.new("rbxasset://fonts/families/RobotoMono.json", Enum.FontWeight.Bold),
-        Enum = Enum.Font.Arcade
+        Enum = Enum.Font.Code
     }
 }
 
 local showToast
 
--- Функция применения шрифта ко всем элементам с гарантированной поддержкой кириллицы
+-- Функция применения шрифта со 100% поддержкой кириллицы
 local function applyFontToAll(fontKey)
     Library.CurrentFontKey = fontKey
     local fontData = FontMapping[fontKey] or FontMapping["Source Sans"]
@@ -1105,7 +1104,7 @@ local function applyFontToAll(fontKey)
     end
 end
 
--- Вспомогательная функция для применения текущего шрифта к вновь создаваемому элементу
+-- Применение шрифта к новому элементу
 local function applyFontToElement(obj)
     if not obj or not obj.Parent then return end
     local fontKey = Library.CurrentFontKey or "Source Sans"
@@ -1714,7 +1713,6 @@ function Library:CreatePage(textKey, iconId, layoutOrder)
     TabBtn.TextXAlignment = Enum.TextXAlignment.Left
     TabBtn.ZIndex = 7
     
-    -- Добавляем кнопку вкладки в отслеживаемые текстовые элементы для смены шрифта
     table.insert(Library.TrackedMainText, TabBtn)
 
     local Padding = Instance.new("UIPadding", TabBtn)
@@ -2280,3 +2278,4 @@ task.spawn(function()
     Library:UpdateTheme("AMOLED")
     showToast(getLocalizedMessage("HubLoaded"), Color3.fromRGB(255, 255, 255))
 end)
+ч
