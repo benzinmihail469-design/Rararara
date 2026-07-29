@@ -652,7 +652,6 @@ Library.TrackedSliderFills = {}
 Library.TrackedSliderHandles = {}
 Library.TrackedSliderTracks = {}
 Library.TrackedScrollingFrames = {}
--- Списки для отслеживания дропдаунов, кнопок, тоглов и слайдеров
 Library.TrackedDropdowns = {}
 Library.TrackedButtons = {}
 Library.TrackedToggles = {}
@@ -868,29 +867,25 @@ function Library:UpdateTheme(themeName)
     local scrollBarColor = isLightMode and Color3.fromRGB(150, 150, 150) or Color3.fromRGB(50, 50, 50)
     local offToggleColor = isLightMode and Color3.fromRGB(200, 200, 200) or Color3.fromRGB(35, 35, 35)
     local sliderTrackColor = isLightMode and Color3.fromRGB(210, 210, 210) or Color3.fromRGB(30, 30, 30)
-
-    -- Обновление основных фонов
+    
     for _, obj in ipairs(Library.TrackedMainBg) do
         if obj and typeof(obj) == "Instance" and obj.Parent then
             tween(obj, {BackgroundColor3 = mainBg})
         end
     end
-
-    -- Обновление фонов элементов
+    
     for _, obj in ipairs(Library.TrackedElementBg) do
         if obj and typeof(obj) == "Instance" and obj.Parent then
             tween(obj, {BackgroundColor3 = elementBg})
         end
     end
-
-    -- Обновление обводок
+    
     for _, obj in ipairs(Library.TrackedStrokes) do
         if obj and typeof(obj) == "Instance" and obj.Parent then
             tween(obj, {Color = strokeColor})
         end
     end
-
-    -- Обновление основного текста
+    
     for _, obj in ipairs(Library.TrackedMainText) do
         if obj and typeof(obj) == "Instance" and obj.Parent then
             tween(obj, {TextColor3 = mainTextColor})
@@ -899,22 +894,19 @@ function Library:UpdateTheme(themeName)
             end
         end
     end
-
-    -- Обновление вспомогательного текста
+    
     for _, obj in ipairs(Library.TrackedSubText) do
         if obj and typeof(obj) == "Instance" and obj.Parent then
             tween(obj, {TextColor3 = subTextColor})
         end
     end
-
-    -- Обновление акцентов
+    
     for _, obj in ipairs(Library.TrackedAccents) do
         if obj and typeof(obj) == "Instance" and obj.Parent then
             tween(obj, {TextColor3 = accent})
         end
     end
-
-    -- Обновление чекбоксов (тоглов)
+    
     for _, tglData in ipairs(Library.TrackedCheckboxes) do
         if tglData.Checkbox and tglData.Checkbox.Parent then
             if not tglData.GetState() then
@@ -926,8 +918,7 @@ function Library:UpdateTheme(themeName)
             end
         end
     end
-
-    -- Обновление заполнения и ручек слайдеров
+    
     for _, obj in ipairs(Library.TrackedSliderFills) do
         if obj and typeof(obj) == "Instance" and obj.Parent then
             tween(obj, {BackgroundColor3 = accent})
@@ -938,22 +929,19 @@ function Library:UpdateTheme(themeName)
             tween(obj, {BackgroundColor3 = accent})
         end
     end
-
-    -- Обновление треков слайдеров
+    
     for _, track in ipairs(Library.TrackedSliderTracks) do
         if track and track.Parent then
             tween(track, {BackgroundColor3 = sliderTrackColor})
         end
     end
-
-    -- Обновление скроллбаров
+    
     for _, sf in ipairs(Library.TrackedScrollingFrames) do
         if sf and sf.Parent then
             sf.ScrollBarImageColor3 = scrollBarColor
         end
     end
-
-    -- Обновление дропдаунов
+    
     for _, dropdownData in ipairs(Library.TrackedDropdowns) do
         if dropdownData.Frame and dropdownData.Frame.Parent then
             tween(dropdownData.Frame, {BackgroundColor3 = elementBg})
@@ -979,8 +967,7 @@ function Library:UpdateTheme(themeName)
             end
         end
     end
-
-    -- Обновление кнопок
+    
     for _, btnData in ipairs(Library.TrackedButtons) do
         if btnData.Button and btnData.Button.Parent then
             tween(btnData.Button, {BackgroundColor3 = elementBg, TextColor3 = mainTextColor})
@@ -989,8 +976,7 @@ function Library:UpdateTheme(themeName)
             tween(btnData.Stroke, {Color = strokeColor})
         end
     end
-
-    -- Обновление тоглов
+    
     for _, tglData in ipairs(Library.TrackedToggles) do
         if tglData.Frame and tglData.Frame.Parent then
             tween(tglData.Frame, {BackgroundColor3 = elementBg})
@@ -1002,8 +988,7 @@ function Library:UpdateTheme(themeName)
             tween(tglData.Label, {TextColor3 = mainTextColor})
         end
     end
-
-    -- Обновление слайдеров
+    
     for _, sldData in ipairs(Library.TrackedSliders) do
         if sldData.Frame and sldData.Frame.Parent then
             tween(sldData.Frame, {BackgroundColor3 = elementBg})
@@ -1018,13 +1003,13 @@ function Library:UpdateTheme(themeName)
             tween(sldData.ValueLabel, {TextColor3 = subTextColor})
         end
     end
-
+    
     applyThemeToTabs(theme)
-
+    
     if SubTabNav and SubTabNav.Parent then
         tween(SubTabNav, {BackgroundColor3 = elementBg})
     end
-
+    
     for name, b in pairs(subTabButtons) do
         local isActive = subPages[name] and subPages[name].Visible
         tween(b, {TextColor3 = isActive and accent or subTextColor}, 0.2)
@@ -1474,7 +1459,6 @@ function Library:CreateDropdown(parentPage, textKey, options, default, callback)
     end
     populateOptions(options)
 
-    -- Регистрируем дропдаун для отслеживания темы (ВОТ ЭТО БЫЛО ПРОПУЩЕНО!)
     table.insert(Library.TrackedDropdowns, {
         Frame = DropdownFrame,
         Stroke = DropdownStroke,
@@ -1514,7 +1498,6 @@ function Library:CreateButton(parentPage, textKey, callback)
     table.insert(Library.TrackedMainText, Btn)
     table.insert(Library.TrackedStrokes, BtnStroke)
     
-    -- Регистрируем кнопку для отслеживания темы
     table.insert(Library.TrackedButtons, {
         Button = Btn,
         Stroke = BtnStroke
@@ -1584,7 +1567,6 @@ function Library:CreateToggle(parentPage, textKey, default, callback)
     }
     table.insert(Library.TrackedCheckboxes, toggleData)
     
-    -- Регистрируем тогл для отслеживания темы
     table.insert(Library.TrackedToggles, {
         Frame = TglFrame,
         Stroke = TglStroke,
@@ -1689,7 +1671,6 @@ function Library:CreateSlider(parentPage, textKey, min, max, default, callback)
     Instance.new("UICorner", SliderHandle).CornerRadius = UDim.new(1, 0)
     table.insert(Library.TrackedSliderHandles, SliderHandle)
 
-    -- Регистрируем слайдер для отслеживания темы
     table.insert(Library.TrackedSliders, {
         Frame = SliderFrame,
         Stroke = SliderStroke,
@@ -2240,7 +2221,6 @@ local function createConfigButton(parent, textKey, callback, position)
     table.insert(Library.TrackedMainText, Btn)
     table.insert(Library.TrackedStrokes, BtnStroke)
     
-    -- Регистрируем кнопку для отслеживания темы
     table.insert(Library.TrackedButtons, {
         Button = Btn,
         Stroke = BtnStroke
