@@ -350,7 +350,7 @@ local function showToast(msg)
 end
 
 -- ============================================================================
--- CHARACTER EFFECT CONTROLLER (WINGS AURA & MODELS) - FIXED FILTER
+-- CHARACTER EFFECT CONTROLLER (WINGS AURA & MODELS)
 -- ============================================================================
 local currentEffectModel = nil
 local currentEffectName = "None"
@@ -372,31 +372,6 @@ local function removeCurrentEffect()
         end
     end
 end
-
--- Список стандартных имен частей тела игрока, которые ни в коем случае нельзя крепить/трогать
-local ignoredBodyParts = {
-    ["Head"] = true,
-    ["Torso"] = true,
-    ["UpperTorso"] = true,
-    ["LowerTorso"] = true,
-    ["LeftArm"] = true,
-    ["RightArm"] = true,
-    ["LeftLeg"] = true,
-    ["RightLeg"] = true,
-    ["LeftUpperArm"] = true,
-    ["LeftLowerArm"] = true,
-    ["LeftHand"] = true,
-    ["RightUpperArm"] = true,
-    ["RightLowerArm"] = true,
-    ["RightHand"] = true,
-    ["LeftUpperLeg"] = true,
-    ["LeftLowerLeg"] = true,
-    ["LeftFoot"] = true,
-    ["RightUpperLeg"] = true,
-    ["RightLowerLeg"] = true,
-    ["RightFoot"] = true,
-    ["HumanoidRootPart"] = true
-}
 
 local function applyPlayerEffect(effectName)
     removeCurrentEffect()
@@ -422,6 +397,25 @@ local function applyPlayerEffect(effectName)
         local effectObj = objects[1]
         effectObj.Name = "DarkHub_Effect_" .. effectName
 
+        -- Список имен стандартных частей тела и элементов персонажа, которые нужно удалять из модели эффекта
+        local bodyPartNames = {
+            ["Head"] = true, ["Torso"] = true, ["HumanoidRootPart"] = true,
+            ["Left Arm"] = true, ["Right Arm"] = true, ["Left Leg"] = true, ["Right Leg"] = true,
+            ["UpperTorso"] = true, ["LowerTorso"] = true,
+            ["LeftUpperArm"] = true, ["LeftLowerArm"] = true, ["LeftHand"] = true,
+            ["RightUpperArm"] = true, ["RightLowerArm"] = true, ["RightHand"] = true,
+            ["LeftUpperLeg"] = true, ["LeftLowerLeg"] = true, ["LeftFoot"] = true,
+            ["RightUpperLeg"] = true, ["RightLowerLeg"] = true, ["RightFoot"] = true,
+            ["Humanoid"] = true, ["Animator"] = true
+        }
+
+        -- Фильтрация: удаляем всё лишнее (торс, руки, ноги, гуманоиды), оставляя только чистые эффекты/крылья
+        for _, descendant in ipairs(effectObj:GetDescendants()) do
+            if bodyPartNames[descendant.Name] or descendant:IsA("Humanoid") then
+                descendant:Destroy()
+            end
+        end
+
         if effectObj:IsA("Accessory") or effectObj:IsA("Hat") then
             hum:AddAccessory(effectObj)
             currentEffectModel = effectObj
@@ -437,16 +431,13 @@ local function applyPlayerEffect(effectName)
 
                 for _, part in ipairs(effectObj:GetDescendants()) do
                     if part:IsA("BasePart") then
-                        -- Проверяем, что деталь НЕ является частью тела игрока (руки, ноги, торс и т.д.)
-                        if not ignoredBodyParts[part.Name] and not part:IsDescendantOf(char) then
-                            part.Anchored = false
-                            part.CanCollide = false
-                            if part ~= primary then
-                                local w = Instance.new("WeldConstraint")
-                                w.Part0 = primary
-                                w.Part1 = part
-                                w.Parent = primary
-                            end
+                        part.Anchored = false
+                        part.CanCollide = false
+                        if part ~= primary then
+                            local w = Instance.new("WeldConstraint")
+                            w.Part0 = primary
+                            w.Part1 = part
+                            w.Parent = primary
                         end
                     end
                 end
@@ -2247,7 +2238,7 @@ Library:CreateDropdown(SubTabs["Theme"], "FogColor", {"Default", "Black", "White
     applyFogSettings(true)
 end)
 
-Library:CreateSlider(SubTabs["Theme"], "FogFogStart", 0, 500, 0, function(val)
+Library:CreateSlider(SubTabs["Theme"], "FogStart", 0, 500, 0, function(val)
     customFogStart = val
     applyFogSettings(false)
 end)
@@ -2257,7 +2248,7 @@ Library:CreateSlider(SubTabs["Theme"], "FogEnd", 10, 1000, 120, function(val)
     applyFogSettings(false)
 end)
 
-Library:CreateSlider(SubTabs["Theta"], "FogDensity", 0, 5, 1, function(val)
+Library:CreateSlider(SubTabs["Theme"], "FogDensity", 0, 5, 1, function(val)
     customFogDensity = val
     applyFogSettings(false)
 end)
