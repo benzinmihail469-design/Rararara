@@ -397,22 +397,37 @@ local function applyPlayerEffect(effectName)
         local effectObj = objects[1]
         effectObj.Name = "DarkHub_Effect_" .. effectName
 
-        -- Список имен стандартных частей тела и элементов персонажа, которые нужно удалять из модели эффекта
-        local bodyPartNames = {
-            ["Head"] = true, ["Torso"] = true, ["HumanoidRootPart"] = true,
-            ["Left Arm"] = true, ["Right Arm"] = true, ["Left Leg"] = true, ["Right Leg"] = true,
-            ["UpperTorso"] = true, ["LowerTorso"] = true,
-            ["LeftUpperArm"] = true, ["LeftLowerArm"] = true, ["LeftHand"] = true,
-            ["RightUpperArm"] = true, ["RightLowerArm"] = true, ["RightHand"] = true,
-            ["LeftUpperLeg"] = true, ["LeftLowerLeg"] = true, ["LeftFoot"] = true,
-            ["RightUpperLeg"] = true, ["RightLowerLeg"] = true, ["RightFoot"] = true,
-            ["Humanoid"] = true, ["Animator"] = true
+        -- Удаляем из загруженной модели любые стандартные части тела (торс, руки, ноги, голову и т.д.),
+        -- чтобы они не прикреплялись к игроку и не дублировали персонажа
+        local ignoredBodyParts = {
+            ["head"] = true,
+            ["torso"] = true,
+            ["humanoidrootpart"] = true,
+            ["left arm"] = true,
+            ["right arm"] = true,
+            ["left leg"] = true,
+            ["right leg"] = true,
+            ["uppertorso"] = true,
+            ["lowertorso"] = true,
+            ["leftupperarm"] = true,
+            ["leftlowerarm"] = true,
+            ["lefthand"] = true,
+            ["rightupperarm"] = true,
+            ["rightlowerarm"] = true,
+            ["righthand"] = true,
+            ["leftupperleg"] = true,
+            ["leftlowerleg"] = true,
+            ["leftfoot"] = true,
+            ["rightupperleg"] = true,
+            ["rightlowerleg"] = true,
+            ["rightfoot"] = true
         }
 
-        -- Фильтрация: удаляем всё лишнее (торс, руки, ноги, гуманоиды), оставляя только чистые эффекты/крылья
-        for _, descendant in ipairs(effectObj:GetDescendants()) do
-            if bodyPartNames[descendant.Name] or descendant:IsA("Humanoid") then
-                descendant:Destroy()
+        for _, desc in ipairs(effectObj:GetDescendants()) do
+            if desc:IsA("BasePart") then
+                if ignoredBodyParts[string.lower(desc.Name)] then
+                    desc:Destroy()
+                end
             end
         end
 
