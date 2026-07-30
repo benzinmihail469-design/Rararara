@@ -1,5 +1,5 @@
 -- ============================================================================
--- Dark Hub - Settings Edition (AMOLED Style with UI, Theme & Configs)
+-- Dark Hub - Settings Edition (AMOLED Style with UI, Theme, Sky & Configs)
 -- ============================================================================
 local TweenService = game:GetService("TweenService")
 local UserInputService = game:GetService("UserInputService")
@@ -161,6 +161,31 @@ local function spawnWave(container, clickX, clickY)
                 Wave:Destroy()
             end
         end)
+    end
+end
+
+-- ============================================================================
+-- SKY SYSTEM CONTROLLER
+-- ============================================================================
+local currentSkyInstance = nil
+local function applySkySettings(skyName)
+    if skyName == "space cky" then
+        if not currentSkyInstance or not currentSkyInstance.Parent then
+            currentSkyInstance = Instance.new("Sky")
+            currentSkyInstance.Name = "DarkHub_SpaceSky"
+            currentSkyInstance.Parent = Lighting
+        end
+        currentSkyInstance.SkyboxBk = "rbxassetid://16262356578"
+        currentSkyInstance.SkyboxDn = "rbxassetid://16262358026"
+        currentSkyInstance.SkyboxFt = "rbxassetid://16262360469"
+        currentSkyInstance.SkyboxLf = "rbxassetid://16262362003"
+        currentSkyInstance.SkyboxRt = "rbxassetid://16262363873"
+        currentSkyInstance.SkyboxUp = "rbxassetid://16262366016"
+    else
+        if currentSkyInstance and currentSkyInstance.Parent then
+            currentSkyInstance:Destroy()
+            currentSkyInstance = nil
+        end
     end
 end
 
@@ -2154,6 +2179,10 @@ end)
 -- ============================================================================
 Library:CreateDropdown(subPages["Theme"], "UITheme", ThemeNamesList, "AMOLED", function(selectedTheme)
     Library:UpdateTheme(selectedTheme)
+end)
+
+Library:CreateDropdown(subPages["Theme"], "Sky", {"Default", "space cky"}, "Default", function(selected)
+    applySkySettings(selected)
 end)
 
 Library:CreateToggle(subPages["Theme"], "Fog", fogEnabled, function(state)
