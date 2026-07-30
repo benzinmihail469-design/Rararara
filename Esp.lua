@@ -181,6 +181,18 @@ local function applySkySettings(skyName)
         currentSkyInstance.SkyboxLf = "rbxassetid://16262362003"
         currentSkyInstance.SkyboxRt = "rbxassetid://16262363873"
         currentSkyInstance.SkyboxUp = "rbxassetid://16262366016"
+    elseif skyName == "pink sky" then
+        if not currentSkyInstance or not currentSkyInstance.Parent then
+            currentSkyInstance = Instance.new("Sky")
+            currentSkyInstance.Name = "DarkHub_PinkSky"
+            currentSkyInstance.Parent = Lighting
+        end
+        currentSkyInstance.SkyboxBk = "rbxassetid://27104516"
+        currentSkyInstance.SkyboxDn = "rbxassetid://271077243"
+        currentSkyInstance.SkyboxFt = "rbxassetid://271042556"
+        currentSkyInstance.SkyboxLf = "rbxassetid://271042310"
+        currentSkyInstance.SkyboxRt = "rbxassetid://271042467"
+        currentSkyInstance.SkyboxUp = "rbxassetid://271077958"
     else
         if currentSkyInstance and currentSkyInstance.Parent then
             currentSkyInstance:Destroy()
@@ -2181,7 +2193,7 @@ Library:CreateDropdown(subPages["Theme"], "UITheme", ThemeNamesList, "AMOLED", f
     Library:UpdateTheme(selectedTheme)
 end)
 
-Library:CreateDropdown(subPages["Theme"], "Sky", {"Default", "space cky"}, "Default", function(selected)
+Library:CreateDropdown(subPages["Theme"], "Sky", {"Default", "space cky", "pink sky"}, "Default", function(selected)
     applySkySettings(selected)
 end)
 
