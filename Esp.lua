@@ -187,7 +187,7 @@ local function applySkySettings(skyName)
             currentSkyInstance.Name = "DarkHub_PinkSky"
             currentSkyInstance.Parent = Lighting
         end
-        currentSkyInstance.SkyboxBk = "rbxassetid://27104516"
+        currentSkyInstance.SkyboxBk = "rbxassetid://271042516"
         currentSkyInstance.SkyboxDn = "rbxassetid://271077243"
         currentSkyInstance.SkyboxFt = "rbxassetid://271042556"
         currentSkyInstance.SkyboxLf = "rbxassetid://271042310"
