@@ -165,17 +165,24 @@ local function spawnWave(container, clickX, clickY)
 end
 
 -- ============================================================================
--- FOG SYSTEM CONTROLLER (Enhanced & High Density)
+-- FOG SYSTEM CONTROLLER (Enhanced, Soft & Bug-Free Repaint)
 -- ============================================================================
 local fogEnabled = true
 local originalFogStart = Lighting.FogStart
 local originalFogEnd = Lighting.FogEnd
 local originalFogColor = Lighting.FogColor
 
+local originalAtmosphere = Lighting:FindFirstChildOfClass("Atmosphere")
+local originalDensity = originalAtmosphere and originalAtmosphere.Density or 0.25
+local originalHaze = originalAtmosphere and originalAtmosphere.Haze or 0
+local originalGlare = originalAtmosphere and originalAtmosphere.Glare or 0
+local originalAtmosphereColor = originalAtmosphere and originalAtmosphere.Color or Color3.fromRGB(199, 199, 199)
+local originalDecay = originalAtmosphere and originalAtmosphere.Decay or Color3.fromRGB(107, 107, 107)
+
 local customFogStart = 0
-local customFogEnd = 80 -- Сделано ближе по умолчанию для заметности
+local customFogEnd = 120 
 local customFogColor = Color3.fromRGB(120, 120, 130)
-local customFogDensity = 1.5 -- Плотность тумана по умолчанию (выкручена для видимости)
+local customFogDensity = 1.0 
 
 local colorPresets = {
     ["Default"] = originalFogColor,
@@ -190,35 +197,49 @@ local colorPresets = {
     ["Orange"] = Color3.fromRGB(255, 150, 0)
 }
 
-local function applyFogSettings()
+local function applyFogSettings(smooth)
+    local duration = smooth and 0.4 or 0
+    
     if fogEnabled then
-        Lighting.FogStart = customFogStart
-        Lighting.FogEnd = customFogEnd
-        Lighting.FogColor = customFogColor
+        tween(Lighting, {
+            FogStart = customFogStart,
+            FogEnd = customFogEnd,
+            FogColor = customFogColor
+        }, duration)
         
         local atmosphere = Lighting:FindFirstChildOfClass("Atmosphere")
         if not atmosphere then
             atmosphere = Instance.new("Atmosphere")
             atmosphere.Parent = Lighting
         end
-        atmosphere.Density = customFogDensity
-        atmosphere.Haze = math.clamp(customFogDensity * 3, 0, 10)
-        atmosphere.Glare = 0.1
-        atmosphere.Color = customFogColor
-        atmosphere.Decay = customFogColor
+        
+        tween(atmosphere, {
+            Density = customFogDensity,
+            Haze = math.clamp(customFogDensity * 3, 0, 10),
+            Glare = 0.1,
+            Color = customFogColor,
+            Decay = customFogColor
+        }, duration)
     else
-        Lighting.FogStart = originalFogStart
-        Lighting.FogEnd = originalFogEnd
-        Lighting.FogColor = originalFogColor
+        tween(Lighting, {
+            FogStart = originalFogStart,
+            FogEnd = originalFogEnd,
+            FogColor = originalFogColor
+        }, duration)
         
         local atmosphere = Lighting:FindFirstChildOfClass("Atmosphere")
         if atmosphere then
-            atmosphere.Density = 0.25
-            atmosphere.Haze = 0
+            tween(atmosphere, {
+                Density = originalDensity,
+                Haze = originalHaze,
+                Glare = originalGlare,
+                Color = originalAtmosphereColor,
+                Decay = originalDecay
+            }, duration)
         end
     end
 end
-applyFogSettings()
+applyFogSettings(false)
 
 -- ============================================================================
 -- TOAST NOTIFICATION CONTROLLER
@@ -2137,27 +2158,27 @@ end)
 
 Library:CreateToggle(subPages["Theme"], "Fog", fogEnabled, function(state)
     fogEnabled = state
-    applyFogSettings()
+    applyFogSettings(true)
 end)
 
 Library:CreateDropdown(subPages["Theme"], "FogColor", {"Default", "Black", "White", "Red", "Blue", "Green", "Purple", "Cyan", "Yellow", "Orange"}, "Black", function(selectedColor)
     customFogColor = colorPresets[selectedColor] or Color3.fromRGB(0, 0, 0)
-    applyFogSettings()
+    applyFogSettings(true)
 end)
 
 Library:CreateSlider(subPages["Theme"], "FogStart", 0, 500, customFogStart, function(val)
     customFogStart = val
-    applyFogSettings()
+    applyFogSettings(true)
 end)
 
 Library:CreateSlider(subPages["Theme"], "FogEnd", 10, 1000, customFogEnd, function(val)
     customFogEnd = val
-    applyFogSettings()
+    applyFogSettings(true)
 end)
 
 Library:CreateSlider(subPages["Theme"], "FogDensity", 0, 5, customFogDensity, function(val)
     customFogDensity = val
-    applyFogSettings()
+    applyFogSettings(true)
 end)
 
 -- ============================================================================
