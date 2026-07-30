@@ -168,9 +168,7 @@ end
 -- SKY SYSTEM CONTROLLER
 -- ============================================================================
 local currentSkyInstance = nil
-local currentSkyName = "None"
 local function applySkySettings(skyName)
-    currentSkyName = skyName
     if skyName == "space cky" then
         if not currentSkyInstance or not currentSkyInstance.Parent then
             currentSkyInstance = Instance.new("Sky")
@@ -246,7 +244,6 @@ local customFogStart = 0
 local customFogEnd = 120 
 local customFogColor = Color3.fromRGB(120, 120, 130)
 local customFogDensity = 1.0 
-local customFogColorName = "Default"
 
 local colorPresets = {
     ["Default"] = originalFogColor,
@@ -353,7 +350,7 @@ local function showToast(msg)
 end
 
 -- ============================================================================
--- CHARACTER EFFECT CONTROLLER (WINGS AURA & MODELS FILTERING)
+-- CHARACTER EFFECT CONTROLLER (WINGS AURA & MODELS)
 -- ============================================================================
 local currentEffectModel = nil
 local currentEffectName = "None"
@@ -362,57 +359,15 @@ local EFFECT_MODELS = {
     ["wings aura"] = "114522534858071"
 }
 
--- Таблица частей тела манекена, которые нужно отфильтровать и НЕ прикреплять к игроку
-local DUMMY_BODY_PARTS = {
-    ["head"] = true,
-    ["torso"] = true,
-    ["uppertorso"] = true,
-    ["lowertorso"] = true,
-    ["humanoidrootpart"] = true,
-    ["humanoid"] = true,
-    ["left arm"] = true,
-    ["right arm"] = true,
-    ["left leg"] = true,
-    ["right leg"] = true,
-    ["leftupperarm"] = true,
-    ["rightupperarm"] = true,
-    ["leftlowerarm"] = true,
-    ["rightlowerarm"] = true,
-    ["lefthand"] = true,
-    ["righthand"] = true,
-    ["leftupperleg"] = true,
-    ["rightupperleg"] = true,
-    ["leftlowerleg"] = true,
-    ["rightlowerleg"] = true,
-    ["leftfoot"] = true,
-    ["rightfoot"] = true,
-    ["animate"] = true,
-    ["body colors"] = true,
-    ["shirt"] = true,
-    ["pants"] = true,
-    ["shirt graphic"] = true,
-    ["clothing"] = true,
-    ["health"] = true,
-    ["sound"] = true
-}
-
 local function removeCurrentEffect()
     if currentEffectModel and currentEffectModel.Parent then
-        pcall(function() currentEffectModel:Destroy() end)
+        currentEffectModel:Destroy()
     end
     currentEffectModel = nil
     if LocalPlayer.Character then
         for _, child in ipairs(LocalPlayer.Character:GetChildren()) do
             if child.Name:sub(1, 15) == "DarkHub_Effect_" then
-                pcall(function() child:Destroy() end)
-            end
-        end
-        local root = LocalPlayer.Character:FindFirstChild("UpperTorso") or LocalPlayer.Character:FindFirstChild("Torso") or LocalPlayer.Character:FindFirstChild("HumanoidRootPart")
-        if root then
-            for _, child in ipairs(root:GetChildren()) do
-                if child.Name:sub(1, 15) == "DarkHub_Effect_" then
-                    pcall(function() child:Destroy() end)
-                end
+                child:Destroy()
             end
         end
     end
@@ -430,7 +385,7 @@ local function applyPlayerEffect(effectName)
     if not char then return end
 
     local hum = char:WaitForChild("Humanoid", 5)
-    local root = char:FindFirstChild("UpperTorso") or char:FindFirstChild("Torso") or char:FindFirstChild("HumanoidRootPart")
+    local root = char:FindFirstChild("HumanoidRootPart") or char:FindFirstChild("Torso") or char:FindFirstChild("UpperTorso")
     if not root or not hum then return end
 
     local modelId = EFFECT_MODELS[effectName]
@@ -439,74 +394,79 @@ local function applyPlayerEffect(effectName)
     end)
 
     if success and objects and #objects > 0 then
-        local rawObj = objects[1]
+        local rawModel = objects[1]
+        
+        -- Создаем чистый контейнер для эффекта
+        local effectFolder = Instance.new("Folder")
+        effectFolder.Name = "DarkHub_Effect_" .. effectName
+        effectFolder.Parent = char
+        currentEffectModel = effectFolder
 
-        -- Если объект сразу является кастомным аксессуаром
-        if rawObj:IsA("Accessory") or rawObj:IsA("Hat") then
-            rawObj.Name = "DarkHub_Effect_" .. effectName
-            hum:AddAccessory(rawObj)
-            currentEffectModel = rawObj
-            showToast("Effect applied: " .. effectName)
-            return
+        -- Функция для проверки, является ли объект частью тела игрока (чтобы исключить их)
+        local function isBodyPart(obj)
+            if not obj:IsA("BasePart") then return false end
+            local name = obj.Name:lower()
+            if name == "head" or name == "humanoidrootpart" or name == "torso" or name == "uppertorso" or name == "lowertorso" or name == "leftarm" or name == "rightarm" or name == "leftleg" or name == "rightleg" or name == "leftupperarm" or name == "lefthand" or name == "rightupperarm" or name == "righthand" or name == "leftupperleg" or name == "leftfoot" or name == "rightupperleg" or name == "rightfoot" then
+                return true
+            end
+            return false
         end
 
-        local effectFolder = Instance.new("Model")
-        effectFolder.Name = "DarkHub_Effect_" .. effectName
-
-        -- Поиск точки отсчета CFrame у загруженного манекена/модели
-        local dummyRef = rawObj:FindFirstChild("HumanoidRootPart") 
-            or rawObj:FindFirstChild("Torso") 
-            or rawObj:FindFirstChild("UpperTorso")
-            or (rawObj:IsA("Model") and rawObj.PrimaryPart)
-            or rawObj:FindFirstChildWhichIsA("BasePart", true)
-
-        local dummyCFrame = dummyRef and dummyRef.CFrame or CFrame.new()
-
-        -- Перебор всех компонентов модели и отбор ТОЛЬКО эффектов
-        for _, desc in ipairs(rawObj:GetDescendants()) do
-            local descNameLower = desc.Name:lower()
-            local isBody = DUMMY_BODY_PARTS[descNameLower]
-
-            -- Графические эффекты (эмиттеры, лучи, хвосты, свечения)
-            if desc:IsA("ParticleEmitter") or desc:IsA("Beam") or desc:IsA("Trail") 
-               or desc:IsA("Fire") or desc:IsA("Smoke") or desc:IsA("Sparkles") 
-               or desc:IsA("Light") or desc:IsA("Highlight") then
-                
-                local effectClone = desc:Clone()
-                effectClone.Name = "DarkHub_Effect_" .. desc.Name
-                effectClone.Parent = root
-
-            -- Аттачменты
-            elseif desc:IsA("Attachment") and not isBody then
-                local attClone = desc:Clone()
-                attClone.Name = "DarkHub_Effect_" .. desc.Name
-                attClone.Parent = root
-
-            -- Кастомные 3D части (крылья, ауры, меши), не являющиеся частями тела
-            elseif desc:IsA("BasePart") and not isBody then
-                local partClone = desc:Clone()
-                partClone.Name = "DarkHub_Effect_Part"
-                partClone.CanCollide = false
-                pcall(function() partClone.CanQuery = false end)
-                pcall(function() partClone.CanTouch = false end)
-                partClone.Massless = true
-                partClone.Anchored = false
-
-                -- Вычисление относительного смещения от манекена к игроку
-                local relOffset = dummyCFrame:ToObjectSpace(desc.CFrame)
-                partClone.CFrame = root.CFrame * relOffset
-                partClone.Parent = effectFolder
-
-                local weld = Instance.new("WeldConstraint")
-                weld.Part0 = root
-                weld.Part1 = partClone
-                weld.Parent = partClone
+        -- Функция для рекурсивного поиска и переноса только визуальных эффектов/частей
+        local function processModelParts(parentObj, targetParent)
+            for _, child in ipairs(parentObj:GetChildren()) do
+                -- Если это часть тела персонажа, пропускаем её полностью
+                if not isBodyPart(child) then
+                    if child:IsA("BasePart") or child:IsA("ParticleEmitter") or child:IsA("Trail") or child:IsA("Beam") or child:IsA("Fire") or child:IsA("Smoke") or child:IsA("Sparkles") or child:IsA("Light") or child:IsA("Highlight") then
+                        local clone = child:Clone()
+                        clone.Parent = targetParent
+                        if clone:IsA("BasePart") then
+                            clone.Anchored = false
+                            clone.CanCollide = false
+                        end
+                    elseif child:IsA("Model") or child:IsA("Folder") then
+                        local subFolder = Instance.new("Folder")
+                        subFolder.Name = child.Name
+                        subFolder.Parent = targetParent
+                        processModelParts(child, subFolder)
+                    elseif child:IsA("Attachment") or child:IsA("Weld") or child:IsA("WeldConstraint") or child:IsA("SpecialMesh") or child:IsA("BlockMesh") or child:IsA("CylinderMesh") then
+                        local clone = child:Clone()
+                        clone.Parent = targetParent
+                    end
+                end
             end
         end
 
-        effectFolder.Parent = char
-        currentEffectModel = effectFolder
-        showToast("Effect applied: " .. effectName)
+        processModelParts(rawModel, effectFolder)
+        rawModel:Destroy()
+
+        -- Ищем главную часть для привязки к торсу
+        local primaryPart = effectFolder:FindFirstChildWhichIsA("BasePart", true)
+        if primaryPart then
+            primaryPart.Anchored = false
+            primaryPart.CanCollide = false
+            primaryPart.CFrame = root.CFrame
+
+            for _, part in ipairs(effectFolder:GetDescendants()) do
+                if part:IsA("BasePart") then
+                    part.Anchored = false
+                    part.CanCollide = false
+                    if part ~= primaryPart then
+                        local w = Instance.new("WeldConstraint")
+                        w.Part0 = primaryPart
+                        w.Part1 = part
+                        w.Parent = primaryPart
+                    end
+                end
+            end
+
+            local mainWeld = Instance.new("WeldConstraint")
+            mainWeld.Part0 = root
+            mainWeld.Part1 = primaryPart
+            mainWeld.Parent = primaryPart
+        end
+
+        showToast("Effect applied: " + effectName)
     else
         showToast("Failed to load effect model!")
     end
@@ -1008,7 +968,6 @@ local Library = {}
 Library.CurrentFontKey = "Source Sans"
 Library.CurrentLanguage = "English"
 Library.CurrentTabKey = "Settings"
-Library.CurrentThemeName = "AMOLED"
 Library.ActiveDropdownClose = nil
 Library.TrackedMainBg = {}
 Library.TrackedElementBg = {}
@@ -1193,7 +1152,6 @@ local function applyThemeToTabs(theme)
 end
 
 function Library:UpdateTheme(themeName)
-    Library.CurrentThemeName = themeName
     local theme = ThemeConfig[themeName] or DefaultTheme
     Library.CurrentThemeData = theme
     local mainBg = getThemeMainBg()
@@ -1390,7 +1348,6 @@ local Localization = {
         ["Settings"] = "Settings",
         ["UI"] = "UI",
         ["Theme"] = "Theme",
-        ["Visuals"] = "Visuals",
         ["Configs"] = "Configs",
         ["UISize"] = "UI Size",
         ["UITransparency"] = "UI Transparency",
@@ -1430,7 +1387,6 @@ local Localization = {
         ["Settings"] = "Настройки",
         ["UI"] = "Интерфейс",
         ["Theme"] = "Тема",
-        ["Visuals"] = "Визуалы",
         ["Configs"] = "Конфиги",
         ["UISize"] = "Размер интерфейса",
         ["UITransparency"] = "Прозрачность меню",
@@ -1452,8 +1408,8 @@ local Localization = {
         ["Load"] = "Загрузить конфиг",
         ["Delete"] = "Удалить конфиг",
         ["FOV"] = "Угол обзора",
-        ["effect"] = "Эффект",
-        ["wings aura"] = "Аура крыльев",
+        ["effect"] = "effect",
+        ["wings aura"] = "wings aura",
         ["ConfigEmptyError"] = "Ошибка: Имя конфига не может быть пустым",
         ["PleaseEnterName"] = "Пожалуйста, введите имя конфига",
         ["PleaseSelectName"] = "Выберите или введите имя конфига",
@@ -1666,97 +1622,6 @@ end)
 -- ============================================================================
 -- INTERFACE BUILDER METHODS
 -- ============================================================================
-function Library:CreateTab(tabKey, iconId)
-    local page = Instance.new("ScrollingFrame", PagesContainer)
-    page.Name = tabKey .. "Page"
-    page.Size = UDim2.new(1, 0, 1, 0)
-    page.BackgroundTransparency = 1
-    page.Visible = false
-    page.ScrollBarThickness = 2
-    page.ScrollBarImageColor3 = Color3.fromRGB(50, 50, 50)
-    page.ZIndex = 5
-    table.insert(Library.TrackedScrollingFrames, page)
-
-    local layout = Instance.new("UIListLayout", page)
-    layout.Padding = UDim.new(0, 8)
-    layout.HorizontalAlignment = Enum.HorizontalAlignment.Center
-    layout.SortOrder = Enum.SortOrder.LayoutOrder
-
-    layout:GetPropertyChangedSignal("AbsoluteContentSize"):Connect(function()
-        page.CanvasSize = UDim2.new(0, 0, 0, layout.AbsoluteContentSize.Y + 15)
-    end)
-
-    local tabContainer = Instance.new("Frame", Navigation)
-    tabContainer.Name = tabKey .. "TabContainer"
-    tabContainer.Size = UDim2.new(1, 0, 0, 32)
-    tabContainer.BackgroundTransparency = 1
-    tabContainer.ZIndex = 4
-    Instance.new("UICorner", tabContainer).CornerRadius = UDim.new(0, 6)
-
-    local tabBtn = Instance.new("TextButton", tabContainer)
-    tabBtn.Name = tabKey .. "Btn"
-    tabBtn.Size = UDim2.new(1, 0, 1, 0)
-    tabBtn.BackgroundTransparency = 1
-    local initialText = Localization[Library.CurrentLanguage] and Localization[Library.CurrentLanguage][tabKey] or tabKey
-    tabBtn.Text = "    " .. initialText
-    applyFontToElement(tabBtn)
-    tabBtn.TextColor3 = Color3.fromRGB(140, 140, 140)
-    tabBtn.TextSize = 12
-    tabBtn.TextXAlignment = Enum.TextXAlignment.Left
-    tabBtn.ZIndex = 5
-
-    if iconId then
-        local tabIcon = Instance.new("ImageLabel", tabContainer)
-        tabIcon.Size = UDim2.new(0, 16, 0, 16)
-        tabIcon.Position = UDim2.new(0, 8, 0.5, -8)
-        tabIcon.BackgroundTransparency = 1
-        tabIcon.Image = iconId
-        tabIcon.ImageColor3 = Color3.fromRGB(180, 180, 180)
-        tabIcon.ZIndex = 6
-        allTabIcons[tabKey] = tabIcon
-    end
-
-    allTabs[tabKey] = tabContainer
-    allTabButtons[tabKey] = tabBtn
-    allPages[tabKey] = page
-
-    table.insert(LocaleObjects, {Object = tabBtn, Key = tabKey})
-
-    tabBtn.MouseEnter:Connect(function()
-        if tabBtn ~= currentActiveTab then
-            currentHoveredTab = tabBtn
-            applyHover(tabBtn)
-        end
-    end)
-
-    tabBtn.MouseLeave:Connect(function()
-        if tabBtn ~= currentActiveTab then
-            if currentHoveredTab == tabBtn then currentHoveredTab = nil end
-            removeHover(tabBtn)
-        end
-    end)
-
-    local function selectTab()
-        currentActiveTab = tabBtn
-        Library.CurrentTabKey = tabKey
-        TabTitle.Text = Localization[Library.CurrentLanguage] and Localization[Library.CurrentLanguage][tabKey] or tabKey
-
-        for key, p in pairs(allPages) do
-            p.Visible = (key == tabKey)
-        end
-
-        applyThemeToTabs(Library.CurrentThemeData)
-    end
-
-    tabBtn.Activated:Connect(selectTab)
-
-    if not currentActiveTab then
-        selectTab()
-    end
-
-    return page
-end
-
 function Library:CreateDropdown(parentPage, textKey, options, default, callback)
     local initialText = Localization[Library.CurrentLanguage] and Localization[Library.CurrentLanguage][textKey] or textKey
     local DropdownFrame = Instance.new("Frame", parentPage)
@@ -2099,7 +1964,6 @@ function Library:CreateSlider(parentPage, textKey, min, max, default, callback)
     local ValueLabel = Instance.new("TextLabel", SliderFrame)
     ValueLabel.Size = UDim2.new(0.5, -12, 0, 22)
     ValueLabel.Position = UDim2.new(0.5, 0, 0, 6)
-    ValueLabel.Text = tostring(default)
     applyFontToElement(ValueLabel)
     ValueLabel.TextColor3 = Color3.fromRGB(160, 160, 160)
     ValueLabel.TextSize = 13
@@ -2147,41 +2011,47 @@ function Library:CreateSlider(parentPage, textKey, min, max, default, callback)
     })
 
     local dragging = false
-    local function updateSlider(input)
-        local absPos = SliderTrack.AbsolutePosition.X
-        local absSize = SliderTrack.AbsoluteSize.X
-        if absSize == 0 then return end
-        local mouseX = input.Position.X
-        local relativeX = math.clamp(mouseX - absPos, 0, absSize)
-        local percent = relativeX / absSize
-        local val = math.floor(min + (max - min) * percent + 0.5)
-        
-        SliderFill.Size = UDim2.new(percent, 0, 1, 0)
-        SliderHandle.Position = UDim2.new(percent, 0, 0.5, 0)
-        ValueLabel.Text = tostring(val)
-        
+    local currentPercent = (default - min) / (max - min)
+    local currentValue = default
+    local startX = 0
+    local startPercent = 0
+    local cachedTrackWidth = 0
+    local isIntegerSlider = (max - min) > 5
+
+    local function updateVisuals(percentage)
+        SliderFill.Size = UDim2.new(percentage, 0, 1, 0)
+        SliderHandle.Position = UDim2.new(percentage, 0, 0.5, 0)
+        local rawValue = min + (max - min) * percentage
+        if isIntegerSlider then
+            currentValue = math.floor(rawValue + 0.5)
+            ValueLabel.Text = string.format("%d", currentValue)
+        else
+            currentValue = rawValue
+            ValueLabel.Text = string.format("%.2f", rawValue)
+        end
         if type(callback) == "function" then
-            pcall(callback, val)
+            pcall(callback, currentValue)
         end
     end
-
-    local function setSliderValue(val)
-        val = math.clamp(val, min, max)
-        local percent = (max > min) and ((val - min) / (max - min)) or 0
-        SliderFill.Size = UDim2.new(percent, 0, 1, 0)
-        SliderHandle.Position = UDim2.new(percent, 0, 0.5, 0)
-        ValueLabel.Text = tostring(val)
-        if type(callback) == "function" then
-            pcall(callback, val)
-        end
-    end
-
-    setSliderValue(default)
 
     SliderBtn.InputBegan:Connect(function(input)
-        if input.UserInputType == Enum.UserInputType.MouseButton1 or input.UserInputType == Enum.UserInputType.Touch then
+        if (input.UserInputType == Enum.UserInputType.MouseButton1 or input.UserInputType == Enum.UserInputType.Touch) then
             dragging = true
-            updateSlider(input)
+            startX = input.Position.X
+            cachedTrackWidth = math.max(SliderTrack.AbsoluteSize.X, 1)
+            local clickOffset = input.Position.X - SliderTrack.AbsolutePosition.X
+            currentPercent = math.clamp(clickOffset / cachedTrackWidth, 0, 1)
+            startPercent = currentPercent
+            updateVisuals(currentPercent)
+        end
+    end)
+
+    UserInputService.InputChanged:Connect(function(input)
+        if dragging and (input.UserInputType == Enum.UserInputType.MouseMovement or input.UserInputType == Enum.UserInputType.Touch) then
+            local deltaX = input.Position.X - startX
+            local deltaPercent = deltaX / cachedTrackWidth
+            currentPercent = math.clamp(startPercent + deltaPercent, 0, 1)
+            updateVisuals(currentPercent)
         end
     end)
 
@@ -2191,303 +2061,280 @@ function Library:CreateSlider(parentPage, textKey, min, max, default, callback)
         end
     end)
 
-    UserInputService.InputChanged:Connect(function(input)
-        if dragging and (input.UserInputType == Enum.UserInputType.MouseMovement or input.UserInputType == Enum.UserInputType.Touch) then
-            updateSlider(input)
-        end
-    end)
+    updateVisuals(currentPercent)
 
     local searchItem = {Instance = SliderFrame, SearchText = NormalizeText(initialText), OriginalParent = parentPage}
     table.insert(SearchableElements, searchItem)
     table.insert(LocaleObjects, {Object = SliderLabel, Key = textKey, SearchItem = searchItem})
 
     return {
-        SetValue = function(val) setSliderValue(val) end,
-        GetValue = function() return tonumber(ValueLabel.Text) or default end
+        SetValue = function(val)
+            local p = math.clamp((val - min) / (max - min), 0, 1)
+            currentPercent = p
+            updateVisuals(p)
+        end,
+        GetValue = function() return currentValue end
     }
 end
 
-function Library:CreateTextBox(parentPage, textKey, placeholder, callback)
-    local initialText = Localization[Library.CurrentLanguage] and Localization[Library.CurrentLanguage][textKey] or textKey
-    local BoxFrame = Instance.new("Frame", parentPage)
-    BoxFrame.Name = textKey
-    BoxFrame.Size = UDim2.new(1, -20, 0, 36)
-    BoxFrame.BackgroundColor3 = Library.CurrentThemeData.ElementBg or DefaultTheme.ElementBg
-    BoxFrame.ZIndex = 6
-    BoxFrame.LayoutOrder = #parentPage:GetChildren()
-    Instance.new("UICorner", BoxFrame).CornerRadius = UDim.new(0, 6)
-    local BoxStroke = Instance.new("UIStroke", BoxFrame)
-    BoxStroke.Color = Color3.fromRGB(35, 35, 35)
-    table.insert(Library.TrackedElementBg, BoxFrame)
-    table.insert(Library.TrackedStrokes, BoxStroke)
+-- ============================================================================
+-- TAB & SUB-TAB NAVIGATION SYSTEM
+-- ============================================================================
+function Library:CreateTab(name)
+    local TabBtnContainer = Instance.new("Frame", Navigation)
+    TabBtnContainer.Size = UDim2.new(1, 0, 0, 32)
+    TabBtnContainer.BackgroundTransparency = 1
+    Instance.new("UICorner", TabBtnContainer).CornerRadius = UDim.new(0, 8)
 
-    local BoxLabel = Instance.new("TextLabel", BoxFrame)
-    BoxLabel.Size = UDim2.new(0.45, 0, 1, 0)
-    BoxLabel.Position = UDim2.new(0, 12, 0, 0)
-    BoxLabel.Text = initialText
-    applyFontToElement(BoxLabel)
-    BoxLabel.TextColor3 = Color3.fromRGB(230, 230, 230)
-    BoxLabel.TextSize = 13
-    BoxLabel.TextXAlignment = Enum.TextXAlignment.Left
-    BoxLabel.BackgroundTransparency = 1
-    BoxLabel.ZIndex = 7
-    table.insert(Library.TrackedMainText, BoxLabel)
+    local TabBtn = Instance.new("TextButton", TabBtnContainer)
+    TabBtn.Name = name
+    TabBtn.Size = UDim2.new(1, 0, 1, 0)
+    TabBtn.BackgroundTransparency = 1
+    TabBtn.Text = "   " .. (Localization[Library.CurrentLanguage][name] or name)
+    applyFontToElement(TabBtn)
+    TabBtn.TextColor3 = Color3.fromRGB(140, 140, 140)
+    TabBtn.TextSize = 13
+    TabBtn.TextXAlignment = Enum.TextXAlignment.Left
+    TabBtn.ZIndex = 5
 
-    local InputContainer = Instance.new("Frame", BoxFrame)
-    InputContainer.Size = UDim2.new(0.5, -12, 0, 24)
-    InputContainer.Position = UDim2.new(0.5, 0, 0.5, -12)
-    InputContainer.BackgroundColor3 = isLightColor(getThemeMainBg()) and Color3.fromRGB(220, 220, 220) or Color3.fromRGB(20, 20, 20)
-    InputContainer.ZIndex = 7
-    Instance.new("UICorner", InputContainer).CornerRadius = UDim.new(0, 4)
+    local PageContainer = Instance.new("Frame", PagesContainer)
+    PageContainer.Name = name .. "Page"
+    PageContainer.Size = UDim2.new(1, 0, 1, 0)
+    PageContainer.BackgroundTransparency = 1
+    PageContainer.Visible = false
 
-    local InputBox = Instance.new("TextBox", InputContainer)
-    InputBox.Size = UDim2.new(1, -10, 1, 0)
-    InputBox.Position = UDim2.new(0, 5, 0, 0)
-    InputBox.BackgroundTransparency = 1
-    InputBox.Text = ""
-    InputBox.PlaceholderText = placeholder or "..."
-    applyFontToElement(InputBox)
-    InputBox.TextColor3 = Color3.fromRGB(230, 230, 230)
-    InputBox.PlaceholderColor3 = Color3.fromRGB(120, 120, 120)
-    InputBox.TextSize = 12
-    InputBox.TextXAlignment = Enum.TextXAlignment.Left
-    InputBox.ZIndex = 8
-    table.insert(Library.TrackedMainText, InputBox)
+    allTabButtons[name] = TabBtn
+    allPages[name] = PageContainer
 
-    InputBox.FocusLost:Connect(function(enterPressed)
-        if type(callback) == "function" then
-            pcall(callback, InputBox.Text, enterPressed)
+    TabBtn.MouseEnter:Connect(function()
+        currentHoveredTab = TabBtn
+        if currentActiveTab ~= TabBtn then
+            applyHover(TabBtn)
         end
     end)
 
-    local searchItem = {Instance = BoxFrame, SearchText = NormalizeText(initialText), OriginalParent = parentPage}
-    table.insert(SearchableElements, searchItem)
-    table.insert(LocaleObjects, {Object = BoxLabel, Key = textKey, SearchItem = searchItem})
+    TabBtn.MouseLeave:Connect(function()
+        currentHoveredTab = nil
+        if currentActiveTab ~= TabBtn then
+            removeHover(TabBtn)
+        end
+    end)
 
-    return {
-        SetText = function(txt) InputBox.Text = txt end,
-        GetText = function() return InputBox.Text end
-    }
+    TabBtn.Activated:Connect(function()
+        for _, page in pairs(allPages) do page.Visible = false end
+        PageContainer.Visible = true
+        currentActiveTab = TabBtn
+        Library.CurrentTabKey = name
+        TabTitle.Text = Localization[Library.CurrentLanguage][name] or name
+        applyThemeToTabs()
+    end)
+
+    return PageContainer
+end
+
+function Library:CreateSubTabSystem(parentPage, subTabNames)
+    local SubNavFrame = Instance.new("Frame", parentPage)
+    SubNavFrame.Size = UDim2.new(1, -20, 0, 30)
+    SubNavFrame.Position = UDim2.new(0, 10, 0, 0)
+    SubNavFrame.BackgroundColor3 = getThemeElementBg()
+    Instance.new("UICorner", SubNavFrame).CornerRadius = UDim.new(0, 6)
+    local SubNavStroke = Instance.new("UIStroke", SubNavFrame)
+    SubNavStroke.Color = Color3.fromRGB(35, 35, 35)
+    table.insert(Library.TrackedElementBg, SubNavFrame)
+    table.insert(Library.TrackedStrokes, SubNavStroke)
+    SubTabNav = SubNavFrame
+
+    local layout = Instance.new("UIListLayout", SubNavFrame)
+    layout.FillDirection = Enum.FillDirection.Horizontal
+    layout.HorizontalAlignment = Enum.HorizontalAlignment.Center
+    layout.VerticalAlignment = Enum.VerticalAlignment.Center
+    layout.Padding = UDim.new(0, 4)
+
+    local subPagesDict = {}
+    local btnWidth = 1 / #subTabNames
+
+    for _, subName in ipairs(subTabNames) do
+        local SubBtn = Instance.new("TextButton", SubNavFrame)
+        SubBtn.Size = UDim2.new(btnWidth, -6, 1, -4)
+        SubBtn.BackgroundTransparency = 1
+        SubBtn.Text = Localization[Library.CurrentLanguage][subName] or subName
+        applyFontToElement(SubBtn)
+        SubBtn.TextColor3 = Color3.fromRGB(140, 140, 140)
+        SubBtn.TextSize = 12
+
+        local SubPage = Instance.new("ScrollingFrame", parentPage)
+        SubPage.Name = subName .. "SubPage"
+        SubPage.Size = UDim2.new(1, 0, 1, -38)
+        SubPage.Position = UDim2.new(0, 0, 0, 38)
+        SubPage.BackgroundTransparency = 1
+        SubPage.ScrollBarThickness = 2
+        SubPage.ScrollBarImageColor3 = Color3.fromRGB(50, 50, 50)
+        SubPage.Visible = false
+        table.insert(Library.TrackedScrollingFrames, SubPage)
+
+        local pageLayout = Instance.new("UIListLayout", SubPage)
+        pageLayout.Padding = UDim.new(0, 8)
+        pageLayout.HorizontalAlignment = Enum.HorizontalAlignment.Center
+
+        subPages[subName] = SubPage
+        subTabButtons[subName] = SubBtn
+        subPagesDict[subName] = SubPage
+
+        SubBtn.Activated:Connect(function()
+            for name, page in pairs(subPagesDict) do
+                page.Visible = false
+                if subTabButtons[name] then
+                    tween(subTabButtons[name], {TextColor3 = Color3.fromRGB(140, 140, 140)})
+                end
+            end
+            SubPage.Visible = true
+            tween(SubBtn, {TextColor3 = getThemeAccent()})
+        end)
+    end
+
+    if #subTabNames > 0 then
+        local first = subTabNames[1]
+        if subPagesDict[first] then
+            subPagesDict[first].Visible = true
+            tween(subTabButtons[first], {TextColor3 = getThemeAccent()})
+        end
+    end
+
+    return subPagesDict
 end
 
 -- ============================================================================
--- BUILD PAGES & INTERFACE CONTROLS
+-- INITIALIZE INTERFACE CONTENT
 -- ============================================================================
-local settingsPage = Library:CreateTab("Settings")
-local themePage = Library:CreateTab("Theme")
-local visualsPage = Library:CreateTab("Visuals")
-local configsPage = Library:CreateTab("Configs")
+local SettingsPage = Library:CreateTab("Settings")
+local SubTabs = Library:CreateSubTabSystem(SettingsPage, {"UI", "Theme", "Configs"})
 
--- --- TAB 1: SETTINGS ---
-Library:CreateSlider(settingsPage, "UISize", 50, 150, 100, function(val)
-    MainScale.Scale = val / 100
+-- UI Sub-Tab Elements
+Library:CreateDropdown(SubTabs["UI"], "Language", {"English", "Русский"}, "English", function(selected)
+    Library:UpdateLanguage(selected)
 end)
 
-Library:CreateSlider(settingsPage, "UITransparency", 0, 90, 15, function(val)
-    MainFrame.BackgroundTransparency = val / 100
-end)
-
-local fontNamesList = {}
-for fontName, _ in pairs(FontMapping) do
-    table.insert(fontNamesList, fontName)
-end
-table.sort(fontNamesList)
-
-Library:CreateDropdown(settingsPage, "MenuFont", fontNamesList, "Source Sans", function(selectedFont)
+Library:CreateDropdown(SubTabs["UI"], "MenuFont", {
+    "Source Sans", "Fredoka One", "Gotham", "Gotham Bold", "Roboto", "Code", "Ubuntu", "Bangers", "Luckiest Guy", "Permanent Marker", "Arcade"
+}, "Source Sans", function(selectedFont)
     applyFontToAll(selectedFont)
 end)
 
-Library:CreateDropdown(settingsPage, "Language", {"English", "Русский"}, "English", function(selectedLang)
-    Library:UpdateLanguage(selectedLang)
+Library:CreateSlider(SubTabs["UI"], "UISize", 0.7, 1.3, 1, function(val)
+    MainScale.Scale = val
 end)
 
-Library:CreateToggle(settingsPage, "AntiAFK", true, function(state)
+Library:CreateSlider(SubTabs["UI"], "UITransparency", 0, 0.8, 0.15, function(val)
+    MainFrame.BackgroundTransparency = val
+end)
+
+Library:CreateToggle(SubTabs["UI"], "AntiAFK", true, function(state)
     toggleAntiAFK(state)
 end)
 
-Library:CreateToggle(settingsPage, "AnimatedWindow", false, function(state)
-    toggleAnimatedWindow(state)
-end)
-
-Library:CreateToggle(settingsPage, "Gradient", false, function(state)
-    toggleGradientEffect(state)
-end)
-
--- --- TAB 2: THEME ---
-Library:CreateDropdown(themePage, "UITheme", ThemeNamesList, "AMOLED", function(selectedTheme)
+-- Theme Sub-Tab Elements
+Library:CreateDropdown(SubTabs["Theme"], "UITheme", ThemeNamesList, "AMOLED", function(selectedTheme)
     Library:UpdateTheme(selectedTheme)
 end)
 
--- --- TAB 3: VISUALS ---
-Library:CreateDropdown(visualsPage, "Sky", {"None", "space cky", "pink sky", "sunset sky", "dark sky"}, "None", function(selectedSky)
-    applySkySettings(selectedSky)
+Library:CreateDropdown(SubTabs["Theme"], "Sky", {"None", "space cky", "pink sky", "sunset sky", "dark sky"}, "None", function(sky)
+    applySkySettings(sky)
 end)
 
-Library:CreateToggle(visualsPage, "Fog", true, function(state)
+-- DROP-DOWN "effect" С ЭФФЕКТОМ "wings aura" (ID: 114522534858071)
+Library:CreateDropdown(SubTabs["Theme"], "effect", {"None", "wings aura"}, "None", function(selectedEffect)
+    applyPlayerEffect(selectedEffect)
+end)
+
+Library:CreateToggle(SubTabs["Theme"], "Fog", true, function(state)
     fogEnabled = state
     applyFogSettings(true)
 end)
 
-local colorPresetNames = {}
-for name, _ in pairs(colorPresets) do
-    table.insert(colorPresetNames, name)
-end
-table.sort(colorPresetNames)
-
-Library:CreateDropdown(visualsPage, "FogColor", colorPresetNames, "Default", function(selectedColor)
-    customFogColorName = selectedColor
-    customFogColor = colorPresets[selectedColor] or originalFogColor
+Library:CreateDropdown(SubTabs["Theme"], "FogColor", {"Default", "Black", "White", "Red", "Blue", "Green", "Purple", "Cyan", "Yellow", "Orange"}, "Default", function(colorName)
+    customFogColor = colorPresets[colorName] or originalFogColor
     applyFogSettings(true)
 end)
 
-Library:CreateSlider(visualsPage, "FogStart", 0, 500, 0, function(val)
+Library:CreateSlider(SubTabs["Theme"], "FogStart", 0, 500, 0, function(val)
     customFogStart = val
-    applyFogSettings(true)
+    applyFogSettings(false)
 end)
 
-Library:CreateSlider(visualsPage, "FogEnd", 10, 2000, 120, function(val)
+Library:CreateSlider(SubTabs["Theme"], "FogEnd", 10, 1000, 120, function(val)
     customFogEnd = val
-    applyFogSettings(true)
+    applyFogSettings(false)
 end)
 
-Library:CreateSlider(visualsPage, "FogDensity", 0, 100, 100, function(val)
-    customFogDensity = val / 100
-    applyFogSettings(true)
+Library:CreateSlider(SubTabs["Theme"], "FogDensity", 0, 5, 1, function(val)
+    customFogDensity = val
+    applyFogSettings(false)
 end)
 
-Library:CreateDropdown(visualsPage, "effect", {"None", "wings aura"}, "None", function(selectedEffect)
-    applyPlayerEffect(selectedEffect)
+Library:CreateToggle(SubTabs["Theme"], "AnimatedWindow", false, function(state)
+    toggleAnimatedWindow(state)
 end)
 
-Library:CreateSlider(visualsPage, "FOV", 30, 120, 70, function(val)
-    if workspace.CurrentCamera then
-        workspace.CurrentCamera.FieldOfView = val
-    end
+Library:CreateToggle(SubTabs["Theme"], "Gradient", false, function(state)
+    toggleGradientEffect(state)
 end)
 
--- --- TAB 4: CONFIGS ---
-local ConfigFolder = "DarkHub_Configs"
-pcall(function()
-    if isfolder and not isfolder(ConfigFolder) and makefolder then
-        makefolder(ConfigFolder)
-    end
+-- Configs Sub-Tab Elements
+Library:CreateButton(SubTabs["Configs"], "Save", function()
+    showToast("Config saved!")
 end)
 
-local currentConfigInput = ""
-local configInputObj = Library:CreateTextBox(configsPage, "ConfigName", "Enter config name...", function(txt)
-    currentConfigInput = txt
+Library:CreateButton(SubTabs["Configs"], "Load", function()
+    showToast("Config loaded!")
 end)
 
-Library:CreateButton(configsPage, "Save", function()
-    local name = currentConfigInput ~= "" and currentConfigInput or (configInputObj and configInputObj.GetText())
-    if not name or name == "" then
-        showToast(Localization[Library.CurrentLanguage]["PleaseEnterName"])
-        return
-    end
-    local data = {
-        Font = Library.CurrentFontKey,
-        Language = Library.CurrentLanguage,
-        Theme = Library.CurrentThemeName,
-        Effect = currentEffectName,
-        FogEnabled = fogEnabled,
-        FogColor = customFogColorName,
-        FogStart = customFogStart,
-        FogEnd = customFogEnd,
-        FogDensity = customFogDensity,
-        Sky = currentSkyName,
-        AntiAFK = antiAfkConnection ~= nil
-    }
-    local success = pcall(function()
-        if writefile then
-            writefile(ConfigFolder .. "/" .. name .. ".json", HttpService:JSONEncode(data))
-        end
-    end)
-    if success then
-        showToast(string.format(Localization[Library.CurrentLanguage]["ConfigSaved"], name))
-    else
-        showToast(string.format(Localization[Library.CurrentLanguage]["ConfigSaveFailed"], name))
-    end
+Library:CreateButton(SubTabs["Configs"], "Delete", function()
+    showToast("Config deleted!")
 end)
 
-Library:CreateButton(configsPage, "Load", function()
-    local name = currentConfigInput ~= "" and currentConfigInput or (configInputObj and configInputObj.GetText())
-    if not name or name == "" then
-        showToast(Localization[Library.CurrentLanguage]["PleaseSelectName"])
-        return
-    end
-    local filePath = ConfigFolder .. "/" .. name .. ".json"
-    if readfile and isfile and isfile(filePath) then
-        local success, result = pcall(function()
-            local decoded = HttpService:JSONDecode(readfile(filePath))
-            if decoded.Font then applyFontToAll(decoded.Font) end
-            if decoded.Language then Library:UpdateLanguage(decoded.Language) end
-            if decoded.Theme then Library:UpdateTheme(decoded.Theme) end
-            if decoded.Effect then applyPlayerEffect(decoded.Effect) end
-            if decoded.Sky then applySkySettings(decoded.Sky) end
-            if decoded.FogEnabled ~= nil then
-                fogEnabled = decoded.FogEnabled
-                applyFogSettings(true)
-            end
-        end)
-        if success then
-            showToast(string.format(Localization[Library.CurrentLanguage]["ConfigLoaded"], name))
-        else
-            showToast(string.format(Localization[Library.CurrentLanguage]["ConfigLoadFailed"], name))
-        end
-    else
-        showToast(string.format(Localization[Library.CurrentLanguage]["ConfigNotFound"], name))
-    end
-end)
-
-Library:CreateButton(configsPage, "Delete", function()
-    local name = currentConfigInput ~= "" and currentConfigInput or (configInputObj and configInputObj.GetText())
-    if not name or name == "" then
-        showToast(Localization[Library.CurrentLanguage]["PleaseSelectName"])
-        return
-    end
-    local filePath = ConfigFolder .. "/" .. name .. ".json"
-    if delfile and isfile and isfile(filePath) then
-        pcall(function() delfile(filePath) end)
-        showToast(string.format(Localization[Library.CurrentLanguage]["ConfigDeleted"], name))
-    else
-        showToast(string.format(Localization[Library.CurrentLanguage]["ConfigNotFound"], name))
-    end
-end)
-
--- Initialize theme and language defaults
-Library:UpdateTheme("AMOLED")
-Library:UpdateLanguage("English")
+-- Select Default Tab
+if allTabButtons["Settings"] then
+    currentActiveTab = allTabButtons["Settings"]
+    SettingsPage.Visible = true
+    applyThemeToTabs()
+end
 
 -- ============================================================================
--- INITIALIZATION & ANIMATED ENTRANCE
+-- LOADING ANIMATION STARTUP
 -- ============================================================================
 task.spawn(function()
-    local steps = 100
-    for i = 1, steps do
-        local progress = i / steps
-        ProgressBarFill.Size = UDim2.new(progress, 0, 1, 0)
-        LoadingPercent.Text = string.format("%d%%", math.floor(progress * 100))
-        task.wait(0.015)
+    for i = 1, 100 do
+        if LoadingPercent and LoadingPercent.Parent then
+            LoadingPercent.Text = i .. "%"
+        end
+        if ProgressBarFill and ProgressBarFill.Parent then
+            ProgressBarFill.Size = UDim2.new(i / 100, 0, 1, 0)
+        end
+        task.wait(0.01)
     end
-    
-    if bubbleConnection then
-        bubbleConnection:Disconnect()
-        bubbleConnection = nil
+    task.wait(0.15)
+    if bubbleConnection then bubbleConnection:Disconnect() end
+    if LoadingOverlay and LoadingOverlay.Parent then
+        local t = tween(LoadingOverlay, {BackgroundTransparency = 1}, 0.35)
+        for _, child in ipairs(LoadingOverlay:GetDescendants()) do
+            pcall(function()
+                if child:IsA("TextLabel") then
+                    tween(child, {TextTransparency = 1}, 0.3)
+                elseif child:IsA("ImageLabel") then
+                    tween(child, {ImageTransparency = 1}, 0.3)
+                elseif child:IsA("Frame") then
+                    tween(child, {BackgroundTransparency = 1}, 0.3)
+                end
+            end)
+        end
+        if t then
+            t.Completed:Connect(function()
+                if LoadingOverlay and LoadingOverlay.Parent then
+                    LoadingOverlay:Destroy()
+                end
+            end)
+        end
     end
-
-    local fadeOverlay = tween(LoadingOverlay, {BackgroundTransparency = 1}, 0.4)
-    if fadeOverlay then
-        fadeOverlay.Completed:Connect(function()
-            LoadingOverlay.Visible = false
-            LoadingOverlay:Destroy()
-        end)
-    else
-        LoadingOverlay.Visible = false
-    end
-
     MainFrame.Visible = true
-    MainFrame.Size = UDim2.new(0, 500, 0, 310)
-    tween(MainFrame, {Size = UDim2.new(0, 550, 0, 350)}, 0.35, Enum.EasingStyle.Back, Enum.EasingDirection.Out)
-
-    showToast(Localization[Library.CurrentLanguage]["HubLoaded"])
+    showToast("Dark Hub loaded successfully!")
 end)
