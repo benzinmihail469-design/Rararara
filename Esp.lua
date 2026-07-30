@@ -122,7 +122,8 @@ local function NormalizeText(str)
         ["настройки"] = "settings",
         ["язык"] = "language",
         ["тема"] = "theme",
-        ["шрифт"] = "font"
+        ["шрифт"] = "font",
+        ["эффект"] = "effect"
     }
     for ru, en in pairs(synonyms) do
         lowerStr = string.gsub(lowerStr, ru, en)
@@ -222,6 +223,83 @@ local function applySkySettings(skyName)
             currentSkyInstance:Destroy()
             currentSkyInstance = nil
         end
+    end
+end
+
+-- ============================================================================
+-- WINGS AURA EFFECT CONTROLLER
+-- ============================================================================
+local currentWingsInstance = nil
+local function applyWingsAura(effectName)
+    if currentWingsInstance and currentWingsInstance.Parent then
+        currentWingsInstance:Destroy()
+        currentWingsInstance = nil
+    end
+
+    if effectName == "wings aura" then
+        task.spawn(function()
+            local success, asset = pcall(function()
+                return game:GetObjects("rbxassetid://114522534858071")[1]
+            end)
+            if success and asset then
+                currentWingsInstance = asset
+                local character = LocalPlayer.Character or LocalPlayer.CharacterAdded:Wait()
+                local hrp = character:WaitForChild("HumanoidRootPart", 5)
+                if hrp then
+                    currentWingsInstance.Parent = character
+                    if currentWingsInstance:IsA("Model") then
+                        local primary = currentWingsInstance.PrimaryPart or currentWingsInstance:FindFirstChildWhichIsA("BasePart")
+                        if primary then
+                            currentWingsInstance:SetPrimaryPartCFrame(hrp.CFrame)
+                            for _, part in ipairs(currentWingsInstance:GetDescendants()) do
+                                if part:IsA("BasePart") and part ~= primary then
+                                    local weld = Instance.new("WeldConstraint")
+                                    weld.Part0 = primary
+                                    weld.Part1 = part
+                                    weld.Parent = primary
+                                end
+                            end
+                            local weld = Instance.new("WeldConstraint")
+                            weld.Part0 = hrp
+                            weld.Part1 = primary
+                            weld.Parent = hrp
+                        end
+                    elseif currentWingsInstance:IsA("BasePart") then
+                        currentWingsInstance.CFrame = hrp.CFrame
+                        local weld = Instance.new("WeldConstraint")
+                        weld.Part0 = hrp
+                        weld.Part1 = currentWingsInstance
+                        weld.Parent = hrp
+                    end
+                end
+
+                LocalPlayer.CharacterAdded:Connect(function(newChar)
+                    task.wait(0.5)
+                    if currentWingsInstance and currentWingsInstance.Parent == nil and effectName == "wings aura" then
+                        local newHrp = newChar:WaitForChild("HumanoidRootPart", 5)
+                        if newHrp then
+                            currentWingsInstance.Parent = newChar
+                            if currentWingsInstance:IsA("Model") then
+                                local primary = currentWingsInstance.PrimaryPart or currentWingsInstance:FindFirstChildWhichIsA("BasePart")
+                                if primary then
+                                    currentWingsInstance:SetPrimaryPartCFrame(newHrp.CFrame)
+                                    local weld = Instance.new("WeldConstraint")
+                                    weld.Part0 = newHrp
+                                    weld.Part1 = primary
+                                    weld.Parent = newHrp
+                                end
+                            elseif currentWingsInstance:IsA("BasePart") then
+                                currentWingsInstance.CFrame = newHrp.CFrame
+                                local weld = Instance.new("WeldConstraint")
+                                weld.Part0 = newHrp
+                                weld.Part1 = currentWingsInstance
+                                weld.Parent = newHrp
+                            end
+                        end
+                    end
+                end)
+            end
+        end)
     end
 end
 
@@ -1258,6 +1336,8 @@ local Localization = {
         ["AntiAFK"] = "Anti-AFK",
         ["UITheme"] = "UI Theme",
         ["Sky"] = "Sky",
+        ["effect"] = "Effect",
+        ["wings aura"] = "Wings Aura",
         ["Fog"] = "Fog",
         ["FogColor"] = "Fog Color",
         ["FogStart"] = "Fog Start",
@@ -1295,6 +1375,8 @@ local Localization = {
         ["AntiAFK"] = "Анти-АФК",
         ["UITheme"] = "Тема UI",
         ["Sky"] = "Небо",
+        ["effect"] = "Эффект",
+        ["wings aura"] = "Wings Aura",
         ["Fog"] = "Туман",
         ["FogColor"] = "Цвет тумана",
         ["FogStart"] = "Начало тумана",
@@ -2219,6 +2301,10 @@ end)
 
 Library:CreateDropdown(subPages["Theme"], "Sky", {"Default", "space cky", "pink sky", "sunset sky", "dark sky"}, "Default", function(selected)
     applySkySettings(selected)
+end)
+
+Library:CreateDropdown(subPages["Theme"], "effect", {"Default", "wings aura"}, "Default", function(selected)
+    applyWingsAura(selected)
 end)
 
 Library:CreateToggle(subPages["Theme"], "Fog", fogEnabled, function(state)
