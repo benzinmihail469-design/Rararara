@@ -350,7 +350,7 @@ local function showToast(msg)
 end
 
 -- ============================================================================
--- CHARACTER EFFECT CONTROLLER (FIXED WINGS AURA & EFFECTS FILTER)
+-- CHARACTER EFFECT CONTROLLER (FIXED OFFSET & POSITIONING)
 -- ============================================================================
 local currentEffectModel = nil
 local currentEffectName = "None"
@@ -359,7 +359,6 @@ local EFFECT_MODELS = {
     ["wings aura"] = "114522534858071"
 }
 
--- Игнорируемые части тела дамми-персонажа
 local BODY_PARTS_FILTER = {
     ["head"] = true, ["torso"] = true, ["left arm"] = true, ["right arm"] = true,
     ["left leg"] = true, ["right leg"] = true, ["humanoidrootpart"] = true,
@@ -367,9 +366,7 @@ local BODY_PARTS_FILTER = {
     ["leftlowerarm"] = true, ["lefthand"] = true, ["rightupperarm"] = true,
     ["rightlowerarm"] = true, ["righthand"] = true, ["leftupperleg"] = true,
     ["leftlowerleg"] = true, ["leftfoot"] = true, ["rightupperleg"] = true,
-    ["rightlowerleg"] = true, ["rightfoot"] = true, ["humanoid"] = true,
-    ["animate"] = true, ["shirt"] = true, ["pants"] = true, ["shirt graphic"] = true,
-    ["body colors"] = true, ["health"] = true
+    ["rightlowerleg"] = true, ["rightfoot"] = true
 }
 
 local function removeCurrentEffect()
@@ -381,11 +378,6 @@ local function removeCurrentEffect()
         for _, child in ipairs(LocalPlayer.Character:GetChildren()) do
             if child.Name:sub(1, 15) == "DarkHub_Effect_" then
                 child:Destroy()
-            end
-        end
-        for _, desc in ipairs(LocalPlayer.Character:GetDescendants()) do
-            if desc:GetAttribute("DarkHubEffect") then
-                desc:Destroy()
             end
         end
     end
@@ -412,69 +404,56 @@ local function applyPlayerEffect(effectName)
     end)
 
     if success and objects and #objects > 0 then
-        local effectFolder = Instance.new("Model")
-        effectFolder.Name = "DarkHub_Effect_" .. effectName
+        local effectContainer = Instance.new("Model")
+        effectContainer.Name = "DarkHub_Effect_" .. effectName
         
-        local foundAnyEffect = false
-
         for _, rawObj in ipairs(objects) do
             if rawObj:IsA("Accessory") or rawObj:IsA("Hat") then
-                local handle = rawObj:FindFirstChild("Handle")
-                if handle then
-                    hum:AddAccessory(rawObj)
-                    foundAnyEffect = true
-                end
+                hum:AddAccessory(rawObj)
+                rawObj.Name = "DarkHub_Effect_" .. effectName
             else
-                -- 1. Ищем и переносим реальные эффекты (частицы, свечение, лучи)
-                for _, desc in ipairs(rawObj:GetDescendants()) do
-                    if desc:IsA("ParticleEmitter") or desc:IsA("Beam") or desc:IsA("Trail") or desc:IsA("Fire") or desc:IsA("Smoke") or desc:IsA("Sparkles") or desc:IsA("Highlight") or desc:IsA("Light") then
-                        local targetName = desc.Parent and desc.Parent.Name or "HumanoidRootPart"
-                        local targetPart = char:FindFirstChild(targetName) or root
-                        
-                        local clone = desc:Clone()
-                        clone:SetAttribute("DarkHubEffect", true)
-                        clone.Parent = targetPart
-                        foundAnyEffect = true
-                    end
-                end
+                rawObj.Parent = effectContainer
+            end
+        end
 
-                -- 2. Прикрепляем кастомные меши/крылья (исключая конечности манекена)
-                local partsToAttach = {}
-                for _, part in ipairs(rawObj:GetDescendants()) do
-                    if part:IsA("BasePart") then
-                        local pName = string.lower(part.Name)
-                        if not BODY_PARTS_FILTER[pName] then
-                            table.insert(partsToAttach, part)
+        -- Очищаем системные скрипты и манекены из скачанной модели
+        for _, desc in ipairs(effectContainer:GetDescendants()) do
+            if desc:IsA("Humanoid") or desc:IsA("Script") or desc:IsA("LocalScript") then
+                desc:Destroy()
+            elseif desc:IsA("BasePart") then
+                local pName = string.lower(desc.Name)
+                if BODY_PARTS_FILTER[pName] and pName ~= "handle" then
+                    for _, child in ipairs(desc:GetChildren()) do
+                        if not child:IsA("Weld") and not child:IsA("WeldConstraint") then
+                            child.Parent = desc.Parent
                         end
                     end
-                end
-
-                if #partsToAttach > 0 then
-                    for _, part in ipairs(partsToAttach) do
-                        local clonePart = part:Clone()
-                        clonePart.Anchored = false
-                        clonePart.CanCollide = false
-                        clonePart.Parent = effectFolder
-
-                        local mainWeld = Instance.new("WeldConstraint")
-                        mainWeld.Part0 = root
-                        mainWeld.Part1 = clonePart
-                        mainWeld.Parent = clonePart
-                        
-                        clonePart.CFrame = root.CFrame
-                        foundAnyEffect = true
-                    end
+                    desc:Destroy()
                 end
             end
         end
 
-        if foundAnyEffect then
-            effectFolder.Parent = char
-            currentEffectModel = effectFolder
+        local primary = effectContainer.PrimaryPart or effectContainer:FindFirstChildWhichIsA("BasePart", true)
+        if primary then
+            effectContainer:PivotTo(root.CFrame)
+            for _, part in ipairs(effectContainer:GetDescendants()) do
+                if part:IsA("BasePart") then
+                    part.Anchored = false
+                    part.CanCollide = false
+                    part.Massless = true
+
+                    local mainWeld = Instance.new("WeldConstraint")
+                    mainWeld.Part0 = root
+                    mainWeld.Part1 = part
+                    mainWeld.Parent = part
+                end
+            end
+            effectContainer.Parent = char
+            currentEffectModel = effectContainer
             showToast("Effect applied: " .. effectName)
         else
-            effectFolder:Destroy()
-            showToast("No valid effects found in model!")
+            effectContainer:Destroy()
+            showToast("Effect applied!")
         end
     else
         showToast("Failed to load effect model!")
@@ -902,20 +881,13 @@ local function ToggleMinimize()
         EmbeddedControls.Visible = true
         tween(MainFrame, {Size = UDim2.new(0, 175, 0, 46), Position = LastMinimizedPos})
     else
-        LastMinimizedPos = MainFrame.Position
         EmbeddedControls.Visible = false
         HeaderBg.Position = UDim2.new(0, 10, 0, 10)
         HeaderBg.Size = UDim2.new(0, 150, 0, 46)
         MainStroke.Enabled = true
         MainFrame.BackgroundTransparency = 0.15
-        local t = tween(MainFrame, {Size = UDim2.new(0, 550, 0, 350), Position = UDim2.new(0.5, 0, 0.5, 0)})
-        if t then
-            t.Completed:Connect(function()
-                if not isMinimized and MainFrame and MainFrame.Parent then
-                    PagesContainer.Visible, TabTitle.Visible, SearchContainer.Visible, Navigation.Visible, FooterBg.Visible, ControlsContainer.Visible = true, true, true, true, true, true
-                end
-            end)
-        end
+        PagesContainer.Visible, TabTitle.Visible, SearchContainer.Visible, Navigation.Visible, FooterBg.Visible, ControlsContainer.Visible = true, true, true, true, true, true
+        tween(MainFrame, {Size = UDim2.new(0, 550, 0, 350), Position = LastMinimizedPos})
     end
 end
 
@@ -963,7 +935,8 @@ MainFrame.InputChanged:Connect(function(input)
 end)
 UserInputService.InputChanged:Connect(function(input)
     if input == dragInput and dragToggle and MainFrame and MainFrame.Parent then
-        local delta = input.Position - dragStart
+        local scale = (MainScale and MainScale.Scale > 0) and MainScale.Scale or 1
+        local delta = (input.Position - dragStart) / scale
         local newPos = UDim2.new(startPos.X.Scale, startPos.X.Offset + delta.X, startPos.Y.Scale, startPos.Y.Offset + delta.Y)
         MainFrame.Position = newPos
         LastMinimizedPos = newPos
