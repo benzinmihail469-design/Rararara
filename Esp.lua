@@ -8,7 +8,7 @@ local GuiService = game:GetService("GuiService")
 local Players = game:GetService("Players")
 local VirtualUser = game:GetService("VirtualUser")
 local HttpService = game:GetService("HttpService")
-local Lighting = game:GetService("Lighting")
+local Lighting = game:GetService("Lightning")
 
 -- Wait for LocalPlayer
 local LocalPlayer = Players.LocalPlayer
@@ -350,20 +350,55 @@ local function showToast(msg)
 end
 
 -- ============================================================================
--- CHARACTER EFFECT CONTROLLER (WINGS AURA & MODELS) - FIXED FILTER
+-- CHARACTER EFFECT CONTROLLER (WINGS AURA & MODELS)
 -- ============================================================================
 local currentEffectModel = nil
 local currentEffectName = "None"
+local effectAttachments = {}
+local effectConnection = nil
+
+-- Определяем части тела, к которым можно прикреплять эффекты
+local BODY_PARTS = {
+    "Torso",
+    "UpperTorso",
+    "LowerTorso",
+    "LeftArm",
+    "RightArm",
+    "LeftLeg",
+    "RightLeg",
+    "Head",
+    "HumanoidRootPart"
+}
 
 local EFFECT_MODELS = {
-    ["wings aura"] = "114522534858071"
+    ["wings aura"] = {
+        ModelId = "114522534858071",
+        AttachTo = {"UpperTorso", "Torso"} -- К каким частям тела прикреплять
+    }
 }
 
 local function removeCurrentEffect()
-    if currentEffectModel and currentEffectModel.Parent then
-        currentEffectModel:Destroy()
+    if currentEffectModel then
+        -- Удаляем все созданные эффекты
+        for _, attachment in ipairs(effectAttachments) do
+            if attachment and attachment.Parent then
+                attachment:Destroy()
+            end
+        end
+        effectAttachments = {}
+        
+        if currentEffectModel.Parent then
+            currentEffectModel:Destroy()
+        end
+        currentEffectModel = nil
     end
-    currentEffectModel = nil
+    
+    if effectConnection then
+        effectConnection:Disconnect()
+        effectConnection = nil
+    end
+    
+    -- Удаляем все эффекты из персонажа
     if LocalPlayer.Character then
         for _, child in ipairs(LocalPlayer.Character:GetChildren()) do
             if child.Name:sub(1, 15) == "DarkHub_Effect_" then
@@ -373,30 +408,15 @@ local function removeCurrentEffect()
     end
 end
 
--- Список стандартных имен частей тела игрока, которые ни в коем случае нельзя крепить/трогать
-local ignoredBodyParts = {
-    ["Head"] = true,
-    ["Torso"] = true,
-    ["UpperTorso"] = true,
-    ["LowerTorso"] = true,
-    ["LeftArm"] = true,
-    ["RightArm"] = true,
-    ["LeftLeg"] = true,
-    ["RightLeg"] = true,
-    ["LeftUpperArm"] = true,
-    ["LeftLowerArm"] = true,
-    ["LeftHand"] = true,
-    ["RightUpperArm"] = true,
-    ["RightLowerArm"] = true,
-    ["RightHand"] = true,
-    ["LeftUpperLeg"] = true,
-    ["LeftLowerLeg"] = true,
-    ["LeftFoot"] = true,
-    ["RightUpperLeg"] = true,
-    ["RightLowerLeg"] = true,
-    ["RightFoot"] = true,
-    ["HumanoidRootPart"] = true
-}
+local function findBodyPart(character, partNames)
+    for _, partName in ipairs(partNames) do
+        local part = character:FindFirstChild(partName)
+        if part and part:IsA("BasePart") then
+            return part
+        end
+    end
+    return nil
+end
 
 local function applyPlayerEffect(effectName)
     removeCurrentEffect()
@@ -410,10 +430,12 @@ local function applyPlayerEffect(effectName)
     if not char then return end
 
     local hum = char:WaitForChild("Humanoid", 5)
-    local root = char:FindFirstChild("HumanoidRootPart") or char:FindFirstChild("Torso") or char:FindFirstChild("UpperTorso")
-    if not root or not hum then return end
+    if not hum then return end
 
-    local modelId = EFFECT_MODELS[effectName]
+    local effectData = EFFECT_MODELS[effectName]
+    local modelId = effectData.ModelId
+    local attachToParts = effectData.AttachTo or {"UpperTorso", "Torso"}
+
     local success, objects = pcall(function()
         return game:GetObjects("rbxassetid://" .. modelId)
     end)
@@ -422,48 +444,97 @@ local function applyPlayerEffect(effectName)
         local effectObj = objects[1]
         effectObj.Name = "DarkHub_Effect_" .. effectName
 
+        -- Если это аксессуар, добавляем его стандартным способом
         if effectObj:IsA("Accessory") or effectObj:IsA("Hat") then
             hum:AddAccessory(effectObj)
             currentEffectModel = effectObj
-        else
-            effectObj.Parent = char
-            currentEffectModel = effectObj
+            showToast("Effect applied: " .. effectName)
+            return
+        end
 
-            local primary = effectObj:IsA("BasePart") and effectObj or (effectObj.PrimaryPart or effectObj:FindFirstChildWhichIsA("BasePart", true))
-            if primary then
-                primary.Anchored = false
-                primary.CanCollide = false
-                primary.CFrame = root.CFrame
+        -- Для моделей находим подходящую часть тела для прикрепления
+        local targetPart = findBodyPart(char, attachToParts)
+        if not targetPart then
+            targetPart = char:FindFirstChild("HumanoidRootPart") or char.PrimaryPart
+        end
 
-                for _, part in ipairs(effectObj:GetDescendants()) do
-                    if part:IsA("BasePart") then
-                        -- Проверяем, что деталь НЕ является частью тела игрока (руки, ноги, торс и т.д.)
-                        if not ignoredBodyParts[part.Name] and not part:IsDescendantOf(char) then
-                            part.Anchored = false
-                            part.CanCollide = false
-                            if part ~= primary then
-                                local w = Instance.new("WeldConstraint")
-                                w.Part0 = primary
-                                w.Part1 = part
-                                w.Parent = primary
-                            end
-                        end
-                    end
+        if not targetPart then
+            showToast("No suitable body part found for effect!")
+            return
+        end
+
+        -- Находим основную часть модели
+        local primaryPart = effectObj:IsA("BasePart") and effectObj or 
+                           (effectObj.PrimaryPart or effectObj:FindFirstChildWhichIsA("BasePart", true))
+        
+        if not primaryPart then
+            showToast("Failed to find primary part in model!")
+            return
+        end
+
+        -- Создаем привязку для каждой части модели
+        effectObj.Parent = char
+        currentEffectModel = effectObj
+
+        -- Настраиваем все части модели
+        for _, part in ipairs(effectObj:GetDescendants()) do
+            if part:IsA("BasePart") then
+                part.Anchored = false
+                part.CanCollide = false
+                
+                -- Создаем привязку для каждой части
+                if part ~= primaryPart then
+                    local weld = Instance.new("Weld")
+                    weld.Part0 = primaryPart
+                    weld.Part1 = part
+                    weld.C0 = primaryPart.CFrame:Inverse() * part.CFrame
+                    weld.Parent = primaryPart
                 end
-
-                local mainWeld = Instance.new("WeldConstraint")
-                mainWeld.Part0 = root
-                mainWeld.Part1 = primary
-                mainWeld.Parent = primary
             end
         end
+
+        -- Привязываем основную часть к телу
+        local mainWeld = Instance.new("Weld")
+        mainWeld.Part0 = targetPart
+        mainWeld.Part1 = primaryPart
+        mainWeld.C0 = targetPart.CFrame:Inverse() * primaryPart.CFrame
+        mainWeld.Parent = primaryPart
+
+        -- Сохраняем для обновления позиции при движении персонажа
+        table.insert(effectAttachments, mainWeld)
+
+        -- Обновляем позицию эффекта каждый кадр (для анимаций)
+        effectConnection = RunService.Heartbeat:Connect(function()
+            if not currentEffectModel or not currentEffectModel.Parent then
+                if effectConnection then
+                    effectConnection:Disconnect()
+                    effectConnection = nil
+                end
+                return
+            end
+            
+            -- Проверяем, что персонаж все еще существует
+            local char = LocalPlayer.Character
+            if not char then return end
+            
+            local target = findBodyPart(char, attachToParts) or char:FindFirstChild("HumanoidRootPart")
+            if not target then return end
+            
+            -- Обновляем положение основного соединения
+            if mainWeld and mainWeld.Parent then
+                mainWeld.Part0 = target
+                mainWeld.C0 = target.CFrame:Inverse() * primaryPart.CFrame
+            end
+        end)
+
         showToast("Effect applied: " .. effectName)
     else
         showToast("Failed to load effect model!")
     end
 end
 
-LocalPlayer.CharacterAdded:Connect(function()
+-- Обработка респавна персонажа
+LocalPlayer.CharacterAdded:Connect(function(character)
     task.wait(1)
     if currentEffectName and currentEffectName ~= "None" then
         applyPlayerEffect(currentEffectName)
@@ -2232,7 +2303,7 @@ Library:CreateDropdown(SubTabs["Theme"], "Sky", {"None", "space cky", "pink sky"
     applySkySettings(sky)
 end)
 
--- DROP-DOWN "effect" С ЭФФЕКТОМ "wings aura" (ID: 114522534858071)
+-- DROP-DOWN "effect" С ЭФФЕКТОМ "wings aura"
 Library:CreateDropdown(SubTabs["Theme"], "effect", {"None", "wings aura"}, "None", function(selectedEffect)
     applyPlayerEffect(selectedEffect)
 end)
@@ -2247,7 +2318,7 @@ Library:CreateDropdown(SubTabs["Theme"], "FogColor", {"Default", "Black", "White
     applyFogSettings(true)
 end)
 
-Library:CreateSlider(SubTabs["Theme"], "FogFogStart", 0, 500, 0, function(val)
+Library:CreateSlider(SubTabs["Theme"], "FogStart", 0, 500, 0, function(val)
     customFogStart = val
     applyFogSettings(false)
 end)
@@ -2257,7 +2328,7 @@ Library:CreateSlider(SubTabs["Theme"], "FogEnd", 10, 1000, 120, function(val)
     applyFogSettings(false)
 end)
 
-Library:CreateSlider(SubTabs["Theta"], "FogDensity", 0, 5, 1, function(val)
+Library:CreateSlider(SubTabs["Theme"], "FogDensity", 0, 5, 1, function(val)
     customFogDensity = val
     applyFogSettings(false)
 end)
