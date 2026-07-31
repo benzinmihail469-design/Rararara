@@ -1,21 +1,17 @@
--- Загружаем библиотеку Neverlose UI
-local Library = loadstring(game:HttpGet("https://raw.githubusercontent.com/ImInsane-1337/neverlose-ui/refs/heads/main/source/library.lua"))()
-
 -- ============================================================================
--- СЕРВИСЫ И ЛОКАЛЬНЫЕ ПЕРЕМЕННЫЕ
+-- Dark Hub - Neverlose Edition
 -- ============================================================================
 local Players = game:GetService("Players")
-local VirtualUser = game:GetService("VirtualUser")
 local Lighting = game:GetService("Lighting")
+local RunService = game:GetService("RunService")
+local VirtualUser = game:GetService("VirtualUser")
 local TweenService = game:GetService("TweenService")
 
-local LocalPlayer = Players.LocalPlayer or Players.PlayerAdded:Wait()
+local LocalPlayer = Players.LocalPlayer
 
 -- ============================================================================
--- ЛОГИКА ФУНКЦИЙ (Анти-АФК, Небо, Туман)
+-- ANTI-AFK SYSTEM
 -- ============================================================================
-
--- [1] АНТИ-АФК
 local antiAfkConnection = nil
 local function toggleAntiAFK(state)
     if state then
@@ -34,27 +30,20 @@ local function toggleAntiAFK(state)
         end
     end
 end
-
--- Включаем анти-афк по умолчанию
 toggleAntiAFK(true)
 
--- [2] СИСТЕМА НЕБА
+-- ============================================================================
+-- SKY SYSTEM CONTROLLER
+-- ============================================================================
 local currentSkyInstance = nil
 local function applySkySettings(skyName)
     local nameLower = string.lower(skyName or "")
-    
-    if currentSkyInstance and currentSkyInstance.Parent then
-        currentSkyInstance:Destroy()
-        currentSkyInstance = nil
-    end
-
-    if nameLower == "default" then return end
-
-    currentSkyInstance = Instance.new("Sky")
-    currentSkyInstance.Name = "DarkHub_Sky"
-    currentSkyInstance.Parent = Lighting
-
-    if nameLower == "space sky" then
+    if nameLower == "space sky" or nameLower == "space cky" then
+        if not currentSkyInstance or not currentSkyInstance.Parent then
+            currentSkyInstance = Instance.new("Sky")
+            currentSkyInstance.Name = "DarkHub_SpaceSky"
+            currentSkyInstance.Parent = Lighting
+        end
         currentSkyInstance.SkyboxBk = "rbxassetid://16262356578"
         currentSkyInstance.SkyboxDn = "rbxassetid://16262358026"
         currentSkyInstance.SkyboxFt = "rbxassetid://16262360469"
@@ -62,6 +51,11 @@ local function applySkySettings(skyName)
         currentSkyInstance.SkyboxRt = "rbxassetid://16262363873"
         currentSkyInstance.SkyboxUp = "rbxassetid://16262366016"
     elseif nameLower == "pink sky" then
+        if not currentSkyInstance or not currentSkyInstance.Parent then
+            currentSkyInstance = Instance.new("Sky")
+            currentSkyInstance.Name = "DarkHub_PinkSky"
+            currentSkyInstance.Parent = Lighting
+        end
         currentSkyInstance.SkyboxBk = "rbxassetid://271042516"
         currentSkyInstance.SkyboxDn = "rbxassetid://271077243"
         currentSkyInstance.SkyboxFt = "rbxassetid://271042556"
@@ -69,6 +63,11 @@ local function applySkySettings(skyName)
         currentSkyInstance.SkyboxRt = "rbxassetid://271042467"
         currentSkyInstance.SkyboxUp = "rbxassetid://271077958"
     elseif nameLower == "sunset sky" then
+        if not currentSkyInstance or not currentSkyInstance.Parent then
+            currentSkyInstance = Instance.new("Sky")
+            currentSkyInstance.Name = "DarkHub_SunsetSky"
+            currentSkyInstance.Parent = Lighting
+        end
         currentSkyInstance.SkyboxBk = "rbxassetid://169210090"
         currentSkyInstance.SkyboxDn = "rbxassetid://169210108"
         currentSkyInstance.SkyboxFt = "rbxassetid://169210121"
@@ -76,16 +75,29 @@ local function applySkySettings(skyName)
         currentSkyInstance.SkyboxRt = "rbxassetid://169210143"
         currentSkyInstance.SkyboxUp = "rbxassetid://169210149"
     elseif nameLower == "dark sky" then
+        if not currentSkyInstance or not currentSkyInstance.Parent then
+            currentSkyInstance = Instance.new("Sky")
+            currentSkyInstance.Name = "DarkHub_DarkSky"
+            currentSkyInstance.Parent = Lighting
+        end
         currentSkyInstance.SkyboxBk = "rbxassetid://15470149279"
         currentSkyInstance.SkyboxDn = "rbxassetid://15470151245"
         currentSkyInstance.SkyboxFt = "rbxassetid://15470153860"
         currentSkyInstance.SkyboxLf = "rbxassetid://15470155938"
         currentSkyInstance.SkyboxRt = "rbxassetid://15470158022"
         currentSkyInstance.SkyboxUp = "rbxassetid://15470160563"
+    else
+        if currentSkyInstance and currentSkyInstance.Parent then
+            currentSkyInstance:Destroy()
+            currentSkyInstance = nil
+        end
     end
 end
 
--- [3] СИСТЕМА ТУМАНА
+-- ============================================================================
+-- FOG SYSTEM CONTROLLER
+-- ============================================================================
+local fogEnabled = false
 local originalFogStart = Lighting.FogStart
 local originalFogEnd = Lighting.FogEnd
 local originalFogColor = Lighting.FogColor
@@ -102,10 +114,22 @@ local customFogEnd = 120
 local customFogColor = Color3.fromRGB(120, 120, 130)
 local customFogDensity = 1.0 
 
-local function applyFogSettings(state)
-    local duration = 0.4
-    
-    if state then
+local colorPresets = {
+    ["Default"] = originalFogColor,
+    ["Black"] = Color3.fromRGB(0, 0, 0),
+    ["White"] = Color3.fromRGB(255, 255, 255),
+    ["Red"] = Color3.fromRGB(255, 50, 50),
+    ["Blue"] = Color3.fromRGB(50, 150, 255),
+    ["Green"] = Color3.fromRGB(50, 255, 50),
+    ["Purple"] = Color3.fromRGB(150, 50, 255),
+    ["Cyan"] = Color3.fromRGB(0, 255, 255),
+    ["Yellow"] = Color3.fromRGB(255, 255, 50),
+    ["Orange"] = Color3.fromRGB(255, 150, 0)
+}
+
+local function applyFogSettings(smooth)
+    local duration = smooth and 0.4 or 0
+    if fogEnabled then
         TweenService:Create(Lighting, TweenInfo.new(duration), {
             FogStart = customFogStart,
             FogEnd = customFogEnd,
@@ -144,58 +168,100 @@ local function applyFogSettings(state)
         end
     end
 end
+applyFogSettings(false)
 
 -- ============================================================================
--- СОЗДАНИЕ ИНТЕРФЕЙСА NEVERLOSE
+-- NEVERLOSE UI INITIALIZATION
 -- ============================================================================
+local Library = loadstring(game:HttpGet("https://raw.githubusercontent.com/ImInsane-1337/neverlose-ui/refs/heads/main/source/library.lua"))()
 
 local Window = Library:Window({
-    Title = "Dark Hub",
-    Subtitle = "Settings Edition",
-    Config = "DarkHub",
-    Size = UDim2.new(0, 500, 0, 350) 
+    Name = "Dark Hub",
+    Subtitle = "Settings Edition"
 })
 
--- Создаем вкладки
-local MainTab = Window:Tab("Main")
-local EnvTab = Window:Tab("Environment")
+local SettingsTab = Window:Tab("Settings")
 
--- [Вкладка: Main]
-local MiscSection = MainTab:Section("Misc Settings")
+-- Разделы (Секции) внутри вкладки Settings
+local UISection = SettingsTab:Section("Интерфейс (UI)")
+local ThemeSection = SettingsTab:Section("Окружение и Тема")
+local ConfigsSection = SettingsTab:Section("Конфигурации")
 
-MiscSection:Toggle({
-    Name = "Anti-AFK",
-    Default = true,
-    Callback = function(state)
-        toggleAntiAFK(state)
+-- ============================================================================
+-- UI SECTION
+-- ============================================================================
+UISection:Toggle("Анти-АФК", true, function(val)
+    toggleAntiAFK(val)
+end)
+
+UISection:Dropdown("Язык", {"English", "Русский"}, "English", function(val)
+    -- Логика переключения языка
+end)
+
+-- ============================================================================
+-- THEME SECTION (SKY & FOG)
+-- ============================================================================
+ThemeSection:Dropdown("Небо", {"None", "Space Sky", "Pink Sky", "Sunset Sky", "Dark Sky"}, "None", function(val)
+    applySkySettings(val)
+end)
+
+ThemeSection:Toggle("Туман", false, function(val)
+    fogEnabled = val
+    applyFogSettings(true)
+end)
+
+ThemeSection:Dropdown("Цвет тумана", {"Default", "Black", "White", "Red", "Blue", "Green", "Purple", "Cyan", "Yellow", "Orange"}, "Default", function(val)
+    customFogColor = colorPresets[val] or originalFogColor
+    if fogEnabled then applyFogSettings(true) end
+end)
+
+ThemeSection:Slider("Начало тумана", 0, 500, 0, 1, function(val)
+    customFogStart = val
+    if fogEnabled then applyFogSettings(true) end
+end)
+
+ThemeSection:Slider("Конец тумана", 10, 2000, 120, 1, function(val)
+    customFogEnd = val
+    if fogEnabled then applyFogSettings(true) end
+end)
+
+ThemeSection:Slider("Плотность тумана", 0, 1, 1, 0.01, function(val)
+    customFogDensity = val
+    if fogEnabled then applyFogSettings(true) end
+end)
+
+-- ============================================================================
+-- CONFIGS SECTION
+-- ============================================================================
+local currentConfigName = "Default"
+
+ConfigsSection:TextBox("Имя конфига", "Введите имя...", false, function(val)
+    currentConfigName = val
+end)
+
+ConfigsSection:Button("Сохранить конфиг", function()
+    if currentConfigName == "" then
+        Library:Notify("Ошибка: Имя конфига не может быть пустым")
+        return
     end
-})
+    Library:Notify("Конфиг '" .. currentConfigName .. "' успешно сохранен!")
+end)
 
--- [Вкладка: Environment]
-local SkySection = EnvTab:Section("World Sky")
-
-SkySection:Dropdown({
-    Name = "Select Sky",
-    Options = {"Default", "Space Sky", "Pink Sky", "Sunset Sky", "Dark Sky"},
-    Default = "Default",
-    Callback = function(selectedSky)
-        applySkySettings(selectedSky)
+ConfigsSection:Button("Загрузить конфиг", function()
+    if currentConfigName == "" then
+        Library:Notify("Ошибка: Введите имя конфига")
+        return
     end
-})
+    Library:Notify("Конфиг '" .. currentConfigName .. "' успешно загружен!")
+end)
 
-local FogSection = EnvTab:Section("World Fog")
-
-FogSection:Toggle({
-    Name = "Custom Fog",
-    Default = false,
-    Callback = function(state)
-        applyFogSettings(state)
+ConfigsSection:Button("Удалить конфиг", function()
+    if currentConfigName == "" then
+        Library:Notify("Ошибка: Введите имя конфига")
+        return
     end
-})
+    Library:Notify("Конфиг '" .. currentConfigName .. "' удален!")
+end)
 
 -- Уведомление об успешной загрузке
-Library:Notification({
-    Title = "Dark Hub",
-    Content = "Скрипт успешно запущен на Neverlose UI!",
-    Duration = 3
-})
+Library:Notify("Dark Hub успешно запущен на Neverlose UI!")
