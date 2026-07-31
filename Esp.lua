@@ -1,6 +1,3 @@
--- ============================================================================
--- Dark Hub - Settings Edition (AMOLED Style with UI, Theme, Sky & Configs)
--- ============================================================================
 local TweenService = game:GetService("TweenService")
 local UserInputService = game:GetService("UserInputService")
 local RunService = game:GetService("RunService")
