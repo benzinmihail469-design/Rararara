@@ -350,197 +350,57 @@ local function showToast(msg)
 end
 
 -- ============================================================================
--- CHARACTER EFFECT CONTROLLER (WINGS AURA - EFFECTS ONLY)
+-- CHARACTER EFFECT CONTROLLER (WINGS AURA & MODELS) — ИСПРАВЛЕНО
 -- ============================================================================
-local currentEffectInstances = {}
+local currentEffectModel = nil
 local currentEffectName = "None"
 
 local EFFECT_MODELS = {
     ["wings aura"] = "114522534858071"
 }
 
--- Типы объектов, которые считаются эффектами (а не частями тела)
-local EFFECT_CLASSES = {
-    ParticleEmitter = true,
-    Beam = true,
-    Trail = true,
-    Fire = true,
-    Smoke = true,
-    Sparkles = true,
-    PointLight = true,
-    SurfaceLight = true,
-    SpotLight = true,
-    Sound = true,
-    BillboardGui = true,
-    SurfaceGui = true,
-    Decal = true,
-    Texture = true,
-    Highlight = true,
-    BloomEffect = true,
-    BlurEffect = true,
-    SunRaysEffect = true,
-    ColorCorrectionEffect = true
+-- Список стандартных имён частей тела/рига, которые НЕ являются эффектом
+local BODY_PART_NAMES = {
+    ["Head"] = true, ["Torso"] = true, ["HumanoidRootPart"] = true,
+    ["Left Arm"] = true, ["Right Arm"] = true,
+    ["Left Leg"] = true, ["Right Leg"] = true,
+    ["UpperTorso"] = true, ["LowerTorso"] = true,
+    ["LeftUpperArm"] = true, ["LeftLowerArm"] = true, ["LeftHand"] = true,
+    ["RightUpperArm"] = true, ["RightLowerArm"] = true, ["RightHand"] = true,
+    ["LeftUpperLeg"] = true, ["LeftLowerLeg"] = true, ["LeftFoot"] = true,
+    ["RightUpperLeg"] = true, ["RightLowerLeg"] = true, ["RightFoot"] = true,
+    ["Humanoid"] = true, ["Animate"] = true, ["Health"] = true,
+    ["Bodycolors"] = true, ["Shirt"] = true, ["Pants"] = true,
+    ["Sound"] = true, ["Rig"] = true, ["HumanoidRootNode"] = true
 }
 
--- Ключевые слова, по которым определяем, что это часть тела, а не эффект
-local BODY_PART_KEYWORDS = {
-    "head", "torso", "arm", "leg", "hand", "foot", "root", "humanoid", "hip",
-    "knee", "ankle", "shoulder", "elbow", "wrist", "waist", "neck", "spine",
-    "pelvis", "clavicle", "collar", "eye", "ear", "nose", "mouth", "jaw",
-    "finger", "thumb", "index", "ring", "pinky", "toe", "heel",
-    "голова", "туловище", "рука", "нога", "кисть", "стопа"
-}
-
-local function isBodyPart(obj)
-    if not obj or typeof(obj) ~= "Instance" then return true end
-    
-    -- Проверяем имя объекта
-    local nameLower = obj.Name:lower()
-    for _, keyword in ipairs(BODY_PART_KEYWORDS) do
-        if string.find(nameLower, keyword) then
-            return true
-        end
+local function isEffectPart(inst)
+    -- Пропускаем всё, что похоже на часть тела/риг по имени
+    if BODY_PART_NAMES[inst.Name] then
+        return false
     end
-    
-    -- Проверяем родительскую цепочку на наличие частей тела
-    local parent = obj.Parent
-    while parent do
-        local parentName = parent.Name:lower()
-        for _, keyword in ipairs(BODY_PART_KEYWORDS) do
-            if string.find(parentName, keyword) then
-                return true
-            end
-        end
-        parent = parent.Parent
+    -- Пропускаем служебные объекты (скрипты, анимации, риг-контроллеры)
+    if inst:IsA("Humanoid") or inst:IsA("Script") or inst:IsA("LocalScript")
+        or inst:IsA("Animation") or inst:IsA("AnimationController")
+        or inst:IsA("Motor6D") or inst:IsA("Bone") then
+        return false
     end
-    
-    -- Если это BasePart без эффектов - считаем частью тела
-    if obj:IsA("BasePart") then
-        -- Проверяем, есть ли у этого парта эффекты
-        local hasEffects = false
-        for _, child in ipairs(obj:GetChildren()) do
-            if EFFECT_CLASSES[child.ClassName] then
-                hasEffects = true
-                break
-            end
-        end
-        
-        -- Если нет эффектов и это меш (MeshPart) или обычный Part без спец свойств
-        if not hasEffects then
-            -- Проверяем на Weld или Motor6D (значит это скелет)
-            for _, child in ipairs(obj:GetChildren()) do
-                if child:IsA("Weld") or child:IsA("Motor6D") or child:IsA("WeldConstraint") then
-                    return true
-                end
-            end
-            -- Проверяем на антропоморфность
-            if obj:IsA("MeshPart") or (obj:IsA("Part") and obj.Size.Y > 0.5 and obj.Size.X < 5) then
-                return true
-            end
-        end
-    end
-    
-    return false
+    -- Оставляем только визуальные части эффекта
+    return inst:IsA("BasePart") or inst:IsA("ParticleEmitter")
+        or inst:IsA("Trail") or inst:IsA("Beam") or inst:IsA("Attachment")
+        or inst:IsA("SpecialMesh")
 end
 
 local function removeCurrentEffect()
-    -- Удаляем все созданные копии эффектов
-    for _, effect in ipairs(currentEffectInstances) do
-        if effect and effect.Parent then
-            pcall(function() effect:Destroy() end)
-        end
+    if currentEffectModel and currentEffectModel.Parent then
+        currentEffectModel:Destroy()
     end
-    currentEffectInstances = {}
-    
-    -- Очищаем старые метки на персонаже
+    currentEffectModel = nil
     if LocalPlayer.Character then
         for _, child in ipairs(LocalPlayer.Character:GetChildren()) do
             if child.Name:sub(1, 15) == "DarkHub_Effect_" then
-                pcall(function() child:Destroy() end)
+                child:Destroy()
             end
-        end
-    end
-end
-
-local function cloneEffect(obj)
-    if not obj or typeof(obj) ~= "Instance" then return nil end
-    
-    -- Если это сам эффект, копируем его
-    if EFFECT_CLASSES[obj.ClassName] then
-        local clone = obj:Clone()
-        return {clone}
-    end
-    
-    -- Если это контейнер с эффектами
-    if obj:IsA("Attachment") then
-        local effects = {}
-        for _, child in ipairs(obj:GetChildren()) do
-            if EFFECT_CLASSES[child.ClassName] then
-                local clone = child:Clone()
-                table.insert(effects, clone)
-            end
-        end
-        return #effects > 0 and effects or nil
-    end
-    
-    return nil
-end
-
-local function collectEffectsRecursive(obj, effectsList)
-    if not obj or typeof(obj) ~= "Instance" then return end
-    
-    -- Проверяем, не часть ли это тела
-    if obj:IsA("BasePart") and isBodyPart(obj) then
-        -- Если это Part с эффектами - собираем только эффекты
-        local childEffects = {}
-        for _, child in ipairs(obj:GetChildren()) do
-            if EFFECT_CLASSES[child.ClassName] then
-                local clone = child:Clone()
-                table.insert(childEffects, clone)
-            elseif child:IsA("Attachment") then
-                local attachmentEffects = cloneEffect(child)
-                if attachmentEffects then
-                    for _, eff in ipairs(attachmentEffects) do
-                        table.insert(childEffects, eff)
-                    end
-                end
-            end
-        end
-        if #childEffects > 0 then
-            for _, eff in ipairs(childEffects) do
-                table.insert(effectsList, {
-                    Effect = eff,
-                    OriginalParent = obj,
-                    OriginalCFrame = obj.CFrame
-                })
-            end
-        end
-        return -- Не идем дальше в части тела
-    end
-    
-    -- Пропускаем Meshes/Decals/Textures на частях тела
-    if obj:IsA("Decal") or obj:IsA("Texture") or obj:IsA("SpecialMesh") then
-        if obj.Parent and isBodyPart(obj.Parent) then
-            return
-        end
-    end
-    
-    -- Собираем эффекты с текущего объекта
-    local effects = cloneEffect(obj)
-    if effects then
-        for _, eff in ipairs(effects) do
-            table.insert(effectsList, {
-                Effect = eff,
-                OriginalParent = obj,
-                OriginalCFrame = (obj:IsA("BasePart") or obj:IsA("Attachment")) and obj.CFrame or CFrame.identity
-            })
-        end
-    end
-    
-    -- Рекурсивно обрабатываем детей
-    for _, child in ipairs(obj:GetChildren()) do
-        if not EFFECT_CLASSES[child.ClassName] then
-            collectEffectsRecursive(child, effectsList)
         end
     end
 end
@@ -566,104 +426,67 @@ local function applyPlayerEffect(effectName)
     end)
 
     if success and objects and #objects > 0 then
-        local effectObj = objects[1]
-        local effectsList = {}
-        
-        -- Собираем все эффекты из модели, игнорируя части тела
-        collectEffectsRecursive(effectObj, effectsList)
-        
-        if #effectsList > 0 then
-            -- Создаем контейнер для эффектов на персонаже
-            local container = Instance.new("Folder")
-            container.Name = "DarkHub_Effect_" .. effectName
-            container.Parent = char
-            
-            -- Применяем каждый эффект к соответствующей части тела персонажа
-            for _, effectData in ipairs(effectsList) do
-                local effect = effectData.Effect
-                local originalParent = effectData.OriginalParent
-                
-                -- Ищем соответствующую часть тела на персонаже
-                local targetPart = nil
-                local parentName = originalParent.Name:lower()
-                
-                -- Пытаемся найти подходящую часть тела
-                for _, child in ipairs(char:GetChildren()) do
-                    if child:IsA("BasePart") then
-                        local childName = child.Name:lower()
-                        -- Сопоставляем по имени
-                        if string.find(parentName, childName) or string.find(childName, parentName) then
-                            targetPart = child
-                            break
-                        end
-                        -- Специальные маппинги
-                        if (parentName:find("torso") and (childName:find("torso") or childName:find("upper"))) or
-                           (parentName:find("head") and childName:find("head")) or
-                           (parentName:find("arm") and childName:find("arm")) or
-                           (parentName:find("leg") and childName:find("leg")) then
-                            targetPart = child
-                            break
-                        end
-                    end
-                end
-                
-                -- Если не нашли - используем HumanoidRootPart
-                if not targetPart then
-                    targetPart = root
-                end
-                
-                -- Применяем эффект к найденной части
-                if targetPart then
-                    pcall(function()
-                        -- Для ParticleEmitter, Beam, Trail и т.д.
-                        if effect:IsA("ParticleEmitter") or effect:IsA("Beam") or effect:IsA("Trail") then
-                            local attachment = Instance.new("Attachment")
-                            attachment.Parent = targetPart
-                            
-                            if effect:IsA("ParticleEmitter") then
-                                local clonedEffect = effect:Clone()
-                                clonedEffect.Parent = attachment
-                                clonedEffect.Enabled = true
-                                table.insert(currentEffectInstances, clonedEffect)
-                            elseif effect:IsA("Beam") then
-                                local clonedEffect = effect:Clone()
-                                clonedEffect.Attachment0 = attachment
-                                -- Создаем второй Attachment для Beam
-                                local attachment1 = Instance.new("Attachment")
-                                attachment1.Parent = targetPart
-                                attachment1.Position = Vector3.new(0, 2, 0) -- Смещение для луча
-                                clonedEffect.Attachment1 = attachment1
-                                clonedEffect.Parent = attachment
-                                clonedEffect.Enabled = true
-                                table.insert(currentEffectInstances, clonedEffect)
-                            elseif effect:IsA("Trail") then
-                                local clonedEffect = effect:Clone()
-                                clonedEffect.Parent = attachment
-                                clonedEffect.Enabled = true
-                                table.insert(currentEffectInstances, clonedEffect)
-                            end
-                            
-                            table.insert(currentEffectInstances, attachment)
-                        else
-                            -- Для остальных эффектов
-                            local clonedEffect = effect:Clone()
-                            clonedEffect.Parent = targetPart
-                            if clonedEffect:IsA("Light") or clonedEffect:IsA("Sparkles") then
-                                clonedEffect.Enabled = true
-                            end
-                            table.insert(currentEffectInstances, clonedEffect)
-                        end
-                    end)
+        local sourceModel = objects[1]
+
+        if sourceModel:IsA("Accessory") or sourceModel:IsA("Hat") then
+            sourceModel.Name = "DarkHub_Effect_" .. effectName
+            hum:AddAccessory(sourceModel)
+            currentEffectModel = sourceModel
+        else
+            -- Собираем только реальные части эффекта, игнорируя рефы тела
+            local effectParts = {}
+            for _, part in ipairs(sourceModel:GetDescendants()) do
+                if isEffectPart(part) then
+                    table.insert(effectParts, part)
                 end
             end
-            
-            showToast("Effect applied: " .. effectName .. " (" .. #effectsList .. " effects)")
-        else
-            showToast("No effects found in model!")
+
+            if #effectParts == 0 then
+                showToast("No effect parts found in model!")
+                sourceModel:Destroy()
+                return
+            end
+
+            -- Создаём чистый контейнер и переносим туда только эффект-части
+            local container = Instance.new("Model")
+            container.Name = "DarkHub_Effect_" .. effectName
+            container.Parent = char
+
+            local primary = nil
+            for _, part in ipairs(effectParts) do
+                if part:IsA("BasePart") then
+                    part.Anchored = false
+                    part.CanCollide = false
+                    part.CanQuery = false
+                    part.Parent = container
+                    if not primary then
+                        primary = part
+                    end
+                else
+                    part.Parent = container
+                end
+            end
+
+            if primary then
+                primary.CFrame = root.CFrame
+                for _, part in ipairs(container:GetChildren()) do
+                    if part:IsA("BasePart") and part ~= primary then
+                        local w = Instance.new("WeldConstraint")
+                        w.Part0 = primary
+                        w.Part1 = part
+                        w.Parent = primary
+                    end
+                end
+                local mainWeld = Instance.new("WeldConstraint")
+                mainWeld.Part0 = root
+                mainWeld.Part1 = primary
+                mainWeld.Parent = primary
+            end
+
+            currentEffectModel = container
+            sourceModel:Destroy() -- исходник со скелетом-рефом больше не нужен
         end
-        
-        -- Удаляем оригинальную модель
-        pcall(function() effectObj:Destroy() end)
+        showToast("Effect applied: " .. effectName)
     else
         showToast("Failed to load effect model!")
     end
@@ -1566,8 +1389,8 @@ local Localization = {
         ["Load"] = "Load Config",
         ["Delete"] = "Delete Config",
         ["FOV"] = "Field of View",
-        ["effect"] = "Effect",
-        ["wings aura"] = "Wings Aura",
+        ["effect"] = "effect",
+        ["wings aura"] = "wings aura",
         ["ConfigEmptyError"] = "Error: Config name cannot be empty",
         ["PleaseEnterName"] = "Please enter a config name",
         ["PleaseSelectName"] = "Please select or enter a config name",
@@ -1605,8 +1428,8 @@ local Localization = {
         ["Load"] = "Загрузить конфиг",
         ["Delete"] = "Удалить конфиг",
         ["FOV"] = "Угол обзора",
-        ["effect"] = "Эффект",
-        ["wings aura"] = "Крылья Аура",
+        ["effect"] = "effect",
+        ["wings aura"] = "wings aura",
         ["ConfigEmptyError"] = "Ошибка: Имя конфига не может быть пустым",
         ["PleaseEnterName"] = "Пожалуйста, введите имя конфига",
         ["PleaseSelectName"] = "Выберите или введите имя конфига",
