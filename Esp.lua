@@ -359,6 +359,31 @@ local EFFECT_MODELS = {
     ["wings aura"] = "114522534858071"
 }
 
+-- Список названий стандартных частей тела, которые нужно отфильтровать (удалить из модели эффекта)
+local bodyPartNames = {
+    ["head"] = true,
+    ["torso"] = true,
+    ["leftarm"] = true,
+    ["rightarm"] = true,
+    ["leftleg"] = true,
+    ["rightleg"] = true,
+    ["uppertorso"] = true,
+    ["lowertorso"] = true,
+    ["humanoidrootpart"] = true,
+    ["leftupperarm"] = true,
+    ["leftlowerarm"] = true,
+    ["lefthand"] = true,
+    ["rightupperarm"] = true,
+    ["rightlowerarm"] = true,
+    ["righthand"] = true,
+    ["leftupperleg"] = true,
+    ["leftlowerleg"] = true,
+    ["leftfoot"] = true,
+    ["rightupperleg"] = true,
+    ["rightlowerleg"] = true,
+    ["rightfoot"] = true
+}
+
 local function removeCurrentEffect()
     if currentEffectModel and currentEffectModel.Parent then
         currentEffectModel:Destroy()
@@ -397,22 +422,12 @@ local function applyPlayerEffect(effectName)
         local effectObj = objects[1]
         effectObj.Name = "DarkHub_Effect_" .. effectName
 
-        -- Список имен стандартных частей тела и элементов персонажа, которые нужно удалять из модели эффекта
-        local bodyPartNames = {
-            ["Head"] = true, ["Torso"] = true, ["HumanoidRootPart"] = true,
-            ["Left Arm"] = true, ["Right Arm"] = true, ["Left Leg"] = true, ["Right Leg"] = true,
-            ["UpperTorso"] = true, ["LowerTorso"] = true,
-            ["LeftUpperArm"] = true, ["LeftLowerArm"] = true, ["LeftHand"] = true,
-            ["RightUpperArm"] = true, ["RightLowerArm"] = true, ["RightHand"] = true,
-            ["LeftUpperLeg"] = true, ["LeftLowerLeg"] = true, ["LeftFoot"] = true,
-            ["RightUpperLeg"] = true, ["RightLowerLeg"] = true, ["RightFoot"] = true,
-            ["Humanoid"] = true, ["Animator"] = true
-        }
-
-        -- Фильтрация: удаляем всё лишнее (торс, руки, ноги, гуманоиды), оставляя только чистые эффекты/крылья
-        for _, descendant in ipairs(effectObj:GetDescendants()) do
-            if bodyPartNames[descendant.Name] or descendant:IsA("Humanoid") then
-                descendant:Destroy()
+        -- Удаляем части тел, гуманоиды и лишний мусор из загруженной модели эффекта
+        for _, desc in ipairs(effectObj:GetDescendants()) do
+            if desc:IsA("BasePart") and bodyPartNames[desc.Name:lower()] then
+                desc:Destroy()
+            elseif desc:IsA("Humanoid") or desc:IsA("BodyColors") or desc:IsA("CharacterMesh") then
+                desc:Destroy()
             end
         end
 
@@ -427,7 +442,9 @@ local function applyPlayerEffect(effectName)
             if primary then
                 primary.Anchored = false
                 primary.CanCollide = false
-                primary.CFrame = root.CFrame
+                pcall(function()
+                    primary.CFrame = root.CFrame
+                end)
 
                 for _, part in ipairs(effectObj:GetDescendants()) do
                     if part:IsA("BasePart") then
