@@ -228,7 +228,7 @@ end
 -- ============================================================================
 -- FOG SYSTEM CONTROLLER
 -- ============================================================================
-local fogEnabled = true
+local fogEnabled = false
 local originalFogStart = Lighting.FogStart
 local originalFogEnd = Lighting.FogEnd
 local originalFogColor = Lighting.FogColor
@@ -970,8 +970,7 @@ end)
 local Library = {}
 Library.CurrentFontKey = "Source Sans"
 Library.CurrentLanguage = "English"
-Library.CurrentTabKey = "Settings"
-Library.CurrentThemeDataName = "AMOLED"
+Library.CurrentTabKey = "UI"
 Library.ActiveDropdownClose = nil
 Library.TrackedMainBg = {}
 Library.TrackedElementBg = {}
@@ -1007,6 +1006,9 @@ local ThemeConfig = {
     ["Golden Hour"] = { Accent = Color3.fromRGB(255, 215, 0), MainBg = Color3.fromRGB(20, 15, 0), ElementBg = Color3.fromRGB(35, 25, 0) }
 }
 
+-- ============================================================================
+-- LIBRARY UTILITIES & THEMING
+-- ============================================================================
 local DefaultTheme = { Accent = Color3.fromRGB(255, 255, 255), MainBg = Color3.fromRGB(0, 0, 0), ElementBg = Color3.fromRGB(15, 15, 15) }
 Library.CurrentThemeData = ThemeConfig["AMOLED"]
 
@@ -1048,10 +1050,15 @@ for name, _ in pairs(ThemeConfig) do
 end
 table.sort(ThemeNamesList)
 
-local allPages = {}
+local allTabs = {}
 local allTabButtons = {}
+local allTabIcons = {}
+local allPages = {}
 local currentActiveTab = nil
 local currentHoveredTab = nil
+local SubTabNav = nil
+local subPages = {}
+local subTabButtons = {}
 local uiGradientInstance = nil
 
 local function applyHover(button)
@@ -1148,7 +1155,6 @@ local function applyThemeToTabs(theme)
 end
 
 function Library:UpdateTheme(themeName)
-    Library.CurrentThemeDataName = themeName
     local theme = ThemeConfig[themeName] or DefaultTheme
     Library.CurrentThemeData = theme
     local mainBg = getThemeMainBg()
@@ -1344,6 +1350,7 @@ local Localization = {
         ["Language"] = "Language",
         ["AntiAFK"] = "Anti-AFK",
         ["UITheme"] = "UI Theme",
+        ["SkyOption"] = "Skybox",
         ["Fog"] = "Fog",
         ["FogColor"] = "Fog Color",
         ["FogStart"] = "Fog Start",
@@ -1357,12 +1364,15 @@ local Localization = {
         ["Load"] = "Load Config",
         ["Delete"] = "Delete Config",
         ["FOV"] = "Field of View",
-        ["CharacterEffect"] = "Character Effect",
+        ["effect"] = "Effect Aura",
+        ["wings aura"] = "Wings Aura",
+        ["ConfigEmptyError"] = "Error: Config name empty",
         ["PleaseEnterName"] = "Please enter a config name",
         ["PleaseSelectName"] = "Please select or enter a config name",
         ["ConfigSaved"] = "Config '%s' saved successfully!",
         ["ConfigSaveFailed"] = "Failed to save config '%s'",
         ["ConfigNotFound"] = "Config '%s' not found",
+        ["ConfigLoadFailed"] = "Failed to load config '%s'",
         ["ConfigLoaded"] = "Config '%s' loaded successfully!",
         ["ConfigDeleted"] = "Config '%s' deleted!",
         ["ConfigDeleteFailed"] = "Failed to delete config '%s'",
@@ -1372,7 +1382,7 @@ local Localization = {
         ["Settings"] = "Настройки",
         ["UI"] = "Интерфейс",
         ["Theme"] = "Тема",
-        ["Sky"] = "Небо и Визуалы",
+        ["Sky"] = "Небо и Эффекты",
         ["Configs"] = "Конфиги",
         ["UISize"] = "Размер интерфейса",
         ["UITransparency"] = "Прозрачность меню",
@@ -1380,6 +1390,7 @@ local Localization = {
         ["Language"] = "Язык",
         ["AntiAFK"] = "Анти-АФК",
         ["UITheme"] = "Тема UI",
+        ["SkyOption"] = "Скайбокс",
         ["Fog"] = "Туман",
         ["FogColor"] = "Цвет тумана",
         ["FogStart"] = "Начало тумана",
@@ -1393,12 +1404,15 @@ local Localization = {
         ["Load"] = "Загрузить конфиг",
         ["Delete"] = "Удалить конфиг",
         ["FOV"] = "Угол обзора",
-        ["CharacterEffect"] = "Эффект персонажа",
+        ["effect"] = "Аура эффектов",
+        ["wings aura"] = "Аура крыльев",
+        ["ConfigEmptyError"] = "Ошибка: Имя конфига не может быть пустым",
         ["PleaseEnterName"] = "Пожалуйста, введите имя конфига",
         ["PleaseSelectName"] = "Выберите или введите имя конфига",
         ["ConfigSaved"] = "Конфиг '%s' успешно сохранен!",
         ["ConfigSaveFailed"] = "Не удалось сохранить конфиг '%s'",
         ["ConfigNotFound"] = "Конфиг '%s' не найден",
+        ["ConfigLoadFailed"] = "Не удалось загрузить конфиг '%s'",
         ["ConfigLoaded"] = "Конфиг '%s' успешно загружен!",
         ["ConfigDeleted"] = "Конфиг '%s' удален!",
         ["ConfigDeleteFailed"] = "Не удалось удалить конфиг '%s'",
@@ -1475,16 +1489,11 @@ function Library:UpdateLanguage(lang)
     for _, loc in ipairs(LocaleObjects) do
         if loc.Object and typeof(loc.Object) == "Instance" and loc.Object.Parent then
             local newText = Localization[lang][loc.Key] or loc.Key
-            local prefix = loc.Prefix or ""
-            loc.Object.Text = prefix .. newText
+            loc.Object.Text = newText
             if loc.SearchItem then
                 loc.SearchItem.SearchText = NormalizeText(newText)
             end
         end
-    end
-
-    if TabTitle and Library.CurrentTabKey then
-        TabTitle.Text = Localization[lang][Library.CurrentTabKey] or Library.CurrentTabKey
     end
     
     if SearchBox then
@@ -1605,93 +1614,6 @@ end)
 ClearSearchBtn.Activated:Connect(function()
     SearchBox.Text = ""
 end)
-
--- ============================================================================
--- TAB CREATION CONTROLLER
--- ============================================================================
-function Library:CreateTab(tabKey, iconAssetId)
-    local initialText = Localization[Library.CurrentLanguage] and Localization[Library.CurrentLanguage][tabKey] or tabKey
-
-    local TabBtnContainer = Instance.new("Frame", Navigation)
-    TabBtnContainer.Size = UDim2.new(1, 0, 0, 32)
-    TabBtnContainer.BackgroundTransparency = 1
-    TabBtnContainer.Name = "Tab_" .. tabKey
-    Instance.new("UICorner", TabBtnContainer).CornerRadius = UDim.new(0, 6)
-
-    local TabBtn = Instance.new("TextButton", TabBtnContainer)
-    TabBtn.Size = UDim2.new(1, 0, 1, 0)
-    TabBtn.BackgroundTransparency = 1
-    TabBtn.Text = "      " .. initialText
-    applyFontToElement(TabBtn)
-    TabBtn.TextColor3 = Color3.fromRGB(140, 140, 140)
-    TabBtn.TextSize = 12
-    TabBtn.TextXAlignment = Enum.TextXAlignment.Left
-    TabBtn.ZIndex = 5
-
-    if iconAssetId then
-        local Icon = Instance.new("ImageLabel", TabBtnContainer)
-        Icon.Size = UDim2.new(0, 16, 0, 16)
-        Icon.Position = UDim2.new(0, 8, 0.5, -8)
-        Icon.BackgroundTransparency = 1
-        Icon.Image = iconAssetId
-        Icon.ImageColor3 = Color3.fromRGB(180, 180, 180)
-        Icon.ZIndex = 6
-    end
-
-    local PageScroll = Instance.new("ScrollingFrame", PagesContainer)
-    PageScroll.Name = "Page_" .. tabKey
-    PageScroll.Size = UDim2.new(1, 0, 1, 0)
-    PageScroll.BackgroundTransparency = 1
-    PageScroll.Visible = false
-    PageScroll.ScrollBarThickness = 2
-    PageScroll.ScrollBarImageColor3 = Color3.fromRGB(50, 50, 50)
-    PageScroll.BorderSizePixel = 0
-    PageScroll.ZIndex = 5
-    table.insert(Library.TrackedScrollingFrames, PageScroll)
-
-    local PageLayout = Instance.new("UIListLayout", PageScroll)
-    PageLayout.Padding = UDim.new(0, 8)
-    PageLayout.HorizontalAlignment = Enum.HorizontalAlignment.Center
-    PageLayout.SortOrder = Enum.SortOrder.LayoutOrder
-
-    local function updatePageCanvas()
-        PageScroll.CanvasSize = UDim2.new(0, 0, 0, PageLayout.AbsoluteContentSize.Y + 15)
-    end
-    PageLayout:GetPropertyChangedSignal("AbsoluteContentSize"):Connect(updatePageCanvas)
-
-    allPages[tabKey] = PageScroll
-    allTabButtons[tabKey] = TabBtn
-
-    TabBtn.MouseEnter:Connect(function()
-        if TabBtn ~= currentActiveTab then
-            currentHoveredTab = TabBtn
-            applyHover(TabBtn)
-        end
-    end)
-
-    TabBtn.MouseLeave:Connect(function()
-        if TabBtn ~= currentActiveTab then
-            currentHoveredTab = nil
-            removeHover(TabBtn)
-        end
-    end)
-
-    local function activateTab()
-        currentActiveTab = TabBtn
-        Library.CurrentTabKey = tabKey
-        TabTitle.Text = Localization[Library.CurrentLanguage] and Localization[Library.CurrentLanguage][tabKey] or tabKey
-        
-        for name, page in pairs(allPages) do
-            page.Visible = (name == tabKey) and (SearchBox.Text == "")
-        end
-        applyThemeToTabs(Library.CurrentThemeData)
-    end
-
-    TabBtn.Activated:Connect(activateTab)
-    table.insert(LocaleObjects, {Object = TabBtn, Key = tabKey, Prefix = "      "})
-
-    return PageScroll, activateTab
-end
 
 -- ============================================================================
 -- INTERFACE BUILDER METHODS
@@ -2018,6 +1940,7 @@ function Library:CreateSlider(parentPage, textKey, min, max, default, callback)
     SliderFrame.ZIndex = 6
     SliderFrame.LayoutOrder = #parentPage:GetChildren()
     Instance.new("UICorner", SliderFrame).CornerRadius = UDim.new(0, 8)
+
     local SliderStroke = Instance.new("UIStroke", SliderFrame)
     SliderStroke.Color = Color3.fromRGB(35, 35, 35)
     table.insert(Library.TrackedElementBg, SliderFrame)
@@ -2038,6 +1961,7 @@ function Library:CreateSlider(parentPage, textKey, min, max, default, callback)
     local ValueLabel = Instance.new("TextLabel", SliderFrame)
     ValueLabel.Size = UDim2.new(0.5, -12, 0, 22)
     ValueLabel.Position = UDim2.new(0.5, 0, 0, 6)
+    ValueLabel.Text = tostring(default)
     applyFontToElement(ValueLabel)
     ValueLabel.TextColor3 = Color3.fromRGB(160, 160, 160)
     ValueLabel.TextSize = 13
@@ -2047,61 +1971,70 @@ function Library:CreateSlider(parentPage, textKey, min, max, default, callback)
     table.insert(Library.TrackedSubText, ValueLabel)
 
     local SliderTrack = Instance.new("Frame", SliderFrame)
-    SliderTrack.Size = UDim2.new(1, -24, 0, 5)
+    SliderTrack.Size = UDim2.new(1, -24, 0, 6)
     SliderTrack.Position = UDim2.new(0, 12, 0, 34)
     SliderTrack.BackgroundColor3 = isLightColor(getThemeMainBg()) and Color3.fromRGB(210, 210, 210) or Color3.fromRGB(30, 30, 30)
     SliderTrack.ZIndex = 7
     Instance.new("UICorner", SliderTrack).CornerRadius = UDim.new(0, 3)
     table.insert(Library.TrackedSliderTracks, SliderTrack)
 
+    local initialRatio = math.clamp((default - min) / (max - min), 0, 1)
     local SliderFill = Instance.new("Frame", SliderTrack)
-    SliderFill.Size = UDim2.new((default - min) / (max - min), 0, 1, 0)
+    SliderFill.Size = UDim2.new(initialRatio, 0, 1, 0)
     SliderFill.BackgroundColor3 = getThemeAccent()
-    SliderFill.BorderSizePixel = 0
     SliderFill.ZIndex = 8
     Instance.new("UICorner", SliderFill).CornerRadius = UDim.new(0, 3)
     table.insert(Library.TrackedSliderFills, SliderFill)
 
     local SliderHandle = Instance.new("Frame", SliderTrack)
-    SliderHandle.Size = UDim2.new(0, 12, 0, 12)
+    SliderHandle.Size = UDim2.new(0, 14, 0, 14)
     SliderHandle.AnchorPoint = Vector2.new(0.5, 0.5)
-    SliderHandle.Position = UDim2.new((default - min) / (max - min), 0, 0.5, 0)
+    SliderHandle.Position = UDim2.new(initialRatio, 0, 0.5, 0)
     SliderHandle.BackgroundColor3 = getThemeAccent()
     SliderHandle.ZIndex = 9
     Instance.new("UICorner", SliderHandle).CornerRadius = UDim.new(1, 0)
     table.insert(Library.TrackedSliderHandles, SliderHandle)
 
-    local currentValue = default
-    local function updateSlider(value)
-        currentValue = math.clamp(value, min, max)
-        local percent = (currentValue - min) / (max - min)
-        SliderFill.Size = UDim2.new(percent, 0, 1, 0)
-        SliderHandle.Position = UDim2.new(percent, 0, 0.5, 0)
-        ValueLabel.Text = tostring(math.floor(currentValue * 100) / 100)
-        if type(callback) == "function" then
-            pcall(callback, currentValue)
-        end
-    end
-    updateSlider(default)
+    table.insert(Library.TrackedSliders, {
+        Frame = SliderFrame,
+        Stroke = SliderStroke,
+        Label = SliderLabel,
+        ValueLabel = ValueLabel
+    })
 
+    local currentValue = default
     local dragging = false
-    local function processInput(input)
-        local posX = input.Position.X - SliderTrack.AbsolutePosition.X
-        local percent = math.clamp(posX / SliderTrack.AbsoluteSize.X, 0, 1)
-        local val = min + percent * (max - min)
-        updateSlider(val)
+
+    local function updateValue(input)
+        local trackAbsPos = SliderTrack.AbsolutePosition.X
+        local trackAbsSize = SliderTrack.AbsoluteSize.X
+        local mouseX = input.Position.X
+        local relativeX = math.clamp(mouseX - trackAbsPos, 0, trackAbsSize)
+        local ratio = relativeX / trackAbsSize
+        local rawVal = min + (max - min) * ratio
+        local val = math.floor(rawVal + 0.5)
+        if max - min <= 1 then
+            val = math.floor(rawVal * 100 + 0.5) / 100
+        end
+        currentValue = val
+        ValueLabel.Text = tostring(val)
+        SliderFill.Size = UDim2.new(ratio, 0, 1, 0)
+        SliderHandle.Position = UDim2.new(ratio, 0, 0.5, 0)
+        if type(callback) == "function" then
+            pcall(callback, val)
+        end
     end
 
     SliderFrame.InputBegan:Connect(function(input)
         if input.UserInputType == Enum.UserInputType.MouseButton1 or input.UserInputType == Enum.UserInputType.Touch then
             dragging = true
-            processInput(input)
+            updateValue(input)
         end
     end)
 
     UserInputService.InputChanged:Connect(function(input)
         if dragging and (input.UserInputType == Enum.UserInputType.MouseMovement or input.UserInputType == Enum.UserInputType.Touch) then
-            processInput(input)
+            updateValue(input)
         end
     end)
 
@@ -2111,354 +2044,469 @@ function Library:CreateSlider(parentPage, textKey, min, max, default, callback)
         end
     end)
 
-    table.insert(Library.TrackedSliders, {
-        Frame = SliderFrame,
-        Stroke = SliderStroke,
-        Label = SliderLabel,
-        ValueLabel = ValueLabel
-    })
-
     local searchItem = {Instance = SliderFrame, SearchText = NormalizeText(initialText), OriginalParent = parentPage}
     table.insert(SearchableElements, searchItem)
     table.insert(LocaleObjects, {Object = SliderLabel, Key = textKey, SearchItem = searchItem})
 
     return {
-        SetValue = function(val) updateSlider(val) end,
+        SetValue = function(val)
+            val = math.clamp(val, min, max)
+            currentValue = val
+            local ratio = (val - min) / (max - min)
+            ValueLabel.Text = tostring(val)
+            SliderFill.Size = UDim2.new(ratio, 0, 1, 0)
+            SliderHandle.Position = UDim2.new(ratio, 0, 0.5, 0)
+            if type(callback) == "function" then pcall(callback, val) end
+        end,
         GetValue = function() return currentValue end
     }
 end
 
--- ============================================================================
--- CONFIGURATION STORAGE MANAGER
--- ============================================================================
-local ConfigFolder = "DarkHub_Configs"
-local hasFileSystem = (type(writefile) == "function" and type(readfile) == "function")
-local inMemoryConfigs = {}
+function Library:CreateInput(parentPage, textKey, placeholderKey, callback)
+    local initialText = Localization[Library.CurrentLanguage] and Localization[Library.CurrentLanguage][textKey] or textKey
+    local initialPlaceholder = Localization[Library.CurrentLanguage] and Localization[Library.CurrentLanguage][placeholderKey] or placeholderKey
+    
+    local InputFrame = Instance.new("Frame", parentPage)
+    InputFrame.Name = textKey
+    InputFrame.Size = UDim2.new(1, -20, 0, 42)
+    InputFrame.BackgroundColor3 = Library.CurrentThemeData.ElementBg or DefaultTheme.ElementBg
+    InputFrame.ZIndex = 6
+    InputFrame.LayoutOrder = #parentPage:GetChildren()
+    Instance.new("UICorner", InputFrame).CornerRadius = UDim.new(0, 6)
 
-if hasFileSystem and type(makefolder) == "function" and type(isfolder) == "function" then
+    local InputStroke = Instance.new("UIStroke", InputFrame)
+    InputStroke.Color = Color3.fromRGB(35, 35, 35)
+    table.insert(Library.TrackedElementBg, InputFrame)
+    table.insert(Library.TrackedStrokes, InputStroke)
+
+    local InputLabel = Instance.new("TextLabel", InputFrame)
+    InputLabel.Size = UDim2.new(0.4, 0, 1, 0)
+    InputLabel.Position = UDim2.new(0, 12, 0, 0)
+    InputLabel.Text = initialText
+    applyFontToElement(InputLabel)
+    InputLabel.TextColor3 = Color3.fromRGB(230, 230, 230)
+    InputLabel.TextSize = 13
+    InputLabel.TextXAlignment = Enum.TextXAlignment.Left
+    InputLabel.BackgroundTransparency = 1
+    InputLabel.ZIndex = 7
+    table.insert(Library.TrackedMainText, InputLabel)
+
+    local TextBox = Instance.new("TextBox", InputFrame)
+    TextBox.Size = UDim2.new(0.6, -20, 0, 26)
+    TextBox.Position = UDim2.new(0.4, 10, 0.5, -13)
+    TextBox.BackgroundColor3 = isLightColor(getThemeMainBg()) and Color3.fromRGB(220, 220, 220) or Color3.fromRGB(22, 22, 22)
+    TextBox.Text = ""
+    TextBox.PlaceholderText = initialPlaceholder or "Enter text..."
+    applyFontToElement(TextBox)
+    TextBox.TextColor3 = Color3.fromRGB(255, 255, 255)
+    TextBox.PlaceholderColor3 = Color3.fromRGB(130, 130, 130)
+    TextBox.TextSize = 12
+    TextBox.ZIndex = 8
+    Instance.new("UICorner", TextBox).CornerRadius = UDim.new(0, 4)
+    local BoxStroke = Instance.new("UIStroke", TextBox)
+    BoxStroke.Color = Color3.fromRGB(45, 45, 45)
+    table.insert(Library.TrackedMainText, TextBox)
+    table.insert(Library.TrackedStrokes, BoxStroke)
+
+    TextBox.FocusLost:Connect(function(enterPressed)
+        if type(callback) == "function" then
+            pcall(callback, TextBox.Text, enterPressed)
+        end
+    end)
+
+    local searchItem = {Instance = InputFrame, SearchText = NormalizeText(initialText), OriginalParent = parentPage}
+    table.insert(SearchableElements, searchItem)
+    table.insert(LocaleObjects, {Object = InputLabel, Key = textKey, SearchItem = searchItem})
+
+    return {
+        GetText = function() return TextBox.Text end,
+        SetText = function(txt) TextBox.Text = txt end
+    }
+end
+
+function Library:CreateTab(tabNameKey, iconId)
+    local tabName = Localization[Library.CurrentLanguage] and Localization[Library.CurrentLanguage][tabNameKey] or tabNameKey
+    
+    local TabContainer = Instance.new("Frame", Navigation)
+    TabContainer.Name = tabNameKey .. "_TabContainer"
+    TabContainer.Size = UDim2.new(1, 0, 0, 32)
+    TabContainer.BackgroundTransparency = 1
+    TabContainer.ZIndex = 4
+    Instance.new("UICorner", TabContainer).CornerRadius = UDim.new(0, 6)
+
+    local TabBtn = Instance.new("TextButton", TabContainer)
+    TabBtn.Name = tabNameKey
+    TabBtn.Size = UDim2.new(1, 0, 1, 0)
+    TabBtn.BackgroundTransparency = 1
+    TabBtn.Text = "      " .. tabName
+    applyFontToElement(TabBtn)
+    TabBtn.TextColor3 = Color3.fromRGB(140, 140, 140)
+    TabBtn.TextSize = 13
+    TabBtn.TextXAlignment = Enum.TextXAlignment.Left
+    TabBtn.ZIndex = 5
+
+    if iconId then
+        local Icon = Instance.new("ImageLabel", TabBtn)
+        Icon.Size = UDim2.new(0, 16, 0, 16)
+        Icon.Position = UDim2.new(0, 8, 0.5, -8)
+        Icon.BackgroundTransparency = 1
+        Icon.Image = iconId
+        Icon.ZIndex = 6
+        allTabIcons[tabNameKey] = Icon
+    end
+
+    local PageScroll = Instance.new("ScrollingFrame", PagesContainer)
+    PageScroll.Name = tabNameKey .. "_Page"
+    PageScroll.Size = UDim2.new(1, 0, 1, 0)
+    PageScroll.BackgroundTransparency = 1
+    PageScroll.Visible = false
+    PageScroll.ScrollBarThickness = 2
+    PageScroll.ScrollBarImageColor3 = Color3.fromRGB(50, 50, 50)
+    PageScroll.ZIndex = 5
+    table.insert(Library.TrackedScrollingFrames, PageScroll)
+
+    local PageLayout = Instance.new("UIListLayout", PageScroll)
+    PageLayout.Padding = UDim.new(0, 8)
+    PageLayout.HorizontalAlignment = Enum.HorizontalAlignment.Center
+    PageLayout.SortOrder = Enum.SortOrder.LayoutOrder
+
+    PageLayout:GetPropertyChangedSignal("AbsoluteContentSize"):Connect(function()
+        PageScroll.CanvasSize = UDim2.new(0, 0, 0, PageLayout.AbsoluteContentSize.Y + 15)
+    end)
+
+    allTabs[tabNameKey] = TabContainer
+    allTabButtons[tabNameKey] = TabBtn
+    allPages[tabNameKey] = PageScroll
+
+    local function activateTab()
+        currentActiveTab = TabBtn
+        Library.CurrentTabKey = tabNameKey
+        TabTitle.Text = Localization[Library.CurrentLanguage] and Localization[Library.CurrentLanguage][tabNameKey] or tabNameKey
+
+        for key, page in pairs(allPages) do
+            page.Visible = (key == tabNameKey)
+        end
+        applyThemeToTabs(Library.CurrentThemeData)
+    end
+
+    TabBtn.MouseEnter:Connect(function()
+        if currentActiveTab ~= TabBtn then
+            currentHoveredTab = TabBtn
+            applyHover(TabBtn)
+        end
+    end)
+    TabBtn.MouseLeave:Connect(function()
+        if currentHoveredTab == TabBtn then
+            currentHoveredTab = nil
+        end
+        if currentActiveTab ~= TabBtn then
+            removeHover(TabBtn)
+        end
+    end)
+    TabBtn.Activated:Connect(activateTab)
+
+    table.insert(LocaleObjects, {Object = TabBtn, Key = tabNameKey})
+
+    return PageScroll
+end
+
+-- ============================================================================
+-- CONFIGURATION FILES MANAGER
+-- ============================================================================
+local CONFIG_FOLDER = "DarkHub_Configs"
+if typeof(makefolder) == "function" and typeof(isfolder) == "function" then
     pcall(function()
-        if not isfolder(ConfigFolder) then
-            makefolder(ConfigFolder)
+        if not isfolder(CONFIG_FOLDER) then
+            makefolder(CONFIG_FOLDER)
         end
     end)
 end
 
-local function saveConfigData(name, dataTable)
-    local jsonStr = HttpService:JSONEncode(dataTable)
-    if hasFileSystem then
-        local success = pcall(function()
-            writefile(ConfigFolder .. "/" .. name .. ".json", jsonStr)
-        end)
-        return success
-    else
-        inMemoryConfigs[name] = jsonStr
-        return true
-    end
-end
-
-local function loadConfigData(name)
-    if hasFileSystem and type(isfile) == "function" then
-        local filePath = ConfigFolder .. "/" .. name .. ".json"
-        if isfile(filePath) then
-            local success, content = pcall(function()
-                return readfile(filePath)
-            end)
-            if success and content then
-                local decodeSuccess, decoded = pcall(function()
-                    return HttpService:JSONDecode(content)
-                end)
-                if decodeSuccess then
-                    return decoded
-                end
-            end
-        end
-    else
-        if inMemoryConfigs[name] then
-            local decodeSuccess, decoded = pcall(function()
-                return HttpService:JSONDecode(inMemoryConfigs[name])
-            end)
-            if decodeSuccess then return decoded end
-        end
-    end
-    return nil
-end
-
-local function deleteConfigData(name)
-    if hasFileSystem and type(delfile) == "function" and type(isfile) == "function" then
-        local filePath = ConfigFolder .. "/" .. name .. ".json"
-        if isfile(filePath) then
-            local success = pcall(function()
-                delfile(filePath)
-            end)
-            return success
-        end
-    else
-        if inMemoryConfigs[name] then
-            inMemoryConfigs[name] = nil
-            return true
-        end
-    end
-    return false
-end
-
-local function getSavedConfigNames()
-    local names = {}
-    if hasFileSystem and type(listfiles) == "function" then
+local function getSavedConfigs()
+    local list = {}
+    if typeof(listfiles) == "function" and typeof(isfolder) == "function" then
         pcall(function()
-            local files = listfiles(ConfigFolder)
-            for _, f in ipairs(files) do
-                local cleanName = f:gsub("\\", "/"):match("([^/]+)%.json$")
-                if cleanName then
-                    table.insert(names, cleanName)
+            if isfolder(CONFIG_FOLDER) then
+                local files = listfiles(CONFIG_FOLDER)
+                for _, filePath in ipairs(files) do
+                    local fileName = filePath:match("([^/\\]+)%.json$") or filePath:match("([^/\\]+)$")
+                    if fileName then
+                        fileName = fileName:gsub("%.json$", "")
+                        table.insert(list, fileName)
+                    end
                 end
             end
         end)
-    else
-        for k, _ in pairs(inMemoryConfigs) do
-            table.insert(names, k)
-        end
     end
-    table.sort(names)
-    return names
+    if #list == 0 then
+        table.insert(list, "default")
+    end
+    return list
 end
 
 -- ============================================================================
--- INITIALIZE TABS & SETTINGS PAGES
+-- CREATE TABS & POPULATE SETTINGS
 -- ============================================================================
-local uiPage, activateUiTab = Library:CreateTab("UI", "rbxassetid://6031280882")
-local themePage, activateThemeTab = Library:CreateTab("Theme", "rbxassetid://6031265976")
-local skyPage, activateSkyTab = Library:CreateTab("Sky", "rbxassetid://6034043431")
-local configsPage, activateConfigsTab = Library:CreateTab("Configs", "rbxassetid://6031251508")
+local pageUI = Library:CreateTab("UI", "rbxassetid://6031097225")
+local pageTheme = Library:CreateTab("Theme", "rbxassetid://6031265976")
+local pageSky = Library:CreateTab("Sky", "rbxassetid://6034043431")
+local pageConfigs = Library:CreateTab("Configs", "rbxassetid://6031265970")
 
--- Default Active Tab
-activateUiTab()
+-- References for Config Save/Load
+local uiSizeSlider, uiTransSlider, menuFontDropdown, languageDropdown, antiAfkToggle, animatedWindowToggle, gradientToggle
+local themeDropdown
+local skyDropdown, effectDropdown, fovSlider, fogToggle, fogColorDropdown, fogStartSlider, fogEndSlider, fogDensitySlider
+local configNameInput, configDropdown
 
--- 1. UI SETTINGS
-Library:CreateSlider(uiPage, "UISize", 0.5, 1.5, 1.0, function(val)
+-- TAB 1: UI SETTINGS
+uiSizeSlider = Library:CreateSlider(pageUI, "UISize", 0.7, 1.3, 1.0, function(val)
     MainScale.Scale = val
 end)
 
-Library:CreateSlider(uiPage, "UITransparency", 0, 0.8, 0.15, function(val)
+uiTransSlider = Library:CreateSlider(pageUI, "UITransparency", 0, 0.8, 0.15, function(val)
     MainFrame.BackgroundTransparency = val
 end)
 
-Library:CreateDropdown(uiPage, "MenuFont", {"Source Sans", "Gotham", "Gotham Bold", "Roboto", "Code", "Ubuntu", "Fredoka One", "Bangers", "Luckiest Guy", "Permanent Marker", "Arcade"}, "Source Sans", function(val)
-    applyFontToAll(val)
+local FontList = {"Source Sans", "Fredoka One", "Gotham", "Gotham Bold", "Roboto", "Code", "Ubuntu", "Bangers", "Luckiest Guy", "Permanent Marker", "Arcade"}
+menuFontDropdown = Library:CreateDropdown(pageUI, "MenuFont", FontList, "Source Sans", function(selectedFont)
+    applyFontToAll(selectedFont)
 end)
 
-Library:CreateDropdown(uiPage, "Language", {"English", "Русский"}, "English", function(val)
-    Library:UpdateLanguage(val)
+languageDropdown = Library:CreateDropdown(pageUI, "Language", {"English", "Русский"}, "English", function(lang)
+    Library:UpdateLanguage(lang)
 end)
 
-Library:CreateToggle(uiPage, "AntiAFK", true, function(state)
+antiAfkToggle = Library:CreateToggle(pageUI, "AntiAFK", true, function(state)
     toggleAntiAFK(state)
 end)
 
-Library:CreateToggle(uiPage, "AnimatedWindow", false, function(state)
+animatedWindowToggle = Library:CreateToggle(pageUI, "AnimatedWindow", false, function(state)
     toggleAnimatedWindow(state)
 end)
 
-Library:CreateToggle(uiPage, "Gradient", false, function(state)
+gradientToggle = Library:CreateToggle(pageUI, "Gradient", false, function(state)
     toggleGradientEffect(state)
 end)
 
--- 2. THEME SETTINGS
-Library:CreateDropdown(themePage, "UITheme", ThemeNamesList, "AMOLED", function(val)
-    Library:UpdateTheme(val)
+-- TAB 2: THEMES
+themeDropdown = Library:CreateDropdown(pageTheme, "UITheme", ThemeNamesList, "AMOLED", function(selectedTheme)
+    Library:UpdateTheme(selectedTheme)
 end)
 
--- 3. SKY & VISUALS SETTINGS
-Library:CreateDropdown(skyPage, "Sky", {"None", "space cky", "pink sky", "sunset sky", "dark sky"}, "None", function(val)
-    applySkySettings(val)
+-- TAB 3: SKY & VISUALS
+skyDropdown = Library:CreateDropdown(pageSky, "SkyOption", {"None", "space cky", "pink sky", "sunset sky", "dark sky"}, "None", function(skyName)
+    applySkySettings(skyName)
 end)
 
-Library:CreateToggle(skyPage, "Fog", true, function(state)
+effectDropdown = Library:CreateDropdown(pageSky, "effect", {"None", "wings aura"}, "None", function(eff)
+    applyPlayerEffect(eff)
+end)
+
+fovSlider = Library:CreateSlider(pageSky, "FOV", 30, 120, 70, function(val)
+    if workspace.CurrentCamera then
+        workspace.CurrentCamera.FieldOfView = val
+    end
+end)
+
+fogToggle = Library:CreateToggle(pageSky, "Fog", false, function(state)
     fogEnabled = state
     applyFogSettings(true)
 end)
 
-Library:CreateDropdown(skyPage, "FogColor", {"Default", "Black", "White", "Red", "Blue", "Green", "Purple", "Cyan", "Yellow", "Orange"}, "Default", function(val)
-    customFogColor = colorPresets[val] or originalFogColor
+local fogColorsList = {"Default", "Black", "White", "Red", "Blue", "Green", "Purple", "Cyan", "Yellow", "Orange"}
+fogColorDropdown = Library:CreateDropdown(pageSky, "FogColor", fogColorsList, "Default", function(cName)
+    customFogColor = colorPresets[cName] or originalFogColor
     applyFogSettings(true)
 end)
 
-Library:CreateSlider(skyPage, "FogStart", 0, 500, 0, function(val)
+fogStartSlider = Library:CreateSlider(pageSky, "FogStart", 0, 500, 0, function(val)
     customFogStart = val
     applyFogSettings(true)
 end)
 
-Library:CreateSlider(skyPage, "FogEnd", 10, 2000, 120, function(val)
+fogEndSlider = Library:CreateSlider(pageSky, "FogEnd", 10, 2000, 120, function(val)
     customFogEnd = val
     applyFogSettings(true)
 end)
 
-Library:CreateSlider(skyPage, "FogDensity", 0, 1, 1.0, function(val)
+fogDensitySlider = Library:CreateSlider(pageSky, "FogDensity", 0, 1, 1.0, function(val)
     customFogDensity = val
     applyFogSettings(true)
 end)
 
-Library:CreateDropdown(skyPage, "CharacterEffect", {"None", "wings aura"}, "None", function(val)
-    applyPlayerEffect(val)
-end)
+-- TAB 4: CONFIGS SYSTEM
+configNameInput = Library:CreateInput(pageConfigs, "ConfigName", "PleaseEnterName", nil)
 
-Library:CreateSlider(skyPage, "FOV", 30, 120, workspace.CurrentCamera.FieldOfView, function(val)
-    workspace.CurrentCamera.FieldOfView = val
-end)
+configDropdown = Library:CreateDropdown(pageConfigs, "Configurations", getSavedConfigs(), getSavedConfigs()[1] or "default", nil)
 
--- 4. CONFIGURATIONS PAGE
-local ConfigNameFrame = Instance.new("Frame", configsPage)
-ConfigNameFrame.Name = "ConfigNameInput"
-ConfigNameFrame.Size = UDim2.new(1, -20, 0, 36)
-ConfigNameFrame.BackgroundColor3 = Library.CurrentThemeData.ElementBg or DefaultTheme.ElementBg
-ConfigNameFrame.ZIndex = 6
-Instance.new("UICorner", ConfigNameFrame).CornerRadius = UDim.new(0, 6)
-local ConfigNameStroke = Instance.new("UIStroke", ConfigNameFrame)
-ConfigNameStroke.Color = Color3.fromRGB(35, 35, 35)
-table.insert(Library.TrackedElementBg, ConfigNameFrame)
-table.insert(Library.TrackedStrokes, ConfigNameStroke)
-
-local ConfigNameBox = Instance.new("TextBox", ConfigNameFrame)
-ConfigNameBox.Size = UDim2.new(1, -24, 1, 0)
-ConfigNameBox.Position = UDim2.new(0, 12, 0, 0)
-ConfigNameBox.BackgroundTransparency = 1
-ConfigNameBox.Text = ""
-ConfigNameBox.PlaceholderText = Localization[Library.CurrentLanguage]["ConfigName"] or "Config Name"
-applyFontToElement(ConfigNameBox)
-ConfigNameBox.TextColor3 = Color3.fromRGB(230, 230, 230)
-ConfigNameBox.PlaceholderColor3 = Color3.fromRGB(120, 120, 120)
-ConfigNameBox.TextSize = 12
-ConfigNameBox.TextXAlignment = Enum.TextXAlignment.Left
-ConfigNameBox.ZIndex = 7
-table.insert(Library.TrackedMainText, ConfigNameBox)
-table.insert(LocaleObjects, {Object = ConfigNameBox, Key = "ConfigName"})
-
-local currentConfigOptions = getSavedConfigNames()
-if #currentConfigOptions == 0 then
-    table.insert(currentConfigOptions, "default")
-end
-
-local configDropdown = Library:CreateDropdown(configsPage, "Configurations", currentConfigOptions, currentConfigOptions[1], function(val)
-    ConfigNameBox.Text = val
-end)
-
-Library:CreateButton(configsPage, "Save", function()
-    local name = ConfigNameBox.Text
-    if name == "" or name:match("^%s*$") then
-        showToast(Localization[Library.CurrentLanguage]["PleaseEnterName"] or "Please enter a config name")
+Library:CreateButton(pageConfigs, "Save", function()
+    local name = configNameInput.GetText()
+    if name == "" then
+        name = configDropdown.GetValue()
+    end
+    if not name or name == "" then
+        showToast(Localization[Library.CurrentLanguage]["ConfigEmptyError"] or "Error: Config name empty")
         return
     end
-    
-    local currentSettingsData = {
-        Theme = Library.CurrentThemeDataName or "AMOLED",
+
+    local data = {
+        UISize = uiSizeSlider.GetValue(),
+        UITransparency = uiTransSlider.GetValue(),
         Font = Library.CurrentFontKey,
         Language = Library.CurrentLanguage,
-        UISize = MainScale.Scale,
-        UITransparency = MainFrame.BackgroundTransparency,
-        FogEnabled = fogEnabled,
-        FogStart = customFogStart,
-        FogEnd = customFogEnd,
-        FogDensity = customFogDensity,
-        Effect = currentEffectName,
-        FOV = workspace.CurrentCamera.FieldOfView
+        AntiAFK = antiAfkToggle.GetValue(),
+        AnimatedWindow = animatedWindowToggle.GetValue(),
+        Gradient = gradientToggle.GetValue(),
+        Theme = themeDropdown.GetValue(),
+        Sky = skyDropdown.GetValue(),
+        Effect = effectDropdown.GetValue(),
+        FOV = fovSlider.GetValue(),
+        FogEnabled = fogToggle.GetValue(),
+        FogColor = fogColorDropdown.GetValue(),
+        FogStart = fogStartSlider.GetValue(),
+        FogEnd = fogEndSlider.GetValue(),
+        FogDensity = fogDensitySlider.GetValue()
     }
-    
-    local ok = saveConfigData(name, currentSettingsData)
-    if ok then
-        showToast(string.format(Localization[Library.CurrentLanguage]["ConfigSaved"] or "Config '%s' saved!", name))
-        local updatedNames = getSavedConfigNames()
-        if #updatedNames > 0 then
-            configDropdown.UpdateOptions(updatedNames)
+
+    local jsonStr = HttpService:JSONEncode(data)
+    if typeof(writefile) == "function" then
+        local path = CONFIG_FOLDER .. "/" .. name .. ".json"
+        local success = pcall(function() writefile(path, jsonStr) end)
+        if success then
+            showToast(string.format(Localization[Library.CurrentLanguage]["ConfigSaved"] or "Saved '%s'", name))
+            configDropdown.UpdateOptions(getSavedConfigs())
+        else
+            showToast(string.format(Localization[Library.CurrentLanguage]["ConfigSaveFailed"] or "Save failed '%s'", name))
         end
     else
-        showToast(string.format(Localization[Library.CurrentLanguage]["ConfigSaveFailed"] or "Failed to save config '%s'", name))
+        showToast("Executor missing writefile!")
     end
 end)
 
-Library:CreateButton(configsPage, "Load", function()
-    local name = ConfigNameBox.Text
-    if name == "" or name:match("^%s*$") then
+Library:CreateButton(pageConfigs, "Load", function()
+    local name = configNameInput.GetText()
+    if name == "" then
         name = configDropdown.GetValue()
     end
-    if name == "" then
-        showToast(Localization[Library.CurrentLanguage]["PleaseSelectName"] or "Please select a config")
+    if not name or name == "" then
+        showToast(Localization[Library.CurrentLanguage]["PleaseSelectName"] or "Select config")
         return
     end
-    
-    local data = loadConfigData(name)
-    if data then
-        if data.Theme then Library:UpdateTheme(data.Theme) end
-        if data.Font then applyFontToAll(data.Font) end
-        if data.Language then Library:UpdateLanguage(data.Language) end
-        if data.UISize then MainScale.Scale = data.UISize end
-        if data.UITransparency then MainFrame.BackgroundTransparency = data.UITransparency end
-        if data.FogEnabled ~= nil then fogEnabled = data.FogEnabled; applyFogSettings(true) end
-        if data.FogStart then customFogStart = data.FogStart; applyFogSettings(true) end
-        if data.FogEnd then customFogEnd = data.FogEnd; applyFogSettings(true) end
-        if data.FogDensity then customFogDensity = data.FogDensity; applyFogSettings(true) end
-        if data.Effect then applyPlayerEffect(data.Effect) end
-        if data.FOV then workspace.CurrentCamera.FieldOfView = data.FOV end
-        showToast(string.format(Localization[Library.CurrentLanguage]["ConfigLoaded"] or "Config '%s' loaded!", name))
+
+    if typeof(readfile) == "function" and typeof(isfile) == "function" then
+        local path = CONFIG_FOLDER .. "/" .. name .. ".json"
+        if not isfile(path) then
+            showToast(string.format(Localization[Library.CurrentLanguage]["ConfigNotFound"] or "Not found '%s'", name))
+            return
+        end
+        local success, content = pcall(function() return readfile(path) end)
+        if success and content then
+            local decSuccess, data = pcall(function() return HttpService:JSONDecode(content) end)
+            if decSuccess and type(data) == "table" then
+                if data.UISize then uiSizeSlider.SetValue(data.UISize) end
+                if data.UITransparency then uiTransSlider.SetValue(data.UITransparency) end
+                if data.Font then
+                    menuFontDropdown.SetValue(data.Font)
+                    applyFontToAll(data.Font)
+                end
+                if data.Language then
+                    languageDropdown.SetValue(data.Language)
+                    Library:UpdateLanguage(data.Language)
+                end
+                if data.AntiAFK ~= nil then antiAfkToggle.SetValue(data.AntiAFK) end
+                if data.AnimatedWindow ~= nil then animatedWindowToggle.SetValue(data.AnimatedWindow) end
+                if data.Gradient ~= nil then gradientToggle.SetValue(data.Gradient) end
+                if data.Theme then
+                    themeDropdown.SetValue(data.Theme)
+                    Library:UpdateTheme(data.Theme)
+                end
+                if data.Sky then
+                    skyDropdown.SetValue(data.Sky)
+                    applySkySettings(data.Sky)
+                end
+                if data.Effect then
+                    effectDropdown.SetValue(data.Effect)
+                    applyPlayerEffect(data.Effect)
+                end
+                if data.FOV then fovSlider.SetValue(data.FOV) end
+                if data.FogEnabled ~= nil then fogToggle.SetValue(data.FogEnabled) end
+                if data.FogColor then fogColorDropdown.SetValue(data.FogColor) end
+                if data.FogStart then fogStartSlider.SetValue(data.FogStart) end
+                if data.FogEnd then fogEndSlider.SetValue(data.FogEnd) end
+                if data.FogDensity then fogDensitySlider.SetValue(data.FogDensity) end
+
+                showToast(string.format(Localization[Library.CurrentLanguage]["ConfigLoaded"] or "Loaded '%s'", name))
+            else
+                showToast(string.format(Localization[Library.CurrentLanguage]["ConfigLoadFailed"] or "Load failed '%s'", name))
+            end
+        end
     else
-        showToast(string.format(Localization[Library.CurrentLanguage]["ConfigNotFound"] or "Config '%s' not found", name))
+        showToast("Executor missing readfile!")
     end
 end)
 
-Library:CreateButton(configsPage, "Delete", function()
-    local name = ConfigNameBox.Text
-    if name == "" or name:match("^%s*$") then
+Library:CreateButton(pageConfigs, "Delete", function()
+    local name = configNameInput.GetText()
+    if name == "" then
         name = configDropdown.GetValue()
     end
-    if name == "" then
-        showToast(Localization[Library.CurrentLanguage]["PleaseSelectName"] or "Please select a config")
-        return
-    end
-    
-    local ok = deleteConfigData(name)
-    if ok then
-        showToast(string.format(Localization[Library.CurrentLanguage]["ConfigDeleted"] or "Config '%s' deleted!", name))
-        ConfigNameBox.Text = ""
-        local updatedNames = getSavedConfigNames()
-        if #updatedNames == 0 then table.insert(updatedNames, "default") end
-        configDropdown.UpdateOptions(updatedNames)
-    else
-        showToast(string.format(Localization[Library.CurrentLanguage]["ConfigDeleteFailed"] or "Failed to delete config '%s'", name))
+    if not name or name == "" then return end
+
+    if typeof(delfile) == "function" and typeof(isfile) == "function" then
+        local path = CONFIG_FOLDER .. "/" .. name .. ".json"
+        if isfile(path) then
+            local success = pcall(function() delfile(path) end)
+            if success then
+                showToast(string.format(Localization[Library.CurrentLanguage]["ConfigDeleted"] or "Deleted '%s'", name))
+                configDropdown.UpdateOptions(getSavedConfigs())
+            else
+                showToast(string.format(Localization[Library.CurrentLanguage]["ConfigDeleteFailed"] or "Delete failed '%s'", name))
+            end
+        end
     end
 end)
 
 -- ============================================================================
--- FINALIZE LOADING ANIMATION
+-- INITIALIZATION & SHOW MENU
 -- ============================================================================
+Library:UpdateTheme("AMOLED")
+Library:UpdateLanguage("English")
+
+if allTabButtons["UI"] then
+    currentActiveTab = allTabButtons["UI"]
+    Library.CurrentTabKey = "UI"
+    pageUI.Visible = true
+    applyThemeToTabs(Library.CurrentThemeData)
+end
+
 task.spawn(function()
     for i = 1, 100 do
         task.wait(0.015)
         LoadingPercent.Text = i .. "%"
         ProgressBarFill.Size = UDim2.new(i / 100, 0, 1, 0)
     end
+    
     task.wait(0.2)
+    if bubbleConnection then
+        bubbleConnection:Disconnect()
+        bubbleConnection = nil
+    end
     
     local fadeOverlay = tween(LoadingOverlay, {BackgroundTransparency = 1}, 0.4)
-    for _, child in ipairs(LoadingOverlay:GetChildren()) do
-        if child:IsA("GuiObject") then
-            tween(child, {BackgroundTransparency = 1}, 0.4)
-            if child:IsA("TextLabel") then
-                tween(child, {TextTransparency = 1}, 0.4)
-            elseif child:IsA("ImageLabel") then
-                tween(child, {ImageTransparency = 1}, 0.4)
-            end
-        end
-    end
-    
     if fadeOverlay then
         fadeOverlay.Completed:Connect(function()
-            if bubbleConnection then
-                bubbleConnection:Disconnect()
+            if LoadingOverlay and LoadingOverlay.Parent then
+                LoadingOverlay:Destroy()
             end
-            LoadingOverlay:Destroy()
-            MainFrame.Visible = true
-            showToast(Localization[Library.CurrentLanguage]["HubLoaded"] or "Dark Hub loaded successfully!")
         end)
-    else
-        LoadingOverlay:Destroy()
-        MainFrame.Visible = true
     end
+    
+    MainFrame.Visible = true
+    MainScale.Scale = 0.8
+    MainFrame.BackgroundTransparency = 1
+    
+    tween(MainScale, {Scale = 1}, 0.3, Enum.EasingStyle.Back, Enum.EasingDirection.Out)
+    tween(MainFrame, {BackgroundTransparency = 0.15}, 0.3)
+    
+    showToast(Localization[Library.CurrentLanguage]["HubLoaded"] or "Dark Hub loaded successfully!")
 end)
