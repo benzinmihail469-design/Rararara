@@ -1,6 +1,5 @@
-
 -- ============================================================================
--- Dark Hub - Settings Edition (AMOLED Style with Sub-Tabs: UI, Theme, Configs)
+-- Dark Hub - Settings Edition (AMOLED Style with Wings Aura Integration)
 -- ============================================================================
 local TweenService = game:GetService("TweenService")
 local UserInputService = game:GetService("UserInputService")
@@ -10,6 +9,7 @@ local Players = game:GetService("Players")
 local VirtualUser = game:GetService("VirtualUser")
 local HttpService = game:GetService("HttpService")
 local Lighting = game:GetService("Lighting")
+local InsertService = game:GetService("InsertService")
 
 -- Wait for LocalPlayer
 local LocalPlayer = Players.LocalPlayer
@@ -123,7 +123,8 @@ local function NormalizeText(str)
         ["настройки"] = "settings",
         ["язык"] = "language",
         ["тема"] = "theme",
-        ["шрифт"] = "font"
+        ["шрифт"] = "font",
+        ["эффект"] = "effect"
     }
     for ru, en in pairs(synonyms) do
         lowerStr = string.gsub(lowerStr, ru, en)
@@ -262,7 +263,6 @@ local colorPresets = {
 
 local function applyFogSettings(smooth)
     local duration = smooth and 0.4 or 0
-    
     if fogEnabled then
         tween(Lighting, {
             FogStart = customFogStart,
@@ -1225,6 +1225,7 @@ local Localization = {
         ["Language"] = "Language",
         ["AntiAFK"] = "Anti-AFK",
         ["UITheme"] = "UI Theme",
+        ["Effect"] = "Effect",
         ["Sky"] = "Sky",
         ["Fog"] = "Fog",
         ["FogColor"] = "Fog Color",
@@ -1261,6 +1262,7 @@ local Localization = {
         ["Language"] = "Язык",
         ["AntiAFK"] = "Анти-АФК",
         ["UITheme"] = "Тема UI",
+        ["Effect"] = "Эффект",
         ["Sky"] = "Небо",
         ["Fog"] = "Туман",
         ["FogColor"] = "Цвет тумана",
@@ -2094,9 +2096,115 @@ Library:CreateToggle(subPages["UI"], "AntiAFK", true, function(val)
     toggleAntiAFK(val)
 end)
 
+-- ============================================================================
+-- WINGS AURA EFFECT LOGIC
+-- ============================================================================
+local currentEffectInstance = nil
+
+local function removeOldEffect()
+    if currentEffectInstance and currentEffectInstance.Parent then
+        pcall(function()
+            currentEffectInstance:Destroy()
+        end)
+        currentEffectInstance = nil
+    end
+end
+
+local function applyWingsAura()
+    removeOldEffect()
+    
+    local success, result = pcall(function()
+        local assetId = 114522534858071
+        local objects = game:GetObjects("rbxassetid://" .. assetId)
+        local model = objects[1]
+        if not model then
+            warn("[Dark Hub] Failed to load asset model 114522534858071")
+            return nil
+        end
+        return model
+    end)
+    
+    if not success or not result then
+        warn("[Dark Hub] Error loading Wings Aura model: " .. tostring(result))
+        showToast("Failed to load Wings Aura!")
+        return
+    end
+    
+    local model = result
+    
+    -- Список ключевых слов для удаления стандартных частей скелета
+    local blacklistParts = {
+        "head", "torso", "uppertorso", "lowertorso", 
+        "left arm", "right arm", "left leg", "right leg",
+        "leftupperarm", "leftlowerarm", "lefthand",
+        "rightupperarm", "rightlowerarm", "righthand",
+        "leftupperleg", "leftlowerleg", "leftfoot",
+        "rightupperleg", "rightlowerleg", "rightfoot",
+        "humanoidrootpart"
+    }
+    
+    -- Рекурсивный обход и очистка лишних частей
+    for _, desc in ipairs(model:GetDescendants()) do
+        if desc:IsA("BasePart") then
+            local nameLower = desc.Name:lower()
+            local isBodyPart = false
+            for _, badName in ipairs(blacklistParts) do
+                if nameLower == badName or string.find(nameLower, badName) then
+                    isBodyPart = true
+                    break
+                end
+            end
+            if isBodyPart then
+                desc:Destroy()
+            end
+        elseif desc:IsA("Humanoid") then
+            desc:Destroy()
+        end
+    end
+    
+    local character = LocalPlayer.Character or LocalPlayer.CharacterAdded:Wait()
+    local rootPart = character:FindFirstChild("HumanoidRootPart") or character:FindFirstChild("Torso")
+    
+    if not rootPart then
+        warn("[Dark Hub] Character HumanoidRootPart not found.")
+        model:Destroy()
+        return
+    end
+    
+    model.Name = "DarkHub_WingsAura"
+    
+    -- Прикрепление оставшихся частей к персонажу через WeldConstraint без коллизий
+    for _, desc in ipairs(model:GetDescendants()) do
+        if desc:IsA("BasePart") then
+            desc.Anchored = false
+            desc.CanCollide = false
+            desc.Massless = true
+            local weld = Instance.new("WeldConstraint")
+            weld.Part0 = rootPart
+            weld.Part1 = desc
+            weld.Parent = desc
+        end
+    end
+    
+    model.Parent = character
+    currentEffectInstance = model
+    print("[Dark Hub] Wings Aura successfully applied!")
+    showToast("Wings Aura applied!")
+end
+
 -- THEME SUB-PAGE ELEMENTS
 Library:CreateDropdown(subPages["Theme"], "UITheme", ThemeNamesList, "AMOLED", function(val)
     Library:UpdateTheme(val)
+end)
+
+Library:CreateDropdown(subPages["Theme"], "Effect", {"None", "Wings Aura"}, "None", function(val)
+    if val == "Wings Aura" then
+        pcall(applyWingsAura)
+    else
+        removeOldEffect()
+        print("[Dark Hub] Effect removed.")
+        showToast("Effect removed.")
+    end
 end)
 
 Library:CreateDropdown(subPages["Theme"], "Sky", {"None", "Space Sky", "Pink Sky", "Sunset Sky", "Dark Sky"}, "None", function(val)
