@@ -18,8 +18,16 @@ while not LocalPlayer do
 end
 
 local CustomIconID = "76579925188009"
-local CustomBackgroundID = "107695985017112" -- Обновленный ID текстуры
+local DefaultIconID = "6031094678" -- Резервная иконка
+local CustomBackgroundID = "107695985017112"
 local startTime = os.clock()
+
+local function getIconAsset(id)
+    if id and type(id) == "string" and #id > 0 then
+        return "rbxassetid://" .. id
+    end
+    return "rbxassetid://" .. DefaultIconID
+end
 
 local function formatSessionTime(seconds)
     local hours = math.floor(seconds / 3600)
@@ -510,7 +518,7 @@ LoadingIcon.Size = UDim2.new(0, 52, 0, 52)
 LoadingIcon.AnchorPoint = Vector2.new(0.5, 0.5)
 LoadingIcon.Position = UDim2.new(0.5, 0, 0.23, 0)
 LoadingIcon.BackgroundTransparency = 1
-LoadingIcon.Image = "rbxassetid://" .. CustomIconID
+LoadingIcon.Image = getIconAsset(CustomIconID)
 LoadingIcon.ScaleType = Enum.ScaleType.Fit
 LoadingIcon.ZIndex = 1001
 
@@ -773,7 +781,7 @@ HubIcon.BackgroundTransparency = 1
 HubIcon.ScaleType = Enum.ScaleType.Fit
 HubIcon.ZIndex = 5
 Instance.new("UICorner", HubIcon).CornerRadius = UDim.new(0, 6)
-HubIcon.Image = "rbxassetid://" .. CustomIconID
+HubIcon.Image = getIconAsset(CustomIconID)
 
 local HubTitle = Instance.new("TextLabel", HeaderBg)
 HubTitle.Text = "Dark Hub"
@@ -1094,9 +1102,13 @@ local function applyThemeToTabs(theme)
             if parentContainer and typeof(parentContainer) == "Instance" then
                 local indicator = parentContainer:FindFirstChild("ActiveIndicator")
                 local hoverStroke = parentContainer:FindFirstChild("HoverStroke")
+                local icon = parentContainer:FindFirstChild("TabIcon")
                 if tabBtn == currentActiveTab then
                     tween(tabBtn, {TextColor3 = activeTextColor}, 0.2)
                     tween(parentContainer, {BackgroundColor3 = activeBgColor, BackgroundTransparency = 0}, 0.2)
+                    if icon then
+                        tween(icon, {ImageColor3 = accent}, 0.2)
+                    end
                     if not indicator then
                         indicator = Instance.new("Frame")
                         indicator.Name = "ActiveIndicator"
@@ -1111,6 +1123,9 @@ local function applyThemeToTabs(theme)
                     tween(indicator, {BackgroundColor3 = accent, BackgroundTransparency = 0}, 0.2)
                 else
                     tween(tabBtn, {TextColor3 = inactiveTextColor}, 0.2)
+                    if icon then
+                        tween(icon, {ImageColor3 = inactiveTextColor}, 0.2)
+                    end
                     if currentHoveredTab ~= tabBtn then
                         tween(parentContainer, {BackgroundTransparency = 1}, 0.2)
                     end
@@ -1165,22 +1180,34 @@ function Library:UpdateTheme(themeName)
     
     for _, obj in ipairs(Library.TrackedMainText) do
         if obj and typeof(obj) == "Instance" and obj.Parent then
-            tween(obj, {TextColor3 = mainTextColor})
-            if obj:IsA("TextBox") then
-                obj.PlaceholderColor3 = subTextColor
+            if obj:IsA("ImageLabel") or obj:IsA("ImageButton") then
+                tween(obj, {ImageColor3 = mainTextColor})
+            else
+                tween(obj, {TextColor3 = mainTextColor})
+                if obj:IsA("TextBox") then
+                    obj.PlaceholderColor3 = subTextColor
+                end
             end
         end
     end
     
     for _, obj in ipairs(Library.TrackedSubText) do
         if obj and typeof(obj) == "Instance" and obj.Parent then
-            tween(obj, {TextColor3 = subTextColor})
+            if obj:IsA("ImageLabel") or obj:IsA("ImageButton") then
+                tween(obj, {ImageColor3 = subTextColor})
+            else
+                tween(obj, {TextColor3 = subTextColor})
+            end
         end
     end
     
     for _, obj in ipairs(Library.TrackedAccents) do
         if obj and typeof(obj) == "Instance" and obj.Parent then
-            tween(obj, {TextColor3 = accent})
+            if obj:IsA("ImageLabel") or obj:IsA("ImageButton") then
+                tween(obj, {ImageColor3 = accent})
+            else
+                tween(obj, {TextColor3 = accent})
+            end
         end
     end
     
@@ -1655,16 +1682,15 @@ function Library:CreateDropdown(parentPage, textKey, options, default, callback)
     SelectedLabel.ZIndex = 8
     table.insert(Library.TrackedAccents, SelectedLabel)
 
-    local Arrow = Instance.new("TextLabel", HeaderBtn)
+    -- Иконка стрелочки вместо текстового символа "v"
+    local Arrow = Instance.new("ImageLabel", HeaderBtn)
     Arrow.Name = "Arrow"
-    Arrow.Size = UDim2.new(0, 20, 1, 0)
-    Arrow.Text = "v"
-    applyFontToElement(Arrow)
-    Arrow.TextColor3 = Color3.fromRGB(150, 150, 150)
-    Arrow.TextSize = 10
-    Arrow.BackgroundTransparency = 1
+    Arrow.Size = UDim2.new(0, 14, 0, 14)
     Arrow.AnchorPoint = Vector2.new(0.5, 0.5)
     Arrow.Position = UDim2.new(1, -16, 0.5, 0)
+    Arrow.BackgroundTransparency = 1
+    Arrow.Image = "rbxassetid://6031091004"
+    Arrow.ImageColor3 = Color3.fromRGB(150, 150, 150)
     Arrow.ZIndex = 8
     table.insert(Library.TrackedSubText, Arrow)
 
@@ -2101,7 +2127,7 @@ function Library:CreateTextBox(parentPage, textKey, placeholderKey, callback)
 end
 
 -- ============================================================================
--- MAIN SETTINGS PAGE & SUB-TABS BUILDER
+-- MAIN SETTINGS PAGE & SIDEBAR TAB BUILDER
 -- ============================================================================
 local SettingsPage = Instance.new("Frame", PagesContainer)
 SettingsPage.Name = "Settings"
@@ -2109,6 +2135,71 @@ SettingsPage.Size = UDim2.new(1, 0, 1, 0)
 SettingsPage.BackgroundTransparency = 1
 SettingsPage.Visible = true
 allPages["Settings"] = SettingsPage
+
+-- Создание боковой кнопки вкладки "Settings" с иконкой
+local SettingsTabBtnContainer = Instance.new("Frame", Navigation)
+SettingsTabBtnContainer.Name = "Tab_Settings"
+SettingsTabBtnContainer.Size = UDim2.new(1, 0, 0, 32)
+SettingsTabBtnContainer.BackgroundTransparency = 1
+SettingsTabBtnContainer.ZIndex = 5
+Instance.new("UICorner", SettingsTabBtnContainer).CornerRadius = UDim.new(0, 6)
+
+local TabHoverStroke = Instance.new("UIStroke", SettingsTabBtnContainer)
+TabHoverStroke.Name = "HoverStroke"
+TabHoverStroke.Color = getThemeAccent()
+TabHoverStroke.Thickness = 1
+TabHoverStroke.Transparency = 1
+
+local SettingsTabIcon = Instance.new("ImageLabel", SettingsTabBtnContainer)
+SettingsTabIcon.Name = "TabIcon"
+SettingsTabIcon.Size = UDim2.new(0, 16, 0, 16)
+SettingsTabIcon.Position = UDim2.new(0, 10, 0.5, -8)
+SettingsTabIcon.BackgroundTransparency = 1
+SettingsTabIcon.Image = "rbxassetid://6031280882" -- Иконка шестеренки (Settings)
+SettingsTabIcon.ImageColor3 = Color3.fromRGB(255, 255, 255)
+SettingsTabIcon.ZIndex = 6
+allTabIcons["Settings"] = SettingsTabIcon
+
+local SettingsTabBtn = Instance.new("TextButton", SettingsTabBtnContainer)
+SettingsTabBtn.Name = "TabBtn"
+SettingsTabBtn.Size = UDim2.new(1, -34, 1, 0)
+SettingsTabBtn.Position = UDim2.new(0, 32, 0, 0)
+SettingsTabBtn.BackgroundTransparency = 1
+SettingsTabBtn.Text = Localization[Library.CurrentLanguage]["Settings"] or "Settings"
+applyFontToElement(SettingsTabBtn)
+SettingsTabBtn.TextColor3 = Color3.fromRGB(255, 255, 255)
+SettingsTabBtn.TextSize = 12
+SettingsTabBtn.TextXAlignment = Enum.TextXAlignment.Left
+SettingsTabBtn.ZIndex = 6
+
+allTabButtons["Settings"] = SettingsTabBtn
+allTabs["Settings"] = SettingsTabBtnContainer
+currentActiveTab = SettingsTabBtn
+table.insert(LocaleObjects, {Object = SettingsTabBtn, Key = "Settings"})
+
+SettingsTabBtn.MouseEnter:Connect(function()
+    currentHoveredTab = SettingsTabBtn
+    if currentActiveTab ~= SettingsTabBtn then
+        tween(SettingsTabBtnContainer, {BackgroundTransparency = 0.85, BackgroundColor3 = Color3.fromRGB(255, 255, 255)}, 0.15)
+    end
+end)
+SettingsTabBtn.MouseLeave:Connect(function()
+    if currentHoveredTab == SettingsTabBtn then
+        currentHoveredTab = nil
+    end
+    if currentActiveTab ~= SettingsTabBtn then
+        tween(SettingsTabBtnContainer, {BackgroundTransparency = 1}, 0.15)
+    end
+end)
+SettingsTabBtn.Activated:Connect(function()
+    currentActiveTab = SettingsTabBtn
+    applyThemeToTabs(Library.CurrentThemeData)
+    for pageName, pageFrame in pairs(allPages) do
+        pageFrame.Visible = (pageName == "Settings")
+    end
+end)
+
+applyThemeToTabs(Library.CurrentThemeData)
 
 SubTabNav = Instance.new("Frame", SettingsPage)
 SubTabNav.Name = "SubTabNav"
