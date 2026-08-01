@@ -2142,7 +2142,6 @@ SettingsPage.BackgroundTransparency = 1
 SettingsPage.Visible = true
 allPages["Settings"] = SettingsPage
 
--- Создание боковой кнопки вкладки "Settings" с иконкой
 local SettingsTabBtnContainer = Instance.new("Frame", Navigation)
 SettingsTabBtnContainer.Name = "Tab_Settings"
 SettingsTabBtnContainer.Size = UDim2.new(1, 0, 0, 32)
@@ -2395,7 +2394,7 @@ end)
 local configsPage = subPages["Configs"]
 
 local currentConfigInput = ""
-local selectedConfigInList = ""
+local selectedConfigInList = "Default"
 
 local configInputBox = Library:CreateTextBox(configsPage, "ConfigName", "PleaseEnterName", function(txt)
     currentConfigInput = txt
@@ -2423,11 +2422,120 @@ Library:CreateButton(configsPage, "Save", function()
     local name = configInputBox.GetText()
     if name == "" then name = selectedConfigInList end
     if name == "" or name == "Default" then
-        showToast(Localization[Library.CurrentLanguage]["PleaseEnterName"])
+        showToast(Localization[Library.CurrentLanguage]["PleaseEnterName"] or "Please enter a config name")
         return
     end
 
-    if makefolder and not isfolder("DarkHub_Configs") then
-        makefolder("DarkHub_Configs")
+    local configData = {
+        Theme = Library.CurrentThemeData,
+        Font = Library.CurrentFontKey,
+        Language = Library.CurrentLanguage,
+        FogEnabled = fogEnabled,
+        FogStart = customFogStart,
+        FogEnd = customFogEnd,
+        FogColor = {R = customFogColor.R, G = customFogColor.G, B = customFogColor.B},
+        FogDensity = customFogDensity,
+        Effect = currentEffectName
+    }
+
+    local success, encoded = pcall(function()
+        return HttpService:JSONEncode(configData)
+    end)
+
+    if success and writefile then
+        if not isfolder("DarkHub_Configs") then
+            makefolder("DarkHub_Configs")
+        end
+        writefile("DarkHub_Configs/" .. name .. ".json", encoded)
+        local fmt = Localization[Library.CurrentLanguage]["ConfigSaved"] or "Config '%s' saved successfully!"
+        showToast(string.format(fmt, name))
+        configsDropdown.UpdateOptions(getSavedConfigsList())
+    else
+        local fmt = Localization[Library.CurrentLanguage]["ConfigSaveFailed"] or "Failed to save config '%s'"
+        showToast(string.format(fmt, name))
     end
+end)
+
+Library:CreateButton(configsPage, "Load", function()
+    local name = selectedConfigInList
+    if name == "" then name = configInputBox.GetText() end
+    if name == "" then
+        showToast(Localization[Library.CurrentLanguage]["PleaseSelectName"] or "Please select or enter a config name")
+        return
+    end
+
+    if readfile and isfile and isfile("DarkHub_Configs/" .. name .. ".json") then
+        local content = readfile("DarkHub_Configs/" .. name .. ".json")
+        local success, decoded = pcall(function()
+            return HttpService:JSONDecode(content)
+        end)
+        if success and type(decoded) == "table" then
+            if decoded.Language then Library:UpdateLanguage(decoded.Language) end
+            if decoded.Font then applyFontToAll(decoded.Font) end
+            if decoded.Effect then applyPlayerEffect(decoded.Effect) end
+            local fmt = Localization[Library.CurrentLanguage]["ConfigLoaded"] or "Config '%s' loaded successfully!"
+            showToast(string.format(fmt, name))
+        else
+            local fmt = Localization[Library.CurrentLanguage]["ConfigLoadFailed"] or "Failed to load config '%s'"
+            showToast(string.format(fmt, name))
+        end
+    else
+        local fmt = Localization[Library.CurrentLanguage]["ConfigNotFound"] or "Config '%s' not found"
+        showToast(string.format(fmt, name))
+    end
+end)
+
+Library:CreateButton(configsPage, "Delete", function()
+    local name = selectedConfigInList
+    if name == "" or name == "Default" then
+        showToast(Localization[Library.CurrentLanguage]["PleaseSelectName"] or "Please select or enter a config name")
+        return
+    end
+
+    if delfile and isfile and isfile("DarkHub_Configs/" .. name .. ".json") then
+        delfile("DarkHub_Configs/" .. name .. ".json")
+        local fmt = Localization[Library.CurrentLanguage]["ConfigDeleted"] or "Config '%s' deleted!"
+        showToast(string.format(fmt, name))
+        configsDropdown.UpdateOptions(getSavedConfigsList())
+    else
+        local fmt = Localization[Library.CurrentLanguage]["ConfigDeleteFailed"] or "Failed to delete config '%s'"
+        showToast(string.format(fmt, name))
+    end
+end)
+
+-- ============================================================================
+-- INITIALIZATION / LOADING ANIMATION
+-- ============================================================================
+task.spawn(function()
+    for i = 1, 100 do
+        task.wait(0.012)
+        if LoadingPercent and LoadingPercent.Parent then
+            LoadingPercent.Text = i .. "%"
+        end
+        if ProgressBarFill and ProgressBarFill.Parent then
+            ProgressBarFill.Size = UDim2.new(i / 100, 0, 1, 0)
+        end
+    end
+
+    if bubbleConnection then
+        bubbleConnection:Disconnect()
+        bubbleConnection = nil
+    end
+
+    local hideLoading = tween(LoadingOverlay, {BackgroundTransparency = 1, Size = UDim2.new(0, 0, 0, 0)}, 0.35)
+    if hideLoading then
+        hideLoading.Completed:Connect(function()
+            if LoadingOverlay and LoadingOverlay.Parent then
+                LoadingOverlay:Destroy()
+            end
+        end)
+    else
+        LoadingOverlay:Destroy()
+    end
+
+    MainFrame.Visible = true
+    MainFrame.Size = UDim2.new(0, 0, 0, 0)
+    tween(MainFrame, {Size = UDim2.new(0, 550, 0, 350)}, 0.4, Enum.EasingStyle.Back, Enum.EasingDirection.Out)
+
+    showToast(Localization[Library.CurrentLanguage]["HubLoaded"] or "Dark Hub loaded successfully!")
 end)
