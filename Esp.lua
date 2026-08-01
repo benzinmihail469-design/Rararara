@@ -24,9 +24,16 @@ local startTime = os.clock()
 
 local function getIconAsset(id)
     if id and type(id) == "string" and #id > 0 then
-        return "rbxassetid://" .. id
+        return "rbxthumb://type=Asset&id=" .. id .. "&w=150&h=150"
     end
     return "rbxassetid://" .. DefaultIconID
+end
+
+local function getBackgroundAsset(id)
+    if id and type(id) == "string" and #id > 0 then
+        return "rbxthumb://type=Asset&id=" .. id .. "&w=420&h=420"
+    end
+    return ""
 end
 
 local function formatSessionTime(seconds)
@@ -653,7 +660,7 @@ local MainBackgroundImage = Instance.new("ImageLabel", MainFrame)
 MainBackgroundImage.Name = "MainBackgroundImage"
 MainBackgroundImage.Size = UDim2.new(1, 0, 1, 0)
 MainBackgroundImage.BackgroundTransparency = 1
-MainBackgroundImage.Image = "rbxassetid://" .. CustomBackgroundID
+MainBackgroundImage.Image = getBackgroundAsset(CustomBackgroundID)
 MainBackgroundImage.ScaleType = Enum.ScaleType.Crop
 MainBackgroundImage.ZIndex = 2
 MainBackgroundImage.Visible = true
@@ -1682,7 +1689,6 @@ function Library:CreateDropdown(parentPage, textKey, options, default, callback)
     SelectedLabel.ZIndex = 8
     table.insert(Library.TrackedAccents, SelectedLabel)
 
-    -- Иконка стрелочки вместо текстового символа "v"
     local Arrow = Instance.new("ImageLabel", HeaderBtn)
     Arrow.Name = "Arrow"
     Arrow.Size = UDim2.new(0, 14, 0, 14)
@@ -2155,7 +2161,7 @@ SettingsTabIcon.Name = "TabIcon"
 SettingsTabIcon.Size = UDim2.new(0, 16, 0, 16)
 SettingsTabIcon.Position = UDim2.new(0, 10, 0.5, -8)
 SettingsTabIcon.BackgroundTransparency = 1
-SettingsTabIcon.Image = "rbxassetid://6031280882" -- Иконка шестеренки (Settings)
+SettingsTabIcon.Image = "rbxassetid://6031280882"
 SettingsTabIcon.ImageColor3 = Color3.fromRGB(255, 255, 255)
 SettingsTabIcon.ZIndex = 6
 allTabIcons["Settings"] = SettingsTabIcon
@@ -2423,114 +2429,5 @@ Library:CreateButton(configsPage, "Save", function()
 
     if makefolder and not isfolder("DarkHub_Configs") then
         makefolder("DarkHub_Configs")
-    end
-
-    local settingsData = {
-        Theme = Library.CurrentThemeData,
-        Font = Library.CurrentFontKey,
-        Language = Library.CurrentLanguage,
-        Effect = currentEffectName
-    }
-
-    if writefile then
-        local success, err = pcall(function()
-            writefile("DarkHub_Configs/" .. name .. ".json", HttpService:JSONEncode(settingsData))
-        end)
-        if success then
-            showToast(string.format(Localization[Library.CurrentLanguage]["ConfigSaved"], name))
-            configsDropdown.UpdateOptions(getSavedConfigsList())
-        else
-            showToast(string.format(Localization[Library.CurrentLanguage]["ConfigSaveFailed"], name))
-        end
-    else
-        showToast("FileSystem unsupported by Executor!")
-    end
-end)
-
-Library:CreateButton(configsPage, "Load", function()
-    local name = selectedConfigInList
-    if name == "" then name = configInputBox.GetText() end
-    if name == "" then
-        showToast(Localization[Library.CurrentLanguage]["PleaseSelectName"])
-        return
-    end
-
-    if readfile and isfile and isfile("DarkHub_Configs/" .. name .. ".json") then
-        local success, result = pcall(function()
-            local content = readfile("DarkHub_Configs/" .. name .. ".json")
-            return HttpService:JSONEncode(content)
-        end)
-        if success and type(result) == "table" then
-            if result.Language then Library:UpdateLanguage(result.Language) end
-            if result.Font then applyFontToAll(result.Font) end
-            if result.Effect then applyPlayerEffect(result.Effect) end
-            showToast(string.format(Localization[Library.CurrentLanguage]["ConfigLoaded"], name))
-        else
-            showToast(string.format(Localization[Library.CurrentLanguage]["ConfigLoadFailed"], name))
-        end
-    else
-        showToast(string.format(Localization[Library.CurrentLanguage]["ConfigNotFound"], name))
-    end
-end)
-
-Library:CreateButton(configsPage, "Delete", function()
-    local name = selectedConfigInList
-    if name == "" then name = configInputBox.GetText() end
-    if name == "" or name == "Default" then
-        showToast(Localization[Library.CurrentLanguage]["PleaseSelectName"])
-        return
-    end
-
-    if isfile and isfile("DarkHub_Configs/" .. name .. ".json") then
-        if delfile then
-            local success = pcall(function()
-                delfile("DarkHub_Configs/" .. name .. ".json")
-            end)
-            if success then
-                showToast(string.format(Localization[Library.CurrentLanguage]["ConfigDeleted"], name))
-                selectedConfigInList = ""
-                configsDropdown.UpdateOptions(getSavedConfigsList())
-            else
-                showToast(string.format(Localization[Library.CurrentLanguage]["ConfigDeleteFailed"], name))
-            end
-        else
-            showToast("FileSystem unsupported by Executor!")
-        end
-    else
-        showToast(string.format(Localization[Library.CurrentLanguage]["ConfigNotFound"], name))
-    end
-end)
-
--- ============================================================================
--- LOADING FINISH SIMULATION
--- ============================================================================
-task.spawn(function()
-    for i = 1, 100 do
-        task.wait(0.015)
-        ProgressBarFill.Size = UDim2.new(i / 100, 0, 1, 0)
-        LoadingPercent.Text = i .. "%"
-        if i == 30 then
-            LoadingStatus.Text = "ЗАГРУЗКА МОДУЛЕЙ"
-        elseif i == 70 then
-            LoadingStatus.Text = "ИНИЦИАЛИЗАЦИЯ ИНТЕРФЕЙСА"
-        elseif i == 95 then
-            LoadingStatus.Text = "ГОТОВО"
-        end
-    end
-    task.wait(0.3)
-    if bubbleConnection then
-        bubbleConnection:Disconnect()
-    end
-    local fadeTween = tween(LoadingOverlay, {BackgroundTransparency = 1}, 0.4)
-    if fadeTween then
-        fadeTween.Completed:Connect(function()
-            LoadingOverlay:Destroy()
-            MainFrame.Visible = true
-            showToast(Localization[Library.CurrentLanguage]["HubLoaded"])
-        end)
-    else
-        LoadingOverlay:Destroy()
-        MainFrame.Visible = true
-        showToast(Localization[Library.CurrentLanguage]["HubLoaded"])
     end
 end)
