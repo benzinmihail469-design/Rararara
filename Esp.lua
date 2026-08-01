@@ -1072,6 +1072,7 @@ local currentHoveredTab = nil
 local SubTabNav = nil
 local subPages = {}
 local subTabButtons = {}
+local currentActiveSubTab = nil
 local uiGradientInstance = nil
 
 local function applyThemeToTabs(theme)
@@ -2186,97 +2187,192 @@ function Library:CreateTab(textKey)
 end
 
 -- ============================================================================
+-- SUB-TAB SYSTEM (UI, Theme, Configs INSIDE Settings)
+-- ============================================================================
+local SettingsSubTabNav = nil
+local SubPagesContainer = nil
+
+local function initSettingsSubTabs(parentPage)
+    SettingsSubTabNav = Instance.new("Frame", parentPage)
+    SettingsSubTabNav.Name = "SettingsSubTabNav"
+    SettingsSubTabNav.Size = UDim2.new(1, -20, 0, 32)
+    SettingsSubTabNav.BackgroundColor3 = Library.CurrentThemeData.ElementBg or DefaultTheme.ElementBg
+    SettingsSubTabNav.ZIndex = 6
+    SettingsSubTabNav.LayoutOrder = 0
+    Instance.new("UICorner", SettingsSubTabNav).CornerRadius = UDim.new(0, 6)
+    local subNavStroke = Instance.new("UIStroke", SettingsSubTabNav)
+    subNavStroke.Color = Color3.fromRGB(35, 35, 35)
+    table.insert(Library.TrackedElementBg, SettingsSubTabNav)
+    table.insert(Library.TrackedStrokes, subNavStroke)
+
+    local subNavLayout = Instance.new("UIListLayout", SettingsSubTabNav)
+    subNavLayout.FillDirection = Enum.FillDirection.Horizontal
+    subNavLayout.HorizontalAlignment = Enum.HorizontalAlignment.Center
+    subNavLayout.SortOrder = Enum.SortOrder.LayoutOrder
+    subNavLayout.Padding = UDim.new(0, 4)
+
+    SubTabNav = SettingsSubTabNav
+
+    SubPagesContainer = Instance.new("Frame", parentPage)
+    SubPagesContainer.Name = "SubPagesContainer"
+    SubPagesContainer.Size = UDim2.new(1, 0, 1, -40)
+    SubPagesContainer.BackgroundTransparency = 1
+    SubPagesContainer.ZIndex = 5
+    SubPagesContainer.LayoutOrder = 1
+end
+
+function Library:CreateSubTab(textKey)
+    if not SettingsSubTabNav then
+        -- Initialize if not yet created
+        -- parentPage would be settingsPage
+    end
+
+    local initialText = Localization[Library.CurrentLanguage] and Localization[Library.CurrentLanguage][textKey] or textKey
+
+    local SubTabBtn = Instance.new("TextButton", SettingsSubTabNav)
+    SubTabBtn.Size = UDim2.new(0.33, -4, 1, 0)
+    SubTabBtn.BackgroundTransparency = 1
+    SubTabBtn.Text = initialText
+    applyFontToElement(SubTabBtn)
+    SubTabBtn.TextColor3 = Color3.fromRGB(140, 140, 140)
+    SubTabBtn.TextSize = 12
+    SubTabBtn.ZIndex = 7
+
+    local SubPage = Instance.new("ScrollingFrame", SubPagesContainer)
+    SubPage.Name = textKey .. "SubPage"
+    SubPage.Size = UDim2.new(1, 0, 1, 0)
+    SubPage.BackgroundTransparency = 1
+    SubPage.Visible = false
+    SubPage.ScrollBarThickness = 2
+    SubPage.ScrollBarImageColor3 = Color3.fromRGB(50, 50, 50)
+    SubPage.ZIndex = 5
+    table.insert(Library.TrackedScrollingFrames, SubPage)
+
+    local SubPageLayout = Instance.new("UIListLayout", SubPage)
+    SubPageLayout.Padding = UDim.new(0, 8)
+    SubPageLayout.HorizontalAlignment = Enum.HorizontalAlignment.Center
+    SubPageLayout.SortOrder = Enum.SortOrder.LayoutOrder
+
+    SubPageLayout:GetPropertyChangedSignal("AbsoluteContentSize"):Connect(function()
+        SubPage.CanvasSize = UDim2.new(0, 0, 0, SubPageLayout.AbsoluteContentSize.Y + 20)
+    end)
+
+    subPages[textKey] = SubPage
+    subTabButtons[textKey] = SubTabBtn
+
+    SubTabBtn.Activated:Connect(function()
+        for key, p in pairs(subPages) do
+            p.Visible = (key == textKey)
+        end
+        currentActiveSubTab = SubTabBtn
+        for name, btn in pairs(subTabButtons) do
+            tween(btn, {TextColor3 = (name == textKey) and getThemeAccent() or Color3.fromRGB(140, 140, 140)}, 0.2)
+        end
+    end)
+
+    if not currentActiveSubTab then
+        currentActiveSubTab = SubTabBtn
+        SubPage.Visible = true
+        SubTabBtn.TextColor3 = getThemeAccent()
+    end
+
+    table.insert(LocaleObjects, {Object = SubTabBtn, Key = textKey, SearchItem = nil})
+
+    return SubPage
+end
+
+-- ============================================================================
 -- SETUP TABS & CONTROLS
 -- ============================================================================
 local settingsPage = Library:CreateTab("Settings")
-local uiPage = Library:CreateTab("UI")
-local themePage = Library:CreateTab("Theme")
-local skyPage = Library:CreateTab("Sky")
-local configsPage = Library:CreateTab("Configs")
 
--- Populate Settings Page
-Library:CreateDropdown(settingsPage, "Language", {"English", "Русский"}, Library.CurrentLanguage, function(selected)
+-- Initialize Sub-Tabs inside Settings
+initSettingsSubTabs(settingsPage)
+local uiSubPage = Library:CreateSubTab("UI")
+local themeSubPage = Library:CreateSubTab("Theme")
+local configsSubPage = Library:CreateSubTab("Configs")
+
+-- Populate UI Sub-Tab
+Library:CreateDropdown(uiSubPage, "Language", {"English", "Русский"}, Library.CurrentLanguage, function(selected)
     Library:UpdateLanguage(selected)
 end)
 
-Library:CreateDropdown(settingsPage, "MenuFont", {"Source Sans", "Gotham", "Gotham Bold", "Roboto", "Code", "Ubuntu", "Fredoka One", "Bangers", "Luckiest Guy", "Permanent Marker", "Arcade"}, Library.CurrentFontKey, function(selected)
+Library:CreateDropdown(uiSubPage, "MenuFont", {"Source Sans", "Gotham", "Gotham Bold", "Roboto", "Code", "Ubuntu", "Fredoka One", "Bangers", "Luckiest Guy", "Permanent Marker", "Arcade"}, Library.CurrentFontKey, function(selected)
     applyFontToAll(selected)
 end)
 
-Library:CreateToggle(settingsPage, "AntiAFK", true, function(state)
+Library:CreateToggle(uiSubPage, "AntiAFK", true, function(state)
     toggleAntiAFK(state)
 end)
 
--- Populate UI Page
-Library:CreateSlider(uiPage, "UISize", 50, 150, 100, function(val)
+Library:CreateSlider(uiSubPage, "UISize", 50, 150, 100, function(val)
     MainScale.Scale = val / 100
 end)
 
-Library:CreateSlider(uiPage, "UITransparency", 0, 80, 15, function(val)
+Library:CreateSlider(uiSubPage, "UITransparency", 0, 80, 15, function(val)
     MainFrame.BackgroundTransparency = val / 100
 end)
 
-Library:CreateToggle(uiPage, "AnimatedWindow", false, function(state)
+Library:CreateToggle(uiSubPage, "AnimatedWindow", false, function(state)
     toggleAnimatedWindow(state)
 end)
 
-Library:CreateToggle(uiPage, "Gradient", false, function(state)
+Library:CreateToggle(uiSubPage, "Gradient", false, function(state)
     toggleGradientEffect(state)
 end)
 
--- Populate Theme Page
-Library:CreateDropdown(themePage, "UITheme", ThemeNamesList, "AMOLED", function(selected)
+-- Populate Theme Sub-Tab
+Library:CreateDropdown(themeSubPage, "UITheme", ThemeNamesList, "AMOLED", function(selected)
     Library:UpdateTheme(selected)
 end)
 
--- Populate Sky Page
-Library:CreateDropdown(skyPage, "Sky", {"None", "space cky", "pink sky", "sunset sky", "dark sky"}, "None", function(selected)
+Library:CreateDropdown(themeSubPage, "Sky", {"None", "space cky", "pink sky", "sunset sky", "dark sky"}, "None", function(selected)
     applySkySettings(selected)
 end)
 
-Library:CreateToggle(skyPage, "Fog", fogEnabled, function(state)
+Library:CreateToggle(themeSubPage, "Fog", fogEnabled, function(state)
     fogEnabled = state
     applyFogSettings(true)
 end)
 
-Library:CreateDropdown(skyPage, "FogColor", {"Default", "Black", "White", "Red", "Blue", "Green", "Purple", "Cyan", "Yellow", "Orange"}, "Default", function(selected)
+Library:CreateDropdown(themeSubPage, "FogColor", {"Default", "Black", "White", "Red", "Blue", "Green", "Purple", "Cyan", "Yellow", "Orange"}, "Default", function(selected)
     if colorPresets[selected] then
         customFogColor = colorPresets[selected]
         applyFogSettings(true)
     end
 end)
 
-Library:CreateSlider(skyPage, "FogStart", 0, 500, 0, function(val)
+Library:CreateSlider(themeSubPage, "FogStart", 0, 500, 0, function(val)
     customFogStart = val
     applyFogSettings(true)
 end)
 
-Library:CreateSlider(skyPage, "FogEnd", 50, 2000, 120, function(val)
+Library:CreateSlider(themeSubPage, "FogEnd", 50, 2000, 120, function(val)
     customFogEnd = val
     applyFogSettings(true)
 end)
 
-Library:CreateSlider(skyPage, "FogDensity", 0, 10, 10, function(val)
+Library:CreateSlider(themeSubPage, "FogDensity", 0, 10, 10, function(val)
     customFogDensity = val / 10
     applyFogSettings(true)
 end)
 
-Library:CreateSlider(skyPage, "FOV", 60, 120, 70, function(val)
+Library:CreateSlider(themeSubPage, "FOV", 60, 120, 70, function(val)
     local camera = workspace.CurrentCamera
     if camera then camera.FieldOfView = val end
 end)
 
-Library:CreateDropdown(skyPage, "effect", {"None", "wings aura"}, "None", function(selected)
+Library:CreateDropdown(themeSubPage, "effect", {"None", "wings aura"}, "None", function(selected)
     applyPlayerEffect(selected)
 end)
 
--- Populate Configs Page
+-- Populate Configs Sub-Tab
 local currentConfigName = ""
-Library:CreateInput(configsPage, "ConfigName", "ConfigName", function(text)
+Library:CreateInput(configsSubPage, "ConfigName", "ConfigName", function(text)
     currentConfigName = text
 end)
 
-Library:CreateButton(configsPage, "Save", function()
+Library:CreateButton(configsSubPage, "Save", function()
     if currentConfigName == "" then
         showToast(Localization[Library.CurrentLanguage]["ConfigEmptyError"])
         return
@@ -2284,7 +2380,7 @@ Library:CreateButton(configsPage, "Save", function()
     showToast(string.format(Localization[Library.CurrentLanguage]["ConfigSaved"], currentConfigName))
 end)
 
-Library:CreateButton(configsPage, "Load", function()
+Library:CreateButton(configsSubPage, "Load", function()
     if currentConfigName == "" then
         showToast(Localization[Library.CurrentLanguage]["PleaseSelectName"])
         return
@@ -2292,7 +2388,7 @@ Library:CreateButton(configsPage, "Load", function()
     showToast(string.format(Localization[Library.CurrentLanguage]["ConfigLoaded"], currentConfigName))
 end)
 
-Library:CreateButton(configsPage, "Delete", function()
+Library:CreateButton(configsSubPage, "Delete", function()
     if currentConfigName == "" then
         showToast(Localization[Library.CurrentLanguage]["PleaseSelectName"])
         return
