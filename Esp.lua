@@ -640,7 +640,7 @@ MainFrame.Size = UDim2.new(0, 550, 0, 350)
 MainFrame.Visible = false
 MainFrame.ClipsDescendants = true
 
--- AMOLED Background Image (использует безопасный формат rbxthumb по аналогии с иконкой)
+-- AMOLED Background Image (исправлен ID и корректный ZIndex для видимости кнопок поверх фона)
 local MainBackgroundImage = Instance.new("ImageLabel", MainFrame)
 MainBackgroundImage.Name = "MainBackgroundImage"
 MainBackgroundImage.Size = UDim2.new(1, 0, 1, 0)
