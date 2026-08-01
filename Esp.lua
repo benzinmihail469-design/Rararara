@@ -18,7 +18,7 @@ while not LocalPlayer do
 end
 
 local CustomIconID = "76579925188009"
-local CustomBackgroundID = "77553474353001"
+local CustomBackgroundID = "107695985017112" -- Обновленный ID текстуры
 local startTime = os.clock()
 
 local function formatSessionTime(seconds)
@@ -640,7 +640,7 @@ MainFrame.Size = UDim2.new(0, 550, 0, 350)
 MainFrame.Visible = false
 MainFrame.ClipsDescendants = true
 
--- AMOLED Background Image (исправлен ID и корректный ZIndex для видимости кнопок поверх фона)
+-- AMOLED Background Image
 local MainBackgroundImage = Instance.new("ImageLabel", MainFrame)
 MainBackgroundImage.Name = "MainBackgroundImage"
 MainBackgroundImage.Size = UDim2.new(1, 0, 1, 0)
@@ -2414,34 +2414,32 @@ end)
 -- LOADING FINISH SIMULATION
 -- ============================================================================
 task.spawn(function()
-    for i = 0, 100, 10 do
-        LoadingPercent.Text = i .. "%"
+    for i = 1, 100 do
+        task.wait(0.015)
         ProgressBarFill.Size = UDim2.new(i / 100, 0, 1, 0)
-        task.wait(0.05)
+        LoadingPercent.Text = i .. "%"
+        if i == 30 then
+            LoadingStatus.Text = "ЗАГРУЗКА МОДУЛЕЙ"
+        elseif i == 70 then
+            LoadingStatus.Text = "ИНИЦИАЛИЗАЦИЯ ИНТЕРФЕЙСА"
+        elseif i == 95 then
+            LoadingStatus.Text = "ГОТОВО"
+        end
     end
-    
+    task.wait(0.3)
     if bubbleConnection then
         bubbleConnection:Disconnect()
     end
-    
-    tween(LoadingOverlay, {BackgroundTransparency = 1}, 0.3)
-    for _, desc in ipairs(LoadingOverlay:GetDescendants()) do
-        if desc:IsA("TextLabel") or desc:IsA("ImageLabel") or desc:IsA("Frame") then
-            pcall(function()
-                if desc.BackgroundTransparency < 1 then
-                    tween(desc, {BackgroundTransparency = 1}, 0.3)
-                end
-                if desc:IsA("TextLabel") then
-                    tween(desc, {TextTransparency = 1}, 0.3)
-                elseif desc:IsA("ImageLabel") then
-                    tween(desc, {ImageTransparency = 1}, 0.3)
-                end
-            end)
-        end
+    local fadeTween = tween(LoadingOverlay, {BackgroundTransparency = 1}, 0.4)
+    if fadeTween then
+        fadeTween.Completed:Connect(function()
+            LoadingOverlay:Destroy()
+            MainFrame.Visible = true
+            showToast(Localization[Library.CurrentLanguage]["HubLoaded"])
+        end)
+    else
+        LoadingOverlay:Destroy()
+        MainFrame.Visible = true
+        showToast(Localization[Library.CurrentLanguage]["HubLoaded"])
     end
-    
-    task.wait(0.35)
-    LoadingOverlay:Destroy()
-    MainFrame.Visible = true
-    showToast(Localization[Library.CurrentLanguage]["HubLoaded"] or "Dark Hub loaded successfully!")
 end)
