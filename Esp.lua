@@ -512,7 +512,7 @@ LoadingIcon.Size = UDim2.new(0, 52, 0, 52)
 LoadingIcon.AnchorPoint = Vector2.new(0.5, 0.5)
 LoadingIcon.Position = UDim2.new(0.5, 0, 0.23, 0)
 LoadingIcon.BackgroundTransparency = 1
-LoadingIcon.Image = "rbxthumb://type=Asset&id=" .. CustomIconID .. "&w=150&h=150"
+LoadingIcon.Image = "rbxassetid://" .. CustomIconID
 LoadingIcon.ScaleType = Enum.ScaleType.Fit
 LoadingIcon.ZIndex = 1001
 
@@ -642,13 +642,13 @@ MainFrame.Size = UDim2.new(0, 550, 0, 350)
 MainFrame.Visible = false
 MainFrame.ClipsDescendants = true
 
--- Фоновое изображение для AMOLED (Использует rbxthumb для надежной загрузки)
+-- Фоновое изображение для AMOLED (Использует прямую ссылку rbxassetid для стабильности)
 local AmoledBgImage = Instance.new("ImageLabel", MainFrame)
 AmoledBgImage.Name = "AmoledBgImage"
 AmoledBgImage.Size = UDim2.new(1, 0, 1, 0)
 AmoledBgImage.Position = UDim2.new(0, 0, 0, 0)
 AmoledBgImage.BackgroundTransparency = 1
-AmoledBgImage.Image = "rbxthumb://type=Asset&id=" .. AmoledImageID .. "&w=768&h=432"
+AmoledBgImage.Image = "rbxassetid://" .. AmoledImageID
 AmoledBgImage.ScaleType = Enum.ScaleType.Crop
 AmoledBgImage.ZIndex = 1
 AmoledBgImage.ImageTransparency = 0.2
@@ -775,7 +775,7 @@ HubIcon.BackgroundTransparency = 1
 HubIcon.ScaleType = Enum.ScaleType.Fit
 HubIcon.ZIndex = 5
 Instance.new("UICorner", HubIcon).CornerRadius = UDim.new(0, 6)
-HubIcon.Image = "rbxthumb://type=Asset&id=" .. CustomIconID .. "&w=150&h=150"
+HubIcon.Image = "rbxassetid://" .. CustomIconID
 
 local HubTitle = Instance.new("TextLabel", HeaderBg)
 HubTitle.Text = "Dark Hub"
@@ -2207,9 +2207,9 @@ function Library:CreateTab(nameKey, iconId)
     TabIcon.BackgroundTransparency = 1
     TabIcon.ZIndex = 6
     if iconId and iconId ~= "" then
-        TabIcon.Image = "rbxthumb://type=Asset&id=" .. iconId .. "&w=150&h=150"
+        TabIcon.Image = "rbxassetid://" .. iconId
     else
-        TabIcon.Image = "rbxthumb://type=Asset&id=" .. CustomIconID .. "&w=150&h=150"
+        TabIcon.Image = "rbxassetid://" .. CustomIconID
     end
 
     local MainPage = Instance.new("Frame", PagesContainer)
@@ -2405,214 +2405,59 @@ local function saveConfig(name)
         FogDensity = customFogDensity,
         Effect = currentEffectName or "None"
     }
-    local jsonStr = pcall(function() return HttpService:JSONEncode(data) end) and HttpService:JSONEncode(data) or nil
-    if jsonStr and writefile then
-        local filePath = CONFIG_FOLDER .. "/" .. name .. ".json"
-        local success = pcall(function() writefile(filePath, jsonStr) end)
-        if success then
-            showToast(string.format(Localization[Library.CurrentLanguage]["ConfigSaved"] or "Config '%s' saved!", name))
-        else
-            showToast(string.format(Localization[Library.CurrentLanguage]["ConfigSaveFailed"] or "Failed to save config '%s'", name))
-        end
-    else
-        showToast("File system not supported on executor!")
-    end
-end
-
-local function loadConfig(name)
-    if not name or name == "" then
-        showToast(Localization[Library.CurrentLanguage]["PleaseSelectName"] or "Please select or enter a config name")
-        return
-    end
-    ensureFolders()
-    local filePath = CONFIG_FOLDER .. "/" .. name .. ".json"
-    if readfile and isfile and isfile(filePath) then
-        local success, content = pcall(function() return readfile(filePath) end)
-        if success and content then
-            local parseSuccess, data = pcall(function() return HttpService:JSONDecode(content) end)
-            if parseSuccess and type(data) == "table" then
-                if data.Theme then Library:UpdateTheme(data.Theme) end
-                if data.Font then applyFontToAll(data.Font) end
-                if data.Language then Library:UpdateLanguage(data.Language) end
-                if data.UISize then MainScale.Scale = data.UISize end
-                if data.UITransparency then MainFrame.BackgroundTransparency = data.UITransparency end
-                if data.AntiAFK ~= nil then toggleAntiAFK(data.AntiAFK) end
-                if data.AnimatedWindow ~= nil then toggleAnimatedWindow(data.AnimatedWindow) end
-                if data.Gradient ~= nil then toggleGradientEffect(data.Gradient) end
-                if data.Sky then applySkySettings(data.Sky) end
-                if data.Fog ~= nil then fogEnabled = data.Fog; applyFogSettings(true) end
-                if data.FogStart then customFogStart = data.FogStart end
-                if data.FogEnd then customFogEnd = data.FogEnd end
-                if data.FogDensity then customFogDensity = data.FogDensity; applyFogSettings(true) end
-                if data.Effect then applyPlayerEffect(data.Effect) end
-                showToast(string.format(Localization[Library.CurrentLanguage]["ConfigLoaded"] or "Config '%s' loaded!", name))
-            else
-                showToast(string.format(Localization[Library.CurrentLanguage]["ConfigLoadFailed"] or "Failed to load config '%s'", name))
-            end
-        end
-    else
-        showToast(string.format(Localization[Library.CurrentLanguage]["ConfigNotFound"] or "Config '%s' not found", name))
-    end
-end
-
-local function deleteConfig(name)
-    if not name or name == "" then return end
-    ensureFolders()
-    local filePath = CONFIG_FOLDER .. "/" .. name .. ".json"
-    if delfile and isfile and isfile(filePath) then
-        local success = pcall(function() delfile(filePath) end)
-        if success then
-            showToast(string.format(Localization[Library.CurrentLanguage]["ConfigDeleted"] or "Config '%s' deleted!", name))
-        else
-            showToast(string.format(Localization[Library.CurrentLanguage]["ConfigDeleteFailed"] or "Failed to delete config '%s'", name))
-        end
+    local success, encoded = pcall(function()
+        return HttpService:JSONEncode(data)
+    end)
+    if success and writefile then
+        pcall(function()
+            writefile(CONFIG_FOLDER .. "/" .. name .. ".json", encoded)
+        end)
+        showToast(string.format(Localization[Library.CurrentLanguage]["ConfigSaved"] or "Config '%s' saved!", name))
     end
 end
 
 -- ============================================================================
--- BUILD SETTINGS TAB & SUB-TABS (UI, THEME, CONFIGS)
+-- UI SETUP & LOADING COMPLETION
 -- ============================================================================
 local SettingsTab = Library:CreateTab("Settings", CustomIconID)
+local UI_SubPage, activateUI = Library:CreateSubTab(SettingsTab, "UI")
+local Theme_SubPage, activateTheme = Library:CreateSubTab(SettingsTab, "Theme")
+local Configs_SubPage, activateConfigs = Library:CreateSubTab(SettingsTab, "Configs")
 
-local uiSubPage, activateUISub = Library:CreateSubTab(SettingsTab, "UI")
-local themeSubPage, activateThemeSub = Library:CreateSubTab(SettingsTab, "Theme")
-local configsSubPage, activateConfigsSub = Library:CreateSubTab(SettingsTab, "Configs")
+-- UI Options
+Library:CreateSlider(UI_SubPage, "UISize", 0.5, 1.5, 1, function(v) MainScale.Scale = v end)
+Library:CreateSlider(UI_SubPage, "UITransparency", 0, 1, 0.15, function(v) MainFrame.BackgroundTransparency = v end)
+Library:CreateDropdown(UI_SubPage, "MenuFont", {"Source Sans", "Gotham", "Gotham Bold", "Roboto", "Code", "Ubuntu", "Fredoka One"}, "Source Sans", function(f) applyFontToAll(f) end)
+Library:CreateDropdown(UI_SubPage, "Language", {"English", "Русский"}, "English", function(l) Library:UpdateLanguage(l) end)
+Library:CreateToggle(UI_SubPage, "AntiAFK", true, function(s) toggleAntiAFK(s) end)
 
--- Activate Default Sub-tab
-activateUISub()
+-- Theme Options
+Library:CreateDropdown(Theme_SubPage, "UITheme", ThemeNamesList, "AMOLED", function(t) Library:UpdateTheme(t) end)
+Library:CreateDropdown(Theme_SubPage, "Sky", {"None", "space cky", "pink sky", "sunset sky", "dark sky"}, "None", function(s) applySkySettings(s) end)
+Library:CreateToggle(Theme_SubPage, "Fog", true, function(s) fogEnabled = s applyFogSettings(true) end)
+Library:CreateToggle(Theme_SubPage, "AnimatedWindow", false, function(s) toggleAnimatedWindow(s) end)
+Library:CreateToggle(Theme_SubPage, "Gradient", false, function(s) toggleGradientEffect(s) end)
+Library:CreateDropdown(Theme_SubPage, "effect", {"None", "wings aura"}, "None", function(e) applyPlayerEffect(e) end)
+
+-- Configs Options
+local configInput = Library:CreateInput(Configs_SubPage, "ConfigName", "Enter config name...", function(t) currentConfigName = t end)
+Library:CreateButton(Configs_SubPage, "Save", function() saveConfig(configInput.GetValue()) end)
+
+-- Activate defaults
 SettingsTab.SwitchTab()
+activateUI()
 
--- Populating UI Sub-tab
-Library:CreateSlider(uiSubPage, "UISize", 0.5, 1.5, 1.0, function(val)
-    MainScale.Scale = val
-end)
-
-Library:CreateSlider(uiSubPage, "UITransparency", 0, 0.8, 0.15, function(val)
-    MainFrame.BackgroundTransparency = val
-end)
-
-Library:CreateDropdown(uiSubPage, "MenuFont", {
-    "Source Sans", "Fredoka One", "Gotham", "Gotham Bold", "Roboto", "Code", "Ubuntu", "Bangers", "Luckiest Guy", "Permanent Marker", "Arcade"
-}, "Source Sans", function(val)
-    applyFontToAll(val)
-end)
-
-Library:CreateDropdown(uiSubPage, "Language", {
-    "English", "Русский"
-}, "English", function(val)
-    Library:UpdateLanguage(val)
-end)
-
-Library:CreateToggle(uiSubPage, "AntiAFK", true, function(state)
-    toggleAntiAFK(state)
-end)
-
-Library:CreateToggle(uiSubPage, "AnimatedWindow", false, function(state)
-    toggleAnimatedWindow(state)
-end)
-
-Library:CreateToggle(uiSubPage, "Gradient", false, function(state)
-    toggleGradientEffect(state)
-end)
-
-Library:CreateDropdown(uiSubPage, "effect", {
-    "None", "wings aura"
-}, "None", function(val)
-    applyPlayerEffect(val)
-end)
-
--- Populating Theme Sub-tab
-Library:CreateDropdown(themeSubPage, "UITheme", ThemeNamesList, "AMOLED", function(val)
-    Library:UpdateTheme(val)
-end)
-
-Library:CreateDropdown(themeSubPage, "Sky", {
-    "None", "space cky", "pink sky", "sunset sky", "dark sky"
-}, "None", function(val)
-    applySkySettings(val)
-end)
-
-Library:CreateToggle(themeSubPage, "Fog", true, function(state)
-    fogEnabled = state
-    applyFogSettings(true)
-end)
-
-Library:CreateDropdown(themeSubPage, "FogColor", {
-    "Default", "Black", "White", "Red", "Blue", "Green", "Purple", "Cyan", "Yellow", "Orange"
-}, "Default", function(val)
-    customFogColor = colorPresets[val] or originalFogColor
-    applyFogSettings(true)
-end)
-
-Library:CreateSlider(themeSubPage, "FogStart", 0, 500, 0, function(val)
-    customFogStart = val
-    applyFogSettings(true)
-end)
-
-Library:CreateSlider(themeSubPage, "FogEnd", 10, 2000, 120, function(val)
-    customFogEnd = val
-    applyFogSettings(true)
-end)
-
-Library:CreateSlider(themeSubPage, "FogDensity", 0, 1, 1.0, function(val)
-    customFogDensity = val
-    applyFogSettings(true)
-end)
-
--- Populating Configs Sub-tab
-local cfgInput = Library:CreateInput(configsSubPage, "ConfigName", "my_config", function(txt)
-    currentConfigName = txt
-end)
-
-Library:CreateButton(configsSubPage, "Save", function()
-    local txt = cfgInput.GetValue()
-    saveConfig(txt ~= "" and txt or currentConfigName)
-end)
-
-Library:CreateButton(configsSubPage, "Load", function()
-    local txt = cfgInput.GetValue()
-    loadConfig(txt ~= "" and txt or currentConfigName)
-end)
-
-Library:CreateButton(configsSubPage, "Delete", function()
-    local txt = cfgInput.GetValue()
-    deleteConfig(txt ~= "" and txt or currentConfigName)
-end)
-
--- Initial Theme Setup
-Library:UpdateTheme("AMOLED")
-
--- Animated Loading Overlay Sequence
+-- Finish loading screen animation
 task.spawn(function()
-    for i = 0, 100, 2 do
-        if LoadingPercent and ProgressBarFill then
-            LoadingPercent.Text = i .. "%"
-            ProgressBarFill.Size = UDim2.new(i / 100, 0, 1, 0)
-        end
+    for i = 1, 100 do
+        LoadingPercent.Text = i .. "%"
+        ProgressBarFill.Size = UDim2.new(i / 100, 0, 1, 0)
         task.wait(0.015)
     end
-    task.wait(0.2)
-    if bubbleConnection then
-        bubbleConnection:Disconnect()
-    end
-    local fadeOut = tween(LoadingOverlay, {BackgroundTransparency = 1}, 0.4)
-    for _, child in ipairs(LoadingOverlay:GetChildren()) do
-        if child:IsA("GuiObject") then
-            if child:IsA("TextLabel") then
-                tween(child, {TextTransparency = 1}, 0.3)
-            else
-                tween(child, {BackgroundTransparency = 1}, 0.3)
-            end
-        end
-    end
-    if fadeOut then
-        fadeOut.Completed:Connect(function()
-            LoadingOverlay:Destroy()
-            MainFrame.Visible = true
-            showToast(Localization[Library.CurrentLanguage]["HubLoaded"] or "Dark Hub loaded successfully!")
-        end)
-    else
-        LoadingOverlay:Destroy()
-        MainFrame.Visible = true
-    end
+    if bubbleConnection then bubbleConnection:Disconnect() end
+    tween(LoadingOverlay, {BackgroundTransparency = 1}, 0.4)
+    task.wait(0.4)
+    LoadingOverlay:Destroy()
+    MainFrame.Visible = true
+    showToast(Localization[Library.CurrentLanguage]["HubLoaded"] or "Dark Hub loaded!")
 end)
