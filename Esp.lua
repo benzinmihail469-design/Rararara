@@ -169,7 +169,9 @@ end
 -- SKY SYSTEM CONTROLLER
 -- ============================================================================
 local currentSkyInstance = nil
+local currentSkyName = "None"
 local function applySkySettings(skyName)
+    currentSkyName = skyName
     if skyName == "space cky" then
         if not currentSkyInstance or not currentSkyInstance.Parent then
             currentSkyInstance = Instance.new("Sky")
@@ -640,16 +642,17 @@ MainFrame.Size = UDim2.new(0, 550, 0, 350)
 MainFrame.Visible = false
 MainFrame.ClipsDescendants = true
 
--- Фоновое изображение для AMOLED
+-- Фоновое изображение для AMOLED (Использует rbxthumb для надежной загрузки)
 local AmoledBgImage = Instance.new("ImageLabel", MainFrame)
 AmoledBgImage.Name = "AmoledBgImage"
 AmoledBgImage.Size = UDim2.new(1, 0, 1, 0)
 AmoledBgImage.Position = UDim2.new(0, 0, 0, 0)
 AmoledBgImage.BackgroundTransparency = 1
-AmoledBgImage.Image = "rbxassetid://" .. AmoledImageID
+AmoledBgImage.Image = "rbxthumb://type=Asset&id=" .. AmoledImageID .. "&w=768&h=432"
 AmoledBgImage.ScaleType = Enum.ScaleType.Crop
 AmoledBgImage.ZIndex = 1
-AmoledBgImage.Visible = false
+AmoledBgImage.ImageTransparency = 0.2
+AmoledBgImage.Visible = true
 Instance.new("UICorner", AmoledBgImage).CornerRadius = UDim.new(0, 14)
 
 local MainScale = Instance.new("UIScale", MainFrame)
@@ -989,6 +992,7 @@ local Library = {}
 Library.CurrentFontKey = "Source Sans"
 Library.CurrentLanguage = "English"
 Library.CurrentTabKey = "Settings"
+Library.CurrentThemeName = "AMOLED"
 Library.ActiveDropdownClose = nil
 Library.TrackedMainBg = {}
 Library.TrackedElementBg = {}
@@ -1175,11 +1179,12 @@ end
 function Library:UpdateTheme(themeName)
     local theme = ThemeConfig[themeName] or DefaultTheme
     Library.CurrentThemeData = theme
+    Library.CurrentThemeName = themeName
 
-    -- Показываем анимированную картиночную тему только при выборе AMOLED
     if AmoledBgImage then
         if string.upper(tostring(themeName)) == "AMOLED" then
             AmoledBgImage.Visible = true
+            AmoledBgImage.ImageTransparency = 0.2
         else
             AmoledBgImage.Visible = false
         end
@@ -1972,33 +1977,35 @@ end
 
 function Library:CreateSlider(parentPage, textKey, min, max, default, callback)
     local initialText = Localization[Library.CurrentLanguage] and Localization[Library.CurrentLanguage][textKey] or textKey
-    local SliderFrame = Instance.new("Frame", parentPage)
-    SliderFrame.Name = textKey
-    SliderFrame.Size = UDim2.new(1, -20, 0, 52)
-    SliderFrame.BackgroundColor3 = Library.CurrentThemeData.ElementBg or DefaultTheme.ElementBg
-    SliderFrame.ZIndex = 6
-    SliderFrame.LayoutOrder = #parentPage:GetChildren()
-    Instance.new("UICorner", SliderFrame).CornerRadius = UDim.new(0, 8)
-    local SliderStroke = Instance.new("UIStroke", SliderFrame)
-    SliderStroke.Color = Color3.fromRGB(35, 35, 35)
-    table.insert(Library.TrackedElementBg, SliderFrame)
-    table.insert(Library.TrackedStrokes, SliderStroke)
+    local SldFrame = Instance.new("Frame", parentPage)
+    SldFrame.Name = textKey
+    SldFrame.Size = UDim2.new(1, -20, 0, 50)
+    SldFrame.BackgroundColor3 = Library.CurrentThemeData.ElementBg or DefaultTheme.ElementBg
+    SldFrame.ZIndex = 6
+    SldFrame.LayoutOrder = #parentPage:GetChildren()
+    Instance.new("UICorner", SldFrame).CornerRadius = UDim.new(0, 6)
+    
+    local SldStroke = Instance.new("UIStroke", SldFrame)
+    SldStroke.Color = Color3.fromRGB(35, 35, 35)
+    SldStroke.Thickness = 1
+    table.insert(Library.TrackedElementBg, SldFrame)
+    table.insert(Library.TrackedStrokes, SldStroke)
 
-    local SliderLabel = Instance.new("TextLabel", SliderFrame)
-    SliderLabel.Size = UDim2.new(0.5, -12, 0, 22)
-    SliderLabel.Position = UDim2.new(0, 12, 0, 6)
-    SliderLabel.Text = initialText
-    applyFontToElement(SliderLabel)
-    SliderLabel.TextColor3 = Color3.fromRGB(230, 230, 230)
-    SliderLabel.TextSize = 13
-    SliderLabel.TextXAlignment = Enum.TextXAlignment.Left
-    SliderLabel.BackgroundTransparency = 1
-    SliderLabel.ZIndex = 7
-    table.insert(Library.TrackedMainText, SliderLabel)
+    local SldLabel = Instance.new("TextLabel", SldFrame)
+    SldLabel.Size = UDim2.new(0.6, 0, 0, 22)
+    SldLabel.Position = UDim2.new(0, 12, 0, 4)
+    SldLabel.Text = initialText
+    applyFontToElement(SldLabel)
+    SldLabel.TextColor3 = Color3.fromRGB(230, 230, 230)
+    SldLabel.TextSize = 13
+    SldLabel.TextXAlignment = Enum.TextXAlignment.Left
+    SldLabel.BackgroundTransparency = 1
+    SldLabel.ZIndex = 7
+    table.insert(Library.TrackedMainText, SldLabel)
 
-    local ValueLabel = Instance.new("TextLabel", SliderFrame)
-    ValueLabel.Size = UDim2.new(0.5, -12, 0, 22)
-    ValueLabel.Position = UDim2.new(0.5, 0, 0, 6)
+    local ValueLabel = Instance.new("TextLabel", SldFrame)
+    ValueLabel.Size = UDim2.new(0.35, 0, 0, 22)
+    ValueLabel.Position = UDim2.new(0.6, -12, 0, 4)
     ValueLabel.Text = tostring(default)
     applyFontToElement(ValueLabel)
     ValueLabel.TextColor3 = Color3.fromRGB(150, 150, 150)
@@ -2008,380 +2015,604 @@ function Library:CreateSlider(parentPage, textKey, min, max, default, callback)
     ValueLabel.ZIndex = 7
     table.insert(Library.TrackedSubText, ValueLabel)
 
-    local Track = Instance.new("Frame", SliderFrame)
-    Track.Size = UDim2.new(1, -24, 0, 6)
-    Track.Position = UDim2.new(0, 12, 0, 34)
-    Track.BackgroundColor3 = Color3.fromRGB(30, 30, 30)
-    Track.BorderSizePixel = 0
-    Track.ZIndex = 7
-    Instance.new("UICorner", Track).CornerRadius = UDim.new(1, 0)
-    table.insert(Library.TrackedSliderTracks, Track)
+    local SliderTrack = Instance.new("Frame", SldFrame)
+    SliderTrack.Size = UDim2.new(1, -24, 0, 6)
+    SliderTrack.Position = UDim2.new(0, 12, 0, 32)
+    SliderTrack.BackgroundColor3 = Color3.fromRGB(30, 30, 30)
+    SliderTrack.BorderSizePixel = 0
+    SliderTrack.ZIndex = 7
+    Instance.new("UICorner", SliderTrack).CornerRadius = UDim.new(1, 0)
+    table.insert(Library.TrackedSliderTracks, SliderTrack)
 
-    local Fill = Instance.new("Frame", Track)
-    Fill.Size = UDim2.new((default - min) / (max - min), 0, 1, 0)
-    Fill.BackgroundColor3 = getThemeAccent()
-    Fill.BorderSizePixel = 0
-    Fill.ZIndex = 8
-    Instance.new("UICorner", Fill).CornerRadius = UDim.new(1, 0)
-    table.insert(Library.TrackedSliderFills, Fill)
+    local valPct = math.clamp((default - min) / (max - min), 0, 1)
 
-    local Handle = Instance.new("Frame", Track)
-    Handle.Size = UDim2.new(0, 12, 0, 12)
-    Handle.AnchorPoint = Vector2.new(0.5, 0.5)
-    Handle.Position = UDim2.new((default - min) / (max - min), 0, 0.5, 0)
-    Handle.BackgroundColor3 = getThemeAccent()
-    Handle.BorderSizePixel = 0
-    Handle.ZIndex = 9
-    Instance.new("UICorner", Handle).CornerRadius = UDim.new(1, 0)
-    table.insert(Library.TrackedSliderHandles, Handle)
+    local SliderFill = Instance.new("Frame", SliderTrack)
+    SliderFill.Size = UDim2.new(valPct, 0, 1, 0)
+    SliderFill.BackgroundColor3 = getThemeAccent()
+    SliderFill.BorderSizePixel = 0
+    SliderFill.ZIndex = 8
+    Instance.new("UICorner", SliderFill).CornerRadius = UDim.new(1, 0)
+    table.insert(Library.TrackedSliderFills, SliderFill)
 
-    table.insert(Library.TrackedSliders, {
-        Frame = SliderFrame,
-        Stroke = SliderStroke,
-        Label = SliderLabel,
-        ValueLabel = ValueLabel
-    })
+    local SliderHandle = Instance.new("Frame", SliderTrack)
+    SliderHandle.Size = UDim2.new(0, 12, 0, 12)
+    SliderHandle.AnchorPoint = Vector2.new(0.5, 0.5)
+    SliderHandle.Position = UDim2.new(valPct, 0, 0.5, 0)
+    SliderHandle.BackgroundColor3 = getThemeAccent()
+    SliderHandle.BorderSizePixel = 0
+    SliderHandle.ZIndex = 9
+    Instance.new("UICorner", SliderHandle).CornerRadius = UDim.new(1, 0)
+    table.insert(Library.TrackedSliderHandles, SliderHandle)
 
-    local sliding = false
-    local function updateSlider(input)
-        local pos = math.clamp((input.Position.X - Track.AbsolutePosition.X) / Track.AbsoluteSize.X, 0, 1)
-        local val = math.floor(min + ((max - min) * pos))
-        Fill.Size = UDim2.new(pos, 0, 1, 0)
-        Handle.Position = UDim2.new(pos, 0, 0.5, 0)
+    local isDragging = false
+    local currentValue = default
+
+    local function updateValueFromInput(input)
+        local posX = math.clamp((input.Position.X - SliderTrack.AbsolutePosition.X) / SliderTrack.AbsoluteSize.X, 0, 1)
+        local rawVal = min + (max - min) * posX
+        local val = math.floor(rawVal * 100 + 0.5) / 100
+        if math.abs(max - min) >= 10 and math.floor(min) == min and math.floor(max) == max then
+            val = math.floor(rawVal + 0.5)
+        end
+        currentValue = val
         ValueLabel.Text = tostring(val)
+        SliderFill.Size = UDim2.new(posX, 0, 1, 0)
+        SliderHandle.Position = UDim2.new(posX, 0, 0.5, 0)
         if type(callback) == "function" then
             pcall(callback, val)
         end
     end
 
-    Track.InputBegan:Connect(function(input)
+    SliderTrack.InputBegan:Connect(function(input)
         if input.UserInputType == Enum.UserInputType.MouseButton1 or input.UserInputType == Enum.UserInputType.Touch then
-            sliding = true
-            updateSlider(input)
-        end
-    end)
-
-    Track.InputEnded:Connect(function(input)
-        if input.UserInputType == Enum.UserInputType.MouseButton1 or input.UserInputType == Enum.UserInputType.Touch then
-            sliding = false
+            isDragging = true
+            updateValueFromInput(input)
         end
     end)
 
     UserInputService.InputChanged:Connect(function(input)
-        if sliding and (input.UserInputType == Enum.UserInputType.MouseMovement or input.UserInputType == Enum.UserInputType.Touch) then
-            updateSlider(input)
+        if isDragging and (input.UserInputType == Enum.UserInputType.MouseMovement or input.UserInputType == Enum.UserInputType.Touch) then
+            updateValueFromInput(input)
         end
     end)
 
-    local searchItem = {Instance = SliderFrame, SearchText = NormalizeText(initialText), OriginalParent = parentPage}
+    UserInputService.InputEnded:Connect(function(input)
+        if input.UserInputType == Enum.UserInputType.MouseButton1 or input.UserInputType == Enum.UserInputType.Touch then
+            isDragging = false
+        end
+    end)
+
+    table.insert(Library.TrackedSliders, {
+        Frame = SldFrame,
+        Stroke = SldStroke,
+        Label = SldLabel,
+        ValueLabel = ValueLabel
+    })
+
+    local searchItem = {Instance = SldFrame, SearchText = NormalizeText(initialText), OriginalParent = parentPage}
     table.insert(SearchableElements, searchItem)
-    table.insert(LocaleObjects, {Object = SliderLabel, Key = textKey, SearchItem = searchItem})
+    table.insert(LocaleObjects, {Object = SldLabel, Key = textKey, SearchItem = searchItem})
 
     return {
         SetValue = function(val)
             val = math.clamp(val, min, max)
-            local pos = (val - min) / (max - min)
-            Fill.Size = UDim2.new(pos, 0, 1, 0)
-            Handle.Position = UDim2.new(pos, 0, 0.5, 0)
+            local pct = (val - min) / (max - min)
+            currentValue = val
             ValueLabel.Text = tostring(val)
+            SliderFill.Size = UDim2.new(pct, 0, 1, 0)
+            SliderHandle.Position = UDim2.new(pct, 0, 0.5, 0)
             if type(callback) == "function" then
                 pcall(callback, val)
             end
         end,
-        GetValue = function()
-            return tonumber(ValueLabel.Text) or default
+        GetValue = function() return currentValue end
+    }
+end
+
+function Library:CreateInput(parentPage, textKey, placeholderText, callback)
+    local initialText = Localization[Library.CurrentLanguage] and Localization[Library.CurrentLanguage][textKey] or textKey
+    local InpFrame = Instance.new("Frame", parentPage)
+    InpFrame.Name = textKey
+    InpFrame.Size = UDim2.new(1, -20, 0, 36)
+    InpFrame.BackgroundColor3 = Library.CurrentThemeData.ElementBg or DefaultTheme.ElementBg
+    InpFrame.ZIndex = 6
+    InpFrame.LayoutOrder = #parentPage:GetChildren()
+    Instance.new("UICorner", InpFrame).CornerRadius = UDim.new(0, 6)
+    local InpStroke = Instance.new("UIStroke", InpFrame)
+    InpStroke.Color = Color3.fromRGB(35, 35, 35)
+    InpStroke.Thickness = 1
+    table.insert(Library.TrackedElementBg, InpFrame)
+    table.insert(Library.TrackedStrokes, InpStroke)
+
+    local InpLabel = Instance.new("TextLabel", InpFrame)
+    InpLabel.Size = UDim2.new(0.45, 0, 1, 0)
+    InpLabel.Position = UDim2.new(0, 12, 0, 0)
+    InpLabel.Text = initialText
+    applyFontToElement(InpLabel)
+    InpLabel.TextColor3 = Color3.fromRGB(230, 230, 230)
+    InpLabel.TextSize = 13
+    InpLabel.TextXAlignment = Enum.TextXAlignment.Left
+    InpLabel.BackgroundTransparency = 1
+    InpLabel.ZIndex = 7
+    table.insert(Library.TrackedMainText, InpLabel)
+
+    local BoxContainer = Instance.new("Frame", InpFrame)
+    BoxContainer.Size = UDim2.new(0.5, 0, 0, 24)
+    BoxContainer.Position = UDim2.new(0.48, 0, 0.5, -12)
+    BoxContainer.BackgroundColor3 = Color3.fromRGB(10, 10, 10)
+    BoxContainer.ZIndex = 7
+    Instance.new("UICorner", BoxContainer).CornerRadius = UDim.new(0, 4)
+    local BoxStroke = Instance.new("UIStroke", BoxContainer)
+    BoxStroke.Color = Color3.fromRGB(35, 35, 35)
+
+    local InputBox = Instance.new("TextBox", BoxContainer)
+    InputBox.Size = UDim2.new(1, -12, 1, 0)
+    InputBox.Position = UDim2.new(0, 6, 0, 0)
+    InputBox.BackgroundTransparency = 1
+    InputBox.Text = ""
+    InputBox.PlaceholderText = placeholderText or ""
+    applyFontToElement(InputBox)
+    InputBox.TextColor3 = Color3.fromRGB(255, 255, 255)
+    InputBox.PlaceholderColor3 = Color3.fromRGB(120, 120, 120)
+    InputBox.TextSize = 12
+    InputBox.TextXAlignment = Enum.TextXAlignment.Left
+    InputBox.ZIndex = 8
+    table.insert(Library.TrackedMainText, InputBox)
+
+    InputBox.FocusLost:Connect(function(enterPressed)
+        if type(callback) == "function" then
+            pcall(callback, InputBox.Text, enterPressed)
         end
+    end)
+
+    local searchItem = {Instance = InpFrame, SearchText = NormalizeText(initialText), OriginalParent = parentPage}
+    table.insert(SearchableElements, searchItem)
+    table.insert(LocaleObjects, {Object = InpLabel, Key = textKey, SearchItem = searchItem})
+
+    return {
+        GetValue = function() return InputBox.Text end,
+        SetValue = function(txt) InputBox.Text = txt end
     }
 end
 
 -- ============================================================================
--- SUB-TAB SYSTEM
+-- MAIN TAB & SUB-TAB SYSTEM CREATOR
 -- ============================================================================
-function Library:CreateSubTabs(parentPage, tabNames)
-    if not SubTabNav then
-        SubTabNav = Instance.new("Frame", parentPage)
-        SubTabNav.Size = UDim2.new(1, 0, 0, 34)
-        SubTabNav.BackgroundColor3 = Color3.fromRGB(15, 15, 15)
-        SubTabNav.ZIndex = 6
-        SubTabNav.LayoutOrder = 0
-        Instance.new("UICorner", SubTabNav).CornerRadius = UDim.new(0, 6)
-        table.insert(Library.TrackedElementBg, SubTabNav)
+function Library:CreateTab(nameKey, iconId)
+    local tabName = Localization[Library.CurrentLanguage] and Localization[Library.CurrentLanguage][nameKey] or nameKey
+    
+    local TabContainer = Instance.new("Frame", Navigation)
+    TabContainer.Name = nameKey .. "_Container"
+    TabContainer.Size = UDim2.new(1, 0, 0, 32)
+    TabContainer.BackgroundTransparency = 1
+    TabContainer.ZIndex = 5
+    Instance.new("UICorner", TabContainer).CornerRadius = UDim.new(0, 6)
+
+    local TabBtn = Instance.new("TextButton", TabContainer)
+    TabBtn.Name = nameKey .. "_Btn"
+    TabBtn.Size = UDim2.new(1, 0, 1, 0)
+    TabBtn.BackgroundTransparency = 1
+    TabBtn.Text = tabName
+    applyFontToElement(TabBtn)
+    TabBtn.TextColor3 = Color3.fromRGB(140, 140, 140)
+    TabBtn.TextSize = 13
+    TabBtn.TextXAlignment = Enum.TextXAlignment.Left
+    TabBtn.Position = UDim2.new(0, 34, 0, 0)
+    TabBtn.ZIndex = 6
+
+    local TabIcon = Instance.new("ImageLabel", TabContainer)
+    TabIcon.Name = "Icon"
+    TabIcon.Size = UDim2.new(0, 16, 0, 16)
+    TabIcon.Position = UDim2.new(0, 10, 0.5, -8)
+    TabIcon.BackgroundTransparency = 1
+    TabIcon.ZIndex = 6
+    if iconId and iconId ~= "" then
+        TabIcon.Image = "rbxthumb://type=Asset&id=" .. iconId .. "&w=150&h=150"
+    else
+        TabIcon.Image = "rbxthumb://type=Asset&id=" .. CustomIconID .. "&w=150&h=150"
     end
 
-    local layout = Instance.new("UIListLayout", SubTabNav)
-    layout.FillDirection = Enum.FillDirection.Horizontal
-    layout.HorizontalAlignment = Enum.HorizontalAlignment.Center
-    layout.Padding = UDim.new(0, 4)
-    layout.SortOrder = Enum.SortOrder.LayoutOrder
+    local MainPage = Instance.new("Frame", PagesContainer)
+    MainPage.Name = nameKey .. "_Page"
+    MainPage.Size = UDim2.new(1, 0, 1, 0)
+    MainPage.BackgroundTransparency = 1
+    MainPage.Visible = false
+    MainPage.ZIndex = 5
 
-    for _, tabName in ipairs(tabNames) do
-        local tabContainer = Instance.new("Frame", SubTabNav)
-        tabContainer.Size = UDim2.new(0, 100, 0, 28)
-        tabContainer.BackgroundTransparency = 1
-        tabContainer.ZIndex = 7
+    allTabs[nameKey] = MainPage
+    allTabButtons[nameKey] = TabBtn
+    allTabIcons[nameKey] = TabIcon
+    allPages[nameKey] = MainPage
 
-        local tabBtn = Instance.new("TextButton", tabContainer)
-        tabBtn.Size = UDim2.new(1, 0, 1, 0)
-        tabBtn.BackgroundTransparency = 1
-        tabBtn.Text = tabName
-        tabBtn.Font = Enum.Font.SourceSansBold
-        tabBtn.TextSize = 12
-        tabBtn.TextColor3 = Color3.fromRGB(140, 140, 140)
-        tabBtn.ZIndex = 8
+    local SubNavFrame = Instance.new("Frame", MainPage)
+    SubNavFrame.Name = "SubTabNav"
+    SubNavFrame.Size = UDim2.new(1, -10, 0, 30)
+    SubNavFrame.Position = UDim2.new(0, 0, 0, 0)
+    SubNavFrame.BackgroundColor3 = Library.CurrentThemeData.ElementBg or DefaultTheme.ElementBg
+    SubNavFrame.ZIndex = 6
+    Instance.new("UICorner", SubNavFrame).CornerRadius = UDim.new(0, 6)
+    local SubNavStroke = Instance.new("UIStroke", SubNavFrame)
+    SubNavStroke.Color = Color3.fromRGB(35, 35, 35)
+    SubNavStroke.Thickness = 1
+    table.insert(Library.TrackedElementBg, SubNavFrame)
+    table.insert(Library.TrackedStrokes, SubNavStroke)
+    SubTabNav = SubNavFrame
 
-        local pill = Instance.new("Frame", tabContainer)
-        pill.Size = UDim2.new(1, -10, 0, 3)
-        pill.Position = UDim2.new(0, 5, 1, -3)
-        pill.BackgroundColor3 = Color3.fromRGB(30, 30, 30)
-        pill.BorderSizePixel = 0
-        pill.ZIndex = 9
-        Instance.new("UICorner", pill).CornerRadius = UDim.new(1, 0)
+    local SubNavLayout = Instance.new("UIListLayout", SubNavFrame)
+    SubNavLayout.FillDirection = Enum.FillDirection.Horizontal
+    SubNavLayout.Padding = UDim.new(0, 6)
+    SubNavLayout.HorizontalAlignment = Enum.HorizontalAlignment.Left
+    SubNavLayout.VerticalAlignment = Enum.VerticalAlignment.Center
 
-        local page = Instance.new("ScrollingFrame", parentPage)
-        page.Name = tabName .. "SubPage"
-        page.Size = UDim2.new(1, 0, 0, 0)
-        page.Position = UDim2.new(0, 0, 0, 42)
-        page.BackgroundTransparency = 1
-        page.Visible = false
-        page.ScrollBarThickness = 2
-        page.ScrollBarImageColor3 = Color3.fromRGB(50, 50, 50)
-        page.ZIndex = 5
-        table.insert(Library.TrackedScrollingFrames, page)
+    local SubPadding = Instance.new("UIPadding", SubNavFrame)
+    SubPadding.PaddingLeft = UDim.new(0, 6)
 
-        local pageLayout = Instance.new("UIListLayout", page)
-        pageLayout.Padding = UDim.new(0, 8)
-        pageLayout.HorizontalAlignment = Enum.HorizontalAlignment.Center
-        pageLayout.SortOrder = Enum.SortOrder.LayoutOrder
+    local SubPagesContainer = Instance.new("Frame", MainPage)
+    SubPagesContainer.Name = "SubPagesContainer"
+    SubPagesContainer.Size = UDim2.new(1, 0, 1, -38)
+    SubPagesContainer.Position = UDim2.new(0, 0, 0, 38)
+    SubPagesContainer.BackgroundTransparency = 1
+    SubPagesContainer.ZIndex = 5
 
-        pageLayout:GetPropertyChangedSignal("AbsoluteContentSize"):Connect(function()
-            page.CanvasSize = UDim2.new(0, 0, 0, pageLayout.AbsoluteContentSize.Y + 15)
-        end)
+    local function SwitchTab()
+        for k, page in pairs(allPages) do
+            page.Visible = false
+        end
+        MainPage.Visible = true
+        currentActiveTab = TabBtn
+        Library.CurrentTabKey = nameKey
+        TabTitle.Text = Localization[Library.CurrentLanguage] and Localization[Library.CurrentLanguage][nameKey] or nameKey
+        applyThemeToTabs(Library.CurrentThemeData)
+    end
 
-        subPages[tabName] = page
-        subTabButtons[tabName] = tabBtn
+    TabBtn.Activated:Connect(SwitchTab)
+    TabBtn.MouseEnter:Connect(function()
+        if TabBtn ~= currentActiveTab then
+            currentHoveredTab = TabBtn
+            applyHover(TabBtn)
+        end
+    end)
+    TabBtn.MouseLeave:Connect(function()
+        if TabBtn ~= currentActiveTab then
+            currentHoveredTab = nil
+            removeHover(TabBtn)
+        end
+    end)
 
-        tabBtn.Activated:Connect(function()
-            for name, p in pairs(subPages) do
-                p.Visible = (name == tabName)
-                local btn = subTabButtons[name]
-                if btn then
-                    local isActive = (name == tabName)
-                    tween(btn, {TextColor3 = isActive and getThemeAccent() or Color3.fromRGB(140,140,140)}, 0.2)
-                    local p = btn.Parent:FindFirstChild("Pill")
-                    if p then
-                        tween(p, {BackgroundColor3 = isActive and getThemeAccent() or Color3.fromRGB(30,30,30)}, 0.2)
-                    end
-                end
+    table.insert(LocaleObjects, {Object = TabBtn, Key = nameKey})
+
+    return {
+        Page = MainPage,
+        SubPagesContainer = SubPagesContainer,
+        SubNavFrame = SubNavFrame,
+        SwitchTab = SwitchTab
+    }
+end
+
+function Library:CreateSubTab(tabObj, subNameKey)
+    local subName = Localization[Library.CurrentLanguage] and Localization[Library.CurrentLanguage][subNameKey] or subNameKey
+    
+    local SubBtnFrame = Instance.new("Frame", tabObj.SubNavFrame)
+    SubBtnFrame.Name = subNameKey .. "_NavFrame"
+    SubBtnFrame.Size = UDim2.new(0, 75, 0, 22)
+    SubBtnFrame.BackgroundTransparency = 1
+    SubBtnFrame.ZIndex = 7
+
+    local SubBtn = Instance.new("TextButton", SubBtnFrame)
+    SubBtn.Name = subNameKey .. "_SubBtn"
+    SubBtn.Size = UDim2.new(1, 0, 1, 0)
+    SubBtn.BackgroundTransparency = 1
+    SubBtn.Text = subName
+    applyFontToElement(SubBtn)
+    SubBtn.TextColor3 = Color3.fromRGB(140, 140, 140)
+    SubBtn.TextSize = 11
+    SubBtn.ZIndex = 8
+
+    local Pill = Instance.new("Frame", SubBtnFrame)
+    Pill.Name = "Pill"
+    Pill.Size = UDim2.new(1, 0, 0, 2)
+    Pill.Position = UDim2.new(0, 0, 1, -2)
+    Pill.BackgroundColor3 = Color3.fromRGB(30, 30, 30)
+    Pill.BorderSizePixel = 0
+    Pill.ZIndex = 8
+    Instance.new("UICorner", Pill).CornerRadius = UDim.new(1, 0)
+
+    local SubPage = Instance.new("ScrollingFrame", tabObj.SubPagesContainer)
+    SubPage.Name = subNameKey .. "_SubPage"
+    SubPage.Size = UDim2.new(1, 0, 1, 0)
+    SubPage.BackgroundTransparency = 1
+    SubPage.Visible = false
+    SubPage.ScrollBarThickness = 2
+    SubPage.ScrollBarImageColor3 = Color3.fromRGB(50, 50, 50)
+    SubPage.BorderSizePixel = 0
+    SubPage.ZIndex = 6
+    table.insert(Library.TrackedScrollingFrames, SubPage)
+
+    local SubPageLayout = Instance.new("UIListLayout", SubPage)
+    SubPageLayout.Padding = UDim.new(0, 6)
+    SubPageLayout.SortOrder = Enum.SortOrder.LayoutOrder
+    SubPageLayout.HorizontalAlignment = Enum.HorizontalAlignment.Left
+
+    local function UpdateSubPageCanvas()
+        if SubPage and SubPage.Parent then
+            SubPage.CanvasSize = UDim2.new(0, 0, 0, SubPageLayout.AbsoluteContentSize.Y + 20)
+        end
+    end
+    SubPageLayout:GetPropertyChangedSignal("AbsoluteContentSize"):Connect(UpdateSubPageCanvas)
+
+    subPages[subNameKey] = SubPage
+    subTabButtons[subNameKey] = SubBtn
+
+    local function ActivateSubTab()
+        for sKey, page in pairs(subPages) do
+            page.Visible = false
+        end
+        for sKey, btn in pairs(subTabButtons) do
+            tween(btn, {TextColor3 = Color3.fromRGB(140, 140, 140)}, 0.2)
+            local p = btn.Parent:FindFirstChild("Pill")
+            if p then
+                tween(p, {BackgroundColor3 = Color3.fromRGB(30, 30, 30)}, 0.2)
             end
+        end
+        SubPage.Visible = true
+        tween(SubBtn, {TextColor3 = getThemeAccent()}, 0.2)
+        tween(Pill, {BackgroundColor3 = getThemeAccent()}, 0.2)
+    end
+
+    SubBtn.Activated:Connect(ActivateSubTab)
+    table.insert(LocaleObjects, {Object = SubBtn, Key = subNameKey})
+
+    return SubPage, ActivateSubTab
+end
+
+-- ============================================================================
+-- CONFIG MANAGEMENT SYSTEM
+-- ============================================================================
+local FOLDER_PATH = "DarkHub"
+local CONFIG_FOLDER = "DarkHub/Configs"
+
+local function ensureFolders()
+    if makefolder and isfolder then
+        pcall(function()
+            if not isfolder(FOLDER_PATH) then makefolder(FOLDER_PATH) end
+            if not isfolder(CONFIG_FOLDER) then makefolder(CONFIG_FOLDER) end
         end)
-
-        table.insert(LocaleObjects, {Object = tabBtn, Key = tabName})
-    end
-
-    -- Activate first tab
-    for name, btn in pairs(subTabButtons) do
-        btn.Activated:Fire()
-        break
-    end
-
-    return function(tabName)
-        return subPages[tabName]
     end
 end
+ensureFolders()
 
--- ============================================================================
--- CREATE MAIN TABS
--- ============================================================================
-local SettingsPage = Library:CreateTab("Settings")
-local UIPage = Library:CreateTab("UI")
-local ThemePage = Library:CreateTab("Theme")
-local ConfigsPage = Library:CreateTab("Configs")
+local currentConfigName = ""
 
--- ============================================================================
--- SETTINGS TAB WITH SUB-TABS
--- ============================================================================
-local getSettingsSubTab = Library:CreateSubTabs(SettingsPage, {"General", "Sky", "Fog"})
-
--- General Sub-Tab
-local GeneralPage = getSettingsSubTab("General")
-if GeneralPage then
-    Library:CreateDropdown(GeneralPage, "Language", {"English", "Русский"}, "English", function(selectedLang)
-        Library:UpdateLanguage(selectedLang)
-    end)
-
-    Library:CreateToggle(GeneralPage, "AntiAFK", true, function(state)
-        toggleAntiAFK(state)
-    end)
-
-    Library:CreateToggle(GeneralPage, "AnimatedWindow", false, function(state)
-        toggleAnimatedWindow(state)
-    end)
-
-    Library:CreateToggle(GeneralPage, "Gradient", false, function(state)
-        toggleGradientEffect(state)
-    end)
-
-    Library:CreateDropdown(GeneralPage, "effect", {"None", "wings aura"}, "None", function(selectedEffect)
-        applyPlayerEffect(selectedEffect)
-    end)
-end
-
--- Sky Sub-Tab
-local SkyPage = getSettingsSubTab("Sky")
-if SkyPage then
-    Library:CreateDropdown(SkyPage, "Sky", {"None", "space cky", "pink sky", "sunset sky", "dark sky"}, "None", function(selectedSky)
-        applySkySettings(selectedSky)
-    end)
-end
-
--- Fog Sub-Tab
-local FogPage = getSettingsSubTab("Fog")
-if FogPage then
-    Library:CreateToggle(FogPage, "Fog", true, function(state)
-        fogEnabled = state
-        applyFogSettings(true)
-    end)
-
-    local fogColorNames = {}
-    for colorName, _ in pairs(colorPresets) do
-        table.insert(fogColorNames, colorName)
-    end
-    table.sort(fogColorNames)
-
-    Library:CreateDropdown(FogPage, "FogColor", fogColorNames, "Default", function(selectedColor)
-        customFogColor = colorPresets[selectedColor] or originalFogColor
-        applyFogSettings(true)
-    end)
-
-    Library:CreateSlider(FogPage, "FogStart", 0, 500, 0, function(val)
-        customFogStart = val
-        applyFogSettings(true)
-    end)
-
-    Library:CreateSlider(FogPage, "FogEnd", 10, 2000, 120, function(val)
-        customFogEnd = val
-        applyFogSettings(true)
-    end)
-
-    Library:CreateSlider(FogPage, "FogDensity", 0, 5, 1, function(val)
-        customFogDensity = val
-        applyFogSettings(true)
-    end)
-end
-
--- ============================================================================
--- UI TAB
--- ============================================================================
-Library:CreateDropdown(UIPage, "MenuFont", fontNames, "Source Sans", function(selectedFont)
-    applyFontToAll(selectedFont)
-end)
-
-Library:CreateSlider(UIPage, "UISize", 0.5, 1.5, 1, function(val)
-    if MainScale then
-        MainScale.Scale = val
-    end
-end)
-
-Library:CreateSlider(UIPage, "UITransparency", 0, 0.5, 0.15, function(val)
-    if MainFrame then
-        MainFrame.BackgroundTransparency = val
-    end
-end)
-
--- ============================================================================
--- THEME TAB
--- ============================================================================
-Library:CreateDropdown(ThemePage, "UITheme", ThemeNamesList, "AMOLED", function(selectedTheme)
-    Library:UpdateTheme(selectedTheme)
-end)
-
--- ============================================================================
--- CONFIGS TAB
--- ============================================================================
--- Config Name Input
-local ConfigNameBox = Instance.new("TextBox", ConfigsPage)
-ConfigNameBox.Size = UDim2.new(1, -20, 0, 36)
-ConfigNameBox.Position = UDim2.new(0, 10, 0, 0)
-ConfigNameBox.BackgroundColor3 = Color3.fromRGB(15, 15, 15)
-ConfigNameBox.Text = ""
-ConfigNameBox.PlaceholderText = "Enter config name..."
-ConfigNameBox.Font = Enum.Font.SourceSansBold
-ConfigNameBox.TextSize = 13
-ConfigNameBox.TextColor3 = Color3.fromRGB(230, 230, 230)
-ConfigNameBox.PlaceholderColor3 = Color3.fromRGB(130, 130, 130)
-ConfigNameBox.TextXAlignment = Enum.TextXAlignment.Left
-ConfigNameBox.ZIndex = 6
-ConfigNameBox.LayoutOrder = 1
-Instance.new("UICorner", ConfigNameBox).CornerRadius = UDim.new(0, 6)
-table.insert(Library.TrackedElementBg, ConfigNameBox)
-table.insert(Library.TrackedMainText, ConfigNameBox)
-
--- Save Button
-Library:CreateButton(ConfigsPage, "Save", function()
-    local name = ConfigNameBox.Text
-    if name == "" then
-        showToast(Localization[Library.CurrentLanguage]["PleaseEnterName"])
+local function saveConfig(name)
+    if not name or name == "" then
+        showToast(Localization[Library.CurrentLanguage]["PleaseEnterName"] or "Please enter a config name")
         return
     end
-    showToast(string.format(Localization[Library.CurrentLanguage]["ConfigSaved"], name))
-end)
+    ensureFolders()
+    local data = {
+        Theme = Library.CurrentThemeName or "AMOLED",
+        Font = Library.CurrentFontKey or "Source Sans",
+        Language = Library.CurrentLanguage or "English",
+        UISize = MainScale.Scale,
+        UITransparency = MainFrame.BackgroundTransparency,
+        AntiAFK = (antiAfkConnection ~= nil),
+        AnimatedWindow = (animatedWindowConnection ~= nil),
+        Gradient = (gradientRotateConnection ~= nil),
+        Sky = currentSkyName or "None",
+        Fog = fogEnabled,
+        FogStart = customFogStart,
+        FogEnd = customFogEnd,
+        FogDensity = customFogDensity,
+        Effect = currentEffectName or "None"
+    }
+    local jsonStr = pcall(function() return HttpService:JSONEncode(data) end) and HttpService:JSONEncode(data) or nil
+    if jsonStr and writefile then
+        local filePath = CONFIG_FOLDER .. "/" .. name .. ".json"
+        local success = pcall(function() writefile(filePath, jsonStr) end)
+        if success then
+            showToast(string.format(Localization[Library.CurrentLanguage]["ConfigSaved"] or "Config '%s' saved!", name))
+        else
+            showToast(string.format(Localization[Library.CurrentLanguage]["ConfigSaveFailed"] or "Failed to save config '%s'", name))
+        end
+    else
+        showToast("File system not supported on executor!")
+    end
+end
 
--- Load Button
-Library:CreateButton(ConfigsPage, "Load", function()
-    local name = ConfigNameBox.Text
-    if name == "" then
-        showToast(Localization[Library.CurrentLanguage]["PleaseSelectName"])
+local function loadConfig(name)
+    if not name or name == "" then
+        showToast(Localization[Library.CurrentLanguage]["PleaseSelectName"] or "Please select or enter a config name")
         return
     end
-    showToast(string.format(Localization[Library.CurrentLanguage]["ConfigLoaded"], name))
-end)
-
--- Delete Button
-Library:CreateButton(ConfigsPage, "Delete", function()
-    local name = ConfigNameBox.Text
-    if name == "" then
-        showToast(Localization[Library.CurrentLanguage]["PleaseSelectName"])
-        return
+    ensureFolders()
+    local filePath = CONFIG_FOLDER .. "/" .. name .. ".json"
+    if readfile and isfile and isfile(filePath) then
+        local success, content = pcall(function() return readfile(filePath) end)
+        if success and content then
+            local parseSuccess, data = pcall(function() return HttpService:JSONDecode(content) end)
+            if parseSuccess and type(data) == "table" then
+                if data.Theme then Library:UpdateTheme(data.Theme) end
+                if data.Font then applyFontToAll(data.Font) end
+                if data.Language then Library:UpdateLanguage(data.Language) end
+                if data.UISize then MainScale.Scale = data.UISize end
+                if data.UITransparency then MainFrame.BackgroundTransparency = data.UITransparency end
+                if data.AntiAFK ~= nil then toggleAntiAFK(data.AntiAFK) end
+                if data.AnimatedWindow ~= nil then toggleAnimatedWindow(data.AnimatedWindow) end
+                if data.Gradient ~= nil then toggleGradientEffect(data.Gradient) end
+                if data.Sky then applySkySettings(data.Sky) end
+                if data.Fog ~= nil then fogEnabled = data.Fog; applyFogSettings(true) end
+                if data.FogStart then customFogStart = data.FogStart end
+                if data.FogEnd then customFogEnd = data.FogEnd end
+                if data.FogDensity then customFogDensity = data.FogDensity; applyFogSettings(true) end
+                if data.Effect then applyPlayerEffect(data.Effect) end
+                showToast(string.format(Localization[Library.CurrentLanguage]["ConfigLoaded"] or "Config '%s' loaded!", name))
+            else
+                showToast(string.format(Localization[Library.CurrentLanguage]["ConfigLoadFailed"] or "Failed to load config '%s'", name))
+            end
+        end
+    else
+        showToast(string.format(Localization[Library.CurrentLanguage]["ConfigNotFound"] or "Config '%s' not found", name))
     end
-    showToast(string.format(Localization[Library.CurrentLanguage]["ConfigDeleted"], name))
-end)
+end
 
--- ============================================================================
--- ACTIVATE DEFAULT TAB
--- ============================================================================
-if allTabButtons["Settings"] then
-    allTabButtons["Settings"].Activated:Fire()
+local function deleteConfig(name)
+    if not name or name == "" then return end
+    ensureFolders()
+    local filePath = CONFIG_FOLDER .. "/" .. name .. ".json"
+    if delfile and isfile and isfile(filePath) then
+        local success = pcall(function() delfile(filePath) end)
+        if success then
+            showToast(string.format(Localization[Library.CurrentLanguage]["ConfigDeleted"] or "Config '%s' deleted!", name))
+        else
+            showToast(string.format(Localization[Library.CurrentLanguage]["ConfigDeleteFailed"] or "Failed to delete config '%s'", name))
+        end
+    end
 end
 
 -- ============================================================================
--- LOADING ANIMATION EXECUTION
+-- BUILD SETTINGS TAB & SUB-TABS (UI, THEME, CONFIGS)
 -- ============================================================================
+local SettingsTab = Library:CreateTab("Settings", CustomIconID)
+
+local uiSubPage, activateUISub = Library:CreateSubTab(SettingsTab, "UI")
+local themeSubPage, activateThemeSub = Library:CreateSubTab(SettingsTab, "Theme")
+local configsSubPage, activateConfigsSub = Library:CreateSubTab(SettingsTab, "Configs")
+
+-- Activate Default Sub-tab
+activateUISub()
+SettingsTab.SwitchTab()
+
+-- Populating UI Sub-tab
+Library:CreateSlider(uiSubPage, "UISize", 0.5, 1.5, 1.0, function(val)
+    MainScale.Scale = val
+end)
+
+Library:CreateSlider(uiSubPage, "UITransparency", 0, 0.8, 0.15, function(val)
+    MainFrame.BackgroundTransparency = val
+end)
+
+Library:CreateDropdown(uiSubPage, "MenuFont", {
+    "Source Sans", "Fredoka One", "Gotham", "Gotham Bold", "Roboto", "Code", "Ubuntu", "Bangers", "Luckiest Guy", "Permanent Marker", "Arcade"
+}, "Source Sans", function(val)
+    applyFontToAll(val)
+end)
+
+Library:CreateDropdown(uiSubPage, "Language", {
+    "English", "Русский"
+}, "English", function(val)
+    Library:UpdateLanguage(val)
+end)
+
+Library:CreateToggle(uiSubPage, "AntiAFK", true, function(state)
+    toggleAntiAFK(state)
+end)
+
+Library:CreateToggle(uiSubPage, "AnimatedWindow", false, function(state)
+    toggleAnimatedWindow(state)
+end)
+
+Library:CreateToggle(uiSubPage, "Gradient", false, function(state)
+    toggleGradientEffect(state)
+end)
+
+Library:CreateDropdown(uiSubPage, "effect", {
+    "None", "wings aura"
+}, "None", function(val)
+    applyPlayerEffect(val)
+end)
+
+-- Populating Theme Sub-tab
+Library:CreateDropdown(themeSubPage, "UITheme", ThemeNamesList, "AMOLED", function(val)
+    Library:UpdateTheme(val)
+end)
+
+Library:CreateDropdown(themeSubPage, "Sky", {
+    "None", "space cky", "pink sky", "sunset sky", "dark sky"
+}, "None", function(val)
+    applySkySettings(val)
+end)
+
+Library:CreateToggle(themeSubPage, "Fog", true, function(state)
+    fogEnabled = state
+    applyFogSettings(true)
+end)
+
+Library:CreateDropdown(themeSubPage, "FogColor", {
+    "Default", "Black", "White", "Red", "Blue", "Green", "Purple", "Cyan", "Yellow", "Orange"
+}, "Default", function(val)
+    customFogColor = colorPresets[val] or originalFogColor
+    applyFogSettings(true)
+end)
+
+Library:CreateSlider(themeSubPage, "FogStart", 0, 500, 0, function(val)
+    customFogStart = val
+    applyFogSettings(true)
+end)
+
+Library:CreateSlider(themeSubPage, "FogEnd", 10, 2000, 120, function(val)
+    customFogEnd = val
+    applyFogSettings(true)
+end)
+
+Library:CreateSlider(themeSubPage, "FogDensity", 0, 1, 1.0, function(val)
+    customFogDensity = val
+    applyFogSettings(true)
+end)
+
+-- Populating Configs Sub-tab
+local cfgInput = Library:CreateInput(configsSubPage, "ConfigName", "my_config", function(txt)
+    currentConfigName = txt
+end)
+
+Library:CreateButton(configsSubPage, "Save", function()
+    local txt = cfgInput.GetValue()
+    saveConfig(txt ~= "" and txt or currentConfigName)
+end)
+
+Library:CreateButton(configsSubPage, "Load", function()
+    local txt = cfgInput.GetValue()
+    loadConfig(txt ~= "" and txt or currentConfigName)
+end)
+
+Library:CreateButton(configsSubPage, "Delete", function()
+    local txt = cfgInput.GetValue()
+    deleteConfig(txt ~= "" and txt or currentConfigName)
+end)
+
+-- Initial Theme Setup
+Library:UpdateTheme("AMOLED")
+
+-- Animated Loading Overlay Sequence
 task.spawn(function()
-    local steps = 100
-    for i = 1, steps do
-        task.wait(0.012)
-        local progress = i / steps
-        ProgressBarFill.Size = UDim2.new(progress, 0, 1, 0)
-        LoadingPercent.Text = math.floor(progress * 100) .. "%"
+    for i = 0, 100, 2 do
+        if LoadingPercent and ProgressBarFill then
+            LoadingPercent.Text = i .. "%"
+            ProgressBarFill.Size = UDim2.new(i / 100, 0, 1, 0)
+        end
+        task.wait(0.015)
     end
-    
-    task.wait(0.15)
-    
+    task.wait(0.2)
     if bubbleConnection then
         bubbleConnection:Disconnect()
     end
-    
-    local fadeOut = tween(LoadingOverlay, {BackgroundTransparency = 1}, 0.35)
+    local fadeOut = tween(LoadingOverlay, {BackgroundTransparency = 1}, 0.4)
+    for _, child in ipairs(LoadingOverlay:GetChildren()) do
+        if child:IsA("GuiObject") then
+            if child:IsA("TextLabel") then
+                tween(child, {TextTransparency = 1}, 0.3)
+            else
+                tween(child, {BackgroundTransparency = 1}, 0.3)
+            end
+        end
+    end
     if fadeOut then
         fadeOut.Completed:Connect(function()
             LoadingOverlay:Destroy()
             MainFrame.Visible = true
-            Library:UpdateTheme("AMOLED")
             showToast(Localization[Library.CurrentLanguage]["HubLoaded"] or "Dark Hub loaded successfully!")
         end)
     else
         LoadingOverlay:Destroy()
         MainFrame.Visible = true
-        Library:UpdateTheme("AMOLED")
     end
 end)
