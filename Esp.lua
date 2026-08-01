@@ -653,7 +653,7 @@ MainFrame.AnchorPoint = Vector2.new(0.5, 0.5)
 MainFrame.Position = UDim2.new(0.5, 0, 0.5, 0)
 MainFrame.Size = UDim2.new(0, 550, 0, 350)
 MainFrame.Visible = false
-MainFrame.ClipsDescendants = false -- Исправлено: теперь дочерние элементы (включая фоновые изображения на главном фрейме) будут корректно отображаться без обрезки
+MainFrame.ClipsDescendants = false
 
 -- AMOLED Background Image
 local MainBackgroundImage = Instance.new("ImageLabel", MainFrame)
@@ -2307,33 +2307,37 @@ for _, subName in ipairs(subTabNames) do
     SubBtn.ZIndex = 10
     subTabButtons[subName] = SubBtn
 
-    table.insert(LocaleObjects, {Object = SubBtn, Key = subName})
-
     SubBtn.Activated:Connect(function()
         switchSubTab(subName)
     end)
 end
 
 -- ============================================================================
--- POPULATE SUB-TAB: UI
+-- INITIALIZE SETTINGS SUB-PAGES CONTENT
 -- ============================================================================
+
+-- UI Sub-page
 local uiPage = subPages["UI"]
 
 Library:CreateSlider(uiPage, "UISize", 50, 150, 100, function(val)
     MainScale.Scale = val / 100
 end)
 
-Library:CreateSlider(uiPage, "UITransparency", 0, 80, 15, function(val)
+Library:CreateSlider(uiPage, "UITransparency", 0, 90, 15, function(val)
     MainFrame.BackgroundTransparency = val / 100
 end)
 
-Library:CreateDropdown(uiPage, "MenuFont", {
-    "Fredoka One", "Gotham", "Gotham Bold", "Source Sans", "Roboto", "Code", "Ubuntu", "Bangers", "Luckiest Guy", "Permanent Marker", "Arcade"
-}, "Source Sans", function(selectedFont)
+local fontNames = {}
+for fontName, _ in pairs(FontMapping) do
+    table.insert(fontNames, fontName)
+end
+table.sort(fontNames)
+
+Library:CreateDropdown(uiPage, "MenuFont", fontNames, "Source Sans", function(selectedFont)
     applyFontToAll(selectedFont)
 end)
 
-Library:CreateDropdown(uiPage, "Language", {"English", "Русский"}, "English", function(selectedLang)
+Library:CreateDropdown(uiPage, "Language", {"English", "Русский"}, Library.CurrentLanguage, function(selectedLang)
     Library:UpdateLanguage(selectedLang)
 end)
 
@@ -2349,17 +2353,23 @@ Library:CreateToggle(uiPage, "Gradient", false, function(state)
     toggleGradientEffect(state)
 end)
 
--- ============================================================================
--- POPULATE SUB-TAB: THEME
--- ============================================================================
+Library:CreateSlider(uiPage, "FOV", 60, 120, math.floor(workspace.CurrentCamera.FieldOfView), function(val)
+    workspace.CurrentCamera.FieldOfView = val
+end)
+
+Library:CreateDropdown(uiPage, "effect", {"None", "wings aura"}, "None", function(selectedEffect)
+    applyPlayerEffect(selectedEffect)
+end)
+
+-- Theme Sub-page
 local themePage = subPages["Theme"]
 
 Library:CreateDropdown(themePage, "UITheme", ThemeNamesList, "AMOLED", function(selectedTheme)
     Library:UpdateTheme(selectedTheme)
 end)
 
-Library:CreateDropdown(themePage, "Sky", {"None", "space cky", "pink sky", "sunset sky", "dark sky"}, "None", function(sky)
-    applySkySettings(sky)
+Library:CreateDropdown(themePage, "Sky", {"None", "space cky", "pink sky", "sunset sky", "dark sky"}, "None", function(selectedSky)
+    applySkySettings(selectedSky)
 end)
 
 Library:CreateToggle(themePage, "Fog", true, function(state)
@@ -2367,11 +2377,9 @@ Library:CreateToggle(themePage, "Fog", true, function(state)
     applyFogSettings(true)
 end)
 
-Library:CreateDropdown(themePage, "FogColor", {"Default", "Black", "White", "Red", "Blue", "Green", "Purple", "Cyan", "Yellow", "Orange"}, "Default", function(colorName)
-    if colorPresets[colorName] then
-        customFogColor = colorPresets[colorName]
-        applyFogSettings(true)
-    end
+Library:CreateDropdown(themePage, "FogColor", {"Default", "Black", "White", "Red", "Blue", "Green", "Purple", "Cyan", "Yellow", "Orange"}, "Default", function(selectedColorName)
+    customFogColor = colorPresets[selectedColorName] or originalFogColor
+    applyFogSettings(true)
 end)
 
 Library:CreateSlider(themePage, "FogStart", 0, 500, 0, function(val)
@@ -2379,46 +2387,149 @@ Library:CreateSlider(themePage, "FogStart", 0, 500, 0, function(val)
     applyFogSettings(true)
 end)
 
-Library:CreateSlider(themePage, "FogEnd", 50, 2000, 120, function(val)
+Library:CreateSlider(themePage, "FogEnd", 10, 2000, 120, function(val)
     customFogEnd = val
     applyFogSettings(true)
 end)
 
-Library:CreateSlider(themePage, "FogDensity", 0, 100, 10, function(val)
-    customFogDensity = val / 10
+Library:CreateSlider(themePage, "FogDensity", 0, 100, 100, function(val)
+    customFogDensity = val / 100
     applyFogSettings(true)
 end)
 
-Library:CreateDropdown(themePage, "effect", {"None", "wings aura"}, "None", function(eff)
-    applyPlayerEffect(eff)
-end)
-
--- ============================================================================
--- POPULATE SUB-TAB: CONFIGS
--- ============================================================================
+-- Configs Sub-page
 local configsPage = subPages["Configs"]
 
 local currentConfigInput = ""
-local selectedConfigInList = "Default"
+local configsList = {}
+local configDropdownObj = nil
 
-local configInputBox = Library:CreateTextBox(configsPage, "ConfigName", "PleaseEnterName", function(txt)
-    currentConfigInput = txt
-end)
-
-local function getSavedConfigsList()
-    local list = {"Default"}
-    if isfolder and isfolder("DarkHub_Configs") and listfiles then
+local function refreshConfigDropdown()
+    configsList = {}
+    if isfolder and listfiles then
+        if not isfolder("DarkHub_Configs") then
+            makefolder("DarkHub_Configs")
+        end
         local files = listfiles("DarkHub_Configs")
-        for _, filePath in ipairs(files) do
-            local filename = filePath:match("([^/]+)%.json$") or filePath:match("([^\\]+)%.json$")
-            if filename and filename ~= "Default" then
-                table.insert(list, filename)
+        for _, file in ipairs(files) do
+            local fileName = file:match("([^/]+)%.json$") or file:match("([^\\]+)%.json$")
+            if fileName then
+                table.insert(configsList, fileName)
             end
         end
     end
-    return list
+    if #configsList == 0 then
+        configsList = {"Default"}
+    end
+    if configDropdownObj then
+        configDropdownObj.UpdateOptions(configsList)
+    end
 end
 
-local configsDropdown = Library:CreateDropdown(configsPage, "Configurations", getSavedConfigsList(), "Default", function(selected)
-    selectedConfigInList = selected
+Library:CreateTextBox(configsPage, "ConfigName", "PleaseEnterName", function(txt)
+    currentConfigInput = txt
 end)
+
+configDropdownObj = Library:CreateDropdown(configsPage, "Configurations", {"Default"}, "Default", function(selectedCfg)
+    currentConfigInput = selectedCfg
+end)
+
+refreshConfigDropdown()
+
+Library:CreateButton(configsPage, "Save", function()
+    local name = currentConfigInput ~= "" and currentConfigInput or "Default"
+    if writefile and isfolder then
+        if not isfolder("DarkHub_Configs") then
+            makefolder("DarkHub_Configs")
+        end
+        local data = {
+            Language = Library.CurrentLanguage,
+            Font = Library.CurrentFontKey,
+            Theme = "AMOLED"
+        }
+        local success, err = pcall(function()
+            writefile("DarkHub_Configs/" .. name .. ".json", HttpService:JSONEncode(data))
+        end)
+        if success then
+            showToast(string.format(Localization[Library.CurrentLanguage]["ConfigSaved"] or "Config '%s' saved!", name))
+            refreshConfigDropdown()
+        else
+            showToast(string.format(Localization[Library.CurrentLanguage]["ConfigSaveFailed"] or "Failed to save config '%s'", name))
+        end
+    else
+        showToast("File system not supported on this executor!")
+    end
+end)
+
+Library:CreateButton(configsPage, "Load", function()
+    local name = currentConfigInput ~= "" and currentConfigInput or "Default"
+    if readfile and isfile then
+        local filePath = "DarkHub_Configs/" .. name .. ".json"
+        if isfile(filePath) then
+            local success, result = pcall(function()
+                return HttpService:JSONDecode(readfile(filePath))
+            end)
+            if success and result then
+                if result.Language then Library:UpdateLanguage(result.Language) end
+                if result.Font then applyFontToAll(result.Font) end
+                showToast(string.format(Localization[Library.CurrentLanguage]["ConfigLoaded"] or "Config '%s' loaded!", name))
+            else
+                showToast(string.format(Localization[Library.CurrentLanguage]["ConfigLoadFailed"] or "Failed to load config '%s'", name))
+            end
+        else
+            showToast(string.format(Localization[Library.CurrentLanguage]["ConfigNotFound"] or "Config '%s' not found", name))
+        end
+    else
+        showToast("File system not supported on this executor!")
+    end
+end)
+
+Library:CreateButton(configsPage, "Delete", function()
+    local name = currentConfigInput ~= "" and currentConfigInput or "Default"
+    if delfile and isfile then
+        local filePath = "DarkHub_Configs/" .. name .. ".json"
+        if isfile(filePath) then
+            delfile(filePath)
+            showToast(string.format(Localization[Library.CurrentLanguage]["ConfigDeleted"] or "Config '%s' deleted!", name))
+            refreshConfigDropdown()
+        else
+            showToast(string.format(Localization[Library.CurrentLanguage]["ConfigNotFound"] or "Config '%s' not found", name))
+        end
+    else
+        showToast("File system not supported on this executor!")
+    end
+end)
+
+-- ============================================================================
+-- LOADING PROCESS ANIMATION & DISPLAY GUI
+-- ============================================================================
+task.spawn(function()
+    local loadSteps = 50
+    for i = 1, loadSteps do
+        task.wait(0.03)
+        local pct = math.floor((i / loadSteps) * 100)
+        LoadingPercent.Text = pct .. "%"
+        ProgressBarFill.Size = UDim2.new(pct / 100, 0, 1, 0)
+    end
+    
+    task.wait(0.2)
+    
+    if bubbleConnection then
+        bubbleConnection:Disconnect()
+        bubbleConnection = nil
+    end
+    
+    local fadeOverlay = tween(LoadingOverlay, {BackgroundTransparency = 1}, 0.4)
+    if fadeOverlay then
+        fadeOverlay.Completed:Connect(function()
+            LoadingOverlay:Destroy()
+            MainFrame.Visible = true
+            showToast(Localization[Library.CurrentLanguage]["HubLoaded"] or "Dark Hub loaded successfully!")
+        end)
+    else
+        LoadingOverlay:Destroy()
+        MainFrame.Visible = true
+    end
+end)
+
+return Library
