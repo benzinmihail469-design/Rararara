@@ -510,7 +510,7 @@ LoadingIcon.Size = UDim2.new(0, 52, 0, 52)
 LoadingIcon.AnchorPoint = Vector2.new(0.5, 0.5)
 LoadingIcon.Position = UDim2.new(0.5, 0, 0.23, 0)
 LoadingIcon.BackgroundTransparency = 1
-LoadingIcon.Image = "rbxthumb://type=Asset&id=" .. CustomIconID .. "&w=150&h=150"
+LoadingIcon.Image = "rbxassetid://" .. CustomIconID
 LoadingIcon.ScaleType = Enum.ScaleType.Fit
 LoadingIcon.ZIndex = 1001
 
@@ -645,7 +645,7 @@ local MainBackgroundImage = Instance.new("ImageLabel", MainFrame)
 MainBackgroundImage.Name = "MainBackgroundImage"
 MainBackgroundImage.Size = UDim2.new(1, 0, 1, 0)
 MainBackgroundImage.BackgroundTransparency = 1
-MainBackgroundImage.Image = "rbxthumb://type=Asset&id=" .. CustomBackgroundID .. "&w=420&h=420"
+MainBackgroundImage.Image = "rbxassetid://" .. CustomBackgroundID
 MainBackgroundImage.ScaleType = Enum.ScaleType.Crop
 MainBackgroundImage.ZIndex = 2
 MainBackgroundImage.Visible = true
@@ -773,7 +773,7 @@ HubIcon.BackgroundTransparency = 1
 HubIcon.ScaleType = Enum.ScaleType.Fit
 HubIcon.ZIndex = 5
 Instance.new("UICorner", HubIcon).CornerRadius = UDim.new(0, 6)
-HubIcon.Image = "rbxthumb://type=Asset&id=" .. CustomIconID .. "&w=150&h=150"
+HubIcon.Image = "rbxassetid://" .. CustomIconID
 
 local HubTitle = Instance.new("TextLabel", HeaderBg)
 HubTitle.Text = "Dark Hub"
@@ -2367,7 +2367,7 @@ Library:CreateButton(configsPage, "Load", function()
     if readfile and isfile and isfile("DarkHub_Configs/" .. name .. ".json") then
         local success, result = pcall(function()
             local content = readfile("DarkHub_Configs/" .. name .. ".json")
-            return HttpService:JSONDecode(content)
+            return HttpService:JSONEncode(content)
         end)
         if success and type(result) == "table" then
             if result.Language then Library:UpdateLanguage(result.Language) end
