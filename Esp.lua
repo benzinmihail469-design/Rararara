@@ -2094,476 +2094,260 @@ function Library:CreateSlider(parentPage, textKey, min, max, default, callback)
     }
 end
 
-function Library:CreateTab(tabNameKey)
-    local initialName = Localization[Library.CurrentLanguage] and Localization[Library.CurrentLanguage][tabNameKey] or tabNameKey
-    
-    local TabContainer = Instance.new("Frame", Navigation)
-    TabContainer.Size = UDim2.new(1, 0, 0, 32)
-    TabContainer.BackgroundTransparency = 1
-    TabContainer.ZIndex = 4
-    Instance.new("UICorner", TabContainer).CornerRadius = UDim.new(0, 6)
-
-    local TabBtn = Instance.new("TextButton", TabContainer)
-    TabBtn.Size = UDim2.new(1, 0, 1, 0)
-    TabBtn.BackgroundTransparency = 1
-    TabBtn.Text = "    " .. initialName
-    applyFontToElement(TabBtn)
-    TabBtn.TextColor3 = Color3.fromRGB(140, 140, 140)
-    TabBtn.TextSize = 12
-    TabBtn.TextXAlignment = Enum.TextXAlignment.Left
-    TabBtn.ZIndex = 5
-
-    local Page = Instance.new("ScrollingFrame", PagesContainer)
-    Page.Name = tabNameKey .. "Page"
-    Page.Size = UDim2.new(1, 0, 1, 0)
-    Page.BackgroundTransparency = 1
-    Page.Visible = false
-    Page.ScrollBarThickness = 2
-    Page.ScrollBarImageColor3 = Color3.fromRGB(50, 50, 50)
-    Page.ZIndex = 5
-    table.insert(Library.TrackedScrollingFrames, Page)
-
-    local PageLayout = Instance.new("UIListLayout", Page)
-    PageLayout.Padding = UDim.new(0, 8)
-    PageLayout.HorizontalAlignment = Enum.HorizontalAlignment.Center
-    PageLayout.SortOrder = Enum.SortOrder.LayoutOrder
-
-    local function updateCanvas()
-        Page.CanvasSize = UDim2.new(0, 0, 0, PageLayout.AbsoluteContentSize.Y + 15)
+-- ============================================================================
+-- SUB-TAB SYSTEM
+-- ============================================================================
+function Library:CreateSubTabs(parentPage, tabNames)
+    if not SubTabNav then
+        SubTabNav = Instance.new("Frame", parentPage)
+        SubTabNav.Size = UDim2.new(1, 0, 0, 34)
+        SubTabNav.BackgroundColor3 = Color3.fromRGB(15, 15, 15)
+        SubTabNav.ZIndex = 6
+        SubTabNav.LayoutOrder = 0
+        Instance.new("UICorner", SubTabNav).CornerRadius = UDim.new(0, 6)
+        table.insert(Library.TrackedElementBg, SubTabNav)
     end
-    PageLayout:GetPropertyChangedSignal("AbsoluteContentSize"):Connect(updateCanvas)
 
-    allTabs[tabNameKey] = TabContainer
-    allTabButtons[tabNameKey] = TabBtn
-    allPages[tabNameKey] = Page
+    local layout = Instance.new("UIListLayout", SubTabNav)
+    layout.FillDirection = Enum.FillDirection.Horizontal
+    layout.HorizontalAlignment = Enum.HorizontalAlignment.Center
+    layout.Padding = UDim.new(0, 4)
+    layout.SortOrder = Enum.SortOrder.LayoutOrder
 
-    TabBtn.MouseEnter:Connect(function()
-        if currentActiveTab ~= TabBtn then
-            currentHoveredTab = TabBtn
-            applyHover(TabBtn)
-        end
-    end)
+    for _, tabName in ipairs(tabNames) do
+        local tabContainer = Instance.new("Frame", SubTabNav)
+        tabContainer.Size = UDim2.new(0, 100, 0, 28)
+        tabContainer.BackgroundTransparency = 1
+        tabContainer.ZIndex = 7
 
-    TabBtn.MouseLeave:Connect(function()
-        if currentActiveTab ~= TabBtn then
-            currentHoveredTab = nil
-            removeHover(TabBtn)
-        end
-    end)
+        local tabBtn = Instance.new("TextButton", tabContainer)
+        tabBtn.Size = UDim2.new(1, 0, 1, 0)
+        tabBtn.BackgroundTransparency = 1
+        tabBtn.Text = tabName
+        tabBtn.Font = Enum.Font.SourceSansBold
+        tabBtn.TextSize = 12
+        tabBtn.TextColor3 = Color3.fromRGB(140, 140, 140)
+        tabBtn.ZIndex = 8
 
-    TabBtn.Activated:Connect(function()
-        for k, p in pairs(allPages) do
-            p.Visible = (k == tabNameKey)
-        end
-        currentActiveTab = TabBtn
-        Library.CurrentTabKey = tabNameKey
-        TabTitle.Text = Localization[Library.CurrentLanguage][tabNameKey] or tabNameKey
-        applyThemeToTabs()
-    end)
+        local pill = Instance.new("Frame", tabContainer)
+        pill.Size = UDim2.new(1, -10, 0, 3)
+        pill.Position = UDim2.new(0, 5, 1, -3)
+        pill.BackgroundColor3 = Color3.fromRGB(30, 30, 30)
+        pill.BorderSizePixel = 0
+        pill.ZIndex = 9
+        Instance.new("UICorner", pill).CornerRadius = UDim.new(1, 0)
 
-    local searchItem = {Instance = TabContainer, SearchText = NormalizeText(initialName), OriginalParent = Navigation}
-    table.insert(SearchableElements, searchItem)
-    table.insert(LocaleObjects, {Object = TabBtn, Key = tabNameKey, SearchItem = searchItem})
+        local page = Instance.new("ScrollingFrame", parentPage)
+        page.Name = tabName .. "SubPage"
+        page.Size = UDim2.new(1, 0, 0, 0)
+        page.Position = UDim2.new(0, 0, 0, 42)
+        page.BackgroundTransparency = 1
+        page.Visible = false
+        page.ScrollBarThickness = 2
+        page.ScrollBarImageColor3 = Color3.fromRGB(50, 50, 50)
+        page.ZIndex = 5
+        table.insert(Library.TrackedScrollingFrames, page)
 
-    return Page
-end
+        local pageLayout = Instance.new("UIListLayout", page)
+        pageLayout.Padding = UDim.new(0, 8)
+        pageLayout.HorizontalAlignment = Enum.HorizontalAlignment.Center
+        pageLayout.SortOrder = Enum.SortOrder.LayoutOrder
 
--- ============================================================================
--- CREATE SUB-TABS FOR SETTINGS (UI, Theme, Configs)
--- ============================================================================
+        pageLayout:GetPropertyChangedSignal("AbsoluteContentSize"):Connect(function()
+            page.CanvasSize = UDim2.new(0, 0, 0, pageLayout.AbsoluteContentSize.Y + 15)
+        end)
 
--- Создаем основную вкладку Settings
-local SettingsPage = Library:CreateTab("Settings")
+        subPages[tabName] = page
+        subTabButtons[tabName] = tabBtn
 
--- Создаем навигацию для суб-вкладок
-SubTabNav = Instance.new("Frame", PagesContainer)
-SubTabNav.Name = "SubTabNav"
-SubTabNav.Size = UDim2.new(1, -20, 0, 32)
-SubTabNav.Position = UDim2.new(0, 10, 0, 0)
-SubTabNav.BackgroundColor3 = getThemeElementBg()
-SubTabNav.ZIndex = 6
-SubTabNav.Visible = false
-Instance.new("UICorner", SubTabNav).CornerRadius = UDim.new(0, 8)
-table.insert(Library.TrackedElementBg, SubTabNav)
-
-local SubTabList = Instance.new("UIListLayout", SubTabNav)
-SubTabList.FillDirection = Enum.FillDirection.Horizontal
-SubTabList.HorizontalAlignment = Enum.HorizontalAlignment.Center
-SubTabList.VerticalAlignment = Enum.VerticalAlignment.Center
-SubTabList.Padding = UDim.new(0, 8)
-
-local function createSubTab(name, page)
-    local Container = Instance.new("Frame", SubTabNav)
-    Container.Size = UDim2.new(0, 80, 0, 24)
-    Container.BackgroundTransparency = 1
-    Container.ZIndex = 7
-
-    local Pill = Instance.new("Frame", Container)
-    Pill.Name = "Pill"
-    Pill.Size = UDim2.new(1, 0, 0, 3)
-    Pill.Position = UDim2.new(0, 0, 1, 0)
-    Pill.BackgroundColor3 = Color3.fromRGB(30, 30, 30)
-    Pill.BorderSizePixel = 0
-    Pill.ZIndex = 8
-    Instance.new("UICorner", Pill).CornerRadius = UDim.new(1, 0)
-
-    local Btn = Instance.new("TextButton", Container)
-    Btn.Size = UDim2.new(1, 0, 1, -3)
-    Btn.BackgroundTransparency = 1
-    Btn.Text = name
-    applyFontToElement(Btn)
-    Btn.TextColor3 = Color3.fromRGB(140, 140, 140)
-    Btn.TextSize = 11
-    Btn.ZIndex = 8
-
-    Btn.Activated:Connect(function()
-        for n, p in pairs(subPages) do
-            p.Visible = (n == name)
-        end
-        for n, b in pairs(subTabButtons) do
-            local isActive = (n == name)
-            tween(b, {TextColor3 = isActive and getThemeAccent() or Color3.fromRGB(140, 140, 140)}, 0.2)
-            local pill = b.Parent:FindFirstChild("Pill")
-            if pill then
-                tween(pill, {BackgroundColor3 = isActive and getThemeAccent() or Color3.fromRGB(30, 30, 30)}, 0.2)
+        tabBtn.Activated:Connect(function()
+            for name, p in pairs(subPages) do
+                p.Visible = (name == tabName)
+                local btn = subTabButtons[name]
+                if btn then
+                    local isActive = (name == tabName)
+                    tween(btn, {TextColor3 = isActive and getThemeAccent() or Color3.fromRGB(140,140,140)}, 0.2)
+                    local p = btn.Parent:FindFirstChild("Pill")
+                    if p then
+                        tween(p, {BackgroundColor3 = isActive and getThemeAccent() or Color3.fromRGB(30,30,30)}, 0.2)
+                    end
+                end
             end
-        end
-    end)
+        end)
 
-    subTabButtons[name] = Btn
-    subPages[name] = page
+        table.insert(LocaleObjects, {Object = tabBtn, Key = tabName})
+    end
 
-    return Btn
-end
+    -- Activate first tab
+    for name, btn in pairs(subTabButtons) do
+        btn.Activated:Fire()
+        break
+    end
 
--- Создаем страницы для суб-вкладок
-local UIPage = Instance.new("Frame", PagesContainer)
-UIPage.Name = "UIPage"
-UIPage.Size = UDim2.new(1, -20, 1, -40)
-UIPage.Position = UDim2.new(0, 10, 0, 40)
-UIPage.BackgroundTransparency = 1
-UIPage.Visible = false
-UIPage.ZIndex = 5
-
-local UILayout = Instance.new("UIListLayout", UIPage)
-UILayout.Padding = UDim.new(0, 8)
-UILayout.HorizontalAlignment = Enum.HorizontalAlignment.Center
-UILayout.SortOrder = Enum.SortOrder.LayoutOrder
-
-local ThemePage = Instance.new("Frame", PagesContainer)
-ThemePage.Name = "ThemePage"
-ThemePage.Size = UDim2.new(1, -20, 1, -40)
-ThemePage.Position = UDim2.new(0, 10, 0, 40)
-ThemePage.BackgroundTransparency = 1
-ThemePage.Visible = false
-ThemePage.ZIndex = 5
-
-local ThemeLayout = Instance.new("UIListLayout", ThemePage)
-ThemeLayout.Padding = UDim.new(0, 8)
-ThemeLayout.HorizontalAlignment = Enum.HorizontalAlignment.Center
-ThemeLayout.SortOrder = Enum.SortOrder.LayoutOrder
-
-local ConfigsPage = Instance.new("Frame", PagesContainer)
-ConfigsPage.Name = "ConfigsPage"
-ConfigsPage.Size = UDim2.new(1, -20, 1, -40)
-ConfigsPage.Position = UDim2.new(0, 10, 0, 40)
-ConfigsPage.BackgroundTransparency = 1
-ConfigsPage.Visible = false
-ConfigsPage.ZIndex = 5
-
-local ConfigsLayout = Instance.new("UIListLayout", ConfigsPage)
-ConfigsLayout.Padding = UDim.new(0, 8)
-ConfigsLayout.HorizontalAlignment = Enum.HorizontalAlignment.Center
-ConfigsLayout.SortOrder = Enum.SortOrder.LayoutOrder
-
--- Создаем суб-вкладки
-createSubTab("UI", UIPage)
-createSubTab("Theme", ThemePage)
-createSubTab("Configs", ConfigsPage)
-
--- Активируем первую суб-вкладку по умолчанию
-subPages["UI"].Visible = true
-if subTabButtons["UI"] then
-    tween(subTabButtons["UI"], {TextColor3 = getThemeAccent()}, 0.2)
-    local pill = subTabButtons["UI"].Parent:FindFirstChild("Pill")
-    if pill then
-        tween(pill, {BackgroundColor3 = getThemeAccent()}, 0.2)
+    return function(tabName)
+        return subPages[tabName]
     end
 end
 
 -- ============================================================================
--- INITIALIZE CONTROLS IN EACH SUB-TAB
+-- CREATE MAIN TABS
 -- ============================================================================
+local SettingsPage = Library:CreateTab("Settings")
+local UIPage = Library:CreateTab("UI")
+local ThemePage = Library:CreateTab("Theme")
+local ConfigsPage = Library:CreateTab("Configs")
 
--- === UI SUB-TAB ===
-Library:CreateSlider(UIPage, "UISize", 0.5, 2, 1, function(val)
-    MainScale.Scale = val
-end)
+-- ============================================================================
+-- SETTINGS TAB WITH SUB-TABS
+-- ============================================================================
+local getSettingsSubTab = Library:CreateSubTabs(SettingsPage, {"General", "Sky", "Fog"})
 
-Library:CreateSlider(UIPage, "UITransparency", 0, 0.5, 0.15, function(val)
-    MainFrame.BackgroundTransparency = val
-end)
+-- General Sub-Tab
+local GeneralPage = getSettingsSubTab("General")
+if GeneralPage then
+    Library:CreateDropdown(GeneralPage, "Language", {"English", "Русский"}, "English", function(selectedLang)
+        Library:UpdateLanguage(selectedLang)
+    end)
 
+    Library:CreateToggle(GeneralPage, "AntiAFK", true, function(state)
+        toggleAntiAFK(state)
+    end)
+
+    Library:CreateToggle(GeneralPage, "AnimatedWindow", false, function(state)
+        toggleAnimatedWindow(state)
+    end)
+
+    Library:CreateToggle(GeneralPage, "Gradient", false, function(state)
+        toggleGradientEffect(state)
+    end)
+
+    Library:CreateDropdown(GeneralPage, "effect", {"None", "wings aura"}, "None", function(selectedEffect)
+        applyPlayerEffect(selectedEffect)
+    end)
+end
+
+-- Sky Sub-Tab
+local SkyPage = getSettingsSubTab("Sky")
+if SkyPage then
+    Library:CreateDropdown(SkyPage, "Sky", {"None", "space cky", "pink sky", "sunset sky", "dark sky"}, "None", function(selectedSky)
+        applySkySettings(selectedSky)
+    end)
+end
+
+-- Fog Sub-Tab
+local FogPage = getSettingsSubTab("Fog")
+if FogPage then
+    Library:CreateToggle(FogPage, "Fog", true, function(state)
+        fogEnabled = state
+        applyFogSettings(true)
+    end)
+
+    local fogColorNames = {}
+    for colorName, _ in pairs(colorPresets) do
+        table.insert(fogColorNames, colorName)
+    end
+    table.sort(fogColorNames)
+
+    Library:CreateDropdown(FogPage, "FogColor", fogColorNames, "Default", function(selectedColor)
+        customFogColor = colorPresets[selectedColor] or originalFogColor
+        applyFogSettings(true)
+    end)
+
+    Library:CreateSlider(FogPage, "FogStart", 0, 500, 0, function(val)
+        customFogStart = val
+        applyFogSettings(true)
+    end)
+
+    Library:CreateSlider(FogPage, "FogEnd", 10, 2000, 120, function(val)
+        customFogEnd = val
+        applyFogSettings(true)
+    end)
+
+    Library:CreateSlider(FogPage, "FogDensity", 0, 5, 1, function(val)
+        customFogDensity = val
+        applyFogSettings(true)
+    end)
+end
+
+-- ============================================================================
+-- UI TAB
+-- ============================================================================
 Library:CreateDropdown(UIPage, "MenuFont", fontNames, "Source Sans", function(selectedFont)
     applyFontToAll(selectedFont)
 end)
 
-Library:CreateDropdown(UIPage, "Language", {"English", "Русский"}, "English", function(selectedLang)
-    Library:UpdateLanguage(selectedLang)
+Library:CreateSlider(UIPage, "UISize", 0.5, 1.5, 1, function(val)
+    if MainScale then
+        MainScale.Scale = val
+    end
 end)
 
-Library:CreateToggle(UIPage, "AntiAFK", true, function(state)
-    toggleAntiAFK(state)
+Library:CreateSlider(UIPage, "UITransparency", 0, 0.5, 0.15, function(val)
+    if MainFrame then
+        MainFrame.BackgroundTransparency = val
+    end
 end)
 
--- === THEME SUB-TAB ===
+-- ============================================================================
+-- THEME TAB
+-- ============================================================================
 Library:CreateDropdown(ThemePage, "UITheme", ThemeNamesList, "AMOLED", function(selectedTheme)
     Library:UpdateTheme(selectedTheme)
 end)
 
-Library:CreateToggle(ThemePage, "AnimatedWindow", false, function(state)
-    toggleAnimatedWindow(state)
-end)
+-- ============================================================================
+-- CONFIGS TAB
+-- ============================================================================
+-- Config Name Input
+local ConfigNameBox = Instance.new("TextBox", ConfigsPage)
+ConfigNameBox.Size = UDim2.new(1, -20, 0, 36)
+ConfigNameBox.Position = UDim2.new(0, 10, 0, 0)
+ConfigNameBox.BackgroundColor3 = Color3.fromRGB(15, 15, 15)
+ConfigNameBox.Text = ""
+ConfigNameBox.PlaceholderText = "Enter config name..."
+ConfigNameBox.Font = Enum.Font.SourceSansBold
+ConfigNameBox.TextSize = 13
+ConfigNameBox.TextColor3 = Color3.fromRGB(230, 230, 230)
+ConfigNameBox.PlaceholderColor3 = Color3.fromRGB(130, 130, 130)
+ConfigNameBox.TextXAlignment = Enum.TextXAlignment.Left
+ConfigNameBox.ZIndex = 6
+ConfigNameBox.LayoutOrder = 1
+Instance.new("UICorner", ConfigNameBox).CornerRadius = UDim.new(0, 6)
+table.insert(Library.TrackedElementBg, ConfigNameBox)
+table.insert(Library.TrackedMainText, ConfigNameBox)
 
-Library:CreateToggle(ThemePage, "Gradient", false, function(state)
-    toggleGradientEffect(state)
-end)
-
-Library:CreateDropdown(ThemePage, "Sky", {"None", "space cky", "pink sky", "sunset sky", "dark sky"}, "None", function(selectedSky)
-    applySkySettings(selectedSky)
-end)
-
-Library:CreateToggle(ThemePage, "Fog", true, function(state)
-    fogEnabled = state
-    applyFogSettings(true)
-end)
-
-Library:CreateDropdown(ThemePage, "FogColor", fogColorNames, "Default", function(selectedColor)
-    customFogColor = colorPresets[selectedColor] or originalFogColor
-    applyFogSettings(true)
-end)
-
-Library:CreateSlider(ThemePage, "FogStart", 0, 500, 0, function(val)
-    customFogStart = val
-    applyFogSettings(true)
-end)
-
-Library:CreateSlider(ThemePage, "FogEnd", 10, 2000, 120, function(val)
-    customFogEnd = val
-    applyFogSettings(true)
-end)
-
-Library:CreateSlider(ThemePage, "FogDensity", 0, 5, 1, function(val)
-    customFogDensity = val
-    applyFogSettings(true)
-end)
-
--- === CONFIGS SUB-TAB ===
-local configsFilePath = "DarkHub_Configs.json"
-local configsData = {}
-local function loadConfigsData()
-    local success, data = pcall(function()
-        if isfile and isfile(configsFilePath) then
-            return HttpService:JSONDecode(readfile(configsFilePath))
-        end
-        return {}
-    end)
-    if success and type(data) == "table" then
-        configsData = data
-    else
-        configsData = {}
-    end
-end
-loadConfigsData()
-
-local function saveConfigsData()
-    pcall(function()
-        if writefile then
-            writefile(configsFilePath, HttpService:JSONEncode(configsData))
-        end
-    end)
-end
-
-local function getConfigNames()
-    local names = {}
-    for name, _ in pairs(configsData) do
-        table.insert(names, name)
-    end
-    table.sort(names)
-    return names
-end
-
-local configNameInput = Instance.new("TextBox", ConfigsPage)
-configNameInput.Name = "ConfigName"
-configNameInput.Size = UDim2.new(1, -20, 0, 36)
-configNameInput.BackgroundColor3 = getThemeElementBg()
-configNameInput.Text = ""
-configNameInput.PlaceholderText = Localization[Library.CurrentLanguage]["ConfigName"] or "Config Name"
-applyFontToElement(configNameInput)
-configNameInput.TextColor3 = Color3.fromRGB(230, 230, 230)
-configNameInput.PlaceholderColor3 = Color3.fromRGB(130, 130, 130)
-configNameInput.TextSize = 13
-configNameInput.TextXAlignment = Enum.TextXAlignment.Left
-configNameInput.ZIndex = 6
-configNameInput.LayoutOrder = 1
-Instance.new("UICorner", configNameInput).CornerRadius = UDim.new(0, 6)
-local configStroke = Instance.new("UIStroke", configNameInput)
-configStroke.Color = Color3.fromRGB(35, 35, 35)
-table.insert(Library.TrackedElementBg, configNameInput)
-table.insert(Library.TrackedStrokes, configStroke)
-table.insert(Library.TrackedMainText, configNameInput)
-
+-- Save Button
 Library:CreateButton(ConfigsPage, "Save", function()
-    local name = configNameInput.Text
+    local name = ConfigNameBox.Text
     if name == "" then
-        showToast(Localization[Library.CurrentLanguage]["ConfigEmptyError"])
+        showToast(Localization[Library.CurrentLanguage]["PleaseEnterName"])
         return
     end
-    
-    local config = {
-        theme = Library.CurrentThemeData and ThemeNamesList[1] or "AMOLED",
-        uisize = MainScale.Scale,
-        uitransparency = MainFrame.BackgroundTransparency,
-        font = Library.CurrentFontKey,
-        language = Library.CurrentLanguage,
-        antiafk = antiAfkConnection ~= nil,
-        animatedwindow = animatedWindowConnection ~= nil,
-        gradient = gradientRotateConnection ~= nil,
-        sky = currentSkyInstance and currentSkyInstance.Name or "None",
-        fog = fogEnabled,
-        fogcolor = customFogColor,
-        fogstart = customFogStart,
-        fogend = customFogEnd,
-        fogdensity = customFogDensity,
-        fov = workspace.CurrentCamera and workspace.CurrentCamera.FieldOfView or 70
-    }
-    
-    configsData[name] = config
-    saveConfigsData()
     showToast(string.format(Localization[Library.CurrentLanguage]["ConfigSaved"], name))
 end)
 
+-- Load Button
 Library:CreateButton(ConfigsPage, "Load", function()
-    local name = configNameInput.Text
+    local name = ConfigNameBox.Text
     if name == "" then
-        showToast(Localization[Library.CurrentLanguage]["PleaseEnterName"])
+        showToast(Localization[Library.CurrentLanguage]["PleaseSelectName"])
         return
     end
-    
-    local config = configsData[name]
-    if not config then
-        showToast(string.format(Localization[Library.CurrentLanguage]["ConfigNotFound"], name))
-        return
-    end
-    
-    -- Apply config
-    if config.theme then
-        Library:UpdateTheme(config.theme)
-    end
-    if config.uisize then
-        MainScale.Scale = config.uisize
-    end
-    if config.uitransparency then
-        MainFrame.BackgroundTransparency = config.uitransparency
-    end
-    if config.font then
-        applyFontToAll(config.font)
-    end
-    if config.language then
-        Library:UpdateLanguage(config.language)
-    end
-    if config.antiafk ~= nil then
-        toggleAntiAFK(config.antiafk)
-    end
-    if config.animatedwindow ~= nil then
-        toggleAnimatedWindow(config.animatedwindow)
-    end
-    if config.gradient ~= nil then
-        toggleGradientEffect(config.gradient)
-    end
-    if config.sky then
-        applySkySettings(config.sky)
-    end
-    if config.fog ~= nil then
-        fogEnabled = config.fog
-        applyFogSettings(true)
-    end
-    if config.fogcolor then
-        customFogColor = config.fogcolor
-        applyFogSettings(true)
-    end
-    if config.fogstart then
-        customFogStart = config.fogstart
-        applyFogSettings(true)
-    end
-    if config.fogend then
-        customFogEnd = config.fogend
-        applyFogSettings(true)
-    end
-    if config.fogdensity then
-        customFogDensity = config.fogdensity
-        applyFogSettings(true)
-    end
-    if config.fov then
-        local cam = workspace.CurrentCamera
-        if cam then
-            cam.FieldOfView = config.fov
-        end
-    end
-    
     showToast(string.format(Localization[Library.CurrentLanguage]["ConfigLoaded"], name))
 end)
 
+-- Delete Button
 Library:CreateButton(ConfigsPage, "Delete", function()
-    local name = configNameInput.Text
+    local name = ConfigNameBox.Text
     if name == "" then
-        showToast(Localization[Library.CurrentLanguage]["PleaseEnterName"])
+        showToast(Localization[Library.CurrentLanguage]["PleaseSelectName"])
         return
     end
-    
-    if configsData[name] then
-        configsData[name] = nil
-        saveConfigsData()
-        showToast(string.format(Localization[Library.CurrentLanguage]["ConfigDeleted"], name))
-    else
-        showToast(string.format(Localization[Library.CurrentLanguage]["ConfigNotFound"], name))
-    end
+    showToast(string.format(Localization[Library.CurrentLanguage]["ConfigDeleted"], name))
 end)
 
 -- ============================================================================
--- OVERRIDE TAB ACTIVATION TO SHOW SUB-TABS
--- ============================================================================
-local originalSettingsTabBtn = allTabButtons["Settings"]
-if originalSettingsTabBtn then
-    local originalActivated = originalSettingsTabBtn.Activated
-    originalSettingsTabBtn.Activated:Connect(function()
-        -- Show sub-tab navigation when Settings is active
-        if SubTabNav then
-            SubTabNav.Visible = true
-        end
-        -- Show Settings page content (which contains sub-tabs)
-        if allPages["Settings"] then
-            allPages["Settings"].Visible = true
-        end
-    end)
-end
-
--- Hide sub-tabs when other tabs are clicked
-for tabName, tabBtn in pairs(allTabButtons) do
-    if tabName ~= "Settings" then
-        tabBtn.Activated:Connect(function()
-            if SubTabNav then
-                SubTabNav.Visible = false
-            end
-            for _, page in pairs(subPages) do
-                page.Visible = false
-            end
-        end)
-    end
-end
-
--- ============================================================================
--- ACTIVATE SETTINGS TAB
+-- ACTIVATE DEFAULT TAB
 -- ============================================================================
 if allTabButtons["Settings"] then
     allTabButtons["Settings"].Activated:Fire()
