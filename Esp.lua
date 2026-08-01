@@ -19,7 +19,7 @@ end
 
 local CustomIconID = "76579925188009"
 local DefaultIconID = "6031094678" -- Резервная иконка
-local CustomBackgroundID = "107695985017112"
+local CustomBackgroundID = "77553474353001" -- Обновленный ID для темы AMOLED
 local startTime = os.clock()
 
 local function getIconAsset(id)
@@ -1156,7 +1156,12 @@ function Library:UpdateTheme(themeName)
     local elementBg = getThemeElementBg()
     
     if MainBackgroundImage then
-        MainBackgroundImage.Visible = (themeName == "AMOLED")
+        if themeName == "AMOLED" then
+            MainBackgroundImage.Image = getBackgroundAsset(CustomBackgroundID)
+            MainBackgroundImage.Visible = true
+        else
+            MainBackgroundImage.Visible = false
+        end
     end
 
     local isLightMode = isLightColor(mainBg)
@@ -2421,8 +2426,8 @@ end)
 Library:CreateButton(configsPage, "Save", function()
     local name = configInputBox.GetText()
     if name == "" then name = selectedConfigInList end
-    if name == "" or name == "Default" then
-        showToast(Localization[Library.CurrentLanguage]["PleaseEnterName"] or "Please enter a config name")
+    if name == "" or not name then
+        showToast(Localization[Library.CurrentLanguage]["ConfigEmptyError"] or "Error: Config name cannot be empty")
         return
     end
 
@@ -2430,112 +2435,118 @@ Library:CreateButton(configsPage, "Save", function()
         Theme = Library.CurrentThemeData,
         Font = Library.CurrentFontKey,
         Language = Library.CurrentLanguage,
-        FogEnabled = fogEnabled,
-        FogStart = customFogStart,
-        FogEnd = customFogEnd,
-        FogColor = {R = customFogColor.R, G = customFogColor.G, B = customFogColor.B},
-        FogDensity = customFogDensity,
-        Effect = currentEffectName
+        UIScale = MainScale.Scale * 100,
+        UITransparency = MainFrame.BackgroundTransparency * 100
     }
 
-    local success, encoded = pcall(function()
-        return HttpService:JSONEncode(configData)
-    end)
-
-    if success and writefile then
+    if isfolder and writefile then
         if not isfolder("DarkHub_Configs") then
             makefolder("DarkHub_Configs")
         end
-        writefile("DarkHub_Configs/" .. name .. ".json", encoded)
-        local fmt = Localization[Library.CurrentLanguage]["ConfigSaved"] or "Config '%s' saved successfully!"
-        showToast(string.format(fmt, name))
-        configsDropdown.UpdateOptions(getSavedConfigsList())
+        local success, err = pcall(function()
+            writefile("DarkHub_Configs/" .. name .. ".json", HttpService:JSONEncode(configData))
+        end)
+        if success then
+            showToast(string.format(Localization[Library.CurrentLanguage]["ConfigSaved"] or "Config '%s' saved!", name))
+            configsDropdown.UpdateOptions(getSavedConfigsList())
+        else
+            showToast(string.format(Localization[Library.CurrentLanguage]["ConfigSaveFailed"] or "Failed to save config '%s'", name))
+        end
     else
-        local fmt = Localization[Library.CurrentLanguage]["ConfigSaveFailed"] or "Failed to save config '%s'"
-        showToast(string.format(fmt, name))
+        showToast("FileSystem API not supported!")
     end
 end)
 
 Library:CreateButton(configsPage, "Load", function()
-    local name = selectedConfigInList
-    if name == "" then name = configInputBox.GetText() end
-    if name == "" then
+    local name = configInputBox.GetText()
+    if name == "" then name = selectedConfigInList end
+    if name == "" or not name then
         showToast(Localization[Library.CurrentLanguage]["PleaseSelectName"] or "Please select or enter a config name")
         return
     end
 
-    if readfile and isfile and isfile("DarkHub_Configs/" .. name .. ".json") then
-        local content = readfile("DarkHub_Configs/" .. name .. ".json")
-        local success, decoded = pcall(function()
-            return HttpService:JSONDecode(content)
+    if isfile and isfile("DarkHub_Configs/" .. name .. ".json") then
+        local success, data = pcall(function()
+            return HttpService:JSONDecode(readfile("DarkHub_Configs/" .. name .. ".json"))
         end)
-        if success and type(decoded) == "table" then
-            if decoded.Language then Library:UpdateLanguage(decoded.Language) end
-            if decoded.Font then applyFontToAll(decoded.Font) end
-            if decoded.Effect then applyPlayerEffect(decoded.Effect) end
-            local fmt = Localization[Library.CurrentLanguage]["ConfigLoaded"] or "Config '%s' loaded successfully!"
-            showToast(string.format(fmt, name))
+        if success and data then
+            if data.Theme then Library:UpdateTheme(data.Theme) end
+            if data.Font then applyFontToAll(data.Font) end
+            if data.Language then Library:UpdateLanguage(data.Language) end
+            if data.UIScale then MainScale.Scale = data.UIScale / 100 end
+            if data.UITransparency then MainFrame.BackgroundTransparency = data.UITransparency / 100 end
+            showToast(string.format(Localization[Library.CurrentLanguage]["ConfigLoaded"] or "Config '%s' loaded!", name))
         else
-            local fmt = Localization[Library.CurrentLanguage]["ConfigLoadFailed"] or "Failed to load config '%s'"
-            showToast(string.format(fmt, name))
+            showToast(string.format(Localization[Library.CurrentLanguage]["ConfigLoadFailed"] or "Failed to load config '%s'", name))
         end
     else
-        local fmt = Localization[Library.CurrentLanguage]["ConfigNotFound"] or "Config '%s' not found"
-        showToast(string.format(fmt, name))
+        showToast(string.format(Localization[Library.CurrentLanguage]["ConfigNotFound"] or "Config '%s' not found", name))
     end
 end)
 
 Library:CreateButton(configsPage, "Delete", function()
-    local name = selectedConfigInList
+    local name = configInputBox.GetText()
+    if name == "" then name = selectedConfigInList end
     if name == "" or name == "Default" then
-        showToast(Localization[Library.CurrentLanguage]["PleaseSelectName"] or "Please select or enter a config name")
+        showToast("Cannot delete Default config")
         return
     end
 
-    if delfile and isfile and isfile("DarkHub_Configs/" .. name .. ".json") then
-        delfile("DarkHub_Configs/" .. name .. ".json")
-        local fmt = Localization[Library.CurrentLanguage]["ConfigDeleted"] or "Config '%s' deleted!"
-        showToast(string.format(fmt, name))
-        configsDropdown.UpdateOptions(getSavedConfigsList())
+    if isfile and isfile("DarkHub_Configs/" .. name .. ".json") and delfile then
+        local success = pcall(function()
+            delfile("DarkHub_Configs/" .. name .. ".json")
+        end)
+        if success then
+            showToast(string.format(Localization[Library.CurrentLanguage]["ConfigDeleted"] or "Config '%s' deleted!", name))
+            configsDropdown.UpdateOptions(getSavedConfigsList())
+        else
+            showToast(string.format(Localization[Library.CurrentLanguage]["ConfigDeleteFailed"] or "Failed to delete config '%s'", name))
+        end
     else
-        local fmt = Localization[Library.CurrentLanguage]["ConfigDeleteFailed"] or "Failed to delete config '%s'"
-        showToast(string.format(fmt, name))
+        showToast(string.format(Localization[Library.CurrentLanguage]["ConfigNotFound"] or "Config '%s' not found", name))
     end
 end)
 
 -- ============================================================================
--- INITIALIZATION / LOADING ANIMATION
+-- INITIALIZATION & ANIMATED LOADING SCREEN
 -- ============================================================================
 task.spawn(function()
     for i = 1, 100 do
-        task.wait(0.012)
-        if LoadingPercent and LoadingPercent.Parent then
-            LoadingPercent.Text = i .. "%"
-        end
-        if ProgressBarFill and ProgressBarFill.Parent then
-            ProgressBarFill.Size = UDim2.new(i / 100, 0, 1, 0)
-        end
+        task.wait(0.015)
+        ProgressBarFill.Size = UDim2.new(i / 100, 0, 1, 0)
+        LoadingPercent.Text = i .. "%"
     end
 
+    task.wait(0.2)
     if bubbleConnection then
         bubbleConnection:Disconnect()
         bubbleConnection = nil
     end
 
-    local hideLoading = tween(LoadingOverlay, {BackgroundTransparency = 1, Size = UDim2.new(0, 0, 0, 0)}, 0.35)
-    if hideLoading then
-        hideLoading.Completed:Connect(function()
-            if LoadingOverlay and LoadingOverlay.Parent then
-                LoadingOverlay:Destroy()
-            end
+    local overlayTween = tween(LoadingOverlay, {BackgroundTransparency = 1}, 0.5)
+    tween(LoadingIcon, {ImageTransparency = 1}, 0.5)
+    tween(LoadingStatus, {TextTransparency = 1}, 0.5)
+    tween(LoadingPercent, {TextTransparency = 1}, 0.5)
+    tween(ProgressBarBg, {BackgroundTransparency = 1}, 0.5)
+    tween(ProgressBarFill, {BackgroundTransparency = 1}, 0.5)
+    tween(OverlayStroke, {Transparency = 1}, 0.5)
+
+    for _, b in ipairs(Bubbles) do
+        if b.Object then
+            tween(b.Object, {BackgroundTransparency = 1}, 0.5)
+        end
+    end
+
+    if overlayTween then
+        overlayTween.Completed:Connect(function()
+            LoadingOverlay:Destroy()
+            MainFrame.Visible = true
+            showToast(Localization[Library.CurrentLanguage]["HubLoaded"] or "Dark Hub loaded successfully!")
         end)
     else
         LoadingOverlay:Destroy()
+        MainFrame.Visible = true
     end
-
-    MainFrame.Visible = true
-    MainFrame.Size = UDim2.new(0, 0, 0, 0)
-    tween(MainFrame, {Size = UDim2.new(0, 550, 0, 350)}, 0.4, Enum.EasingStyle.Back, Enum.EasingDirection.Out)
-
-    showToast(Localization[Library.CurrentLanguage]["HubLoaded"] or "Dark Hub loaded successfully!")
 end)
+
+return Library
