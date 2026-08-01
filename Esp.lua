@@ -18,6 +18,7 @@ while not LocalPlayer do
 end
 
 local CustomIconID = "76579925188009"
+local CustomBackgroundID = "77553474353001"
 local startTime = os.clock()
 
 local function formatSessionTime(seconds)
@@ -639,14 +640,14 @@ MainFrame.Size = UDim2.new(0, 550, 0, 350)
 MainFrame.Visible = false
 MainFrame.ClipsDescendants = true
 
--- AMOLED Background Image (ID: 77553474353001) - Fixed ZIndex and Visibility
+-- AMOLED Background Image (использует безопасный формат rbxthumb по аналогии с иконкой)
 local MainBackgroundImage = Instance.new("ImageLabel", MainFrame)
 MainBackgroundImage.Name = "MainBackgroundImage"
 MainBackgroundImage.Size = UDim2.new(1, 0, 1, 0)
 MainBackgroundImage.BackgroundTransparency = 1
-MainBackgroundImage.Image = "rbxassetid://77553474353001"
+MainBackgroundImage.Image = "rbxthumb://type=Asset&id=" .. CustomBackgroundID .. "&w=420&h=420"
 MainBackgroundImage.ScaleType = Enum.ScaleType.Crop
-MainBackgroundImage.ZIndex = 2 -- Выставлен выше фона MainFrame, чтобы картинка корректно отображалась
+MainBackgroundImage.ZIndex = 2
 MainBackgroundImage.Visible = true
 
 local BgCorner = Instance.new("UICorner", MainBackgroundImage)
