@@ -639,15 +639,16 @@ MainFrame.Size = UDim2.new(0, 550, 0, 350)
 MainFrame.Visible = false
 MainFrame.ClipsDescendants = true
 
--- AMOLED Background Image (ID: 77553474353001)
+-- AMOLED Background Image (ID: 77553474353001) - Fixed ZIndex and Visibility
 local MainBackgroundImage = Instance.new("ImageLabel", MainFrame)
 MainBackgroundImage.Name = "MainBackgroundImage"
 MainBackgroundImage.Size = UDim2.new(1, 0, 1, 0)
 MainBackgroundImage.BackgroundTransparency = 1
 MainBackgroundImage.Image = "rbxassetid://77553474353001"
 MainBackgroundImage.ScaleType = Enum.ScaleType.Crop
-MainBackgroundImage.ZIndex = 1
-MainBackgroundImage.Visible = true -- Активна по умолчанию, т.к. AMOLED стоит по умолчанию
+MainBackgroundImage.ZIndex = 2 -- Выставлен выше фона MainFrame, чтобы картинка корректно отображалась
+MainBackgroundImage.Visible = true
+
 local BgCorner = Instance.new("UICorner", MainBackgroundImage)
 BgCorner.CornerRadius = UDim.new(0, 14)
 
@@ -1078,53 +1079,6 @@ local subPages = {}
 local subTabButtons = {}
 local uiGradientInstance = nil
 
-local function applyHover(button)
-    if not button or typeof(button) ~= "Instance" or not button.Parent then return end
-    local parentContainer = button.Parent
-    if not parentContainer or typeof(parentContainer) ~= "Instance" or not parentContainer.Parent then return end
-    local accent = getThemeAccent()
-    local mainBg = getThemeMainBg()
-    local stroke = parentContainer:FindFirstChild("HoverStroke")
-    if not stroke then
-        stroke = Instance.new("UIStroke")
-        stroke.Name = "HoverStroke"
-        stroke.Color = accent
-        stroke.Thickness = 1
-        stroke.Transparency = 1
-        stroke.ApplyStrokeMode = Enum.ApplyStrokeMode.Border
-        stroke.Parent = parentContainer
-    else
-        stroke.Color = accent
-    end
-    local isL = isLightColor(mainBg)
-    local hoverBg = isL and Color3.fromRGB(200, 200, 200) or Color3.fromRGB(35, 35, 35)
-    local hoverText = isL and Color3.fromRGB(20, 20, 20) or Color3.fromRGB(255, 255, 255)
-    tween(parentContainer, {BackgroundColor3 = hoverBg, BackgroundTransparency = 0.5}, 0.18)
-    tween(stroke, {Transparency = 0.5}, 0.18)
-    tween(button, {TextColor3 = hoverText}, 0.18)
-end
-
-local function removeHover(button)
-    if not button or typeof(button) ~= "Instance" or not button.Parent then return end
-    local parentContainer = button.Parent
-    if not parentContainer or typeof(parentContainer) ~= "Instance" then return end
-    local stroke = parentContainer:FindFirstChild("HoverStroke")
-    if stroke then
-        local t = tween(stroke, {Transparency = 1}, 0.18)
-        if t then
-            t.Completed:Connect(function()
-                if stroke and stroke.Parent and stroke.Transparency >= 0.99 then
-                    stroke:Destroy()
-                end
-            end)
-        end
-    end
-    local isL = isLightColor(getThemeMainBg())
-    local normalTextColor = isL and Color3.fromRGB(110, 110, 110) or Color3.fromRGB(140, 140, 140)
-    tween(parentContainer, {BackgroundTransparency = 1}, 0.18)
-    tween(button, {TextColor3 = normalTextColor}, 0.18)
-end
-
 local function applyThemeToTabs(theme)
     theme = theme or Library.CurrentThemeData or DefaultTheme
     local mainBg = (theme and typeof(theme.MainBg) == "Color3") and theme.MainBg or DefaultTheme.MainBg
@@ -1178,7 +1132,6 @@ function Library:UpdateTheme(themeName)
     local accent = getThemeAccent()
     local elementBg = getThemeElementBg()
     
-    -- Управляем видимостью картинки для темы AMOLED
     if MainBackgroundImage then
         MainBackgroundImage.Visible = (themeName == "AMOLED")
     end
@@ -2156,7 +2109,6 @@ SettingsPage.BackgroundTransparency = 1
 SettingsPage.Visible = true
 allPages["Settings"] = SettingsPage
 
--- Beautiful Capsule Sub-Nav Bar
 SubTabNav = Instance.new("Frame", SettingsPage)
 SubTabNav.Name = "SubTabNav"
 SubTabNav.Size = UDim2.new(1, -20, 0, 32)
@@ -2207,7 +2159,6 @@ local function switchSubTab(targetName)
 end
 
 for _, subName in ipairs(subTabNames) do
-    -- Create Sub-Page Scrolling Frame
     local subPage = Instance.new("ScrollingFrame", SubPagesContainer)
     subPage.Name = "SubPage_" .. subName
     subPage.Size = UDim2.new(1, 0, 1, 0)
@@ -2228,7 +2179,6 @@ for _, subName in ipairs(subTabNames) do
         subPage.CanvasSize = UDim2.new(0, 0, 0, subLayout.AbsoluteContentSize.Y + 15)
     end)
 
-    -- Create Sub-Tab Button Capsule
     local SubBtnContainer = Instance.new("Frame", SubTabNav)
     SubBtnContainer.Name = "Container_" .. subName
     SubBtnContainer.Size = UDim2.new(0.31, 0, 0.8, 0)
@@ -2353,10 +2303,6 @@ local configInputBox = Library:CreateTextBox(configsPage, "ConfigName", "PleaseE
     currentConfigInput = txt
 end)
 
-local configsDropdown = Library:CreateDropdown(configsPage, "Configurations", {"Default"}, "Default", function(selected)
-    selectedConfigInList = selected
-end)
-
 local function getSavedConfigsList()
     local list = {"Default"}
     if isfolder and isfolder("DarkHub_Configs") and listfiles then
@@ -2370,6 +2316,10 @@ local function getSavedConfigsList()
     end
     return list
 end
+
+local configsDropdown = Library:CreateDropdown(configsPage, "Configurations", getSavedConfigsList(), "Default", function(selected)
+    selectedConfigInList = selected
+end)
 
 Library:CreateButton(configsPage, "Save", function()
     local name = configInputBox.GetText()
@@ -2433,87 +2383,64 @@ end)
 
 Library:CreateButton(configsPage, "Delete", function()
     local name = selectedConfigInList
+    if name == "" then name = configInputBox.GetText() end
     if name == "" or name == "Default" then
         showToast(Localization[Library.CurrentLanguage]["PleaseSelectName"])
         return
     end
 
-    if delfile and isfile and isfile("DarkHub_Configs/" .. name .. ".json") then
-        delfile("DarkHub_Configs/" .. name .. ".json")
-        showToast(string.format(Localization[Library.CurrentLanguage]["ConfigDeleted"], name))
-        configsDropdown.UpdateOptions(getSavedConfigsList())
+    if isfile and isfile("DarkHub_Configs/" .. name .. ".json") then
+        if delfile then
+            local success = pcall(function()
+                delfile("DarkHub_Configs/" .. name .. ".json")
+            end)
+            if success then
+                showToast(string.format(Localization[Library.CurrentLanguage]["ConfigDeleted"], name))
+                selectedConfigInList = ""
+                configsDropdown.UpdateOptions(getSavedConfigsList())
+            else
+                showToast(string.format(Localization[Library.CurrentLanguage]["ConfigDeleteFailed"], name))
+            end
+        else
+            showToast("FileSystem unsupported by Executor!")
+        end
     else
-        showToast(string.format(Localization[Library.CurrentLanguage]["ConfigDeleteFailed"], name))
+        showToast(string.format(Localization[Library.CurrentLanguage]["ConfigNotFound"], name))
     end
 end)
 
 -- ============================================================================
--- TAB SWITCHING SYSTEM (FIXED)
+-- LOADING FINISH SIMULATION
 -- ============================================================================
-local function switchTab(tabKey)
-    if Library.CurrentTabKey == tabKey then return end
-    Library.CurrentTabKey = tabKey
-    
-    for key, page in pairs(allPages) do
-        if page and typeof(page) == "Instance" then
-            page.Visible = (key == tabKey)
-        end
-    end
-    
-    for key, btn in pairs(allTabButtons) do
-        if btn and typeof(btn) == "Instance" then
-            local parent = btn.Parent
-            if parent then
-                local indicator = parent:FindFirstChild("ActiveIndicator")
-                local isL = isLightColor(getThemeMainBg())
-                if key == tabKey then
-                    tween(btn, {TextColor3 = isL and Color3.fromRGB(20, 20, 20) or Color3.fromRGB(255, 255, 255)}, 0.2)
-                    tween(parent, {BackgroundColor3 = isL and Color3.fromRGB(215, 215, 215) or Color3.fromRGB(25, 25, 25), BackgroundTransparency = 0}, 0.2)
-                    if not indicator then
-                        indicator = Instance.new("Frame")
-                        indicator.Name = "ActiveIndicator"
-                        indicator.Size = UDim2.new(0, 4, 1, 0)
-                        indicator.Position = UDim2.new(0, 0, 0, 0)
-                        indicator.BorderSizePixel = 0
-                        indicator.ZIndex = btn.ZIndex + 2
-                        indicator.Parent = parent
-                        local corner = Instance.new("UICorner", indicator)
-                        corner.CornerRadius = UDim.new(0, 2)
-                    end
-                    tween(indicator, {BackgroundColor3 = getThemeAccent(), BackgroundTransparency = 0}, 0.2)
-                else
-                    tween(btn, {TextColor3 = isL and Color3.fromRGB(110, 110, 110) or Color3.fromRGB(140, 140, 140)}, 0.2)
-                    tween(parent, {BackgroundTransparency = 1}, 0.2)
-                    if indicator then
-                        indicator:Destroy()
-                    end
-                end
-            end
-        end
-    end
-    if TabTitle then
-        TabTitle.Text = Localization[Library.CurrentLanguage] and Localization[Library.CurrentLanguage][tabKey] or tabKey
-    end
-end
-
--- Finalize loading screen animation and show main GUI
 task.spawn(function()
-    for i = 1, 100 do
+    for i = 0, 100, 10 do
         LoadingPercent.Text = i .. "%"
         ProgressBarFill.Size = UDim2.new(i / 100, 0, 1, 0)
-        task.wait(0.01)
+        task.wait(0.05)
     end
+    
     if bubbleConnection then
         bubbleConnection:Disconnect()
     end
-    local t = tween(LoadingOverlay, {BackgroundTransparency = 1}, 0.4)
-    if t then
-        t.Completed:Connect(function()
-            LoadingOverlay:Destroy()
-        end)
-    else
-        LoadingOverlay:Destroy()
+    
+    tween(LoadingOverlay, {BackgroundTransparency = 1}, 0.3)
+    for _, desc in ipairs(LoadingOverlay:GetDescendants()) do
+        if desc:IsA("TextLabel") or desc:IsA("ImageLabel") or desc:IsA("Frame") then
+            pcall(function()
+                if desc.BackgroundTransparency < 1 then
+                    tween(desc, {BackgroundTransparency = 1}, 0.3)
+                end
+                if desc:IsA("TextLabel") then
+                    tween(desc, {TextTransparency = 1}, 0.3)
+                elseif desc:IsA("ImageLabel") then
+                    tween(desc, {ImageTransparency = 1}, 0.3)
+                end
+            end)
+        end
     end
+    
+    task.wait(0.35)
+    LoadingOverlay:Destroy()
     MainFrame.Visible = true
-    showToast(Localization[Library.CurrentLanguage]["HubLoaded"])
+    showToast(Localization[Library.CurrentLanguage]["HubLoaded"] or "Dark Hub loaded successfully!")
 end)
