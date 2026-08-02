@@ -1080,7 +1080,7 @@ local function applyThemeToTabs(theme)
     local mainBg = (theme and typeof(theme.MainBg) == "Color3") and theme.MainBg or DefaultTheme.MainBg
     local accent = (theme and typeof(theme.Accent) == "Color3") and theme.Accent or DefaultTheme.Accent
     local isLightMode = isLightColor(mainBg)
-    local activeTextColor = isLightMode and Color3.fromRGB(20, 20, 20) or Color3.fromRGB(255, 255, 255)
+    local activeTextColor = accent -- Активный цвет текста равен акценту темы для заметного выделения
     local inactiveTextColor = isLightMode and Color3.fromRGB(110, 110, 110) or Color3.fromRGB(140, 140, 140)
     local activeBgColor = isLightMode and Color3.fromRGB(215, 215, 215) or Color3.fromRGB(25, 25, 25)
     for textKey, tabBtn in pairs(allTabButtons) do
@@ -1092,17 +1092,18 @@ local function applyThemeToTabs(theme)
                 local tabStroke = parentContainer:FindFirstChild("TabStroke")
                 local icon = parentContainer:FindFirstChild("TabIcon")
                 if tabBtn == currentActiveTab then
-                    tween(tabBtn, {TextColor3 = activeTextColor, Position = UDim2.new(0, 16, 0, 0), TextSize = 13.5}, 0.2)
+                    tween(tabBtn, {TextColor3 = activeTextColor, Position = UDim2.new(0, 18, 0, 0), TextSize = 13.5}, 0.2)
                     tween(parentContainer, {BackgroundColor3 = activeBgColor, BackgroundTransparency = 0}, 0.2)
                     
+                    -- Акцентная обводка/контур вокруг активной вкладки вместо черной
                     if not tabStroke then
                         tabStroke = Instance.new("UIStroke")
                         tabStroke.Name = "TabStroke"
-                        tabStroke.Color = Color3.fromRGB(0, 0, 0)
+                        tabStroke.Color = accent
                         tabStroke.Thickness = 1.5
                         tabStroke.Parent = parentContainer
                     else
-                        tabStroke.Color = Color3.fromRGB(0, 0, 0)
+                        tabStroke.Color = accent
                         tabStroke.Transparency = 0
                     end
 
@@ -1315,14 +1316,10 @@ function Library:UpdateTheme(themeName)
     
     for name, b in pairs(subTabButtons) do
         local isActive = subPages[name] and subPages[name].Visible
-        local container = b.Parent
-        local isL = isLightColor(mainBg)
-        tween(b, {TextColor3 = isActive and (isL and Color3.fromRGB(20, 20, 20) or Color3.fromRGB(255, 255, 255)) or Color3.fromRGB(140, 140, 140)}, 0.2)
-        if container and container:IsA("Frame") then
-            tween(container, {
-                BackgroundColor3 = accent,
-                BackgroundTransparency = isActive and 0.15 or 1
-            }, 0.2)
+        tween(b, {TextColor3 = isActive and accent or subTextColor}, 0.2)
+        local pill = b.Parent:FindFirstChild("Pill")
+        if pill then
+            tween(pill, {BackgroundColor3 = isActive and accent or Color3.fromRGB(30,30,30)}, 0.2)
         end
     end
 
@@ -2215,21 +2212,19 @@ local SubPagesContainer = nil
 local function initSettingsSubTabs(parentPage)
     SettingsSubTabNav = Instance.new("Frame", parentPage)
     SettingsSubTabNav.Name = "SettingsSubTabNav"
-    SettingsSubTabNav.Size = UDim2.new(1, -20, 0, 36)
+    SettingsSubTabNav.Size = UDim2.new(1, -20, 0, 32)
     SettingsSubTabNav.BackgroundColor3 = Library.CurrentThemeData.ElementBg or DefaultTheme.ElementBg
     SettingsSubTabNav.ZIndex = 6
     SettingsSubTabNav.LayoutOrder = 0
-    Instance.new("UICorner", SettingsSubTabNav).CornerRadius = UDim.new(0, 8)
+    Instance.new("UICorner", SettingsSubTabNav).CornerRadius = UDim.new(0, 6)
     local subNavStroke = Instance.new("UIStroke", SettingsSubTabNav)
-    subNavStroke.Color = Color3.fromRGB(45, 45, 45)
-    subNavStroke.Thickness = 1.2
+    subNavStroke.Color = Color3.fromRGB(35, 35, 35)
     table.insert(Library.TrackedElementBg, SettingsSubTabNav)
     table.insert(Library.TrackedStrokes, subNavStroke)
 
     local subNavLayout = Instance.new("UIListLayout", SettingsSubTabNav)
     subNavLayout.FillDirection = Enum.FillDirection.Horizontal
     subNavLayout.HorizontalAlignment = Enum.HorizontalAlignment.Center
-    subNavLayout.VerticalAlignment = Enum.VerticalAlignment.Center
     subNavLayout.SortOrder = Enum.SortOrder.LayoutOrder
     subNavLayout.Padding = UDim.new(0, 4)
 
@@ -2237,7 +2232,7 @@ local function initSettingsSubTabs(parentPage)
 
     SubPagesContainer = Instance.new("Frame", parentPage)
     SubPagesContainer.Name = "SubPagesContainer"
-    SubPagesContainer.Size = UDim2.new(1, 0, 1, -44)
+    SubPagesContainer.Size = UDim2.new(1, 0, 1, -40)
     SubPagesContainer.BackgroundTransparency = 1
     SubPagesContainer.ZIndex = 5
     SubPagesContainer.LayoutOrder = 1
@@ -2245,28 +2240,19 @@ end
 
 function Library:CreateSubTab(textKey)
     if not SettingsSubTabNav then
-        initSettingsSubTabs(settingsPage)
+        -- Initialize if not yet created
     end
 
     local initialText = Localization[Library.CurrentLanguage] and Localization[Library.CurrentLanguage][textKey] or textKey
 
-    -- Container for each sub-tab to act as a highlighted background pill
-    local SubTabContainer = Instance.new("Frame", SettingsSubTabNav)
-    SubTabContainer.Name = textKey .. "Container"
-    SubTabContainer.Size = UDim2.new(0.33, -4, 1, -6)
-    SubTabContainer.BackgroundColor3 = getThemeAccent()
-    SubTabContainer.BackgroundTransparency = 1
-    SubTabContainer.ZIndex = 7
-    Instance.new("UICorner", SubTabContainer).CornerRadius = UDim.new(0, 6)
-
-    local SubTabBtn = Instance.new("TextButton", SubTabContainer)
-    SubTabBtn.Size = UDim2.new(1, 0, 1, 0)
+    local SubTabBtn = Instance.new("TextButton", SettingsSubTabNav)
+    SubTabBtn.Size = UDim2.new(0.33, -4, 1, 0)
     SubTabBtn.BackgroundTransparency = 1
     SubTabBtn.Text = initialText
     applyFontToElement(SubTabBtn)
     SubTabBtn.TextColor3 = Color3.fromRGB(140, 140, 140)
     SubTabBtn.TextSize = 12
-    SubTabBtn.ZIndex = 8
+    SubTabBtn.ZIndex = 7
 
     local SubPage = Instance.new("ScrollingFrame", SubPagesContainer)
     SubPage.Name = textKey .. "SubPage"
@@ -2296,36 +2282,14 @@ function Library:CreateSubTab(textKey)
         end
         currentActiveSubTab = SubTabBtn
         for name, btn in pairs(subTabButtons) do
-            local container = btn.Parent
-            local isActive = (name == textKey)
-            local accent = getThemeAccent()
-            local isL = isLightColor(getThemeMainBg())
-            
-            if isActive then
-                tween(btn, {TextColor3 = isL and Color3.fromRGB(20, 20, 20) or Color3.fromRGB(255, 255, 255)}, 0.2)
-                if container and container:IsA("Frame") then
-                    tween(container, {
-                        BackgroundTransparency = 0.15,
-                        BackgroundColor3 = accent
-                    }, 0.2)
-                end
-            else
-                tween(btn, {TextColor3 = Color3.fromRGB(140, 140, 140)}, 0.2)
-                if container and container:IsA("Frame") then
-                    tween(container, {
-                        BackgroundTransparency = 1
-                    }, 0.2)
-                end
-            end
+            tween(btn, {TextColor3 = (name == textKey) and getThemeAccent() or Color3.fromRGB(140, 140, 140)}, 0.2)
         end
     end)
 
     if not currentActiveSubTab then
         currentActiveSubTab = SubTabBtn
         SubPage.Visible = true
-        SubTabBtn.TextColor3 = isLightColor(getThemeMainBg()) and Color3.fromRGB(20, 20, 20) or Color3.fromRGB(255, 255, 255)
-        SubTabContainer.BackgroundTransparency = 0.15
-        SubTabContainer.BackgroundColor3 = getThemeAccent()
+        SubTabBtn.TextColor3 = getThemeAccent()
     end
 
     table.insert(LocaleObjects, {Object = SubTabBtn, Key = textKey, SearchItem = nil})
