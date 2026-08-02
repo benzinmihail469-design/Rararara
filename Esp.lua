@@ -1083,6 +1083,11 @@ local function applyThemeToTabs(theme)
     local activeTextColor = isLightMode and Color3.fromRGB(20, 20, 20) or Color3.fromRGB(255, 255, 255)
     local inactiveTextColor = isLightMode and Color3.fromRGB(110, 110, 110) or Color3.fromRGB(140, 140, 140)
     local activeBgColor = isLightMode and Color3.fromRGB(215, 215, 215) or Color3.fromRGB(25, 25, 25)
+    
+    -- Добавляем черный контур для активной вкладки
+    local activeStrokeColor = Color3.fromRGB(0, 0, 0) -- Черный цвет для обводки
+    local activeStrokeThickness = 2 -- Толщина обводки
+    
     for textKey, tabBtn in pairs(allTabButtons) do
         if tabBtn and typeof(tabBtn) == "Instance" and tabBtn.Parent then
             local parentContainer = tabBtn.Parent
@@ -1090,8 +1095,11 @@ local function applyThemeToTabs(theme)
                 local indicator = parentContainer:FindFirstChild("ActiveIndicator")
                 local hoverStroke = parentContainer:FindFirstChild("HoverStroke")
                 local icon = parentContainer:FindFirstChild("TabIcon")
+                local stroke = parentContainer:FindFirstChild("TabStroke") -- Ищем обводку
+                
                 if tabBtn == currentActiveTab then
-                    tween(tabBtn, {TextColor3 = activeTextColor}, 0.2)
+                    -- Применяем стили активной вкладки
+                    tween(tabBtn, {TextColor3 = activeTextColor, Font = Enum.Font.SourceSansBold}, 0.2) -- Делаем шрифт жирным
                     tween(parentContainer, {BackgroundColor3 = activeBgColor, BackgroundTransparency = 0}, 0.2)
                     if icon then
                         tween(icon, {ImageColor3 = accent}, 0.2)
@@ -1108,8 +1116,19 @@ local function applyThemeToTabs(theme)
                         corner.CornerRadius = UDim.new(0, 2)
                     end
                     tween(indicator, {BackgroundColor3 = accent, BackgroundTransparency = 0}, 0.2)
+                    
+                    -- Добавляем черный контур
+                    if not stroke then
+                        stroke = Instance.new("UIStroke")
+                        stroke.Name = "TabStroke"
+                        stroke.Parent = parentContainer
+                    end
+                    stroke.Color = activeStrokeColor
+                    stroke.Thickness = activeStrokeThickness
+                    stroke.Enabled = true
                 else
-                    tween(tabBtn, {TextColor3 = inactiveTextColor}, 0.2)
+                    -- Стили неактивной вкладки
+                    tween(tabBtn, {TextColor3 = inactiveTextColor, Font = Enum.Font.SourceSans}, 0.2) -- Обычный шрифт
                     if icon then
                         tween(icon, {ImageColor3 = inactiveTextColor}, 0.2)
                     end
@@ -1118,6 +1137,10 @@ local function applyThemeToTabs(theme)
                     end
                     if indicator then
                         indicator:Destroy()
+                    end
+                    -- Убираем черный контур
+                    if stroke then
+                        stroke.Enabled = false
                     end
                 end
                 if hoverStroke then
@@ -1299,7 +1322,7 @@ function Library:UpdateTheme(themeName)
     
     for name, b in pairs(subTabButtons) do
         local isActive = subPages[name] and subPages[name].Visible
-        tween(b, {TextColor3 = isActive and accent or subTextColor}, 0.2)
+        tween(b, {TextColor3 = isActive and accent or subTextColor, Font = isActive and Enum.Font.SourceSansBold or Enum.Font.SourceSans}, 0.2)
         local pill = b.Parent:FindFirstChild("Pill")
         if pill then
             tween(pill, {BackgroundColor3 = isActive and accent or Color3.fromRGB(30,30,30)}, 0.2)
@@ -1513,6 +1536,16 @@ local function toggleAnimatedWindow(state)
                         stroke.Color = rainbowColor
                     end
                 end
+                -- Также анимируем контур вкладок
+                for _, tabBtn in pairs(allTabButtons) do
+                    if tabBtn and tabBtn.Parent then
+                        local parentContainer = tabBtn.Parent
+                        local stroke = parentContainer:FindFirstChild("TabStroke")
+                        if stroke and stroke.Enabled then
+                            stroke.Color = rainbowColor
+                        end
+                    end
+                end
             end)
         end
     else
@@ -1523,6 +1556,16 @@ local function toggleAnimatedWindow(state)
             for _, stroke in ipairs(Library.TrackedStrokes) do
                 if stroke and typeof(stroke) == "Instance" and stroke.Parent then
                     stroke.Color = strokeColor
+                end
+            end
+            -- Возвращаем черный контур для вкладок
+            for _, tabBtn in pairs(allTabButtons) do
+                if tabBtn and tabBtn.Parent then
+                    local parentContainer = tabBtn.Parent
+                    local stroke = parentContainer:FindFirstChild("TabStroke")
+                    if stroke and stroke.Enabled then
+                        stroke.Color = Color3.fromRGB(0, 0, 0)
+                    end
                 end
             end
         end
@@ -2129,16 +2172,6 @@ function Library:CreateTab(textKey)
     TabBtn.TextXAlignment = Enum.TextXAlignment.Left
     TabBtn.ZIndex = 6
 
-    -- Tab border line (visible only when selected)
-    local TabBorder = Instance.new("Frame", TabButtonContainer)
-    TabBorder.Name = "TabBorder"
-    TabBorder.Size = UDim2.new(0, 4, 0, 0)
-    TabBorder.Position = UDim2.new(0, 0, 0, 0)
-    TabBorder.BackgroundColor3 = getThemeAccent()
-    TabBorder.BackgroundTransparency = 1
-    TabBorder.BorderSizePixel = 0
-    TabBorder.ZIndex = 7
-
     local Page = Instance.new("ScrollingFrame", PagesContainer)
     Page.Name = textKey .. "Page"
     Page.Size = UDim2.new(1, 0, 1, 0)
@@ -2192,10 +2225,6 @@ function Library:CreateTab(textKey)
     end
 
     table.insert(LocaleObjects, {Object = TabBtn, Key = textKey, SearchItem = nil})
-
-    -- Add to SearchableElements for tab search
-    local searchItem = {Instance = TabButtonContainer, SearchText = NormalizeText(initialText), OriginalParent = Navigation}
-    table.insert(SearchableElements, searchItem)
 
     return Page
 end
@@ -2252,16 +2281,6 @@ function Library:CreateSubTab(textKey)
     SubTabBtn.TextSize = 12
     SubTabBtn.ZIndex = 7
 
-    -- Border line for sub-tab (visible only when selected)
-    local SubTabBorder = Instance.new("Frame", SettingsSubTabNav)
-    SubTabBorder.Name = "SubTabBorder"
-    SubTabBorder.Size = UDim2.new(0, 0, 0, 2)
-    SubTabBorder.Position = UDim2.new(0, 0, 1, -2)
-    SubTabBorder.BackgroundColor3 = getThemeAccent()
-    SubTabBorder.BackgroundTransparency = 1
-    SubTabBorder.BorderSizePixel = 0
-    SubTabBorder.ZIndex = 8
-
     local SubPage = Instance.new("ScrollingFrame", SubPagesContainer)
     SubPage.Name = textKey .. "SubPage"
     SubPage.Size = UDim2.new(1, 0, 1, 0)
@@ -2289,14 +2308,8 @@ function Library:CreateSubTab(textKey)
             p.Visible = (key == textKey)
         end
         currentActiveSubTab = SubTabBtn
-        
-        -- Update border visibility
         for name, btn in pairs(subTabButtons) do
-            local border = btn.Parent:FindFirstChild("SubTabBorder")
-            if border then
-                tween(border, {BackgroundTransparency = (name == textKey) and 0 or 1}, 0.2)
-            end
-            tween(btn, {TextColor3 = (name == textKey) and getThemeAccent() or Color3.fromRGB(140, 140, 140)}, 0.2)
+            tween(btn, {TextColor3 = (name == textKey) and getThemeAccent() or Color3.fromRGB(140, 140, 140), Font = (name == textKey) and Enum.Font.SourceSansBold or Enum.Font.SourceSans}, 0.2) -- Жирный шрифт для активной под-вкладки
         end
     end)
 
@@ -2304,11 +2317,7 @@ function Library:CreateSubTab(textKey)
         currentActiveSubTab = SubTabBtn
         SubPage.Visible = true
         SubTabBtn.TextColor3 = getThemeAccent()
-        local border = SubTabBtn.Parent:FindFirstChild("SubTabBorder")
-        if border then
-            border.BackgroundTransparency = 0
-            border.BackgroundColor3 = getThemeAccent()
-        end
+        SubTabBtn.Font = Enum.Font.SourceSansBold -- Жирный шрифт для активной под-вкладки по умолчанию
     end
 
     table.insert(LocaleObjects, {Object = SubTabBtn, Key = textKey, SearchItem = nil})
