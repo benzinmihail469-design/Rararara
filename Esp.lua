@@ -1083,24 +1083,30 @@ local function applyThemeToTabs(theme)
     local activeTextColor = isLightMode and Color3.fromRGB(20, 20, 20) or Color3.fromRGB(255, 255, 255)
     local inactiveTextColor = isLightMode and Color3.fromRGB(110, 110, 110) or Color3.fromRGB(140, 140, 140)
     local activeBgColor = isLightMode and Color3.fromRGB(215, 215, 215) or Color3.fromRGB(25, 25, 25)
-    
-    -- Добавляем черный контур для активной вкладки
-    local activeStrokeColor = Color3.fromRGB(0, 0, 0) -- Черный цвет для обводки
-    local activeStrokeThickness = 2 -- Толщина обводки
-    
     for textKey, tabBtn in pairs(allTabButtons) do
         if tabBtn and typeof(tabBtn) == "Instance" and tabBtn.Parent then
             local parentContainer = tabBtn.Parent
             if parentContainer and typeof(parentContainer) == "Instance" then
                 local indicator = parentContainer:FindFirstChild("ActiveIndicator")
                 local hoverStroke = parentContainer:FindFirstChild("HoverStroke")
+                local tabStroke = parentContainer:FindFirstChild("TabStroke")
                 local icon = parentContainer:FindFirstChild("TabIcon")
-                local stroke = parentContainer:FindFirstChild("TabStroke") -- Ищем обводку
-                
                 if tabBtn == currentActiveTab then
-                    -- Применяем стили активной вкладки
-                    tween(tabBtn, {TextColor3 = activeTextColor, Font = Enum.Font.SourceSansBold}, 0.2) -- Делаем шрифт жирным
+                    tween(tabBtn, {TextColor3 = activeTextColor, Position = UDim2.new(0, 16, 0, 0), TextSize = 13.5}, 0.2)
                     tween(parentContainer, {BackgroundColor3 = activeBgColor, BackgroundTransparency = 0}, 0.2)
+                    
+                    -- Black contour/stroke around active tab
+                    if not tabStroke then
+                        tabStroke = Instance.new("UIStroke")
+                        tabStroke.Name = "TabStroke"
+                        tabStroke.Color = Color3.fromRGB(0, 0, 0)
+                        tabStroke.Thickness = 1.5
+                        tabStroke.Parent = parentContainer
+                    else
+                        tabStroke.Color = Color3.fromRGB(0, 0, 0)
+                        tabStroke.Transparency = 0
+                    end
+
                     if icon then
                         tween(icon, {ImageColor3 = accent}, 0.2)
                     end
@@ -1116,31 +1122,19 @@ local function applyThemeToTabs(theme)
                         corner.CornerRadius = UDim.new(0, 2)
                     end
                     tween(indicator, {BackgroundColor3 = accent, BackgroundTransparency = 0}, 0.2)
-                    
-                    -- Добавляем черный контур
-                    if not stroke then
-                        stroke = Instance.new("UIStroke")
-                        stroke.Name = "TabStroke"
-                        stroke.Parent = parentContainer
-                    end
-                    stroke.Color = activeStrokeColor
-                    stroke.Thickness = activeStrokeThickness
-                    stroke.Enabled = true
                 else
-                    -- Стили неактивной вкладки
-                    tween(tabBtn, {TextColor3 = inactiveTextColor, Font = Enum.Font.SourceSans}, 0.2) -- Обычный шрифт
+                    tween(tabBtn, {TextColor3 = inactiveTextColor, Position = UDim2.new(0, 12, 0, 0), TextSize = 13}, 0.2)
                     if icon then
                         tween(icon, {ImageColor3 = inactiveTextColor}, 0.2)
+                    end
+                    if tabStroke then
+                        tween(tabStroke, {Transparency = 1}, 0.2)
                     end
                     if currentHoveredTab ~= tabBtn then
                         tween(parentContainer, {BackgroundTransparency = 1}, 0.2)
                     end
                     if indicator then
                         indicator:Destroy()
-                    end
-                    -- Убираем черный контур
-                    if stroke then
-                        stroke.Enabled = false
                     end
                 end
                 if hoverStroke then
@@ -1322,7 +1316,7 @@ function Library:UpdateTheme(themeName)
     
     for name, b in pairs(subTabButtons) do
         local isActive = subPages[name] and subPages[name].Visible
-        tween(b, {TextColor3 = isActive and accent or subTextColor, Font = isActive and Enum.Font.SourceSansBold or Enum.Font.SourceSans}, 0.2)
+        tween(b, {TextColor3 = isActive and accent or subTextColor}, 0.2)
         local pill = b.Parent:FindFirstChild("Pill")
         if pill then
             tween(pill, {BackgroundColor3 = isActive and accent or Color3.fromRGB(30,30,30)}, 0.2)
@@ -1536,16 +1530,6 @@ local function toggleAnimatedWindow(state)
                         stroke.Color = rainbowColor
                     end
                 end
-                -- Также анимируем контур вкладок
-                for _, tabBtn in pairs(allTabButtons) do
-                    if tabBtn and tabBtn.Parent then
-                        local parentContainer = tabBtn.Parent
-                        local stroke = parentContainer:FindFirstChild("TabStroke")
-                        if stroke and stroke.Enabled then
-                            stroke.Color = rainbowColor
-                        end
-                    end
-                end
             end)
         end
     else
@@ -1556,16 +1540,6 @@ local function toggleAnimatedWindow(state)
             for _, stroke in ipairs(Library.TrackedStrokes) do
                 if stroke and typeof(stroke) == "Instance" and stroke.Parent then
                     stroke.Color = strokeColor
-                end
-            end
-            -- Возвращаем черный контур для вкладок
-            for _, tabBtn in pairs(allTabButtons) do
-                if tabBtn and tabBtn.Parent then
-                    local parentContainer = tabBtn.Parent
-                    local stroke = parentContainer:FindFirstChild("TabStroke")
-                    if stroke and stroke.Enabled then
-                        stroke.Color = Color3.fromRGB(0, 0, 0)
-                    end
                 end
             end
         end
@@ -2267,7 +2241,6 @@ end
 function Library:CreateSubTab(textKey)
     if not SettingsSubTabNav then
         -- Initialize if not yet created
-        -- parentPage would be settingsPage
     end
 
     local initialText = Localization[Library.CurrentLanguage] and Localization[Library.CurrentLanguage][textKey] or textKey
@@ -2309,7 +2282,7 @@ function Library:CreateSubTab(textKey)
         end
         currentActiveSubTab = SubTabBtn
         for name, btn in pairs(subTabButtons) do
-            tween(btn, {TextColor3 = (name == textKey) and getThemeAccent() or Color3.fromRGB(140, 140, 140), Font = (name == textKey) and Enum.Font.SourceSansBold or Enum.Font.SourceSans}, 0.2) -- Жирный шрифт для активной под-вкладки
+            tween(btn, {TextColor3 = (name == textKey) and getThemeAccent() or Color3.fromRGB(140, 140, 140)}, 0.2)
         end
     end)
 
@@ -2317,7 +2290,6 @@ function Library:CreateSubTab(textKey)
         currentActiveSubTab = SubTabBtn
         SubPage.Visible = true
         SubTabBtn.TextColor3 = getThemeAccent()
-        SubTabBtn.Font = Enum.Font.SourceSansBold -- Жирный шрифт для активной под-вкладки по умолчанию
     end
 
     table.insert(LocaleObjects, {Object = SubTabBtn, Key = textKey, SearchItem = nil})
