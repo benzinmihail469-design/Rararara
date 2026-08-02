@@ -1080,7 +1080,7 @@ local function applyThemeToTabs(theme)
     local mainBg = (theme and typeof(theme.MainBg) == "Color3") and theme.MainBg or DefaultTheme.MainBg
     local accent = (theme and typeof(theme.Accent) == "Color3") and theme.Accent or DefaultTheme.Accent
     local isLightMode = isLightColor(mainBg)
-    local activeTextColor = accent -- Активный цвет текста равен акценту темы для заметного выделения
+    local activeTextColor = accent 
     local inactiveTextColor = isLightMode and Color3.fromRGB(110, 110, 110) or Color3.fromRGB(140, 140, 140)
     local activeBgColor = isLightMode and Color3.fromRGB(215, 215, 215) or Color3.fromRGB(25, 25, 25)
     for textKey, tabBtn in pairs(allTabButtons) do
@@ -1089,24 +1089,11 @@ local function applyThemeToTabs(theme)
             if parentContainer and typeof(parentContainer) == "Instance" then
                 local indicator = parentContainer:FindFirstChild("ActiveIndicator")
                 local hoverStroke = parentContainer:FindFirstChild("HoverStroke")
-                local tabStroke = parentContainer:FindFirstChild("TabStroke")
                 local icon = parentContainer:FindFirstChild("TabIcon")
                 if tabBtn == currentActiveTab then
                     tween(tabBtn, {TextColor3 = activeTextColor, Position = UDim2.new(0, 18, 0, 0), TextSize = 13.5}, 0.2)
                     tween(parentContainer, {BackgroundColor3 = activeBgColor, BackgroundTransparency = 0}, 0.2)
                     
-                    -- Акцентная обводка/контур вокруг активной вкладки вместо черной
-                    if not tabStroke then
-                        tabStroke = Instance.new("UIStroke")
-                        tabStroke.Name = "TabStroke"
-                        tabStroke.Color = accent
-                        tabStroke.Thickness = 1.5
-                        tabStroke.Parent = parentContainer
-                    else
-                        tabStroke.Color = accent
-                        tabStroke.Transparency = 0
-                    end
-
                     if icon then
                         tween(icon, {ImageColor3 = accent}, 0.2)
                     end
@@ -1120,15 +1107,23 @@ local function applyThemeToTabs(theme)
                         indicator.Parent = parentContainer
                         local corner = Instance.new("UICorner", indicator)
                         corner.CornerRadius = UDim.new(0, 2)
+
+                        -- Добавляем эффект свечения палочки (UIStroke)
+                        local glowStroke = Instance.new("UIStroke", indicator)
+                        glowStroke.Name = "GlowStroke"
+                        glowStroke.Thickness = 3
+                        glowStroke.Transparency = 0.4
                     end
                     tween(indicator, {BackgroundColor3 = accent, BackgroundTransparency = 0}, 0.2)
+                    local glowStroke = indicator:FindFirstChild("GlowStroke")
+                    if glowStroke then
+                        glowStroke.Color = accent
+                        glowStroke.Transparency = 0.4
+                    end
                 else
                     tween(tabBtn, {TextColor3 = inactiveTextColor, Position = UDim2.new(0, 12, 0, 0), TextSize = 13}, 0.2)
                     if icon then
                         tween(icon, {ImageColor3 = inactiveTextColor}, 0.2)
-                    end
-                    if tabStroke then
-                        tween(tabStroke, {Transparency = 1}, 0.2)
                     end
                     if currentHoveredTab ~= tabBtn then
                         tween(parentContainer, {BackgroundTransparency = 1}, 0.2)
