@@ -2129,6 +2129,16 @@ function Library:CreateTab(textKey)
     TabBtn.TextXAlignment = Enum.TextXAlignment.Left
     TabBtn.ZIndex = 6
 
+    -- Tab border line (visible only when selected)
+    local TabBorder = Instance.new("Frame", TabButtonContainer)
+    TabBorder.Name = "TabBorder"
+    TabBorder.Size = UDim2.new(0, 4, 0, 0)
+    TabBorder.Position = UDim2.new(0, 0, 0, 0)
+    TabBorder.BackgroundColor3 = getThemeAccent()
+    TabBorder.BackgroundTransparency = 1
+    TabBorder.BorderSizePixel = 0
+    TabBorder.ZIndex = 7
+
     local Page = Instance.new("ScrollingFrame", PagesContainer)
     Page.Name = textKey .. "Page"
     Page.Size = UDim2.new(1, 0, 1, 0)
@@ -2182,6 +2192,10 @@ function Library:CreateTab(textKey)
     end
 
     table.insert(LocaleObjects, {Object = TabBtn, Key = textKey, SearchItem = nil})
+
+    -- Add to SearchableElements for tab search
+    local searchItem = {Instance = TabButtonContainer, SearchText = NormalizeText(initialText), OriginalParent = Navigation}
+    table.insert(SearchableElements, searchItem)
 
     return Page
 end
@@ -2238,6 +2252,16 @@ function Library:CreateSubTab(textKey)
     SubTabBtn.TextSize = 12
     SubTabBtn.ZIndex = 7
 
+    -- Border line for sub-tab (visible only when selected)
+    local SubTabBorder = Instance.new("Frame", SettingsSubTabNav)
+    SubTabBorder.Name = "SubTabBorder"
+    SubTabBorder.Size = UDim2.new(0, 0, 0, 2)
+    SubTabBorder.Position = UDim2.new(0, 0, 1, -2)
+    SubTabBorder.BackgroundColor3 = getThemeAccent()
+    SubTabBorder.BackgroundTransparency = 1
+    SubTabBorder.BorderSizePixel = 0
+    SubTabBorder.ZIndex = 8
+
     local SubPage = Instance.new("ScrollingFrame", SubPagesContainer)
     SubPage.Name = textKey .. "SubPage"
     SubPage.Size = UDim2.new(1, 0, 1, 0)
@@ -2265,7 +2289,13 @@ function Library:CreateSubTab(textKey)
             p.Visible = (key == textKey)
         end
         currentActiveSubTab = SubTabBtn
+        
+        -- Update border visibility
         for name, btn in pairs(subTabButtons) do
+            local border = btn.Parent:FindFirstChild("SubTabBorder")
+            if border then
+                tween(border, {BackgroundTransparency = (name == textKey) and 0 or 1}, 0.2)
+            end
             tween(btn, {TextColor3 = (name == textKey) and getThemeAccent() or Color3.fromRGB(140, 140, 140)}, 0.2)
         end
     end)
@@ -2274,6 +2304,11 @@ function Library:CreateSubTab(textKey)
         currentActiveSubTab = SubTabBtn
         SubPage.Visible = true
         SubTabBtn.TextColor3 = getThemeAccent()
+        local border = SubTabBtn.Parent:FindFirstChild("SubTabBorder")
+        if border then
+            border.BackgroundTransparency = 0
+            border.BackgroundColor3 = getThemeAccent()
+        end
     end
 
     table.insert(LocaleObjects, {Object = SubTabBtn, Key = textKey, SearchItem = nil})
