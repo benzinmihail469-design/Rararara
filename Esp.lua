@@ -1103,10 +1103,12 @@ local function applyThemeToTabs(theme)
             if parentContainer and typeof(parentContainer) == "Instance" then
                 local indicator = parentContainer:FindFirstChild("ActiveIndicator")
                 local icon = parentContainer:FindFirstChild("TabIcon")
+                local isSettings = (icon ~= nil)
 
                 if tabBtn == currentActiveTab then
                     -- Активное состояние: фон прозрачный, текст яркий
-                    tween(tabBtn, {TextColor3 = activeTextColor, Position = UDim2.new(0, 16, 0, 0), TextSize = 13}, 0.2)
+                    local activePos = isSettings and UDim2.new(0, 32, 0, 0) or UDim2.new(0, 16, 0, 0)
+                    tween(tabBtn, {TextColor3 = activeTextColor, Position = activePos, TextSize = 13}, 0.2)
                     tween(parentContainer, {BackgroundTransparency = activeTransparency}, 0.2)
                     
                     if icon then
@@ -1132,7 +1134,8 @@ local function applyThemeToTabs(theme)
                     tween(indicator, {Size = UDim2.new(0, 3.5, 0.65, 0), BackgroundColor3 = brightAccent, BackgroundTransparency = 0}, 0.2)
                 else
                     -- Неактивное состояние
-                    tween(tabBtn, {TextColor3 = inactiveTextColor, Position = UDim2.new(0, 12, 0, 0), TextSize = 13}, 0.2)
+                    local inactivePos = isSettings and UDim2.new(0, 32, 0, 0) or UDim2.new(0, 12, 0, 0)
+                    tween(tabBtn, {TextColor3 = inactiveTextColor, Position = inactivePos, TextSize = 13}, 0.2)
                     if icon then
                         tween(icon, {ImageColor3 = inactiveTextColor}, 0.2)
                     end
@@ -2148,8 +2151,8 @@ function Library:CreateTab(textKey)
     Instance.new("UICorner", TabButtonContainer).CornerRadius = UDim.new(0, 6)
 
     local TabBtn = Instance.new("TextButton", TabButtonContainer)
-    TabBtn.Size = UDim2.new(1, -12, 1, 0)
-    TabBtn.Position = UDim2.new(0, 12, 0, 0)
+    TabBtn.Size = UDim2.new(1, textKey == "Settings" and -32 or -12, 1, 0)
+    TabBtn.Position = UDim2.new(0, textKey == "Settings" and 32 or 12, 0, 0)
     TabBtn.BackgroundTransparency = 1
     TabBtn.Text = initialText
     applyFontToElement(TabBtn)
@@ -2157,6 +2160,19 @@ function Library:CreateTab(textKey)
     TabBtn.TextSize = 13
     TabBtn.TextXAlignment = Enum.TextXAlignment.Left
     TabBtn.ZIndex = 6
+
+    if textKey == "Settings" then
+        local TabIcon = Instance.new("ImageLabel", TabButtonContainer)
+        TabIcon.Name = "TabIcon"
+        TabIcon.Size = UDim2.new(0, 16, 0, 16)
+        TabIcon.AnchorPoint = Vector2.new(0, 0.5)
+        TabIcon.Position = UDim2.new(0, 10, 0.5, 0)
+        TabIcon.BackgroundTransparency = 1
+        TabIcon.Image = getIconAsset("126198709409720")
+        TabIcon.ScaleType = Enum.ScaleType.Fit
+        TabIcon.ZIndex = 6
+        TabIcon.ImageColor3 = Color3.fromRGB(140, 140, 140)
+    end
 
     local Page = Instance.new("ScrollingFrame", PagesContainer)
     Page.Name = textKey .. "Page"
