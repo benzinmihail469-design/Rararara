@@ -665,7 +665,7 @@ PagesContainer.Position = UDim2.new(0, 175, 0, 60)
 PagesContainer.BackgroundTransparency = 1
 PagesContainer.ZIndex = 5
 
--- Иконка около верхушечной вкладки Settings (ИСПРАВЛЕНО)
+-- Иконка около верхушечной вкладки Settings
 local TabTitleIcon = Instance.new("ImageLabel", MainFrame)
 TabTitleIcon.Name = "TabTitleIcon"
 TabTitleIcon.Size = UDim2.new(0, 18, 0, 18)
@@ -1087,7 +1087,6 @@ local subTabButtons = {}
 local currentActiveSubTab = nil
 local uiGradientInstance = nil
 
--- ВЫДЕЛЕНИЕ ВКЛАДОК ПОД ЦВЕТ И ПРОЗРАЧНОСТЬ ГЛАВНОГО ФРЕЙМА С ЯРКОЙ ПОЛОЧКОЙ
 local function applyThemeToTabs(theme)
     theme = theme or Library.CurrentThemeData or DefaultTheme
     local mainBg = (theme and typeof(theme.MainBg) == "Color3") and theme.MainBg or DefaultTheme.MainBg
@@ -1115,7 +1114,6 @@ local function applyThemeToTabs(theme)
                 local icon = parentContainer:FindFirstChild("TabIcon")
 
                 if tabBtn == currentActiveTab then
-                    -- Активное состояние
                     tween(tabBtn, {TextColor3 = activeTextColor, TextSize = 13}, 0.2)
                     tween(parentContainer, {BackgroundTransparency = activeTransparency}, 0.2)
                     
@@ -1140,7 +1138,6 @@ local function applyThemeToTabs(theme)
 
                     tween(indicator, {Size = UDim2.new(0, 3.5, 0.65, 0), BackgroundColor3 = brightAccent, BackgroundTransparency = 0}, 0.2)
                 else
-                    -- Неактивное состояние
                     tween(tabBtn, {TextColor3 = inactiveTextColor, TextSize = 13}, 0.2)
                     if icon then
                         tween(icon, {ImageColor3 = inactiveTextColor}, 0.2)
@@ -2262,4 +2259,3 @@ task.spawn(function()
     MainFrame.Visible = true
     showToast(Localization[Library.CurrentLanguage]["HubLoaded"] or "Dark Hub loaded successfully!")
 end)
-ц
