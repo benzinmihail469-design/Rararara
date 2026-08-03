@@ -1075,52 +1075,52 @@ local subTabButtons = {}
 local currentActiveSubTab = nil
 local uiGradientInstance = nil
 
+-- НОВОЕ ВЫДЕЛЕНИЕ ВКЛАДОК ПО ФОТОГРАФИИ
 local function applyThemeToTabs(theme)
     theme = theme or Library.CurrentThemeData or DefaultTheme
     local mainBg = (theme and typeof(theme.MainBg) == "Color3") and theme.MainBg or DefaultTheme.MainBg
     local accent = (theme and typeof(theme.Accent) == "Color3") and theme.Accent or DefaultTheme.Accent
     local isLightMode = isLightColor(mainBg)
-    local activeTextColor = accent 
+    
+    local activeTextColor = isLightMode and Color3.fromRGB(20, 20, 20) or Color3.fromRGB(255, 255, 255)
     local inactiveTextColor = isLightMode and Color3.fromRGB(110, 110, 110) or Color3.fromRGB(140, 140, 140)
-    local activeBgColor = isLightMode and Color3.fromRGB(215, 215, 215) or Color3.fromRGB(25, 25, 25)
+    local activeBgColor = isLightMode and Color3.fromRGB(220, 220, 220) or Color3.fromRGB(20, 20, 24)
+
     for textKey, tabBtn in pairs(allTabButtons) do
         if tabBtn and typeof(tabBtn) == "Instance" and tabBtn.Parent then
             local parentContainer = tabBtn.Parent
             if parentContainer and typeof(parentContainer) == "Instance" then
                 local indicator = parentContainer:FindFirstChild("ActiveIndicator")
-                local hoverStroke = parentContainer:FindFirstChild("HoverStroke")
                 local icon = parentContainer:FindFirstChild("TabIcon")
+
                 if tabBtn == currentActiveTab then
-                    tween(tabBtn, {TextColor3 = activeTextColor, Position = UDim2.new(0, 18, 0, 0), TextSize = 13.5}, 0.2)
+                    -- Активное состояние: Плавное смещение текста и плашка фона
+                    tween(tabBtn, {TextColor3 = activeTextColor, Position = UDim2.new(0, 16, 0, 0), TextSize = 13}, 0.2)
                     tween(parentContainer, {BackgroundColor3 = activeBgColor, BackgroundTransparency = 0}, 0.2)
                     
                     if icon then
                         tween(icon, {ImageColor3 = accent}, 0.2)
                     end
+
+                    -- Вертикальная скругленная полоска-индикатор слева
                     if not indicator then
                         indicator = Instance.new("Frame")
                         indicator.Name = "ActiveIndicator"
-                        indicator.Size = UDim2.new(0, 4, 1, 0)
-                        indicator.Position = UDim2.new(0, 0, 0, 0)
+                        indicator.AnchorPoint = Vector2.new(0, 0.5)
+                        indicator.Size = UDim2.new(0, 3.5, 0, 0)
+                        indicator.Position = UDim2.new(0, 4, 0.5, 0)
+                        indicator.BackgroundColor3 = accent
                         indicator.BorderSizePixel = 0
                         indicator.ZIndex = tabBtn.ZIndex + 2
                         indicator.Parent = parentContainer
-                        local corner = Instance.new("UICorner", indicator)
-                        corner.CornerRadius = UDim.new(0, 2)
 
-                        -- Добавляем эффект свечения палочки (UIStroke)
-                        local glowStroke = Instance.new("UIStroke", indicator)
-                        glowStroke.Name = "GlowStroke"
-                        glowStroke.Thickness = 3
-                        glowStroke.Transparency = 0.4
+                        local corner = Instance.new("UICorner", indicator)
+                        corner.CornerRadius = UDim.new(1, 0)
                     end
-                    tween(indicator, {BackgroundColor3 = accent, BackgroundTransparency = 0}, 0.2)
-                    local glowStroke = indicator:FindFirstChild("GlowStroke")
-                    if glowStroke then
-                        glowStroke.Color = accent
-                        glowStroke.Transparency = 0.4
-                    end
+
+                    tween(indicator, {Size = UDim2.new(0, 3.5, 0.65, 0), BackgroundColor3 = accent, BackgroundTransparency = 0}, 0.2)
                 else
+                    -- Неактивное состояние
                     tween(tabBtn, {TextColor3 = inactiveTextColor, Position = UDim2.new(0, 12, 0, 0), TextSize = 13}, 0.2)
                     if icon then
                         tween(icon, {ImageColor3 = inactiveTextColor}, 0.2)
@@ -1129,11 +1129,17 @@ local function applyThemeToTabs(theme)
                         tween(parentContainer, {BackgroundTransparency = 1}, 0.2)
                     end
                     if indicator then
-                        indicator:Destroy()
+                        local t = tween(indicator, {Size = UDim2.new(0, 3.5, 0, 0), BackgroundTransparency = 1}, 0.2)
+                        if t then
+                            t.Completed:Connect(function()
+                                if currentActiveTab ~= tabBtn and indicator and indicator.Parent then
+                                    indicator:Destroy()
+                                end
+                            end)
+                        else
+                            indicator:Destroy()
+                        end
                     end
-                end
-                if hoverStroke then
-                    tween(hoverStroke, {Color = accent}, 0.2)
                 end
             end
         end
