@@ -1075,14 +1075,14 @@ local subTabButtons = {}
 local currentActiveSubTab = nil
 local uiGradientInstance = nil
 
--- ДИНАМИЧЕСКОЕ ВЫДЕЛЕНИЕ ВКЛАДОК (ПОД ЦВЕТ ГЛАВНОГО ФРЕЙМА)
+-- ДИНАМИЧЕСКОЕ ВЫДЕЛЕНИЕ ВКЛАДОК (ЦВЕТ ВКЛАДКИ = ЦВЕТ ГЛАВНОГО ФРЕЙМА)
 local function applyThemeToTabs(theme)
     theme = theme or Library.CurrentThemeData or DefaultTheme
     local mainBg = (theme and typeof(theme.MainBg) == "Color3") and theme.MainBg or DefaultTheme.MainBg
     local accent = (theme and typeof(theme.Accent) == "Color3") and theme.Accent or DefaultTheme.Accent
     local isLightMode = isLightColor(mainBg)
     
-    -- Фон активной вкладки равен цвету главного фрейма (MainBg)
+    -- Фон активной вкладки становится равным фону главного фрейма (mainBg)
     local activeBgColor = mainBg
     local activeTextColor = accent
     local inactiveTextColor = isLightMode and Color3.fromRGB(110, 110, 110) or Color3.fromRGB(140, 140, 140)
@@ -1095,7 +1095,7 @@ local function applyThemeToTabs(theme)
                 local icon = parentContainer:FindFirstChild("TabIcon")
 
                 if tabBtn == currentActiveTab then
-                    -- Активное состояние: Плавное смещение текста и фоновая плашка под цвет главного фрейма
+                    -- Активное состояние: фон равен цвету MainFrame, текст и иконка цвета акцента темы
                     tween(tabBtn, {TextColor3 = activeTextColor, Position = UDim2.new(0, 16, 0, 0), TextSize = 13}, 0.2)
                     tween(parentContainer, {BackgroundColor3 = activeBgColor, BackgroundTransparency = 0}, 0.2)
                     
@@ -1103,14 +1103,14 @@ local function applyThemeToTabs(theme)
                         tween(icon, {ImageColor3 = activeTextColor}, 0.2)
                     end
 
-                    -- Вертикальная скругленная полоска-индикатор слева (акцентного цвета)
+                    -- Вертикальная скругленная полоска-индикатор слева
                     if not indicator then
                         indicator = Instance.new("Frame")
                         indicator.Name = "ActiveIndicator"
                         indicator.AnchorPoint = Vector2.new(0, 0.5)
                         indicator.Size = UDim2.new(0, 3.5, 0, 0)
                         indicator.Position = UDim2.new(0, 4, 0.5, 0)
-                        indicator.BackgroundColor3 = activeTextColor
+                        indicator.BackgroundColor3 = accent
                         indicator.BorderSizePixel = 0
                         indicator.ZIndex = tabBtn.ZIndex + 2
                         indicator.Parent = parentContainer
@@ -1119,7 +1119,7 @@ local function applyThemeToTabs(theme)
                         corner.CornerRadius = UDim.new(1, 0)
                     end
 
-                    tween(indicator, {Size = UDim2.new(0, 3.5, 0.65, 0), BackgroundColor3 = activeTextColor, BackgroundTransparency = 0}, 0.2)
+                    tween(indicator, {Size = UDim2.new(0, 3.5, 0.65, 0), BackgroundColor3 = accent, BackgroundTransparency = 0}, 0.2)
                 else
                     -- Неактивное состояние
                     tween(tabBtn, {TextColor3 = inactiveTextColor, Position = UDim2.new(0, 12, 0, 0), TextSize = 13}, 0.2)
@@ -2017,36 +2017,33 @@ function Library:CreateSlider(parentPage, textKey, min, max, default, callback)
         ValueLabel = ValLabel
     })
 
-    local sliding = false
-    local currentValue = default
-
+    local isDragging = false
     local function updateSlider(input)
-        local pos = math.clamp((input.Position.X - Track.AbsolutePosition.X) / Track.AbsoluteSize.X, 0, 1)
-        currentValue = math.floor(min + (max - min) * pos + 0.5)
-        ValLabel.Text = tostring(currentValue)
-        tween(Fill, {Size = UDim2.new(pos, 0, 1, 0)}, 0.05)
-        tween(Handle, {Position = UDim2.new(pos, 0, 0.5, 0)}, 0.05)
+        local posX = input.Position.X - Track.AbsolutePosition.X
+        local pct = math.clamp(posX / Track.AbsoluteSize.X, 0, 1)
+        local val = math.floor(min + (max - min) * pct + 0.5)
+        Fill.Size = UDim2.new(pct, 0, 1, 0)
+        Handle.Position = UDim2.new(pct, 0, 0.5, 0)
+        ValLabel.Text = tostring(val)
         if type(callback) == "function" then
-            pcall(callback, currentValue)
+            pcall(callback, val)
         end
     end
 
     Track.InputBegan:Connect(function(input)
         if input.UserInputType == Enum.UserInputType.MouseButton1 or input.UserInputType == Enum.UserInputType.Touch then
-            sliding = true
+            isDragging = true
             updateSlider(input)
         end
     end)
-
     UserInputService.InputChanged:Connect(function(input)
-        if sliding and (input.UserInputType == Enum.UserInputType.MouseMovement or input.UserInputType == Enum.UserInputType.Touch) then
+        if isDragging and (input.UserInputType == Enum.UserInputType.MouseMovement or input.UserInputType == Enum.UserInputType.Touch) then
             updateSlider(input)
         end
     end)
-
     UserInputService.InputEnded:Connect(function(input)
         if input.UserInputType == Enum.UserInputType.MouseButton1 or input.UserInputType == Enum.UserInputType.Touch then
-            sliding = false
+            isDragging = false
         end
     end)
 
@@ -2056,50 +2053,17 @@ function Library:CreateSlider(parentPage, textKey, min, max, default, callback)
 
     return {
         SetValue = function(val)
-            currentValue = math.clamp(val, min, max)
-            local pos = (currentValue - min) / (max - min)
-            ValLabel.Text = tostring(currentValue)
-            tween(Fill, {Size = UDim2.new(pos, 0, 1, 0)}, 0.1)
-            tween(Handle, {Position = UDim2.new(pos, 0, 0.5, 0)}, 0.1)
+            val = math.clamp(val, min, max)
+            local pct = (val - min) / (max - min)
+            Fill.Size = UDim2.new(pct, 0, 1, 0)
+            Handle.Position = UDim2.new(pct, 0, 0.5, 0)
+            ValLabel.Text = tostring(val)
             if type(callback) == "function" then
-                pcall(callback, currentValue)
+                pcall(callback, val)
             end
         end,
-        GetValue = function() return currentValue end
+        GetValue = function()
+            return tonumber(ValLabel.Text) or default
+        end
     }
 end
-
--- ============================================================================
--- INITIALIZATION AND STARTUP
--- ============================================================================
-task.spawn(function()
-    local duration = 1.2
-    local steps = 100
-    for i = 1, steps do
-        local progress = i / steps
-        ProgressBarFill.Size = UDim2.new(progress, 0, 1, 0)
-        LoadingPercent.Text = math.floor(progress * 100) .. "%"
-        task.wait(duration / steps)
-    end
-    
-    if bubbleConnection then
-        bubbleConnection:Disconnect()
-    end
-    
-    tween(LoadingOverlay, {BackgroundTransparency = 1}, 0.3)
-    for _, child in ipairs(LoadingOverlay:GetChildren()) do
-        if child:IsA("GuiObject") then
-            tween(child, {BackgroundTransparency = 1}, 0.3)
-            if child:IsA("TextLabel") then
-                tween(child, {TextTransparency = 1}, 0.3)
-            end
-        end
-    end
-    
-    task.wait(0.35)
-    LoadingOverlay:Destroy()
-    MainFrame.Visible = true
-    showToast(Localization[Library.CurrentLanguage]["HubLoaded"] or "Dark Hub loaded successfully!")
-end)
-
-return Library
