@@ -22,14 +22,13 @@ local SettingsIconID = "126198709409720" -- Иконка для Settings
 local DefaultIconID = "6031094678" -- Резервная иконка
 local startTime = os.clock()
 
--- Исправленная функция получения иконки через rbxassetid
+-- Исправлено: использование rbxassetid вместо rbxthumb для стабильной загрузки UI-иконок
 local function getIconAsset(id)
-    if id and type(id) == "string" and id:find("rbxassetid://") then
-        return id
-    end
-    local cleanId = tostring(id or ""):match("%d+")
-    if cleanId and #cleanId > 0 then
-        return "rbxassetid://" .. cleanId
+    if id and type(id) == "string" and #id > 0 then
+        if string.find(id, "rbxassetid://") or string.find(id, "rbxthumb://") then
+            return id
+        end
+        return "rbxassetid://" .. id
     end
     return "rbxassetid://" .. DefaultIconID
 end
@@ -2007,14 +2006,14 @@ function Library:CreateToggle(parentPage, textKey, default, callback)
         Label = TglLabel
     })
 
-    local function updateToggle(state)
+    local function setToggleState(state)
         enabled = state
         if enabled then
             tween(Checkbox, {BackgroundColor3 = getThemeAccent()}, 0.2)
             tween(Indicator, {Position = UDim2.new(1, -16, 0.5, -7), BackgroundColor3 = getThemeMainBg()}, 0.2)
         else
-            local offColor = isLightColor(getThemeMainBg()) and Color3.fromRGB(200, 200, 200) or Color3.fromRGB(35, 35, 35)
-            tween(Checkbox, {BackgroundColor3 = offColor}, 0.2)
+            local isL = isLightColor(getThemeMainBg())
+            tween(Checkbox, {BackgroundColor3 = isL and Color3.fromRGB(200, 200, 200) or Color3.fromRGB(35, 35, 35)}, 0.2)
             tween(Indicator, {Position = UDim2.new(0, 2, 0.5, -7), BackgroundColor3 = getThemeAccent()}, 0.2)
         end
         if type(callback) == "function" then
@@ -2023,7 +2022,7 @@ function Library:CreateToggle(parentPage, textKey, default, callback)
     end
 
     Checkbox.Activated:Connect(function()
-        updateToggle(not enabled)
+        setToggleState(not enabled)
     end)
 
     local searchItem = {Instance = TglFrame, SearchText = NormalizeText(initialText), OriginalParent = parentPage}
@@ -2031,212 +2030,7 @@ function Library:CreateToggle(parentPage, textKey, default, callback)
     table.insert(LocaleObjects, {Object = TglLabel, Key = textKey, SearchItem = searchItem})
 
     return {
-        SetValue = function(state) updateToggle(state) end,
+        SetValue = function(val) setToggleState(val) end,
         GetValue = function() return enabled end
     }
 end
-
-function Library:CreateSlider(parentPage, textKey, min, max, default, callback)
-    local initialText = Localization[Library.CurrentLanguage] and Localization[Library.CurrentLanguage][textKey] or textKey
-    local SldFrame = Instance.new("Frame", parentPage)
-    SldFrame.Name = textKey
-    SldFrame.Size = UDim2.new(1, -20, 0, 50)
-    SldFrame.BackgroundColor3 = Library.CurrentThemeData.ElementBg or DefaultTheme.ElementBg
-    SldFrame.ZIndex = 6
-    SldFrame.LayoutOrder = #parentPage:GetChildren()
-    Instance.new("UICorner", SldFrame).CornerRadius = UDim.new(0, 6)
-    local SldStroke = Instance.new("UIStroke", SldFrame)
-    SldStroke.Color = Color3.fromRGB(35, 35, 35)
-    table.insert(Library.TrackedElementBg, SldFrame)
-    table.insert(Library.TrackedStrokes, SldStroke)
-
-    local SldLabel = Instance.new("TextLabel", SldFrame)
-    SldLabel.Size = UDim2.new(0.6, 0, 0, 24)
-    SldLabel.Position = UDim2.new(0, 12, 0, 2)
-    SldLabel.Text = initialText
-    applyFontToElement(SldLabel)
-    SldLabel.TextColor3 = Color3.fromRGB(230, 230, 230)
-    SldLabel.TextSize = 13
-    SldLabel.TextXAlignment = Enum.TextXAlignment.Left
-    SldLabel.BackgroundTransparency = 1
-    SldLabel.ZIndex = 7
-    table.insert(Library.TrackedMainText, SldLabel)
-
-    local ValLabel = Instance.new("TextLabel", SldFrame)
-    ValLabel.Size = UDim2.new(0.35, 0, 0, 24)
-    ValLabel.Position = UDim2.new(0.6, -5, 0, 2)
-    ValLabel.Text = tostring(default)
-    applyFontToElement(ValLabel)
-    ValLabel.TextColor3 = Color3.fromRGB(150, 150, 150)
-    ValLabel.TextSize = 12
-    ValLabel.TextXAlignment = Enum.TextXAlignment.Right
-    ValLabel.BackgroundTransparency = 1
-    ValLabel.ZIndex = 7
-    table.insert(Library.TrackedSubText, ValLabel)
-
-    local Track = Instance.new("Frame", SldFrame)
-    Track.Size = UDim2.new(1, -24, 0, 6)
-    Track.Position = UDim2.new(0, 12, 0, 32)
-    Track.BackgroundColor3 = isLightColor(getThemeMainBg()) and Color3.fromRGB(210, 210, 210) or Color3.fromRGB(30, 30, 30)
-    Track.ZIndex = 7
-    Instance.new("UICorner", Track).CornerRadius = UDim.new(1, 0)
-    table.insert(Library.TrackedSliderTracks, Track)
-
-    local Fill = Instance.new("Frame", Track)
-    local percentage = math.clamp((default - min) / (max - min), 0, 1)
-    Fill.Size = UDim2.new(percentage, 0, 1, 0)
-    Fill.BackgroundColor3 = getThemeAccent()
-    Fill.ZIndex = 8
-    Instance.new("UICorner", Fill).CornerRadius = UDim.new(1, 0)
-    table.insert(Library.TrackedSliderFills, Fill)
-
-    local sliding = false
-    local currentValue = default
-
-    local function updateValue(input)
-        local posX = input.Position.X - Track.AbsolutePosition.X
-        local pct = math.clamp(posX / Track.AbsoluteSize.X, 0, 1)
-        currentValue = math.floor(min + (max - min) * pct + 0.5)
-        ValLabel.Text = tostring(currentValue)
-        tween(Fill, {Size = UDim2.new(pct, 0, 1, 0)}, 0.05)
-        if type(callback) == "function" then
-            pcall(callback, currentValue)
-        end
-    end
-
-    Track.InputBegan:Connect(function(input)
-        if input.UserInputType == Enum.UserInputType.MouseButton1 or input.UserInputType == Enum.UserInputType.Touch then
-            sliding = true
-            updateValue(input)
-        end
-    end)
-
-    Track.InputEnded:Connect(function(input)
-        if input.UserInputType == Enum.UserInputType.MouseButton1 or input.UserInputType == Enum.UserInputType.Touch then
-            sliding = false
-        end
-    end)
-
-    UserInputService.InputChanged:Connect(function(input)
-        if sliding and (input.UserInputType == Enum.UserInputType.MouseMovement or input.UserInputType == Enum.UserInputType.Touch) then
-            updateValue(input)
-        end
-    end)
-
-    table.insert(Library.TrackedSliders, {
-        Frame = SldFrame,
-        Stroke = SldStroke,
-        Label = SldLabel,
-        ValueLabel = ValLabel
-    })
-
-    local searchItem = {Instance = SldFrame, SearchText = NormalizeText(initialText), OriginalParent = parentPage}
-    table.insert(SearchableElements, searchItem)
-    table.insert(LocaleObjects, {Object = SldLabel, Key = textKey, SearchItem = searchItem})
-
-    return {
-        SetValue = function(val)
-            currentValue = math.clamp(val, min, max)
-            local pct = (currentValue - min) / (max - min)
-            ValLabel.Text = tostring(currentValue)
-            Fill.Size = UDim2.new(pct, 0, 1, 0)
-            if type(callback) == "function" then pcall(callback, currentValue) end
-        end,
-        GetValue = function() return currentValue end
-    }
-end
-
--- ============================================================================
--- INITIALIZE TABS & UI CONTENT
--- ============================================================================
-local SettingsPage = Library:CreateTab("Settings", SettingsIconID)
-local UIPage = Library:CreateTab("UI", "6031094678")
-local ThemePage = Library:CreateTab("Theme", "6031094678")
-
--- Settings Tab Elements
-Library:CreateToggle(SettingsPage, "AntiAFK", true, function(state)
-    toggleAntiAFK(state)
-end)
-
-Library:CreateDropdown(SettingsPage, "Language", {"English", "Русский"}, "English", function(lang)
-    Library:UpdateLanguage(lang)
-end)
-
--- UI Tab Elements
-Library:CreateDropdown(UIPage, "MenuFont", {"Source Sans", "Fredoka One", "Gotham", "Gotham Bold", "Roboto", "Code", "Ubuntu", "Bangers", "Luckiest Guy", "Permanent Marker", "Arcade"}, "Source Sans", function(font)
-    applyFontToAll(font)
-end)
-
-Library:CreateSlider(UIPage, "UISize", 80, 120, 100, function(val)
-    MainScale.Scale = val / 100
-end)
-
-Library:CreateSlider(UIPage, "UITransparency", 0, 100, 15, function(val)
-    MainFrame.BackgroundTransparency = val / 100
-end)
-
-Library:CreateToggle(UIPage, "AnimatedWindow", false, function(state)
-    toggleAnimatedWindow(state)
-end)
-
-Library:CreateToggle(UIPage, "Gradient", false, function(state)
-    toggleGradientEffect(state)
-end)
-
--- Theme Tab Elements
-Library:CreateDropdown(ThemePage, "UITheme", ThemeNamesList, "AMOLED", function(themeName)
-    Library:UpdateTheme(themeName)
-end)
-
-Library:CreateDropdown(ThemePage, "Sky", {"Default", "space cky", "pink sky", "sunset sky", "dark sky"}, "Default", function(sky)
-    applySkySettings(sky)
-end)
-
-Library:CreateToggle(ThemePage, "Fog", true, function(state)
-    fogEnabled = state
-    applyFogSettings(true)
-end)
-
-Library:CreateDropdown(ThemePage, "FogColor", {"Default", "Black", "White", "Red", "Blue", "Green", "Purple", "Cyan", "Yellow", "Orange"}, "Default", function(colName)
-    if colorPresets[colName] then
-        customFogColor = colorPresets[colName]
-        applyFogSettings(true)
-    end
-end)
-
-Library:CreateSlider(ThemePage, "FogEnd", 10, 1000, 120, function(val)
-    customFogEnd = val
-    applyFogSettings(true)
-end)
-
-Library:CreateDropdown(ThemePage, "effect", {"None", "wings aura"}, "None", function(eff)
-    applyPlayerEffect(eff)
-end)
-
--- ============================================================================
--- FINISH LOADING SCREEN & SHOW MAIN FRAME
--- ============================================================================
-task.spawn(function()
-    for i = 1, 100 do
-        task.wait(0.015)
-        ProgressBarFill.Size = UDim2.new(i / 100, 0, 1, 0)
-        LoadingPercent.Text = i .. "%"
-    end
-    
-    task.wait(0.2)
-    if bubbleConnection then
-        bubbleConnection:Disconnect()
-    end
-    
-    tween(LoadingOverlay, {BackgroundTransparency = 1}, 0.3)
-    for _, child in ipairs(LoadingOverlay:GetChildren()) do
-        if child:IsA("GuiObject") then
-            tween(child, {BackgroundTransparency = 1}, 0.3)
-        end
-    end
-    
-    task.wait(0.3)
-    LoadingOverlay:Destroy()
-    MainFrame.Visible = true
-    showToast(Localization[Library.CurrentLanguage]["HubLoaded"] or "Dark Hub loaded successfully!")
-end)
