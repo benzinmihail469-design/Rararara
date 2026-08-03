@@ -23,7 +23,7 @@ local startTime = os.clock()
 
 local function getIconAsset(id)
     if id and type(id) == "string" and #id > 0 then
-        return "rbxthumb://type=Asset&id=" .. id .. "&w=150&h=150"
+        return "rbxassetid://" .. id
     end
     return "rbxassetid://" .. DefaultIconID
 end
@@ -1075,16 +1075,16 @@ local subTabButtons = {}
 local currentActiveSubTab = nil
 local uiGradientInstance = nil
 
--- ДИНАМИЧЕСКОЕ ВЫДЕЛЕНИЕ ВКЛАДОК (МЕНЯЕТ ЦВЕТ В ТОН ТЕМЫ)
+-- ДИНАМИЧЕСКОЕ ВЫДЕЛЕНИЕ ВКЛАДОК (ПОД ЦВЕТ ГЛАВНОГО ФРЕЙМА)
 local function applyThemeToTabs(theme)
     theme = theme or Library.CurrentThemeData or DefaultTheme
     local mainBg = (theme and typeof(theme.MainBg) == "Color3") and theme.MainBg or DefaultTheme.MainBg
     local accent = (theme and typeof(theme.Accent) == "Color3") and theme.Accent or DefaultTheme.Accent
     local isLightMode = isLightColor(mainBg)
     
-    -- Фон активной вкладки становится равным Акценту выбранной темы (больше не черная!)
-    local activeBgColor = accent
-    local activeTextColor = isLightColor(accent) and Color3.fromRGB(15, 15, 15) or Color3.fromRGB(255, 255, 255)
+    -- Фон активной вкладки равен цвету главного фрейма (mainBg)
+    local activeBgColor = mainBg
+    local activeTextColor = isLightMode and Color3.fromRGB(35, 35, 35) or Color3.fromRGB(255, 255, 255)
     local inactiveTextColor = isLightMode and Color3.fromRGB(110, 110, 110) or Color3.fromRGB(140, 140, 140)
 
     for textKey, tabBtn in pairs(allTabButtons) do
@@ -1095,22 +1095,22 @@ local function applyThemeToTabs(theme)
                 local icon = parentContainer:FindFirstChild("TabIcon")
 
                 if tabBtn == currentActiveTab then
-                    -- Активное состояние: Плавное смещение текста и фоновая плашка в цвет акцента темы
+                    -- Активное состояние: Плавное смещение текста и фоновая плашка под цвет главного фрейма
                     tween(tabBtn, {TextColor3 = activeTextColor, Position = UDim2.new(0, 16, 0, 0), TextSize = 13}, 0.2)
-                    tween(parentContainer, {BackgroundColor3 = activeBgColor, BackgroundTransparency = 0.15}, 0.2)
+                    tween(parentContainer, {BackgroundColor3 = activeBgColor, BackgroundTransparency = 0}, 0.2)
                     
                     if icon then
                         tween(icon, {ImageColor3 = activeTextColor}, 0.2)
                     end
 
-                    -- Вертикальная скругленная полоска-индикатор слева
+                    -- Вертикальная скругленная полоска-индикатор слева с акцентом темы
                     if not indicator then
                         indicator = Instance.new("Frame")
                         indicator.Name = "ActiveIndicator"
                         indicator.AnchorPoint = Vector2.new(0, 0.5)
                         indicator.Size = UDim2.new(0, 3.5, 0, 0)
                         indicator.Position = UDim2.new(0, 4, 0.5, 0)
-                        indicator.BackgroundColor3 = activeTextColor
+                        indicator.BackgroundColor3 = accent
                         indicator.BorderSizePixel = 0
                         indicator.ZIndex = tabBtn.ZIndex + 2
                         indicator.Parent = parentContainer
@@ -1119,7 +1119,7 @@ local function applyThemeToTabs(theme)
                         corner.CornerRadius = UDim.new(1, 0)
                     end
 
-                    tween(indicator, {Size = UDim2.new(0, 3.5, 0.65, 0), BackgroundColor3 = activeTextColor, BackgroundTransparency = 0}, 0.2)
+                    tween(indicator, {Size = UDim2.new(0, 3.5, 0.65, 0), BackgroundColor3 = accent, BackgroundTransparency = 0}, 0.2)
                 else
                     -- Неактивное состояние
                     tween(tabBtn, {TextColor3 = inactiveTextColor, Position = UDim2.new(0, 12, 0, 0), TextSize = 13}, 0.2)
