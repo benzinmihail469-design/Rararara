@@ -1075,16 +1075,17 @@ local subTabButtons = {}
 local currentActiveSubTab = nil
 local uiGradientInstance = nil
 
--- НОВОЕ ВЫДЕЛЕНИЕ ВКЛАДОК ПО ФОТОГРАФИИ
+-- ДИНАМИЧЕСКОЕ ВЫДЕЛЕНИЕ ВКЛАДОК (МЕНЯЕТ ЦВЕТ В ТОН ТЕМЫ)
 local function applyThemeToTabs(theme)
     theme = theme or Library.CurrentThemeData or DefaultTheme
     local mainBg = (theme and typeof(theme.MainBg) == "Color3") and theme.MainBg or DefaultTheme.MainBg
     local accent = (theme and typeof(theme.Accent) == "Color3") and theme.Accent or DefaultTheme.Accent
     local isLightMode = isLightColor(mainBg)
     
-    local activeTextColor = isLightMode and Color3.fromRGB(20, 20, 20) or Color3.fromRGB(255, 255, 255)
+    -- Фон активной вкладки становится равным Акценту выбранной темы (больше не черная!)
+    local activeBgColor = accent
+    local activeTextColor = isLightColor(accent) and Color3.fromRGB(15, 15, 15) or Color3.fromRGB(255, 255, 255)
     local inactiveTextColor = isLightMode and Color3.fromRGB(110, 110, 110) or Color3.fromRGB(140, 140, 140)
-    local activeBgColor = isLightMode and Color3.fromRGB(220, 220, 220) or Color3.fromRGB(20, 20, 24)
 
     for textKey, tabBtn in pairs(allTabButtons) do
         if tabBtn and typeof(tabBtn) == "Instance" and tabBtn.Parent then
@@ -1094,12 +1095,12 @@ local function applyThemeToTabs(theme)
                 local icon = parentContainer:FindFirstChild("TabIcon")
 
                 if tabBtn == currentActiveTab then
-                    -- Активное состояние: Плавное смещение текста и плашка фона
+                    -- Активное состояние: Плавное смещение текста и фоновая плашка в цвет акцента темы
                     tween(tabBtn, {TextColor3 = activeTextColor, Position = UDim2.new(0, 16, 0, 0), TextSize = 13}, 0.2)
-                    tween(parentContainer, {BackgroundColor3 = activeBgColor, BackgroundTransparency = 0}, 0.2)
+                    tween(parentContainer, {BackgroundColor3 = activeBgColor, BackgroundTransparency = 0.15}, 0.2)
                     
                     if icon then
-                        tween(icon, {ImageColor3 = accent}, 0.2)
+                        tween(icon, {ImageColor3 = activeTextColor}, 0.2)
                     end
 
                     -- Вертикальная скругленная полоска-индикатор слева
@@ -1109,7 +1110,7 @@ local function applyThemeToTabs(theme)
                         indicator.AnchorPoint = Vector2.new(0, 0.5)
                         indicator.Size = UDim2.new(0, 3.5, 0, 0)
                         indicator.Position = UDim2.new(0, 4, 0.5, 0)
-                        indicator.BackgroundColor3 = accent
+                        indicator.BackgroundColor3 = activeTextColor
                         indicator.BorderSizePixel = 0
                         indicator.ZIndex = tabBtn.ZIndex + 2
                         indicator.Parent = parentContainer
@@ -1118,7 +1119,7 @@ local function applyThemeToTabs(theme)
                         corner.CornerRadius = UDim.new(1, 0)
                     end
 
-                    tween(indicator, {Size = UDim2.new(0, 3.5, 0.65, 0), BackgroundColor3 = accent, BackgroundTransparency = 0}, 0.2)
+                    tween(indicator, {Size = UDim2.new(0, 3.5, 0.65, 0), BackgroundColor3 = activeTextColor, BackgroundTransparency = 0}, 0.2)
                 else
                     -- Неактивное состояние
                     tween(tabBtn, {TextColor3 = inactiveTextColor, Position = UDim2.new(0, 12, 0, 0), TextSize = 13}, 0.2)
