@@ -1,1837 +1,877 @@
---[[
-    Dark Hub GUI
-    Основано на библиотеке Library.lua
-    Адаптировано для ПК и мобильных устройств
-]]
+-- ========================================================
+-- DARK HUB - FULL STANDALONE GUI (PC / MOBILE)
+-- ========================================================
 
-local Players = game:GetService("Players")
-local UserInputService = game:GetService("UserInputService")
-local RunService = game:GetService("RunService")
-local TweenService = game:GetService("TweenService")
-local CoreGui = game:GetService("CoreGui")
-local HttpService = game:GetService("HttpService")
-local Workspace = game:GetService("Workspace")
-local Lighting = game:GetService("Lighting")
+local Library do 
+    local Workspace = game:GetService("Workspace")
+    local UserInputService = game:GetService("UserInputService")
+    local Players = game:GetService("Players")
+    local HttpService = game:GetService("HttpService")
+    local RunService = game:GetService("RunService")
+    local CoreGui = cloneref and cloneref(game:GetService("CoreGui")) or game:GetService("CoreGui")
+    local TweenService = game:GetService("TweenService")
+    local Lighting = game:GetService("Lighting")
 
-local LocalPlayer = Players.LocalPlayer
-local Mouse = LocalPlayer:GetMouse()
-
-local gethui = gethui or function() return CoreGui end
-
--- Вспомогательные функции
-local function Create(Class, Properties)
-    local Instance = Instance.new(Class)
-    for Property, Value in pairs(Properties or {}) do
-        Instance[Property] = Value
+    local gethui = gethui or function()
+        return CoreGui
     end
-    return Instance
-end
 
-local function CreateTween(Instance, Info, Goal)
-    local Tween = TweenService:Create(Instance, Info or TweenInfo.new(0.3, Enum.EasingStyle.Quad, Enum.EasingDirection.Out), Goal)
-    Tween:Play()
-    return Tween
-end
+    local LocalPlayer = Players.LocalPlayer
+    local Camera = Workspace.CurrentCamera
+    local Mouse = LocalPlayer:GetMouse()
 
-local function IsMobile()
-    return UserInputService.TouchEnabled
-end
+    local FromRGB = Color3.fromRGB
+    local FromHSV = Color3.fromHSV
+    local FromHex = Color3.fromHex
 
--- ============================================================
--- Основное GUI
--- ============================================================
+    local RGBSequence = ColorSequence.new
+    local RGBSequenceKeypoint = ColorSequenceKeypoint.new
+    local NumSequence = NumberSequence.new
+    local NumSequenceKeypoint = NumberSequenceKeypoint.new
 
-local DarkHub = {
-    Theme = {
-        Background = Color3.fromRGB(12, 12, 14),
-        Background2 = Color3.fromRGB(10, 10, 12),
-        SectionBackground = Color3.fromRGB(14, 14, 16),
-        SectionTop = Color3.fromRGB(28, 27, 31),
-        Element = Color3.fromRGB(18, 18, 20),
-        Outline = Color3.fromRGB(25, 25, 28),
-        Text = Color3.fromRGB(235, 235, 235),
-        Accent = Color3.fromRGB(0, 116, 224),
-        AccentGradient = Color3.fromRGB(0, 195, 255),
-    },
-    IsOpen = false,
-    Pages = {},
-    CurrentPage = nil,
-    Flags = {},
-    Connections = {},
-    ToClean = {},
-}
+    local UDim2New = UDim2.new
+    local UDimNew = UDim.new
+    local UDim2FromOffset = UDim2.fromOffset
+    local Vector2New = Vector2.new
+    local Vector3New = Vector3.new
 
--- Создаем основной ScreenGui
-local ScreenGui = Create("ScreenGui", {
-    Name = "DarkHub",
-    Parent = gethui(),
-    ZIndexBehavior = Enum.ZIndexBehavior.Global,
-    DisplayOrder = 2,
-    ResetOnSpawn = false,
-})
+    local MathClamp = math.clamp
+    local MathFloor = math.floor
+    local InstanceNew = Instance.new
+    local TableInsert = table.insert
+    local TableClone = table.clone
+    local TableUnpack = table.unpack
+    local StringFormat = string.format
 
-table.insert(DarkHub.ToClean, ScreenGui)
+    local IsMobile = UserInputService.TouchEnabled or false
 
--- Создаем основной фрейм
-local MainFrame = Create("Frame", {
-    Name = "MainFrame",
-    Parent = ScreenGui,
-    AnchorPoint = Vector2.new(0.5, 0.5),
-    Position = UDim2.new(0.5, 0, 0.5, 0),
-    Size = UDim2.new(0, 620, 0, 550),
-    BackgroundColor3 = DarkHub.Theme.Background,
-    BackgroundTransparency = 0.12,
-    BorderSizePixel = 0,
-    ZIndex = 2,
-    Visible = false,
-})
-
--- Скругление углов
-Create("UICorner", {
-    Parent = MainFrame,
-    CornerRadius = UDim.new(0, 6),
-})
-
--- Адаптация для мобильных устройств
-if IsMobile() then
-    Create("UIScale", {
-        Parent = MainFrame,
-        Scale = 0.75,
-    })
-end
-
--- ============================================================
--- Заголовок
--- ============================================================
-
-local TopBar = Create("Frame", {
-    Name = "TopBar",
-    Parent = MainFrame,
-    Size = UDim2.new(1, 0, 0, 50),
-    BackgroundColor3 = DarkHub.Theme.Background2,
-    BackgroundTransparency = 0.15,
-    BorderSizePixel = 0,
-    ZIndex = 2,
-})
-
-Create("UICorner", {
-    Parent = TopBar,
-    CornerRadius = UDim.new(0, 6),
-})
-
--- Логотип (иконка)
-local Logo = Create("ImageLabel", {
-    Name = "Logo",
-    Parent = TopBar,
-    Size = UDim2.new(0, 28, 0, 28),
-    Position = UDim2.new(0, 12, 0.5, 0),
-    AnchorPoint = Vector2.new(0, 0.5),
-    BackgroundTransparency = 1,
-    Image = "rbxassetid://81598136527047",
-    ZIndex = 3,
-})
-
--- Градиент для логотипа
-local LogoGradient = Create("UIGradient", {
-    Parent = Logo,
-    Color = ColorSequence.new({
-        ColorSequenceKeypoint.new(0, DarkHub.Theme.Accent),
-        ColorSequenceKeypoint.new(1, DarkHub.Theme.AccentGradient),
-    }),
-})
-
--- Заголовок
-local Title = Create("TextLabel", {
-    Name = "Title",
-    Parent = TopBar,
-    FontFace = Font.new("rbxassetid://12187365364", Enum.FontWeight.SemiBold, Enum.FontStyle.Normal),
-    Text = "Dark Hub",
-    TextColor3 = DarkHub.Theme.Text,
-    TextSize = 20,
-    TextXAlignment = Enum.TextXAlignment.Left,
-    BackgroundTransparency = 1,
-    Position = UDim2.new(0, 46, 0.5, -2),
-    AnchorPoint = Vector2.new(0, 0.5),
-    AutomaticSize = Enum.AutomaticSize.X,
-    ZIndex = 3,
-})
-
--- Подзаголовок
-local SubTitle = Create("TextLabel", {
-    Name = "SubTitle",
-    Parent = TopBar,
-    FontFace = Font.new("rbxassetid://12187365364", Enum.FontWeight.Light, Enum.FontStyle.Normal),
-    Text = "Premium Quality",
-    TextColor3 = DarkHub.Theme.Text,
-    TextSize = 12,
-    TextTransparency = 0.5,
-    TextXAlignment = Enum.TextXAlignment.Left,
-    BackgroundTransparency = 1,
-    Position = UDim2.new(0, 46, 0.5, 14),
-    AnchorPoint = Vector2.new(0, 0.5),
-    AutomaticSize = Enum.AutomaticSize.X,
-    ZIndex = 3,
-})
-
--- ============================================================
--- Кнопки управления (Закрыть, Свернуть)
--- ============================================================
-
-local CloseButton = Create("TextButton", {
-    Name = "CloseButton",
-    Parent = TopBar,
-    Size = UDim2.new(0, 28, 0, 28),
-    Position = UDim2.new(1, -36, 0.5, 0),
-    AnchorPoint = Vector2.new(0, 0.5),
-    BackgroundColor3 = DarkHub.Theme.Element,
-    BackgroundTransparency = 0.2,
-    BorderSizePixel = 0,
-    Text = "",
-    AutoButtonColor = false,
-    ZIndex = 3,
-})
-
-Create("UICorner", {
-    Parent = CloseButton,
-    CornerRadius = UDim.new(0, 6),
-})
-
-local CloseIcon = Create("ImageLabel", {
-    Parent = CloseButton,
-    Size = UDim2.new(0, 12, 0, 12),
-    Position = UDim2.new(0.5, 0, 0.5, 0),
-    AnchorPoint = Vector2.new(0.5, 0.5),
-    BackgroundTransparency = 1,
-    Image = "rbxassetid://130510492706892",
-    ImageColor3 = DarkHub.Theme.Text,
-    ImageTransparency = 0.3,
-    ZIndex = 4,
-})
-
--- Ближняя подсветка для кнопки закрытия
-local CloseAccent = Create("Frame", {
-    Parent = CloseButton,
-    Size = UDim2.new(0, 0, 0, 0),
-    Position = UDim2.new(0.5, 0, 0.5, 0),
-    AnchorPoint = Vector2.new(0.5, 0.5),
-    BackgroundColor3 = DarkHub.Theme.Accent,
-    BackgroundTransparency = 1,
-    BorderSizePixel = 0,
-    ZIndex = 2,
-})
-
-Create("UICorner", {
-    Parent = CloseAccent,
-    CornerRadius = UDim.new(0, 6),
-})
-
--- ============================================================
--- Левая панель с вкладками
--- ============================================================
-
-local LeftPanel = Create("Frame", {
-    Name = "LeftPanel",
-    Parent = MainFrame,
-    Size = UDim2.new(0, 190, 1, -50),
-    Position = UDim2.new(0, 0, 0, 50),
-    BackgroundColor3 = DarkHub.Theme.Background2,
-    BackgroundTransparency = 0.15,
-    BorderSizePixel = 0,
-    ZIndex = 2,
-})
-
-Create("UICorner", {
-    Parent = LeftPanel,
-    CornerRadius = UDim.new(0, 6),
-})
-
--- Контейнер для вкладок (с прокруткой)
-local TabsScrolling = Create("ScrollingFrame", {
-    Parent = LeftPanel,
-    Size = UDim2.new(1, 0, 1, 0),
-    BackgroundTransparency = 1,
-    BorderSizePixel = 0,
-    ScrollBarThickness = 0,
-    CanvasSize = UDim2.new(0, 0, 0, 0),
-    AutomaticCanvasSize = Enum.AutomaticSize.Y,
-    ZIndex = 2,
-})
-
-Create("UIListLayout", {
-    Parent = TabsScrolling,
-    Padding = UDim.new(0, 4),
-    SortOrder = Enum.SortOrder.LayoutOrder,
-})
-
-Create("UIPadding", {
-    Parent = TabsScrolling,
-    PaddingTop = UDim.new(0, 10),
-    PaddingBottom = UDim.new(0, 10),
-    PaddingLeft = UDim.new(0, 8),
-    PaddingRight = UDim.new(0, 8),
-})
-
--- ============================================================
--- Основной контент
--- ============================================================
-
-local ContentArea = Create("Frame", {
-    Name = "ContentArea",
-    Parent = MainFrame,
-    Size = UDim2.new(1, -190, 1, -50),
-    Position = UDim2.new(0, 190, 0, 50),
-    BackgroundTransparency = 1,
-    BorderSizePixel = 0,
-    ZIndex = 2,
-})
-
--- Область страниц
-local PagesContainer = Create("Frame", {
-    Parent = ContentArea,
-    Size = UDim2.new(1, -16, 1, -16),
-    Position = UDim2.new(0, 8, 0, 8),
-    BackgroundTransparency = 1,
-    BorderSizePixel = 0,
-    ZIndex = 2,
-})
-
-Create("UIListLayout", {
-    Parent = PagesContainer,
-    Padding = UDim.new(0, 0),
-    SortOrder = Enum.SortOrder.LayoutOrder,
-})
-
--- ============================================================
--- Водяной знак (Watermark)
--- ============================================================
-
-local WatermarkFrame = Create("Frame", {
-    Name = "Watermark",
-    Parent = ScreenGui,
-    Position = UDim2.new(0, 12, 0, 12),
-    Size = UDim2.new(0, 0, 0, 28),
-    AutomaticSize = Enum.AutomaticSize.X,
-    BackgroundColor3 = DarkHub.Theme.Background2,
-    BackgroundTransparency = 0.3,
-    BorderSizePixel = 0,
-    Visible = false,
-    ZIndex = 10,
-})
-
-Create("UICorner", {
-    Parent = WatermarkFrame,
-    CornerRadius = UDim.new(0, 4),
-})
-
-Create("UIStroke", {
-    Parent = WatermarkFrame,
-    Color = DarkHub.Theme.Outline,
-    Thickness = 1,
-    Transparency = 0,
-})
-
-local WatermarkAccent = Create("Frame", {
-    Parent = WatermarkFrame,
-    Size = UDim2.new(1, 0, 0, 2),
-    Position = UDim2.new(0, 0, 0, 0),
-    BackgroundColor3 = DarkHub.Theme.Accent,
-    BorderSizePixel = 0,
-})
-
-Create("UICorner", {
-    Parent = WatermarkAccent,
-    CornerRadius = UDim.new(0, 4),
-})
-
-Create("UIGradient", {
-    Parent = WatermarkAccent,
-    Color = ColorSequence.new({
-        ColorSequenceKeypoint.new(0, DarkHub.Theme.Accent),
-        ColorSequenceKeypoint.new(1, DarkHub.Theme.AccentGradient),
-    }),
-})
-
-local WatermarkContent = Create("Frame", {
-    Parent = WatermarkFrame,
-    Size = UDim2.new(1, 0, 1, 0),
-    BackgroundTransparency = 1,
-})
-
-Create("UIListLayout", {
-    Parent = WatermarkContent,
-    FillDirection = Enum.FillDirection.Horizontal,
-    SortOrder = Enum.SortOrder.LayoutOrder,
-    VerticalAlignment = Enum.VerticalAlignment.Center,
-    Padding = UDim.new(0, 4),
-})
-
-Create("UIPadding", {
-    Parent = WatermarkContent,
-    PaddingLeft = UDim.new(0, 10),
-    PaddingRight = UDim.new(0, 10),
-    PaddingTop = UDim.new(0, 4),
-})
-
--- ============================================================
--- Уведомления
--- ============================================================
-
-local NotificationHolder = Create("Frame", {
-    Parent = ScreenGui,
-    Size = UDim2.new(0, 0, 1, 0),
-    BackgroundTransparency = 1,
-    AutomaticSize = Enum.AutomaticSize.X,
-    Position = UDim2.new(0, 8, 0, 0),
-    ZIndex = 50,
-})
-
-Create("UIListLayout", {
-    Parent = NotificationHolder,
-    Padding = UDim.new(0, 8),
-    SortOrder = Enum.SortOrder.LayoutOrder,
-})
-
-Create("UIPadding", {
-    Parent = NotificationHolder,
-    PaddingTop = UDim.new(0, 8),
-    PaddingBottom = UDim.new(0, 8),
-    PaddingRight = UDim.new(0, 8),
-})
-
--- ============================================================
--- Функции GUI
--- ============================================================
-
-function DarkHub:IsOpen()
-    return self.IsOpen
-end
-
-function DarkHub:Open()
-    if self.IsOpen then return end
-    self.IsOpen = true
-    MainFrame.Visible = true
-    
-    local Descendants = MainFrame:GetDescendants()
-    table.insert(Descendants, MainFrame)
-    
-    for _, Value in Descendants do
-        if Value:IsA("Frame") and Value ~= MainFrame then
-            Value.BackgroundTransparency = 0
-        elseif Value:IsA("TextLabel") or Value:IsA("TextButton") or Value:IsA("TextBox") then
-            Value.TextTransparency = 0
-        elseif Value:IsA("ImageLabel") or Value:IsA("ImageButton") then
-            Value.ImageTransparency = 0
-        end
-    end
-    
-    MainFrame.BackgroundTransparency = 0.12
-end
-
-function DarkHub:Close()
-    if not self.IsOpen then return end
-    self.IsOpen = false
-    
-    local Descendants = MainFrame:GetDescendants()
-    table.insert(Descendants, MainFrame)
-    
-    for _, Value in Descendants do
-        if Value:IsA("Frame") and Value ~= MainFrame then
-            Value.BackgroundTransparency = 1
-        elseif Value:IsA("TextLabel") or Value:IsA("TextButton") or Value:IsA("TextBox") then
-            Value.TextTransparency = 1
-        elseif Value:IsA("ImageLabel") or Value:IsA("ImageButton") then
-            Value.ImageTransparency = 1
-        end
-    end
-    
-    MainFrame.BackgroundTransparency = 1
-    task.wait(0.2)
-    MainFrame.Visible = false
-end
-
-function DarkHub:Toggle()
-    if self.IsOpen then
-        self:Close()
-    else
-        self:Open()
-    end
-end
-
--- ============================================================
--- Создание страницы
--- ============================================================
-
-function DarkHub:CreatePage(Name, Icon)
-    local Page = {
-        Name = Name,
-        Icon = Icon or "100050851789190",
-        Frame = nil,
-        Button = nil,
+    Library = {
+        Theme = {
+            ["AccentGradient"] = FromRGB(0, 195, 255),
+            ["Background 2"] = FromRGB(10, 10, 12),
+            ["Background"] = FromRGB(12, 12, 14),
+            ["Text"] = FromRGB(235, 235, 235),
+            ["Outline"] = FromRGB(25, 25, 28),
+            ["Section Top"] = FromRGB(28, 27, 31),
+            ["Section Background"] = FromRGB(10, 10, 12),
+            ["Section Background 2"] = FromRGB(14, 14, 16),
+            ["Accent"] = FromRGB(0, 116, 224),
+            ["Element"] = FromRGB(16, 16, 18)
+        },
+        ToClean = {},
+        MenuKeybind = Enum.KeyCode.Insert,
+        Flags = {},
+        Tween = {
+            Time = 0.25,
+            Style = Enum.EasingStyle.Quad,
+            Direction = Enum.EasingDirection.Out
+        },
+        FadeSpeed = 0.15,
+        Pages = {},
         Sections = {},
-        Active = false,
+        Connections = {},
+        Threads = {},
+        ThemeMap = {},
+        ThemeItems = {},
+        OpenFrames = {},
+        SetFlags = {},
+        UnnamedConnections = 0,
+        UnnamedFlags = 0,
+        Holder = nil,
+        UnusedHolder = nil,
+        NotifHolder = nil,
+        Font = Font.new("rbxassetid://12187365364", Enum.FontWeight.SemiBold, Enum.FontStyle.Normal)
     }
-    
-    -- Кнопка вкладки
-    local Button = Create("TextButton", {
-        Parent = TabsScrolling,
-        Size = UDim2.new(1, 0, 0, 36),
-        BackgroundColor3 = DarkHub.Theme.Element,
-        BackgroundTransparency = 1,
-        BorderSizePixel = 0,
-        Text = "",
-        AutoButtonColor = false,
-        ZIndex = 3,
+
+    Library.__index = Library
+
+    -- Instances Builder
+    local Instances = {}
+    Instances.__index = Instances
+
+    function Instances.Create(self, Class, Properties)
+        local NewItem = { Instance = InstanceNew(Class) }
+        setmetatable(NewItem, Instances)
+        for Prop, Val in pairs(Properties or {}) do
+            NewItem.Instance[Prop] = Val
+        end
+        return NewItem
+    end
+
+    function Instances:Connect(Event, Callback)
+        if not self.Instance or not self.Instance[Event] then return end
+        local Conn = self.Instance[Event]:Connect(Callback)
+        TableInsert(Library.Connections, Conn)
+        return Conn
+    end
+
+    function Instances:Tween(Info, Goal)
+        if not self.Instance then return end
+        Info = Info or TweenInfo.new(Library.Tween.Time, Library.Tween.Style, Library.Tween.Direction)
+        local T = TweenService:Create(self.Instance, Info, Goal)
+        T:Play()
+        return T
+    end
+
+    function Instances:Clean()
+        if self.Instance then self.Instance:Destroy() end
+    end
+
+    -- Core GUI Screens
+    Library.Holder = Instances:Create("ScreenGui", {
+        Parent = gethui(),
+        Name = "DarkHub_GUI",
+        ZIndexBehavior = Enum.ZIndexBehavior.Global,
+        DisplayOrder = 999,
+        ResetOnSpawn = false
     })
-    
-    Create("UICorner", {
-        Parent = Button,
-        CornerRadius = UDim.new(0, 4),
-    })
-    
-    -- Акцент для кнопки
-    local ButtonAccent = Create("Frame", {
-        Parent = Button,
-        Size = UDim2.new(0, 0, 1, 0),
-        Position = UDim2.new(0, 0, 0, 0),
-        BackgroundColor3 = DarkHub.Theme.Accent,
-        BackgroundTransparency = 1,
-        BorderSizePixel = 0,
-        ZIndex = 2,
-    })
-    
-    Create("UICorner", {
-        Parent = ButtonAccent,
-        CornerRadius = UDim.new(0, 4),
-    })
-    
-    -- Иконка вкладки
-    local ButtonIcon = Create("ImageLabel", {
-        Parent = Button,
-        Size = UDim2.new(0, 16, 0, 16),
-        Position = UDim2.new(0, 10, 0.5, 0),
-        AnchorPoint = Vector2.new(0, 0.5),
-        BackgroundTransparency = 1,
-        Image = "rbxassetid://" .. Icon,
-        ImageColor3 = DarkHub.Theme.Text,
-        ImageTransparency = 0.3,
-        ZIndex = 3,
-    })
-    
-    local ButtonIconGradient = Create("UIGradient", {
-        Parent = ButtonIcon,
-        Color = ColorSequence.new({
-            ColorSequenceKeypoint.new(0, DarkHub.Theme.Accent),
-            ColorSequenceKeypoint.new(1, DarkHub.Theme.AccentGradient),
-        }),
+
+    Library.UnusedHolder = Instances:Create("ScreenGui", {
+        Parent = gethui(),
+        Name = "DarkHub_Storage",
         Enabled = false,
+        ResetOnSpawn = false
     })
-    
-    -- Текст вкладки
-    local ButtonText = Create("TextLabel", {
-        Parent = Button,
-        FontFace = Font.new("rbxassetid://12187365364", Enum.FontWeight.Regular, Enum.FontStyle.Normal),
-        Text = Name,
-        TextColor3 = DarkHub.Theme.Text,
-        TextSize = 14,
-        TextXAlignment = Enum.TextXAlignment.Left,
-        TextTransparency = 0.3,
+
+    Library.NotifHolder = Instances:Create("Frame", {
+        Parent = Library.Holder.Instance,
+        Name = "NotifHolder",
         BackgroundTransparency = 1,
-        Position = UDim2.new(0, 36, 0.5, -1),
-        AnchorPoint = Vector2.new(0, 0.5),
-        AutomaticSize = Enum.AutomaticSize.X,
-        ZIndex = 3,
+        Size = UDim2New(0, 260, 1, 0),
+        Position = UDim2New(1, -270, 0, 10),
+        BackgroundColor3 = FromRGB(255, 255, 255)
     })
-    
-    -- Фрейм страницы
-    local PageFrame = Create("Frame", {
-        Parent = PagesContainer,
-        Size = UDim2.new(1, 0, 1, 0),
-        BackgroundTransparency = 1,
-        BorderSizePixel = 0,
-        Visible = false,
-        ZIndex = 2,
-    })
-    
-    Create("UIListLayout", {
-        Parent = PageFrame,
-        Padding = UDim.new(0, 10),
+
+    Instances:Create("UIListLayout", {
+        Parent = Library.NotifHolder.Instance,
+        Padding = UDimNew(0, 8),
         SortOrder = Enum.SortOrder.LayoutOrder,
+        VerticalAlignment = Enum.VerticalAlignment.Bottom
     })
-    
-    Page.Button = Button
-    Page.Frame = PageFrame
-    Page.ButtonIcon = ButtonIcon
-    Page.ButtonText = ButtonText
-    Page.ButtonAccent = ButtonAccent
-    Page.ButtonIconGradient = ButtonIconGradient
-    
-    -- Функция переключения страницы
-    function Page:Activate()
-        for _, P in pairs(DarkHub.Pages) do
-            if P == self then
-                P.Active = true
-                P.Frame.Visible = true
-                P.Button.BackgroundTransparency = 0.1
-                P.ButtonText.TextTransparency = 0
-                P.ButtonIcon.ImageTransparency = 0
-                P.ButtonIconGradient.Enabled = true
-                P.ButtonAccent.BackgroundTransparency = 0
-            else
-                P.Active = false
-                P.Frame.Visible = false
-                P.Button.BackgroundTransparency = 1
-                P.ButtonText.TextTransparency = 0.3
-                P.ButtonIcon.ImageTransparency = 0.3
-                P.ButtonIconGradient.Enabled = false
-                P.ButtonAccent.BackgroundTransparency = 1
-            end
-        end
-        DarkHub.CurrentPage = self
-    end
-    
-    Button.MouseButton1Click:Connect(function()
-        Page:Activate()
-    end)
-    
-    table.insert(DarkHub.Pages, Page)
-    
-    -- Если это первая страница, активируем её
-    if #DarkHub.Pages == 1 then
-        Page:Activate()
-    end
-    
-    return Page
-end
 
--- ============================================================
--- Создание секции
--- ============================================================
-
-function DarkHub:CreateSection(Page, Name, Description, Icon)
-    local Section = {
-        Page = Page,
-        Name = Name,
-        Description = Description or "",
-        Icon = Icon or "123944728972740",
-        Frame = nil,
-        Elements = {},
-        IsActive = true,
-    }
-    
-    local SectionFrame = Create("Frame", {
-        Parent = Page.Frame,
-        Size = UDim2.new(1, 0, 0, 0),
-        AutomaticSize = Enum.AutomaticSize.Y,
-        BackgroundColor3 = DarkHub.Theme.SectionBackground,
-        BackgroundTransparency = 0.65,
-        BorderSizePixel = 0,
-        ClipsDescendants = true,
-        ZIndex = 2,
-    })
-    
-    Create("UICorner", {
-        Parent = SectionFrame,
-        CornerRadius = UDim.new(0, 4),
-    })
-    
-    -- Верхняя часть секции
-    local SectionTop = Create("Frame", {
-        Parent = SectionFrame,
-        Size = UDim2.new(1, 0, 0, 50),
-        BackgroundColor3 = DarkHub.Theme.Outline,
-        BackgroundTransparency = 0.65,
-        BorderSizePixel = 0,
-        ZIndex = 2,
-    })
-    
-    local SectionTopBG = Create("Frame", {
-        Parent = SectionTop,
-        Size = UDim2.new(1, -2, 1, -2),
-        Position = UDim2.new(0, 1, 0, 1),
-        BackgroundColor3 = DarkHub.Theme.SectionTop,
-        BackgroundTransparency = 0.65,
-        BorderSizePixel = 0,
-        ZIndex = 3,
-    })
-    
-    Create("UICorner", {
-        Parent = SectionTopBG,
-        CornerRadius = UDim.new(0, 4),
-    })
-    
-    -- Иконка секции
-    local SectionIcon = Create("ImageLabel", {
-        Parent = SectionTopBG,
-        Size = UDim2.new(0, 18, 0, 18),
-        Position = UDim2.new(0, 12, 0.5, 0),
-        AnchorPoint = Vector2.new(0, 0.5),
-        BackgroundTransparency = 1,
-        Image = "rbxassetid://" .. Icon,
-        ZIndex = 4,
-    })
-    
-    Create("UIGradient", {
-        Parent = SectionIcon,
-        Color = ColorSequence.new({
-            ColorSequenceKeypoint.new(0, DarkHub.Theme.Accent),
-            ColorSequenceKeypoint.new(1, DarkHub.Theme.AccentGradient),
-        }),
-    })
-    
-    -- Заголовок секции
-    local SectionTitle = Create("TextLabel", {
-        Parent = SectionTopBG,
-        FontFace = Font.new("rbxassetid://12187365364", Enum.FontWeight.SemiBold, Enum.FontStyle.Normal),
-        Text = Name,
-        TextColor3 = DarkHub.Theme.Text,
-        TextSize = 15,
-        TextXAlignment = Enum.TextXAlignment.Left,
-        BackgroundTransparency = 1,
-        Position = UDim2.new(0, 38, 0, 12),
-        AutomaticSize = Enum.AutomaticSize.X,
-        ZIndex = 4,
-    })
-    
-    -- Описание секции
-    if Description ~= "" then
-        local SectionDesc = Create("TextLabel", {
-            Parent = SectionTopBG,
-            FontFace = Font.new("rbxassetid://12187365364", Enum.FontWeight.Light, Enum.FontStyle.Normal),
-            Text = Description,
-            TextColor3 = DarkHub.Theme.Text,
-            TextSize = 12,
-            TextTransparency = 0.4,
-            TextXAlignment = Enum.TextXAlignment.Left,
-            BackgroundTransparency = 1,
-            Position = UDim2.new(0, 38, 0, 30),
-            AutomaticSize = Enum.AutomaticSize.X,
-            ZIndex = 4,
-        })
-    end
-    
-    -- Контент секции
-    local SectionContent = Create("Frame", {
-        Parent = SectionFrame,
-        Size = UDim2.new(1, -24, 0, 0),
-        Position = UDim2.new(0, 12, 0, 55),
-        BackgroundTransparency = 1,
-        BorderSizePixel = 0,
-        AutomaticSize = Enum.AutomaticSize.Y,
-        ZIndex = 2,
-    })
-    
-    Create("UIListLayout", {
-        Parent = SectionContent,
-        Padding = UDim.new(0, 6),
-        SortOrder = Enum.SortOrder.LayoutOrder,
-    })
-    
-    Create("UIPadding", {
-        Parent = SectionContent,
-        PaddingBottom = UDim.new(0, 10),
-    })
-    
-    Section.Frame = SectionFrame
-    Section.Content = SectionContent
-    Section.Top = SectionTop
-    
-    table.insert(Page.Sections, Section)
-    
-    return Section
-end
-
--- ============================================================
--- Элементы GUI
--- ============================================================
-
--- Кнопка
-function DarkHub:Button(Section, Data)
-    local Element = {
-        Section = Section,
-        Name = Data.Name or "Button",
-        Callback = Data.Callback or function() end,
-        Frame = nil,
-    }
-    
-    local Frame = Create("Frame", {
-        Parent = Section.Content,
-        Size = UDim2.new(1, 0, 0, 32),
-        BackgroundTransparency = 1,
-        ZIndex = 2,
-    })
-    
-    local Button = Create("TextButton", {
-        Parent = Frame,
-        Size = UDim2.new(1, 0, 1, 0),
-        BackgroundColor3 = DarkHub.Theme.Element,
-        BorderSizePixel = 0,
-        Text = "",
-        AutoButtonColor = false,
-        ZIndex = 2,
-    })
-    
-    Create("UICorner", {
-        Parent = Button,
-        CornerRadius = UDim.new(0, 4),
-    })
-    
-    -- Акцент при наведении
-    local ButtonAccent = Create("Frame", {
-        Parent = Button,
-        Size = UDim2.new(0, 0, 0, 0),
-        Position = UDim2.new(0.5, 0, 0.5, 0),
-        AnchorPoint = Vector2.new(0.5, 0.5),
-        BackgroundColor3 = DarkHub.Theme.Accent,
-        BackgroundTransparency = 1,
-        BorderSizePixel = 0,
-        ZIndex = 1,
-    })
-    
-    Create("UICorner", {
-        Parent = ButtonAccent,
-        CornerRadius = UDim.new(0, 4),
-    })
-    
-    Create("UIGradient", {
-        Parent = ButtonAccent,
-        Color = ColorSequence.new({
-            ColorSequenceKeypoint.new(0, DarkHub.Theme.Accent),
-            ColorSequenceKeypoint.new(1, DarkHub.Theme.AccentGradient),
-        }),
-    })
-    
-    local ButtonText = Create("TextLabel", {
-        Parent = Button,
-        FontFace = Font.new("rbxassetid://12187365364", Enum.FontWeight.Regular, Enum.FontStyle.Normal),
-        Text = Element.Name,
-        TextColor3 = DarkHub.Theme.Text,
-        TextSize = 14,
-        TextTransparency = 0.3,
-        BackgroundTransparency = 1,
-        Position = UDim2.new(0.5, 0, 0.5, 0),
-        AnchorPoint = Vector2.new(0.5, 0.5),
-        AutomaticSize = Enum.AutomaticSize.X,
-        ZIndex = 3,
-    })
-    
-    -- Наведение
-    Button.MouseEnter:Connect(function()
-        CreateTween(ButtonAccent, TweenInfo.new(0.2, Enum.EasingStyle.Quint, Enum.EasingDirection.Out), {
-            Size = UDim2.new(1, 0, 1, 0),
-            BackgroundTransparency = 0,
-        })
-    end)
-    
-    Button.MouseLeave:Connect(function()
-        CreateTween(ButtonAccent, TweenInfo.new(0.2, Enum.EasingStyle.Quint, Enum.EasingDirection.Out), {
-            Size = UDim2.new(0, 0, 0, 0),
-            BackgroundTransparency = 1,
-        })
-    end)
-    
-    -- Нажатие
-    Button.MouseButton1Click:Connect(function()
-        Element.Callback()
-        
-        -- Анимация нажатия
-        CreateTween(Button, TweenInfo.new(0.1, Enum.EasingStyle.Quad), {
-            Size = UDim2.new(0.95, 0, 0.95, 0),
-        })
-        task.wait(0.1)
-        CreateTween(Button, TweenInfo.new(0.1, Enum.EasingStyle.Quad), {
-            Size = UDim2.new(1, 0, 1, 0),
-        })
-    end)
-    
-    Element.Frame = Frame
-    table.insert(Section.Elements, Element)
-    
-    return Element
-end
-
--- Переключатель (Toggle)
-function DarkHub:Toggle(Section, Data)
-    local Element = {
-        Section = Section,
-        Name = Data.Name or "Toggle",
-        Flag = Data.Flag or "toggle_" .. tostring(#DarkHub.Flags + 1),
-        Default = Data.Default or false,
-        Callback = Data.Callback or function() end,
-        Value = false,
-        Frame = nil,
-    }
-    
-    local Frame = Create("Frame", {
-        Parent = Section.Content,
-        Size = UDim2.new(1, 0, 0, 24),
-        BackgroundTransparency = 1,
-        ZIndex = 2,
-    })
-    
-    local Button = Create("TextButton", {
-        Parent = Frame,
-        Size = UDim2.new(1, 0, 1, 0),
-        BackgroundTransparency = 1,
-        BorderSizePixel = 0,
-        Text = "",
-        AutoButtonColor = false,
-        ZIndex = 2,
-    })
-    
-    -- Индикатор
-    local Indicator = Create("Frame", {
-        Parent = Frame,
-        Size = UDim2.new(0, 18, 0, 18),
-        Position = UDim2.new(0, 0, 0.5, 0),
-        AnchorPoint = Vector2.new(0, 0.5),
-        BackgroundColor3 = DarkHub.Theme.Element,
-        BorderSizePixel = 0,
-        ZIndex = 2,
-    })
-    
-    Create("UICorner", {
-        Parent = Indicator,
-        CornerRadius = UDim.new(0, 3),
-    })
-    
-    -- Акцент переключателя
-    local IndicatorAccent = Create("Frame", {
-        Parent = Indicator,
-        Size = UDim2.new(0, 0, 0, 0),
-        Position = UDim2.new(0.5, 0, 0.5, 0),
-        AnchorPoint = Vector2.new(0.5, 0.5),
-        BackgroundColor3 = DarkHub.Theme.Accent,
-        BackgroundTransparency = 1,
-        BorderSizePixel = 0,
-        ZIndex = 1,
-    })
-    
-    Create("UICorner", {
-        Parent = IndicatorAccent,
-        CornerRadius = UDim.new(0, 3),
-    })
-    
-    Create("UIGradient", {
-        Parent = IndicatorAccent,
-        Color = ColorSequence.new({
-            ColorSequenceKeypoint.new(0, DarkHub.Theme.Accent),
-            ColorSequenceKeypoint.new(1, DarkHub.Theme.AccentGradient),
-        }),
-    })
-    
-    -- Галочка
-    local CheckIcon = Create("ImageLabel", {
-        Parent = IndicatorAccent,
-        Size = UDim2.new(0, 0, 0, 0),
-        Position = UDim2.new(0.5, 0, 0.5, 0),
-        AnchorPoint = Vector2.new(0.5, 0.5),
-        BackgroundTransparency = 1,
-        Image = "rbxassetid://121760666525660",
-        ImageColor3 = DarkHub.Theme.Text,
-        ImageTransparency = 1,
-        ZIndex = 3,
-    })
-    
-    local Label = Create("TextLabel", {
-        Parent = Frame,
-        FontFace = Font.new("rbxassetid://12187365364", Enum.FontWeight.Regular, Enum.FontStyle.Normal),
-        Text = Element.Name,
-        TextColor3 = DarkHub.Theme.Text,
-        TextSize = 14,
-        TextTransparency = 0.3,
-        TextXAlignment = Enum.TextXAlignment.Left,
-        BackgroundTransparency = 1,
-        Position = UDim2.new(0, 24, 0.5, -1),
-        AnchorPoint = Vector2.new(0, 0.5),
-        AutomaticSize = Enum.AutomaticSize.X,
-        ZIndex = 2,
-    })
-    
-    function Element:Set(Value)
-        Element.Value = Value
-        DarkHub.Flags[Element.Flag] = Value
-        
-        if Value then
-            CreateTween(IndicatorAccent, TweenInfo.new(0.2, Enum.EasingStyle.Back, Enum.EasingDirection.Out), {
-                Size = UDim2.new(1, 0, 1, 0),
-                BackgroundTransparency = 0,
-            })
-            CreateTween(CheckIcon, TweenInfo.new(0.15, Enum.EasingStyle.Quad), {
-                Size = UDim2.new(0, 10, 0, 9),
-                ImageTransparency = 0,
-            })
-        else
-            CreateTween(IndicatorAccent, TweenInfo.new(0.15, Enum.EasingStyle.Back, Enum.EasingDirection.Out), {
-                Size = UDim2.new(0, 0, 0, 0),
-                BackgroundTransparency = 1,
-            })
-            CreateTween(CheckIcon, TweenInfo.new(0.1, Enum.EasingStyle.Quad), {
-                Size = UDim2.new(0, 0, 0, 0),
-                ImageTransparency = 1,
-            })
-        end
-        
-        Element.Callback(Value)
-    end
-    
-    function Element:Get()
-        return Element.Value
-    end
-    
-    -- Наведение
-    Button.MouseEnter:Connect(function()
-        CreateTween(Indicator, TweenInfo.new(0.15, Enum.EasingStyle.Quint, Enum.EasingDirection.Out), {
-            Size = UDim2.new(0, 21, 0, 21),
-            Position = UDim2.new(0, -3, 0.5, 0),
-        })
-    end)
-    
-    Button.MouseLeave:Connect(function()
-        CreateTween(Indicator, TweenInfo.new(0.15, Enum.EasingStyle.Quint, Enum.EasingDirection.Out), {
-            Size = UDim2.new(0, 18, 0, 18),
-            Position = UDim2.new(0, 0, 0.5, 0),
-        })
-    end)
-    
-    Button.MouseButton1Click:Connect(function()
-        Element:Set(not Element.Value)
-    end)
-    
-    Element:Set(Element.Default)
-    Element.Frame = Frame
-    table.insert(Section.Elements, Element)
-    
-    return Element
-end
-
--- Ползунок (Slider)
-function DarkHub:Slider(Section, Data)
-    local Element = {
-        Section = Section,
-        Name = Data.Name or "Slider",
-        Flag = Data.Flag or "slider_" .. tostring(#DarkHub.Flags + 1),
-        Min = Data.Min or 0,
-        Max = Data.Max or 100,
-        Default = Data.Default or 50,
-        Suffix = Data.Suffix or "",
-        Decimals = Data.Decimals or 1,
-        Callback = Data.Callback or function() end,
-        Value = 0,
-        Frame = nil,
-        Sliding = false,
-    }
-    
-    local Frame = Create("Frame", {
-        Parent = Section.Content,
-        Size = UDim2.new(1, 0, 0, 38),
-        BackgroundTransparency = 1,
-        ZIndex = 2,
-    })
-    
-    local Label = Create("TextLabel", {
-        Parent = Frame,
-        FontFace = Font.new("rbxassetid://12187365364", Enum.FontWeight.Regular, Enum.FontStyle.Normal),
-        Text = Element.Name,
-        TextColor3 = DarkHub.Theme.Text,
-        TextSize = 14,
-        TextTransparency = 0.3,
-        TextXAlignment = Enum.TextXAlignment.Left,
-        BackgroundTransparency = 1,
-        Position = UDim2.new(0, 0, 0, 0),
-        AutomaticSize = Enum.AutomaticSize.X,
-        ZIndex = 2,
-    })
-    
-    -- Значение
-    local ValueLabel = Create("TextLabel", {
-        Parent = Frame,
-        FontFace = Font.new("rbxassetid://12187365364", Enum.FontWeight.Regular, Enum.FontStyle.Normal),
-        Text = tostring(Element.Default) .. Element.Suffix,
-        TextColor3 = DarkHub.Theme.Text,
-        TextSize = 14,
-        TextTransparency = 0.3,
-        TextXAlignment = Enum.TextXAlignment.Right,
-        BackgroundTransparency = 1,
-        Position = UDim2.new(1, 0, 0, 0),
-        AnchorPoint = Vector2.new(1, 0),
-        AutomaticSize = Enum.AutomaticSize.X,
-        ZIndex = 2,
-    })
-    
-    -- Слайдер
-    local SliderTrack = Create("TextButton", {
-        Parent = Frame,
-        Size = UDim2.new(1, -40, 0, 6),
-        Position = UDim2.new(0, 20, 1, -4),
-        AnchorPoint = Vector2.new(0, 1),
-        BackgroundColor3 = DarkHub.Theme.Element,
-        BorderSizePixel = 0,
-        Text = "",
-        AutoButtonColor = false,
-        ZIndex = 2,
-    })
-    
-    Create("UICorner", {
-        Parent = SliderTrack,
-        CornerRadius = UDim.new(1, 0),
-    })
-    
-    -- Заполнение
-    local SliderFill = Create("Frame", {
-        Parent = SliderTrack,
-        Size = UDim2.new((Element.Default - Element.Min) / (Element.Max - Element.Min), 0, 1, 0),
-        BackgroundColor3 = DarkHub.Theme.Accent,
-        BorderSizePixel = 0,
-        ZIndex = 1,
-    })
-    
-    Create("UICorner", {
-        Parent = SliderFill,
-        CornerRadius = UDim.new(1, 0),
-    })
-    
-    Create("UIGradient", {
-        Parent = SliderFill,
-        Color = ColorSequence.new({
-            ColorSequenceKeypoint.new(0, DarkHub.Theme.Accent),
-            ColorSequenceKeypoint.new(1, DarkHub.Theme.AccentGradient),
-        }),
-    })
-    
-    -- Ручка
-    local SliderHandle = Create("Frame", {
-        Parent = SliderTrack,
-        Size = UDim2.new(0, 14, 0, 14),
-        Position = UDim2.new((Element.Default - Element.Min) / (Element.Max - Element.Min), -7, 0.5, -7),
-        AnchorPoint = Vector2.new(0, 0.5),
-        BackgroundColor3 = DarkHub.Theme.Text,
-        BorderSizePixel = 0,
-        ZIndex = 3,
-    })
-    
-    Create("UICorner", {
-        Parent = SliderHandle,
-        CornerRadius = UDim.new(1, 0),
-    })
-    
-    function Element:Set(Value)
-        local Clamped = math.clamp(Value, Element.Min, Element.Max)
-        local Rounded = math.round(Clamped / Element.Decimals) * Element.Decimals
-        Element.Value = Rounded
-        DarkHub.Flags[Element.Flag] = Rounded
-        
-        local Percent = (Rounded - Element.Min) / (Element.Max - Element.Min)
-        
-        CreateTween(SliderFill, TweenInfo.new(0.1, Enum.EasingStyle.Quad), {
-            Size = UDim2.new(Percent, 0, 1, 0),
-        })
-        
-        CreateTween(SliderHandle, TweenInfo.new(0.1, Enum.EasingStyle.Quad), {
-            Position = UDim2.new(Percent, -7, 0.5, -7),
-        })
-        
-        ValueLabel.Text = tostring(Rounded) .. Element.Suffix
-        
-        Element.Callback(Rounded)
-    end
-    
-    function Element:Get()
-        return Element.Value
-    end
-    
-    -- События перетаскивания
-    SliderTrack.MouseButton1Down:Connect(function(X, Y)
-        Element.Sliding = true
-        local Position = (X - SliderTrack.AbsolutePosition.X) / SliderTrack.AbsoluteSize.X
-        local Value = Element.Min + (Element.Max - Element.Min) * math.clamp(Position, 0, 1)
-        Element:Set(Value)
-    end)
-    
-    UserInputService.InputChanged:Connect(function(Input)
-        if Input.UserInputType == Enum.UserInputType.MouseMovement and Element.Sliding then
-            local Position = (Input.Position.X - SliderTrack.AbsolutePosition.X) / SliderTrack.AbsoluteSize.X
-            local Value = Element.Min + (Element.Max - Element.Min) * math.clamp(Position, 0, 1)
-            Element:Set(Value)
-        end
-    end)
-    
-    UserInputService.InputEnded:Connect(function(Input)
-        if Input.UserInputType == Enum.UserInputType.MouseButton1 then
-            Element.Sliding = false
-        end
-    end)
-    
-    Element:Set(Element.Default)
-    Element.Frame = Frame
-    table.insert(Section.Elements, Element)
-    
-    return Element
-end
-
--- Выпадающий список (Dropdown)
-function DarkHub:Dropdown(Section, Data)
-    local Element = {
-        Section = Section,
-        Name = Data.Name or "Dropdown",
-        Flag = Data.Flag or "dropdown_" .. tostring(#DarkHub.Flags + 1),
-        Items = Data.Items or {"Option 1", "Option 2", "Option 3"},
-        Default = Data.Default or nil,
-        Callback = Data.Callback or function() end,
-        Value = nil,
-        Frame = nil,
-        IsOpen = false,
-        Options = {},
-    }
-    
-    local Frame = Create("Frame", {
-        Parent = Section.Content,
-        Size = UDim2.new(1, 0, 0, 28),
-        BackgroundTransparency = 1,
-        ZIndex = 2,
-    })
-    
-    local Label = Create("TextLabel", {
-        Parent = Frame,
-        FontFace = Font.new("rbxassetid://12187365364", Enum.FontWeight.Regular, Enum.FontStyle.Normal),
-        Text = Element.Name,
-        TextColor3 = DarkHub.Theme.Text,
-        TextSize = 14,
-        TextTransparency = 0.3,
-        TextXAlignment = Enum.TextXAlignment.Left,
-        BackgroundTransparency = 1,
-        Position = UDim2.new(0, 0, 0.5, -1),
-        AnchorPoint = Vector2.new(0, 0.5),
-        AutomaticSize = Enum.AutomaticSize.X,
-        ZIndex = 2,
-    })
-    
-    local Button = Create("TextButton", {
-        Parent = Frame,
-        Size = UDim2.new(0, 140, 0, 28),
-        Position = UDim2.new(1, 0, 0.5, 0),
-        AnchorPoint = Vector2.new(1, 0.5),
-        BackgroundColor3 = DarkHub.Theme.Element,
-        BorderSizePixel = 0,
-        Text = "",
-        AutoButtonColor = false,
-        ZIndex = 2,
-    })
-    
-    Create("UICorner", {
-        Parent = Button,
-        CornerRadius = UDim.new(0, 4),
-    })
-    
-    local ValueText = Create("TextLabel", {
-        Parent = Button,
-        FontFace = Font.new("rbxassetid://12187365364", Enum.FontWeight.Regular, Enum.FontStyle.Normal),
-        Text = "...",
-        TextColor3 = DarkHub.Theme.Text,
-        TextSize = 14,
-        TextTransparency = 0.3,
-        TextXAlignment = Enum.TextXAlignment.Left,
-        BackgroundTransparency = 1,
-        Position = UDim2.new(0, 10, 0.5, -1),
-        AnchorPoint = Vector2.new(0, 0.5),
-        Size = UDim2.new(1, -30, 0, 0),
-        TextTruncate = Enum.TextTruncate.AtEnd,
-        ZIndex = 3,
-    })
-    
-    local Arrow = Create("ImageLabel", {
-        Parent = Button,
-        Size = UDim2.new(0, 12, 0, 8),
-        Position = UDim2.new(1, -8, 0.5, 0),
-        AnchorPoint = Vector2.new(1, 0.5),
-        BackgroundTransparency = 1,
-        Image = "rbxassetid://123317177279443",
-        ImageColor3 = DarkHub.Theme.Text,
-        ImageTransparency = 0.3,
-        ZIndex = 3,
-    })
-    
-    -- Выпадающий список
-    local DropdownFrame = Create("TextButton", {
-        Parent = ScreenGui,
-        Size = UDim2.new(0, 140, 0, 100),
-        Position = UDim2.new(0, 0, 0, 0),
-        BackgroundColor3 = DarkHub.Theme.Background2,
-        BorderSizePixel = 0,
-        Text = "",
-        AutoButtonColor = false,
-        Visible = false,
-        ZIndex = 20,
-    })
-    
-    Create("UIStroke", {
-        Parent = DropdownFrame,
-        Color = DarkHub.Theme.Outline,
-        Thickness = 1,
-    })
-    
-    Create("UICorner", {
-        Parent = DropdownFrame,
-        CornerRadius = UDim.new(0, 4),
-    })
-    
-    local DropdownList = Create("ScrollingFrame", {
-        Parent = DropdownFrame,
-        Size = UDim2.new(1, -8, 1, -8),
-        Position = UDim2.new(0, 4, 0, 4),
-        BackgroundTransparency = 1,
-        BorderSizePixel = 0,
-        ScrollBarThickness = 0,
-        CanvasSize = UDim2.new(0, 0, 0, 0),
-        AutomaticCanvasSize = Enum.AutomaticSize.Y,
-        ZIndex = 21,
-    })
-    
-    Create("UIListLayout", {
-        Parent = DropdownList,
-        Padding = UDim.new(0, 2),
-        SortOrder = Enum.SortOrder.LayoutOrder,
-    })
-    
-    local RenderStepped
-    
-    function Element:SetOpen(Open)
-        Element.IsOpen = Open
-        
-        if Open then
-            DropdownFrame.Visible = true
-            DropdownFrame.Parent = ScreenGui
-            
-            RenderStepped = RunService.RenderStepped:Connect(function()
-                DropdownFrame.Position = UDim2.new(0, Button.AbsolutePosition.X, 0, Button.AbsolutePosition.Y + Button.AbsoluteSize.Y + 4)
-                DropdownFrame.Size = UDim2.new(0, Button.AbsoluteSize.X, 0, math.min(120, #Element.Items * 28 + 12))
-            end)
-            
-            CreateTween(Arrow, TweenInfo.new(0.2, Enum.EasingStyle.Quad), {
-                Rotation = 180,
-            })
-        else
-            if RenderStepped then
-                RenderStepped:Disconnect()
-                RenderStepped = nil
-            end
-            
-            CreateTween(Arrow, TweenInfo.new(0.2, Enum.EasingStyle.Quad), {
-                Rotation = 0,
-            })
-            
-            DropdownFrame.Visible = false
-            DropdownFrame.Parent = ScreenGui
-        end
-    end
-    
-    function Element:Set(Value)
-        Element.Value = Value
-        DarkHub.Flags[Element.Flag] = Value
-        
-        ValueText.Text = Value or "..."
-        Element.Callback(Value)
-        
-        Element:SetOpen(false)
-    end
-    
-    function Element:Get()
-        return Element.Value
-    end
-    
-    -- Создание опций
-    for _, Item in pairs(Element.Items) do
-        local Option = Create("TextButton", {
-            Parent = DropdownList,
-            Size = UDim2.new(1, 0, 0, 22),
-            BackgroundColor3 = DarkHub.Theme.Element,
-            BackgroundTransparency = 1,
+    -- Notification System
+    function Library:Notify(Title, Text, Duration)
+        Duration = Duration or 3
+        local Frame = Instances:Create("Frame", {
+            Parent = Library.NotifHolder.Instance,
+            Size = UDim2New(1, 0, 0, 50),
+            BackgroundColor3 = Library.Theme["Background"],
             BorderSizePixel = 0,
-            Text = "",
-            AutoButtonColor = false,
-            ZIndex = 22,
+            BackgroundTransparency = 0.1
         })
-        
-        local OptionText = Create("TextLabel", {
-            Parent = Option,
-            FontFace = Font.new("rbxassetid://12187365364", Enum.FontWeight.Regular, Enum.FontStyle.Normal),
-            Text = Item,
-            TextColor3 = DarkHub.Theme.Text,
-            TextSize = 13,
-            TextTransparency = 0.3,
-            TextXAlignment = Enum.TextXAlignment.Left,
+        Instances:Create("UICorner", { Parent = Frame.Instance, CornerRadius = UDimNew(0, 6) })
+        Instances:Create("UIStroke", { Parent = Frame.Instance, Color = Library.Theme["Accent"], Thickness = 1 })
+
+        local TitleLabel = Instances:Create("TextLabel", {
+            Parent = Frame.Instance,
+            Text = Title,
+            FontFace = Library.Font,
+            TextSize = 14,
+            TextColor3 = Library.Theme["Accent"],
+            Position = UDim2New(0, 10, 0, 6),
+            Size = UDim2New(1, -20, 0, 16),
             BackgroundTransparency = 1,
-            Position = UDim2.new(0, 8, 0.5, -1),
-            AnchorPoint = Vector2.new(0, 0.5),
-            AutomaticSize = Enum.AutomaticSize.X,
-            ZIndex = 23,
+            TextXAlignment = Enum.TextXAlignment.Left
         })
-        
-        Option.MouseEnter:Connect(function()
-            CreateTween(Option, TweenInfo.new(0.1, Enum.EasingStyle.Quad), {
-                BackgroundTransparency = 0.5,
-            })
-        end)
-        
-        Option.MouseLeave:Connect(function()
-            CreateTween(Option, TweenInfo.new(0.1, Enum.EasingStyle.Quad), {
-                BackgroundTransparency = 1,
-            })
-        end)
-        
-        Option.MouseButton1Click:Connect(function()
-            Element:Set(Item)
+
+        local DescLabel = Instances:Create("TextLabel", {
+            Parent = Frame.Instance,
+            Text = Text,
+            FontFace = Library.Font,
+            TextSize = 12,
+            TextColor3 = Library.Theme["Text"],
+            Position = UDim2New(0, 10, 0, 24),
+            Size = UDim2New(1, -20, 0, 20),
+            BackgroundTransparency = 1,
+            TextXAlignment = Enum.TextXAlignment.Left
+        })
+
+        task.delay(Duration, function()
+            Frame:Tween(TweenInfo.new(0.3), {BackgroundTransparency = 1})
+            TitleLabel:Tween(TweenInfo.new(0.3), {TextTransparency = 1})
+            DescLabel:Tween(TweenInfo.new(0.3), {TextTransparency = 1})
+            task.wait(0.3)
+            Frame:Clean()
         end)
     end
-    
-    Button.MouseButton1Click:Connect(function()
-        Element:SetOpen(not Element.IsOpen)
-    end)
-    
-    -- Закрытие при клике вне
-    UserInputService.InputBegan:Connect(function(Input)
-        if Input.UserInputType == Enum.UserInputType.MouseButton1 then
-            if Element.IsOpen then
-                local MousePos = UserInputService:GetMouseLocation()
-                local FramePos = DropdownFrame.AbsolutePosition
-                local FrameSize = DropdownFrame.AbsoluteSize
-                
-                if not (MousePos.X >= FramePos.X and MousePos.X <= FramePos.X + FrameSize.X and
-                        MousePos.Y >= FramePos.Y and MousePos.Y <= FramePos.Y + FrameSize.Y) then
-                    Element:SetOpen(false)
+
+    -- Window Builder
+    function Library:CreateWindow(Config)
+        Config = Config or {}
+        local WindowName = Config.Name or "Dark Hub"
+        local SubText = Config.SubName or "Universal Mobile & PC"
+
+        -- Main Window Frame (Centered)
+        local MainFrame = Instances:Create("Frame", {
+            Parent = Library.Holder.Instance,
+            Name = "MainFrame",
+            AnchorPoint = Vector2New(0.5, 0.5),
+            Position = UDim2New(0.5, 0, 0.5, 0),
+            Size = IsMobile and UDim2New(0, 560, 0, 340) or UDim2New(0, 650, 0, 420),
+            BackgroundColor3 = Library.Theme["Background"],
+            BorderSizePixel = 0,
+            ClipsDescendants = true
+        })
+
+        Instances:Create("UICorner", { Parent = MainFrame.Instance, CornerRadius = UDimNew(0, 8) })
+        Instances:Create("UIStroke", { Parent = MainFrame.Instance, Color = Library.Theme["Outline"], Thickness = 1.5 })
+
+        -- Header
+        local Header = Instances:Create("Frame", {
+            Parent = MainFrame.Instance,
+            Size = UDim2New(1, 0, 0, 45),
+            BackgroundColor3 = Library.Theme["Background 2"],
+            BorderSizePixel = 0
+        })
+
+        local Title = Instances:Create("TextLabel", {
+            Parent = Header.Instance,
+            Text = WindowName,
+            FontFace = Library.Font,
+            TextSize = 18,
+            TextColor3 = Library.Theme["AccentGradient"],
+            Position = UDim2New(0, 12, 0, 6),
+            Size = UDim2New(0, 200, 0, 20),
+            BackgroundTransparency = 1,
+            TextXAlignment = Enum.TextXAlignment.Left
+        })
+
+        local SubTitle = Instances:Create("TextLabel", {
+            Parent = Header.Instance,
+            Text = SubText,
+            FontFace = Library.Font,
+            TextSize = 11,
+            TextColor3 = Library.Theme["Text"],
+            Position = UDim2New(0, 12, 0, 25),
+            Size = UDim2New(0, 200, 0, 14),
+            BackgroundTransparency = 1,
+            TextTransparency = 0.4,
+            TextXAlignment = Enum.TextXAlignment.Left
+        })
+
+        -- Search Input
+        local SearchBox = Instances:Create("TextBox", {
+            Parent = Header.Instance,
+            PlaceholderText = "Search...",
+            Text = "",
+            FontFace = Library.Font,
+            TextSize = 12,
+            TextColor3 = Library.Theme["Text"],
+            PlaceholderColor3 = FromRGB(120, 120, 120),
+            BackgroundColor3 = Library.Theme["Element"],
+            Position = UDim2New(1, -210, 0, 10),
+            Size = UDim2New(0, 130, 0, 25),
+            BorderSizePixel = 0
+        })
+        Instances:Create("UICorner", { Parent = SearchBox.Instance, CornerRadius = UDimNew(0, 5) })
+
+        -- Close Button
+        local CloseBtn = Instances:Create("TextButton", {
+            Parent = Header.Instance,
+            Text = "X",
+            FontFace = Library.Font,
+            TextSize = 14,
+            TextColor3 = Library.Theme["Text"],
+            BackgroundColor3 = FromRGB(180, 40, 40),
+            Position = UDim2New(1, -35, 0, 10),
+            Size = UDim2New(0, 25, 0, 25),
+            BorderSizePixel = 0
+        })
+        Instances:Create("UICorner", { Parent = CloseBtn.Instance, CornerRadius = UDimNew(0, 5) })
+
+        -- Sidebar Tabs Container
+        local Sidebar = Instances:Create("ScrollingFrame", {
+            Parent = MainFrame.Instance,
+            Position = UDim2New(0, 0, 0, 45),
+            Size = UDim2New(0, 140, 1, -75),
+            BackgroundColor3 = Library.Theme["Background 2"],
+            BorderSizePixel = 0,
+            ScrollBarThickness = 2,
+            CanvasSize = UDim2New(0, 0, 0, 0),
+            AutomaticCanvasSize = Enum.AutomaticSize.Y
+        })
+        Instances:Create("UIListLayout", { Parent = Sidebar.Instance, Padding = UDimNew(0, 4), SortOrder = Enum.SortOrder.LayoutOrder })
+        Instances:Create("UIPadding", { Parent = Sidebar.Instance, PaddingTop = UDimNew(0, 6), PaddingLeft = UDimNew(0, 6), PaddingRight = UDimNew(0, 6) })
+
+        -- Pages Container
+        local PageContainer = Instances:Create("Frame", {
+            Parent = MainFrame.Instance,
+            Position = UDim2New(0, 140, 0, 45),
+            Size = UDim2New(1, -140, 1, -75),
+            BackgroundTransparency = 1
+        })
+
+        -- Footer / Bottom Status Bar
+        local Footer = Instances:Create("Frame", {
+            Parent = MainFrame.Instance,
+            Position = UDim2New(0, 0, 1, -30),
+            Size = UDim2New(1, 0, 0, 30),
+            BackgroundColor3 = Library.Theme["Background 2"],
+            BorderSizePixel = 0
+        })
+
+        local FooterText = Instances:Create("TextLabel", {
+            Parent = Footer.Instance,
+            Text = "Dark Hub | Ready",
+            FontFace = Library.Font,
+            TextSize = 11,
+            TextColor3 = Library.Theme["Text"],
+            Position = UDim2New(0, 10, 0, 0),
+            Size = UDim2New(0.5, 0, 1, 0),
+            BackgroundTransparency = 1,
+            TextXAlignment = Enum.TextXAlignment.Left
+        })
+
+        local TimerLabel = Instances:Create("TextLabel", {
+            Parent = Footer.Instance,
+            Text = "Time: 00:00:00",
+            FontFace = Library.Font,
+            TextSize = 11,
+            TextColor3 = Library.Theme["Accent"],
+            Position = UDim2New(0.5, 0, 0, 0),
+            Size = UDim2New(0.5, -10, 1, 0),
+            BackgroundTransparency = 1,
+            TextXAlignment = Enum.TextXAlignment.Right
+        })
+
+        -- Live Uptime Timer
+        local StartTime = os.time()
+        RunService.RenderStepped:Connect(function()
+            local Elapsed = os.time() - StartTime
+            local Hrs = math.floor(Elapsed / 3600)
+            local Mins = math.floor((Elapsed % 3600) / 60)
+            local Secs = Elapsed % 60
+            TimerLabel.Instance.Text = StringFormat("Uptime: %02d:%02d:%02d", Hrs, Mins, Secs)
+        end)
+
+        -- Mobile Floating Toggle Button
+        if IsMobile then
+            local MobileBtn = Instances:Create("TextButton", {
+                Parent = Library.Holder.Instance,
+                Text = "DARK",
+                FontFace = Library.Font,
+                TextSize = 12,
+                TextColor3 = Library.Theme["Text"],
+                BackgroundColor3 = Library.Theme["Accent"],
+                Position = UDim2New(0, 15, 0, 15),
+                Size = UDim2New(0, 45, 0, 45),
+                BorderSizePixel = 0,
+                ZIndex = 1000
+            })
+            Instances:Create("UICorner", { Parent = MobileBtn.Instance, CornerRadius = UDimNew(1, 0) })
+            
+            MobileBtn:Connect("MouseButton1Click", function()
+                MainFrame.Instance.Visible = not MainFrame.Instance.Visible
+            end)
+        end
+
+        -- Dragging Logic
+        local Dragging, DragStart, StartPos
+        Header:Connect("InputBegan", function(Input)
+            if Input.UserInputType == Enum.UserInputType.MouseButton1 or Input.UserInputType == Enum.UserInputType.Touch then
+                Dragging = true
+                DragStart = Input.Position
+                StartPos = MainFrame.Instance.Position
+            end
+        end)
+
+        UserInputService.InputChanged:Connect(function(Input)
+            if Dragging and (Input.UserInputType == Enum.UserInputType.MouseMovement or Input.UserInputType == Enum.UserInputType.Touch) then
+                local Delta = Input.Position - DragStart
+                MainFrame.Instance.Position = UDim2New(
+                    StartPos.X.Scale, StartPos.X.Offset + Delta.X,
+                    StartPos.Y.Scale, StartPos.Y.Offset + Delta.Y
+                )
+            end
+        end)
+
+        UserInputService.InputEnded:Connect(function(Input)
+            if Input.UserInputType == Enum.UserInputType.MouseButton1 or Input.UserInputType == Enum.UserInputType.Touch then
+                Dragging = false
+            end
+        end)
+
+        CloseBtn:Connect("MouseButton1Click", function()
+            MainFrame.Instance.Visible = false
+        end)
+
+        -- Keybind Toggle (PC)
+        UserInputService.InputBegan:Connect(function(Input, Processed)
+            if not Processed and Input.KeyCode == Library.MenuKeybind then
+                MainFrame.Instance.Visible = not MainFrame.Instance.Visible
+            end
+        end)
+
+        -- Window Tabs Object
+        local WindowObj = {
+            CurrentPage = nil,
+            Pages = {},
+            SearchElements = {}
+        }
+
+        -- Dynamic Search Logic
+        SearchBox:Connect("Changed", function()
+            local Query = string.lower(SearchBox.Instance.Text)
+            for _, ItemData in ipairs(WindowObj.SearchElements) do
+                if Query == "" then
+                    ItemData.Frame.Instance.Visible = true
+                else
+                    ItemData.Frame.Instance.Visible = string.find(string.lower(ItemData.Name), Query) ~= nil
                 end
             end
-        end
-    end)
-    
-    if Element.Default then
-        Element:Set(Element.Default)
-    end
-    
-    Element.Frame = Frame
-    table.insert(Section.Elements, Element)
-    
-    return Element
-end
+        end)
 
--- Текстовое поле (Textbox)
-function DarkHub:Textbox(Section, Data)
-    local Element = {
-        Section = Section,
-        Name = Data.Name or "Textbox",
-        Flag = Data.Flag or "textbox_" .. tostring(#DarkHub.Flags + 1),
-        Placeholder = Data.Placeholder or "Enter text...",
-        Default = Data.Default or "",
-        Callback = Data.Callback or function() end,
-        Value = "",
-        Frame = nil,
-    }
-    
-    local Frame = Create("Frame", {
-        Parent = Section.Content,
-        Size = UDim2.new(1, 0, 0, 28),
-        BackgroundTransparency = 1,
-        ZIndex = 2,
-    })
-    
-    local Label = Create("TextLabel", {
-        Parent = Frame,
-        FontFace = Font.new("rbxassetid://12187365364", Enum.FontWeight.Regular, Enum.FontStyle.Normal),
-        Text = Element.Name,
-        TextColor3 = DarkHub.Theme.Text,
-        TextSize = 14,
-        TextTransparency = 0.3,
-        TextXAlignment = Enum.TextXAlignment.Left,
-        BackgroundTransparency = 1,
-        Position = UDim2.new(0, 0, 0.5, -1),
-        AnchorPoint = Vector2.new(0, 0.5),
-        AutomaticSize = Enum.AutomaticSize.X,
-        ZIndex = 2,
-    })
-    
-    local Input = Create("TextBox", {
-        Parent = Frame,
-        Size = UDim2.new(0, 140, 0, 28),
-        Position = UDim2.new(1, 0, 0.5, 0),
-        AnchorPoint = Vector2.new(1, 0.5),
-        FontFace = Font.new("rbxassetid://12187365364", Enum.FontWeight.Regular, Enum.FontStyle.Normal),
-        Text = "",
-        TextColor3 = DarkHub.Theme.Text,
-        TextSize = 14,
-        TextXAlignment = Enum.TextXAlignment.Left,
-        PlaceholderText = Element.Placeholder,
-        PlaceholderColor3 = DarkHub.Theme.Text,
-        BackgroundColor3 = DarkHub.Theme.Element,
-        BorderSizePixel = 0,
-        ClearTextOnFocus = false,
-        ZIndex = 2,
-    })
-    
-    Create("UICorner", {
-        Parent = Input,
-        CornerRadius = UDim.new(0, 4),
-    })
-    
-    Create("UIPadding", {
-        Parent = Input,
-        PaddingLeft = UDim.new(0, 10),
-    })
-    
-    function Element:Set(Value)
-        Element.Value = Value
-        DarkHub.Flags[Element.Flag] = Value
-        Input.Text = Value
-        Element.Callback(Value)
-    end
-    
-    function Element:Get()
-        return Element.Value
-    end
-    
-    Input:GetPropertyChangedSignal("Text"):Connect(function()
-        Element:Set(Input.Text)
-    end)
-    
-    if Element.Default then
-        Element:Set(Element.Default)
-    end
-    
-    Element.Frame = Frame
-    table.insert(Section.Elements, Element)
-    
-    return Element
-end
-
--- ============================================================
--- Уведомления
--- ============================================================
-
-function DarkHub:Notify(Data)
-    local Notification = Create("Frame", {
-        Parent = NotificationHolder,
-        BackgroundColor3 = DarkHub.Theme.Background2,
-        BackgroundTransparency = 0.35,
-        BorderSizePixel = 0,
-        AutomaticSize = Enum.AutomaticSize.XY,
-        ZIndex = 50,
-    })
-    
-    Create("UICorner", {
-        Parent = Notification,
-        CornerRadius = UDim.new(0, 4),
-    })
-    
-    Create("UIStroke", {
-        Parent = Notification,
-        Color = DarkHub.Theme.Outline,
-        Thickness = 1,
-        Transparency = 0,
-    })
-    
-    Create("UIPadding", {
-        Parent = Notification,
-        PaddingTop = UDim.new(0, 10),
-        PaddingBottom = UDim.new(0, 10),
-        PaddingLeft = UDim.new(0, 12),
-        PaddingRight = UDim.new(0, 12),
-    })
-    
-    local Title = Create("TextLabel", {
-        Parent = Notification,
-        FontFace = Font.new("rbxassetid://12187365364", Enum.FontWeight.SemiBold, Enum.FontStyle.Normal),
-        Text = Data.Title or "Notification",
-        TextColor3 = DarkHub.Theme.Text,
-        TextSize = 15,
-        TextXAlignment = Enum.TextXAlignment.Left,
-        BackgroundTransparency = 1,
-        AutomaticSize = Enum.AutomaticSize.XY,
-        ZIndex = 51,
-    })
-    
-    local Desc = Create("TextLabel", {
-        Parent = Notification,
-        FontFace = Font.new("rbxassetid://12187365364", Enum.FontWeight.Light, Enum.FontStyle.Normal),
-        Text = Data.Description or "",
-        TextColor3 = DarkHub.Theme.Text,
-        TextSize = 13,
-        TextTransparency = 0.3,
-        TextXAlignment = Enum.TextXAlignment.Left,
-        BackgroundTransparency = 1,
-        Position = UDim2.new(0, 0, 0, Title.TextBounds.Y + 4),
-        AutomaticSize = Enum.AutomaticSize.XY,
-        ZIndex = 51,
-    })
-    
-    -- Акцентная линия
-    local Accent = Create("Frame", {
-        Parent = Notification,
-        Size = UDim2.new(0, 0, 0, 3),
-        Position = UDim2.new(0, 0, 1, -3),
-        BackgroundColor3 = DarkHub.Theme.Accent,
-        BorderSizePixel = 0,
-        ZIndex = 51,
-    })
-    
-    Create("UICorner", {
-        Parent = Accent,
-        CornerRadius = UDim.new(1, 0),
-    })
-    
-    Create("UIGradient", {
-        Parent = Accent,
-        Color = ColorSequence.new({
-            ColorSequenceKeypoint.new(0, DarkHub.Theme.Accent),
-            ColorSequenceKeypoint.new(1, DarkHub.Theme.AccentGradient),
-        }),
-    })
-    
-    -- Анимация появления
-    Notification.Size = UDim2.new(0, 0, 0, 0)
-    Notification.BackgroundTransparency = 1
-    
-    for _, Child in pairs(Notification:GetDescendants()) do
-        if Child:IsA("TextLabel") then
-            Child.TextTransparency = 1
-        end
-    end
-    
-    task.wait(0.05)
-    
-    CreateTween(Notification, TweenInfo.new(0.4, Enum.EasingStyle.Exponential, Enum.EasingDirection.Out), {
-        Size = UDim2.new(0, Notification.AbsoluteSize.X, 0, Notification.AbsoluteSize.Y),
-        BackgroundTransparency = 0.35,
-    })
-    
-    for _, Child in pairs(Notification:GetDescendants()) do
-        if Child:IsA("TextLabel") then
-            CreateTween(Child, TweenInfo.new(0.4, Enum.EasingStyle.Exponential, Enum.EasingDirection.Out), {
-                TextTransparency = 0,
+        -- Create Page Function
+        function WindowObj:CreateTab(Name)
+            local TabBtn = Instances:Create("TextButton", {
+                Parent = Sidebar.Instance,
+                Text = Name,
+                FontFace = Library.Font,
+                TextSize = 13,
+                TextColor3 = Library.Theme["Text"],
+                BackgroundColor3 = Library.Theme["Element"],
+                Size = UDim2New(1, 0, 0, 30),
+                BorderSizePixel = 0
             })
-        end
-    end
-    
-    -- Анимация акцента
-    CreateTween(Accent, TweenInfo.new(Data.Duration or 3, Enum.EasingStyle.Linear), {
-        Size = UDim2.new(1, 0, 0, 3),
-    })
-    
-    -- Удаление
-    task.delay((Data.Duration or 3) + 0.3, function()
-        CreateTween(Notification, TweenInfo.new(0.3, Enum.EasingStyle.Exponential, Enum.EasingDirection.In), {
-            Size = UDim2.new(0, 0, 0, 0),
-            BackgroundTransparency = 1,
-        })
-        
-        for _, Child in pairs(Notification:GetDescendants()) do
-            if Child:IsA("TextLabel") then
-                CreateTween(Child, TweenInfo.new(0.2, Enum.EasingStyle.Quad), {
-                    TextTransparency = 1,
-                })
-            end
-        end
-        
-        task.wait(0.3)
-        Notification:Destroy()
-    end)
-end
+            Instances:Create("UICorner", { Parent = TabBtn.Instance, CornerRadius = UDimNew(0, 5) })
 
--- ============================================================
--- Водяной знак (Watermark)
--- ============================================================
-
-function DarkHub:SetWatermark(Elements)
-    -- Очищаем старые элементы
-    for _, Child in pairs(WatermarkContent:GetChildren()) do
-        Child:Destroy()
-    end
-    
-    for i, Element in pairs(Elements) do
-        if i > 1 then
-            local Sep = Create("TextLabel", {
-                Parent = WatermarkContent,
-                FontFace = Font.new("rbxassetid://12187365364", Enum.FontWeight.Light, Enum.FontStyle.Normal),
-                Text = "|",
-                TextColor3 = DarkHub.Theme.Text,
-                TextSize = 14,
-                TextTransparency = 0.5,
+            local PageScroll = Instances:Create("ScrollingFrame", {
+                Parent = PageContainer.Instance,
+                Size = UDim2New(1, 0, 1, 0),
                 BackgroundTransparency = 1,
-                AutomaticSize = Enum.AutomaticSize.XY,
-                ZIndex = 11,
+                Visible = false,
+                ScrollBarThickness = 3,
+                CanvasSize = UDim2New(0, 0, 0, 0),
+                AutomaticCanvasSize = Enum.AutomaticSize.Y
             })
+            Instances:Create("UIListLayout", { Parent = PageScroll.Instance, Padding = UDimNew(0, 8), SortOrder = Enum.SortOrder.LayoutOrder })
+            Instances:Create("UIPadding", { Parent = PageScroll.Instance, PaddingTop = UDimNew(0, 8), PaddingLeft = UDimNew(0, 8), PaddingRight = UDimNew(0, 8) })
+
+            local PageObj = { PageFrame = PageScroll }
+
+            TabBtn:Connect("MouseButton1Click", function()
+                for _, P in pairs(WindowObj.Pages) do
+                    P.PageFrame.Instance.Visible = false
+                    P.TabBtn.Instance.BackgroundColor3 = Library.Theme["Element"]
+                end
+                PageScroll.Instance.Visible = true
+                TabBtn.Instance.BackgroundColor3 = Library.Theme["Accent"]
+                WindowObj.CurrentPage = PageObj
+            end)
+
+            PageObj.TabBtn = TabBtn
+            TableInsert(WindowObj.Pages, PageObj)
+
+            -- Auto-select first tab
+            if #WindowObj.Pages == 1 then
+                PageScroll.Instance.Visible = true
+                TabBtn.Instance.BackgroundColor3 = Library.Theme["Accent"]
+                WindowObj.CurrentPage = PageObj
+            end
+
+            -- Create Section
+            function PageObj:CreateSection(SecName)
+                local SecFrame = Instances:Create("Frame", {
+                    Parent = PageScroll.Instance,
+                    Size = UDim2New(1, 0, 0, 30),
+                    BackgroundColor3 = Library.Theme["Section Background"],
+                    BorderSizePixel = 0,
+                    AutomaticSize = Enum.AutomaticSize.Y
+                })
+                Instances:Create("UICorner", { Parent = SecFrame.Instance, CornerRadius = UDimNew(0, 6) })
+                Instances:Create("UIStroke", { Parent = SecFrame.Instance, Color = Library.Theme["Outline"], Thickness = 1 })
+
+                local SecTitle = Instances:Create("TextLabel", {
+                    Parent = SecFrame.Instance,
+                    Text = SecName,
+                    FontFace = Library.Font,
+                    TextSize = 13,
+                    TextColor3 = Library.Theme["AccentGradient"],
+                    Position = UDim2New(0, 10, 0, 5),
+                    Size = UDim2New(1, -20, 0, 20),
+                    BackgroundTransparency = 1,
+                    TextXAlignment = Enum.TextXAlignment.Left
+                })
+
+                local ElementContainer = Instances:Create("Frame", {
+                    Parent = SecFrame.Instance,
+                    Position = UDim2New(0, 0, 0, 28),
+                    Size = UDim2New(1, 0, 0, 0),
+                    BackgroundTransparency = 1,
+                    AutomaticSize = Enum.AutomaticSize.Y
+                })
+                Instances:Create("UIListLayout", { Parent = ElementContainer.Instance, Padding = UDimNew(0, 6), SortOrder = Enum.SortOrder.LayoutOrder })
+                Instances:Create("UIPadding", { Parent = ElementContainer.Instance, PaddingLeft = UDimNew(0, 8), PaddingRight = UDimNew(0, 8), PaddingBottom = UDimNew(0, 8) })
+
+                local SecObj = {}
+
+                -- UI Element: Button
+                function SecObj:AddButton(Text, Callback)
+                    Callback = Callback or function() end
+                    local BtnFrame = Instances:Create("TextButton", {
+                        Parent = ElementContainer.Instance,
+                        Text = Text,
+                        FontFace = Library.Font,
+                        TextSize = 12,
+                        TextColor3 = Library.Theme["Text"],
+                        BackgroundColor3 = Library.Theme["Element"],
+                        Size = UDim2New(1, 0, 0, 28),
+                        BorderSizePixel = 0
+                    })
+                    Instances:Create("UICorner", { Parent = BtnFrame.Instance, CornerRadius = UDimNew(0, 4) })
+
+                    BtnFrame:Connect("MouseButton1Click", function()
+                        BtnFrame:Tween(TweenInfo.new(0.1), {BackgroundColor3 = Library.Theme["Accent"]})
+                        task.wait(0.1)
+                        BtnFrame:Tween(TweenInfo.new(0.1), {BackgroundColor3 = Library.Theme["Element"]})
+                        Callback()
+                    end)
+
+                    TableInsert(WindowObj.SearchElements, {Name = Text, Frame = BtnFrame})
+                end
+
+                -- UI Element: Toggle
+                function SecObj:AddToggle(Text, Default, Callback)
+                    Callback = Callback or function() end
+                    local Toggled = Default or false
+
+                    local TogFrame = Instances:Create("Frame", {
+                        Parent = ElementContainer.Instance,
+                        Size = UDim2New(1, 0, 0, 28),
+                        BackgroundColor3 = Library.Theme["Element"],
+                        BorderSizePixel = 0
+                    })
+                    Instances:Create("UICorner", { Parent = TogFrame.Instance, CornerRadius = UDimNew(0, 4) })
+
+                    local TogLabel = Instances:Create("TextLabel", {
+                        Parent = TogFrame.Instance,
+                        Text = Text,
+                        FontFace = Library.Font,
+                        TextSize = 12,
+                        TextColor3 = Library.Theme["Text"],
+                        Position = UDim2New(0, 10, 0, 0),
+                        Size = UDim2New(0.7, 0, 1, 0),
+                        BackgroundTransparency = 1,
+                        TextXAlignment = Enum.TextXAlignment.Left
+                    })
+
+                    local Switch = Instances:Create("Frame", {
+                        Parent = TogFrame.Instance,
+                        Position = UDim2New(1, -40, 0.5, -8),
+                        Size = UDim2New(0, 30, 0, 16),
+                        BackgroundColor3 = Toggled and Library.Theme["Accent"] or FromRGB(50, 50, 50),
+                        BorderSizePixel = 0
+                    })
+                    Instances:Create("UICorner", { Parent = Switch.Instance, CornerRadius = UDimNew(1, 0) })
+
+                    local Indicator = Instances:Create("Frame", {
+                        Parent = Switch.Instance,
+                        Position = Toggled and UDim2New(1, -14, 0.5, -6) or UDim2New(0, 2, 0.5, -6),
+                        Size = UDim2New(0, 12, 0, 12),
+                        BackgroundColor3 = FromRGB(255, 255, 255),
+                        BorderSizePixel = 0
+                    })
+                    Instances:Create("UICorner", { Parent = Indicator.Instance, CornerRadius = UDimNew(1, 0) })
+
+                    local Clicker = Instances:Create("TextButton", {
+                        Parent = TogFrame.Instance,
+                        Text = "",
+                        BackgroundTransparency = 1,
+                        Size = UDim2New(1, 0, 1, 0)
+                    })
+
+                    Clicker:Connect("MouseButton1Click", function()
+                        Toggled = not Toggled
+                        Switch:Tween(TweenInfo.new(0.15), {BackgroundColor3 = Toggled and Library.Theme["Accent"] or FromRGB(50, 50, 50)})
+                        Indicator:Tween(TweenInfo.new(0.15), {Position = Toggled and UDim2New(1, -14, 0.5, -6) or UDim2New(0, 2, 0.5, -6)})
+                        Callback(Toggled)
+                    end)
+
+                    TableInsert(WindowObj.SearchElements, {Name = Text, Frame = TogFrame})
+                end
+
+                -- UI Element: Slider
+                function SecObj:AddSlider(Text, Min, Max, Default, Callback)
+                    Callback = Callback or function() end
+                    Default = math.clamp(Default or Min, Min, Max)
+
+                    local SldFrame = Instances:Create("Frame", {
+                        Parent = ElementContainer.Instance,
+                        Size = UDim2New(1, 0, 0, 42),
+                        BackgroundColor3 = Library.Theme["Element"],
+                        BorderSizePixel = 0
+                    })
+                    Instances:Create("UICorner", { Parent = SldFrame.Instance, CornerRadius = UDimNew(0, 4) })
+
+                    local SldLabel = Instances:Create("TextLabel", {
+                        Parent = SldFrame.Instance,
+                        Text = Text,
+                        FontFace = Library.Font,
+                        TextSize = 12,
+                        TextColor3 = Library.Theme["Text"],
+                        Position = UDim2New(0, 10, 0, 4),
+                        Size = UDim2New(0.6, 0, 0, 16),
+                        BackgroundTransparency = 1,
+                        TextXAlignment = Enum.TextXAlignment.Left
+                    })
+
+                    local ValLabel = Instances:Create("TextLabel", {
+                        Parent = SldFrame.Instance,
+                        Text = tostring(Default),
+                        FontFace = Library.Font,
+                        TextSize = 12,
+                        TextColor3 = Library.Theme["Accent"],
+                        Position = UDim2New(0.6, 0, 0, 4),
+                        Size = UDim2New(0.4, -10, 0, 16),
+                        BackgroundTransparency = 1,
+                        TextXAlignment = Enum.TextXAlignment.Right
+                    })
+
+                    local Track = Instances:Create("Frame", {
+                        Parent = SldFrame.Instance,
+                        Position = UDim2New(0, 10, 0, 26),
+                        Size = UDim2New(1, -20, 0, 8),
+                        BackgroundColor3 = FromRGB(40, 40, 40),
+                        BorderSizePixel = 0
+                    })
+                    Instances:Create("UICorner", { Parent = Track.Instance, CornerRadius = UDimNew(1, 0) })
+
+                    local Fill = Instances:Create("Frame", {
+                        Parent = Track.Instance,
+                        Size = UDim2New((Default - Min) / (Max - Min), 0, 1, 0),
+                        BackgroundColor3 = Library.Theme["Accent"],
+                        BorderSizePixel = 0
+                    })
+                    Instances:Create("UICorner", { Parent = Fill.Instance, CornerRadius = UDimNew(1, 0) })
+
+                    local Sliding = false
+                    local function Update(Input)
+                        local Pos = math.clamp((Input.Position.X - Track.Instance.AbsolutePosition.X) / Track.Instance.AbsoluteSize.X, 0, 1)
+                        local Val = math.floor(Min + (Max - Min) * Pos)
+                        Fill.Instance.Size = UDim2New(Pos, 0, 1, 0)
+                        ValLabel.Instance.Text = tostring(Val)
+                        Callback(Val)
+                    end
+
+                    Track:Connect("InputBegan", function(Input)
+                        if Input.UserInputType == Enum.UserInputType.MouseButton1 or Input.UserInputType == Enum.UserInputType.Touch then
+                            Sliding = true
+                            Update(Input)
+                        end
+                    end)
+
+                    UserInputService.InputChanged:Connect(function(Input)
+                        if Sliding and (Input.UserInputType == Enum.UserInputType.MouseMovement or Input.UserInputType == Enum.UserInputType.Touch) then
+                            Update(Input)
+                        end
+                    end)
+
+                    UserInputService.InputEnded:Connect(function(Input)
+                        if Input.UserInputType == Enum.UserInputType.MouseButton1 or Input.UserInputType == Enum.UserInputType.Touch then
+                            Sliding = false
+                        end
+                    end)
+
+                    TableInsert(WindowObj.SearchElements, {Name = Text, Frame = SldFrame})
+                end
+
+                -- UI Element: Dropdown
+                function SecObj:AddDropdown(Text, List, Default, Callback)
+                    Callback = Callback or function() end
+                    List = List or {}
+                    local Selected = Default or List[1] or "None"
+                    local Open = false
+
+                    local DropFrame = Instances:Create("Frame", {
+                        Parent = ElementContainer.Instance,
+                        Size = UDim2New(1, 0, 0, 30),
+                        BackgroundColor3 = Library.Theme["Element"],
+                        BorderSizePixel = 0,
+                        ClipsDescendants = true
+                    })
+                    Instances:Create("UICorner", { Parent = DropFrame.Instance, CornerRadius = UDimNew(0, 4) })
+
+                    local DropLabel = Instances:Create("TextLabel", {
+                        Parent = DropFrame.Instance,
+                        Text = Text .. ": " .. tostring(Selected),
+                        FontFace = Library.Font,
+                        TextSize = 12,
+                        TextColor3 = Library.Theme["Text"],
+                        Position = UDim2New(0, 10, 0, 0),
+                        Size = UDim2New(1, -20, 0, 30),
+                        BackgroundTransparency = 1,
+                        TextXAlignment = Enum.TextXAlignment.Left
+                    })
+
+                    local TriggerBtn = Instances:Create("TextButton", {
+                        Parent = DropFrame.Instance,
+                        Text = "v",
+                        FontFace = Library.Font,
+                        TextSize = 12,
+                        TextColor3 = Library.Theme["Accent"],
+                        BackgroundTransparency = 1,
+                        Position = UDim2New(1, -25, 0, 0),
+                        Size = UDim2New(0, 25, 0, 30)
+                    })
+
+                    local ListContainer = Instances:Create("Frame", {
+                        Parent = DropFrame.Instance,
+                        Position = UDim2New(0, 0, 0, 30),
+                        Size = UDim2New(1, 0, 0, #List * 24),
+                        BackgroundTransparency = 1
+                    })
+                    Instances:Create("UIListLayout", { Parent = ListContainer.Instance, SortOrder = Enum.SortOrder.LayoutOrder })
+
+                    for _, Item in ipairs(List) do
+                        local ItemBtn = Instances:Create("TextButton", {
+                            Parent = ListContainer.Instance,
+                            Text = tostring(Item),
+                            FontFace = Library.Font,
+                            TextSize = 11,
+                            TextColor3 = Library.Theme["Text"],
+                            BackgroundColor3 = Library.Theme["Background 2"],
+                            Size = UDim2New(1, 0, 0, 24),
+                            BorderSizePixel = 0
+                        })
+
+                        ItemBtn:Connect("MouseButton1Click", function()
+                            Selected = Item
+                            DropLabel.Instance.Text = Text .. ": " .. tostring(Selected)
+                            Open = false
+                            DropFrame:Tween(TweenInfo.new(0.2), {Size = UDim2New(1, 0, 0, 30)})
+                            Callback(Selected)
+                        end)
+                    end
+
+                    TriggerBtn:Connect("MouseButton1Click", function()
+                        Open = not Open
+                        DropFrame:Tween(TweenInfo.new(0.2), {Size = Open and UDim2New(1, 0, 0, 30 + (#List * 24)) or UDim2New(1, 0, 0, 30)})
+                    end)
+
+                    TableInsert(WindowObj.SearchElements, {Name = Text, Frame = DropFrame})
+                end
+
+                -- UI Element: TextBox Input
+                function SecObj:AddTextBox(Text, Placeholder, Callback)
+                    Callback = Callback or function() end
+                    local BoxFrame = Instances:Create("Frame", {
+                        Parent = ElementContainer.Instance,
+                        Size = UDim2New(1, 0, 0, 30),
+                        BackgroundColor3 = Library.Theme["Element"],
+                        BorderSizePixel = 0
+                    })
+                    Instances:Create("UICorner", { Parent = BoxFrame.Instance, CornerRadius = UDimNew(0, 4) })
+
+                    local BoxLabel = Instances:Create("TextLabel", {
+                        Parent = BoxFrame.Instance,
+                        Text = Text,
+                        FontFace = Library.Font,
+                        TextSize = 12,
+                        TextColor3 = Library.Theme["Text"],
+                        Position = UDim2New(0, 10, 0, 0),
+                        Size = UDim2New(0.5, -10, 1, 0),
+                        BackgroundTransparency = 1,
+                        TextXAlignment = Enum.TextXAlignment.Left
+                    })
+
+                    local InputBox = Instances:Create("TextBox", {
+                        Parent = BoxFrame.Instance,
+                        PlaceholderText = Placeholder or "Type here...",
+                        Text = "",
+                        FontFace = Library.Font,
+                        TextSize = 11,
+                        TextColor3 = Library.Theme["Text"],
+                        BackgroundColor3 = Library.Theme["Background 2"],
+                        Position = UDim2New(0.5, 0, 0.15, 0),
+                        Size = UDim2New(0.5, -10, 0.7, 0),
+                        BorderSizePixel = 0
+                    })
+                    Instances:Create("UICorner", { Parent = InputBox.Instance, CornerRadius = UDimNew(0, 4) })
+
+                    InputBox:Connect("FocusLost", function(EnterPressed)
+                        Callback(InputBox.Instance.Text, EnterPressed)
+                    end)
+
+                    TableInsert(WindowObj.SearchElements, {Name = Text, Frame = BoxFrame})
+                end
+
+                return SecObj
+            end
+
+            return PageObj
         end
-        
-        local Item = Create("TextLabel", {
-            Parent = WatermarkContent,
-            FontFace = Font.new("rbxassetid://12187365364", Enum.FontWeight.Regular, Enum.FontStyle.Normal),
-            Text = tostring(Element),
-            TextColor3 = DarkHub.Theme.Text,
-            TextSize = 13,
-            BackgroundTransparency = 1,
-            AutomaticSize = Enum.AutomaticSize.XY,
-            ZIndex = 11,
-        })
+
+        return WindowObj
     end
 end
 
-function DarkHub:ShowWatermark(Show)
-    WatermarkFrame.Visible = Show
-end
+-- ========================================================
+-- INITIALIZING DARK HUB & CREATING DEMO INTERFACE
+-- ========================================================
 
--- ============================================================
--- Управление перетаскиванием
--- ============================================================
+local DarkHub = Library:CreateWindow({
+    Name = "Dark Hub",
+    SubName = "Premium ПК / Mobile Interface"
+})
 
-do
-    local Dragging = false
-    local DragStart, DragPosition
-    
-    TopBar.InputBegan:Connect(function(Input)
-        if Input.UserInputType == Enum.UserInputType.MouseButton1 or Input.UserInputType == Enum.UserInputType.Touch then
-            Dragging = true
-            DragStart = Input.Position
-            DragPosition = MainFrame.Position
-        end
-    end)
-    
-    UserInputService.InputChanged:Connect(function(Input)
-        if Dragging and (Input.UserInputType == Enum.UserInputType.MouseMovement or Input.UserInputType == Enum.UserInputType.Touch) then
-            local Delta = Input.Position - DragStart
-            MainFrame.Position = UDim2.new(
-                DragPosition.X.Scale,
-                DragPosition.X.Offset + Delta.X,
-                DragPosition.Y.Scale,
-                DragPosition.Y.Offset + Delta.Y
-            )
-        end
-    end)
-    
-    UserInputService.InputEnded:Connect(function(Input)
-        if Input.UserInputType == Enum.UserInputType.MouseButton1 or Input.UserInputType == Enum.UserInputType.Touch then
-            Dragging = false
-        end
-    end)
-end
+Library:Notify("Dark Hub Loaded", "Press 'Insert' or Mobile Button to toggle UI", 4)
 
--- ============================================================
--- Управление открытием/закрытием
--- ============================================================
+-- TAB 1: MAIN
+local MainTab = DarkHub:CreateTab("Main")
+local MainSec = MainTab:CreateSection("General Options")
 
-CloseButton.MouseButton1Click:Connect(function()
-    DarkHub:Close()
+MainSec:AddButton("Test Notification", function()
+    Library:Notify("Notification", "Dark Hub successfully triggered!", 3)
 end)
 
--- Горячая клавиша Insert
-UserInputService.InputBegan:Connect(function(Input)
-    if Input.KeyCode == Enum.KeyCode.Insert then
-        DarkHub:Toggle()
+MainSec:AddToggle("Auto Farm Gold", false, function(Value)
+    print("Auto Farm set to:", Value)
+end)
+
+MainSec:AddSlider("WalkSpeed", 16, 200, 16, function(Value)
+    if game.Players.LocalPlayer.Character and game.Players.LocalPlayer.Character:FindFirstChild("Humanoid") then
+        game.Players.LocalPlayer.Character.Humanoid.WalkSpeed = Value
     end
 end)
 
--- ============================================================
--- Создание GUI
--- ============================================================
+-- TAB 2: COMBAT
+local CombatTab = DarkHub:CreateTab("Combat")
+local CombatSec = CombatTab:CreateSection("Aimbot & Target")
 
--- Главная страница
-local MainPage = DarkHub:CreatePage("Main", "100050851789190")
-
--- Секция "Общее"
-local GeneralSection = DarkHub:CreateSection(MainPage, "General", "Main settings and controls", "123944728972740")
-
-DarkHub:Toggle(GeneralSection, {
-    Name = "Enable Feature",
-    Flag = "feature_enabled",
-    Default = true,
-    Callback = function(Value)
-        DarkHub:Notify({
-            Title = "Feature",
-            Description = Value and "Enabled" or "Disabled",
-            Duration = 1,
-        })
-    end,
-})
-
-DarkHub:Slider(GeneralSection, {
-    Name = "Speed",
-    Flag = "speed_value",
-    Min = 0,
-    Max = 100,
-    Default = 50,
-    Suffix = "%",
-    Callback = function(Value)
-        -- Обработка значения
-    end,
-})
-
-DarkHub:Button(GeneralSection, {
-    Name = "Execute Action",
-    Callback = function()
-        DarkHub:Notify({
-            Title = "Action",
-            Description = "Action executed successfully!",
-            Duration = 2,
-        })
-    end,
-})
-
--- Секция "Настройки"
-local SettingsSection = DarkHub:CreateSection(MainPage, "Settings", "Customize your experience", "122669828593160")
-
-DarkHub:Dropdown(SettingsSection, {
-    Name = "Theme",
-    Flag = "theme_select",
-    Items = {"Dark", "Light", "Blue", "Purple"},
-    Default = "Dark",
-    Callback = function(Value)
-        DarkHub:Notify({
-            Title = "Theme",
-            Description = "Selected: " .. Value,
-            Duration = 1.5,
-        })
-    end,
-})
-
-DarkHub:Textbox(SettingsSection, {
-    Name = "Custom Text",
-    Flag = "custom_text",
-    Placeholder = "Enter custom text...",
-    Default = "",
-    Callback = function(Value)
-        -- Обработка текста
-    end,
-})
-
--- Секция "Информация"
-local InfoSection = DarkHub:CreateSection(MainPage, "Information", "About Dark Hub", "81598136527047")
-
-DarkHub:Button(InfoSection, {
-    Name = "Show Info",
-    Callback = function()
-        DarkHub:Notify({
-            Title = "Dark Hub v1.0",
-            Description = "Premium quality GUI for Roblox",
-            Duration = 3,
-        })
-    end,
-})
-
--- ============================================================
--- Инициализация
--- ============================================================
-
--- Открываем GUI с задержкой для анимации
-task.delay(0.5, function()
-    DarkHub:Open()
-    
-    -- Показываем уведомление
-    DarkHub:Notify({
-        Title = "Dark Hub",
-        Description = "Loaded successfully!",
-        Duration = 2,
-    })
-    
-    -- Показываем водяной знак
-    DarkHub:SetWatermark({"Dark Hub", "v1.0", "Premium"})
-    DarkHub:ShowWatermark(true)
+CombatSec:AddToggle("Enable Silent Aimbot", true, function(Value)
+    print("Aimbot Enabled:", Value)
 end)
 
--- Возвращаем объект
-return DarkHub
+CombatSec:AddDropdown("Target Bone", {"Head", "HumanoidRootPart", "Torso"}, "Head", function(Selected)
+    print("Target set to:", Selected)
+end)
+
+CombatSec:AddSlider("Aimbot FOV", 30, 500, 100, function(Value)
+    print("FOV updated to:", Value)
+end)
+
+-- TAB 3: VISUALS
+local VisualsTab = DarkHub:CreateTab("Visuals")
+local VisualsSec = VisualsTab:CreateSection("ESP Options")
+
+VisualsSec:AddToggle("Player ESP Boxes", false, function(Value)
+    print("Boxes ESP:", Value)
+end)
+
+VisualsSec:AddToggle("Show Distance", true, function(Value)
+    print("Distance ESP:", Value)
+end)
+
+VisualsSec:AddTextBox("Custom ESP Title", "Enter Title...", function(Text)
+    print("Custom Title Set:", Text)
+end)
+
+-- TAB 4: SETTINGS
+local SettingsTab = DarkHub:CreateTab("Settings")
+local ConfigSec = SettingsTab:CreateSection("UI Configurations")
+
+ConfigSec:AddButton("Unload GUI", function()
+    if Library.Holder then
+        Library.Holder:Clean()
+    end
+end)
