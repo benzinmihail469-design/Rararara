@@ -482,20 +482,16 @@ local function CreatePage(PageData)
                 CurrentPage.Active = false
                 CurrentPage.Frame.Visible = false
                 CurrentPage.TabButton.BackgroundTransparency = 1
-                CurrentPage.TabButton.BackgroundColor3 = Theme.Accent
-                CurrentPage.TabButton.BackgroundTransparency = 1
             end
             
             PageData.Active = true
             PageData.Frame.Visible = true
             PageData.TabButton.BackgroundTransparency = 0.25
-            PageData.TabButton.BackgroundColor3 = Theme.Accent
             CurrentPage = PageData
         else
             PageData.Active = false
             PageData.Frame.Visible = false
             PageData.TabButton.BackgroundTransparency = 1
-            PageData.TabButton.BackgroundColor3 = Theme.Accent
         end
     end
     
@@ -1132,15 +1128,6 @@ local function CreatePage(PageData)
                     SetOpen(false)
                 else
                     SetOpen(true)
-                    for _, Other in ipairs(Pages) do
-                        for _, Section in ipairs(Other.Sections) do
-                            for _, Element in ipairs(Section.Elements) do
-                                if Element ~= DropdownData and Element.IsOpen then
-                                    Element:SetOpen(false)
-                                end
-                            end
-                        end
-                    end
                 end
             end)
             
@@ -1846,7 +1833,7 @@ local function CreatePage(PageData)
                 Query = string.lower(Query)
                 FilteredItems = {}
                 for _, Item in ipairs(Items) do
-                    if Query == "" or string.find(string.lower(Item), Query) then
+                    if Query == "" or string.find(string.lower(Item), Query, 1, true) then
                         table.insert(FilteredItems, Item)
                     end
                 end
@@ -2067,10 +2054,13 @@ ConfigsSection:Button({Name = "Create", Icon = "101500482366184", Callback = fun
             end
         end
         local Data = HttpService:JSONEncode(Config)
-        -- Сохраняем в память (для демонстрации)
         if not _G.ConfigsData then _G.ConfigsData = {} end
         _G.ConfigsData[Name] = Data
-        ConfigDropdown:Refresh(table.keys(_G.ConfigsData))
+        local Keys = {}
+        for K, _ in pairs(_G.ConfigsData) do
+            table.insert(Keys, K)
+        end
+        ConfigDropdown:Refresh(Keys)
     end
 end})
 
@@ -2106,7 +2096,11 @@ ConfigsSection:Button({Name = "Delete", Icon = "130510492706892", Callback = fun
     local Selected = ConfigDropdown:Get()
     if Selected and #Selected > 0 and _G.ConfigsData then
         _G.ConfigsData[Selected[1]] = nil
-        ConfigDropdown:Refresh(table.keys(_G.ConfigsData))
+        local Keys = {}
+        for K, _ in pairs(_G.ConfigsData) do
+            table.insert(Keys, K)
+        end
+        ConfigDropdown:Refresh(Keys)
     end
 end})
 
@@ -2191,6 +2185,8 @@ do
 end
 
 -- === УВЕДОМЛЕНИЯ ===
+DarkHub = {}
+
 function DarkHub:Notify(Data)
     Data = Data or {}
     local Title = Data.Title or "Notification"
