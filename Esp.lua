@@ -31,7 +31,7 @@ local function CreateTween(Instance, Info, Goal)
     return Tween
 end
 
--- Цветовая схема (из библиотеки)
+-- Цветовая схема (из библиотеки Neverlose)
 local Theme = {
     Background = Color3.fromRGB(12, 12, 14),
     Background2 = Color3.fromRGB(10, 10, 12),
@@ -43,6 +43,8 @@ local Theme = {
     Text = Color3.fromRGB(235, 235, 235),
     Accent = Color3.fromRGB(0, 116, 224),
     AccentGradient = Color3.fromRGB(0, 195, 255),
+    Danger = Color3.fromRGB(255, 50, 50),
+    Success = Color3.fromRGB(50, 255, 50),
 }
 
 -- Шрифты
@@ -100,8 +102,14 @@ local MainFrame = Create("Frame", {
 })
 
 Create("UICorner", { Parent = MainFrame, CornerRadius = UDim.new(0, 8) })
+Create("UIStroke", {
+    Parent = MainFrame,
+    Color = Theme.Outline,
+    Thickness = 1,
+    Transparency = 0.5,
+})
 
--- Затемнение фона (Blur)
+-- Blur эффект
 do
     local BlurPart = Create("Part", {
         Parent = Camera,
@@ -189,7 +197,7 @@ Create("UIGradient", {
 local Title = Create("TextLabel", {
     Parent = MainFrame,
     Name = "Title",
-    Text = "Dark Hub",
+    Text = "Neverlose",
     TextColor3 = Theme.Text,
     BackgroundTransparency = 1,
     FontFace = FontSemiBold,
@@ -522,6 +530,12 @@ local function CreatePage(PageData)
         })
         
         Create("UICorner", { Parent = SectionFrame, CornerRadius = UDim.new(0, 6) })
+        Create("UIStroke", {
+            Parent = SectionFrame,
+            Color = Theme.Outline,
+            Thickness = 0.5,
+            Transparency = 0.5,
+        })
         
         -- Шапка секции
         local SectionTop = Create("Frame", {
@@ -621,8 +635,6 @@ local function CreatePage(PageData)
             Content = SectionContent,
             Elements = {},
         }
-        
-        -- Функция создания элементов
         
         -- Toggle
         function SectionData:Toggle(Data)
@@ -1179,6 +1191,263 @@ local function CreatePage(PageData)
             return DropdownData
         end
         
+        -- MultiDropdown
+        function SectionData:MultiDropdown(Data)
+            local DropdownName = Data.Name or "MultiDropdown"
+            local Flag = Data.Flag or "multidropdown_" .. (#Flags + 1)
+            local Items = Data.Items or {"Option 1", "Option 2", "Option 3"}
+            local Default = Data.Default or {}
+            local Callback = Data.Callback or function() end
+            
+            local DropdownFrame = Create("Frame", {
+                Parent = SectionContent,
+                BackgroundTransparency = 1,
+                Size = UDim2.new(1, 0, 0, 30),
+                BorderSizePixel = 0,
+            })
+            
+            local DropdownText = Create("TextLabel", {
+                Parent = DropdownFrame,
+                Text = DropdownName,
+                TextColor3 = Theme.Text,
+                TextTransparency = 0.3,
+                BackgroundTransparency = 1,
+                FontFace = FontRegular,
+                TextSize = 14,
+                Position = UDim2.new(0, 0, 0.5, 0),
+                AnchorPoint = Vector2.new(0, 0.5),
+                Size = UDim2.new(0, 0, 0, 15),
+                AutomaticSize = Enum.AutomaticSize.X,
+            })
+            
+            local DropdownButton = Create("TextButton", {
+                Parent = DropdownFrame,
+                Text = "",
+                AutoButtonColor = false,
+                BackgroundColor3 = Theme.Element,
+                Size = UDim2.new(0, 140, 0, 28),
+                Position = UDim2.new(1, 0, 0.5, 0),
+                AnchorPoint = Vector2.new(1, 0.5),
+                BorderSizePixel = 0,
+            })
+            
+            Create("UICorner", { Parent = DropdownButton, CornerRadius = UDim.new(0, 6) })
+            
+            local DropdownValue = Create("TextLabel", {
+                Parent = DropdownButton,
+                Text = #Default > 0 and table.concat(Default, ", ") or "None",
+                TextColor3 = Theme.Text,
+                TextTransparency = 0.3,
+                BackgroundTransparency = 1,
+                FontFace = FontRegular,
+                TextSize = 12,
+                Position = UDim2.new(0, 10, 0.5, 0),
+                AnchorPoint = Vector2.new(0, 0.5),
+                Size = UDim2.new(1, -35, 0, 15),
+                TextXAlignment = Enum.TextXAlignment.Left,
+            })
+            
+            local Arrow = Create("ImageLabel", {
+                Parent = DropdownButton,
+                Image = "rbxassetid://123317177279443",
+                ImageColor3 = Color3.fromRGB(141, 141, 150),
+                BackgroundTransparency = 1,
+                Size = UDim2.new(0, 16, 0, 8),
+                Position = UDim2.new(1, -10, 0.5, 0),
+                AnchorPoint = Vector2.new(1, 0.5),
+            })
+            
+            -- Выпадающий список
+            local DropdownList = Create("Frame", {
+                Parent = Holder,
+                BackgroundColor3 = Theme.Background,
+                Size = UDim2.new(0, 140, 0, 120),
+                Position = UDim2.new(0, 0, 0, 0),
+                Visible = false,
+                BorderSizePixel = 0,
+                ZIndex = 10,
+            })
+            
+            Create("UICorner", { Parent = DropdownList, CornerRadius = UDim.new(0, 6) })
+            
+            Create("UIStroke", {
+                Parent = DropdownList,
+                Color = Theme.Outline,
+                ApplyStrokeMode = Enum.ApplyStrokeMode.Border,
+            })
+            
+            local ListScroller = Create("ScrollingFrame", {
+                Parent = DropdownList,
+                BackgroundTransparency = 1,
+                Size = UDim2.new(1, -8, 1, -8),
+                Position = UDim2.new(0, 4, 0, 4),
+                CanvasSize = UDim2.new(0, 0, 0, 0),
+                AutomaticCanvasSize = Enum.AutomaticSize.Y,
+                ScrollBarThickness = 2,
+            })
+            
+            local ListLayout = Create("UIListLayout", {
+                Parent = ListScroller,
+                Padding = UDim.new(0, 4),
+                SortOrder = Enum.SortOrder.LayoutOrder,
+            })
+            
+            local Options = {}
+            local Selected = {}
+            local IsOpen = false
+            
+            for _, Item in ipairs(Default) do
+                if table.find(Items, Item) then
+                    table.insert(Selected, Item)
+                end
+            end
+            
+            local function UpdatePosition()
+                local Pos = DropdownButton.AbsolutePosition
+                local Size = DropdownButton.AbsoluteSize
+                DropdownList.Position = UDim2.new(0, Pos.X, 0, Pos.Y + Size.Y + 5)
+                DropdownList.Size = UDim2.new(0, Size.X, 0, math.min(120, #Items * 28 + 16))
+            end
+            
+            local function SetOpen(Open)
+                IsOpen = Open
+                DropdownList.Visible = Open
+                if Open then
+                    UpdatePosition()
+                    DropdownList.Parent = Holder
+                end
+            end
+            
+            local function SetValue(Option)
+                local Index = table.find(Selected, Option)
+                if Index then
+                    table.remove(Selected, Index)
+                else
+                    table.insert(Selected, Option)
+                end
+                DropdownValue.Text = #Selected > 0 and table.concat(Selected, ", ") or "None"
+                Flags[Flag] = table.clone(Selected)
+                Callback(table.clone(Selected))
+            end
+            
+            -- Создание опций
+            for _, Item in ipairs(Items) do
+                local OptionButton = Create("TextButton", {
+                    Parent = ListScroller,
+                    Text = "",
+                    AutoButtonColor = false,
+                    BackgroundTransparency = 1,
+                    Size = UDim2.new(1, 0, 0, 24),
+                    BorderSizePixel = 0,
+                })
+                
+                local Check = Create("ImageLabel", {
+                    Parent = OptionButton,
+                    Image = "rbxassetid://121760666525660",
+                    ImageColor3 = Theme.Text,
+                    ImageTransparency = table.find(Selected, Item) and 0 or 1,
+                    BackgroundTransparency = 1,
+                    Size = UDim2.new(0, 12, 0, 12),
+                    Position = UDim2.new(0, 10, 0.5, 0),
+                    AnchorPoint = Vector2.new(0, 0.5),
+                })
+                
+                local OptionText = Create("TextLabel", {
+                    Parent = OptionButton,
+                    Text = Item,
+                    TextColor3 = Theme.Text,
+                    TextTransparency = 0.3,
+                    BackgroundTransparency = 1,
+                    FontFace = FontRegular,
+                    TextSize = 14,
+                    Position = UDim2.new(0, 28, 0.5, 0),
+                    AnchorPoint = Vector2.new(0, 0.5),
+                    Size = UDim2.new(1, -28, 0, 15),
+                    TextXAlignment = Enum.TextXAlignment.Left,
+                })
+                
+                Options[Item] = OptionButton
+                
+                OptionButton.MouseButton1Down:Connect(function()
+                    SetValue(Item)
+                    if table.find(Selected, Item) then
+                        Check.ImageTransparency = 0
+                    else
+                        Check.ImageTransparency = 1
+                    end
+                end)
+            end
+            
+            DropdownButton.MouseButton1Down:Connect(function()
+                if IsOpen then
+                    SetOpen(false)
+                else
+                    SetOpen(true)
+                end
+            end)
+            
+            UserInputService.InputBegan:Connect(function(Input)
+                if IsOpen and (Input.UserInputType == Enum.UserInputType.MouseButton1 or Input.UserInputType == Enum.UserInputType.Touch) then
+                    if not DropdownList.Visible then return end
+                    if Input.Position.X >= DropdownList.AbsolutePosition.X and Input.Position.X <= DropdownList.AbsolutePosition.X + DropdownList.AbsoluteSize.X and
+                       Input.Position.Y >= DropdownList.AbsolutePosition.Y and Input.Position.Y <= DropdownList.AbsolutePosition.Y + DropdownList.AbsoluteSize.Y then
+                        return
+                    end
+                    SetOpen(false)
+                end
+            end)
+            
+            Flags[Flag] = table.clone(Selected)
+            Callback(table.clone(Selected))
+            
+            SetFlags[Flag] = function(Val)
+                if type(Val) == "table" then
+                    Selected = {}
+                    for _, Item in ipairs(Val) do
+                        if table.find(Items, Item) then
+                            table.insert(Selected, Item)
+                        end
+                    end
+                    DropdownValue.Text = #Selected > 0 and table.concat(Selected, ", ") or "None"
+                    for _, Item in ipairs(Items) do
+                        if Options[Item] then
+                            local Check = Options[Item]:FindFirstChildWhichIsA("ImageLabel")
+                            if Check then
+                                Check.ImageTransparency = table.find(Selected, Item) and 0 or 1
+                            end
+                        end
+                    end
+                end
+            end
+            
+            return {
+                Set = function(Val)
+                    if type(Val) == "table" then
+                        Selected = {}
+                        for _, Item in ipairs(Val) do
+                            if table.find(Items, Item) then
+                                table.insert(Selected, Item)
+                            end
+                        end
+                        DropdownValue.Text = #Selected > 0 and table.concat(Selected, ", ") or "None"
+                        for _, Item in ipairs(Items) do
+                            if Options[Item] then
+                                local Check = Options[Item]:FindFirstChildWhichIsA("ImageLabel")
+                                if Check then
+                                    Check.ImageTransparency = table.find(Selected, Item) and 0 or 1
+                                end
+                            end
+                        end
+                        Flags[Flag] = table.clone(Selected)
+                        Callback(table.clone(Selected))
+                    end
+                end,
+                Get = function() return table.clone(Selected) end,
+                IsOpen = IsOpen,
+                SetOpen = SetOpen,
+            }
+        end
+        
         -- Keybind
         function SectionData:Keybind(Data)
             local KeybindName = Data.Name or "Keybind"
@@ -1438,7 +1707,7 @@ local function CreatePage(PageData)
                 TextXAlignment = Enum.TextXAlignment.Left,
             })
             
-            -- Палитра (упрощенная версия)
+            -- Палитра
             local ColorPicker = Create("Frame", {
                 Parent = Holder,
                 BackgroundColor3 = Theme.Background,
@@ -1996,84 +2265,96 @@ end
 
 -- Aimbot
 local AimbotPage = CreatePage({Name = "Aimbot", Icon = "100050851789190"})
-local AimbotSection = AimbotPage:CreateSection({Name = "Aimbot"})
-AimbotSection:Toggle({Name = "Enable Aimbot", Default = false})
-AimbotSection:Slider({Name = "FOV", Min = 0, Max = 360, Default = 90, Suffix = "°"})
-AimbotSection:Slider({Name = "Smoothness", Min = 0, Max = 100, Default = 50, Suffix = "%"})
-AimbotSection:Dropdown({Name = "Target", Items = {"Head", "Body", "Legs"}, Default = "Head"})
-AimbotSection:Keybind({Name = "Aimbot Key", Default = Enum.KeyCode.LeftShift})
+local AimbotSection = AimbotPage:CreateSection({Name = "Aimbot", Description = "Настройки прицеливания"})
+AimbotSection:Toggle({Name = "Enable Aimbot", Flag = "aimbot_enabled", Default = false})
+AimbotSection:Slider({Name = "FOV", Flag = "aimbot_fov", Min = 0, Max = 360, Default = 90, Suffix = "°"})
+AimbotSection:Slider({Name = "Smoothness", Flag = "aimbot_smooth", Min = 0, Max = 100, Default = 50, Suffix = "%"})
+AimbotSection:Dropdown({Name = "Target", Flag = "aimbot_target", Items = {"Head", "Body", "Legs"}, Default = "Head"})
+AimbotSection:Keybind({Name = "Aimbot Key", Flag = "aimbot_key", Default = Enum.KeyCode.LeftShift})
 
 -- Ragebot
 local RagebotPage = CreatePage({Name = "Ragebot", Icon = "123944728972740"})
-local RagebotSection = RagebotPage:CreateSection({Name = "Ragebot"})
-RagebotSection:Toggle({Name = "Enable Ragebot", Default = false})
-RagebotSection:Slider({Name = "Min Damage", Min = 0, Max = 100, Default = 70, Suffix = "%"})
-RagebotSection:Dropdown({Name = "Hitbox", Items = {"Head", "Body", "Legs"}, Default = "Head"})
-RagebotSection:Toggle({Name = "Auto Wallbang", Default = true})
+local RagebotSection = RagebotPage:CreateSection({Name = "Ragebot", Description = "Настройки агрессивного прицеливания"})
+RagebotSection:Toggle({Name = "Enable Ragebot", Flag = "ragebot_enabled", Default = false})
+RagebotSection:Slider({Name = "Min Damage", Flag = "ragebot_damage", Min = 0, Max = 100, Default = 70, Suffix = "%"})
+RagebotSection:Dropdown({Name = "Hitbox", Flag = "ragebot_hitbox", Items = {"Head", "Body", "Legs"}, Default = "Head"})
+RagebotSection:Toggle({Name = "Auto Wallbang", Flag = "ragebot_wallbang", Default = true})
+RagebotSection:Toggle({Name = "Auto Stop", Flag = "ragebot_stop", Default = true})
+RagebotSection:Slider({Name = "Reaction Time", Flag = "ragebot_reaction", Min = 0, Max = 200, Default = 50, Suffix = "ms"})
 
 -- Visuals
 local VisualsPage = CreatePage({Name = "Visuals", Icon = "122669828593160"})
-local VisualsSection = VisualsPage:CreateSection({Name = "Players"})
-VisualsSection:Toggle({Name = "Player ESP", Default = true})
-VisualsSection:Toggle({Name = "Box ESP", Default = true})
-VisualsSection:Colorpicker({Name = "Box Color", Default = Color3.new(0, 1, 1)})
-VisualsSection:Toggle({Name = "Snaplines", Default = false})
-VisualsSection:Dropdown({Name = "ESP Type", Items = {"Box", "Circle", "Glow"}, Default = "Box"})
+local VisualsSection = VisualsPage:CreateSection({Name = "Players", Description = "Настройки отображения игроков"})
+VisualsSection:Toggle({Name = "Player ESP", Flag = "esp_player", Default = true})
+VisualsSection:Toggle({Name = "Box ESP", Flag = "esp_box", Default = true})
+VisualsSection:Colorpicker({Name = "Box Color", Flag = "esp_box_color", Default = Color3.new(0, 1, 1)})
+VisualsSection:Toggle({Name = "Snaplines", Flag = "esp_snaplines", Default = false})
+VisualsSection:Dropdown({Name = "ESP Type", Flag = "esp_type", Items = {"Box", "Circle", "Glow"}, Default = "Box"})
+VisualsSection:Toggle({Name = "Health Bar", Flag = "esp_health", Default = true})
+VisualsSection:Toggle({Name = "Name ESP", Flag = "esp_name", Default = true})
 
-local VisualsSection2 = VisualsPage:CreateSection({Name = "World"})
-VisualsSection2:Toggle({Name = "Chams", Default = false})
-VisualsSection2:Colorpicker({Name = "Chams Color", Default = Color3.new(0, 1, 0)})
-VisualsSection2:Slider({Name = "Brightness", Min = 0, Max = 100, Default = 50, Suffix = "%"})
+local VisualsSection2 = VisualsPage:CreateSection({Name = "World", Description = "Настройки отображения мира"})
+VisualsSection2:Toggle({Name = "Chams", Flag = "world_chams", Default = false})
+VisualsSection2:Colorpicker({Name = "Chams Color", Flag = "world_chams_color", Default = Color3.new(0, 1, 0)})
+VisualsSection2:Slider({Name = "Brightness", Flag = "world_brightness", Min = 0, Max = 100, Default = 50, Suffix = "%"})
+VisualsSection2:Toggle({Name = "Night Mode", Flag = "world_night", Default = false})
+VisualsSection2:Slider({Name = "Fog Distance", Flag = "world_fog", Min = 0, Max = 100, Default = 100, Suffix = "%"})
 
-local VisualsSection3 = VisualsPage:CreateSection({Name = "Weapon"})
-VisualsSection3:Toggle({Name = "Weapon ESP", Default = true})
-VisualsSection3:Slider({Name = "Drop Distance", Min = 0, Max = 100, Default = 30, Suffix = "m"})
+local VisualsSection3 = VisualsPage:CreateSection({Name = "Weapon", Description = "Настройки отображения оружия"})
+VisualsSection3:Toggle({Name = "Weapon ESP", Flag = "weapon_esp", Default = true})
+VisualsSection3:Slider({Name = "Drop Distance", Flag = "weapon_distance", Min = 0, Max = 100, Default = 30, Suffix = "m"})
+VisualsSection3:Toggle({Name = "Weapon Chams", Flag = "weapon_chams", Default = false})
+VisualsSection3:Colorpicker({Name = "Weapon Color", Flag = "weapon_color", Default = Color3.new(1, 0, 0)})
 
 -- Movement
 local MovementPage = CreatePage({Name = "Movement", Icon = "101636617799068"})
-local MovementSection = MovementPage:CreateSection({Name = "Movement"})
-MovementSection:Toggle({Name = "Auto Jump", Default = false})
-MovementSection:Toggle({Name = "Auto Strafe", Default = false})
-MovementSection:Slider({Name = "Strafe Speed", Min = 0, Max = 100, Default = 60, Suffix = "%"})
-MovementSection:Toggle({Name = "Quick Stop", Default = false})
-MovementSection:Toggle({Name = "Edge Jump", Default = false})
-MovementSection:Toggle({Name = "Infinity Duck", Default = false})
+local MovementSection = MovementPage:CreateSection({Name = "Movement", Description = "Настройки передвижения"})
+MovementSection:Toggle({Name = "Auto Jump", Flag = "move_autojump", Default = false})
+MovementSection:Toggle({Name = "Auto Strafe", Flag = "move_autostrafe", Default = false})
+MovementSection:Slider({Name = "Strafe Speed", Flag = "move_strafespeed", Min = 0, Max = 100, Default = 60, Suffix = "%"})
+MovementSection:Toggle({Name = "Quick Stop", Flag = "move_quickstop", Default = false})
+MovementSection:Toggle({Name = "Edge Jump", Flag = "move_edgejump", Default = false})
+MovementSection:Toggle({Name = "Infinity Duck", Flag = "move_infduck", Default = false})
+MovementSection:Toggle({Name = "Bunny Hop", Flag = "move_bhop", Default = false})
+MovementSection:Slider({Name = "Jump Height", Flag = "move_jumpheight", Min = 0, Max = 200, Default = 100, Suffix = "%"})
 
 -- Miscellaneous
 local MiscPage = CreatePage({Name = "Miscellaneous", Icon = "81598136527047"})
-local MiscSection = MiscPage:CreateSection({Name = "Miscellaneous"})
-MiscSection:Toggle({Name = "Anti Untrusted", Default = true})
-MiscSection:Toggle({Name = "Fast Reload", Default = false})
-MiscSection:Toggle({Name = "Fast Weapon Switch", Default = false})
-MiscSection:Toggle({Name = "Unlock Cameras", Default = false})
-MiscSection:Textbox({Name = "Server Filter", Placeholder = "Enter filter..."})
-MiscSection:Slider({Name = "DPI Scale", Min = 50, Max = 200, Default = 100, Suffix = "%"})
-MiscSection:Slider({Name = "Animation Speed", Min = 0.1, Max = 5, Default = 1.8, Decimals = 0.1})
+local MiscSection = MiscPage:CreateSection({Name = "Miscellaneous", Description = "Различные настройки"})
+MiscSection:Toggle({Name = "Anti Untrusted", Flag = "misc_antiuntrusted", Default = true})
+MiscSection:Toggle({Name = "Fast Reload", Flag = "misc_fastreload", Default = false})
+MiscSection:Toggle({Name = "Fast Weapon Switch", Flag = "misc_fastswitch", Default = false})
+MiscSection:Toggle({Name = "Unlock Cameras", Flag = "misc_unlockcam", Default = false})
+MiscSection:Textbox({Name = "Server Filter", Flag = "misc_serverfilter", Placeholder = "Enter filter..."})
+MiscSection:Slider({Name = "DPI Scale", Flag = "misc_dpi", Min = 50, Max = 200, Default = 100, Suffix = "%"})
+MiscSection:Slider({Name = "Animation Speed", Flag = "misc_animspeed", Min = 0.1, Max = 5, Default = 1.8, Decimals = 0.1})
+MiscSection:Toggle({Name = "No Recoil", Flag = "misc_norecoil", Default = false})
+MiscSection:Toggle({Name = "No Spread", Flag = "misc_nospread", Default = false})
 
 -- Configs
 local ConfigsPage = CreatePage({Name = "Configs", Icon = "101500482366184"})
-local ConfigsSection = ConfigsPage:CreateSection({Name = "Configs"})
-local ConfigDropdown = ConfigsSection:Listbox({Name = "Configs", Items = {}, Multi = false})
+local ConfigsSection = ConfigsPage:CreateSection({Name = "Configs", Description = "Управление конфигурациями"})
+local ConfigDropdown = ConfigsSection:Listbox({Name = "Configs", Flag = "configs_list", Items = {}, Multi = false})
 
-ConfigsSection:Textbox({Name = "Config Name", Placeholder = "Enter name..."})
+ConfigsSection:Textbox({Name = "Config Name", Flag = "config_name", Placeholder = "Enter name..."})
 
 ConfigsSection:Button({Name = "Create", Icon = "101500482366184", Callback = function()
-    local Name = Flags["Config Name"] or "config"
+    local Name = Flags["config_name"] or "config"
     if Name and Name ~= "" then
         local Config = {}
         for Flag, Value in pairs(Flags) do
-            if Flag ~= "Config Name" and Flag ~= "Configs" then
+            if Flag ~= "config_name" and Flag ~= "configs_list" then
                 Config[Flag] = Value
             end
         end
         local Data = HttpService:JSONEncode(Config)
-        -- Сохраняем в память (для демонстрации)
         if not _G.ConfigsData then _G.ConfigsData = {} end
         _G.ConfigsData[Name] = Data
         
         local Keys = {}
         for K in pairs(_G.ConfigsData) do table.insert(Keys, K) end
         ConfigDropdown:Refresh(Keys)
+        DarkHub:Notify({Title = "Config", Description = "Created: " .. Name, Duration = 2})
     end
 end})
 
@@ -2088,6 +2369,7 @@ ConfigsSection:Button({Name = "Load", Icon = "101636617799068", Callback = funct
                     SetFlags[Flag](Value)
                 end
             end
+            DarkHub:Notify({Title = "Config", Description = "Loaded: " .. Selected[1], Duration = 2})
         end
     end
 end})
@@ -2097,11 +2379,12 @@ ConfigsSection:Button({Name = "Save", Icon = "101636617799068", Callback = funct
     if Selected and #Selected > 0 and _G.ConfigsData then
         local Config = {}
         for Flag, Value in pairs(Flags) do
-            if Flag ~= "Config Name" and Flag ~= "Configs" then
+            if Flag ~= "config_name" and Flag ~= "configs_list" then
                 Config[Flag] = Value
             end
         end
         _G.ConfigsData[Selected[1]] = HttpService:JSONEncode(Config)
+        DarkHub:Notify({Title = "Config", Description = "Saved: " .. Selected[1], Duration = 2})
     end
 end})
 
@@ -2112,6 +2395,7 @@ ConfigsSection:Button({Name = "Delete", Icon = "130510492706892", Callback = fun
         local Keys = {}
         for K in pairs(_G.ConfigsData) do table.insert(Keys, K) end
         ConfigDropdown:Refresh(Keys)
+        DarkHub:Notify({Title = "Config", Description = "Deleted: " .. Selected[1], Duration = 2})
     end
 end})
 
@@ -2202,6 +2486,7 @@ function DarkHub:Notify(Data)
     local Description = Data.Description or ""
     local Duration = Data.Duration or 3
     local Icon = Data.Icon or "101636617799068"
+    local Type = Data.Type or "info" -- info, success, danger
     
     local Notification = Create("Frame", {
         Parent = NotificationHolder,
@@ -2256,12 +2541,19 @@ function DarkHub:Notify(Data)
     
     Create("UICorner", { Parent = Accent, CornerRadius = UDim.new(1, 0) })
     
+    local AccentColor = Theme.Accent
+    if Type == "success" then
+        AccentColor = Theme.Success
+    elseif Type == "danger" then
+        AccentColor = Theme.Danger
+    end
+    
     Create("UIGradient", {
         Parent = Accent,
         Rotation = -115,
         Color = ColorSequence.new({
-            ColorSequenceKeypoint.new(0, Theme.Accent),
-            ColorSequenceKeypoint.new(1, Theme.AccentGradient),
+            ColorSequenceKeypoint.new(0, AccentColor),
+            ColorSequenceKeypoint.new(1, AccentColor),
         })
     })
     
@@ -2278,8 +2570,8 @@ function DarkHub:Notify(Data)
         Parent = IconImg,
         Rotation = -115,
         Color = ColorSequence.new({
-            ColorSequenceKeypoint.new(0, Theme.Accent),
-            ColorSequenceKeypoint.new(1, Theme.AccentGradient),
+            ColorSequenceKeypoint.new(0, AccentColor),
+            ColorSequenceKeypoint.new(1, AccentColor),
         })
     })
     
@@ -2355,3 +2647,18 @@ end
 
 -- === ГЛОБАЛЬНАЯ ПЕРЕМЕННАЯ ===
 getgenv().DarkHub = DarkHub
+
+-- === ПРИМЕР ИСПОЛЬЗОВАНИЯ ===
+print("Neverlose UI loaded!")
+
+-- Функция для получения значений
+function DarkHub:GetFlag(Flag)
+    return Flags[Flag]
+end
+
+-- Функция для установки значений
+function DarkHub:SetFlag(Flag, Value)
+    if SetFlags[Flag] then
+        SetFlags[Flag](Value)
+    end
+end
