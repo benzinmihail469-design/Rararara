@@ -99,7 +99,7 @@ local MainFrame = Create("Frame", {
     BorderSizePixel = 0,
     Position = UDim2.new(0.5, 0, 0.5, 0),
     AnchorPoint = Vector2.new(0.5, 0.5),
-    Size = IsMobile and UDim2.new(0.88, 0, 0.85, 0) or UDim2.new(0, 640, 0, 440),
+    Size = IsMobile and UDim2.new(0.88, 0, 0.85, 0) or UDim2.new(0, 600, 0, 400),
     ClipsDescendants = false,
 })
 
@@ -177,7 +177,7 @@ local Logo = Create("ImageLabel", {
     BackgroundTransparency = 1,
     Size = UDim2.new(0, 26, 0, 26),
     Position = UDim2.new(0, 10, 0, 11),
-    Image = "rbxassetid://1l20959262762131",
+    Image = "rbxassetid://120959262762131",
     ScaleType = Enum.ScaleType.Fit,
     ZIndex = 5,
 })
@@ -391,9 +391,9 @@ local Pages = {}
 local CurrentPage = nil
 
 -- Функция создания страницы
-local function CreatePage(PageData)
-    local PageName = PageData.Name or "Page"
-    local PageIcon = PageData.Icon or "100050851789190"
+local function CreatePage(PageConfig)
+    local PageName = PageConfig.Name or "Page"
+    local PageIcon = PageConfig.Icon or "100050851789190"
     
     -- Кнопка вкладки
     local TabButton = Create("TextButton", {
@@ -513,10 +513,10 @@ local function CreatePage(PageData)
     PageData.SetActive = SetActive
     
     -- Функция создания секции
-    local function CreateSection(SectionData)
-        local SectionName = SectionData.Name or "Section"
-        local SectionDesc = SectionData.Description or ""
-        local SectionIcon = SectionData.Icon or "123944728972740"
+    local function CreateSection(SectionConfig)
+        local SectionName = SectionConfig.Name or "Section"
+        local SectionDesc = SectionConfig.Description or ""
+        local SectionIcon = SectionConfig.Icon or "123944728972740"
         
         local SectionFrame = Create("Frame", {
             Parent = PageContent,
@@ -2045,7 +2045,7 @@ if IsMobile then
     
     local FloatLogo = Create("ImageLabel", {
         Parent = FloatButton,
-        Image = "rbxassetid://1l20959262762131",
+        Image = "rbxassetid://120959262762131",
         BackgroundTransparency = 1,
         Size = UDim2.new(1, -12, 1, -12),
         Position = UDim2.new(0.5, 0, 0.5, 0),
