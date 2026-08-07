@@ -1,3 +1,4 @@
+
 local DarkHub = {} -- Dark Hub UI (Pulse Hub Styled Sizes - Compact)
 
 local Players = game:GetService("Players")
