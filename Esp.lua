@@ -18,6 +18,7 @@ local MainWidth = IsMobile and 530 or 570     -- Ширина главного �
 local MainHeight = IsMobile and 320 or 340    -- Высота главного окна
 local SidebarWidth = IsMobile and 140 or 150  -- Ширина боковой панели
 local HeaderHeight = 36                       -- Высота шапки
+local FooterHeight = 42                       -- Высота подвала с профилем
 
 -- Вспомогательные функции
 local function Create(Class, Properties)
@@ -289,7 +290,7 @@ local LeftTabs = Create("ScrollingFrame", {
     Parent = MainFrame,
     BackgroundColor3 = Theme.Background,
     BackgroundTransparency = 0.15,
-    Size = UDim2.new(0, SidebarWidth, 1, 0),
+    Size = UDim2.new(0, SidebarWidth, 1, -FooterHeight), -- Вычтена высота подвала
     Position = UDim2.new(0, 0, 0, 0),
     BorderSizePixel = 0,
     ClipsDescendants = true,
@@ -312,6 +313,95 @@ Create("UIPadding", {
     PaddingBottom = UDim.new(0, 6),
     PaddingLeft = UDim.new(0, 4),
     PaddingRight = UDim.new(0, 4),
+})
+
+-- === ПОДВАЛ (ПРОФИЛЬ ИГРОКА) ===
+local ProfileFooter = Create("Frame", {
+    Parent = MainFrame,
+    Name = "ProfileFooter",
+    BackgroundColor3 = Theme.Background,
+    BackgroundTransparency = 0.1,
+    Size = UDim2.new(0, SidebarWidth, 0, FooterHeight),
+    Position = UDim2.new(0, 0, 1, -FooterHeight),
+    BorderSizePixel = 0,
+    ZIndex = 8,
+})
+
+Create("UICorner", { Parent = ProfileFooter, CornerRadius = UDim.new(0, 8) })
+
+-- Разделительная линия сверху подвала
+Create("Frame", {
+    Parent = ProfileFooter,
+    BackgroundColor3 = Theme.Outline,
+    BackgroundTransparency = 0.4,
+    Size = UDim2.new(1, -12, 0, 1),
+    Position = UDim2.new(0.5, 0, 0, 0),
+    AnchorPoint = Vector2.new(0.5, 0),
+    BorderSizePixel = 0,
+})
+
+-- Аватарка игрока
+local AvatarImage = Create("ImageLabel", {
+    Parent = ProfileFooter,
+    Name = "Avatar",
+    BackgroundTransparency = 1,
+    Size = UDim2.new(0, 26, 0, 26),
+    Position = UDim2.new(0, 8, 0.5, 0),
+    AnchorPoint = Vector2.new(0, 0.5),
+    Image = "rbxthumb://type=AvatarHeadShot&id=" .. LocalPlayer.UserId .. "&w=150&h=150",
+    ZIndex = 9,
+})
+
+Create("UICorner", { Parent = AvatarImage, CornerRadius = UDim.new(1, 0) })
+
+-- Имя пользователя
+Create("TextLabel", {
+    Parent = ProfileFooter,
+    Name = "Username",
+    Text = LocalPlayer.DisplayName,
+    TextColor3 = Theme.Text,
+    BackgroundTransparency = 1,
+    FontFace = FontSemiBold,
+    TextSize = 11,
+    Position = UDim2.new(0, 40, 0.5, -6),
+    AnchorPoint = Vector2.new(0, 0.5),
+    Size = UDim2.new(0, SidebarWidth - 60, 0, 12),
+    TextXAlignment = Enum.TextXAlignment.Left,
+    TextTruncate = Enum.TextTruncate.AtEnd,
+    ZIndex = 9,
+})
+
+-- Субтитр / Никнейм (@username)
+Create("TextLabel", {
+    Parent = ProfileFooter,
+    Name = "Subtext",
+    Text = "@" .. LocalPlayer.Name,
+    TextColor3 = Theme.Text,
+    TextTransparency = 0.5,
+    BackgroundTransparency = 1,
+    FontFace = FontRegular,
+    TextSize = 9,
+    Position = UDim2.new(0, 40, 0.5, 6),
+    AnchorPoint = Vector2.new(0, 0.5),
+    Size = UDim2.new(0, SidebarWidth - 60, 0, 10),
+    TextXAlignment = Enum.TextXAlignment.Left,
+    TextTruncate = Enum.TextTruncate.AtEnd,
+    ZIndex = 9,
+})
+
+-- Иконка стрелочки справа
+local ArrowIcon = Create("ImageLabel", {
+    Parent = ProfileFooter,
+    Name = "Arrow",
+    Image = "rbxassetid://130510492706892",
+    ImageColor3 = Theme.Text,
+    ImageTransparency = 0.5,
+    BackgroundTransparency = 1,
+    Size = UDim2.new(0, 8, 0, 8),
+    Position = UDim2.new(1, -10, 0.5, 0),
+    AnchorPoint = Vector2.new(1, 0.5),
+    Rotation = -90,
+    ZIndex = 9,
 })
 
 -- Единый индикатор активной вкладки (для плавной анимации)
