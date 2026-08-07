@@ -13,11 +13,11 @@ local Camera = game:GetService("Workspace").CurrentCamera
 
 local IsMobile = UserInputService.TouchEnabled
 
--- === ОБНОВЛЕННЫЕ НАСТРОЙКИ РАЗМЕРОВ ГУИ (УМЕНЬШЕННЫЕ) ===
-local MainWidth = IsMobile and 530 or 570     -- Ширина главного окна (было 630/660)
-local MainHeight = IsMobile and 320 or 340    -- Высота главного окна (было 380/400)
-local SidebarWidth = IsMobile and 140 or 150  -- Ширина боковой панели (было 165/175)
-local HeaderHeight = 36                       -- Высота шапки (было 42)
+-- === ОБНОВЛЕННЫЕ НАСТРОЙКИ РАЗМЕРОВ ГУИ ===
+local MainWidth = IsMobile and 530 or 570     -- Ширина главного окна
+local MainHeight = IsMobile and 320 or 340    -- Высота главного окна
+local SidebarWidth = IsMobile and 140 or 150  -- Ширина боковой панели
+local HeaderHeight = 36                       -- Высота шапки
 
 -- Вспомогательные функции
 local function Create(Class, Properties)
@@ -219,7 +219,7 @@ Create("TextLabel", {
     ZIndex = 5,
 })
 
--- Кнопка закрытия (22х22)
+-- Кнопка закрытия
 local CloseButton = Create("TextButton", {
     Parent = MainFrame,
     Text = "",
@@ -284,69 +284,8 @@ CloseButton.MouseButton1Down:Connect(function()
     MainFrame.Visible = false
 end)
 
--- Кнопка настроек
-local SettingsButton = Create("TextButton", {
-    Parent = MainFrame,
-    Text = "",
-    AutoButtonColor = false,
-    BackgroundColor3 = Theme.Element,
-    BackgroundTransparency = 0.2,
-    Position = UDim2.new(1, -33, 0, 7),
-    AnchorPoint = Vector2.new(1, 0),
-    Size = UDim2.new(0, 22, 0, 22),
-    ZIndex = 5,
-})
-
-Create("UICorner", { Parent = SettingsButton, CornerRadius = UDim.new(0, 5) })
-
-Create("ImageLabel", {
-    Parent = SettingsButton,
-    Image = "rbxassetid://122669828593160",
-    ImageColor3 = Theme.Text,
-    ImageTransparency = 0.3,
-    BackgroundTransparency = 1,
-    Size = UDim2.new(0, 10, 0, 10),
-    Position = UDim2.new(0.5, 0, 0.5, 0),
-    AnchorPoint = Vector2.new(0.5, 0.5),
-    ZIndex = 6,
-})
-
-local SettingsAccent = Create("Frame", {
-    Parent = SettingsButton,
-    BackgroundColor3 = Color3.new(1, 1, 1),
-    BackgroundTransparency = 1,
-    Size = UDim2.new(0, 0, 0, 0),
-    Position = UDim2.new(0.5, 0, 0.5, 0),
-    AnchorPoint = Vector2.new(0.5, 0.5),
-})
-
-Create("UICorner", { Parent = SettingsAccent, CornerRadius = UDim.new(0, 5) })
-
-Create("UIGradient", {
-    Parent = SettingsAccent,
-    Rotation = -115,
-    Color = ColorSequence.new({
-        ColorSequenceKeypoint.new(0, Theme.Accent),
-        ColorSequenceKeypoint.new(1, Theme.AccentGradient),
-    })
-})
-
-SettingsButton.MouseEnter:Connect(function()
-    CreateTween(SettingsAccent, TweenInfo.new(0.3, Enum.EasingStyle.Quint, Enum.EasingDirection.Out), {
-        Size = UDim2.new(1, 0, 1, 0),
-        BackgroundTransparency = 0,
-    })
-end)
-
-SettingsButton.MouseLeave:Connect(function()
-    CreateTween(SettingsAccent, TweenInfo.new(0.3, Enum.EasingStyle.Quint, Enum.EasingDirection.Out), {
-        Size = UDim2.new(0, 0, 0, 0),
-        BackgroundTransparency = 1,
-    })
-end)
-
 -- Левая панель вкладок (Сайдбар)
-local LeftTabs = Create("Frame", {
+local LeftTabs = Create("ScrollingFrame", {
     Parent = MainFrame,
     BackgroundColor3 = Theme.Background,
     BackgroundTransparency = 0.15,
@@ -354,22 +293,25 @@ local LeftTabs = Create("Frame", {
     Position = UDim2.new(0, 0, 0, 0),
     BorderSizePixel = 0,
     ClipsDescendants = true,
+    ScrollBarThickness = 0,
+    CanvasSize = UDim2.new(0, 0, 0, 0),
+    AutomaticCanvasSize = Enum.AutomaticSize.Y,
 })
 
 Create("UICorner", { Parent = LeftTabs, CornerRadius = UDim.new(0, 8) })
 
 Create("UIListLayout", {
     Parent = LeftTabs,
-    Padding = UDim.new(0, 3),
+    Padding = UDim.new(0, 4),
     SortOrder = Enum.SortOrder.LayoutOrder,
 })
 
 Create("UIPadding", {
     Parent = LeftTabs,
-    PaddingTop = UDim.new(0, HeaderHeight + 2),
+    PaddingTop = UDim.new(0, HeaderHeight + 4),
     PaddingBottom = UDim.new(0, 6),
-    PaddingLeft = UDim.new(0, 5),
-    PaddingRight = UDim.new(0, 5),
+    PaddingLeft = UDim.new(0, 4),
+    PaddingRight = UDim.new(0, 4),
 })
 
 -- Контентная зона
@@ -393,51 +335,68 @@ local function CreatePage(PageConfig)
     local PageName = PageConfig.Name or "Page"
     local PageIcon = PageConfig.Icon or "100050851789190"
     
-    -- Кнопка вкладки (высота 27px)
+    -- Кнопка вкладки (Pulse Hub Style: 32px высота, белая полоска слева, три точки справа)
     local TabButton = Create("TextButton", {
         Parent = LeftTabs,
         Text = "",
         AutoButtonColor = false,
         BackgroundColor3 = Theme.Accent,
         BackgroundTransparency = 1,
-        Size = UDim2.new(1, 0, 0, 27),
+        Size = UDim2.new(1, 0, 0, 32),
         BorderSizePixel = 0,
         ClipsDescendants = true,
     })
     
-    Create("UICorner", { Parent = TabButton, CornerRadius = UDim.new(0, 5) })
+    Create("UICorner", { Parent = TabButton, CornerRadius = UDim.new(0, 6) })
+    
+    -- Индикатор активной вкладки (белая вертикальная полоска слева)
+    local ActiveIndicator = Create("Frame", {
+        Parent = TabButton,
+        BackgroundColor3 = Color3.fromRGB(255, 255, 255),
+        Position = UDim2.new(0, 2, 0.5, 0),
+        AnchorPoint = Vector2.new(0, 0.5),
+        Size = UDim2.new(0, 3, 0.6, 0),
+        Visible = false,
+        BorderSizePixel = 0,
+    })
+    Create("UICorner", { Parent = ActiveIndicator, CornerRadius = UDim.new(1, 0) })
     
     local TabIcon = Create("ImageLabel", {
         Parent = TabButton,
         Image = "rbxassetid://" .. PageIcon,
         ImageColor3 = Theme.Text,
         BackgroundTransparency = 1,
-        Size = UDim2.new(0, 14, 0, 14),
-        Position = UDim2.new(0, 8, 0.5, 0),
+        Size = UDim2.new(0, 16, 0, 16),
+        Position = UDim2.new(0, 12, 0.5, 0),
         AnchorPoint = Vector2.new(0, 0.5),
     })
     
-    Create("UIGradient", {
-        Parent = TabIcon,
-        Rotation = -115,
-        Color = ColorSequence.new({
-            ColorSequenceKeypoint.new(0, Theme.Accent),
-            ColorSequenceKeypoint.new(1, Theme.AccentGradient),
-        })
-    })
-    
-    Create("TextLabel", {
+    local TabLabel = Create("TextLabel", {
         Parent = TabButton,
         Text = PageName,
         TextColor3 = Theme.Text,
-        TextTransparency = 0.3,
+        TextTransparency = 0.5,
         BackgroundTransparency = 1,
         FontFace = FontRegular,
-        TextSize = 11,
-        Position = UDim2.new(0, 28, 0.5, 0),
+        TextSize = 12,
+        Position = UDim2.new(0, 36, 0.5, 0),
         AnchorPoint = Vector2.new(0, 0.5),
-        Size = UDim2.new(1, -30, 0, 13),
+        Size = UDim2.new(1, -52, 0, 14),
         TextXAlignment = Enum.TextXAlignment.Left,
+    })
+    
+    -- Значок трех точек (⋮) сбоку вкладки как в Pulse Hub
+    Create("TextLabel", {
+        Parent = TabButton,
+        Text = "⋮",
+        TextColor3 = Theme.Text,
+        TextTransparency = 0.6,
+        BackgroundTransparency = 1,
+        FontFace = FontRegular,
+        TextSize = 13,
+        Position = UDim2.new(1, -8, 0.5, 0),
+        AnchorPoint = Vector2.new(1, 0.5),
+        Size = UDim2.new(0, 10, 0, 14),
     })
     
     local PageFrame = Create("ScrollingFrame", {
@@ -473,6 +432,8 @@ local function CreatePage(PageConfig)
         Frame = PageFrame,
         Content = PageContent,
         TabButton = TabButton,
+        TabLabel = TabLabel,
+        ActiveIndicator = ActiveIndicator,
         Sections = {},
         Active = false,
     }
@@ -485,19 +446,25 @@ local function CreatePage(PageConfig)
                 CurrentPage.Active = false
                 CurrentPage.Frame.Visible = false
                 CurrentPage.TabButton.BackgroundTransparency = 1
-                CurrentPage.TabButton.BackgroundColor3 = Theme.Accent
+                CurrentPage.ActiveIndicator.Visible = false
+                CurrentPage.TabLabel.TextTransparency = 0.5
+                CurrentPage.TabLabel.FontFace = FontRegular
             end
             
             PageData.Active = true
             PageData.Frame.Visible = true
-            PageData.TabButton.BackgroundTransparency = 0.25
-            PageData.TabButton.BackgroundColor3 = Theme.Accent
+            PageData.TabButton.BackgroundTransparency = 0.88
+            PageData.ActiveIndicator.Visible = true
+            PageData.TabLabel.TextTransparency = 0
+            PageData.TabLabel.FontFace = FontSemiBold
             CurrentPage = PageData
         else
             PageData.Active = false
             PageData.Frame.Visible = false
             PageData.TabButton.BackgroundTransparency = 1
-            PageData.TabButton.BackgroundColor3 = Theme.Accent
+            PageData.ActiveIndicator.Visible = false
+            PageData.TabLabel.TextTransparency = 0.5
+            PageData.TabLabel.FontFace = FontRegular
         end
     end
     
@@ -523,7 +490,7 @@ local function CreatePage(PageConfig)
         
         Create("UICorner", { Parent = SectionFrame, CornerRadius = UDim.new(0, 5) })
         
-        -- Шапка секции (высота 26px)
+        -- Шапка секции
         local SectionTop = Create("Frame", {
             Parent = SectionFrame,
             BackgroundColor3 = Theme.Outline,
@@ -543,7 +510,7 @@ local function CreatePage(PageConfig)
         
         Create("UICorner", { Parent = SectionTopBg, CornerRadius = UDim.new(0, 4) })
         
-        local SectionBar = Create("Frame", {
+        Create("Frame", {
             Parent = SectionTopBg,
             BackgroundColor3 = Theme.Text,
             Size = UDim2.new(0, 2, 0, 10),
@@ -730,7 +697,7 @@ local function CreatePage(PageConfig)
             return { Set = SetValue, Get = function() return Value end }
         end
         
-        -- Button (высота 26px)
+        -- Button
         function SectionData:Button(Data)
             local ButtonName = Data.Name or "Button"
             local Icon = Data.Icon
@@ -822,7 +789,7 @@ local function CreatePage(PageConfig)
             return ButtonFrame
         end
         
-        -- Slider (высота 24px)
+        -- Slider
         function SectionData:Slider(Data)
             local SliderName = Data.Name or "Slider"
             local Flag = Data.Flag or "slider_" .. (#Flags + 1)
@@ -945,7 +912,7 @@ local function CreatePage(PageConfig)
             return { Set = SetValue, Get = function() return Value end }
         end
         
-        -- Dropdown (высота 25px)
+        -- Dropdown
         function SectionData:Dropdown(Data)
             local DropdownName = Data.Name or "Dropdown"
             local Flag = Data.Flag or "dropdown_" .. (#Flags + 1)
@@ -1119,7 +1086,7 @@ local function CreatePage(PageConfig)
             }
         end
         
-        -- Keybind (высота 24px)
+        -- Keybind
         function SectionData:Keybind(Data)
             local KeybindName = Data.Name or "Keybind"
             local Flag = Data.Flag or "keybind_" .. (#Flags + 1)
@@ -1220,7 +1187,7 @@ local function CreatePage(PageConfig)
             return { Set = SetKey, Get = function() return Key end }
         end
         
-        -- Textbox (высота 25px)
+        -- Textbox
         function SectionData:Textbox(Data)
             local TextboxName = Data.Name or "Textbox"
             local Flag = Data.Flag or "textbox_" .. (#Flags + 1)
@@ -1287,7 +1254,7 @@ local function CreatePage(PageConfig)
             return { Set = SetValue, Get = function() return Value end }
         end
         
-        -- Colorpicker (высота 24px)
+        -- Colorpicker
         function SectionData:Colorpicker(Data)
             local ColorpickerName = Data.Name or "Colorpicker"
             local Flag = Data.Flag or "color_" .. (#Flags + 1)
@@ -1854,7 +1821,7 @@ MovementSection:Toggle({Name = "Auto Jump", Default = false})
 MovementSection:Toggle({Name = "Auto Strafe", Default = false})
 MovementSection:Slider({Name = "Strafe Speed", Min = 0, Max = 100, Default = 60, Suffix = "%"})
 
--- Miscellaneous (Server)
+-- Server
 local MiscPage = CreatePage({Name = "Server", Icon = "81598136527047"})
 local ServerSection = MiscPage:CreateSection({Name = "Server Control"})
 ServerSection:Button({Name = "Rejoin Server"})
