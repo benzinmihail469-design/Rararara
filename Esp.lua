@@ -335,7 +335,7 @@ local function CreatePage(PageConfig)
     local PageName = PageConfig.Name or "Page"
     local PageIcon = PageConfig.Icon or "100050851789190"
     
-    -- Кнопка вкладки (Pulse Hub Style: 32px высота, белая полоска слева, три точки справа)
+    -- Кнопка вкладки (Pulse Hub Style)
     local TabButton = Create("TextButton", {
         Parent = LeftTabs,
         Text = "",
@@ -385,19 +385,35 @@ local function CreatePage(PageConfig)
         TextXAlignment = Enum.TextXAlignment.Left,
     })
     
-    -- Значок трех точек (⋮) сбоку вкладки как в Pulse Hub
-    Create("TextLabel", {
+    -- Иконка трех ИДЕАЛЬНО КРУГЛЫХ точек сбоку вкладки (Pulse Hub Style)
+    local DotsContainer = Create("Frame", {
         Parent = TabButton,
-        Text = "⋮",
-        TextColor3 = Theme.Text,
-        TextTransparency = 0.6,
         BackgroundTransparency = 1,
-        FontFace = FontRegular,
-        TextSize = 13,
         Position = UDim2.new(1, -8, 0.5, 0),
         AnchorPoint = Vector2.new(1, 0.5),
-        Size = UDim2.new(0, 10, 0, 14),
+        Size = UDim2.new(0, 3, 0, 13),
+        BorderSizePixel = 0,
     })
+
+    Create("UIListLayout", {
+        Parent = DotsContainer,
+        Padding = UDim.new(0, 2),
+        SortOrder = Enum.SortOrder.LayoutOrder,
+        HorizontalAlignment = Enum.HorizontalAlignment.Center,
+        VerticalAlignment = Enum.VerticalAlignment.Center,
+    })
+
+    for i = 1, 3 do
+        local Dot = Create("Frame", {
+            Parent = DotsContainer,
+            BackgroundColor3 = Theme.Text,
+            BackgroundTransparency = 0.6,
+            Size = UDim2.new(0, 3, 0, 3),
+            BorderSizePixel = 0,
+            LayoutOrder = i,
+        })
+        Create("UICorner", { Parent = Dot, CornerRadius = UDim.new(1, 0) })
+    end
     
     local PageFrame = Create("ScrollingFrame", {
         Parent = Content,
