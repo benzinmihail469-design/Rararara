@@ -1,6 +1,5 @@
 local DarkHub = {} -- Dark Hub UI
--- Полностью автономное GUI, созданное на основе предоставленной библиотеки
--- Оптимизировано для ПК и мобильных устройств
+-- Полностью автономное GUI, адаптированное по размерам под Pulse Hub
 
 local Players = game:GetService("Players")
 local UserInputService = game:GetService("UserInputService")
@@ -16,9 +15,9 @@ local Camera = game:GetService("Workspace").CurrentCamera
 
 local IsMobile = UserInputService.TouchEnabled
 
--- Адаптивные параметры размеров
-local SidebarWidth = IsMobile and 140 or 160
-local HeaderHeight = 48
+-- Адаптивные параметры размеров (уменьшены для компактности)
+local SidebarWidth = IsMobile and 130 or 150
+local HeaderHeight = 36
 
 -- Вспомогательные функции
 local function Create(Class, Properties)
@@ -74,16 +73,16 @@ local NotificationHolder = Create("Frame", {
 
 local NotificationLayout = Create("UIListLayout", {
     Parent = NotificationHolder,
-    Padding = UDim.new(0, 12),
+    Padding = UDim.new(0, 8),
     SortOrder = Enum.SortOrder.LayoutOrder,
 })
 
 local NotificationPadding = Create("UIPadding", {
     Parent = NotificationHolder,
-    PaddingTop = UDim.new(0, 12),
-    PaddingBottom = UDim.new(0, 12),
-    PaddingRight = UDim.new(0, 12),
-    PaddingLeft = UDim.new(0, 12),
+    PaddingTop = UDim.new(0, 10),
+    PaddingBottom = UDim.new(0, 10),
+    PaddingRight = UDim.new(0, 10),
+    PaddingLeft = UDim.new(0, 10),
 })
 
 -- Список флагов
@@ -99,7 +98,7 @@ local MainFrame = Create("Frame", {
     BorderSizePixel = 0,
     Position = UDim2.new(0.5, 0, 0.5, 0),
     AnchorPoint = Vector2.new(0.5, 0.5),
-    Size = IsMobile and UDim2.new(0.64, 0, 0.88, 0) or UDim2.new(0, 580, 0, 360), -- Размер изменен под фото
+    Size = IsMobile and UDim2.new(0.62, 0, 0.88, 0) or UDim2.new(0, 610, 0, 380), -- Размер под фото
     ClipsDescendants = false,
 })
 
@@ -169,14 +168,14 @@ do
     end)
 end
 
--- Логотип и заголовок
+-- Логотип и заголовок (уменьшенные пропорции)
 local Logo = Create("ImageLabel", {
     Parent = MainFrame,
     Name = "Logo",
     ImageColor3 = Color3.new(1, 1, 1),
     BackgroundTransparency = 1,
-    Size = UDim2.new(0, 26, 0, 26),
-    Position = UDim2.new(0, 10, 0, 11),
+    Size = UDim2.new(0, 20, 0, 20),
+    Position = UDim2.new(0, 8, 0, 8),
     Image = "rbxassetid://120959262762131",
     ScaleType = Enum.ScaleType.Fit,
     ZIndex = 5,
@@ -198,9 +197,9 @@ local Title = Create("TextLabel", {
     TextColor3 = Theme.Text,
     BackgroundTransparency = 1,
     FontFace = FontSemiBold,
-    TextSize = 16,
-    Position = UDim2.new(0, 42, 0, 8),
-    Size = UDim2.new(0, 0, 0, 16),
+    TextSize = 13,
+    Position = UDim2.new(0, 34, 0, 4),
+    Size = UDim2.new(0, 0, 0, 14),
     AutomaticSize = Enum.AutomaticSize.X,
     ZIndex = 5,
 })
@@ -213,9 +212,9 @@ local SubTitle = Create("TextLabel", {
     TextTransparency = 0.4,
     BackgroundTransparency = 1,
     FontFace = FontRegular,
-    TextSize = 12,
-    Position = UDim2.new(0, 42, 0, 25),
-    Size = UDim2.new(0, 0, 0, 14),
+    TextSize = 10,
+    Position = UDim2.new(0, 34, 0, 18),
+    Size = UDim2.new(0, 0, 0, 12),
     AutomaticSize = Enum.AutomaticSize.X,
     ZIndex = 5,
 })
@@ -227,13 +226,13 @@ local CloseButton = Create("TextButton", {
     AutoButtonColor = false,
     BackgroundColor3 = Theme.Element,
     BackgroundTransparency = 0.2,
-    Position = UDim2.new(1, -10, 0, 10),
+    Position = UDim2.new(1, -8, 0, 6),
     AnchorPoint = Vector2.new(1, 0),
-    Size = UDim2.new(0, 28, 0, 28),
+    Size = UDim2.new(0, 24, 0, 24),
     ZIndex = 5,
 })
 
-Create("UICorner", { Parent = CloseButton, CornerRadius = UDim.new(0, 6) })
+Create("UICorner", { Parent = CloseButton, CornerRadius = UDim.new(0, 5) })
 
 local CloseIcon = Create("ImageLabel", {
     Parent = CloseButton,
@@ -241,7 +240,7 @@ local CloseIcon = Create("ImageLabel", {
     ImageColor3 = Theme.Text,
     ImageTransparency = 0.3,
     BackgroundTransparency = 1,
-    Size = UDim2.new(0, 10, 0, 10),
+    Size = UDim2.new(0, 9, 0, 9),
     Position = UDim2.new(0.5, 0, 0.5, 0),
     AnchorPoint = Vector2.new(0.5, 0.5),
     ZIndex = 6,
@@ -256,7 +255,7 @@ local CloseAccent = Create("Frame", {
     AnchorPoint = Vector2.new(0.5, 0.5),
 })
 
-Create("UICorner", { Parent = CloseAccent, CornerRadius = UDim.new(0, 6) })
+Create("UICorner", { Parent = CloseAccent, CornerRadius = UDim.new(0, 5) })
 
 Create("UIGradient", {
     Parent = CloseAccent,
@@ -292,13 +291,13 @@ local SettingsButton = Create("TextButton", {
     AutoButtonColor = false,
     BackgroundColor3 = Theme.Element,
     BackgroundTransparency = 0.2,
-    Position = UDim2.new(1, -44, 0, 10),
+    Position = UDim2.new(1, -36, 0, 6),
     AnchorPoint = Vector2.new(1, 0),
-    Size = UDim2.new(0, 28, 0, 28),
+    Size = UDim2.new(0, 24, 0, 24),
     ZIndex = 5,
 })
 
-Create("UICorner", { Parent = SettingsButton, CornerRadius = UDim.new(0, 6) })
+Create("UICorner", { Parent = SettingsButton, CornerRadius = UDim.new(0, 5) })
 
 local SettingsIcon = Create("ImageLabel", {
     Parent = SettingsButton,
@@ -306,7 +305,7 @@ local SettingsIcon = Create("ImageLabel", {
     ImageColor3 = Theme.Text,
     ImageTransparency = 0.3,
     BackgroundTransparency = 1,
-    Size = UDim2.new(0, 13, 0, 12),
+    Size = UDim2.new(0, 11, 0, 11),
     Position = UDim2.new(0.5, 0, 0.5, 0),
     AnchorPoint = Vector2.new(0.5, 0.5),
     ZIndex = 6,
@@ -321,7 +320,7 @@ local SettingsAccent = Create("Frame", {
     AnchorPoint = Vector2.new(0.5, 0.5),
 })
 
-Create("UICorner", { Parent = SettingsAccent, CornerRadius = UDim.new(0, 6) })
+Create("UICorner", { Parent = SettingsAccent, CornerRadius = UDim.new(0, 5) })
 
 Create("UIGradient", {
     Parent = SettingsAccent,
@@ -361,16 +360,16 @@ Create("UICorner", { Parent = LeftTabs, CornerRadius = UDim.new(0, 8) })
 
 local TabsList = Create("UIListLayout", {
     Parent = LeftTabs,
-    Padding = UDim.new(0, 6),
+    Padding = UDim.new(0, 4),
     SortOrder = Enum.SortOrder.LayoutOrder,
 })
 
 local TabsPadding = Create("UIPadding", {
     Parent = LeftTabs,
-    PaddingTop = UDim.new(0, HeaderHeight + 6),
-    PaddingBottom = UDim.new(0, 10),
-    PaddingLeft = UDim.new(0, 8),
-    PaddingRight = UDim.new(0, 8),
+    PaddingTop = UDim.new(0, HeaderHeight + 4),
+    PaddingBottom = UDim.new(0, 8),
+    PaddingLeft = UDim.new(0, 6),
+    PaddingRight = UDim.new(0, 6),
 })
 
 -- Контент
@@ -402,20 +401,20 @@ local function CreatePage(PageConfig)
         AutoButtonColor = false,
         BackgroundColor3 = Theme.Accent,
         BackgroundTransparency = 1,
-        Size = UDim2.new(1, 0, 0, 32),
+        Size = UDim2.new(1, 0, 0, 27),
         BorderSizePixel = 0,
         ClipsDescendants = true,
     })
     
-    Create("UICorner", { Parent = TabButton, CornerRadius = UDim.new(0, 6) })
+    Create("UICorner", { Parent = TabButton, CornerRadius = UDim.new(0, 5) })
     
     local TabIcon = Create("ImageLabel", {
         Parent = TabButton,
         Image = "rbxassetid://" .. PageIcon,
         ImageColor3 = Theme.Text,
         BackgroundTransparency = 1,
-        Size = UDim2.new(0, 16, 0, 16),
-        Position = UDim2.new(0, 8, 0.5, 0),
+        Size = UDim2.new(0, 14, 0, 14),
+        Position = UDim2.new(0, 6, 0.5, 0),
         AnchorPoint = Vector2.new(0, 0.5),
     })
     
@@ -435,10 +434,10 @@ local function CreatePage(PageConfig)
         TextTransparency = 0.3,
         BackgroundTransparency = 1,
         FontFace = FontRegular,
-        TextSize = 13,
-        Position = UDim2.new(0, 30, 0.5, 0),
+        TextSize = 12,
+        Position = UDim2.new(0, 26, 0.5, 0),
         AnchorPoint = Vector2.new(0, 0.5),
-        Size = UDim2.new(1, -34, 0, 14),
+        Size = UDim2.new(1, -28, 0, 13),
         TextXAlignment = Enum.TextXAlignment.Left,
     })
     
@@ -447,7 +446,7 @@ local function CreatePage(PageConfig)
         Parent = Content,
         BackgroundTransparency = 1,
         Size = UDim2.new(1, 0, 1, 0),
-        ScrollBarThickness = 3,
+        ScrollBarThickness = 2,
         CanvasSize = UDim2.new(0, 0, 0, 0),
         AutomaticCanvasSize = Enum.AutomaticSize.Y,
         Visible = false,
@@ -461,14 +460,14 @@ local function CreatePage(PageConfig)
     local PageContent = Create("Frame", {
         Parent = PageFrame,
         BackgroundTransparency = 1,
-        Size = UDim2.new(1, -16, 0, 0),
-        Position = UDim2.new(0, 8, 0, 8),
+        Size = UDim2.new(1, -12, 0, 0),
+        Position = UDim2.new(0, 6, 0, 6),
         AutomaticSize = Enum.AutomaticSize.Y,
     })
     
     local ContentLayout = Create("UIListLayout", {
         Parent = PageContent,
-        Padding = UDim.new(0, 10),
+        Padding = UDim.new(0, 8),
         SortOrder = Enum.SortOrder.LayoutOrder,
     })
     
@@ -528,14 +527,14 @@ local function CreatePage(PageConfig)
             BorderSizePixel = 0,
         })
         
-        Create("UICorner", { Parent = SectionFrame, CornerRadius = UDim.new(0, 6) })
+        Create("UICorner", { Parent = SectionFrame, CornerRadius = UDim.new(0, 5) })
         
         -- Шапка секции
         local SectionTop = Create("Frame", {
             Parent = SectionFrame,
             BackgroundColor3 = Theme.Outline,
             BackgroundTransparency = 0.65,
-            Size = UDim2.new(1, 0, 0, 40),
+            Size = UDim2.new(1, 0, 0, 32),
             BorderSizePixel = 0,
         })
         
@@ -548,15 +547,15 @@ local function CreatePage(PageConfig)
             BorderSizePixel = 0,
         })
         
-        Create("UICorner", { Parent = SectionTopBg, CornerRadius = UDim.new(0, 5) })
+        Create("UICorner", { Parent = SectionTopBg, CornerRadius = UDim.new(0, 4) })
         
         local SectionIconImg = Create("ImageLabel", {
             Parent = SectionTopBg,
             Image = "rbxassetid://" .. SectionIcon,
             ImageColor3 = Color3.new(1, 1, 1),
             BackgroundTransparency = 1,
-            Size = UDim2.new(0, 18, 0, 18),
-            Position = UDim2.new(0, 10, 0.5, 0),
+            Size = UDim2.new(0, 14, 0, 14),
+            Position = UDim2.new(0, 8, 0.5, 0),
             AnchorPoint = Vector2.new(0, 0.5),
         })
         
@@ -575,10 +574,10 @@ local function CreatePage(PageConfig)
             TextColor3 = Theme.Text,
             BackgroundTransparency = 1,
             FontFace = FontSemiBold,
-            TextSize = 14,
-            Position = UDim2.new(0, 36, 0.5, SectionDesc ~= "" and -8 or 0),
+            TextSize = 12,
+            Position = UDim2.new(0, 28, 0.5, SectionDesc ~= "" and -6 or 0),
             AnchorPoint = Vector2.new(0, SectionDesc ~= "" and 0 or 0.5),
-            Size = UDim2.new(0, 0, 0, 15),
+            Size = UDim2.new(0, 0, 0, 13),
             AutomaticSize = Enum.AutomaticSize.X,
         })
         
@@ -590,9 +589,9 @@ local function CreatePage(PageConfig)
                 TextTransparency = 0.4,
                 BackgroundTransparency = 1,
                 FontFace = FontRegular,
-                TextSize = 12,
-                Position = UDim2.new(0, 36, 0, 22),
-                Size = UDim2.new(0, 0, 0, 13),
+                TextSize = 10,
+                Position = UDim2.new(0, 28, 0, 17),
+                Size = UDim2.new(0, 0, 0, 11),
                 AutomaticSize = Enum.AutomaticSize.X,
             })
         end
@@ -602,26 +601,26 @@ local function CreatePage(PageConfig)
             Parent = SectionFrame,
             BackgroundColor3 = Theme.SectionBackground,
             BackgroundTransparency = 0.65,
-            Position = UDim2.new(0, 1, 0, 41),
+            Position = UDim2.new(0, 1, 0, 33),
             Size = UDim2.new(1, -2, 0, 0),
             AutomaticSize = Enum.AutomaticSize.Y,
             BorderSizePixel = 0,
         })
         
-        Create("UICorner", { Parent = SectionContent, CornerRadius = UDim.new(0, 6) })
+        Create("UICorner", { Parent = SectionContent, CornerRadius = UDim.new(0, 5) })
         
         local ElementsList = Create("UIListLayout", {
             Parent = SectionContent,
-            Padding = UDim.new(0, 8),
+            Padding = UDim.new(0, 6),
             SortOrder = Enum.SortOrder.LayoutOrder,
         })
         
         local ElementsPadding = Create("UIPadding", {
             Parent = SectionContent,
-            PaddingTop = UDim.new(0, 10),
-            PaddingBottom = UDim.new(0, 10),
-            PaddingLeft = UDim.new(0, 10),
-            PaddingRight = UDim.new(0, 10),
+            PaddingTop = UDim.new(0, 8),
+            PaddingBottom = UDim.new(0, 8),
+            PaddingLeft = UDim.new(0, 8),
+            PaddingRight = UDim.new(0, 8),
         })
         
         local SectionData = {
@@ -640,7 +639,7 @@ local function CreatePage(PageConfig)
             local ToggleFrame = Create("Frame", {
                 Parent = SectionContent,
                 BackgroundTransparency = 1,
-                Size = UDim2.new(1, 0, 0, 22),
+                Size = UDim2.new(1, 0, 0, 18),
                 BorderSizePixel = 0,
             })
             
@@ -656,13 +655,13 @@ local function CreatePage(PageConfig)
             local Indicator = Create("Frame", {
                 Parent = ToggleFrame,
                 BackgroundColor3 = Theme.Element,
-                Size = UDim2.new(0, 18, 0, 18),
+                Size = UDim2.new(0, 15, 0, 15),
                 Position = UDim2.new(0, 0, 0.5, 0),
                 AnchorPoint = Vector2.new(0, 0.5),
                 BorderSizePixel = 0,
             })
             
-            Create("UICorner", { Parent = Indicator, CornerRadius = UDim.new(0, 4) })
+            Create("UICorner", { Parent = Indicator, CornerRadius = UDim.new(0, 3) })
             
             local Accent = Create("Frame", {
                 Parent = Indicator,
@@ -673,7 +672,7 @@ local function CreatePage(PageConfig)
                 AnchorPoint = Vector2.new(0.5, 0.5),
             })
             
-            Create("UICorner", { Parent = Accent, CornerRadius = UDim.new(0, 4) })
+            Create("UICorner", { Parent = Accent, CornerRadius = UDim.new(0, 3) })
             
             Create("UIGradient", {
                 Parent = Accent,
@@ -702,10 +701,10 @@ local function CreatePage(PageConfig)
                 TextTransparency = 0.3,
                 BackgroundTransparency = 1,
                 FontFace = FontRegular,
-                TextSize = 13,
-                Position = UDim2.new(0, 26, 0.5, 0),
+                TextSize = 12,
+                Position = UDim2.new(0, 22, 0.5, 0),
                 AnchorPoint = Vector2.new(0, 0.5),
-                Size = UDim2.new(1, -30, 0, 15),
+                Size = UDim2.new(1, -24, 0, 13),
                 TextXAlignment = Enum.TextXAlignment.Left,
             })
             
@@ -722,7 +721,7 @@ local function CreatePage(PageConfig)
                     })
                     CreateTween(CheckImage, TweenInfo.new(0.2, Enum.EasingStyle.Back, Enum.EasingDirection.Out), {
                         ImageTransparency = 0,
-                        Size = UDim2.new(0, 10, 0, 9),
+                        Size = UDim2.new(0, 9, 0, 8),
                     })
                 else
                     CreateTween(Accent, TweenInfo.new(0.2, Enum.EasingStyle.Back, Enum.EasingDirection.Out), {
@@ -762,11 +761,11 @@ local function CreatePage(PageConfig)
                 Text = "",
                 AutoButtonColor = false,
                 BackgroundColor3 = Theme.Element,
-                Size = UDim2.new(1, 0, 0, 30),
+                Size = UDim2.new(1, 0, 0, 25),
                 BorderSizePixel = 0,
             })
             
-            Create("UICorner", { Parent = ButtonFrame, CornerRadius = UDim.new(0, 6) })
+            Create("UICorner", { Parent = ButtonFrame, CornerRadius = UDim.new(0, 5) })
             
             local Accent = Create("Frame", {
                 Parent = ButtonFrame,
@@ -777,7 +776,7 @@ local function CreatePage(PageConfig)
                 AnchorPoint = Vector2.new(0.5, 0.5),
             })
             
-            Create("UICorner", { Parent = Accent, CornerRadius = UDim.new(0, 6) })
+            Create("UICorner", { Parent = Accent, CornerRadius = UDim.new(0, 5) })
             
             Create("UIGradient", {
                 Parent = Accent,
@@ -795,10 +794,10 @@ local function CreatePage(PageConfig)
                 TextTransparency = 0.3,
                 BackgroundTransparency = 1,
                 FontFace = FontRegular,
-                TextSize = 13,
+                TextSize = 12,
                 Position = UDim2.new(0.5, 0, 0.5, 0),
                 AnchorPoint = Vector2.new(0.5, 0.5),
-                Size = UDim2.new(1, -20, 0, 15),
+                Size = UDim2.new(1, -16, 0, 13),
                 TextXAlignment = Enum.TextXAlignment.Center,
             })
             
@@ -809,8 +808,8 @@ local function CreatePage(PageConfig)
                     ImageColor3 = Theme.Text,
                     ImageTransparency = 0.3,
                     BackgroundTransparency = 1,
-                    Size = UDim2.new(0, 14, 0, 14),
-                    Position = UDim2.new(0, -18, 0.5, 0),
+                    Size = UDim2.new(0, 12, 0, 12),
+                    Position = UDim2.new(0, -14, 0.5, 0),
                     AnchorPoint = Vector2.new(1, 0.5),
                 })
             end
@@ -857,7 +856,7 @@ local function CreatePage(PageConfig)
             local SliderFrame = Create("Frame", {
                 Parent = SectionContent,
                 BackgroundTransparency = 1,
-                Size = UDim2.new(1, 0, 0, 32),
+                Size = UDim2.new(1, 0, 0, 26),
                 BorderSizePixel = 0,
             })
             
@@ -868,9 +867,9 @@ local function CreatePage(PageConfig)
                 TextTransparency = 0.3,
                 BackgroundTransparency = 1,
                 FontFace = FontRegular,
-                TextSize = 13,
+                TextSize = 12,
                 Position = UDim2.new(0, 0, 0, 0),
-                Size = UDim2.new(0, 0, 0, 15),
+                Size = UDim2.new(0, 0, 0, 13),
                 AutomaticSize = Enum.AutomaticSize.X,
             })
             
@@ -881,10 +880,10 @@ local function CreatePage(PageConfig)
                 TextTransparency = 0.3,
                 BackgroundTransparency = 1,
                 FontFace = FontRegular,
-                TextSize = 13,
+                TextSize = 12,
                 Position = UDim2.new(1, 0, 0, 0),
                 AnchorPoint = Vector2.new(1, 0),
-                Size = UDim2.new(0, 0, 0, 15),
+                Size = UDim2.new(0, 0, 0, 13),
                 AutomaticSize = Enum.AutomaticSize.X,
             })
             
@@ -893,8 +892,8 @@ local function CreatePage(PageConfig)
                 Text = "",
                 AutoButtonColor = false,
                 BackgroundColor3 = Theme.Element,
-                Position = UDim2.new(0, 0, 1, -5),
-                Size = UDim2.new(1, 0, 0, 5),
+                Position = UDim2.new(0, 0, 1, -4),
+                Size = UDim2.new(1, 0, 0, 4),
                 BorderSizePixel = 0,
             })
             
@@ -981,7 +980,7 @@ local function CreatePage(PageConfig)
             local DropdownFrame = Create("Frame", {
                 Parent = SectionContent,
                 BackgroundTransparency = 1,
-                Size = UDim2.new(1, 0, 0, 28),
+                Size = UDim2.new(1, 0, 0, 22),
                 BorderSizePixel = 0,
             })
             
@@ -992,10 +991,10 @@ local function CreatePage(PageConfig)
                 TextTransparency = 0.3,
                 BackgroundTransparency = 1,
                 FontFace = FontRegular,
-                TextSize = 13,
+                TextSize = 12,
                 Position = UDim2.new(0, 0, 0.5, 0),
                 AnchorPoint = Vector2.new(0, 0.5),
-                Size = UDim2.new(0, 0, 0, 15),
+                Size = UDim2.new(0, 0, 0, 13),
                 AutomaticSize = Enum.AutomaticSize.X,
             })
             
@@ -1004,13 +1003,13 @@ local function CreatePage(PageConfig)
                 Text = "",
                 AutoButtonColor = false,
                 BackgroundColor3 = Theme.Element,
-                Size = UDim2.new(0, 120, 0, 26),
+                Size = UDim2.new(0, 100, 0, 22),
                 Position = UDim2.new(1, 0, 0.5, 0),
                 AnchorPoint = Vector2.new(1, 0.5),
                 BorderSizePixel = 0,
             })
             
-            Create("UICorner", { Parent = DropdownButton, CornerRadius = UDim.new(0, 6) })
+            Create("UICorner", { Parent = DropdownButton, CornerRadius = UDim.new(0, 5) })
             
             local DropdownValue = Create("TextLabel", {
                 Parent = DropdownButton,
@@ -1019,10 +1018,10 @@ local function CreatePage(PageConfig)
                 TextTransparency = 0.3,
                 BackgroundTransparency = 1,
                 FontFace = FontRegular,
-                TextSize = 13,
-                Position = UDim2.new(0, 8, 0.5, 0),
+                TextSize = 12,
+                Position = UDim2.new(0, 6, 0.5, 0),
                 AnchorPoint = Vector2.new(0, 0.5),
-                Size = UDim2.new(1, -28, 0, 15),
+                Size = UDim2.new(1, -22, 0, 13),
                 TextXAlignment = Enum.TextXAlignment.Left,
             })
             
@@ -1031,23 +1030,23 @@ local function CreatePage(PageConfig)
                 Image = "rbxassetid://123317177279443",
                 ImageColor3 = Color3.fromRGB(141, 141, 150),
                 BackgroundTransparency = 1,
-                Size = UDim2.new(0, 12, 0, 6),
-                Position = UDim2.new(1, -8, 0.5, 0),
+                Size = UDim2.new(0, 10, 0, 5),
+                Position = UDim2.new(1, -6, 0.5, 0),
                 AnchorPoint = Vector2.new(1, 0.5),
             })
             
-            -- Выпадающий список поверх всего UI
+            -- Выпадающий список
             local DropdownList = Create("Frame", {
                 Parent = Holder,
                 BackgroundColor3 = Theme.Background,
-                Size = UDim2.new(0, 120, 0, 110),
+                Size = UDim2.new(0, 100, 0, 95),
                 Position = UDim2.new(0, 0, 0, 0),
                 Visible = false,
                 BorderSizePixel = 0,
                 ZIndex = 100,
             })
             
-            Create("UICorner", { Parent = DropdownList, CornerRadius = UDim.new(0, 6) })
+            Create("UICorner", { Parent = DropdownList, CornerRadius = UDim.new(0, 5) })
             
             Create("UIStroke", {
                 Parent = DropdownList,
@@ -1058,8 +1057,8 @@ local function CreatePage(PageConfig)
             local ListScroller = Create("ScrollingFrame", {
                 Parent = DropdownList,
                 BackgroundTransparency = 1,
-                Size = UDim2.new(1, -6, 1, -6),
-                Position = UDim2.new(0, 3, 0, 3),
+                Size = UDim2.new(1, -4, 1, -4),
+                Position = UDim2.new(0, 2, 0, 2),
                 CanvasSize = UDim2.new(0, 0, 0, 0),
                 AutomaticCanvasSize = Enum.AutomaticSize.Y,
                 ScrollBarThickness = 2,
@@ -1068,7 +1067,7 @@ local function CreatePage(PageConfig)
             
             local ListLayout = Create("UIListLayout", {
                 Parent = ListScroller,
-                Padding = UDim.new(0, 3),
+                Padding = UDim.new(0, 2),
                 SortOrder = Enum.SortOrder.LayoutOrder,
             })
             
@@ -1079,8 +1078,8 @@ local function CreatePage(PageConfig)
             local function UpdatePosition()
                 local Pos = DropdownButton.AbsolutePosition
                 local Size = DropdownButton.AbsoluteSize
-                DropdownList.Position = UDim2.new(0, Pos.X, 0, Pos.Y + Size.Y + 4)
-                DropdownList.Size = UDim2.new(0, Size.X, 0, math.min(110, #Items * 26 + 10))
+                DropdownList.Position = UDim2.new(0, Pos.X, 0, Pos.Y + Size.Y + 3)
+                DropdownList.Size = UDim2.new(0, Size.X, 0, math.min(95, #Items * 22 + 6))
             end
             
             local function SetOpen(Open)
@@ -1106,7 +1105,7 @@ local function CreatePage(PageConfig)
                     Text = "",
                     AutoButtonColor = false,
                     BackgroundTransparency = 1,
-                    Size = UDim2.new(1, 0, 0, 22),
+                    Size = UDim2.new(1, 0, 0, 18),
                     BorderSizePixel = 0,
                     ZIndex = 102,
                 })
@@ -1118,10 +1117,10 @@ local function CreatePage(PageConfig)
                     TextTransparency = 0.3,
                     BackgroundTransparency = 1,
                     FontFace = FontRegular,
-                    TextSize = 13,
-                    Position = UDim2.new(0, 8, 0.5, 0),
+                    TextSize = 12,
+                    Position = UDim2.new(0, 6, 0.5, 0),
                     AnchorPoint = Vector2.new(0, 0.5),
-                    Size = UDim2.new(1, -8, 0, 15),
+                    Size = UDim2.new(1, -6, 0, 13),
                     TextXAlignment = Enum.TextXAlignment.Left,
                     ZIndex = 103,
                 })
@@ -1173,7 +1172,7 @@ local function CreatePage(PageConfig)
             local KeybindFrame = Create("Frame", {
                 Parent = SectionContent,
                 BackgroundTransparency = 1,
-                Size = UDim2.new(1, 0, 0, 28),
+                Size = UDim2.new(1, 0, 0, 22),
                 BorderSizePixel = 0,
             })
             
@@ -1184,10 +1183,10 @@ local function CreatePage(PageConfig)
                 TextTransparency = 0.3,
                 BackgroundTransparency = 1,
                 FontFace = FontRegular,
-                TextSize = 13,
+                TextSize = 12,
                 Position = UDim2.new(0, 0, 0.5, 0),
                 AnchorPoint = Vector2.new(0, 0.5),
-                Size = UDim2.new(0, 0, 0, 15),
+                Size = UDim2.new(0, 0, 0, 13),
                 AutomaticSize = Enum.AutomaticSize.X,
             })
             
@@ -1196,13 +1195,13 @@ local function CreatePage(PageConfig)
                 Text = "",
                 AutoButtonColor = false,
                 BackgroundColor3 = Theme.Element,
-                Size = UDim2.new(0, 90, 0, 26),
+                Size = UDim2.new(0, 75, 0, 22),
                 Position = UDim2.new(1, 0, 0.5, 0),
                 AnchorPoint = Vector2.new(1, 0.5),
                 BorderSizePixel = 0,
             })
             
-            Create("UICorner", { Parent = KeybindButton, CornerRadius = UDim.new(0, 6) })
+            Create("UICorner", { Parent = KeybindButton, CornerRadius = UDim.new(0, 5) })
             
             local KeybindValue = Create("TextLabel", {
                 Parent = KeybindButton,
@@ -1211,10 +1210,10 @@ local function CreatePage(PageConfig)
                 TextTransparency = 0.3,
                 BackgroundTransparency = 1,
                 FontFace = FontRegular,
-                TextSize = 13,
+                TextSize = 12,
                 Position = UDim2.new(0.5, 0, 0.5, 0),
                 AnchorPoint = Vector2.new(0.5, 0.5),
-                Size = UDim2.new(1, -8, 0, 15),
+                Size = UDim2.new(1, -6, 0, 13),
                 TextXAlignment = Enum.TextXAlignment.Center,
             })
             
@@ -1285,7 +1284,7 @@ local function CreatePage(PageConfig)
             local TextboxFrame = Create("Frame", {
                 Parent = SectionContent,
                 BackgroundTransparency = 1,
-                Size = UDim2.new(1, 0, 0, 30),
+                Size = UDim2.new(1, 0, 0, 24),
                 BorderSizePixel = 0,
             })
             
@@ -1296,10 +1295,10 @@ local function CreatePage(PageConfig)
                 TextTransparency = 0.3,
                 BackgroundTransparency = 1,
                 FontFace = FontRegular,
-                TextSize = 13,
+                TextSize = 12,
                 Position = UDim2.new(0, 0, 0.5, 0),
                 AnchorPoint = Vector2.new(0, 0.5),
-                Size = UDim2.new(0, 0, 0, 15),
+                Size = UDim2.new(0, 0, 0, 13),
                 AutomaticSize = Enum.AutomaticSize.X,
             })
             
@@ -1309,22 +1308,22 @@ local function CreatePage(PageConfig)
                 PlaceholderText = Placeholder,
                 TextColor3 = Theme.Text,
                 BackgroundColor3 = Theme.Element,
-                Size = UDim2.new(0, 130, 0, 26),
+                Size = UDim2.new(0, 110, 0, 22),
                 Position = UDim2.new(1, 0, 0.5, 0),
                 AnchorPoint = Vector2.new(1, 0.5),
                 BorderSizePixel = 0,
                 FontFace = FontRegular,
-                TextSize = 13,
+                TextSize = 12,
                 TextXAlignment = Enum.TextXAlignment.Left,
                 ClearTextOnFocus = false,
             })
             
-            Create("UICorner", { Parent = TextboxInput, CornerRadius = UDim.new(0, 6) })
+            Create("UICorner", { Parent = TextboxInput, CornerRadius = UDim.new(0, 5) })
             
             Create("UIPadding", {
                 Parent = TextboxInput,
-                PaddingLeft = UDim.new(0, 8),
-                PaddingRight = UDim.new(0, 8),
+                PaddingLeft = UDim.new(0, 6),
+                PaddingRight = UDim.new(0, 6),
             })
             
             local Value = Default
@@ -1362,7 +1361,7 @@ local function CreatePage(PageConfig)
             local ColorFrame = Create("Frame", {
                 Parent = SectionContent,
                 BackgroundTransparency = 1,
-                Size = UDim2.new(1, 0, 0, 26),
+                Size = UDim2.new(1, 0, 0, 22),
                 BorderSizePixel = 0,
             })
             
@@ -1373,10 +1372,10 @@ local function CreatePage(PageConfig)
                 TextTransparency = 0.3,
                 BackgroundTransparency = 1,
                 FontFace = FontRegular,
-                TextSize = 13,
+                TextSize = 12,
                 Position = UDim2.new(0, 0, 0.5, 0),
                 AnchorPoint = Vector2.new(0, 0.5),
-                Size = UDim2.new(0, 0, 0, 15),
+                Size = UDim2.new(0, 0, 0, 13),
                 AutomaticSize = Enum.AutomaticSize.X,
             })
             
@@ -1385,19 +1384,19 @@ local function CreatePage(PageConfig)
                 Text = "",
                 AutoButtonColor = false,
                 BackgroundColor3 = Theme.Element,
-                Size = UDim2.new(0, 100, 0, 24),
+                Size = UDim2.new(0, 85, 0, 20),
                 Position = UDim2.new(1, 0, 0.5, 0),
                 AnchorPoint = Vector2.new(1, 0.5),
                 BorderSizePixel = 0,
             })
             
-            Create("UICorner", { Parent = ColorButton, CornerRadius = UDim.new(0, 6) })
+            Create("UICorner", { Parent = ColorButton, CornerRadius = UDim.new(0, 5) })
             
             local ColorPreview = Create("Frame", {
                 Parent = ColorButton,
                 BackgroundColor3 = Default,
-                Size = UDim2.new(0, 16, 0, 16),
-                Position = UDim2.new(0, 5, 0.5, 0),
+                Size = UDim2.new(0, 13, 0, 13),
+                Position = UDim2.new(0, 4, 0.5, 0),
                 AnchorPoint = Vector2.new(0, 0.5),
                 BorderSizePixel = 0,
             })
@@ -1411,10 +1410,10 @@ local function CreatePage(PageConfig)
                 TextTransparency = 0.3,
                 BackgroundTransparency = 1,
                 FontFace = FontRegular,
-                TextSize = 12,
-                Position = UDim2.new(0, 26, 0.5, 0),
+                TextSize = 11,
+                Position = UDim2.new(0, 22, 0.5, 0),
                 AnchorPoint = Vector2.new(0, 0.5),
-                Size = UDim2.new(1, -30, 0, 15),
+                Size = UDim2.new(1, -24, 0, 13),
                 TextXAlignment = Enum.TextXAlignment.Left,
             })
             
@@ -1422,14 +1421,14 @@ local function CreatePage(PageConfig)
             local ColorPicker = Create("Frame", {
                 Parent = Holder,
                 BackgroundColor3 = Theme.Background,
-                Size = UDim2.new(0, 200, 0, 220),
+                Size = UDim2.new(0, 180, 0, 190),
                 Position = UDim2.new(0, 0, 0, 0),
                 Visible = false,
                 BorderSizePixel = 0,
                 ZIndex = 100,
             })
             
-            Create("UICorner", { Parent = ColorPicker, CornerRadius = UDim.new(0, 8) })
+            Create("UICorner", { Parent = ColorPicker, CornerRadius = UDim.new(0, 6) })
             Create("UIStroke", { Parent = ColorPicker, Color = Theme.Outline, ApplyStrokeMode = Enum.ApplyStrokeMode.Border })
             
             local Palette = Create("TextButton", {
@@ -1437,13 +1436,13 @@ local function CreatePage(PageConfig)
                 Text = "",
                 AutoButtonColor = false,
                 BackgroundColor3 = Color3.new(1, 0, 0),
-                Size = UDim2.new(1, -20, 1, -95),
-                Position = UDim2.new(0, 10, 0, 10),
+                Size = UDim2.new(1, -16, 1, -80),
+                Position = UDim2.new(0, 8, 0, 8),
                 BorderSizePixel = 0,
                 ZIndex = 101,
             })
             
-            Create("UICorner", { Parent = Palette, CornerRadius = UDim.new(0, 6) })
+            Create("UICorner", { Parent = Palette, CornerRadius = UDim.new(0, 5) })
             
             local SatOverlay = Create("Frame", {
                 Parent = Palette,
@@ -1481,8 +1480,8 @@ local function CreatePage(PageConfig)
             local Cursor = Create("Frame", {
                 Parent = Palette,
                 BackgroundTransparency = 1,
-                Size = UDim2.new(0, 10, 0, 10),
-                Position = UDim2.new(0.8, -5, 0.2, -5),
+                Size = UDim2.new(0, 8, 0, 8),
+                Position = UDim2.new(0.8, -4, 0.2, -4),
                 BorderSizePixel = 0,
                 ZIndex = 104,
             })
@@ -1495,8 +1494,8 @@ local function CreatePage(PageConfig)
                 Text = "",
                 AutoButtonColor = false,
                 BackgroundColor3 = Color3.new(1, 1, 1),
-                Size = UDim2.new(1, -20, 0, 8),
-                Position = UDim2.new(0, 10, 1, -75),
+                Size = UDim2.new(1, -16, 0, 6),
+                Position = UDim2.new(0, 8, 1, -62),
                 BorderSizePixel = 0,
                 ZIndex = 101,
             })
@@ -1526,8 +1525,8 @@ local function CreatePage(PageConfig)
             local HueCursor = Create("Frame", {
                 Parent = HueSlider,
                 BackgroundColor3 = Color3.new(1, 1, 1),
-                Size = UDim2.new(0, 10, 0, 14),
-                Position = UDim2.new(0.5, -5, 0.5, -7),
+                Size = UDim2.new(0, 8, 0, 12),
+                Position = UDim2.new(0.5, -4, 0.5, -6),
                 AnchorPoint = Vector2.new(0, 0.5),
                 BorderSizePixel = 0,
                 ZIndex = 103,
@@ -1540,19 +1539,19 @@ local function CreatePage(PageConfig)
                 Text = "#" .. Default:ToHex(),
                 TextColor3 = Theme.Text,
                 BackgroundColor3 = Theme.Element,
-                Size = UDim2.new(0, 110, 0, 24),
-                Position = UDim2.new(1, -10, 1, -10),
+                Size = UDim2.new(0, 95, 0, 20),
+                Position = UDim2.new(1, -8, 1, -8),
                 AnchorPoint = Vector2.new(1, 1),
                 BorderSizePixel = 0,
                 FontFace = FontRegular,
-                TextSize = 13,
+                TextSize = 12,
                 TextXAlignment = Enum.TextXAlignment.Left,
                 ClearTextOnFocus = false,
                 ZIndex = 101,
             })
             
-            Create("UICorner", { Parent = HexInput, CornerRadius = UDim.new(0, 6) })
-            Create("UIPadding", { Parent = HexInput, PaddingLeft = UDim.new(0, 8) })
+            Create("UICorner", { Parent = HexInput, CornerRadius = UDim.new(0, 5) })
+            Create("UIPadding", { Parent = HexInput, PaddingLeft = UDim.new(0, 6) })
             
             local HexLabel = Create("TextLabel", {
                 Parent = ColorPicker,
@@ -1561,10 +1560,10 @@ local function CreatePage(PageConfig)
                 TextTransparency = 0.5,
                 BackgroundTransparency = 1,
                 FontFace = FontRegular,
-                TextSize = 13,
-                Position = UDim2.new(0, 10, 1, -10),
+                TextSize = 12,
+                Position = UDim2.new(0, 8, 1, -8),
                 AnchorPoint = Vector2.new(0, 1),
-                Size = UDim2.new(0, 30, 0, 24),
+                Size = UDim2.new(0, 25, 0, 20),
                 ZIndex = 101,
             })
             
@@ -1590,7 +1589,7 @@ local function CreatePage(PageConfig)
             local function UpdatePosition()
                 local Pos = ColorButton.AbsolutePosition
                 local Size = ColorButton.AbsoluteSize
-                ColorPicker.Position = UDim2.new(0, Pos.X - 100, 0, Pos.Y + Size.Y + 4)
+                ColorPicker.Position = UDim2.new(0, Pos.X - 90, 0, Pos.Y + Size.Y + 3)
                 ColorPicker.Visible = IsOpen
             end
             
@@ -1611,7 +1610,7 @@ local function CreatePage(PageConfig)
                     local Y = math.clamp((Input.Position.Y - Palette.AbsolutePosition.Y) / Palette.AbsoluteSize.Y, 0, 1)
                     Sat = X
                     Val = 1 - Y
-                    Cursor.Position = UDim2.new(X, -5, Y, -5)
+                    Cursor.Position = UDim2.new(X, -4, Y, -4)
                     UpdateColor()
                 end
             end)
@@ -1627,7 +1626,7 @@ local function CreatePage(PageConfig)
                     DraggingHue = true
                     local X = math.clamp((Input.Position.X - HueSlider.AbsolutePosition.X) / HueSlider.AbsoluteSize.X, 0, 1)
                     Hue = X
-                    HueCursor.Position = UDim2.new(X, -5, 0.5, -7)
+                    HueCursor.Position = UDim2.new(X, -4, 0.5, -6)
                     UpdateColor()
                 end
             end)
@@ -1644,13 +1643,13 @@ local function CreatePage(PageConfig)
                     local Y = math.clamp((Input.Position.Y - Palette.AbsolutePosition.Y) / Palette.AbsoluteSize.Y, 0, 1)
                     Sat = X
                     Val = 1 - Y
-                    Cursor.Position = UDim2.new(X, -5, Y, -5)
+                    Cursor.Position = UDim2.new(X, -4, Y, -4)
                     UpdateColor()
                 end
                 if DraggingHue and (Input.UserInputType == Enum.UserInputType.MouseMovement or Input.UserInputType == Enum.UserInputType.Touch) then
                     local X = math.clamp((Input.Position.X - HueSlider.AbsolutePosition.X) / HueSlider.AbsoluteSize.X, 0, 1)
                     Hue = X
-                    HueCursor.Position = UDim2.new(X, -5, 0.5, -7)
+                    HueCursor.Position = UDim2.new(X, -4, 0.5, -6)
                     UpdateColor()
                 end
             end)
@@ -1661,8 +1660,8 @@ local function CreatePage(PageConfig)
                 if Success then
                     local H, S, V = NewColor:ToHSV()
                     Hue, Sat, Val = H, S, V
-                    Cursor.Position = UDim2.new(Sat, -5, 1 - Val, -5)
-                    HueCursor.Position = UDim2.new(Hue, -5, 0.5, -7)
+                    Cursor.Position = UDim2.new(Sat, -4, 1 - Val, -4)
+                    HueCursor.Position = UDim2.new(Hue, -4, 0.5, -6)
                     UpdateColor()
                 end
             end)
@@ -1686,8 +1685,8 @@ local function CreatePage(PageConfig)
                 if type(NewColor) == "Color3" then
                     local H, S, V = NewColor:ToHSV()
                     Hue, Sat, Val = H, S, V
-                    Cursor.Position = UDim2.new(Sat, -5, 1 - Val, -5)
-                    HueCursor.Position = UDim2.new(Hue, -5, 0.5, -7)
+                    Cursor.Position = UDim2.new(Sat, -4, 1 - Val, -4)
+                    HueCursor.Position = UDim2.new(Hue, -4, 0.5, -6)
                     UpdateColor()
                 end
             end
@@ -1712,7 +1711,7 @@ local function CreatePage(PageConfig)
             local ListboxFrame = Create("Frame", {
                 Parent = SectionContent,
                 BackgroundTransparency = 1,
-                Size = UDim2.new(1, 0, 0, 38),
+                Size = UDim2.new(1, 0, 0, 34),
                 BorderSizePixel = 0,
             })
             
@@ -1723,9 +1722,9 @@ local function CreatePage(PageConfig)
                 TextTransparency = 0.3,
                 BackgroundTransparency = 1,
                 FontFace = FontRegular,
-                TextSize = 13,
+                TextSize = 12,
                 Position = UDim2.new(0, 0, 0, 0),
-                Size = UDim2.new(0, 0, 0, 14),
+                Size = UDim2.new(0, 0, 0, 13),
                 AutomaticSize = Enum.AutomaticSize.X,
             })
             
@@ -1735,35 +1734,35 @@ local function CreatePage(PageConfig)
                 PlaceholderText = "Search...",
                 TextColor3 = Theme.Text,
                 BackgroundColor3 = Theme.Element,
-                Size = UDim2.new(1, 0, 0, 24),
-                Position = UDim2.new(0, 0, 1, -24),
+                Size = UDim2.new(1, 0, 0, 20),
+                Position = UDim2.new(0, 0, 1, -20),
                 AnchorPoint = Vector2.new(0, 1),
                 BorderSizePixel = 0,
                 FontFace = FontRegular,
-                TextSize = 13,
+                TextSize = 12,
                 TextXAlignment = Enum.TextXAlignment.Left,
                 ClearTextOnFocus = false,
             })
             
-            Create("UICorner", { Parent = SearchBox, CornerRadius = UDim.new(0, 6) })
-            Create("UIPadding", { Parent = SearchBox, PaddingLeft = UDim.new(0, 8) })
+            Create("UICorner", { Parent = SearchBox, CornerRadius = UDim.new(0, 5) })
+            Create("UIPadding", { Parent = SearchBox, PaddingLeft = UDim.new(0, 6) })
             
             local ListContainer = Create("Frame", {
                 Parent = ListboxFrame,
                 BackgroundColor3 = Theme.Element,
                 Size = UDim2.new(1, 0, 0, 0),
-                Position = UDim2.new(0, 0, 0, 42),
+                Position = UDim2.new(0, 0, 0, 36),
                 BorderSizePixel = 0,
                 ClipsDescendants = true,
             })
             
-            Create("UICorner", { Parent = ListContainer, CornerRadius = UDim.new(0, 6) })
+            Create("UICorner", { Parent = ListContainer, CornerRadius = UDim.new(0, 5) })
             
             local ListScroller = Create("ScrollingFrame", {
                 Parent = ListContainer,
                 BackgroundTransparency = 1,
-                Size = UDim2.new(1, -6, 1, -6),
-                Position = UDim2.new(0, 3, 0, 3),
+                Size = UDim2.new(1, -4, 1, -4),
+                Position = UDim2.new(0, 2, 0, 2),
                 CanvasSize = UDim2.new(0, 0, 0, 0),
                 AutomaticCanvasSize = Enum.AutomaticSize.Y,
                 ScrollBarThickness = 2,
@@ -1771,7 +1770,7 @@ local function CreatePage(PageConfig)
             
             local ListLayout = Create("UIListLayout", {
                 Parent = ListScroller,
-                Padding = UDim.new(0, 3),
+                Padding = UDim.new(0, 2),
                 SortOrder = Enum.SortOrder.LayoutOrder,
             })
             
@@ -1781,9 +1780,9 @@ local function CreatePage(PageConfig)
             
             local function UpdateListHeight()
                 local Count = #FilteredItems
-                local Height = math.min(100, Count * 24 + 6)
+                local Height = math.min(85, Count * 20 + 4)
                 ListContainer.Size = UDim2.new(1, 0, 0, Height)
-                ListboxFrame.Size = UDim2.new(1, 0, 0, 42 + Height)
+                ListboxFrame.Size = UDim2.new(1, 0, 0, 36 + Height)
             end
             
             local function FilterItems(Query)
@@ -1807,7 +1806,7 @@ local function CreatePage(PageConfig)
                         Text = "",
                         AutoButtonColor = false,
                         BackgroundTransparency = 1,
-                        Size = UDim2.new(1, 0, 0, 22),
+                        Size = UDim2.new(1, 0, 0, 18),
                         BorderSizePixel = 0,
                     })
                     
@@ -1818,16 +1817,16 @@ local function CreatePage(PageConfig)
                         TextTransparency = 0.3,
                         BackgroundTransparency = 1,
                         FontFace = FontRegular,
-                        TextSize = 13,
-                        Position = UDim2.new(0, 8, 0.5, 0),
+                        TextSize = 12,
+                        Position = UDim2.new(0, 6, 0.5, 0),
                         AnchorPoint = Vector2.new(0, 0.5),
-                        Size = UDim2.new(1, -8, 0, 15),
+                        Size = UDim2.new(1, -6, 0, 13),
                         TextXAlignment = Enum.TextXAlignment.Left,
                     })
                     
                     if table.find(Selected, Item) then
                         OptionText.TextTransparency = 0
-                        OptionText.Position = UDim2.new(0, 14, 0.5, 0)
+                        OptionText.Position = UDim2.new(0, 10, 0.5, 0)
                     end
                     
                     OptionButton.MouseButton1Down:Connect(function()
@@ -2033,8 +2032,8 @@ if IsMobile then
         AutoButtonColor = false,
         BackgroundColor3 = Theme.Background,
         BackgroundTransparency = 0.5,
-        Size = UDim2.new(0, 50, 0, 50),
-        Position = UDim2.new(0, 15, 0, 15),
+        Size = UDim2.new(0, 42, 0, 42),
+        Position = UDim2.new(0, 12, 0, 12),
         AnchorPoint = Vector2.new(0, 0),
         BorderSizePixel = 0,
         ZIndex = 127,
@@ -2047,7 +2046,7 @@ if IsMobile then
         Parent = FloatButton,
         Image = "rbxassetid://120959262762131",
         BackgroundTransparency = 1,
-        Size = UDim2.new(1, -12, 1, -12),
+        Size = UDim2.new(1, -10, 1, -10),
         Position = UDim2.new(0.5, 0, 0.5, 0),
         AnchorPoint = Vector2.new(0.5, 0.5),
         ScaleType = Enum.ScaleType.Fit,
@@ -2117,14 +2116,14 @@ function DarkHub:Notify(Data)
         ClipsDescendants = true,
     })
     
-    Create("UICorner", { Parent = Notification, CornerRadius = UDim.new(0, 6) })
+    Create("UICorner", { Parent = Notification, CornerRadius = UDim.new(0, 5) })
     
     local Padding = Create("UIPadding", {
         Parent = Notification,
-        PaddingTop = UDim.new(0, 10),
-        PaddingBottom = UDim.new(0, 10),
-        PaddingLeft = UDim.new(0, 10),
-        PaddingRight = UDim.new(0, 10),
+        PaddingTop = UDim.new(0, 8),
+        PaddingBottom = UDim.new(0, 8),
+        PaddingLeft = UDim.new(0, 8),
+        PaddingRight = UDim.new(0, 8),
     })
     
     local TitleLabel = Create("TextLabel", {
@@ -2133,8 +2132,8 @@ function DarkHub:Notify(Data)
         TextColor3 = Theme.Text,
         BackgroundTransparency = 1,
         FontFace = FontSemiBold,
-        TextSize = 14,
-        Size = UDim2.new(0, 0, 0, 15),
+        TextSize = 12,
+        Size = UDim2.new(0, 0, 0, 13),
         AutomaticSize = Enum.AutomaticSize.XY,
     })
     
@@ -2145,17 +2144,17 @@ function DarkHub:Notify(Data)
         TextTransparency = 0.3,
         BackgroundTransparency = 1,
         FontFace = FontRegular,
-        TextSize = 13,
-        Position = UDim2.new(0, 0, 0, 20),
-        Size = UDim2.new(0, 0, 0, 15),
+        TextSize = 11,
+        Position = UDim2.new(0, 0, 0, 16),
+        Size = UDim2.new(0, 0, 0, 12),
         AutomaticSize = Enum.AutomaticSize.XY,
     })
     
     local Accent = Create("Frame", {
         Parent = Notification,
         BackgroundColor3 = Color3.new(1, 1, 1),
-        Size = UDim2.new(0, 0, 0, 3),
-        Position = UDim2.new(0, 0, 1, -3),
+        Size = UDim2.new(0, 0, 0, 2),
+        Position = UDim2.new(0, 0, 1, -2),
         BorderSizePixel = 0,
     })
     
@@ -2174,8 +2173,8 @@ function DarkHub:Notify(Data)
         Parent = Notification,
         Image = "rbxassetid://" .. Icon,
         BackgroundTransparency = 1,
-        Size = UDim2.new(0, 16, 0, 16),
-        Position = UDim2.new(1, -20, 0, 0),
+        Size = UDim2.new(0, 14, 0, 14),
+        Position = UDim2.new(1, -16, 0, 0),
         AnchorPoint = Vector2.new(1, 0),
     })
     
@@ -2201,7 +2200,7 @@ function DarkHub:Notify(Data)
     
     -- Прогресс-бар
     CreateTween(Accent, TweenInfo.new(Duration, Enum.EasingStyle.Linear), {
-        Size = UDim2.new(1, 0, 0, 3),
+        Size = UDim2.new(1, 0, 0, 2),
     })
     
     task.wait(Duration + 0.2)
