@@ -17,7 +17,7 @@ local Camera = game:GetService("Workspace").CurrentCamera
 local IsMobile = UserInputService.TouchEnabled
 
 -- Адаптивные параметры размеров
-local SidebarWidth = IsMobile and 135 or 160
+local SidebarWidth = IsMobile and 140 or 160
 local HeaderHeight = 48
 
 -- Вспомогательные функции
@@ -99,7 +99,7 @@ local MainFrame = Create("Frame", {
     BorderSizePixel = 0,
     Position = UDim2.new(0.5, 0, 0.5, 0),
     AnchorPoint = Vector2.new(0.5, 0.5),
-    Size = IsMobile and UDim2.new(0.88, 0, 0.85, 0) or UDim2.new(0, 600, 0, 400),
+    Size = IsMobile and UDim2.new(0.64, 0, 0.88, 0) or UDim2.new(0, 580, 0, 360), -- Размер изменен под фото
     ClipsDescendants = false,
 })
 
