@@ -314,6 +314,20 @@ Create("UIPadding", {
     PaddingRight = UDim.new(0, 4),
 })
 
+-- Единый индикатор активной вкладки (для плавной анимации)
+local ActiveIndicator = Create("Frame", {
+    Parent = MainFrame,
+    BackgroundColor3 = Color3.fromRGB(255, 255, 255),
+    Size = UDim2.new(0, 3, 0, 19),
+    AnchorPoint = Vector2.new(0, 0.5),
+    Position = UDim2.new(0, 6, 0, 0),
+    Visible = false,
+    BorderSizePixel = 0,
+    ZIndex = 10,
+})
+
+Create("UICorner", { Parent = ActiveIndicator, CornerRadius = UDim.new(1, 0) })
+
 -- Контентная зона
 local Content = Create("Frame", {
     Parent = MainFrame,
@@ -349,18 +363,6 @@ local function CreatePage(PageConfig)
     
     Create("UICorner", { Parent = TabButton, CornerRadius = UDim.new(0, 6) })
     
-    -- Индикатор активной вкладки (белая вертикальная полоска слева)
-    local ActiveIndicator = Create("Frame", {
-        Parent = TabButton,
-        BackgroundColor3 = Color3.fromRGB(255, 255, 255),
-        Position = UDim2.new(0, 2, 0.5, 0),
-        AnchorPoint = Vector2.new(0, 0.5),
-        Size = UDim2.new(0, 3, 0.6, 0),
-        Visible = false,
-        BorderSizePixel = 0,
-    })
-    Create("UICorner", { Parent = ActiveIndicator, CornerRadius = UDim.new(1, 0) })
-    
     local TabIcon = Create("ImageLabel", {
         Parent = TabButton,
         Image = "rbxassetid://" .. PageIcon,
@@ -385,7 +387,7 @@ local function CreatePage(PageConfig)
         TextXAlignment = Enum.TextXAlignment.Left,
     })
     
-    -- Иконка трех ИДЕАЛЬНО КРУГЛЫХ точек сбоку вкладки (Pulse Hub Style)
+    -- Иконка трех точек сбоку вкладки (Pulse Hub Style)
     local DotsContainer = Create("Frame", {
         Parent = TabButton,
         BackgroundTransparency = 1,
@@ -449,7 +451,6 @@ local function CreatePage(PageConfig)
         Content = PageContent,
         TabButton = TabButton,
         TabLabel = TabLabel,
-        ActiveIndicator = ActiveIndicator,
         Sections = {},
         Active = false,
     }
@@ -462,7 +463,6 @@ local function CreatePage(PageConfig)
                 CurrentPage.Active = false
                 CurrentPage.Frame.Visible = false
                 CurrentPage.TabButton.BackgroundTransparency = 1
-                CurrentPage.ActiveIndicator.Visible = false
                 CurrentPage.TabLabel.TextTransparency = 0.5
                 CurrentPage.TabLabel.FontFace = FontRegular
             end
@@ -470,15 +470,28 @@ local function CreatePage(PageConfig)
             PageData.Active = true
             PageData.Frame.Visible = true
             PageData.TabButton.BackgroundTransparency = 0.88
-            PageData.ActiveIndicator.Visible = true
             PageData.TabLabel.TextTransparency = 0
             PageData.TabLabel.FontFace = FontSemiBold
             CurrentPage = PageData
+
+            -- Плавное перемещение белой полоски на новую вкладку
+            task.defer(function()
+                local TargetY = TabButton.AbsolutePosition.Y - MainFrame.AbsolutePosition.Y + (TabButton.AbsoluteSize.Y / 2)
+                local TargetPos = UDim2.new(0, 6, 0, TargetY)
+
+                if not ActiveIndicator.Visible then
+                    ActiveIndicator.Position = TargetPos
+                    ActiveIndicator.Visible = true
+                else
+                    CreateTween(ActiveIndicator, TweenInfo.new(0.3, Enum.EasingStyle.Quint, Enum.EasingDirection.Out), {
+                        Position = TargetPos
+                    })
+                end
+            end)
         else
             PageData.Active = false
             PageData.Frame.Visible = false
             PageData.TabButton.BackgroundTransparency = 1
-            PageData.ActiveIndicator.Visible = false
             PageData.TabLabel.TextTransparency = 0.5
             PageData.TabLabel.FontFace = FontRegular
         end
