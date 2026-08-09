@@ -1,5 +1,4 @@
-
-local DarkHub = {} -- Dark Hub UI (Pulse Hub Styled Sizes - Compact)
+local ShitaroUI = {} -- Shitaro Style UI
 
 local Players = game:GetService("Players")
 local UserInputService = game:GetService("UserInputService")
@@ -14,14 +13,14 @@ local Camera = game:GetService("Workspace").CurrentCamera
 
 local IsMobile = UserInputService.TouchEnabled
 
--- === ОБНОВЛЕННЫЕ НАСТРОЙКИ РАЗМЕРОВ ГУИ ===
-local MainWidth = IsMobile and 530 or 570     -- Ширина главного окна
-local MainHeight = IsMobile and 320 or 340    -- Высота главного окна
-local SidebarWidth = IsMobile and 140 or 150  -- Ширина боковой панели
-local HeaderHeight = 36                       -- Высота шапки
-local FooterHeight = 42                       -- Высота подвала с профилем
+-- === SHITARO STYLE SIZES ===
+local MainWidth = IsMobile and 580 or 620
+local MainHeight = IsMobile and 360 or 380
+local SidebarWidth = IsMobile and 100 or 110
+local HeaderHeight = 34
+local FooterHeight = 44
 
--- Вспомогательные функции
+-- === HELPER FUNCTIONS ===
 local function Create(Class, Properties)
     local Instance = Instance.new(Class)
     for Property, Value in pairs(Properties) do
@@ -36,34 +35,38 @@ local function CreateTween(Instance, Info, Goal)
     return Tween
 end
 
--- Цветовая схема
+-- === SHITARO COLOR SCHEME ===
 local Theme = {
-    Background = Color3.fromRGB(12, 12, 14),
-    Background2 = Color3.fromRGB(10, 10, 12),
-    SectionBackground = Color3.fromRGB(10, 10, 12),
-    SectionBackground2 = Color3.fromRGB(14, 14, 16),
-    SectionTop = Color3.fromRGB(22, 22, 25),
+    Background = Color3.fromRGB(14, 14, 18),
+    Background2 = Color3.fromRGB(10, 10, 14),
+    SectionBackground = Color3.fromRGB(12, 12, 16),
+    SectionBackground2 = Color3.fromRGB(16, 16, 20),
+    SectionTop = Color3.fromRGB(20, 20, 24),
     Element = Color3.fromRGB(18, 18, 22),
-    Outline = Color3.fromRGB(28, 28, 32),
-    Text = Color3.fromRGB(240, 240, 240),
-    Accent = Color3.fromRGB(0, 116, 224),
-    AccentGradient = Color3.fromRGB(0, 195, 255),
+    Outline = Color3.fromRGB(30, 30, 36),
+    Text = Color3.fromRGB(235, 235, 240),
+    TextDim = Color3.fromRGB(155, 155, 165),
+    Accent = Color3.fromRGB(80, 180, 255),
+    AccentGradient = Color3.fromRGB(130, 100, 255),
+    -- Shitaro specific
+    TabBg = Color3.fromRGB(18, 18, 22),
+    TabActive = Color3.fromRGB(30, 30, 40),
 }
 
--- Шрифты
+-- Fonts
 local FontSemiBold = Font.new("rbxassetid://12187365364", Enum.FontWeight.SemiBold, Enum.FontStyle.Normal)
 local FontRegular = Font.new("rbxassetid://12187365364", Enum.FontWeight.Regular, Enum.FontStyle.Normal)
 
--- Холдер
+-- Holder
 local Holder = Create("ScreenGui", {
     Parent = CoreGui,
-    Name = "DarkHub",
+    Name = "ShitaroUI",
     ZIndexBehavior = Enum.ZIndexBehavior.Global,
     DisplayOrder = 2,
     ResetOnSpawn = false,
 })
 
--- Контейнер для уведомлений
+-- Notification Holder
 local NotificationHolder = Create("Frame", {
     Parent = Holder,
     Name = "Notifications",
@@ -87,16 +90,15 @@ Create("UIPadding", {
     PaddingLeft = UDim.new(0, 8),
 })
 
--- Список флагов
 local Flags = {}
 local SetFlags = {}
 
--- === ГЛАВНОЕ ОКНО ===
+-- === MAIN FRAME (SHITARO STYLE) ===
 local MainFrame = Create("Frame", {
     Parent = Holder,
     Name = "MainFrame",
     BackgroundColor3 = Theme.Background,
-    BackgroundTransparency = 0.08,
+    BackgroundTransparency = 0.05,
     BorderSizePixel = 0,
     Position = UDim2.new(0.5, 0, 0.5, 0),
     AnchorPoint = Vector2.new(0.5, 0.5),
@@ -104,9 +106,16 @@ local MainFrame = Create("Frame", {
     ClipsDescendants = false,
 })
 
-Create("UICorner", { Parent = MainFrame, CornerRadius = UDim.new(0, 8) })
+Create("UICorner", { Parent = MainFrame, CornerRadius = UDim.new(0, 10) })
+Create("UIStroke", {
+    Parent = MainFrame,
+    Color = Theme.Outline,
+    Thickness = 1,
+    Transparency = 0.6,
+    ApplyStrokeMode = Enum.ApplyStrokeMode.Border,
+})
 
--- Затемнение фона (Blur)
+-- Blur effect (Shitaro style - subtle)
 do
     local BlurPart = Create("Part", {
         Parent = Camera,
@@ -129,7 +138,7 @@ do
         FarIntensity = 0,
         FocusDistance = 0,
         InFocusRadius = 1000,
-        NearIntensity = 1,
+        NearIntensity = 0.8,
     })
     
     RunService.RenderStepped:Connect(function()
@@ -165,134 +174,95 @@ do
             BlockMesh.Offset = Center
             BlockMesh.Scale = Size / 0.0101
             BlurPart.CFrame = Camera.CFrame
-            BlurPart.Transparency = 0.97
+            BlurPart.Transparency = 0.96
         end
     end)
 end
 
--- Логотип и заголовок
-local Logo = Create("ImageLabel", {
+-- === HEADER (Shitaro "SHITARO Never" style) ===
+local Header = Create("Frame", {
     Parent = MainFrame,
+    Name = "Header",
+    BackgroundColor3 = Theme.Background2,
+    BackgroundTransparency = 0.1,
+    Size = UDim2.new(1, 0, 0, HeaderHeight),
+    BorderSizePixel = 0,
+})
+
+Create("UICorner", { Parent = Header, CornerRadius = UDim.new(0, 10) })
+
+-- Shitaro Logo
+local Logo = Create("TextLabel", {
+    Parent = Header,
     Name = "Logo",
-    ImageColor3 = Color3.new(1, 1, 1),
-    BackgroundTransparency = 1,
-    Size = UDim2.new(0, 18, 0, 18),
-    Position = UDim2.new(0, 10, 0, 9),
-    Image = "rbxassetid://120959262762131",
-    ScaleType = Enum.ScaleType.Fit,
-    ZIndex = 5,
-})
-
-Create("UIGradient", {
-    Parent = Logo,
-    Rotation = -115,
-    Color = ColorSequence.new({
-        ColorSequenceKeypoint.new(0, Theme.Accent),
-        ColorSequenceKeypoint.new(1, Theme.AccentGradient),
-    })
-})
-
-Create("TextLabel", {
-    Parent = MainFrame,
-    Name = "Title",
-    Text = "Dark Hub",
-    TextColor3 = Theme.Text,
+    Text = "SHITARO",
+    TextColor3 = Color3.fromRGB(255, 255, 255),
     BackgroundTransparency = 1,
     FontFace = FontSemiBold,
-    TextSize = 12,
-    Position = UDim2.new(0, 34, 0, 5),
-    Size = UDim2.new(0, 0, 0, 13),
+    TextSize = 18,
+    Position = UDim2.new(0, 12, 0.5, 0),
+    AnchorPoint = Vector2.new(0, 0.5),
+    Size = UDim2.new(0, 0, 0, 20),
     AutomaticSize = Enum.AutomaticSize.X,
-    ZIndex = 5,
 })
 
 Create("TextLabel", {
-    Parent = MainFrame,
-    Name = "SubTitle",
-    Text = "Premium Cheat",
-    TextColor3 = Theme.Text,
-    TextTransparency = 0.4,
+    Parent = Header,
+    Name = "Never",
+    Text = "Never",
+    TextColor3 = Color3.fromRGB(80, 180, 255),
     BackgroundTransparency = 1,
     FontFace = FontRegular,
-    TextSize = 9,
-    Position = UDim2.new(0, 34, 0, 18),
-    Size = UDim2.new(0, 0, 0, 11),
+    TextSize = 10,
+    Position = UDim2.new(0, 92, 0.5, 0),
+    AnchorPoint = Vector2.new(0, 0.5),
+    Size = UDim2.new(0, 0, 0, 14),
     AutomaticSize = Enum.AutomaticSize.X,
-    ZIndex = 5,
 })
 
--- Кнопка закрытия
+-- Window controls (close/minimize)
 local CloseButton = Create("TextButton", {
-    Parent = MainFrame,
-    Text = "",
+    Parent = Header,
+    Text = "✕",
+    TextColor3 = Theme.TextDim,
+    TextSize = 14,
     AutoButtonColor = false,
-    BackgroundColor3 = Theme.Element,
-    BackgroundTransparency = 0.2,
-    Position = UDim2.new(1, -7, 0, 7),
-    AnchorPoint = Vector2.new(1, 0),
-    Size = UDim2.new(0, 22, 0, 22),
+    BackgroundTransparency = 1,
+    Position = UDim2.new(1, -10, 0.5, 0),
+    AnchorPoint = Vector2.new(1, 0.5),
+    Size = UDim2.new(0, 20, 0, 20),
     ZIndex = 5,
 })
-
-Create("UICorner", { Parent = CloseButton, CornerRadius = UDim.new(0, 5) })
-
-Create("ImageLabel", {
-    Parent = CloseButton,
-    Image = "rbxassetid://130510492706892",
-    ImageColor3 = Theme.Text,
-    ImageTransparency = 0.3,
-    BackgroundTransparency = 1,
-    Size = UDim2.new(0, 9, 0, 9),
-    Position = UDim2.new(0.5, 0, 0.5, 0),
-    AnchorPoint = Vector2.new(0.5, 0.5),
-    ZIndex = 6,
-})
-
-local CloseAccent = Create("Frame", {
-    Parent = CloseButton,
-    BackgroundColor3 = Color3.new(1, 1, 1),
-    BackgroundTransparency = 1,
-    Size = UDim2.new(0, 0, 0, 0),
-    Position = UDim2.new(0.5, 0, 0.5, 0),
-    AnchorPoint = Vector2.new(0.5, 0.5),
-})
-
-Create("UICorner", { Parent = CloseAccent, CornerRadius = UDim.new(0, 5) })
-
-Create("UIGradient", {
-    Parent = CloseAccent,
-    Rotation = -115,
-    Color = ColorSequence.new({
-        ColorSequenceKeypoint.new(0, Theme.Accent),
-        ColorSequenceKeypoint.new(1, Theme.AccentGradient),
-    })
-})
-
-CloseButton.MouseEnter:Connect(function()
-    CreateTween(CloseAccent, TweenInfo.new(0.3, Enum.EasingStyle.Quint, Enum.EasingDirection.Out), {
-        Size = UDim2.new(1, 0, 1, 0),
-        BackgroundTransparency = 0,
-    })
-end)
-
-CloseButton.MouseLeave:Connect(function()
-    CreateTween(CloseAccent, TweenInfo.new(0.3, Enum.EasingStyle.Quint, Enum.EasingDirection.Out), {
-        Size = UDim2.new(0, 0, 0, 0),
-        BackgroundTransparency = 1,
-    })
-end)
 
 CloseButton.MouseButton1Down:Connect(function()
     MainFrame.Visible = false
 end)
 
--- Левая панель вкладок (Сайдбар)
+-- Minimize button
+local MinButton = Create("TextButton", {
+    Parent = Header,
+    Text = "─",
+    TextColor3 = Theme.TextDim,
+    TextSize = 16,
+    AutoButtonColor = false,
+    BackgroundTransparency = 1,
+    Position = UDim2.new(1, -32, 0.5, 0),
+    AnchorPoint = Vector2.new(1, 0.5),
+    Size = UDim2.new(0, 20, 0, 20),
+    ZIndex = 5,
+})
+
+MinButton.MouseButton1Down:Connect(function()
+    MainFrame.Visible = false
+end)
+
+-- === SIDEBAR (Shitaro style) ===
 local LeftTabs = Create("ScrollingFrame", {
     Parent = MainFrame,
-    BackgroundColor3 = Theme.Background,
+    BackgroundColor3 = Theme.TabBg,
     BackgroundTransparency = 0.15,
-    Size = UDim2.new(0, SidebarWidth, 1, -FooterHeight), -- Вычтена высота подвала
-    Position = UDim2.new(0, 0, 0, 0),
+    Size = UDim2.new(0, SidebarWidth, 1, -FooterHeight),
+    Position = UDim2.new(0, 0, 0, HeaderHeight),
     BorderSizePixel = 0,
     ClipsDescendants = true,
     ScrollBarThickness = 0,
@@ -300,27 +270,27 @@ local LeftTabs = Create("ScrollingFrame", {
     AutomaticCanvasSize = Enum.AutomaticSize.Y,
 })
 
-Create("UICorner", { Parent = LeftTabs, CornerRadius = UDim.new(0, 8) })
+Create("UICorner", { Parent = LeftTabs, CornerRadius = UDim.new(0, 10) })
 
 Create("UIListLayout", {
     Parent = LeftTabs,
-    Padding = UDim.new(0, 4),
+    Padding = UDim.new(0, 2),
     SortOrder = Enum.SortOrder.LayoutOrder,
 })
 
 Create("UIPadding", {
     Parent = LeftTabs,
-    PaddingTop = UDim.new(0, HeaderHeight + 4),
+    PaddingTop = UDim.new(0, 6),
     PaddingBottom = UDim.new(0, 6),
-    PaddingLeft = UDim.new(0, 4),
-    PaddingRight = UDim.new(0, 4),
+    PaddingLeft = UDim.new(0, 2),
+    PaddingRight = UDim.new(0, 2),
 })
 
--- === ПОДВАЛ (ПРОФИЛЬ ИГРОКА) ===
+-- === FOOTER (Profile) ===
 local ProfileFooter = Create("Frame", {
     Parent = MainFrame,
     Name = "ProfileFooter",
-    BackgroundColor3 = Theme.Background,
+    BackgroundColor3 = Theme.TabBg,
     BackgroundTransparency = 0.1,
     Size = UDim2.new(0, SidebarWidth, 0, FooterHeight),
     Position = UDim2.new(0, 0, 1, -FooterHeight),
@@ -328,26 +298,15 @@ local ProfileFooter = Create("Frame", {
     ZIndex = 8,
 })
 
-Create("UICorner", { Parent = ProfileFooter, CornerRadius = UDim.new(0, 8) })
+Create("UICorner", { Parent = ProfileFooter, CornerRadius = UDim.new(0, 10) })
 
--- Разделительная линия сверху подвала
-Create("Frame", {
-    Parent = ProfileFooter,
-    BackgroundColor3 = Theme.Outline,
-    BackgroundTransparency = 0.4,
-    Size = UDim2.new(1, -12, 0, 1),
-    Position = UDim2.new(0.5, 0, 0, 0),
-    AnchorPoint = Vector2.new(0.5, 0),
-    BorderSizePixel = 0,
-})
-
--- Аватарка игрока
+-- Avatar
 local AvatarImage = Create("ImageLabel", {
     Parent = ProfileFooter,
     Name = "Avatar",
     BackgroundTransparency = 1,
-    Size = UDim2.new(0, 26, 0, 26),
-    Position = UDim2.new(0, 8, 0.5, 0),
+    Size = UDim2.new(0, 28, 0, 28),
+    Position = UDim2.new(0, 4, 0.5, 0),
     AnchorPoint = Vector2.new(0, 0.5),
     Image = "rbxthumb://type=AvatarHeadShot&id=" .. LocalPlayer.UserId .. "&w=150&h=150",
     ZIndex = 9,
@@ -355,7 +314,7 @@ local AvatarImage = Create("ImageLabel", {
 
 Create("UICorner", { Parent = AvatarImage, CornerRadius = UDim.new(1, 0) })
 
--- Имя пользователя
+-- Username
 Create("TextLabel", {
     Parent = ProfileFooter,
     Name = "Username",
@@ -363,76 +322,73 @@ Create("TextLabel", {
     TextColor3 = Theme.Text,
     BackgroundTransparency = 1,
     FontFace = FontSemiBold,
-    TextSize = 11,
-    Position = UDim2.new(0, 40, 0.5, -6),
+    TextSize = 10,
+    Position = UDim2.new(0, 36, 0.5, -4),
     AnchorPoint = Vector2.new(0, 0.5),
-    Size = UDim2.new(0, SidebarWidth - 60, 0, 12),
+    Size = UDim2.new(0, SidebarWidth - 44, 0, 12),
     TextXAlignment = Enum.TextXAlignment.Left,
     TextTruncate = Enum.TextTruncate.AtEnd,
     ZIndex = 9,
 })
 
--- Субтитр / Никнейм (@username)
 Create("TextLabel", {
     Parent = ProfileFooter,
     Name = "Subtext",
     Text = "@" .. LocalPlayer.Name,
-    TextColor3 = Theme.Text,
-    TextTransparency = 0.5,
+    TextColor3 = Theme.TextDim,
     BackgroundTransparency = 1,
     FontFace = FontRegular,
-    TextSize = 9,
-    Position = UDim2.new(0, 40, 0.5, 6),
+    TextSize = 8,
+    Position = UDim2.new(0, 36, 0.5, 6),
     AnchorPoint = Vector2.new(0, 0.5),
-    Size = UDim2.new(0, SidebarWidth - 60, 0, 10),
+    Size = UDim2.new(0, SidebarWidth - 44, 0, 10),
     TextXAlignment = Enum.TextXAlignment.Left,
     TextTruncate = Enum.TextTruncate.AtEnd,
     ZIndex = 9,
 })
 
--- Иконка стрелочки справа
-local ArrowIcon = Create("ImageLabel", {
+-- Arrow icon
+Create("ImageLabel", {
     Parent = ProfileFooter,
     Name = "Arrow",
     Image = "rbxassetid://130510492706892",
-    ImageColor3 = Theme.Text,
-    ImageTransparency = 0.5,
+    ImageColor3 = Theme.TextDim,
     BackgroundTransparency = 1,
     Size = UDim2.new(0, 8, 0, 8),
-    Position = UDim2.new(1, -10, 0.5, 0),
+    Position = UDim2.new(1, -8, 0.5, 0),
     AnchorPoint = Vector2.new(1, 0.5),
     Rotation = -90,
     ZIndex = 9,
 })
 
--- Единый индикатор активной вкладки (для плавной анимации)
+-- === ACTIVE TAB INDICATOR ===
 local ActiveIndicator = Create("Frame", {
     Parent = MainFrame,
-    BackgroundColor3 = Color3.fromRGB(255, 255, 255),
-    Size = UDim2.new(0, 3, 0, 19),
+    BackgroundColor3 = Theme.Accent,
+    Size = UDim2.new(0, 3, 0, 20),
     AnchorPoint = Vector2.new(0, 0.5),
-    Position = UDim2.new(0, 6, 0, 0),
+    Position = UDim2.new(0, 4, 0, 0),
     Visible = false,
     BorderSizePixel = 0,
     ZIndex = 10,
 })
 
-Create("UICorner", { Parent = ActiveIndicator, CornerRadius = UDim.new(1, 0) })
+Create("UICorner", { Parent = ActiveIndicator, CornerRadius = UDim.new(0, 2) })
 
--- Контентная зона
+-- === CONTENT AREA ===
 local Content = Create("Frame", {
     Parent = MainFrame,
     BackgroundColor3 = Theme.Background,
-    BackgroundTransparency = 0.75,
+    BackgroundTransparency = 0.7,
     Position = UDim2.new(0, SidebarWidth, 0, HeaderHeight),
-    Size = UDim2.new(1, -SidebarWidth, 1, -HeaderHeight),
+    Size = UDim2.new(1, -SidebarWidth, 1, -HeaderHeight - FooterHeight),
     BorderSizePixel = 0,
     ClipsDescendants = true,
 })
 
-Create("UICorner", { Parent = Content, CornerRadius = UDim.new(0, 8) })
+Create("UICorner", { Parent = Content, CornerRadius = UDim.new(0, 10) })
 
--- Страницы
+-- Pages
 local Pages = {}
 local CurrentPage = nil
 
@@ -440,14 +396,14 @@ local function CreatePage(PageConfig)
     local PageName = PageConfig.Name or "Page"
     local PageIcon = PageConfig.Icon or "100050851789190"
     
-    -- Кнопка вкладки (Pulse Hub Style)
+    -- Tab button (Shitaro style)
     local TabButton = Create("TextButton", {
         Parent = LeftTabs,
         Text = "",
         AutoButtonColor = false,
-        BackgroundColor3 = Theme.Accent,
+        BackgroundColor3 = Theme.TabBg,
         BackgroundTransparency = 1,
-        Size = UDim2.new(1, 0, 0, 32),
+        Size = UDim2.new(1, 0, 0, 28),
         BorderSizePixel = 0,
         ClipsDescendants = true,
     })
@@ -457,56 +413,25 @@ local function CreatePage(PageConfig)
     local TabIcon = Create("ImageLabel", {
         Parent = TabButton,
         Image = "rbxassetid://" .. PageIcon,
-        ImageColor3 = Theme.Text,
+        ImageColor3 = Theme.TextDim,
         BackgroundTransparency = 1,
-        Size = UDim2.new(0, 16, 0, 16),
-        Position = UDim2.new(0, 12, 0.5, 0),
+        Size = UDim2.new(0, 14, 0, 14),
+        Position = UDim2.new(0, 8, 0.5, 0),
         AnchorPoint = Vector2.new(0, 0.5),
     })
     
     local TabLabel = Create("TextLabel", {
         Parent = TabButton,
         Text = PageName,
-        TextColor3 = Theme.Text,
-        TextTransparency = 0.5,
+        TextColor3 = Theme.TextDim,
         BackgroundTransparency = 1,
         FontFace = FontRegular,
-        TextSize = 12,
-        Position = UDim2.new(0, 36, 0.5, 0),
+        TextSize = 10,
+        Position = UDim2.new(0, 28, 0.5, 0),
         AnchorPoint = Vector2.new(0, 0.5),
-        Size = UDim2.new(1, -52, 0, 14),
+        Size = UDim2.new(1, -32, 0, 12),
         TextXAlignment = Enum.TextXAlignment.Left,
     })
-    
-    -- Иконка трех точек сбоку вкладки (Pulse Hub Style)
-    local DotsContainer = Create("Frame", {
-        Parent = TabButton,
-        BackgroundTransparency = 1,
-        Position = UDim2.new(1, -8, 0.5, 0),
-        AnchorPoint = Vector2.new(1, 0.5),
-        Size = UDim2.new(0, 3, 0, 13),
-        BorderSizePixel = 0,
-    })
-
-    Create("UIListLayout", {
-        Parent = DotsContainer,
-        Padding = UDim.new(0, 2),
-        SortOrder = Enum.SortOrder.LayoutOrder,
-        HorizontalAlignment = Enum.HorizontalAlignment.Center,
-        VerticalAlignment = Enum.VerticalAlignment.Center,
-    })
-
-    for i = 1, 3 do
-        local Dot = Create("Frame", {
-            Parent = DotsContainer,
-            BackgroundColor3 = Theme.Text,
-            BackgroundTransparency = 0.6,
-            Size = UDim2.new(0, 3, 0, 3),
-            BorderSizePixel = 0,
-            LayoutOrder = i,
-        })
-        Create("UICorner", { Parent = Dot, CornerRadius = UDim.new(1, 0) })
-    end
     
     local PageFrame = Create("ScrollingFrame", {
         Parent = Content,
@@ -542,6 +467,7 @@ local function CreatePage(PageConfig)
         Content = PageContent,
         TabButton = TabButton,
         TabLabel = TabLabel,
+        TabIcon = TabIcon,
         Sections = {},
         Active = false,
     }
@@ -554,27 +480,28 @@ local function CreatePage(PageConfig)
                 CurrentPage.Active = false
                 CurrentPage.Frame.Visible = false
                 CurrentPage.TabButton.BackgroundTransparency = 1
-                CurrentPage.TabLabel.TextTransparency = 0.5
+                CurrentPage.TabLabel.TextColor3 = Theme.TextDim
+                CurrentPage.TabIcon.ImageColor3 = Theme.TextDim
                 CurrentPage.TabLabel.FontFace = FontRegular
             end
             
             PageData.Active = true
             PageData.Frame.Visible = true
             PageData.TabButton.BackgroundTransparency = 0.88
-            PageData.TabLabel.TextTransparency = 0
+            PageData.TabLabel.TextColor3 = Theme.Text
+            PageData.TabIcon.ImageColor3 = Theme.Text
             PageData.TabLabel.FontFace = FontSemiBold
             CurrentPage = PageData
 
-            -- Плавное перемещение белой полоски на новую вкладку
             task.defer(function()
                 local TargetY = TabButton.AbsolutePosition.Y - MainFrame.AbsolutePosition.Y + (TabButton.AbsoluteSize.Y / 2)
-                local TargetPos = UDim2.new(0, 6, 0, TargetY)
+                local TargetPos = UDim2.new(0, 4, 0, TargetY)
 
                 if not ActiveIndicator.Visible then
                     ActiveIndicator.Position = TargetPos
                     ActiveIndicator.Visible = true
                 else
-                    CreateTween(ActiveIndicator, TweenInfo.new(0.3, Enum.EasingStyle.Quint, Enum.EasingDirection.Out), {
+                    CreateTween(ActiveIndicator, TweenInfo.new(0.25, Enum.EasingStyle.Quint, Enum.EasingDirection.Out), {
                         Position = TargetPos
                     })
                 end
@@ -583,7 +510,8 @@ local function CreatePage(PageConfig)
             PageData.Active = false
             PageData.Frame.Visible = false
             PageData.TabButton.BackgroundTransparency = 1
-            PageData.TabLabel.TextTransparency = 0.5
+            PageData.TabLabel.TextColor3 = Theme.TextDim
+            PageData.TabIcon.ImageColor3 = Theme.TextDim
             PageData.TabLabel.FontFace = FontRegular
         end
     end
@@ -601,28 +529,28 @@ local function CreatePage(PageConfig)
         local SectionFrame = Create("Frame", {
             Parent = PageContent,
             BackgroundColor3 = Theme.SectionBackground2,
-            BackgroundTransparency = 0.65,
+            BackgroundTransparency = 0.5,
             Size = UDim2.new(1, 0, 0, 0),
             AutomaticSize = Enum.AutomaticSize.Y,
             ClipsDescendants = false,
             BorderSizePixel = 0,
         })
         
-        Create("UICorner", { Parent = SectionFrame, CornerRadius = UDim.new(0, 5) })
+        Create("UICorner", { Parent = SectionFrame, CornerRadius = UDim.new(0, 6) })
         
-        -- Шапка секции
+        -- Section header
         local SectionTop = Create("Frame", {
             Parent = SectionFrame,
             BackgroundColor3 = Theme.Outline,
-            BackgroundTransparency = 0.65,
-            Size = UDim2.new(1, 0, 0, 26),
+            BackgroundTransparency = 0.5,
+            Size = UDim2.new(1, 0, 0, 24),
             BorderSizePixel = 0,
         })
         
         local SectionTopBg = Create("Frame", {
             Parent = SectionTop,
             BackgroundColor3 = Theme.SectionTop,
-            BackgroundTransparency = 0.65,
+            BackgroundTransparency = 0.5,
             Position = UDim2.new(0, 1, 0, 1),
             Size = UDim2.new(1, -2, 1, -2),
             BorderSizePixel = 0,
@@ -632,7 +560,7 @@ local function CreatePage(PageConfig)
         
         Create("Frame", {
             Parent = SectionTopBg,
-            BackgroundColor3 = Theme.Text,
+            BackgroundColor3 = Theme.Accent,
             Size = UDim2.new(0, 2, 0, 10),
             Position = UDim2.new(0, 6, 0.5, 0),
             AnchorPoint = Vector2.new(0, 0.5),
@@ -645,7 +573,7 @@ local function CreatePage(PageConfig)
             TextColor3 = Theme.Text,
             BackgroundTransparency = 1,
             FontFace = FontSemiBold,
-            TextSize = 11,
+            TextSize = 10,
             Position = UDim2.new(0, 14, 0.5, SectionDesc ~= "" and -5 or 0),
             AnchorPoint = Vector2.new(0, SectionDesc ~= "" and 0 or 0.5),
             Size = UDim2.new(0, 0, 0, 12),
@@ -656,11 +584,10 @@ local function CreatePage(PageConfig)
             Create("TextLabel", {
                 Parent = SectionTopBg,
                 Text = SectionDesc,
-                TextColor3 = Theme.Text,
-                TextTransparency = 0.4,
+                TextColor3 = Theme.TextDim,
                 BackgroundTransparency = 1,
                 FontFace = FontRegular,
-                TextSize = 9,
+                TextSize = 8,
                 Position = UDim2.new(0, 14, 0, 13),
                 Size = UDim2.new(0, 0, 0, 10),
                 AutomaticSize = Enum.AutomaticSize.X,
@@ -670,27 +597,27 @@ local function CreatePage(PageConfig)
         local SectionContent = Create("Frame", {
             Parent = SectionFrame,
             BackgroundColor3 = Theme.SectionBackground,
-            BackgroundTransparency = 0.65,
-            Position = UDim2.new(0, 1, 0, 27),
+            BackgroundTransparency = 0.5,
+            Position = UDim2.new(0, 1, 0, 25),
             Size = UDim2.new(1, -2, 0, 0),
             AutomaticSize = Enum.AutomaticSize.Y,
             BorderSizePixel = 0,
         })
         
-        Create("UICorner", { Parent = SectionContent, CornerRadius = UDim.new(0, 5) })
+        Create("UICorner", { Parent = SectionContent, CornerRadius = UDim.new(0, 4) })
         
         Create("UIListLayout", {
             Parent = SectionContent,
-            Padding = UDim.new(0, 5),
+            Padding = UDim.new(0, 4),
             SortOrder = Enum.SortOrder.LayoutOrder,
         })
         
         Create("UIPadding", {
             Parent = SectionContent,
-            PaddingTop = UDim.new(0, 6),
-            PaddingBottom = UDim.new(0, 6),
-            PaddingLeft = UDim.new(0, 6),
-            PaddingRight = UDim.new(0, 6),
+            PaddingTop = UDim.new(0, 5),
+            PaddingBottom = UDim.new(0, 5),
+            PaddingLeft = UDim.new(0, 5),
+            PaddingRight = UDim.new(0, 5),
         })
         
         local SectionData = {
@@ -699,7 +626,7 @@ local function CreatePage(PageConfig)
             Elements = {},
         }
         
-        -- Toggle
+        -- Toggle (Shitaro style)
         function SectionData:Toggle(Data)
             local ToggleName = Data.Name or "Toggle"
             local Flag = Data.Flag or "toggle_" .. (#Flags + 1)
@@ -725,13 +652,13 @@ local function CreatePage(PageConfig)
             local Indicator = Create("Frame", {
                 Parent = ToggleFrame,
                 BackgroundColor3 = Theme.Element,
-                Size = UDim2.new(0, 14, 0, 14),
+                Size = UDim2.new(0, 16, 0, 16),
                 Position = UDim2.new(0, 0, 0.5, 0),
                 AnchorPoint = Vector2.new(0, 0.5),
                 BorderSizePixel = 0,
             })
             
-            Create("UICorner", { Parent = Indicator, CornerRadius = UDim.new(0, 3) })
+            Create("UICorner", { Parent = Indicator, CornerRadius = UDim.new(0, 4) })
             
             local Accent = Create("Frame", {
                 Parent = Indicator,
@@ -742,7 +669,7 @@ local function CreatePage(PageConfig)
                 AnchorPoint = Vector2.new(0.5, 0.5),
             })
             
-            Create("UICorner", { Parent = Accent, CornerRadius = UDim.new(0, 3) })
+            Create("UICorner", { Parent = Accent, CornerRadius = UDim.new(0, 4) })
             
             Create("UIGradient", {
                 Parent = Accent,
@@ -771,7 +698,7 @@ local function CreatePage(PageConfig)
                 TextTransparency = 0.3,
                 BackgroundTransparency = 1,
                 FontFace = FontRegular,
-                TextSize = 11,
+                TextSize = 10,
                 Position = UDim2.new(0, 20, 0.5, 0),
                 AnchorPoint = Vector2.new(0, 0.5),
                 Size = UDim2.new(1, -22, 0, 12),
@@ -791,7 +718,7 @@ local function CreatePage(PageConfig)
                     })
                     CreateTween(CheckImage, TweenInfo.new(0.2, Enum.EasingStyle.Back, Enum.EasingDirection.Out), {
                         ImageTransparency = 0,
-                        Size = UDim2.new(0, 8, 0, 7),
+                        Size = UDim2.new(0, 9, 0, 8),
                     })
                 else
                     CreateTween(Accent, TweenInfo.new(0.2, Enum.EasingStyle.Back, Enum.EasingDirection.Out), {
@@ -817,7 +744,7 @@ local function CreatePage(PageConfig)
             return { Set = SetValue, Get = function() return Value end }
         end
         
-        -- Button
+        -- Button (Shitaro style)
         function SectionData:Button(Data)
             local ButtonName = Data.Name or "Button"
             local Icon = Data.Icon
@@ -861,7 +788,7 @@ local function CreatePage(PageConfig)
                 TextTransparency = 0.2,
                 BackgroundTransparency = 1,
                 FontFace = FontRegular,
-                TextSize = 11,
+                TextSize = 10,
                 Position = UDim2.new(0.5, 0, 0.5, 0),
                 AnchorPoint = Vector2.new(0.5, 0.5),
                 Size = UDim2.new(1, -10, 0, 12),
@@ -909,7 +836,7 @@ local function CreatePage(PageConfig)
             return ButtonFrame
         end
         
-        -- Slider
+        -- Slider (Shitaro style)
         function SectionData:Slider(Data)
             local SliderName = Data.Name or "Slider"
             local Flag = Data.Flag or "slider_" .. (#Flags + 1)
@@ -934,7 +861,7 @@ local function CreatePage(PageConfig)
                 TextTransparency = 0.3,
                 BackgroundTransparency = 1,
                 FontFace = FontRegular,
-                TextSize = 11,
+                TextSize = 10,
                 Position = UDim2.new(0, 0, 0, 0),
                 Size = UDim2.new(0, 0, 0, 12),
                 AutomaticSize = Enum.AutomaticSize.X,
@@ -947,7 +874,7 @@ local function CreatePage(PageConfig)
                 TextTransparency = 0.3,
                 BackgroundTransparency = 1,
                 FontFace = FontRegular,
-                TextSize = 11,
+                TextSize = 10,
                 Position = UDim2.new(1, 0, 0, 0),
                 AnchorPoint = Vector2.new(1, 0),
                 Size = UDim2.new(0, 0, 0, 12),
@@ -1032,7 +959,7 @@ local function CreatePage(PageConfig)
             return { Set = SetValue, Get = function() return Value end }
         end
         
-        -- Dropdown
+        -- Dropdown (Shitaro style)
         function SectionData:Dropdown(Data)
             local DropdownName = Data.Name or "Dropdown"
             local Flag = Data.Flag or "dropdown_" .. (#Flags + 1)
@@ -1043,7 +970,7 @@ local function CreatePage(PageConfig)
             local DropdownFrame = Create("Frame", {
                 Parent = SectionContent,
                 BackgroundTransparency = 1,
-                Size = UDim2.new(1, 0, 0, 25),
+                Size = UDim2.new(1, 0, 0, 24),
                 BorderSizePixel = 0,
             })
             
@@ -1054,7 +981,7 @@ local function CreatePage(PageConfig)
                 TextTransparency = 0.3,
                 BackgroundTransparency = 1,
                 FontFace = FontRegular,
-                TextSize = 11,
+                TextSize = 10,
                 Position = UDim2.new(0, 0, 0.5, 0),
                 AnchorPoint = Vector2.new(0, 0.5),
                 Size = UDim2.new(0.45, -5, 0, 12),
@@ -1072,7 +999,7 @@ local function CreatePage(PageConfig)
                 BorderSizePixel = 0,
             })
             
-            Create("UICorner", { Parent = DropdownButton, CornerRadius = UDim.new(0, 5) })
+            Create("UICorner", { Parent = DropdownButton, CornerRadius = UDim.new(0, 4) })
             
             local DropdownValue = Create("TextLabel", {
                 Parent = DropdownButton,
@@ -1081,7 +1008,7 @@ local function CreatePage(PageConfig)
                 TextTransparency = 0.3,
                 BackgroundTransparency = 1,
                 FontFace = FontRegular,
-                TextSize = 11,
+                TextSize = 10,
                 Position = UDim2.new(0, 6, 0.5, 0),
                 AnchorPoint = Vector2.new(0, 0.5),
                 Size = UDim2.new(1, -18, 0, 12),
@@ -1091,7 +1018,7 @@ local function CreatePage(PageConfig)
             Create("ImageLabel", {
                 Parent = DropdownButton,
                 Image = "rbxassetid://123317177279443",
-                ImageColor3 = Color3.fromRGB(141, 141, 150),
+                ImageColor3 = Theme.TextDim,
                 BackgroundTransparency = 1,
                 Size = UDim2.new(0, 8, 0, 4),
                 Position = UDim2.new(1, -6, 0.5, 0),
@@ -1107,7 +1034,7 @@ local function CreatePage(PageConfig)
                 ZIndex = 100,
             })
             
-            Create("UICorner", { Parent = DropdownList, CornerRadius = UDim.new(0, 5) })
+            Create("UICorner", { Parent = DropdownList, CornerRadius = UDim.new(0, 6) })
             Create("UIStroke", { Parent = DropdownList, Color = Theme.Outline, ApplyStrokeMode = Enum.ApplyStrokeMode.Border })
             
             local ListScroller = Create("ScrollingFrame", {
@@ -1135,7 +1062,7 @@ local function CreatePage(PageConfig)
                 local Pos = DropdownButton.AbsolutePosition
                 local Size = DropdownButton.AbsoluteSize
                 DropdownList.Position = UDim2.new(0, Pos.X, 0, Pos.Y + Size.Y + 3)
-                DropdownList.Size = UDim2.new(0, Size.X, 0, math.min(90, #Items * 20 + 4))
+                DropdownList.Size = UDim2.new(0, Size.X, 0, math.min(90, #Items * 18 + 4))
             end
             
             local function SetOpen(Open)
@@ -1158,7 +1085,7 @@ local function CreatePage(PageConfig)
                     Text = "",
                     AutoButtonColor = false,
                     BackgroundTransparency = 1,
-                    Size = UDim2.new(1, 0, 0, 18),
+                    Size = UDim2.new(1, 0, 0, 16),
                     BorderSizePixel = 0,
                     ZIndex = 102,
                 })
@@ -1170,7 +1097,7 @@ local function CreatePage(PageConfig)
                     TextTransparency = 0.3,
                     BackgroundTransparency = 1,
                     FontFace = FontRegular,
-                    TextSize = 11,
+                    TextSize = 10,
                     Position = UDim2.new(0, 5, 0.5, 0),
                     AnchorPoint = Vector2.new(0, 0.5),
                     Size = UDim2.new(1, -5, 0, 12),
@@ -1206,7 +1133,7 @@ local function CreatePage(PageConfig)
             }
         end
         
-        -- Keybind
+        -- Keybind (Shitaro style)
         function SectionData:Keybind(Data)
             local KeybindName = Data.Name or "Keybind"
             local Flag = Data.Flag or "keybind_" .. (#Flags + 1)
@@ -1227,7 +1154,7 @@ local function CreatePage(PageConfig)
                 TextTransparency = 0.3,
                 BackgroundTransparency = 1,
                 FontFace = FontRegular,
-                TextSize = 11,
+                TextSize = 10,
                 Position = UDim2.new(0, 0, 0.5, 0),
                 AnchorPoint = Vector2.new(0, 0.5),
                 Size = UDim2.new(0.6, -5, 0, 12),
@@ -1245,7 +1172,7 @@ local function CreatePage(PageConfig)
                 BorderSizePixel = 0,
             })
             
-            Create("UICorner", { Parent = KeybindButton, CornerRadius = UDim.new(0, 5) })
+            Create("UICorner", { Parent = KeybindButton, CornerRadius = UDim.new(0, 4) })
             
             local KeybindValue = Create("TextLabel", {
                 Parent = KeybindButton,
@@ -1254,7 +1181,7 @@ local function CreatePage(PageConfig)
                 TextTransparency = 0.3,
                 BackgroundTransparency = 1,
                 FontFace = FontRegular,
-                TextSize = 11,
+                TextSize = 10,
                 Position = UDim2.new(0.5, 0, 0.5, 0),
                 AnchorPoint = Vector2.new(0.5, 0.5),
                 Size = UDim2.new(1, -4, 0, 12),
@@ -1307,7 +1234,7 @@ local function CreatePage(PageConfig)
             return { Set = SetKey, Get = function() return Key end }
         end
         
-        -- Textbox
+        -- Textbox (Shitaro style)
         function SectionData:Textbox(Data)
             local TextboxName = Data.Name or "Textbox"
             local Flag = Data.Flag or "textbox_" .. (#Flags + 1)
@@ -1319,7 +1246,7 @@ local function CreatePage(PageConfig)
             local TextboxFrame = Create("Frame", {
                 Parent = SectionContent,
                 BackgroundTransparency = 1,
-                Size = UDim2.new(1, 0, 0, 25),
+                Size = UDim2.new(1, 0, 0, 24),
                 BorderSizePixel = 0,
             })
             
@@ -1330,7 +1257,7 @@ local function CreatePage(PageConfig)
                 TextTransparency = 0.3,
                 BackgroundTransparency = 1,
                 FontFace = FontRegular,
-                TextSize = 11,
+                TextSize = 10,
                 Position = UDim2.new(0, 0, 0.5, 0),
                 AnchorPoint = Vector2.new(0, 0.5),
                 Size = UDim2.new(0.4, -5, 0, 12),
@@ -1348,12 +1275,12 @@ local function CreatePage(PageConfig)
                 AnchorPoint = Vector2.new(1, 0.5),
                 BorderSizePixel = 0,
                 FontFace = FontRegular,
-                TextSize = 11,
+                TextSize = 10,
                 TextXAlignment = Enum.TextXAlignment.Left,
                 ClearTextOnFocus = false,
             })
             
-            Create("UICorner", { Parent = TextboxInput, CornerRadius = UDim.new(0, 5) })
+            Create("UICorner", { Parent = TextboxInput, CornerRadius = UDim.new(0, 4) })
             Create("UIPadding", { Parent = TextboxInput, PaddingLeft = UDim.new(0, 6), PaddingRight = UDim.new(0, 6) })
             
             local Value = Default
@@ -1374,7 +1301,7 @@ local function CreatePage(PageConfig)
             return { Set = SetValue, Get = function() return Value end }
         end
         
-        -- Colorpicker
+        -- Colorpicker (Shitaro style)
         function SectionData:Colorpicker(Data)
             local ColorpickerName = Data.Name or "Colorpicker"
             local Flag = Data.Flag or "color_" .. (#Flags + 1)
@@ -1395,7 +1322,7 @@ local function CreatePage(PageConfig)
                 TextTransparency = 0.3,
                 BackgroundTransparency = 1,
                 FontFace = FontRegular,
-                TextSize = 11,
+                TextSize = 10,
                 Position = UDim2.new(0, 0, 0.5, 0),
                 AnchorPoint = Vector2.new(0, 0.5),
                 Size = UDim2.new(0.55, -5, 0, 12),
@@ -1413,13 +1340,13 @@ local function CreatePage(PageConfig)
                 BorderSizePixel = 0,
             })
             
-            Create("UICorner", { Parent = ColorButton, CornerRadius = UDim.new(0, 5) })
+            Create("UICorner", { Parent = ColorButton, CornerRadius = UDim.new(0, 4) })
             
             local ColorPreview = Create("Frame", {
                 Parent = ColorButton,
                 BackgroundColor3 = Default,
-                Size = UDim2.new(0, 12, 0, 12),
-                Position = UDim2.new(0, 5, 0.5, 0),
+                Size = UDim2.new(0, 14, 0, 14),
+                Position = UDim2.new(0, 4, 0.5, 0),
                 AnchorPoint = Vector2.new(0, 0.5),
                 BorderSizePixel = 0,
             })
@@ -1433,10 +1360,10 @@ local function CreatePage(PageConfig)
                 TextTransparency = 0.3,
                 BackgroundTransparency = 1,
                 FontFace = FontRegular,
-                TextSize = 10,
-                Position = UDim2.new(0, 20, 0.5, 0),
+                TextSize = 9,
+                Position = UDim2.new(0, 22, 0.5, 0),
                 AnchorPoint = Vector2.new(0, 0.5),
-                Size = UDim2.new(1, -22, 0, 12),
+                Size = UDim2.new(1, -24, 0, 12),
                 TextXAlignment = Enum.TextXAlignment.Left,
             })
             
@@ -1449,7 +1376,7 @@ local function CreatePage(PageConfig)
                 ZIndex = 100,
             })
             
-            Create("UICorner", { Parent = ColorPicker, CornerRadius = UDim.new(0, 5) })
+            Create("UICorner", { Parent = ColorPicker, CornerRadius = UDim.new(0, 6) })
             Create("UIStroke", { Parent = ColorPicker, Color = Theme.Outline, ApplyStrokeMode = Enum.ApplyStrokeMode.Border })
             
             local Palette = Create("TextButton", {
@@ -1565,7 +1492,7 @@ local function CreatePage(PageConfig)
                 AnchorPoint = Vector2.new(1, 1),
                 BorderSizePixel = 0,
                 FontFace = FontRegular,
-                TextSize = 10,
+                TextSize = 9,
                 TextXAlignment = Enum.TextXAlignment.Left,
                 ClearTextOnFocus = false,
                 ZIndex = 101,
@@ -1577,11 +1504,10 @@ local function CreatePage(PageConfig)
             Create("TextLabel", {
                 Parent = ColorPicker,
                 Text = "Hex:",
-                TextColor3 = Theme.Text,
-                TextTransparency = 0.5,
+                TextColor3 = Theme.TextDim,
                 BackgroundTransparency = 1,
                 FontFace = FontRegular,
-                TextSize = 10,
+                TextSize = 9,
                 Position = UDim2.new(0, 6, 1, -6),
                 AnchorPoint = Vector2.new(0, 1),
                 Size = UDim2.new(0, 22, 0, 18),
@@ -1713,7 +1639,7 @@ local function CreatePage(PageConfig)
             return { Set = SetFlags[Flag], Get = function() return Color end, SetOpen = SetOpen, IsOpen = function() return IsOpen end }
         end
         
-        -- Listbox
+        -- Listbox (Shitaro style)
         function SectionData:Listbox(Data)
             local ListboxName = Data.Name or "Listbox"
             local Flag = Data.Flag or "listbox_" .. (#Flags + 1)
@@ -1736,7 +1662,7 @@ local function CreatePage(PageConfig)
                 TextTransparency = 0.3,
                 BackgroundTransparency = 1,
                 FontFace = FontRegular,
-                TextSize = 11,
+                TextSize = 10,
                 Position = UDim2.new(0, 0, 0, 0),
                 Size = UDim2.new(0, 0, 0, 12),
                 AutomaticSize = Enum.AutomaticSize.X,
@@ -1753,7 +1679,7 @@ local function CreatePage(PageConfig)
                 AnchorPoint = Vector2.new(0, 1),
                 BorderSizePixel = 0,
                 FontFace = FontRegular,
-                TextSize = 10,
+                TextSize = 9,
                 TextXAlignment = Enum.TextXAlignment.Left,
                 ClearTextOnFocus = false,
             })
@@ -1793,7 +1719,7 @@ local function CreatePage(PageConfig)
             
             local function UpdateListHeight()
                 local Count = #FilteredItems
-                local Height = math.min(75, Count * 18 + 4)
+                local Height = math.min(75, Count * 16 + 4)
                 ListContainer.Size = UDim2.new(1, 0, 0, Height)
                 ListboxFrame.Size = UDim2.new(1, 0, 0, 36 + Height)
             end
@@ -1817,7 +1743,7 @@ local function CreatePage(PageConfig)
                         Text = "",
                         AutoButtonColor = false,
                         BackgroundTransparency = 1,
-                        Size = UDim2.new(1, 0, 0, 16),
+                        Size = UDim2.new(1, 0, 0, 14),
                         BorderSizePixel = 0,
                     })
                     
@@ -1828,7 +1754,7 @@ local function CreatePage(PageConfig)
                         TextTransparency = 0.3,
                         BackgroundTransparency = 1,
                         FontFace = FontRegular,
-                        TextSize = 10,
+                        TextSize = 9,
                         Position = UDim2.new(0, 5, 0.5, 0),
                         AnchorPoint = Vector2.new(0, 0.5),
                         Size = UDim2.new(1, -5, 0, 11),
@@ -1901,7 +1827,7 @@ local function CreatePage(PageConfig)
     return PageData
 end
 
--- === СОЗДАНИЕ СТРАНИЦ ===
+-- === CREATE PAGES (Shitaro style) ===
 
 -- Aimbot
 local AimbotPage = CreatePage({Name = "Aimbot", Icon = "100050851789190"})
@@ -1994,20 +1920,20 @@ ConfigsSection:Button({Name = "Load", Icon = "101636617799068", Callback = funct
     end
 end})
 
--- Активация первой страницы
+-- Activate first page
 if Pages[1] then
     Pages[1]:SetActive(true)
 end
 
--- Плавающая кнопка для мобильных
+-- Floating button for mobile (Shitaro style)
 if IsMobile then
     local FloatButton = Create("TextButton", {
         Parent = Holder,
         Text = "",
         AutoButtonColor = false,
         BackgroundColor3 = Theme.Background,
-        BackgroundTransparency = 0.5,
-        Size = UDim2.new(0, 36, 0, 36),
+        BackgroundTransparency = 0.4,
+        Size = UDim2.new(0, 40, 0, 40),
         Position = UDim2.new(0, 10, 0, 10),
         BorderSizePixel = 0,
         ZIndex = 127,
@@ -2015,23 +1941,15 @@ if IsMobile then
     
     Create("UICorner", { Parent = FloatButton, CornerRadius = UDim.new(1, 0) })
     
-    local FloatLogo = Create("ImageLabel", {
+    local FloatLogo = Create("TextLabel", {
         Parent = FloatButton,
-        Image = "rbxassetid://120959262762131",
+        Text = "S",
+        TextColor3 = Theme.Accent,
         BackgroundTransparency = 1,
-        Size = UDim2.new(1, -8, 1, -8),
+        FontFace = FontSemiBold,
+        TextSize = 22,
         Position = UDim2.new(0.5, 0, 0.5, 0),
         AnchorPoint = Vector2.new(0.5, 0.5),
-        ScaleType = Enum.ScaleType.Fit,
-    })
-    
-    Create("UIGradient", {
-        Parent = FloatLogo,
-        Rotation = -115,
-        Color = ColorSequence.new({
-            ColorSequenceKeypoint.new(0, Theme.Accent),
-            ColorSequenceKeypoint.new(1, Theme.AccentGradient),
-        })
     })
     
     FloatButton.MouseButton1Down:Connect(function()
@@ -2039,7 +1957,7 @@ if IsMobile then
     end)
 end
 
--- Перетаскивание
+-- Dragging
 do
     local Dragging = false
     local DragStart = nil
@@ -2072,4 +1990,4 @@ do
     end)
 end
 
-getgenv().DarkHub = DarkHub
+getgenv().ShitaroUI = ShitaroUI
