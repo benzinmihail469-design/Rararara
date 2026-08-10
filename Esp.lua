@@ -35,6 +35,14 @@ local function CreateTween(Instance, Info, Goal)
     return Tween
 end
 
+-- Функция очистки строк (игнорирует регистр, тире, запятые, пробелы и знаки)
+local function CleanString(Str)
+    if not Str then return "" end
+    local Cleaned = string.lower(tostring(Str))
+    Cleaned = string.gsub(Cleaned, "[%s%p]", "")
+    return Cleaned
+end
+
 -- Цветовая схема (AMOLED Black)
 local Theme = {
     Background = Color3.fromRGB(0, 0, 0),
@@ -291,7 +299,7 @@ CloseButton.MouseButton1Down:Connect(function()
     MainFrame.Visible = false
 end)
 
--- === ПОЛЕ ПОИСКА В ШАПКЕ РЕДОМ С КНОПКОЙ ЗАКРЫТИЯ ===
+-- === ПОЛЕ ПОИСКА В ШАПКЕ (БЕЗ ЭМОДЗИ) ===
 local HeaderSearchContainer = Create("Frame", {
     Parent = MainFrame,
     Name = "HeaderSearch",
@@ -305,17 +313,6 @@ local HeaderSearchContainer = Create("Frame", {
 
 Create("UICorner", { Parent = HeaderSearchContainer, CornerRadius = UDim.new(0, 6) })
 
-local SearchIcon = Create("TextLabel", {
-    Parent = HeaderSearchContainer,
-    Text = "🔍",
-    BackgroundTransparency = 1,
-    Size = UDim2.new(0, 14, 0, 14),
-    Position = UDim2.new(0, 6, 0.5, 0),
-    AnchorPoint = Vector2.new(0, 0.5),
-    TextSize = 10,
-    ZIndex = 6,
-})
-
 local HeaderSearchInput = Create("TextBox", {
     Parent = HeaderSearchContainer,
     Text = "",
@@ -323,8 +320,8 @@ local HeaderSearchInput = Create("TextBox", {
     PlaceholderColor3 = Color3.fromRGB(130, 130, 130),
     TextColor3 = Theme.Text,
     BackgroundTransparency = 1,
-    Position = UDim2.new(0, 22, 0, 0),
-    Size = UDim2.new(1, -26, 1, 0),
+    Position = UDim2.new(0, 8, 0, 0),
+    Size = UDim2.new(1, -12, 1, 0),
     FontFace = FontRegular,
     TextSize = 11,
     TextXAlignment = Enum.TextXAlignment.Left,
@@ -376,7 +373,6 @@ local ProfileFooter = Create("Frame", {
 
 Create("UICorner", { Parent = ProfileFooter, CornerRadius = UDim.new(0, 10) })
 
--- Разделительная линия сверху подвала
 Create("Frame", {
     Parent = ProfileFooter,
     BackgroundColor3 = Theme.Outline,
@@ -387,7 +383,6 @@ Create("Frame", {
     BorderSizePixel = 0,
 })
 
--- Аватарка игрока
 local AvatarImage = Create("ImageLabel", {
     Parent = ProfileFooter,
     Name = "Avatar",
@@ -401,7 +396,6 @@ local AvatarImage = Create("ImageLabel", {
 
 Create("UICorner", { Parent = AvatarImage, CornerRadius = UDim.new(1, 0) })
 
--- Имя пользователя
 Create("TextLabel", {
     Parent = ProfileFooter,
     Name = "Username",
@@ -418,7 +412,6 @@ Create("TextLabel", {
     ZIndex = 9,
 })
 
--- Субтитр / Никнейм (@username)
 Create("TextLabel", {
     Parent = ProfileFooter,
     Name = "Subtext",
@@ -436,7 +429,6 @@ Create("TextLabel", {
     ZIndex = 9,
 })
 
--- Иконка стрелочки справа
 local ArrowIcon = Create("ImageLabel", {
     Parent = ProfileFooter,
     Name = "Arrow",
@@ -451,7 +443,6 @@ local ArrowIcon = Create("ImageLabel", {
     ZIndex = 9,
 })
 
--- Единый индикатор активной вкладки
 local ActiveIndicator = Create("Frame", {
     Parent = MainFrame,
     BackgroundColor3 = Color3.fromRGB(255, 255, 255),
@@ -478,38 +469,101 @@ local Content = Create("Frame", {
 
 Create("UICorner", { Parent = Content, CornerRadius = UDim.new(0, 10) })
 
+-- Контейнер для результатов глобального поиска
+local GlobalSearchFrame = Create("ScrollingFrame", {
+    Parent = Content,
+    BackgroundTransparency = 1,
+    Size = UDim2.new(1, 0, 1, 0),
+    ScrollBarThickness = 3,
+    CanvasSize = UDim2.new(0, 0, 0, 0),
+    AutomaticCanvasSize = Enum.AutomaticSize.Y,
+    Visible = false,
+    BorderSizePixel = 0,
+    VerticalScrollBarInset = Enum.ScrollBarInset.ScrollBar,
+})
+
+Create("UICorner", { Parent = GlobalSearchFrame, CornerRadius = UDim.new(0, 10) })
+
+local GlobalSearchContent = Create("Frame", {
+    Parent = GlobalSearchFrame,
+    BackgroundTransparency = 1,
+    Size = UDim2.new(1, -10, 0, 0),
+    Position = UDim2.new(0, 5, 0, 5),
+    AutomaticSize = Enum.AutomaticSize.Y,
+})
+
+Create("UIListLayout", {
+    Parent = GlobalSearchContent,
+    Padding = UDim.new(0, 6),
+    SortOrder = Enum.SortOrder.LayoutOrder,
+})
+
 -- Страницы
 local Pages = {}
 local CurrentPage = nil
 
--- Функция фильтрации элементов по тексту в шапке
-local function FilterCurrentPage(Query)
-    Query = string.lower(Query or "")
-    if not CurrentPage then return end
+-- Глобальная система поиска по всем вкладкам и элементам
+local function GlobalSearch(Query)
+    local CleanQuery = CleanString(Query)
 
-    for _, Section in ipairs(CurrentPage.Sections) do
-        local SectionNameMatch = (Query == "") or (Section.Name and string.find(string.lower(Section.Name), Query) ~= nil)
-        local AnyElementMatch = false
-
-        for _, Element in ipairs(Section.Elements) do
-            local ElementNameMatch = (Query == "") or (Element.Name and string.find(string.lower(Element.Name), Query) ~= nil)
-            local IsMatch = SectionNameMatch or ElementNameMatch
-
-            if Element.Frame then
-                Element.Frame.Visible = IsMatch
-            end
-
-            if IsMatch then
-                AnyElementMatch = true
+    if CleanQuery == "" then
+        GlobalSearchFrame.Visible = false
+        
+        for _, Page in ipairs(Pages) do
+            for _, Section in ipairs(Page.Sections) do
+                Section.Frame.Parent = Section.OriginalParent
+                Section.Frame.Visible = true
+                for _, Element in ipairs(Section.Elements) do
+                    if Element.Frame then
+                        Element.Frame.Visible = true
+                    end
+                end
             end
         end
 
-        Section.Frame.Visible = AnyElementMatch
+        if CurrentPage then
+            CurrentPage.Frame.Visible = true
+        end
+    else
+        if CurrentPage then
+            CurrentPage.Frame.Visible = false
+        end
+        GlobalSearchFrame.Visible = true
+
+        for _, Page in ipairs(Pages) do
+            for _, Section in ipairs(Page.Sections) do
+                local CleanSectionName = CleanString(Section.Name)
+                local SectionMatch = (CleanSectionName ~= "") and (string.find(CleanSectionName, CleanQuery, 1, true) ~= nil)
+                local HasAnyElementMatch = false
+
+                for _, Element in ipairs(Section.Elements) do
+                    local CleanElementName = CleanString(Element.Name)
+                    local ElementMatch = (CleanElementName ~= "") and (string.find(CleanElementName, CleanQuery, 1, true) ~= nil)
+                    local IsVisible = SectionMatch or ElementMatch
+
+                    if Element.Frame then
+                        Element.Frame.Visible = IsVisible
+                    end
+
+                    if IsVisible then
+                        HasAnyElementMatch = true
+                    end
+                end
+
+                if SectionMatch or HasAnyElementMatch then
+                    Section.Frame.Parent = GlobalSearchContent
+                    Section.Frame.Visible = true
+                else
+                    Section.Frame.Visible = false
+                    Section.Frame.Parent = Section.OriginalParent
+                end
+            end
+        end
     end
 end
 
 HeaderSearchInput:GetPropertyChangedSignal("Text"):Connect(function()
-    FilterCurrentPage(HeaderSearchInput.Text)
+    GlobalSearch(HeaderSearchInput.Text)
 end)
 
 local function CreatePage(PageConfig)
@@ -621,8 +675,12 @@ local function CreatePage(PageConfig)
     }
     
     local function SetActive(Active)
-        if Active == PageData.Active then return end
+        if Active == PageData.Active and not GlobalSearchFrame.Visible then return end
         
+        if HeaderSearchInput.Text ~= "" then
+            HeaderSearchInput.Text = ""
+        end
+
         if Active then
             if CurrentPage then
                 CurrentPage.Active = false
@@ -638,8 +696,6 @@ local function CreatePage(PageConfig)
             PageData.TabLabel.TextTransparency = 0
             PageData.TabLabel.FontFace = FontSemiBold
             CurrentPage = PageData
-
-            FilterCurrentPage(HeaderSearchInput.Text)
 
             task.defer(function()
                 local TargetY = TabButton.AbsolutePosition.Y - MainFrame.AbsolutePosition.Y + (TabButton.AbsoluteSize.Y / 2)
@@ -773,6 +829,7 @@ local function CreatePage(PageConfig)
         local SectionData = {
             Name = SectionName,
             Frame = SectionFrame,
+            OriginalParent = PageContent,
             Content = SectionContent,
             Elements = {},
         }
@@ -1884,10 +1941,10 @@ local function CreatePage(PageConfig)
             end
             
             local function FilterItems(Query)
-                Query = string.lower(Query)
+                local CleanQ = CleanString(Query)
                 FilteredItems = {}
                 for _, Item in ipairs(Items) do
-                    if Query == "" or string.find(string.lower(Item), Query) then
+                    if CleanQ == "" or string.find(CleanString(Item), CleanQ, 1, true) then
                         table.insert(FilteredItems, Item)
                     end
                 end
