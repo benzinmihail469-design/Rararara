@@ -100,7 +100,7 @@ local MainFrame = Create("Frame", {
     Position = UDim2.new(0.5, 0, 0.5, 0),
     AnchorPoint = Vector2.new(0.5, 0.5),
     Size = UDim2.new(0, MainWidth, 0, MainHeight),
-    ClipsDescendants = false,
+    ClipsDescendants = true, -- Включено для бесшовного обрезания внутренних панелей по углам
 })
 
 Create("UICorner", { Parent = MainFrame, CornerRadius = UDim.new(0, 8) })
@@ -285,6 +285,18 @@ CloseButton.MouseButton1Down:Connect(function()
     MainFrame.Visible = false
 end)
 
+-- Вертикальная линия-разделитель сайдбара и основного контента
+Create("Frame", {
+    Parent = MainFrame,
+    Name = "SidebarDivider",
+    BackgroundColor3 = Theme.Outline,
+    BackgroundTransparency = 0.5,
+    Size = UDim2.new(0, 1, 1, 0),
+    Position = UDim2.new(0, SidebarWidth, 0, 0),
+    BorderSizePixel = 0,
+    ZIndex = 4,
+})
+
 -- Левая панель вкладок (Сайдбар)
 local LeftTabs = Create("ScrollingFrame", {
     Parent = MainFrame,
@@ -298,8 +310,6 @@ local LeftTabs = Create("ScrollingFrame", {
     CanvasSize = UDim2.new(0, 0, 0, 0),
     AutomaticCanvasSize = Enum.AutomaticSize.Y,
 })
-
-Create("UICorner", { Parent = LeftTabs, CornerRadius = UDim.new(0, 8) })
 
 Create("UIListLayout", {
     Parent = LeftTabs,
@@ -327,16 +337,13 @@ local ProfileFooter = Create("Frame", {
     ZIndex = 8,
 })
 
-Create("UICorner", { Parent = ProfileFooter, CornerRadius = UDim.new(0, 8) })
-
--- Разделительная линия сверху подвала
+-- Разделительная линия сверху подвала (без зазоров по бокам)
 Create("Frame", {
     Parent = ProfileFooter,
     BackgroundColor3 = Theme.Outline,
     BackgroundTransparency = 0.4,
-    Size = UDim2.new(1, -12, 0, 1),
-    Position = UDim2.new(0.5, 0, 0, 0),
-    AnchorPoint = Vector2.new(0.5, 0),
+    Size = UDim2.new(1, 0, 0, 1),
+    Position = UDim2.new(0, 0, 0, 0),
     BorderSizePixel = 0,
 })
 
@@ -404,7 +411,7 @@ local ArrowIcon = Create("ImageLabel", {
     ZIndex = 9,
 })
 
--- Единый индикатор активной вкладки (для плавной анимации)
+-- Единый индикатор активной вкладки
 local ActiveIndicator = Create("Frame", {
     Parent = MainFrame,
     BackgroundColor3 = Color3.fromRGB(255, 255, 255),
@@ -423,13 +430,11 @@ local Content = Create("Frame", {
     Parent = MainFrame,
     BackgroundColor3 = Theme.Background,
     BackgroundTransparency = 0.75,
-    Position = UDim2.new(0, SidebarWidth, 0, HeaderHeight),
-    Size = UDim2.new(1, -SidebarWidth, 1, -HeaderHeight),
+    Position = UDim2.new(0, SidebarWidth + 1, 0, HeaderHeight),
+    Size = UDim2.new(1, -(SidebarWidth + 1), 1, -HeaderHeight),
     BorderSizePixel = 0,
     ClipsDescendants = true,
 })
-
-Create("UICorner", { Parent = Content, CornerRadius = UDim.new(0, 8) })
 
 -- Страницы
 local Pages = {}
@@ -519,8 +524,6 @@ local function CreatePage(PageConfig)
         VerticalScrollBarInset = Enum.ScrollBarInset.ScrollBar,
     })
     
-    Create("UICorner", { Parent = PageFrame, CornerRadius = UDim.new(0, 8) })
-    
     local PageContent = Create("Frame", {
         Parent = PageFrame,
         BackgroundTransparency = 1,
@@ -564,7 +567,7 @@ local function CreatePage(PageConfig)
             PageData.TabLabel.FontFace = FontSemiBold
             CurrentPage = PageData
 
-            -- Плавное перемещение белой полоски на новую вкладку
+            -- Плавное перемещение индикатора активной вкладки
             task.defer(function()
                 local TargetY = TabButton.AbsolutePosition.Y - MainFrame.AbsolutePosition.Y + (TabButton.AbsoluteSize.Y / 2)
                 local TargetPos = UDim2.new(0, 6, 0, TargetY)
