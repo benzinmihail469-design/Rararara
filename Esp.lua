@@ -1,6 +1,3 @@
-Слушай сделай мой скрипт Гуи под стиль shitaro вот фотка 
-И вот мой скрипт
-
 local DarkHub = {} -- Dark Hub UI (Pulse Hub Styled Sizes - Compact)
 
 local Players = game:GetService("Players")
