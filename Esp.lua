@@ -674,6 +674,29 @@ local function CreatePage(PageConfig)
         Active = false,
     }
     
+    -- АНИМАЦИЯ НАВЕДЕНИЯ НА ВКЛАДКУ
+    TabButton.MouseEnter:Connect(function()
+        if not PageData.Active then
+            CreateTween(TabButton, TweenInfo.new(0.2, Enum.EasingStyle.Quint, Enum.EasingDirection.Out), {
+                BackgroundTransparency = 0.92
+            })
+            CreateTween(TabLabel, TweenInfo.new(0.2, Enum.EasingStyle.Quint, Enum.EasingDirection.Out), {
+                TextTransparency = 0.25
+            })
+        end
+    end)
+
+    TabButton.MouseLeave:Connect(function()
+        if not PageData.Active then
+            CreateTween(TabButton, TweenInfo.new(0.2, Enum.EasingStyle.Quint, Enum.EasingDirection.Out), {
+                BackgroundTransparency = 1
+            })
+            CreateTween(TabLabel, TweenInfo.new(0.2, Enum.EasingStyle.Quint, Enum.EasingDirection.Out), {
+                TextTransparency = 0.5
+            })
+        end
+    end)
+    
     local function SetActive(Active)
         if Active == PageData.Active and not GlobalSearchFrame.Visible then return end
         
@@ -685,15 +708,23 @@ local function CreatePage(PageConfig)
             if CurrentPage then
                 CurrentPage.Active = false
                 CurrentPage.Frame.Visible = false
-                CurrentPage.TabButton.BackgroundTransparency = 1
-                CurrentPage.TabLabel.TextTransparency = 0.5
+                CreateTween(CurrentPage.TabButton, TweenInfo.new(0.2, Enum.EasingStyle.Quint, Enum.EasingDirection.Out), {
+                    BackgroundTransparency = 1
+                })
+                CreateTween(CurrentPage.TabLabel, TweenInfo.new(0.2, Enum.EasingStyle.Quint, Enum.EasingDirection.Out), {
+                    TextTransparency = 0.5
+                })
                 CurrentPage.TabLabel.FontFace = FontRegular
             end
             
             PageData.Active = true
             PageData.Frame.Visible = true
-            PageData.TabButton.BackgroundTransparency = 0.88
-            PageData.TabLabel.TextTransparency = 0
+            CreateTween(TabButton, TweenInfo.new(0.2, Enum.EasingStyle.Quint, Enum.EasingDirection.Out), {
+                BackgroundTransparency = 0.88
+            })
+            CreateTween(TabLabel, TweenInfo.new(0.2, Enum.EasingStyle.Quint, Enum.EasingDirection.Out), {
+                TextTransparency = 0
+            })
             PageData.TabLabel.FontFace = FontSemiBold
             CurrentPage = PageData
 
@@ -713,8 +744,12 @@ local function CreatePage(PageConfig)
         else
             PageData.Active = false
             PageData.Frame.Visible = false
-            PageData.TabButton.BackgroundTransparency = 1
-            PageData.TabLabel.TextTransparency = 0.5
+            CreateTween(TabButton, TweenInfo.new(0.2, Enum.EasingStyle.Quint, Enum.EasingDirection.Out), {
+                BackgroundTransparency = 1
+            })
+            CreateTween(TabLabel, TweenInfo.new(0.2, Enum.EasingStyle.Quint, Enum.EasingDirection.Out), {
+                TextTransparency = 0.5
+            })
             PageData.TabLabel.FontFace = FontRegular
         end
     end
