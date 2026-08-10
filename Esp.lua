@@ -1964,7 +1964,7 @@ local ConfigDropdown = ConfigsSection:Listbox({Name = "Configs", Items = {}, Mul
 
 ConfigsSection:Textbox({Name = "Config Name", Placeholder = "Enter name..."})
 
-ConfigsSection:Button({Name = "Create", Icon = "101500482366184", Callback = function()
+ConfigsSection:Button({Name = "Create", Callback = function()
     local Name = Flags["Config Name"] or "config"
     if Name and Name ~= "" then
         local Config = {}
@@ -1983,7 +1983,7 @@ ConfigsSection:Button({Name = "Create", Icon = "101500482366184", Callback = fun
     end
 end})
 
-ConfigsSection:Button({Name = "Load", Icon = "101636617799068", Callback = function()
+ConfigsSection:Button({Name = "Load", Callback = function()
     local Selected = ConfigDropdown:Get()
     if Selected and #Selected > 0 and _G.ConfigsData then
         local Data = _G.ConfigsData[Selected[1]]
