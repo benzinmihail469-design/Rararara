@@ -220,16 +220,16 @@ Create("TextLabel", {
     ZIndex = 5,
 })
 
--- Кнопка закрытия с крестиком (Fredoka One)
+-- УВЕЛИЧЕННАЯ КВАДРАТНАЯ КНОПКА ЗАКРЫТИЯ
 local CloseButton = Create("TextButton", {
     Parent = MainFrame,
     Text = "",
     AutoButtonColor = false,
     BackgroundColor3 = Theme.Element,
     BackgroundTransparency = 0.2,
-    Position = UDim2.new(1, -8, 0, 7),
+    Position = UDim2.new(1, -8, 0, 5),
     AnchorPoint = Vector2.new(1, 0),
-    Size = UDim2.new(0, 22, 0, 22),
+    Size = UDim2.new(0, 26, 0, 26),
     ZIndex = 5,
 })
 
@@ -242,7 +242,7 @@ local CloseText = Create("TextLabel", {
     TextTransparency = 0.3,
     BackgroundTransparency = 1,
     FontFace = FontSemiBold,
-    TextSize = 15,
+    TextSize = 20,
     Size = UDim2.new(1, 0, 1, 0),
     Position = UDim2.new(0.5, 0, 0.5, -1),
     AnchorPoint = Vector2.new(0.5, 0.5),
@@ -290,6 +290,47 @@ end)
 CloseButton.MouseButton1Down:Connect(function()
     MainFrame.Visible = false
 end)
+
+-- === ПОЛЕ ПОИСКА В ШАПКЕ РЕДОМ С КНОПКОЙ ЗАКРЫТИЯ ===
+local HeaderSearchContainer = Create("Frame", {
+    Parent = MainFrame,
+    Name = "HeaderSearch",
+    BackgroundColor3 = Theme.Element,
+    BackgroundTransparency = 0.2,
+    Position = UDim2.new(1, -40, 0, 5),
+    AnchorPoint = Vector2.new(1, 0),
+    Size = UDim2.new(0, 130, 0, 26),
+    ZIndex = 5,
+})
+
+Create("UICorner", { Parent = HeaderSearchContainer, CornerRadius = UDim.new(0, 6) })
+
+local SearchIcon = Create("TextLabel", {
+    Parent = HeaderSearchContainer,
+    Text = "🔍",
+    BackgroundTransparency = 1,
+    Size = UDim2.new(0, 14, 0, 14),
+    Position = UDim2.new(0, 6, 0.5, 0),
+    AnchorPoint = Vector2.new(0, 0.5),
+    TextSize = 10,
+    ZIndex = 6,
+})
+
+local HeaderSearchInput = Create("TextBox", {
+    Parent = HeaderSearchContainer,
+    Text = "",
+    PlaceholderText = "Search...",
+    PlaceholderColor3 = Color3.fromRGB(130, 130, 130),
+    TextColor3 = Theme.Text,
+    BackgroundTransparency = 1,
+    Position = UDim2.new(0, 22, 0, 0),
+    Size = UDim2.new(1, -26, 1, 0),
+    FontFace = FontRegular,
+    TextSize = 11,
+    TextXAlignment = Enum.TextXAlignment.Left,
+    ClearTextOnFocus = false,
+    ZIndex = 6,
+})
 
 -- Левая панель вкладок (Сайдбар)
 local LeftTabs = Create("ScrollingFrame", {
@@ -441,6 +482,36 @@ Create("UICorner", { Parent = Content, CornerRadius = UDim.new(0, 10) })
 local Pages = {}
 local CurrentPage = nil
 
+-- Функция фильтрации элементов по тексту в шапке
+local function FilterCurrentPage(Query)
+    Query = string.lower(Query or "")
+    if not CurrentPage then return end
+
+    for _, Section in ipairs(CurrentPage.Sections) do
+        local SectionNameMatch = (Query == "") or (Section.Name and string.find(string.lower(Section.Name), Query) ~= nil)
+        local AnyElementMatch = false
+
+        for _, Element in ipairs(Section.Elements) do
+            local ElementNameMatch = (Query == "") or (Element.Name and string.find(string.lower(Element.Name), Query) ~= nil)
+            local IsMatch = SectionNameMatch or ElementNameMatch
+
+            if Element.Frame then
+                Element.Frame.Visible = IsMatch
+            end
+
+            if IsMatch then
+                AnyElementMatch = true
+            end
+        end
+
+        Section.Frame.Visible = AnyElementMatch
+    end
+end
+
+HeaderSearchInput:GetPropertyChangedSignal("Text"):Connect(function()
+    FilterCurrentPage(HeaderSearchInput.Text)
+end)
+
 local function CreatePage(PageConfig)
     local PageName = PageConfig.Name or "Page"
     local PageIcon = PageConfig.Icon or "100050851789190"
@@ -567,6 +638,8 @@ local function CreatePage(PageConfig)
             PageData.TabLabel.TextTransparency = 0
             PageData.TabLabel.FontFace = FontSemiBold
             CurrentPage = PageData
+
+            FilterCurrentPage(HeaderSearchInput.Text)
 
             task.defer(function()
                 local TargetY = TabButton.AbsolutePosition.Y - MainFrame.AbsolutePosition.Y + (TabButton.AbsoluteSize.Y / 2)
@@ -698,6 +771,7 @@ local function CreatePage(PageConfig)
         })
         
         local SectionData = {
+            Name = SectionName,
             Frame = SectionFrame,
             Content = SectionContent,
             Elements = {},
@@ -818,6 +892,7 @@ local function CreatePage(PageConfig)
             SetValue(Default)
             SetFlags[Flag] = SetValue
             
+            table.insert(SectionData.Elements, { Frame = ToggleFrame, Name = ToggleName })
             return { Set = SetValue, Get = function() return Value end }
         end
         
@@ -910,6 +985,7 @@ local function CreatePage(PageConfig)
                 Callback()
             end)
             
+            table.insert(SectionData.Elements, { Frame = ButtonFrame, Name = ButtonName })
             return ButtonFrame
         end
         
@@ -1033,6 +1109,7 @@ local function CreatePage(PageConfig)
             SetValue(Default)
             SetFlags[Flag] = SetValue
             
+            table.insert(SectionData.Elements, { Frame = SliderFrame, Name = SliderName })
             return { Set = SetValue, Get = function() return Value end }
         end
         
@@ -1202,6 +1279,7 @@ local function CreatePage(PageConfig)
             
             SetFlags[Flag] = function(Val) if Options[Val] then SetValue(Val) end end
             
+            table.insert(SectionData.Elements, { Frame = DropdownFrame, Name = DropdownName })
             return {
                 Set = function(Val) if Options[Val] then SetValue(Val) end end,
                 Get = function() return Selected end,
@@ -1308,6 +1386,7 @@ local function CreatePage(PageConfig)
             SetKey(Default)
             SetFlags[Flag] = SetKey
             
+            table.insert(SectionData.Elements, { Frame = KeybindFrame, Name = KeybindName })
             return { Set = SetKey, Get = function() return Key end }
         end
         
@@ -1375,6 +1454,7 @@ local function CreatePage(PageConfig)
             SetValue(Default)
             SetFlags[Flag] = SetValue
             
+            table.insert(SectionData.Elements, { Frame = TextboxFrame, Name = TextboxName })
             return { Set = SetValue, Get = function() return Value end }
         end
         
@@ -1714,6 +1794,7 @@ local function CreatePage(PageConfig)
                 end
             end
             
+            table.insert(SectionData.Elements, { Frame = ColorFrame, Name = ColorpickerName })
             return { Set = SetFlags[Flag], Get = function() return Color end, SetOpen = SetOpen, IsOpen = function() return IsOpen end }
         end
         
@@ -1881,6 +1962,7 @@ local function CreatePage(PageConfig)
                 Callback(table.clone(Selected))
             end
             
+            table.insert(SectionData.Elements, { Frame = ListboxFrame, Name = ListboxName })
             return {
                 Set = SetFlags[Flag],
                 Get = function() return table.clone(Selected) end,
@@ -1894,7 +1976,6 @@ local function CreatePage(PageConfig)
             }
         end
         
-        table.insert(SectionData.Elements, SectionData)
         table.insert(PageData.Sections, SectionData)
         return SectionData
     end
