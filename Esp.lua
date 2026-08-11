@@ -177,7 +177,7 @@ do
     end)
 end
 
--- Логотип и заголовок
+-- Логотип и заголовок (Обновлена иконка около заголовка)
 local Logo = Create("ImageLabel", {
     Parent = MainFrame,
     Name = "Logo",
@@ -185,7 +185,7 @@ local Logo = Create("ImageLabel", {
     BackgroundTransparency = 1,
     Size = UDim2.new(0, 18, 0, 18),
     Position = UDim2.new(0, 10, 0, 9),
-    Image = "rbxassetid://120959262762131",
+    Image = "rbxassetid://76579925188009",
     ScaleType = Enum.ScaleType.Fit,
     ZIndex = 5,
 })
@@ -2161,7 +2161,7 @@ ConfigsSection:Button({Name = "Load", Callback = function()
     if Selected and #Selected > 0 and _G.ConfigsData then
         local Data = _G.ConfigsData[Selected[1]]
         if Data then
-            local Decoded = HttpService:JSONDecode(Data)
+            local Decoded = HttpService:JSONEncode(Data)
             for Flag, Value in pairs(Decoded) do
                 if SetFlags[Flag] then
                     SetFlags[Flag](Value)
@@ -2194,7 +2194,7 @@ if IsMobile then
     
     local FloatLogo = Create("ImageLabel", {
         Parent = FloatButton,
-        Image = "rbxassetid://120959262762131",
+        Image = "rbxassetid://76579925188009",
         BackgroundTransparency = 1,
         Size = UDim2.new(1, -8, 1, -8),
         Position = UDim2.new(0.5, 0, 0.5, 0),
@@ -2221,32 +2221,33 @@ do
     local Dragging = false
     local DragStart = nil
     local StartPosition = nil
-    
+
+    local function Update(Input)
+        local Delta = Input.Position - DragStart
+        MainFrame.Position = UDim2.new(StartPosition.X.Scale, StartPosition.X.Offset + Delta.X, StartPosition.Y.Scale, StartPosition.Y.Offset + Delta.Y)
+    end
+
     MainFrame.InputBegan:Connect(function(Input)
         if Input.UserInputType == Enum.UserInputType.MouseButton1 or Input.UserInputType == Enum.UserInputType.Touch then
             Dragging = true
             DragStart = Input.Position
             StartPosition = MainFrame.Position
+
+            Input.Changed:Connect(function()
+                if Input.UserInputState == Enum.UserInputState.End then
+                    Dragging = false
+                end
+            end)
         end
     end)
-    
-    UserInputService.InputEnded:Connect(function(Input)
-        if Input.UserInputType == Enum.UserInputType.MouseButton1 or Input.UserInputType == Enum.UserInputType.Touch then
-            Dragging = false
-        end
-    end)
-    
-    UserInputService.InputChanged:Connect(function(Input)
-        if Dragging and (Input.UserInputType == Enum.UserInputType.MouseMovement or Input.UserInputType == Enum.UserInputType.Touch) then
-            local Delta = Input.Position - DragStart
-            MainFrame.Position = UDim2.new(
-                StartPosition.X.Scale,
-                StartPosition.X.Offset + Delta.X,
-                StartPosition.Y.Scale,
-                StartPosition.Y.Offset + Delta.Y
-            )
+
+    MainFrame.InputChanged:Connect(function(Input)
+        if Input.UserInputType == Enum.UserInputType.MouseMovement or Input.UserInputType == Enum.UserInputType.Touch then
+            if Dragging then
+                Update(Input)
+            end
         end
     end)
 end
 
-getgenv().DarkHub = DarkHub
+return DarkHub
