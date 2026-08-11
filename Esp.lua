@@ -20,8 +20,18 @@ local SidebarWidth = IsMobile and 140 or 150  -- Ширина боковой п�
 local HeaderHeight = 36                       -- Высота шапки
 local FooterHeight = 42                       -- Высота подвала с профилем
 
--- Иконка для Dark Hub
-local DarkHubIcon = "rbxassetid://129648286080620"
+-- Функция авто-форматирования ID иконки (поддерживает числовые ID и rbxassetid://)
+local function GetIconUri(Icon)
+    if not Icon then return "" end
+    local StrIcon = tostring(Icon)
+    if not string.find(StrIcon, "rbxassetid://") then
+        return "rbxassetid://" .. StrIcon
+    end
+    return StrIcon
+end
+
+-- Иконка для Dark Hub рядом с заголовком (Ваш Decal ID)
+local DarkHubIcon = GetIconUri("129648286080620")
 
 -- Вспомогательные функции
 local function Create(Class, Properties)
@@ -180,7 +190,7 @@ do
     end)
 end
 
--- Логотип и заголовок (Установлена иконка Decal)
+-- Логотип и заголовок (Установлен Ваш Decal ID)
 local Logo = Create("ImageLabel", {
     Parent = MainFrame,
     Name = "Logo",
@@ -231,7 +241,7 @@ Create("TextLabel", {
     ZIndex = 5,
 })
 
--- УВЕЛИЧЕННАЯ КВАДРАТНАЯ КНОПКА ЗАКРЫТИЯ
+-- КНОПКА ЗАКРЫТИЯ
 local CloseButton = Create("TextButton", {
     Parent = MainFrame,
     Text = "",
@@ -302,7 +312,7 @@ CloseButton.MouseButton1Down:Connect(function()
     MainFrame.Visible = false
 end)
 
--- === ПОЛЕ ПОИСКА В ШАПКЕ (БЕЗ ЭМОДЗИ) ===
+-- ПОЛЕ ПОИСКА В ШАПКЕ
 local HeaderSearchContainer = Create("Frame", {
     Parent = MainFrame,
     Name = "HeaderSearch",
@@ -362,7 +372,7 @@ Create("UIPadding", {
     PaddingRight = UDim.new(0, 4),
 })
 
--- === ПОДВАЛ (ПРОФИЛЬ ИГРОКА) ===
+-- ПОДВАЛ (ПРОФИЛЬ ИГРОКА)
 local ProfileFooter = Create("Frame", {
     Parent = MainFrame,
     Name = "ProfileFooter",
@@ -435,7 +445,7 @@ Create("TextLabel", {
 local ArrowIcon = Create("ImageLabel", {
     Parent = ProfileFooter,
     Name = "Arrow",
-    Image = "rbxassetid://130510492706892",
+    Image = GetIconUri("130510492706892"),
     ImageColor3 = Theme.Text,
     ImageTransparency = 0.5,
     BackgroundTransparency = 1,
@@ -588,7 +598,7 @@ local function CreatePage(PageConfig)
     
     local TabIcon = Create("ImageLabel", {
         Parent = TabButton,
-        Image = "rbxassetid://" .. PageIcon,
+        Image = GetIconUri(PageIcon),
         ImageColor3 = Theme.Text,
         BackgroundTransparency = 1,
         Size = UDim2.new(0, 16, 0, 16),
@@ -677,7 +687,6 @@ local function CreatePage(PageConfig)
         Active = false,
     }
     
-    -- АНИМАЦИЯ НАВЕДЕНИЯ НА ВКЛАДКУ
     TabButton.MouseEnter:Connect(function()
         if not PageData.Active then
             CreateTween(TabButton, TweenInfo.new(0.2, Enum.EasingStyle.Quint, Enum.EasingDirection.Out), {
@@ -928,7 +937,7 @@ local function CreatePage(PageConfig)
             
             local CheckImage = Create("ImageLabel", {
                 Parent = Accent,
-                Image = "rbxassetid://121760666525660",
+                Image = GetIconUri("121760666525660"),
                 ImageColor3 = Theme.Text,
                 ImageTransparency = 1,
                 BackgroundTransparency = 1,
@@ -1045,7 +1054,7 @@ local function CreatePage(PageConfig)
             if Icon then
                 Create("ImageLabel", {
                     Parent = ButtonText,
-                    Image = "rbxassetid://" .. Icon,
+                    Image = GetIconUri(Icon),
                     ImageColor3 = Theme.Text,
                     ImageTransparency = 0.3,
                     BackgroundTransparency = 1,
@@ -1266,7 +1275,7 @@ local function CreatePage(PageConfig)
             
             Create("ImageLabel", {
                 Parent = DropdownButton,
-                Image = "rbxassetid://123317177279443",
+                Image = GetIconUri("123317177279443"),
                 ImageColor3 = Color3.fromRGB(141, 141, 150),
                 BackgroundTransparency = 1,
                 Size = UDim2.new(0, 8, 0, 4),
@@ -2179,7 +2188,7 @@ if Pages[1] then
     Pages[1]:SetActive(true)
 end
 
--- Плавающая кнопка для мобильных устройств
+-- Плавающая кнопка для мобильных устройств (с установленной иконкой)
 if IsMobile then
     local FloatButton = Create("TextButton", {
         Parent = Holder,
@@ -2203,12 +2212,18 @@ if IsMobile then
         Position = UDim2.new(0.5, 0, 0.5, 0),
         AnchorPoint = Vector2.new(0.5, 0.5),
         ScaleType = Enum.ScaleType.Fit,
-        ZIndex = 128,
     })
-
+    
+    Create("UIGradient", {
+        Parent = FloatLogo,
+        Rotation = -115,
+        Color = ColorSequence.new({
+            ColorSequenceKeypoint.new(0, Theme.Accent),
+            ColorSequenceKeypoint.new(1, Theme.AccentGradient),
+        })
+    })
+    
     FloatButton.MouseButton1Down:Connect(function()
         MainFrame.Visible = not MainFrame.Visible
     end)
 end
-
-return DarkHub
