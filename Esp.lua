@@ -20,6 +20,14 @@ local SidebarWidth = IsMobile and 140 or 150  -- Ширина боковой п�
 local HeaderHeight = 36                       -- Высота шапки
 local FooterHeight = 42                       -- Высота подвала с профилем
 
+-- Иконка для Dark Hub (По умолчанию: Moon / Тёмный стиль)
+-- Варианты ID для смены:
+-- "rbxassetid://10723346959" — Moon (Луна / Dark)
+-- "rbxassetid://10709781460" — Skull (Череп)
+-- "rbxassetid://10723415903" — Shield (Щит)
+-- "rbxassetid://10723342330" — Crown (Корона)
+local DarkHubIcon = "rbxassetid://10723346959"
+
 -- Вспомогательные функции
 local function Create(Class, Properties)
     local Instance = Instance.new(Class)
@@ -177,7 +185,7 @@ do
     end)
 end
 
--- Логотип и заголовок (Обновлена иконка около заголовка)
+-- Логотип и заголовок (Новая иконка Dark Hub)
 local Logo = Create("ImageLabel", {
     Parent = MainFrame,
     Name = "Logo",
@@ -185,7 +193,7 @@ local Logo = Create("ImageLabel", {
     BackgroundTransparency = 1,
     Size = UDim2.new(0, 18, 0, 18),
     Position = UDim2.new(0, 10, 0, 9),
-    Image = "rbxassetid://76579925188009",
+    Image = DarkHubIcon,
     ScaleType = Enum.ScaleType.Fit,
     ZIndex = 5,
 })
@@ -2176,7 +2184,7 @@ if Pages[1] then
     Pages[1]:SetActive(true)
 end
 
--- Плавающая кнопка для мобильных
+-- Плавающая кнопка для мобильных устройств
 if IsMobile then
     local FloatButton = Create("TextButton", {
         Parent = Holder,
@@ -2194,7 +2202,7 @@ if IsMobile then
     
     local FloatLogo = Create("ImageLabel", {
         Parent = FloatButton,
-        Image = "rbxassetid://76579925188009",
+        Image = DarkHubIcon,
         BackgroundTransparency = 1,
         Size = UDim2.new(1, -8, 1, -8),
         Position = UDim2.new(0.5, 0, 0.5, 0),
@@ -2215,39 +2223,3 @@ if IsMobile then
         MainFrame.Visible = not MainFrame.Visible
     end)
 end
-
--- Перетаскивание
-do
-    local Dragging = false
-    local DragStart = nil
-    local StartPosition = nil
-
-    local function Update(Input)
-        local Delta = Input.Position - DragStart
-        MainFrame.Position = UDim2.new(StartPosition.X.Scale, StartPosition.X.Offset + Delta.X, StartPosition.Y.Scale, StartPosition.Y.Offset + Delta.Y)
-    end
-
-    MainFrame.InputBegan:Connect(function(Input)
-        if Input.UserInputType == Enum.UserInputType.MouseButton1 or Input.UserInputType == Enum.UserInputType.Touch then
-            Dragging = true
-            DragStart = Input.Position
-            StartPosition = MainFrame.Position
-
-            Input.Changed:Connect(function()
-                if Input.UserInputState == Enum.UserInputState.End then
-                    Dragging = false
-                end
-            end)
-        end
-    end)
-
-    MainFrame.InputChanged:Connect(function(Input)
-        if Input.UserInputType == Enum.UserInputType.MouseMovement or Input.UserInputType == Enum.UserInputType.Touch then
-            if Dragging then
-                Update(Input)
-            end
-        end
-    end)
-end
-
-return DarkHub
