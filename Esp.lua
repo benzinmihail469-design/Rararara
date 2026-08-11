@@ -20,13 +20,8 @@ local SidebarWidth = IsMobile and 140 or 150  -- Ширина боковой п�
 local HeaderHeight = 36                       -- Высота шапки
 local FooterHeight = 42                       -- Высота подвала с профилем
 
--- Иконка для Dark Hub (По умолчанию: Moon / Тёмный стиль)
--- Варианты ID для смены:
--- "rbxassetid://10723346959" — Moon (Луна / Dark)
--- "rbxassetid://10709781460" — Skull (Череп)
--- "rbxassetid://10723415903" — Shield (Щит)
--- "rbxassetid://10723342330" — Crown (Корона)
-local DarkHubIcon = "rbxassetid://10723346959"
+-- Иконка для Dark Hub
+local DarkHubIcon = "rbxassetid://129648286080620"
 
 -- Вспомогательные функции
 local function Create(Class, Properties)
@@ -185,7 +180,7 @@ do
     end)
 end
 
--- Логотип и заголовок (Новая иконка Dark Hub)
+-- Логотип и заголовок (Установлена иконка Decal)
 local Logo = Create("ImageLabel", {
     Parent = MainFrame,
     Name = "Logo",
@@ -2208,18 +2203,12 @@ if IsMobile then
         Position = UDim2.new(0.5, 0, 0.5, 0),
         AnchorPoint = Vector2.new(0.5, 0.5),
         ScaleType = Enum.ScaleType.Fit,
+        ZIndex = 128,
     })
-    
-    Create("UIGradient", {
-        Parent = FloatLogo,
-        Rotation = -115,
-        Color = ColorSequence.new({
-            ColorSequenceKeypoint.new(0, Theme.Accent),
-            ColorSequenceKeypoint.new(1, Theme.AccentGradient),
-        })
-    })
-    
+
     FloatButton.MouseButton1Down:Connect(function()
         MainFrame.Visible = not MainFrame.Visible
     end)
 end
+
+return DarkHub
