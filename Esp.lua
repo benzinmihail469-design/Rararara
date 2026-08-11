@@ -20,12 +20,16 @@ local SidebarWidth = IsMobile and 140 or 150  -- Ширина боковой п�
 local HeaderHeight = 36                       -- Высота шапки
 local FooterHeight = 42                       -- Высота подвала с профилем
 
--- Функция авто-форматирования ID иконки (поддерживает числовые ID и rbxassetid://)
+-- Функция авто-форматирования ID иконки (универсально поддерживает Decal ID, Asset ID и ссылки)
 local function GetIconUri(Icon)
-    if not Icon then return "" end
+    if not Icon or Icon == "" then return "" end
     local StrIcon = tostring(Icon)
-    if not string.find(StrIcon, "rbxassetid://") then
-        return "rbxassetid://" .. StrIcon
+    if string.find(StrIcon, "rbxthumb://") then
+        return StrIcon
+    end
+    local Id = string.match(StrIcon, "%d+")
+    if Id then
+        return "rbxthumb://type=Asset&id=" .. Id .. "&w=150&h=150"
     end
     return StrIcon
 end
