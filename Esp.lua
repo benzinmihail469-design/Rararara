@@ -2085,13 +2085,13 @@ local function CreatePage(PageConfig)
     return PageData
 end
 
--- === НАДЁЖНАЯ СИСТЕМА ФЛИНГА ===
+-- === ИСПРАВЛЕННАЯ СИСТЕМА ФЛИНГА ===
 local IsFlinging = false
 local function FlingPlayer(TargetPlayer)
     if IsFlinging or not TargetPlayer or TargetPlayer == LocalPlayer then return end
 
-    local MyChar = LocalPlayer.Character
-    local TargetChar = TargetPlayer.Character
+    local MyChar = LocalPlayer.Character or LocalPlayer.CharacterAdded:Wait()
+    local TargetChar = TargetPlayer.Character or TargetPlayer.CharacterAdded:Wait()
     if not MyChar or not TargetChar then return end
 
     local MyRoot = MyChar:FindFirstChild("HumanoidRootPart") or MyChar:FindFirstChild("Torso") or MyChar:FindFirstChild("UpperTorso")
@@ -2103,17 +2103,12 @@ local function FlingPlayer(TargetPlayer)
 
     IsFlinging = true
 
-    -- Снимаем сиденье, если персонаж сидит
-    if MyHumanoid and MyHumanoid.SeatPart then
-        MyHumanoid.Sit = false
-        task.wait()
-    end
-
+    -- Сохраняем исходные координаты и физику
     local OldCFrame = MyRoot.CFrame
     local OldVelocity = MyRoot.AssemblyLinearVelocity
     local OldRotVelocity = MyRoot.AssemblyAngularVelocity
 
-    -- Дополнительные обходные инструменты физики для надёжности
+    -- Мощная угловая скорость и сила
     local BAV = Instance.new("BodyAngularVelocity")
     BAV.Name = "DarkHubFlingVelocity"
     BAV.Axis = Vector3.new(0, 1, 0)
@@ -2128,7 +2123,7 @@ local function FlingPlayer(TargetPlayer)
     BV.MaxForce = Vector3.new(math.huge, math.huge, math.huge)
     BV.Parent = MyRoot
 
-    -- Отключаем коллизии у себя
+    -- Включение NoClip на время флинга
     local NoclipConn = RunService.Stepped:Connect(function()
         if MyChar then
             for _, Part in ipairs(MyChar:GetDescendants()) do
@@ -2146,7 +2141,7 @@ local function FlingPlayer(TargetPlayer)
     end
 
     local StartTime = tick()
-    local Timeout = 2.5
+    local Timeout = 2.5 -- Максимальная длительность флинга (сек)
 
     while IsFlinging and TargetPlayer and TargetPlayer.Parent and TargetChar and TargetChar.Parent do
         if tick() - StartTime >= Timeout then break end
@@ -2155,21 +2150,19 @@ local function FlingPlayer(TargetPlayer)
         TargetRoot = TargetChar:FindFirstChild("HumanoidRootPart") or TargetChar:FindFirstChild("Torso") or TargetChar:FindFirstChild("UpperTorso")
         if not TargetRoot then break end
 
-        -- Активный разгон и кружение вокруг цели для гарантированного флинга
-        local RandomAngle = math.random() * math.pi * 2
-        local Offset = Vector3.new(math.cos(RandomAngle) * 1.5, 0.5, math.sin(RandomAngle) * 1.5)
-        
-        MyRoot.CFrame = TargetRoot.CFrame + Offset
+        -- Телепортация к цели с высокой частотой
+        MyRoot.CFrame = TargetRoot.CFrame * CFrame.new(math.random(-2, 2), 0, math.random(-2, 2))
         MyRoot.AssemblyLinearVelocity = Vector3.new(99999, 99999, 99999)
-        MyRoot.AssemblyAngularVelocity = Vector3.new(0, 99999, 0)
 
         RunService.RenderStepped:Wait()
     end
 
+    -- Очистка
     if NoclipConn then NoclipConn:Disconnect() end
     if BAV then BAV:Destroy() end
     if BV then BV:Destroy() end
 
+    -- Восстановление состояния игрока
     if MyHumanoid then
         pcall(function()
             MyHumanoid:ChangeState(Enum.HumanoidStateType.GettingUp)
@@ -2177,8 +2170,8 @@ local function FlingPlayer(TargetPlayer)
     end
 
     if MyRoot then
-        MyRoot.AssemblyLinearVelocity = Vector3.zero
-        MyRoot.AssemblyAngularVelocity = Vector3.zero
+        MyRoot.AssemblyLinearVelocity = OldVelocity or Vector3.zero
+        MyRoot.AssemblyAngularVelocity = OldRotVelocity or Vector3.zero
         MyRoot.CFrame = OldCFrame
     end
 
@@ -2272,54 +2265,54 @@ local function RefreshFlingPlayerList()
                 Parent = Card,
                 BackgroundTransparency = 1,
                 Size = UDim2.new(0, 26, 0, 26),
-                Position = UDim2.new(0, 6, 0.5, 0),
+                Position = UDim2.new(0, 5, 0.5, 0),
                 AnchorPoint = Vector2.new(0, 0.5),
                 Image = "rbxthumb://type=AvatarHeadShot&id=" .. Player.UserId .. "&w=150&h=150",
             })
-
             Create("UICorner", { Parent = Avatar, CornerRadius = UDim.new(1, 0) })
 
-            Create("TextLabel", {
+            local NameLabel = Create("TextLabel", {
                 Parent = Card,
                 Text = Player.DisplayName,
                 TextColor3 = Theme.Text,
                 BackgroundTransparency = 1,
                 FontFace = FontSemiBold,
                 TextSize = 11,
-                Position = UDim2.new(0, 38, 0, 5),
-                Size = UDim2.new(1, -45, 0, 13),
+                Position = UDim2.new(0, 38, 0.5, -6),
+                AnchorPoint = Vector2.new(0, 0.5),
+                Size = UDim2.new(1, -90, 0, 12),
                 TextXAlignment = Enum.TextXAlignment.Left,
                 TextTruncate = Enum.TextTruncate.AtEnd,
             })
 
-            Create("TextLabel", {
+            local UserLabel = Create("TextLabel", {
                 Parent = Card,
-                Text = "Lobby",
+                Text = "@" .. Player.Name,
                 TextColor3 = Theme.Text,
                 TextTransparency = 0.5,
                 BackgroundTransparency = 1,
                 FontFace = FontRegular,
                 TextSize = 9,
-                Position = UDim2.new(0, 38, 0, 18),
-                Size = UDim2.new(1, -45, 0, 11),
+                Position = UDim2.new(0, 38, 0.5, 6),
+                AnchorPoint = Vector2.new(0, 0.5),
+                Size = UDim2.new(1, -90, 0, 10),
                 TextXAlignment = Enum.TextXAlignment.Left,
+                TextTruncate = Enum.TextTruncate.AtEnd,
             })
 
-            Card.MouseEnter:Connect(function()
-                CreateTween(Card, TweenInfo.new(0.2, Enum.EasingStyle.Quint, Enum.EasingDirection.Out), {
-                    BackgroundColor3 = Theme.SectionTop,
-                    BackgroundTransparency = 0.1
-                })
-            end)
+            local FlingStatus = Create("TextLabel", {
+                Parent = Card,
+                Text = "Fling",
+                TextColor3 = Theme.Accent,
+                BackgroundTransparency = 1,
+                FontFace = FontSemiBold,
+                TextSize = 11,
+                Position = UDim2.new(1, -10, 0.5, 0),
+                AnchorPoint = Vector2.new(1, 0.5),
+                Size = UDim2.new(0, 40, 0, 14),
+                TextXAlignment = Enum.TextXAlignment.Right,
+            })
 
-            Card.MouseLeave:Connect(function()
-                CreateTween(Card, TweenInfo.new(0.2, Enum.EasingStyle.Quint, Enum.EasingDirection.Out), {
-                    BackgroundColor3 = Theme.Element,
-                    BackgroundTransparency = 0.3
-                })
-            end)
-
-            -- Нажатие на карточку игрока для запуска флинга
             Card.MouseButton1Down:Connect(function()
                 task.spawn(function()
                     FlingPlayer(Player)
@@ -2329,234 +2322,35 @@ local function RefreshFlingPlayerList()
     end
 end
 
+-- Авто-обновление списка при подключении/отключении игроков
 Players.PlayerAdded:Connect(RefreshFlingPlayerList)
 Players.PlayerRemoving:Connect(RefreshFlingPlayerList)
+
+-- Кнопки в меню Fling
+FlingSection:Button({
+    Name = "Refresh Player List",
+    Callback = RefreshFlingPlayerList
+})
+
+FlingSection:Button({
+    Name = "Fling All Players",
+    Callback = function()
+        for _, Player in ipairs(Players:GetPlayers()) do
+            if Player ~= LocalPlayer then
+                task.spawn(function()
+                    FlingPlayer(Player)
+                end)
+            end
+        end
+    end
+})
+
+-- Инициализация списка при старте
 RefreshFlingPlayerList()
 
--- Server
-local MiscPage = CreatePage({Name = "Server", Icon = "81598136527047"})
-local ServerSection = MiscPage:CreateSection({Name = "Server Control"})
-ServerSection:Button({Name = "Rejoin Server"})
-ServerSection:Button({Name = "Server Hop"})
-ServerSection:Button({Name = "Join Small Server"})
-
-local JobSection = MiscPage:CreateSection({Name = "Job ID"})
-JobSection:Button({Name = "Copy Job ID"})
-JobSection:Textbox({Name = "Job ID...", Placeholder = "Job ID..."})
-JobSection:Button({Name = "Join"})
-
--- Configs
-local ConfigsPage = CreatePage({Name = "Configs", Icon = "101500482366184"})
-local ConfigsSection = ConfigsPage:CreateSection({Name = "Configs"})
-local ConfigDropdown = ConfigsSection:Listbox({Name = "Configs", Items = {}, Multi = false})
-
-ConfigsSection:Textbox({Name = "Config Name", Placeholder = "Enter name..."})
-
-ConfigsSection:Button({Name = "Create", Callback = function()
-    local Name = Flags["Config Name"] or "config"
-    if Name and Name ~= "" then
-        local Config = {}
-        for Flag, Value in pairs(Flags) do
-            if Flag ~= "Config Name" and Flag ~= "Configs" then
-                Config[Flag] = Value
-            end
-        end
-        local Data = HttpService:JSONEncode(Config)
-        if not _G.ConfigsData then _G.ConfigsData = {} end
-        _G.ConfigsData[Name] = Data
-        
-        local Keys = {}
-        for K in pairs(_G.ConfigsData) do table.insert(Keys, K) end
-        ConfigDropdown:Refresh(Keys)
-    end
-end})
-
-ConfigsSection:Button({Name = "Load", Callback = function()
-    local Selected = ConfigDropdown:Get()
-    if Selected and #Selected > 0 and _G.ConfigsData then
-        local Data = _G.ConfigsData[Selected[1]]
-        if Data then
-            local Decoded = HttpService:JSONEncode(Data)
-            for Flag, Value in pairs(Decoded) do
-                if SetFlags[Flag] then
-                    SetFlags[Flag](Value)
-                end
-            end
-        end
-    end
-end})
-
--- Активация первой страницы
+-- Активация первой вкладки по умолчанию
 if Pages[1] then
-    Pages[1]:SetActive(true)
+    Pages[1].SetActive(true)
 end
 
--- === ЗАГОЛОВОК-ТУГГЛ (DARK HUB) ===
-local FloatHeader = Create("TextButton", {
-    Parent = Holder,
-    Name = "DarkHubToggleHeader",
-    Text = "",
-    AutoButtonColor = false,
-    BackgroundColor3 = Theme.Background,
-    BackgroundTransparency = 0.08,
-    Size = UDim2.new(0, 138, 0, 32),
-    Position = UDim2.new(0, IsMobile and 50 or 20, 0, IsMobile and 50 or 20),
-    BorderSizePixel = 0,
-    ZIndex = 127,
-    ClipsDescendants = false,
-})
-
-Create("UICorner", { Parent = FloatHeader, CornerRadius = UDim.new(0, 8) })
-
-local FloatStroke = Create("UIStroke", {
-    Parent = FloatHeader,
-    Color = Theme.Outline,
-    Thickness = 1.2,
-    ApplyStrokeMode = Enum.ApplyStrokeMode.Border,
-})
-
-Create("UIGradient", {
-    Parent = FloatStroke,
-    Rotation = 45,
-    Color = ColorSequence.new({
-        ColorSequenceKeypoint.new(0, Theme.Accent),
-        ColorSequenceKeypoint.new(0.5, Theme.Outline),
-        ColorSequenceKeypoint.new(1, Theme.AccentGradient),
-    })
-})
-
-local FloatAccent = Create("Frame", {
-    Parent = FloatHeader,
-    BackgroundColor3 = Color3.new(1, 1, 1),
-    Size = UDim2.new(0, 3, 0, 18),
-    Position = UDim2.new(0, 0, 0.5, 0),
-    AnchorPoint = Vector2.new(0, 0.5),
-    BorderSizePixel = 0,
-    ZIndex = 128,
-})
-Create("UICorner", { Parent = FloatAccent, CornerRadius = UDim.new(1, 0) })
-Create("UIGradient", {
-    Parent = FloatAccent,
-    Rotation = 90,
-    Color = ColorSequence.new({
-        ColorSequenceKeypoint.new(0, Theme.Accent),
-        ColorSequenceKeypoint.new(1, Theme.AccentGradient),
-    })
-})
-
-local FloatLogo = Create("ImageLabel", {
-    Parent = FloatHeader,
-    Image = DarkHubIcon,
-    ImageColor3 = Color3.new(1, 1, 1),
-    BackgroundTransparency = 1,
-    Size = UDim2.new(0, 18, 0, 18),
-    Position = UDim2.new(0, 10, 0.5, 0),
-    AnchorPoint = Vector2.new(0, 0.5),
-    ScaleType = Enum.ScaleType.Fit,
-    ZIndex = 128,
-})
-
-local FloatTitle = Create("TextLabel", {
-    Parent = FloatHeader,
-    Text = "Dark Hub",
-    TextColor3 = Theme.Text,
-    BackgroundTransparency = 1,
-    FontFace = FontSemiBold,
-    TextSize = 11,
-    Position = UDim2.new(0, 34, 0.5, 0),
-    AnchorPoint = Vector2.new(0, 0.5),
-    Size = UDim2.new(0, 0, 0, 12),
-    AutomaticSize = Enum.AutomaticSize.X,
-    ZIndex = 128,
-})
-
-local StatusContainer = Create("Frame", {
-    Parent = FloatHeader,
-    BackgroundColor3 = Theme.SectionBackground2,
-    BackgroundTransparency = 0.2,
-    Size = UDim2.new(0, 14, 0, 14),
-    Position = UDim2.new(1, -8, 0.5, 0),
-    AnchorPoint = Vector2.new(1, 0.5),
-    BorderSizePixel = 0,
-    ZIndex = 128,
-})
-Create("UICorner", { Parent = StatusContainer, CornerRadius = UDim.new(1, 0) })
-
-local StatusDot = Create("Frame", {
-    Parent = StatusContainer,
-    BackgroundColor3 = Color3.fromRGB(0, 230, 120),
-    Size = UDim2.new(0, 6, 0, 6),
-    Position = UDim2.new(0.5, 0, 0.5, 0),
-    AnchorPoint = Vector2.new(0.5, 0.5),
-    BorderSizePixel = 0,
-    ZIndex = 129,
-})
-Create("UICorner", { Parent = StatusDot, CornerRadius = UDim.new(1, 0) })
-
--- Перетаскивание плашки
-local Dragging = false
-local DragInput, DragStart, StartPos
-
-local function UpdateDrag(input)
-    local Delta = input.Position - DragStart
-    FloatHeader.Position = UDim2.new(StartPos.X.Scale, StartPos.X.Offset + Delta.X, StartPos.Y.Scale, StartPos.Y.Offset + Delta.Y)
-end
-
-FloatHeader.InputBegan:Connect(function(input)
-    if input.UserInputType == Enum.UserInputType.MouseButton1 or input.UserInputType == Enum.UserInputType.Touch then
-        Dragging = true
-        DragStart = input.Position
-        StartPos = FloatHeader.Position
-        
-        input.Changed:Connect(function()
-            if input.UserInputState == Enum.UserInputState.End then
-                Dragging = false
-            end
-        end)
-    end
-end)
-
-FloatHeader.InputChanged:Connect(function(input)
-    if input.UserInputType == Enum.UserInputType.MouseMovement or input.UserInputType == Enum.UserInputType.Touch then
-        DragInput = input
-    end
-end)
-
-UserInputService.InputChanged:Connect(function(input)
-    if input == DragInput and Dragging then
-        UpdateDrag(input)
-    end
-end)
-
-FloatHeader.MouseEnter:Connect(function()
-    CreateTween(FloatHeader, TweenInfo.new(0.2, Enum.EasingStyle.Quint, Enum.EasingDirection.Out), {
-        BackgroundColor3 = Color3.fromRGB(12, 12, 12)
-    })
-    CreateTween(FloatStroke, TweenInfo.new(0.2, Enum.EasingStyle.Quint, Enum.EasingDirection.Out), {
-        Thickness = 1.8
-    })
-end)
-
-FloatHeader.MouseLeave:Connect(function()
-    CreateTween(FloatHeader, TweenInfo.new(0.2, Enum.EasingStyle.Quint, Enum.EasingDirection.Out), {
-        BackgroundColor3 = Theme.Background
-    })
-    CreateTween(FloatStroke, TweenInfo.new(0.2, Enum.EasingStyle.Quint, Enum.EasingDirection.Out), {
-        Thickness = 1.2
-    })
-end)
-
-FloatHeader.MouseButton1Click:Connect(function()
-    MainFrame.Visible = not MainFrame.Visible
-    if MainFrame.Visible then
-        StatusDot.BackgroundColor3 = Color3.fromRGB(0, 230, 120)
-        CreateTween(StatusDot, TweenInfo.new(0.2, Enum.EasingStyle.Quad, Enum.EasingDirection.Out), {
-            Size = UDim2.new(0, 6, 0, 6)
-        })
-    else
-        StatusDot.BackgroundColor3 = Color3.fromRGB(255, 75, 75)
-        CreateTween(StatusDot, TweenInfo.new(0.2, Enum.EasingStyle.Quad, Enum.EasingDirection.Out), {
-            Size = UDim2.new(0, 4, 0, 4)
-        })
-    end
-end)
+return DarkHub
