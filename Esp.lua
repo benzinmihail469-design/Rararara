@@ -35,7 +35,7 @@ local function GetIconUri(Icon)
 end
 
 -- Иконка для Dark Hub рядом с заголовком
-local DarkHubIcon = GetIconUri("129648286080620")
+local DarkHubIcon = GetIconUri("91508433366374")
 
 -- Вспомогательные функции
 local function Create(Class, Properties)
