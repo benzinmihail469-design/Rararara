@@ -194,7 +194,7 @@ do
     end)
 end
 
--- УВЕЛИЧЕННАЯ И БЕЛАЯ ИКОНКА (Убран UIGradient, размер изменён на 26x26)
+-- ИКОНКА В ГЛАВНОМ ОКНЕ
 local Logo = Create("ImageLabel", {
     Parent = MainFrame,
     Name = "Logo",
@@ -2183,34 +2183,110 @@ if Pages[1] then
     Pages[1]:SetActive(true)
 end
 
--- Плавающая кнопка для мобильных устройств (тоже сделана белой)
-if IsMobile then
-    local FloatButton = Create("TextButton", {
-        Parent = Holder,
-        Text = "",
-        AutoButtonColor = false,
-        BackgroundColor3 = Theme.Background,
-        BackgroundTransparency = 0.3,
-        Size = UDim2.new(0, 36, 0, 36),
-        Position = UDim2.new(0, 10, 0, 10),
-        BorderSizePixel = 0,
-        ZIndex = 127,
+-- === ОБНОВЛЕННЫЙ СТИЛЬНЫЙ ЗАГОЛОВОК-ТУГГЛ (ВМЕСТО ПРОСТОГО КРУЖОЧКА) ===
+local FloatHeader = Create("TextButton", {
+    Parent = Holder,
+    Name = "DarkHubToggleHeader",
+    Text = "",
+    AutoButtonColor = false,
+    BackgroundColor3 = Theme.Background,
+    BackgroundTransparency = 0.15,
+    Size = UDim2.new(0, 125, 0, 32),
+    Position = UDim2.new(0, 15, 0, 15),
+    BorderSizePixel = 0,
+    ZIndex = 127,
+    ClipsDescendants = true,
+})
+
+Create("UICorner", { Parent = FloatHeader, CornerRadius = UDim.new(0, 8) })
+
+local FloatStroke = Create("UIStroke", {
+    Parent = FloatHeader,
+    Color = Theme.Outline,
+    Thickness = 1,
+    ApplyStrokeMode = Enum.ApplyStrokeMode.Border,
+})
+
+-- Акцентная синяя полоска слева
+local FloatAccent = Create("Frame", {
+    Parent = FloatHeader,
+    BackgroundColor3 = Color3.new(1, 1, 1),
+    Size = UDim2.new(0, 3, 0, 16),
+    Position = UDim2.new(0, 0, 0.5, 0),
+    AnchorPoint = Vector2.new(0, 0.5),
+    BorderSizePixel = 0,
+})
+Create("UICorner", { Parent = FloatAccent, CornerRadius = UDim.new(1, 0) })
+Create("UIGradient", {
+    Parent = FloatAccent,
+    Rotation = 90,
+    Color = ColorSequence.new({
+        ColorSequenceKeypoint.new(0, Theme.Accent),
+        ColorSequenceKeypoint.new(1, Theme.AccentGradient),
     })
-    
-    Create("UICorner", { Parent = FloatButton, CornerRadius = UDim.new(1, 0) })
-    
-    local FloatLogo = Create("ImageLabel", {
-        Parent = FloatButton,
-        Image = DarkHubIcon,
-        ImageColor3 = Color3.new(1, 1, 1),
-        BackgroundTransparency = 1,
-        Size = UDim2.new(1, -8, 1, -8),
-        Position = UDim2.new(0.5, 0, 0.5, 0),
-        AnchorPoint = Vector2.new(0.5, 0.5),
-        ScaleType = Enum.ScaleType.Fit,
+})
+
+-- Иконка Dark Hub
+local FloatLogo = Create("ImageLabel", {
+    Parent = FloatHeader,
+    Image = DarkHubIcon,
+    ImageColor3 = Color3.new(1, 1, 1),
+    BackgroundTransparency = 1,
+    Size = UDim2.new(0, 18, 0, 18),
+    Position = UDim2.new(0, 10, 0.5, 0),
+    AnchorPoint = Vector2.new(0, 0.5),
+    ScaleType = Enum.ScaleType.Fit,
+})
+
+-- Текст названия
+local FloatTitle = Create("TextLabel", {
+    Parent = FloatHeader,
+    Text = "Dark Hub",
+    TextColor3 = Theme.Text,
+    BackgroundTransparency = 1,
+    FontFace = FontSemiBold,
+    TextSize = 11,
+    Position = UDim2.new(0, 34, 0.5, 0),
+    AnchorPoint = Vector2.new(0, 0.5),
+    Size = UDim2.new(0, 0, 0, 12),
+    AutomaticSize = Enum.AutomaticSize.X,
+})
+
+-- Индикатор состояния (Зеленый = открыто, Красный = скрыто)
+local StatusDot = Create("Frame", {
+    Parent = FloatHeader,
+    BackgroundColor3 = Color3.fromRGB(0, 230, 120),
+    Size = UDim2.new(0, 5, 0, 5),
+    Position = UDim2.new(1, -10, 0.5, 0),
+    AnchorPoint = Vector2.new(1, 0.5),
+    BorderSizePixel = 0,
+})
+Create("UICorner", { Parent = StatusDot, CornerRadius = UDim.new(1, 0) })
+
+-- Эффекты при наведении и нажатии
+FloatHeader.MouseEnter:Connect(function()
+    CreateTween(FloatHeader, TweenInfo.new(0.2, Enum.EasingStyle.Quint, Enum.EasingDirection.Out), {
+        BackgroundTransparency = 0.05
     })
-    
-    FloatButton.MouseButton1Down:Connect(function()
-        MainFrame.Visible = not MainFrame.Visible
-    end)
-end
+    CreateTween(FloatStroke, TweenInfo.new(0.2, Enum.EasingStyle.Quint, Enum.EasingDirection.Out), {
+        Color = Theme.Accent
+    })
+end)
+
+FloatHeader.MouseLeave:Connect(function()
+    CreateTween(FloatHeader, TweenInfo.new(0.2, Enum.EasingStyle.Quint, Enum.EasingDirection.Out), {
+        BackgroundTransparency = 0.15
+    })
+    CreateTween(FloatStroke, TweenInfo.new(0.2, Enum.EasingStyle.Quint, Enum.EasingDirection.Out), {
+        Color = Theme.Outline
+    })
+end)
+
+FloatHeader.MouseButton1Down:Connect(function()
+    MainFrame.Visible = not MainFrame.Visible
+    if MainFrame.Visible then
+        StatusDot.BackgroundColor3 = Color3.fromRGB(0, 230, 120)
+    else
+        StatusDot.BackgroundColor3 = Color3.fromRGB(255, 70, 70)
+    end
+end)
