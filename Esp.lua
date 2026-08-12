@@ -2085,6 +2085,69 @@ local function CreatePage(PageConfig)
     return PageData
 end
 
+-- === СИСТЕМА ФЛИНГА (CandyZone Skid Fling) ===
+local IsFlinging = false
+local function FlingPlayer(TargetPlayer)
+    if IsFlinging then return end
+    if not TargetPlayer or not TargetPlayer.Character or not TargetPlayer.Character:FindFirstChild("HumanoidRootPart") then return end
+
+    local MyChar = LocalPlayer.Character
+    local MyRoot = MyChar and MyChar:FindFirstChild("HumanoidRootPart")
+    local MyHumanoid = MyChar and MyChar:FindFirstChildOfClass("Humanoid")
+
+    if not MyRoot or not MyHumanoid then return end
+
+    IsFlinging = true
+
+    local OldCFrame = MyRoot.CFrame
+    local OldVelocity = MyRoot.AssemblyLinearVelocity
+
+    -- Скорость и угловая скорость для флинга
+    local BAV = Instance.new("BodyAngularVelocity")
+    BAV.Name = "FlingVelocity"
+    BAV.Axis = Vector3.new(0, 1, 0)
+    BAV.AngularVelocity = Vector3.new(0, 999999, 0)
+    BAV.MaxTorque = Vector3.new(0, math.huge, 0)
+    BAV.P = math.huge
+    BAV.Parent = MyRoot
+
+    -- Ноклип во время флинга
+    local NoclipConn
+    NoclipConn = RunService.Stepped:Connect(function()
+        if MyChar then
+            for _, Part in ipairs(MyChar:GetDescendants()) do
+                if Part:IsA("BasePart") then
+                    Part.CanCollide = false
+                end
+            end
+        end
+    end)
+
+    local TargetRoot = TargetPlayer.Character:FindFirstChild("HumanoidRootPart")
+    local TargetHumanoid = TargetPlayer.Character:FindFirstChildOfClass("Humanoid")
+    local StartTime = tick()
+
+    -- Цикл телепортации в цель
+    while IsFlinging and TargetPlayer and TargetPlayer.Character and TargetRoot and (tick() - StartTime < 2.5) do
+        if TargetHumanoid and TargetHumanoid.Health <= 0 then break end
+        
+        TargetRoot = TargetPlayer.Character:FindFirstChild("HumanoidRootPart")
+        if TargetRoot then
+            MyRoot.CFrame = TargetRoot.CFrame * CFrame.new(math.random(-1, 1), 0, math.random(-1, 1))
+            MyRoot.AssemblyLinearVelocity = Vector3.new(99999, 99999, 99999)
+        end
+        RunService.RenderStepped:Wait()
+    end
+
+    -- Очистка и возврат назад
+    if NoclipConn then NoclipConn:Disconnect() end
+    if BAV then BAV:Destroy() end
+
+    MyRoot.AssemblyLinearVelocity = OldVelocity
+    MyRoot.CFrame = OldCFrame
+    IsFlinging = false
+end
+
 -- === СОЗДАНИЕ СТРАНИЦ ===
 
 -- Aimbot
@@ -2124,6 +2187,111 @@ local MovementSection = MovementPage:CreateSection({Name = "Movement Options"})
 MovementSection:Toggle({Name = "Auto Jump", Default = false})
 MovementSection:Toggle({Name = "Auto Strafe", Default = false})
 MovementSection:Slider({Name = "Strafe Speed", Min = 0, Max = 100, Default = 60, Suffix = "%"})
+
+-- === ВКЛАДКА FLING PLAYERS (КАК НА ФОТО) ===
+local FlingIcon = "10723381622" -- Иконка молнии
+local FlingPage = CreatePage({Name = "Fling Players", Icon = FlingIcon})
+local FlingSection = FlingPage:CreateSection({
+    Name = "Fling Players", 
+    Description = "Tap a player to fling them"
+})
+
+local PlayerListContainer = Create("Frame", {
+    Parent = FlingSection.Content,
+    BackgroundTransparency = 1,
+    Size = UDim2.new(1, 0, 0, 0),
+    AutomaticSize = Enum.AutomaticSize.Y,
+    BorderSizePixel = 0,
+})
+
+Create("UIListLayout", {
+    Parent = PlayerListContainer,
+    Padding = UDim.new(0, 5),
+    SortOrder = Enum.SortOrder.LayoutOrder,
+})
+
+local function RefreshFlingPlayerList()
+    for _, Child in ipairs(PlayerListContainer:GetChildren()) do
+        if Child:IsA("TextButton") then
+            Child:Destroy()
+        end
+    end
+
+    for _, Player in ipairs(Players:GetPlayers()) do
+        if Player ~= LocalPlayer then
+            local Card = Create("TextButton", {
+                Parent = PlayerListContainer,
+                Text = "",
+                AutoButtonColor = false,
+                BackgroundColor3 = Theme.Element,
+                BackgroundTransparency = 0.3,
+                Size = UDim2.new(1, 0, 0, 36),
+                BorderSizePixel = 0,
+            })
+
+            Create("UICorner", { Parent = Card, CornerRadius = UDim.new(0, 6) })
+
+            local Avatar = Create("ImageLabel", {
+                Parent = Card,
+                BackgroundTransparency = 1,
+                Size = UDim2.new(0, 26, 0, 26),
+                Position = UDim2.new(0, 6, 0.5, 0),
+                AnchorPoint = Vector2.new(0, 0.5),
+                Image = "rbxthumb://type=AvatarHeadShot&id=" .. Player.UserId .. "&w=150&h=150",
+            })
+
+            Create("UICorner", { Parent = Avatar, CornerRadius = UDim.new(1, 0) })
+
+            Create("TextLabel", {
+                Parent = Card,
+                Text = Player.DisplayName,
+                TextColor3 = Theme.Text,
+                BackgroundTransparency = 1,
+                FontFace = FontSemiBold,
+                TextSize = 11,
+                Position = UDim2.new(0, 38, 0, 5),
+                Size = UDim2.new(1, -45, 0, 13),
+                TextXAlignment = Enum.TextXAlignment.Left,
+                TextTruncate = Enum.TextTruncate.AtEnd,
+            })
+
+            Create("TextLabel", {
+                Parent = Card,
+                Text = "Lobby",
+                TextColor3 = Theme.Text,
+                TextTransparency = 0.5,
+                BackgroundTransparency = 1,
+                FontFace = FontRegular,
+                TextSize = 9,
+                Position = UDim2.new(0, 38, 0, 18),
+                Size = UDim2.new(1, -45, 0, 11),
+                TextXAlignment = Enum.TextXAlignment.Left,
+            })
+
+            Card.MouseEnter:Connect(function()
+                CreateTween(Card, TweenInfo.new(0.2, Enum.EasingStyle.Quint, Enum.EasingDirection.Out), {
+                    BackgroundColor3 = Theme.SectionTop,
+                    BackgroundTransparency = 0.1
+                })
+            end)
+
+            Card.MouseLeave:Connect(function()
+                CreateTween(Card, TweenInfo.new(0.2, Enum.EasingStyle.Quint, Enum.EasingDirection.Out), {
+                    BackgroundColor3 = Theme.Element,
+                    BackgroundTransparency = 0.3
+                })
+            end)
+
+            Card.MouseButton1Down:Connect(function()
+                FlingPlayer(Player)
+            end)
+        end
+    end
+end
+
+Players.PlayerAdded:Connect(RefreshFlingPlayerList)
+Players.PlayerRemoving:Connect(RefreshFlingPlayerList)
+RefreshFlingPlayerList()
 
 -- Server
 local MiscPage = CreatePage({Name = "Server", Icon = "81598136527047"})
