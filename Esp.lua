@@ -20,7 +20,7 @@ local SidebarWidth = IsMobile and 140 or 150  -- Ширина боковой п�
 local HeaderHeight = 36                       -- Высота шапки
 local FooterHeight = 42                       -- Высота подвала с профилем
 
--- Функция авто-форматирования ID иконки (универсально поддерживает Decal ID, Asset ID и ссылки)
+-- Функция авто-форматирования ID иконки
 local function GetIconUri(Icon)
     if not Icon or Icon == "" then return "" end
     local StrIcon = tostring(Icon)
@@ -34,7 +34,7 @@ local function GetIconUri(Icon)
     return StrIcon
 end
 
--- Иконка для Dark Hub рядом с заголовком (Ваш Decal ID)
+-- Иконка для Dark Hub рядом с заголовком
 local DarkHubIcon = GetIconUri("129648286080620")
 
 -- Вспомогательные функции
@@ -52,7 +52,7 @@ local function CreateTween(Instance, Info, Goal)
     return Tween
 end
 
--- Функция очистки строк (игнорирует регистр, тире, запятые, пробелы и знаки)
+-- Функция очистки строк
 local function CleanString(Str)
     if not Str then return "" end
     local Cleaned = string.lower(tostring(Str))
@@ -194,26 +194,17 @@ do
     end)
 end
 
--- Логотип и заголовок (Установлен Ваш Decal ID)
+-- УВЕЛИЧЕННАЯ И БЕЛАЯ ИКОНКА (Убран UIGradient, размер изменён на 26x26)
 local Logo = Create("ImageLabel", {
     Parent = MainFrame,
     Name = "Logo",
     ImageColor3 = Color3.new(1, 1, 1),
     BackgroundTransparency = 1,
-    Size = UDim2.new(0, 18, 0, 18),
-    Position = UDim2.new(0, 10, 0, 9),
+    Size = UDim2.new(0, 26, 0, 26),
+    Position = UDim2.new(0, 8, 0, 5),
     Image = DarkHubIcon,
     ScaleType = Enum.ScaleType.Fit,
     ZIndex = 5,
-})
-
-Create("UIGradient", {
-    Parent = Logo,
-    Rotation = -115,
-    Color = ColorSequence.new({
-        ColorSequenceKeypoint.new(0, Theme.Accent),
-        ColorSequenceKeypoint.new(1, Theme.AccentGradient),
-    })
 })
 
 Create("TextLabel", {
@@ -224,7 +215,7 @@ Create("TextLabel", {
     BackgroundTransparency = 1,
     FontFace = FontSemiBold,
     TextSize = 12,
-    Position = UDim2.new(0, 34, 0, 5),
+    Position = UDim2.new(0, 40, 0, 5),
     Size = UDim2.new(0, 0, 0, 13),
     AutomaticSize = Enum.AutomaticSize.X,
     ZIndex = 5,
@@ -239,7 +230,7 @@ Create("TextLabel", {
     BackgroundTransparency = 1,
     FontFace = FontRegular,
     TextSize = 9,
-    Position = UDim2.new(0, 34, 0, 18),
+    Position = UDim2.new(0, 40, 0, 18),
     Size = UDim2.new(0, 0, 0, 11),
     AutomaticSize = Enum.AutomaticSize.X,
     ZIndex = 5,
@@ -2192,7 +2183,7 @@ if Pages[1] then
     Pages[1]:SetActive(true)
 end
 
--- Плавающая кнопка для мобильных устройств (с установленной иконкой)
+-- Плавающая кнопка для мобильных устройств (тоже сделана белой)
 if IsMobile then
     local FloatButton = Create("TextButton", {
         Parent = Holder,
@@ -2211,20 +2202,12 @@ if IsMobile then
     local FloatLogo = Create("ImageLabel", {
         Parent = FloatButton,
         Image = DarkHubIcon,
+        ImageColor3 = Color3.new(1, 1, 1),
         BackgroundTransparency = 1,
         Size = UDim2.new(1, -8, 1, -8),
         Position = UDim2.new(0.5, 0, 0.5, 0),
         AnchorPoint = Vector2.new(0.5, 0.5),
         ScaleType = Enum.ScaleType.Fit,
-    })
-    
-    Create("UIGradient", {
-        Parent = FloatLogo,
-        Rotation = -115,
-        Color = ColorSequence.new({
-            ColorSequenceKeypoint.new(0, Theme.Accent),
-            ColorSequenceKeypoint.new(1, Theme.AccentGradient),
-        })
     })
     
     FloatButton.MouseButton1Down:Connect(function()
