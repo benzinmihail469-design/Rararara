@@ -2088,32 +2088,37 @@ end
 -- === СИСТЕМА ФЛИНГА (CandyZone Skid Fling) ===
 local IsFlinging = false
 local function FlingPlayer(TargetPlayer)
-    if IsFlinging then return end
-    if not TargetPlayer or not TargetPlayer.Character or not TargetPlayer.Character:FindFirstChild("HumanoidRootPart") then return end
+    if IsFlinging or not TargetPlayer or TargetPlayer == LocalPlayer then return end
 
     local MyChar = LocalPlayer.Character
-    local MyRoot = MyChar and MyChar:FindFirstChild("HumanoidRootPart")
-    local MyHumanoid = MyChar and MyChar:FindFirstChildOfClass("Humanoid")
+    local TargetChar = TargetPlayer.Character
+    if not MyChar or not TargetChar then return end
 
-    if not MyRoot or not MyHumanoid then return end
+    local MyRoot = MyChar:FindFirstChild("HumanoidRootPart")
+    local TargetRoot = TargetChar:FindFirstChild("HumanoidRootPart")
+    local MyHumanoid = MyChar:FindFirstChildOfClass("Humanoid")
+    local TargetHumanoid = TargetChar:FindFirstChildOfClass("Humanoid")
+
+    if not MyRoot or not TargetRoot or not TargetHumanoid or TargetHumanoid.Health <= 0 then return end
 
     IsFlinging = true
 
+    -- Сохраняем исходные координаты и физику
     local OldCFrame = MyRoot.CFrame
     local OldVelocity = MyRoot.AssemblyLinearVelocity
+    local OldRotVelocity = MyRoot.AssemblyAngularVelocity
 
-    -- Скорость и угловая скорость для флинга
+    -- Мощная угловая скорость в стиле CandyZone
     local BAV = Instance.new("BodyAngularVelocity")
-    BAV.Name = "FlingVelocity"
+    BAV.Name = "CandyFlingVelocity"
     BAV.Axis = Vector3.new(0, 1, 0)
     BAV.AngularVelocity = Vector3.new(0, 999999, 0)
     BAV.MaxTorque = Vector3.new(0, math.huge, 0)
     BAV.P = math.huge
     BAV.Parent = MyRoot
 
-    -- Ноклип во время флинга
-    local NoclipConn
-    NoclipConn = RunService.Stepped:Connect(function()
+    -- Включение NoClip на время флинга
+    local NoclipConn = RunService.Stepped:Connect(function()
         if MyChar then
             for _, Part in ipairs(MyChar:GetDescendants()) do
                 if Part:IsA("BasePart") then
@@ -2123,28 +2128,43 @@ local function FlingPlayer(TargetPlayer)
         end
     end)
 
-    local TargetRoot = TargetPlayer.Character:FindFirstChild("HumanoidRootPart")
-    local TargetHumanoid = TargetPlayer.Character:FindFirstChildOfClass("Humanoid")
-    local StartTime = tick()
+    -- Переключение состояния Humanoid на Physics для корректной передачи импульса
+    if MyHumanoid then
+        MyHumanoid:ChangeState(Enum.HumanoidStateType.Physics)
+    end
 
-    -- Цикл телепортации в цель
-    while IsFlinging and TargetPlayer and TargetPlayer.Character and TargetRoot and (tick() - StartTime < 2.5) do
-        if TargetHumanoid and TargetHumanoid.Health <= 0 then break end
-        
-        TargetRoot = TargetPlayer.Character:FindFirstChild("HumanoidRootPart")
-        if TargetRoot then
-            MyRoot.CFrame = TargetRoot.CFrame * CFrame.new(math.random(-1, 1), 0, math.random(-1, 1))
-            MyRoot.AssemblyLinearVelocity = Vector3.new(99999, 99999, 99999)
-        end
+    local StartTime = tick()
+    local Timeout = 2.5 -- Максимальная длительность флинга (сек)
+
+    while IsFlinging and TargetPlayer and TargetPlayer.Parent and TargetChar and TargetChar.Parent do
+        if tick() - StartTime >= Timeout then break end
+        if TargetHumanoid.Health <= 0 then break end
+
+        TargetRoot = TargetChar:FindFirstChild("HumanoidRootPart")
+        if not TargetRoot then break end
+
+        -- Телепортация в игрока с экстремальной частотой и скоростью
+        MyRoot.CFrame = TargetRoot.CFrame * CFrame.new(math.random(-100, 100)/100, 0, math.random(-100, 100)/100)
+        MyRoot.AssemblyLinearVelocity = Vector3.new(999999, 999999, 999999)
+
         RunService.RenderStepped:Wait()
     end
 
-    -- Очистка и возврат назад
+    -- Очистка
     if NoclipConn then NoclipConn:Disconnect() end
     if BAV then BAV:Destroy() end
 
-    MyRoot.AssemblyLinearVelocity = OldVelocity
-    MyRoot.CFrame = OldCFrame
+    -- Восстановление состояния и позиции игрока
+    if MyHumanoid then
+        MyHumanoid:ChangeState(Enum.HumanoidStateType.GettingUp)
+    end
+
+    if MyRoot then
+        MyRoot.AssemblyLinearVelocity = OldVelocity or Vector3.zero
+        MyRoot.AssemblyAngularVelocity = OldRotVelocity or Vector3.zero
+        MyRoot.CFrame = OldCFrame
+    end
+
     IsFlinging = false
 end
 
@@ -2188,8 +2208,8 @@ MovementSection:Toggle({Name = "Auto Jump", Default = false})
 MovementSection:Toggle({Name = "Auto Strafe", Default = false})
 MovementSection:Slider({Name = "Strafe Speed", Min = 0, Max = 100, Default = 60, Suffix = "%"})
 
--- === ВКЛАДКА FLING PLAYERS (КАК НА ФОТО) ===
-local FlingIcon = "10723381622" -- Иконка молнии
+-- === ВКЛАДКА FLING PLAYERS ===
+local FlingIcon = "10709781323" -- Красивая иконка молнии/флинга
 local FlingPage = CreatePage({Name = "Fling Players", Icon = FlingIcon})
 local FlingSection = FlingPage:CreateSection({
     Name = "Fling Players", 
@@ -2282,8 +2302,11 @@ local function RefreshFlingPlayerList()
                 })
             end)
 
-            Card.MouseButton1Down:Connect(function()
-                FlingPlayer(Player)
+            -- Клик по карточке игрока запускает флинг
+            Card.MouseButton1Click:Connect(function()
+                task.spawn(function()
+                    FlingPlayer(Player)
+                end)
             end)
         end
     end
