@@ -2085,13 +2085,13 @@ local function CreatePage(PageConfig)
     return PageData
 end
 
--- === ИСПРАВЛЕННАЯ СИСТЕМА ФЛИНГА ===
+-- === НАДЁЖНАЯ СИСТЕМА ФЛИНГА ===
 local IsFlinging = false
 local function FlingPlayer(TargetPlayer)
     if IsFlinging or not TargetPlayer or TargetPlayer == LocalPlayer then return end
 
-    local MyChar = LocalPlayer.Character or LocalPlayer.CharacterAdded:Wait()
-    local TargetChar = TargetPlayer.Character or TargetPlayer.CharacterAdded:Wait()
+    local MyChar = LocalPlayer.Character
+    local TargetChar = TargetPlayer.Character
     if not MyChar or not TargetChar then return end
 
     local MyRoot = MyChar:FindFirstChild("HumanoidRootPart") or MyChar:FindFirstChild("Torso") or MyChar:FindFirstChild("UpperTorso")
@@ -2103,12 +2103,17 @@ local function FlingPlayer(TargetPlayer)
 
     IsFlinging = true
 
-    -- Сохраняем исходные координаты и физику
+    -- Снимаем сиденье, если персонаж сидит
+    if MyHumanoid and MyHumanoid.SeatPart then
+        MyHumanoid.Sit = false
+        task.wait()
+    end
+
     local OldCFrame = MyRoot.CFrame
     local OldVelocity = MyRoot.AssemblyLinearVelocity
     local OldRotVelocity = MyRoot.AssemblyAngularVelocity
 
-    -- Мощная угловая скорость и сила
+    -- Дополнительные обходные инструменты физики для надёжности
     local BAV = Instance.new("BodyAngularVelocity")
     BAV.Name = "DarkHubFlingVelocity"
     BAV.Axis = Vector3.new(0, 1, 0)
@@ -2123,7 +2128,7 @@ local function FlingPlayer(TargetPlayer)
     BV.MaxForce = Vector3.new(math.huge, math.huge, math.huge)
     BV.Parent = MyRoot
 
-    -- Включение NoClip на время флинга
+    -- Отключаем коллизии у себя
     local NoclipConn = RunService.Stepped:Connect(function()
         if MyChar then
             for _, Part in ipairs(MyChar:GetDescendants()) do
@@ -2141,7 +2146,7 @@ local function FlingPlayer(TargetPlayer)
     end
 
     local StartTime = tick()
-    local Timeout = 2.5 -- Максимальная длительность флинга (сек)
+    local Timeout = 2.5
 
     while IsFlinging and TargetPlayer and TargetPlayer.Parent and TargetChar and TargetChar.Parent do
         if tick() - StartTime >= Timeout then break end
@@ -2150,19 +2155,21 @@ local function FlingPlayer(TargetPlayer)
         TargetRoot = TargetChar:FindFirstChild("HumanoidRootPart") or TargetChar:FindFirstChild("Torso") or TargetChar:FindFirstChild("UpperTorso")
         if not TargetRoot then break end
 
-        -- Телепортация к цели с высокой частотой
-        MyRoot.CFrame = TargetRoot.CFrame * CFrame.new(math.random(-2, 2), 0, math.random(-2, 2))
+        -- Активный разгон и кружение вокруг цели для гарантированного флинга
+        local RandomAngle = math.random() * math.pi * 2
+        local Offset = Vector3.new(math.cos(RandomAngle) * 1.5, 0.5, math.sin(RandomAngle) * 1.5)
+        
+        MyRoot.CFrame = TargetRoot.CFrame + Offset
         MyRoot.AssemblyLinearVelocity = Vector3.new(99999, 99999, 99999)
+        MyRoot.AssemblyAngularVelocity = Vector3.new(0, 99999, 0)
 
         RunService.RenderStepped:Wait()
     end
 
-    -- Очистка
     if NoclipConn then NoclipConn:Disconnect() end
     if BAV then BAV:Destroy() end
     if BV then BV:Destroy() end
 
-    -- Восстановление состояния игрока
     if MyHumanoid then
         pcall(function()
             MyHumanoid:ChangeState(Enum.HumanoidStateType.GettingUp)
@@ -2170,8 +2177,8 @@ local function FlingPlayer(TargetPlayer)
     end
 
     if MyRoot then
-        MyRoot.AssemblyLinearVelocity = OldVelocity or Vector3.zero
-        MyRoot.AssemblyAngularVelocity = OldRotVelocity or Vector3.zero
+        MyRoot.AssemblyLinearVelocity = Vector3.zero
+        MyRoot.AssemblyAngularVelocity = Vector3.zero
         MyRoot.CFrame = OldCFrame
     end
 
@@ -2312,7 +2319,7 @@ local function RefreshFlingPlayerList()
                 })
             end)
 
-            -- Надежный запуск флинга по нажатию
+            -- Нажатие на карточку игрока для запуска флинга
             Card.MouseButton1Down:Connect(function()
                 task.spawn(function()
                     FlingPlayer(Player)
