@@ -74,7 +74,7 @@ local Theme = {
     AccentGradient = Color3.fromRGB(0, 195, 255),
 }
 
--- Шрифты (Fredoka One)
+-- Шрифты
 local FontSemiBold = Font.fromEnum(Enum.Font.FredokaOne)
 local FontRegular = Font.fromEnum(Enum.Font.FredokaOne)
 
@@ -510,7 +510,7 @@ Create("UIListLayout", {
 local Pages = {}
 local CurrentPage = nil
 
--- Глобальная система поиска по всем вкладкам и элементам
+-- Глобальная система поиска
 local function GlobalSearch(Query)
     local CleanQuery = CleanString(Query)
 
@@ -2090,16 +2090,16 @@ local IsFlinging = false
 local function FlingPlayer(TargetPlayer)
     if IsFlinging or not TargetPlayer or TargetPlayer == LocalPlayer then return end
 
-    local MyChar = LocalPlayer.Character
-    local TargetChar = TargetPlayer.Character
+    local MyChar = LocalPlayer.Character or LocalPlayer.CharacterAdded:Wait()
+    local TargetChar = TargetPlayer.Character or TargetPlayer.CharacterAdded:Wait()
     if not MyChar or not TargetChar then return end
 
-    local MyRoot = MyChar:FindFirstChild("HumanoidRootPart")
-    local TargetRoot = TargetChar:FindFirstChild("HumanoidRootPart")
+    local MyRoot = MyChar:FindFirstChild("HumanoidRootPart") or MyChar:FindFirstChild("Torso") or MyChar:FindFirstChild("UpperTorso")
+    local TargetRoot = TargetChar:FindFirstChild("HumanoidRootPart") or TargetChar:FindFirstChild("Torso") or TargetChar:FindFirstChild("UpperTorso")
     local MyHumanoid = MyChar:FindFirstChildOfClass("Humanoid")
     local TargetHumanoid = TargetChar:FindFirstChildOfClass("Humanoid")
 
-    if not MyRoot or not TargetRoot or not TargetHumanoid or TargetHumanoid.Health <= 0 then return end
+    if not MyRoot or not TargetRoot then return end
 
     IsFlinging = true
 
@@ -2108,14 +2108,20 @@ local function FlingPlayer(TargetPlayer)
     local OldVelocity = MyRoot.AssemblyLinearVelocity
     local OldRotVelocity = MyRoot.AssemblyAngularVelocity
 
-    -- Мощная угловая скорость в стиле CandyZone
+    -- Мощная угловая скорость и сила
     local BAV = Instance.new("BodyAngularVelocity")
-    BAV.Name = "CandyFlingVelocity"
+    BAV.Name = "DarkHubFlingVelocity"
     BAV.Axis = Vector3.new(0, 1, 0)
-    BAV.AngularVelocity = Vector3.new(0, 999999, 0)
+    BAV.AngularVelocity = Vector3.new(0, 99999, 0)
     BAV.MaxTorque = Vector3.new(0, math.huge, 0)
     BAV.P = math.huge
     BAV.Parent = MyRoot
+
+    local BV = Instance.new("BodyVelocity")
+    BV.Name = "DarkHubFlingForce"
+    BV.Velocity = Vector3.new(99999, 99999, 99999)
+    BV.MaxForce = Vector3.new(math.huge, math.huge, math.huge)
+    BV.Parent = MyRoot
 
     -- Включение NoClip на время флинга
     local NoclipConn = RunService.Stepped:Connect(function()
@@ -2128,9 +2134,10 @@ local function FlingPlayer(TargetPlayer)
         end
     end)
 
-    -- Переключение состояния Humanoid на Physics для корректной передачи импульса
     if MyHumanoid then
-        MyHumanoid:ChangeState(Enum.HumanoidStateType.Physics)
+        pcall(function()
+            MyHumanoid:ChangeState(Enum.HumanoidStateType.Physics)
+        end)
     end
 
     local StartTime = tick()
@@ -2138,14 +2145,14 @@ local function FlingPlayer(TargetPlayer)
 
     while IsFlinging and TargetPlayer and TargetPlayer.Parent and TargetChar and TargetChar.Parent do
         if tick() - StartTime >= Timeout then break end
-        if TargetHumanoid.Health <= 0 then break end
+        if TargetHumanoid and TargetHumanoid.Health <= 0 then break end
 
-        TargetRoot = TargetChar:FindFirstChild("HumanoidRootPart")
+        TargetRoot = TargetChar:FindFirstChild("HumanoidRootPart") or TargetChar:FindFirstChild("Torso") or TargetChar:FindFirstChild("UpperTorso")
         if not TargetRoot then break end
 
-        -- Телепортация в игрока с экстремальной частотой и скоростью
-        MyRoot.CFrame = TargetRoot.CFrame * CFrame.new(math.random(-100, 100)/100, 0, math.random(-100, 100)/100)
-        MyRoot.AssemblyLinearVelocity = Vector3.new(999999, 999999, 999999)
+        -- Телепортация к цели с высокой частотой
+        MyRoot.CFrame = TargetRoot.CFrame * CFrame.new(math.random(-2, 2), 0, math.random(-2, 2))
+        MyRoot.AssemblyLinearVelocity = Vector3.new(99999, 99999, 99999)
 
         RunService.RenderStepped:Wait()
     end
@@ -2153,10 +2160,13 @@ local function FlingPlayer(TargetPlayer)
     -- Очистка
     if NoclipConn then NoclipConn:Disconnect() end
     if BAV then BAV:Destroy() end
+    if BV then BV:Destroy() end
 
-    -- Восстановление состояния и позиции игрока
+    -- Восстановление состояния игрока
     if MyHumanoid then
-        MyHumanoid:ChangeState(Enum.HumanoidStateType.GettingUp)
+        pcall(function()
+            MyHumanoid:ChangeState(Enum.HumanoidStateType.GettingUp)
+        end)
     end
 
     if MyRoot then
@@ -2209,7 +2219,7 @@ MovementSection:Toggle({Name = "Auto Strafe", Default = false})
 MovementSection:Slider({Name = "Strafe Speed", Min = 0, Max = 100, Default = 60, Suffix = "%"})
 
 -- === ВКЛАДКА FLING PLAYERS ===
-local FlingIcon = "10709781323" -- Красивая иконка молнии/флинга
+local FlingIcon = "10709781323"
 local FlingPage = CreatePage({Name = "Fling Players", Icon = FlingIcon})
 local FlingSection = FlingPage:CreateSection({
     Name = "Fling Players", 
@@ -2247,7 +2257,6 @@ local function RefreshFlingPlayerList()
                 BackgroundTransparency = 0.3,
                 Size = UDim2.new(1, 0, 0, 36),
                 BorderSizePixel = 0,
-                ZIndex = 5, -- Добавлен ZIndex для гарантии видимости
             })
 
             Create("UICorner", { Parent = Card, CornerRadius = UDim.new(0, 6) })
@@ -2259,7 +2268,6 @@ local function RefreshFlingPlayerList()
                 Position = UDim2.new(0, 6, 0.5, 0),
                 AnchorPoint = Vector2.new(0, 0.5),
                 Image = "rbxthumb://type=AvatarHeadShot&id=" .. Player.UserId .. "&w=150&h=150",
-                ZIndex = 6,
             })
 
             Create("UICorner", { Parent = Avatar, CornerRadius = UDim.new(1, 0) })
@@ -2275,12 +2283,11 @@ local function RefreshFlingPlayerList()
                 Size = UDim2.new(1, -45, 0, 13),
                 TextXAlignment = Enum.TextXAlignment.Left,
                 TextTruncate = Enum.TextTruncate.AtEnd,
-                ZIndex = 6,
             })
 
             Create("TextLabel", {
                 Parent = Card,
-                Text = "Click to fling",
+                Text = "Lobby",
                 TextColor3 = Theme.Text,
                 TextTransparency = 0.5,
                 BackgroundTransparency = 1,
@@ -2289,7 +2296,6 @@ local function RefreshFlingPlayerList()
                 Position = UDim2.new(0, 38, 0, 18),
                 Size = UDim2.new(1, -45, 0, 11),
                 TextXAlignment = Enum.TextXAlignment.Left,
-                ZIndex = 6,
             })
 
             Card.MouseEnter:Connect(function()
@@ -2306,7 +2312,7 @@ local function RefreshFlingPlayerList()
                 })
             end)
 
-            -- Исправлено: используем MouseButton1Down для мгновенного срабатывания
+            -- Надежный запуск флинга по нажатию
             Card.MouseButton1Down:Connect(function()
                 task.spawn(function()
                     FlingPlayer(Player)
@@ -2363,7 +2369,7 @@ ConfigsSection:Button({Name = "Load", Callback = function()
     if Selected and #Selected > 0 and _G.ConfigsData then
         local Data = _G.ConfigsData[Selected[1]]
         if Data then
-            local Decoded = HttpService:JSONDecode(Data)
+            local Decoded = HttpService:JSONEncode(Data)
             for Flag, Value in pairs(Decoded) do
                 if SetFlags[Flag] then
                     SetFlags[Flag](Value)
@@ -2378,7 +2384,7 @@ if Pages[1] then
     Pages[1]:SetActive(true)
 end
 
--- === ПЕРЕРАБОТАННЫЙ СТИЛЬНЫЙ И ПЕРЕТАСКИВАЕМЫЙ ЗАГОЛОВОК-ТУГГЛ (DARK HUB) ===
+-- === ЗАГОЛОВОК-ТУГГЛ (DARK HUB) ===
 local FloatHeader = Create("TextButton", {
     Parent = Holder,
     Name = "DarkHubToggleHeader",
@@ -2402,7 +2408,6 @@ local FloatStroke = Create("UIStroke", {
     ApplyStrokeMode = Enum.ApplyStrokeMode.Border,
 })
 
--- Динамический акцентный градиент для обводки
 Create("UIGradient", {
     Parent = FloatStroke,
     Rotation = 45,
@@ -2413,7 +2418,6 @@ Create("UIGradient", {
     })
 })
 
--- Неоновая левая акцентная полоска
 local FloatAccent = Create("Frame", {
     Parent = FloatHeader,
     BackgroundColor3 = Color3.new(1, 1, 1),
@@ -2433,7 +2437,6 @@ Create("UIGradient", {
     })
 })
 
--- Иконка Dark Hub
 local FloatLogo = Create("ImageLabel", {
     Parent = FloatHeader,
     Image = DarkHubIcon,
@@ -2446,7 +2449,6 @@ local FloatLogo = Create("ImageLabel", {
     ZIndex = 128,
 })
 
--- Название Dark Hub
 local FloatTitle = Create("TextLabel", {
     Parent = FloatHeader,
     Text = "Dark Hub",
@@ -2461,7 +2463,6 @@ local FloatTitle = Create("TextLabel", {
     ZIndex = 128,
 })
 
--- Контейнер индикатора статуса
 local StatusContainer = Create("Frame", {
     Parent = FloatHeader,
     BackgroundColor3 = Theme.SectionBackground2,
@@ -2485,7 +2486,7 @@ local StatusDot = Create("Frame", {
 })
 Create("UICorner", { Parent = StatusDot, CornerRadius = UDim.new(1, 0) })
 
--- Перетаскивание плашки (Draggable Support)
+-- Перетаскивание плашки
 local Dragging = false
 local DragInput, DragStart, StartPos
 
@@ -2520,7 +2521,6 @@ UserInputService.InputChanged:Connect(function(input)
     end
 end)
 
--- Анимации наведения и переключения
 FloatHeader.MouseEnter:Connect(function()
     CreateTween(FloatHeader, TweenInfo.new(0.2, Enum.EasingStyle.Quint, Enum.EasingDirection.Out), {
         BackgroundColor3 = Color3.fromRGB(12, 12, 12)
