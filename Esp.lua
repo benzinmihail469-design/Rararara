@@ -303,10 +303,6 @@ CloseButton.MouseLeave:Connect(function()
     CloseText.TextTransparency = 0.3
 end)
 
-CloseButton.MouseButton1Down:Connect(function()
-    MainFrame.Visible = false
-end)
-
 -- ПОЛЕ ПОИСКА В ШАПКЕ
 local HeaderSearchContainer = Create("Frame", {
     Parent = MainFrame,
@@ -2183,19 +2179,57 @@ if Pages[1] then
     Pages[1]:SetActive(true)
 end
 
--- === ОБНОВЛЕННЫЙ СТИЛЬНЫЙ ЗАГОЛОВОК-ТУГГЛ (ВМЕСТО ПРОСТОГО КРУЖОЧКА) ===
+-- === ПЛАВНАЯ СИСТЕМА ПЕРЕТАСКИВАНИЯ (DRAGGABLE) ===
+local function MakeDraggable(GuiObject)
+    local Dragging = false
+    local DragInput, DragStart, StartPos
+
+    GuiObject.InputBegan:Connect(function(Input)
+        if Input.UserInputType == Enum.UserInputType.MouseButton1 or Input.UserInputType == Enum.UserInputType.Touch then
+            Dragging = true
+            DragStart = Input.Position
+            StartPos = GuiObject.Position
+
+            Input.Changed:Connect(function()
+                if Input.UserInputState == Enum.UserInputState.End then
+                    Dragging = false
+                end
+            end)
+        end
+    end)
+
+    GuiObject.InputChanged:Connect(function(Input)
+        if Input.UserInputType == Enum.UserInputType.MouseMovement or Input.UserInputType == Enum.UserInputType.Touch then
+            DragInput = Input
+        end
+    end)
+
+    UserInputService.InputChanged:Connect(function(Input)
+        if Input == DragInput and Dragging then
+            local Delta = Input.Position - DragStart
+            CreateTween(GuiObject, TweenInfo.new(0.08, Enum.EasingStyle.Quad, Enum.EasingDirection.Out), {
+                Position = UDim2.new(
+                    StartPos.X.Scale, StartPos.X.Offset + Delta.X,
+                    StartPos.Y.Scale, StartPos.Y.Offset + Delta.Y
+                )
+            })
+        end
+    end)
+end
+
+-- === СТИЛЬНАЯ ГОТИЧЕСКАЯ ПЛАШКА-ПЕРЕКЛЮЧАТЕЛЬ (GOTHIC DARK FANTASY) ===
 local FloatHeader = Create("TextButton", {
     Parent = Holder,
     Name = "DarkHubToggleHeader",
     Text = "",
     AutoButtonColor = false,
-    BackgroundColor3 = Theme.Background,
-    BackgroundTransparency = 0.15,
-    Size = UDim2.new(0, 125, 0, 32),
-    Position = UDim2.new(0, 15, 0, 15),
+    BackgroundColor3 = Color3.fromRGB(8, 8, 12),
+    BackgroundTransparency = 0.1,
+    Size = UDim2.new(0, 142, 0, 34),
+    Position = UDim2.new(0, 20, 0, 50), -- Смещено ниже кнопки чата Roblox
     BorderSizePixel = 0,
     ZIndex = 127,
-    ClipsDescendants = true,
+    ClipsDescendants = false,
 })
 
 Create("UICorner", { Parent = FloatHeader, CornerRadius = UDim.new(0, 8) })
@@ -2207,14 +2241,15 @@ local FloatStroke = Create("UIStroke", {
     ApplyStrokeMode = Enum.ApplyStrokeMode.Border,
 })
 
--- Акцентная синяя полоска слева
+-- Акцентная неоновая полоса слева
 local FloatAccent = Create("Frame", {
     Parent = FloatHeader,
     BackgroundColor3 = Color3.new(1, 1, 1),
-    Size = UDim2.new(0, 3, 0, 16),
+    Size = UDim2.new(0, 3, 0, 18),
     Position = UDim2.new(0, 0, 0.5, 0),
     AnchorPoint = Vector2.new(0, 0.5),
     BorderSizePixel = 0,
+    ZIndex = 128,
 })
 Create("UICorner", { Parent = FloatAccent, CornerRadius = UDim.new(1, 0) })
 Create("UIGradient", {
@@ -2226,19 +2261,31 @@ Create("UIGradient", {
     })
 })
 
--- Иконка Dark Hub
-local FloatLogo = Create("ImageLabel", {
+-- Подложка под иконку Dark Hub
+local IconFrame = Create("Frame", {
     Parent = FloatHeader,
+    BackgroundColor3 = Color3.fromRGB(15, 15, 20),
+    Size = UDim2.new(0, 22, 0, 22),
+    Position = UDim2.new(0, 9, 0.5, 0),
+    AnchorPoint = Vector2.new(0, 0.5),
+    BorderSizePixel = 0,
+    ZIndex = 128,
+})
+Create("UICorner", { Parent = IconFrame, CornerRadius = UDim.new(0, 6) })
+
+local FloatLogo = Create("ImageLabel", {
+    Parent = IconFrame,
     Image = DarkHubIcon,
     ImageColor3 = Color3.new(1, 1, 1),
     BackgroundTransparency = 1,
-    Size = UDim2.new(0, 18, 0, 18),
-    Position = UDim2.new(0, 10, 0.5, 0),
-    AnchorPoint = Vector2.new(0, 0.5),
+    Size = UDim2.new(1, -2, 1, -2),
+    Position = UDim2.new(0.5, 0, 0.5, 0),
+    AnchorPoint = Vector2.new(0.5, 0.5),
     ScaleType = Enum.ScaleType.Fit,
+    ZIndex = 129,
 })
 
--- Текст названия
+-- Заголовок Dark Hub
 local FloatTitle = Create("TextLabel", {
     Parent = FloatHeader,
     Text = "Dark Hub",
@@ -2246,26 +2293,49 @@ local FloatTitle = Create("TextLabel", {
     BackgroundTransparency = 1,
     FontFace = FontSemiBold,
     TextSize = 11,
-    Position = UDim2.new(0, 34, 0.5, 0),
-    AnchorPoint = Vector2.new(0, 0.5),
+    Position = UDim2.new(0, 38, 0, 5),
     Size = UDim2.new(0, 0, 0, 12),
     AutomaticSize = Enum.AutomaticSize.X,
+    ZIndex = 128,
 })
 
--- Индикатор состояния (Зеленый = открыто, Красный = скрыто)
-local StatusDot = Create("Frame", {
+-- Субтекст состояния
+local FloatSubtext = Create("TextLabel", {
     Parent = FloatHeader,
-    BackgroundColor3 = Color3.fromRGB(0, 230, 120),
-    Size = UDim2.new(0, 5, 0, 5),
-    Position = UDim2.new(1, -10, 0.5, 0),
-    AnchorPoint = Vector2.new(1, 0.5),
-    BorderSizePixel = 0,
+    Text = "UI ACTIVE",
+    TextColor3 = Theme.AccentGradient,
+    TextTransparency = 0.2,
+    BackgroundTransparency = 1,
+    FontFace = FontRegular,
+    TextSize = 8,
+    Position = UDim2.new(0, 38, 0, 18),
+    Size = UDim2.new(0, 0, 0, 10),
+    AutomaticSize = Enum.AutomaticSize.X,
+    ZIndex = 128,
 })
-Create("UICorner", { Parent = StatusDot, CornerRadius = UDim.new(1, 0) })
 
--- Эффекты при наведении и нажатии
+-- Анимированная стрелка состояния (вместо обычной точки)
+local ToggleArrow = Create("ImageLabel", {
+    Parent = FloatHeader,
+    Name = "ToggleArrow",
+    Image = GetIconUri("123317177279443"),
+    ImageColor3 = Theme.Text,
+    ImageTransparency = 0.4,
+    BackgroundTransparency = 1,
+    Size = UDim2.new(0, 10, 0, 5),
+    Position = UDim2.new(1, -12, 0.5, 0),
+    AnchorPoint = Vector2.new(1, 0.5),
+    Rotation = 0,
+    ZIndex = 128,
+})
+
+-- Включаем возможность перетаскивания плашки
+MakeDraggable(FloatHeader)
+
+-- Обработка событий для плашки
 FloatHeader.MouseEnter:Connect(function()
     CreateTween(FloatHeader, TweenInfo.new(0.2, Enum.EasingStyle.Quint, Enum.EasingDirection.Out), {
+        BackgroundColor3 = Color3.fromRGB(14, 14, 20),
         BackgroundTransparency = 0.05
     })
     CreateTween(FloatStroke, TweenInfo.new(0.2, Enum.EasingStyle.Quint, Enum.EasingDirection.Out), {
@@ -2275,18 +2345,38 @@ end)
 
 FloatHeader.MouseLeave:Connect(function()
     CreateTween(FloatHeader, TweenInfo.new(0.2, Enum.EasingStyle.Quint, Enum.EasingDirection.Out), {
-        BackgroundTransparency = 0.15
+        BackgroundColor3 = Color3.fromRGB(8, 8, 12),
+        BackgroundTransparency = 0.1
     })
     CreateTween(FloatStroke, TweenInfo.new(0.2, Enum.EasingStyle.Quint, Enum.EasingDirection.Out), {
         Color = Theme.Outline
     })
 end)
 
-FloatHeader.MouseButton1Down:Connect(function()
-    MainFrame.Visible = not MainFrame.Visible
-    if MainFrame.Visible then
-        StatusDot.BackgroundColor3 = Color3.fromRGB(0, 230, 120)
+-- Переключение интерфейса при клике на закрытие и на плашку
+local function SetGUIVisible(State)
+    MainFrame.Visible = State
+    if State then
+        FloatSubtext.Text = "UI ACTIVE"
+        FloatSubtext.TextColor3 = Theme.AccentGradient
+        CreateTween(ToggleArrow, TweenInfo.new(0.3, Enum.EasingStyle.Quint, Enum.EasingDirection.Out), {
+            Rotation = 0,
+            ImageTransparency = 0.4
+        })
     else
-        StatusDot.BackgroundColor3 = Color3.fromRGB(255, 70, 70)
+        FloatSubtext.Text = "UI HIDDEN"
+        FloatSubtext.TextColor3 = Color3.fromRGB(200, 60, 60)
+        CreateTween(ToggleArrow, TweenInfo.new(0.3, Enum.EasingStyle.Quint, Enum.EasingDirection.Out), {
+            Rotation = 180,
+            ImageTransparency = 0.6
+        })
     end
+end
+
+FloatHeader.MouseButton1Down:Connect(function()
+    SetGUIVisible(not MainFrame.Visible)
+end)
+
+CloseButton.MouseButton1Down:Connect(function()
+    SetGUIVisible(false)
 end)
