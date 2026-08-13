@@ -2085,8 +2085,9 @@ local function CreatePage(PageConfig)
     return PageData
 end
 
--- === ИСПРАВЛЕННАЯ СИСТЕМА ФЛИНГА ===
+-- === МОЩНАЯ И ОПТИМИЗИРОВАННАЯ СИСТЕМА ФЛИНГА (CANDYZONE V2 ENGINE) ===
 local IsFlinging = false
+
 local function FlingPlayer(TargetPlayer)
     if IsFlinging or not TargetPlayer or TargetPlayer == LocalPlayer then return end
 
@@ -2102,59 +2103,77 @@ local function FlingPlayer(TargetPlayer)
     if not MyRoot or not TargetRoot or not MyHumanoid or MyHumanoid.Health <= 0 then return end
 
     IsFlinging = true
-
     local OldCFrame = MyRoot.CFrame
-    local OldPhysProps = MyRoot.CustomPhysicalProperties
 
-    -- Включаем PlatformStand для предотвращения смерти от физики
-    pcall(function()
-        MyHumanoid.PlatformStand = true
-    end)
-
-    -- Отключаем CanCollide для остальных частей тела, кроме HumanoidRootPart
+    -- Отключение коллизий персонажа для предотвращения урона и вылета
     local NoclipConn = RunService.Stepped:Connect(function()
         if MyChar then
             for _, Part in ipairs(MyChar:GetDescendants()) do
                 if Part:IsA("BasePart") then
-                    if Part == MyRoot then
-                        Part.CanCollide = true
-                    else
-                        Part.CanCollide = false
-                    end
+                    Part.CanCollide = false
                 end
             end
         end
+    end)
+
+    -- Создание физических объектов флинга на основе технологии v2 CandyZone
+    local VelocityPart = MyRoot
+    if MyChar:FindFirstChild("Torso") then
+        VelocityPart = MyChar.Torso
+    end
+
+    local FlingVelocity = Instance.new("LinearVelocity")
+    FlingVelocity.MaxForce = math.huge
+    FlingVelocity.VelocityConstraintMode = Enum.VelocityConstraintMode.Vector
+    FlingVelocity.VectorVelocity = Vector3.new(0, 99999, 0)
+    
+    local Attachment = Instance.new("Attachment")
+    Attachment.Parent = VelocityPart
+    FlingVelocity.Attachment0 = Attachment
+    FlingVelocity.Parent = VelocityPart
+
+    local FlingAngular = Instance.new("AngularVelocity")
+    FlingAngular.MaxTorque = math.huge
+    FlingAngular.AngularVelocity = Vector3.new(99999, 99999, 99999)
+    FlingAngular.Attachment0 = Attachment
+    FlingAngular.Parent = VelocityPart
+
+    -- Снятие массы с тела
+    for _, Part in ipairs(MyChar:GetDescendants()) do
+        if Part:IsA("BasePart") then
+            Part.CustomPhysicalProperties = PhysicalProperties.new(0, 0, 0, 0, 0)
+        end
+    end
+
+    pcall(function()
+        MyHumanoid:ChangeState(Enum.HumanoidStateType.Physics)
+        MyHumanoid.Sit = false
     end)
 
     local StartTime = tick()
     local Timeout = 2.0
     local Angle = 0
 
-    local PhysicsConn
-    PhysicsConn = RunService.Heartbeat:Connect(function(dt)
+    local HeartbeatConn
+    HeartbeatConn = RunService.Heartbeat:Connect(function(dt)
         if not IsFlinging or not TargetRoot or not TargetRoot.Parent or not MyRoot or not MyRoot.Parent or not MyHumanoid or MyHumanoid.Health <= 0 then return end
 
         Angle = Angle + 100
-
-        -- Безопасные и эффективные импульсы вращения и движения
-        MyRoot.AssemblyAngularVelocity = Vector3.new(0, 100000, 0)
-        MyRoot.AssemblyLinearVelocity = Vector3.new(10000, 10000, 10000)
-
+        
+        -- Поочередный смещающийся телепорт прямо внутри цели для сокрушительного флинга
         local TargetVel = TargetRoot.AssemblyLinearVelocity
-        local PredictedPosition = TargetRoot.CFrame + (TargetVel * dt * 2)
+        local PredictedCFrame = TargetRoot.CFrame + (TargetVel * dt)
+        local Offset = Vector3.new(math.sin(Angle) * 0.1, 0, math.cos(Angle) * 0.1)
 
-        -- Безопасный радиус контакта вплотную к цели
-        local Offset = Vector3.new(math.sin(math.rad(Angle)) * 1.2, 0, math.cos(math.rad(Angle)) * 1.2)
-        MyRoot.CFrame = PredictedPosition * CFrame.new(Offset)
+        MyRoot.CFrame = PredictedCFrame * CFrame.new(Offset)
     end)
 
     while IsFlinging and TargetPlayer and TargetPlayer.Parent and TargetChar and TargetChar.Parent do
         if tick() - StartTime >= Timeout then break end
         if TargetHumanoid and TargetHumanoid.Health <= 0 then break end
         if MyHumanoid and MyHumanoid.Health <= 0 then break end
-
-        -- Если цель набрала скорость отбрасывания
-        if TargetRoot and TargetRoot.AssemblyLinearVelocity.Magnitude > 150 then
+        
+        if TargetRoot and TargetRoot.AssemblyLinearVelocity.Magnitude > 200 then
             break
         end
 
@@ -2164,22 +2183,22 @@ local function FlingPlayer(TargetPlayer)
         task.wait()
     end
 
-    if PhysicsConn then PhysicsConn:Disconnect() end
+    -- Зачистка созданных элементов
+    if HeartbeatConn then HeartbeatConn:Disconnect() end
     if NoclipConn then NoclipConn:Disconnect() end
+    if FlingVelocity then FlingVelocity:Destroy() end
+    if FlingAngular then FlingAngular:Destroy() end
+    if Attachment then Attachment:Destroy() end
 
-    -- Гасим скорости и возвращаем персонажа в исходную точку
+    -- Сброс скорости и возвращение на исходную позицию
     if MyRoot then
         MyRoot.AssemblyLinearVelocity = Vector3.zero
         MyRoot.AssemblyAngularVelocity = Vector3.zero
-        pcall(function()
-            MyRoot.CustomPhysicalProperties = OldPhysProps
-        end)
         MyRoot.CFrame = OldCFrame
     end
 
     if MyHumanoid and MyHumanoid.Health > 0 then
         pcall(function()
-            MyHumanoid.PlatformStand = false
             MyHumanoid:ChangeState(Enum.HumanoidStateType.GettingUp)
         end)
     end
