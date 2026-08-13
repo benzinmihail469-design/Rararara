@@ -2105,12 +2105,17 @@ local function FlingPlayer(TargetPlayer)
 
     local OldCFrame = MyRoot.CFrame
 
-    -- Отключаем коллизии для ВСЕХ деталей нашего персонажа, чтобы защититься от смертельного физического урона
+    -- Отключаем коллизию для всех деталей персонажа КРОМЕ HumanoidRootPart,
+    -- чтобы передавать физический импульс, но не умирать от соприкосновений.
     local NoclipConn = RunService.Stepped:Connect(function()
         if MyChar then
             for _, Part in ipairs(MyChar:GetDescendants()) do
                 if Part:IsA("BasePart") then
-                    Part.CanCollide = false
+                    if Part == MyRoot then
+                        Part.CanCollide = true
+                    else
+                        Part.CanCollide = false
+                    end
                 end
             end
         end
@@ -2122,25 +2127,30 @@ local function FlingPlayer(TargetPlayer)
     end)
 
     local StartTime = tick()
-    local Timeout = 1.0
-    local Angle = 0
+    local Timeout = 2.0 -- Увеличенный таймаут для успешного флинга бегущей цели
+    local Toggle = false
 
     local PhysicsConn
     PhysicsConn = RunService.Heartbeat:Connect(function(dt)
         if not IsFlinging or not TargetRoot or not TargetRoot.Parent or not MyRoot or not MyRoot.Parent or not MyHumanoid or MyHumanoid.Health <= 0 then return end
 
-        Angle = Angle + 100
-        
-        -- Безопасная скорость вращения (15,000 рад/с), передающая максимальный импульс цели без суицида
-        MyRoot.AssemblyAngularVelocity = Vector3.new(0, 15000, 0)
-        MyRoot.AssemblyLinearVelocity = Vector3.new(0, 100, 0)
+        Toggle = not Toggle
 
-        -- Учитываем движение цели (предикшн)
+        -- Чередуем векторы мощной угловой скорости для максимальной передачи энергии цели
+        local VelocityVector = Vector3.new(0, 200000, 0)
+        if Toggle then
+            VelocityVector = Vector3.new(200000, 200000, 200000)
+        end
+
+        MyRoot.AssemblyAngularVelocity = VelocityVector
+        MyRoot.AssemblyLinearVelocity = Vector3.new(0, 4000, 0)
+
+        -- Упреждающий предикшн позиции бегущей/движущейся цели
         local TargetVel = TargetRoot.AssemblyLinearVelocity
-        local PredictedCFrame = TargetRoot.CFrame + (TargetVel * dt)
+        local PredictedCFrame = TargetRoot.CFrame + (TargetVel * (dt * 1.5))
 
         -- Микро-смещение вплотную к цели
-        local Offset = Vector3.new(math.sin(Angle) * 0.05, 0, math.cos(Angle) * 0.05)
+        local Offset = Toggle and Vector3.new(0.01, 0, 0.01) or Vector3.new(-0.01, 0, -0.01)
         MyRoot.CFrame = PredictedCFrame * CFrame.new(Offset)
     end)
 
@@ -2149,8 +2159,8 @@ local function FlingPlayer(TargetPlayer)
         if TargetHumanoid and TargetHumanoid.Health <= 0 then break end
         if MyHumanoid and MyHumanoid.Health <= 0 then break end
         
-        -- Если цель подхвачена физикой и отлетела
-        if TargetRoot and TargetRoot.AssemblyLinearVelocity.Magnitude > 150 then
+        -- Порог скорости отлета цели повышен, чтобы не сбрасываться при обычных прыжках/беге
+        if TargetRoot and TargetRoot.AssemblyLinearVelocity.Magnitude > 400 then
             break
         end
 
