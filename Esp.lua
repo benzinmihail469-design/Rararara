@@ -2085,7 +2085,7 @@ local function CreatePage(PageConfig)
     return PageData
 end
 
--- === ИСПРАВЛЕННАЯ И УСКОРЕННАЯ СИСТЕМА ФЛИНГА ===
+-- === БЕЗОПАСНАЯ И ЭФФЕКТИВНАЯ СИСТЕМА ФЛИНГА ===
 local IsFlinging = false
 local function FlingPlayer(TargetPlayer)
     if IsFlinging or not TargetPlayer or TargetPlayer == LocalPlayer then return end
@@ -2099,65 +2099,58 @@ local function FlingPlayer(TargetPlayer)
     local MyHumanoid = MyChar:FindFirstChildOfClass("Humanoid")
     local TargetHumanoid = TargetChar:FindFirstChildOfClass("Humanoid")
 
-    if not MyRoot or not TargetRoot then return end
+    if not MyRoot or not TargetRoot or not MyHumanoid or MyHumanoid.Health <= 0 then return end
 
     IsFlinging = true
 
     local OldCFrame = MyRoot.CFrame
-    local OldVelocity = MyRoot.AssemblyLinearVelocity
-    local OldRotVelocity = MyRoot.AssemblyAngularVelocity
 
-    -- Отключаем коллизию только для второстепенных частей, сохраняя CanCollide = true у Root для передачи импульса
+    -- Отключаем коллизии для ВСЕХ деталей нашего персонажа, чтобы защититься от смертельного физического урона
     local NoclipConn = RunService.Stepped:Connect(function()
         if MyChar then
             for _, Part in ipairs(MyChar:GetDescendants()) do
                 if Part:IsA("BasePart") then
-                    if Part == MyRoot then
-                        Part.CanCollide = true
-                    else
-                        Part.CanCollide = false
-                    end
+                    Part.CanCollide = false
                 end
             end
         end
     end)
 
-    if MyHumanoid then
-        pcall(function()
-            MyHumanoid:ChangeState(Enum.HumanoidStateType.Physics)
-            MyHumanoid.Sit = false
-        end)
-    end
+    pcall(function()
+        MyHumanoid:ChangeState(Enum.HumanoidStateType.Physics)
+        MyHumanoid.Sit = false
+    end)
 
     local StartTime = tick()
-    local Timeout = 1.2
+    local Timeout = 1.0
     local Angle = 0
 
     local PhysicsConn
     PhysicsConn = RunService.Heartbeat:Connect(function(dt)
-        if not IsFlinging or not TargetRoot or not TargetRoot.Parent or not MyRoot or not MyRoot.Parent then return end
+        if not IsFlinging or not TargetRoot or not TargetRoot.Parent or not MyRoot or not MyRoot.Parent or not MyHumanoid or MyHumanoid.Health <= 0 then return end
 
-        Angle = Angle + 180
+        Angle = Angle + 100
         
-        -- Экстремальная угловая и линейная скорость для моментального откидывания
-        MyRoot.AssemblyAngularVelocity = Vector3.new(999999, 999999, 999999)
-        MyRoot.AssemblyLinearVelocity = Vector3.new(999999, 999999, 999999)
+        -- Безопасная скорость вращения (15,000 рад/с), передающая максимальный импульс цели без суицида
+        MyRoot.AssemblyAngularVelocity = Vector3.new(0, 15000, 0)
+        MyRoot.AssemblyLinearVelocity = Vector3.new(0, 100, 0)
 
-        -- Учитываем движение цели (предикшн для ходячих игроков)
+        -- Учитываем движение цели (предикшн)
         local TargetVel = TargetRoot.AssemblyLinearVelocity
-        local PredictedCFrame = TargetRoot.CFrame + (TargetVel * dt * 2)
+        local PredictedCFrame = TargetRoot.CFrame + (TargetVel * dt)
 
-        -- Микро-смещение вокруг прогнозируемой позиции цели
-        local Offset = Vector3.new(math.sin(Angle) * 0.1, 0, math.cos(Angle) * 0.1)
+        -- Микро-смещение вплотную к цели
+        local Offset = Vector3.new(math.sin(Angle) * 0.05, 0, math.cos(Angle) * 0.05)
         MyRoot.CFrame = PredictedCFrame * CFrame.new(Offset)
     end)
 
     while IsFlinging and TargetPlayer and TargetPlayer.Parent and TargetChar and TargetChar.Parent do
         if tick() - StartTime >= Timeout then break end
         if TargetHumanoid and TargetHumanoid.Health <= 0 then break end
+        if MyHumanoid and MyHumanoid.Health <= 0 then break end
         
-        -- Если цель уже подхвачена физикой и отлетела
-        if TargetRoot and TargetRoot.AssemblyLinearVelocity.Magnitude > 250 then
+        -- Если цель подхвачена физикой и отлетела
+        if TargetRoot and TargetRoot.AssemblyLinearVelocity.Magnitude > 150 then
             break
         end
 
@@ -2170,16 +2163,17 @@ local function FlingPlayer(TargetPlayer)
     if PhysicsConn then PhysicsConn:Disconnect() end
     if NoclipConn then NoclipConn:Disconnect() end
 
-    if MyHumanoid then
+    -- Безопасное гашение импульса
+    if MyRoot then
+        MyRoot.AssemblyLinearVelocity = Vector3.zero
+        MyRoot.AssemblyAngularVelocity = Vector3.zero
+        MyRoot.CFrame = OldCFrame
+    end
+
+    if MyHumanoid and MyHumanoid.Health > 0 then
         pcall(function()
             MyHumanoid:ChangeState(Enum.HumanoidStateType.GettingUp)
         end)
-    end
-
-    if MyRoot then
-        MyRoot.AssemblyLinearVelocity = OldVelocity or Vector3.zero
-        MyRoot.AssemblyAngularVelocity = OldRotVelocity or Vector3.zero
-        MyRoot.CFrame = OldCFrame
     end
 
     IsFlinging = false
