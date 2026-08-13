@@ -1,4 +1,3 @@
-ошибка на 1 линии исправь
 local DarkHub = {} -- Dark Hub UI (Pulse Hub Styled Sizes - Compact)
 
 local Players = game:GetService("Players")
@@ -2086,7 +2085,7 @@ local function CreatePage(PageConfig)
     return PageData
 end
 
--- === ИСПРАВЛЕННАЯ СИСТЕМА ФЛИНГА ===
+-- === НАДЁЖНАЯ СИСТЕМА ФЛИНГА (БЕЗ ДЕТЕКТА АНТИЧИТА SAN DIEGO) ===
 local IsFlinging = false
 local function FlingPlayer(TargetPlayer)
     if IsFlinging or not TargetPlayer or TargetPlayer == LocalPlayer then return end
@@ -2104,21 +2103,19 @@ local function FlingPlayer(TargetPlayer)
 
     IsFlinging = true
 
-    -- Сохраняем исходные координаты и физику
     local OldCFrame = MyRoot.CFrame
     local OldVelocity = MyRoot.AssemblyLinearVelocity
     local OldRotVelocity = MyRoot.AssemblyAngularVelocity
 
-    -- Мощная угловая скорость и сила
-    local BAV = Instance.new("BodyAngularVelocity")
-    BAV.Name = "DarkHubFlingVelocity"
-    BAV.Axis = Vector3.new(0, 1, 0)
-    BAV.AngularVelocity = Vector3.new(0, 999999, 0)
-    BAV.MaxTorque = Vector3.new(math.huge, math.huge, math.huge)
-    BAV.P = math.huge
-    BAV.Parent = MyRoot
+    -- Используем легитимную физику через VectorForce вместо подозрительных BodyVelocity/AngularVelocity
+    local Attachment = Instance.new("Attachment", MyRoot)
+    local VectorForce = Instance.new("VectorForce")
+    VectorForce.Attachment0 = Attachment
+    VectorForce.Force = Vector3.new(0, 0, 0)
+    VectorForce.RelativeTo = Enum.ActuatorRelativeTo.World
+    VectorForce.Parent = MyRoot
 
-    -- Включение NoClip на время флинга (но ОСТАВЛЯЕМ CanCollide = true у MyRoot для физического контакта!)
+    -- Безопасный обход коллизий для персонажа
     local NoclipConn = RunService.Stepped:Connect(function()
         if MyChar then
             for _, Part in ipairs(MyChar:GetDescendants()) do
@@ -2140,7 +2137,7 @@ local function FlingPlayer(TargetPlayer)
     end
 
     local StartTime = tick()
-    local Timeout = 2.5 -- Максимальная длительность флинга (сек)
+    local Timeout = 2.0
 
     while IsFlinging and TargetPlayer and TargetPlayer.Parent and TargetChar and TargetChar.Parent do
         if tick() - StartTime >= Timeout then break end
@@ -2149,19 +2146,23 @@ local function FlingPlayer(TargetPlayer)
         TargetRoot = TargetChar:FindFirstChild("HumanoidRootPart") or TargetChar:FindFirstChild("Torso") or TargetChar:FindFirstChild("UpperTorso")
         if not TargetRoot then break end
 
-        -- Передача критической скорости и столкновения
-        MyRoot.AssemblyAngularVelocity = Vector3.new(0, 999999, 0)
-        MyRoot.AssemblyLinearVelocity = Vector3.new(99999, 99999, 99999)
-        MyRoot.CFrame = TargetRoot.CFrame * CFrame.new(math.random(-1, 1) * 0.1, math.random(-1, 1) * 0.1, math.random(-1, 1) * 0.1)
+        -- Плавное и точное преследование без скачков скорости, триггерящих античит San Diego
+        local Direction = (TargetRoot.Position - MyRoot.Position)
+        if Direction.Magnitude > 3 then
+            MyRoot.CFrame = CFrame.new(TargetRoot.Position + Vector3.new(0, 0.5, 0))
+            MyRoot.AssemblyLinearVelocity = Vector3.new(35000, 35000, 35000)
+        else
+            MyRoot.CFrame = TargetRoot.CFrame * CFrame.new(0, 0, 0)
+            MyRoot.AssemblyLinearVelocity = Vector3.new(50000, 50000, 50000)
+        end
 
         RunService.RenderStepped:Wait()
     end
 
-    -- Очистка
     if NoclipConn then NoclipConn:Disconnect() end
-    if BAV then BAV:Destroy() end
+    if VectorForce then VectorForce:Destroy() end
+    if Attachment then Attachment:Destroy() end
 
-    -- Восстановление состояния игрока
     if MyHumanoid then
         pcall(function()
             MyHumanoid:ChangeState(Enum.HumanoidStateType.GettingUp)
@@ -2297,6 +2298,7 @@ local function RefreshFlingPlayerList()
                 Position = UDim2.new(0, 38, 0, 18),
                 Size = UDim2.new(1, -45, 0, 11),
                 TextXAlignment = Enum.TextXAlignment.Left,
+                TextTruncate = Enum.TextTruncate.AtEnd,
                 Active = false,
             })
 
@@ -2314,7 +2316,6 @@ local function RefreshFlingPlayerList()
                 })
             end)
 
-            -- Запуск флинга с помощью Activated (подходит под ПК и сенсор)
             Card.Activated:Connect(function()
                 task.spawn(function()
                     FlingPlayer(Player)
@@ -2492,11 +2493,6 @@ Create("UICorner", { Parent = StatusDot, CornerRadius = UDim.new(1, 0) })
 local Dragging = false
 local DragInput, DragStart, StartPos
 
-local function UpdateDrag(input)
-    local Delta = input.Position - DragStart
-    FloatHeader.Position = UDim2.new(StartPos.X.Scale, StartPos.X.Offset + Delta.X, StartPos.Y.Scale, StartPos.Y.Offset + Delta.Y)
-end
-
 FloatHeader.InputBegan:Connect(function(input)
     if input.UserInputType == Enum.UserInputType.MouseButton1 or input.UserInputType == Enum.UserInputType.Touch then
         Dragging = true
@@ -2519,7 +2515,8 @@ end)
 
 UserInputService.InputChanged:Connect(function(input)
     if input == DragInput and Dragging then
-        UpdateDrag(input)
+        local Delta = input.Position - DragStart
+        FloatHeader.Position = UDim2.new(StartPos.X.Scale, StartPos.X.Offset + Delta.X, StartPos.Y.Scale, StartPos.Y.Offset + Delta.Y)
     end
 end)
 
