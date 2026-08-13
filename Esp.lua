@@ -2085,7 +2085,7 @@ local function CreatePage(PageConfig)
     return PageData
 end
 
--- === ИСПРАВЛЕННАЯ СИСТЕМА ФЛИНГА (РАБОТАЕТ В ДВИЖЕНИИ И НА ХОДУ) ===
+-- === ИСПРАВЛЕННАЯ СИСТЕМА ФЛИНГА (НЕ УБИВАЕТ СЕБЯ, РАБОТАЕТ В ДВИЖЕНИИ) ===
 local IsFlinging = false
 local function FlingPlayer(TargetPlayer)
     if IsFlinging or not TargetPlayer or TargetPlayer == LocalPlayer then return end
@@ -2104,22 +2104,20 @@ local function FlingPlayer(TargetPlayer)
     IsFlinging = true
     local OldCFrame = MyRoot.CFrame
 
-    -- Отключаем коллизию всех частей, кроме RootPart (для жесткого удара)
+    -- Отключаем коллизию ВСЕХ частей (включая RootPart) для предотвращения получения урона
     local NoclipConn = RunService.Stepped:Connect(function()
         if MyChar then
-            for _, Part in ipairs(MyChar:GetChildren()) do
+            for _, Part in ipairs(MyChar:GetDescendants()) do
                 if Part:IsA("BasePart") then
-                    if Part == MyRoot then
-                        Part.CanCollide = true
-                    else
-                        Part.CanCollide = false
-                    end
+                    Part.CanCollide = false
                 end
             end
         end
     end)
 
+    -- Временно отключаем смерть от падений/столкновений
     pcall(function()
+        MyHumanoid:SetStateEnabled(Enum.HumanoidStateType.Dead, false)
         MyHumanoid:ChangeState(Enum.HumanoidStateType.Physics)
         MyHumanoid.Sit = false
     end)
@@ -2134,17 +2132,21 @@ local function FlingPlayer(TargetPlayer)
 
         Toggle = not Toggle
 
-        -- Максимальная угловая скорость по всем осям для непрерывного флинг-импульса
-        MyRoot.AssemblyAngularVelocity = Vector3.new(200000, 200000, 200000)
+        -- Безопасный мощный физический импульс вращения
+        MyRoot.AssemblyAngularVelocity = Vector3.new(99999, 99999, 99999)
 
-        -- Предикт скорости и направления цели
+        -- Управление линейной скоростью под движение цели
         local TargetVel = TargetRoot.AssemblyLinearVelocity
-        MyRoot.AssemblyLinearVelocity = Vector3.new(TargetVel.X * 1.5, 2000, TargetVel.Z * 1.5)
+        MyRoot.AssemblyLinearVelocity = Vector3.new(TargetVel.X * 1.5, 1500, TargetVel.Z * 1.5)
 
-        -- Динамическое чередование позиций прямо в теле цели для гарантии столкновений при движении
+        -- Упреждающее микро-смещение в модель врага
         local Offset = Toggle and Vector3.new(0, 0.4, 0) or Vector3.new(0, -0.4, 0)
-        local PredictedCFrame = TargetRoot.CFrame + (TargetVel * 0.12)
-        MyRoot.CFrame = PredictedCFrame * CFrame.new(Offset)
+        local PredictedCFrame = TargetRoot.CFrame + (TargetVel * 0.1)
+
+        -- Защита от телепорта под текстуры/карту
+        if PredictedCFrame.Y > (workspace.FallenPartsDestroyHeight + 20) then
+            MyRoot.CFrame = PredictedCFrame * CFrame.new(Offset)
+        end
     end)
 
     while IsFlinging and TargetPlayer and TargetPlayer.Parent and TargetChar and TargetChar.Parent do
@@ -2152,7 +2154,7 @@ local function FlingPlayer(TargetPlayer)
         if TargetHumanoid and TargetHumanoid.Health <= 0 then break end
         if MyHumanoid and MyHumanoid.Health <= 0 then break end
 
-        -- Если игрока откинуло на высокую скорость — завершаем
+        -- Если отбросило со скоростью выше 250 — цель успешна отлетела
         if TargetRoot and TargetRoot.AssemblyLinearVelocity.Magnitude > 250 then
             break
         end
@@ -2166,7 +2168,7 @@ local function FlingPlayer(TargetPlayer)
     if PhysicsConn then PhysicsConn:Disconnect() end
     if NoclipConn then NoclipConn:Disconnect() end
 
-    -- Сброс импульсов и возврат персонажа на исходную позицию
+    -- Полноценный сброс скоростей и возврат в безопасное состояние
     if MyRoot then
         MyRoot.AssemblyLinearVelocity = Vector3.zero
         MyRoot.AssemblyAngularVelocity = Vector3.zero
@@ -2175,6 +2177,7 @@ local function FlingPlayer(TargetPlayer)
 
     if MyHumanoid and MyHumanoid.Health > 0 then
         pcall(function()
+            MyHumanoid:SetStateEnabled(Enum.HumanoidStateType.Dead, true)
             MyHumanoid:ChangeState(Enum.HumanoidStateType.GettingUp)
         end)
     end
