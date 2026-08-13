@@ -1,3 +1,5 @@
+Чтобы код был полностью целый
+Слушай все еще не работает флинг когда нажимаю на профиля игроков исправь это вот код 
 local DarkHub = {} -- Dark Hub UI (Pulse Hub Styled Sizes - Compact)
 
 local Players = game:GetService("Players")
@@ -2085,39 +2087,54 @@ local function CreatePage(PageConfig)
     return PageData
 end
 
--- === РАБОЧАЯ СИСТЕМА ФЛИНГА (ИСПРАВЛЕНО) ===
+-- === ИСПРАВЛЕННАЯ СИСТЕМА ФЛИНГА ===
 local IsFlinging = false
 local function FlingPlayer(TargetPlayer)
     if IsFlinging or not TargetPlayer or TargetPlayer == LocalPlayer then return end
 
-    local MyChar = LocalPlayer.Character
-    if not MyChar or not MyChar:FindFirstChild("HumanoidRootPart") then return end
-    local MyRoot = MyChar:FindFirstChild("HumanoidRootPart")
-    local MyHumanoid = MyChar:FindFirstChildOfClass("Humanoid")
+    local MyChar = LocalPlayer.Character or LocalPlayer.CharacterAdded:Wait()
+    local TargetChar = TargetPlayer.Character or TargetPlayer.CharacterAdded:Wait()
+    if not MyChar or not TargetChar then return end
 
-    local TargetChar = TargetPlayer.Character
-    if not TargetChar or not TargetChar:FindFirstChild("HumanoidRootPart") then return end
-    local TargetRoot = TargetChar:FindFirstChild("HumanoidRootPart")
+    local MyRoot = MyChar:FindFirstChild("HumanoidRootPart") or MyChar:FindFirstChild("Torso") or MyChar:FindFirstChild("UpperTorso")
+    local TargetRoot = TargetChar:FindFirstChild("HumanoidRootPart") or TargetChar:FindFirstChild("Torso") or TargetChar:FindFirstChild("UpperTorso")
+    local MyHumanoid = MyChar:FindFirstChildOfClass("Humanoid")
+    local TargetHumanoid = TargetChar:FindFirstChildOfClass("Humanoid")
+
+    if not MyRoot or not TargetRoot then return end
 
     IsFlinging = true
 
+    -- Сохраняем исходные координаты и физику
     local OldCFrame = MyRoot.CFrame
     local OldVelocity = MyRoot.AssemblyLinearVelocity
     local OldRotVelocity = MyRoot.AssemblyAngularVelocity
 
-    -- Мощная физическая скорость и вращение
+    -- Мощная угловая скорость и сила
     local BAV = Instance.new("BodyAngularVelocity")
     BAV.Name = "DarkHubFlingVelocity"
     BAV.Axis = Vector3.new(0, 1, 0)
-    BAV.AngularVelocity = Vector3.new(0, 999999, 0)
-    BAV.MaxTorque = Vector3.new(math.huge, math.huge, math.huge)
+    BAV.AngularVelocity = Vector3.new(0, 99999, 0)
+    BAV.MaxTorque = Vector3.new(0, math.huge, 0)
+    BAV.P = math.huge
     BAV.Parent = MyRoot
 
     local BV = Instance.new("BodyVelocity")
     BV.Name = "DarkHubFlingForce"
-    BV.Velocity = Vector3.new(999999, 999999, 999999)
+    BV.Velocity = Vector3.new(99999, 99999, 99999)
     BV.MaxForce = Vector3.new(math.huge, math.huge, math.huge)
     BV.Parent = MyRoot
+
+    -- Включение NoClip на время флинга
+    local NoclipConn = RunService.Stepped:Connect(function()
+        if MyChar then
+            for _, Part in ipairs(MyChar:GetDescendants()) do
+                if Part:IsA("BasePart") then
+                    Part.CanCollide = false
+                end
+            end
+        end
+    end)
 
     if MyHumanoid then
         pcall(function()
@@ -2126,28 +2143,28 @@ local function FlingPlayer(TargetPlayer)
     end
 
     local StartTime = tick()
-    local Timeout = 2.0 -- Длительность флинга (сек)
+    local Timeout = 2.5 -- Максимальная длительность флинга (сек)
 
-    while IsFlinging and TargetPlayer and TargetPlayer.Parent do
+    while IsFlinging and TargetPlayer and TargetPlayer.Parent and TargetChar and TargetChar.Parent do
         if tick() - StartTime >= Timeout then break end
-        
-        TargetChar = TargetPlayer.Character
-        if TargetChar and TargetChar:FindFirstChild("HumanoidRootPart") then
-            TargetRoot = TargetChar.HumanoidRootPart
-            MyRoot.CFrame = TargetRoot.CFrame * CFrame.new(math.random(-1, 1), 0, math.random(-1, 1))
-            MyRoot.AssemblyLinearVelocity = Vector3.new(999999, 999999, 999999)
-            MyRoot.AssemblyAngularVelocity = Vector3.new(0, 999999, 0)
-        else
-            break
-        end
+        if TargetHumanoid and TargetHumanoid.Health <= 0 then break end
+
+        TargetRoot = TargetChar:FindFirstChild("HumanoidRootPart") or TargetChar:FindFirstChild("Torso") or TargetChar:FindFirstChild("UpperTorso")
+        if not TargetRoot then break end
+
+        -- Телепортация к цели с высокой частотой
+        MyRoot.CFrame = TargetRoot.CFrame * CFrame.new(math.random(-2, 2), 0, math.random(-2, 2))
+        MyRoot.AssemblyLinearVelocity = Vector3.new(99999, 99999, 99999)
 
         RunService.RenderStepped:Wait()
     end
 
-    -- Очистка сил
+    -- Очистка
+    if NoclipConn then NoclipConn:Disconnect() end
     if BAV then BAV:Destroy() end
     if BV then BV:Destroy() end
 
+    -- Восстановление состояния игрока
     if MyHumanoid then
         pcall(function()
             MyHumanoid:ChangeState(Enum.HumanoidStateType.GettingUp)
@@ -2297,7 +2314,7 @@ local function RefreshFlingPlayerList()
                 })
             end)
 
-            -- Запуск флинга по нажатию
+            -- Надежный запуск флинга по нажатию
             Card.MouseButton1Down:Connect(function()
                 task.spawn(function()
                     FlingPlayer(Player)
