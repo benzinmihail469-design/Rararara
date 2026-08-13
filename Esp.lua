@@ -2085,7 +2085,7 @@ local function CreatePage(PageConfig)
     return PageData
 end
 
--- === НАДЁЖНАЯ СИСТЕМА ФЛИНГА (БЕЗ ДЕТЕКТА АНТИЧИТА SAN DIEGO) ===
+-- === ИСПРАВЛЕННАЯ СИСТЕМА ФЛИНГА ===
 local IsFlinging = false
 local function FlingPlayer(TargetPlayer)
     if IsFlinging or not TargetPlayer or TargetPlayer == LocalPlayer then return end
@@ -2107,24 +2107,12 @@ local function FlingPlayer(TargetPlayer)
     local OldVelocity = MyRoot.AssemblyLinearVelocity
     local OldRotVelocity = MyRoot.AssemblyAngularVelocity
 
-    -- Используем легитимную физику через VectorForce вместо подозрительных BodyVelocity/AngularVelocity
-    local Attachment = Instance.new("Attachment", MyRoot)
-    local VectorForce = Instance.new("VectorForce")
-    VectorForce.Attachment0 = Attachment
-    VectorForce.Force = Vector3.new(0, 0, 0)
-    VectorForce.RelativeTo = Enum.ActuatorRelativeTo.World
-    VectorForce.Parent = MyRoot
-
-    -- Безопасный обход коллизий для персонажа
+    -- Noclip для прохождения сквозь стены и объекты во время флинга
     local NoclipConn = RunService.Stepped:Connect(function()
         if MyChar then
             for _, Part in ipairs(MyChar:GetDescendants()) do
                 if Part:IsA("BasePart") then
-                    if Part == MyRoot then
-                        Part.CanCollide = true
-                    else
-                        Part.CanCollide = false
-                    end
+                    Part.CanCollide = false
                 end
             end
         end
@@ -2137,7 +2125,23 @@ local function FlingPlayer(TargetPlayer)
     end
 
     local StartTime = tick()
-    local Timeout = 2.0
+    local Timeout = 2.5
+    local Angle = 0
+
+    -- Использование Heartbeat для точного применения физики на каждом тике
+    local PhysicsConn
+    PhysicsConn = RunService.Heartbeat:Connect(function()
+        if not IsFlinging or not TargetRoot or not TargetRoot.Parent or not MyRoot or not MyRoot.Parent then return end
+
+        Angle = Angle + 100
+        -- Создаем огромную угловую скорость вращения (AngularVelocity) — ключевой фактор флинга
+        MyRoot.AssemblyAngularVelocity = Vector3.new(0, 999999, 0)
+        MyRoot.AssemblyLinearVelocity = Vector3.new(50000, 50000, 50000)
+
+        -- Микро-смещение CFrame вокруг цели для соударения физических хитбоксов
+        local Offset = Vector3.new(math.cos(Angle) * 0.1, 0, math.sin(Angle) * 0.1)
+        MyRoot.CFrame = TargetRoot.CFrame * CFrame.new(Offset)
+    end)
 
     while IsFlinging and TargetPlayer and TargetPlayer.Parent and TargetChar and TargetChar.Parent do
         if tick() - StartTime >= Timeout then break end
@@ -2146,22 +2150,11 @@ local function FlingPlayer(TargetPlayer)
         TargetRoot = TargetChar:FindFirstChild("HumanoidRootPart") or TargetChar:FindFirstChild("Torso") or TargetChar:FindFirstChild("UpperTorso")
         if not TargetRoot then break end
 
-        -- Плавное и точное преследование без скачков скорости, триггерящих античит San Diego
-        local Direction = (TargetRoot.Position - MyRoot.Position)
-        if Direction.Magnitude > 3 then
-            MyRoot.CFrame = CFrame.new(TargetRoot.Position + Vector3.new(0, 0.5, 0))
-            MyRoot.AssemblyLinearVelocity = Vector3.new(35000, 35000, 35000)
-        else
-            MyRoot.CFrame = TargetRoot.CFrame * CFrame.new(0, 0, 0)
-            MyRoot.AssemblyLinearVelocity = Vector3.new(50000, 50000, 50000)
-        end
-
-        RunService.RenderStepped:Wait()
+        task.wait()
     end
 
+    if PhysicsConn then PhysicsConn:Disconnect() end
     if NoclipConn then NoclipConn:Disconnect() end
-    if VectorForce then VectorForce:Destroy() end
-    if Attachment then Attachment:Destroy() end
 
     if MyHumanoid then
         pcall(function()
