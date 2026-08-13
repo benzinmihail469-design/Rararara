@@ -2085,7 +2085,7 @@ local function CreatePage(PageConfig)
     return PageData
 end
 
--- === ИСПРАВЛЕННАЯ СИСТЕМА ФЛИНГА ===
+-- === ИСПРАВЛЕННАЯ И УСКОРЕННАЯ СИСТЕМА ФЛИНГА ===
 local IsFlinging = false
 local function FlingPlayer(TargetPlayer)
     if IsFlinging or not TargetPlayer or TargetPlayer == LocalPlayer then return end
@@ -2107,12 +2107,16 @@ local function FlingPlayer(TargetPlayer)
     local OldVelocity = MyRoot.AssemblyLinearVelocity
     local OldRotVelocity = MyRoot.AssemblyAngularVelocity
 
-    -- Noclip для прохождения сквозь стены и объекты во время флинга
+    -- Отключаем коллизию только для второстепенных частей, сохраняя CanCollide = true у Root для передачи импульса
     local NoclipConn = RunService.Stepped:Connect(function()
         if MyChar then
             for _, Part in ipairs(MyChar:GetDescendants()) do
                 if Part:IsA("BasePart") then
-                    Part.CanCollide = false
+                    if Part == MyRoot then
+                        Part.CanCollide = true
+                    else
+                        Part.CanCollide = false
+                    end
                 end
             end
         end
@@ -2121,31 +2125,41 @@ local function FlingPlayer(TargetPlayer)
     if MyHumanoid then
         pcall(function()
             MyHumanoid:ChangeState(Enum.HumanoidStateType.Physics)
+            MyHumanoid.Sit = false
         end)
     end
 
     local StartTime = tick()
-    local Timeout = 2.5
+    local Timeout = 1.2
     local Angle = 0
 
-    -- Использование Heartbeat для точного применения физики на каждом тике
     local PhysicsConn
-    PhysicsConn = RunService.Heartbeat:Connect(function()
+    PhysicsConn = RunService.Heartbeat:Connect(function(dt)
         if not IsFlinging or not TargetRoot or not TargetRoot.Parent or not MyRoot or not MyRoot.Parent then return end
 
-        Angle = Angle + 100
-        -- Создаем огромную угловую скорость вращения (AngularVelocity) — ключевой фактор флинга
-        MyRoot.AssemblyAngularVelocity = Vector3.new(0, 999999, 0)
-        MyRoot.AssemblyLinearVelocity = Vector3.new(50000, 50000, 50000)
+        Angle = Angle + 180
+        
+        -- Экстремальная угловая и линейная скорость для моментального откидывания
+        MyRoot.AssemblyAngularVelocity = Vector3.new(999999, 999999, 999999)
+        MyRoot.AssemblyLinearVelocity = Vector3.new(999999, 999999, 999999)
 
-        -- Микро-смещение CFrame вокруг цели для соударения физических хитбоксов
-        local Offset = Vector3.new(math.cos(Angle) * 0.1, 0, math.sin(Angle) * 0.1)
-        MyRoot.CFrame = TargetRoot.CFrame * CFrame.new(Offset)
+        -- Учитываем движение цели (предикшн для ходячих игроков)
+        local TargetVel = TargetRoot.AssemblyLinearVelocity
+        local PredictedCFrame = TargetRoot.CFrame + (TargetVel * dt * 2)
+
+        -- Микро-смещение вокруг прогнозируемой позиции цели
+        local Offset = Vector3.new(math.sin(Angle) * 0.1, 0, math.cos(Angle) * 0.1)
+        MyRoot.CFrame = PredictedCFrame * CFrame.new(Offset)
     end)
 
     while IsFlinging and TargetPlayer and TargetPlayer.Parent and TargetChar and TargetChar.Parent do
         if tick() - StartTime >= Timeout then break end
         if TargetHumanoid and TargetHumanoid.Health <= 0 then break end
+        
+        -- Если цель уже подхвачена физикой и отлетела
+        if TargetRoot and TargetRoot.AssemblyLinearVelocity.Magnitude > 250 then
+            break
+        end
 
         TargetRoot = TargetChar:FindFirstChild("HumanoidRootPart") or TargetChar:FindFirstChild("Torso") or TargetChar:FindFirstChild("UpperTorso")
         if not TargetRoot then break end
