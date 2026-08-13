@@ -2085,7 +2085,7 @@ local function CreatePage(PageConfig)
     return PageData
 end
 
--- === БЕЗОПАСНАЯ И ЭФФЕКТИВНАЯ СИСТЕМА ФЛИНГА ===
+-- === ИСПРАВЛЕННАЯ СИСТЕМА ФЛИНГА (РАБОТАЕТ В ДВИЖЕНИИ И В КАТКАХ) ===
 local IsFlinging = false
 local function FlingPlayer(TargetPlayer)
     if IsFlinging or not TargetPlayer or TargetPlayer == LocalPlayer then return end
@@ -2102,14 +2102,12 @@ local function FlingPlayer(TargetPlayer)
     if not MyRoot or not TargetRoot or not MyHumanoid or MyHumanoid.Health <= 0 then return end
 
     IsFlinging = true
-
     local OldCFrame = MyRoot.CFrame
 
-    -- Отключаем коллизию для всех деталей персонажа КРОМЕ HumanoidRootPart,
-    -- чтобы передавать физический импульс, но не умирать от соприкосновений.
+    -- Включаем коллизию строго для HumanoidRootPart для передачи физического импульса цели, отключая остальное
     local NoclipConn = RunService.Stepped:Connect(function()
         if MyChar then
-            for _, Part in ipairs(MyChar:GetDescendants()) do
+            for _, Part in ipairs(MyChar:GetChildren()) do
                 if Part:IsA("BasePart") then
                     if Part == MyRoot then
                         Part.CanCollide = true
@@ -2127,40 +2125,34 @@ local function FlingPlayer(TargetPlayer)
     end)
 
     local StartTime = tick()
-    local Timeout = 2.0 -- Увеличенный таймаут для успешного флинга бегущей цели
-    local Toggle = false
+    local Timeout = 1.5
+    local Angle = 0
 
     local PhysicsConn
     PhysicsConn = RunService.Heartbeat:Connect(function(dt)
         if not IsFlinging or not TargetRoot or not TargetRoot.Parent or not MyRoot or not MyRoot.Parent or not MyHumanoid or MyHumanoid.Health <= 0 then return end
 
-        Toggle = not Toggle
+        Angle = Angle + 100
 
-        -- Чередуем векторы мощной угловой скорости для максимальной передачи энергии цели
-        local VelocityVector = Vector3.new(0, 200000, 0)
-        if Toggle then
-            VelocityVector = Vector3.new(200000, 200000, 200000)
-        end
+        -- Высокая скорость вращения для импульса
+        MyRoot.AssemblyAngularVelocity = Vector3.new(0, 100000, 0)
 
-        MyRoot.AssemblyAngularVelocity = VelocityVector
-        MyRoot.AssemblyLinearVelocity = Vector3.new(0, 4000, 0)
-
-        -- Упреждающий предикшн позиции бегущей/движущейся цели
+        -- Учитываем скорость цели, чтобы липнуть вплотную на ходу
         local TargetVel = TargetRoot.AssemblyLinearVelocity
-        local PredictedCFrame = TargetRoot.CFrame + (TargetVel * (dt * 1.5))
+        MyRoot.AssemblyLinearVelocity = TargetVel + Vector3.new(0, 50, 0)
 
-        -- Микро-смещение вплотную к цели
-        local Offset = Toggle and Vector3.new(0.01, 0, 0.01) or Vector3.new(-0.01, 0, -0.01)
-        MyRoot.CFrame = PredictedCFrame * CFrame.new(Offset)
+        -- Вращение CFrame по кругу вокруг цели
+        local Offset = Vector3.new(math.sin(Angle) * 0.1, 0, math.cos(Angle) * 0.1)
+        MyRoot.CFrame = (TargetRoot.CFrame + TargetVel * dt) * CFrame.new(Offset)
     end)
 
     while IsFlinging and TargetPlayer and TargetPlayer.Parent and TargetChar and TargetChar.Parent do
         if tick() - StartTime >= Timeout then break end
         if TargetHumanoid and TargetHumanoid.Health <= 0 then break end
         if MyHumanoid and MyHumanoid.Health <= 0 then break end
-        
-        -- Порог скорости отлета цели повышен, чтобы не сбрасываться при обычных прыжках/беге
-        if TargetRoot and TargetRoot.AssemblyLinearVelocity.Magnitude > 400 then
+
+        -- Если скорость цели превысила порог — откинули
+        if TargetRoot and TargetRoot.AssemblyLinearVelocity.Magnitude > 120 then
             break
         end
 
@@ -2173,7 +2165,7 @@ local function FlingPlayer(TargetPlayer)
     if PhysicsConn then PhysicsConn:Disconnect() end
     if NoclipConn then NoclipConn:Disconnect() end
 
-    -- Безопасное гашение импульса
+    -- Сброс импульса и возврат в исходную позицию
     if MyRoot then
         MyRoot.AssemblyLinearVelocity = Vector3.zero
         MyRoot.AssemblyAngularVelocity = Vector3.zero
@@ -2300,7 +2292,7 @@ local function RefreshFlingPlayerList()
 
             Create("TextLabel", {
                 Parent = Card,
-                Text = "Lobby",
+                Text = "In Game",
                 TextColor3 = Theme.Text,
                 TextTransparency = 0.5,
                 BackgroundTransparency = 1,
