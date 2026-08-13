@@ -2085,7 +2085,7 @@ local function CreatePage(PageConfig)
     return PageData
 end
 
--- === МОЩНАЯ И ОПТИМИЗИРОВАННАЯ СИСТЕМА ФЛИНГА ===
+-- === ИСПРАВЛЕННАЯ СИСТЕМА ФЛИНГА ===
 local IsFlinging = false
 local function FlingPlayer(TargetPlayer)
     if IsFlinging or not TargetPlayer or TargetPlayer == LocalPlayer then return end
@@ -2106,13 +2106,12 @@ local function FlingPlayer(TargetPlayer)
     local OldCFrame = MyRoot.CFrame
     local OldPhysProps = MyRoot.CustomPhysicalProperties
 
-    -- Повышаем массу и плотность корневой части до предела для разрушительной передачи кинетической энергии
+    -- Включаем PlatformStand для предотвращения смерти от физики
     pcall(function()
-        MyRoot.CustomPhysicalProperties = PhysicalProperties.new(100, 0.3, 0.5, 1, 1)
+        MyHumanoid.PlatformStand = true
     end)
 
-    -- Включаем CanCollide ТОЛЬКО для HumanoidRootPart (чтобы наносить физический удар),
-    -- но отключаем для остальных частей тела (чтобы персонаж не спотыкался)
+    -- Отключаем CanCollide для остальных частей тела, кроме HumanoidRootPart
     local NoclipConn = RunService.Stepped:Connect(function()
         if MyChar then
             for _, Part in ipairs(MyChar:GetDescendants()) do
@@ -2127,13 +2126,8 @@ local function FlingPlayer(TargetPlayer)
         end
     end)
 
-    pcall(function()
-        MyHumanoid:ChangeState(Enum.HumanoidStateType.Physics)
-        MyHumanoid.Sit = false
-    end)
-
     local StartTime = tick()
-    local Timeout = 1.5 -- Тайм-аут для полного отбрасывания
+    local Timeout = 2.0
     local Angle = 0
 
     local PhysicsConn
@@ -2142,18 +2136,16 @@ local function FlingPlayer(TargetPlayer)
 
         Angle = Angle + 100
 
-        -- Колоссальная скорость вращения по всем 3 осям для максимального импульса
-        MyRoot.AssemblyAngularVelocity = Vector3.new(999999, 999999, 999999)
-        MyRoot.AssemblyLinearVelocity = Vector3.new(0, 999999, 0)
+        -- Безопасные и эффективные импульсы вращения и движения
+        MyRoot.AssemblyAngularVelocity = Vector3.new(0, 100000, 0)
+        MyRoot.AssemblyLinearVelocity = Vector3.new(10000, 10000, 10000)
 
-        -- Улучшенный Предикшн: перехват цели на ходу с запасом по вектору скорости
         local TargetVel = TargetRoot.AssemblyLinearVelocity
-        local PredictionTime = math.clamp(dt * 3.5, 0.08, 0.25)
-        local PredictedPosition = TargetRoot.CFrame + (TargetVel * PredictionTime)
+        local PredictedPosition = TargetRoot.CFrame + (TargetVel * dt * 2)
 
-        -- Динамическая микро-орбита вплотную к цели
-        local Offset = Vector3.new(math.sin(Angle) * 0.03, 0, math.cos(Angle) * 0.03)
-        MyRoot.CFrame = PredictedPosition * CFrame.new(Offset) * CFrame.Angles(math.rad(Angle * 5), math.rad(Angle * 5), 0)
+        -- Безопасный радиус контакта вплотную к цели
+        local Offset = Vector3.new(math.sin(math.rad(Angle)) * 1.2, 0, math.cos(math.rad(Angle)) * 1.2)
+        MyRoot.CFrame = PredictedPosition * CFrame.new(Offset)
     end)
 
     while IsFlinging and TargetPlayer and TargetPlayer.Parent and TargetChar and TargetChar.Parent do
@@ -2161,8 +2153,8 @@ local function FlingPlayer(TargetPlayer)
         if TargetHumanoid and TargetHumanoid.Health <= 0 then break end
         if MyHumanoid and MyHumanoid.Health <= 0 then break end
 
-        -- Если цель успешно набрала запредельную скорость и отлетела
-        if TargetRoot and TargetRoot.AssemblyLinearVelocity.Magnitude > 100 then
+        -- Если цель набрала скорость отбрасывания
+        if TargetRoot and TargetRoot.AssemblyLinearVelocity.Magnitude > 150 then
             break
         end
 
@@ -2175,7 +2167,7 @@ local function FlingPlayer(TargetPlayer)
     if PhysicsConn then PhysicsConn:Disconnect() end
     if NoclipConn then NoclipConn:Disconnect() end
 
-    -- Безопасное гашение импульса и возврат персонажа
+    -- Гасим скорости и возвращаем персонажа в исходную точку
     if MyRoot then
         MyRoot.AssemblyLinearVelocity = Vector3.zero
         MyRoot.AssemblyAngularVelocity = Vector3.zero
@@ -2187,6 +2179,7 @@ local function FlingPlayer(TargetPlayer)
 
     if MyHumanoid and MyHumanoid.Health > 0 then
         pcall(function()
+            MyHumanoid.PlatformStand = false
             MyHumanoid:ChangeState(Enum.HumanoidStateType.GettingUp)
         end)
     end
