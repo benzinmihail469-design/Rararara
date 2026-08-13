@@ -1,3 +1,4 @@
+исправь флинг чтобы он игроков откидывал которые тоже ходят 
 local DarkHub = {} -- Dark Hub UI (Pulse Hub Styled Sizes - Compact)
 
 local Players = game:GetService("Players")
