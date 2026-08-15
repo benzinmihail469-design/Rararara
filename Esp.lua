@@ -1,158 +1,106 @@
-local OrionLib = loadstring(game:HttpGet(('https://raw.githubusercontent.com/shlexware/Orion/main/source')))()
+-- Загрузка библиотеки Neverlose UI (raw ссылка для корректного выполнения)
+local Neverlose_Main = loadstring(game:HttpGet("https://raw.githubusercontent.com/Mana42138/Neverlose-UI/main/Source.lua"))()
 
 -- Создание главного окна
-local Window = OrionLib:MakeWindow({
-    Name = "Dark Hub | Orion Edition",
-    HidePremium = false,
-    SaveConfig = true,
-    ConfigFolder = "DarkHubOrionConfig",
-    IntroEnabled = true,
-    IntroText = "Dark Hub",
-    IntroIcon = "rbxassetid://4483345998"
-})
+local Window = Neverlose_Main:AddWindow("Dark Hub", "Neverlose Edition")
+
+-- === ВКЛАДКИ (TABS) ===
+local LegitTab = Window:AddTab("Legitbot")
+local VisualsTab = Window:AddTab("Visuals")
+local MiscTab = Window:AddTab("Miscellaneous")
+local ConfigTab = Window:AddTab("Configs")
 
 -- ==========================================
--- === ВКЛАДКА: MAIN ===
+-- 1. ВКЛАДКА: LEGITBOT
 -- ==========================================
-local MainTab = Window:MakeTab({
-    Name = "Main",
-    Icon = "rbxassetid://4483345998",
-    PremiumOnly = false
-})
+local AimSection = LegitTab:AddSection("Aimbot Settings")
 
-MainTab:AddSection({
-    Name = "Параметры персонажа"
-})
+AimSection:AddToggle("Enable Aimbot", false, function(state)
+    getgenv().AimbotEnabled = state
+end)
 
-MainTab:AddToggle({
-    Name = "Включить усилитель",
-    Default = false,
-    Save = true,
-    Flag = "Toggle_SpeedBoost",
-    Callback = function(Value)
-        print("Статус:", Value)
-    end    
-})
+AimSection:AddSlider("Aimbot Smooth", 1, 20, 5, function(val)
+    getgenv().AimbotSmooth = val
+end)
 
-MainTab:AddSlider({
-    Name = "Скорость ходьбы (WalkSpeed)",
-    Min = 16,
-    Max = 250,
-    Default = 16,
-    Color = Color3.fromRGB(80, 120, 255),
-    Increment = 1,
-    ValueName = "Speed",
-    Save = true,
-    Flag = "Slider_WalkSpeed",
-    Callback = function(Value)
-        local char = game.Players.LocalPlayer.Character
-        if char and char:FindFirstChild("Humanoid") then
-            char.Humanoid.WalkSpeed = Value
-        end
-    end    
-})
+AimSection:AddSlider("FOV Radius", 10, 500, 90, function(val)
+    getgenv().AimbotFOV = val
+end)
 
-MainTab:AddSlider({
-    Name = "Высота прыжка (JumpPower)",
-    Min = 50,
-    Max = 300,
-    Default = 50,
-    Color = Color3.fromRGB(80, 255, 120),
-    Increment = 1,
-    ValueName = "Power",
-    Save = true,
-    Flag = "Slider_JumpPower",
-    Callback = function(Value)
-        local char = game.Players.LocalPlayer.Character
-        if char and char:FindFirstChild("Humanoid") then
-            char.Humanoid.JumpPower = Value
-        end
-    end    
-})
+AimSection:AddDropdown("Target Bone", {"Head", "Torso", "HumanoidRootPart"}, "Head", function(selected)
+    getgenv().AimTargetBone = selected
+end)
+
+AimSection:AddKeybind("Aimbot Key", Enum.KeyCode.E, function()
+    print("Aimbot key pressed")
+end)
 
 -- ==========================================
--- === ВКЛАДКА: VISUALS ===
+-- 2. ВКЛАДКА: VISUALS
 -- ==========================================
-local VisualsTab = Window:MakeTab({
-    Name = "Visuals",
-    Icon = "rbxassetid://4483345998",
-    PremiumOnly = false
-})
+local EspSection = VisualsTab:AddSection("Player ESP")
 
-VisualsTab:AddSection({
-    Name = "Настройки отображения"
-})
+EspSection:AddToggle("Enable Player ESP", false, function(state)
+    _G.ESPEnabled = state
+end)
 
-VisualsTab:AddDropdown({
-    Name = "Режим подсветки",
-    Default = "Boxes",
-    Options = {"Boxes", "Chams", "Tracers", "Head Dots"},
-    Save = true,
-    Flag = "Dropdown_ESPMode",
-    Callback = function(Value)
-        print("Выбран режим:", Value)
-    end
-})
+EspSection:AddToggle("Enable Weapon ESP", false, function(state)
+    _G.GunESPEnabled = state
+end)
 
-VisualsTab:AddColorpicker({
-    Name = "Цвет элементов",
-    Default = Color3.fromRGB(255, 0, 85),
-    Save = true,
-    Flag = "Color_Accent",
-    Callback = function(Value)
-        print("Новый цвет:", Value)
-    end
-})
+EspSection:AddColorpicker("ESP Color", Color3.fromRGB(0, 162, 255), function(color)
+    getgenv().ESPColor = color
+end)
+
+local RenderSection = VisualsTab:AddSection("World & Camera")
+
+RenderSection:AddSlider("Camera FOV", 70, 120, 70, function(val)
+    game:GetService("Workspace").CurrentCamera.FieldOfView = val
+end)
 
 -- ==========================================
--- === ВКЛАДКА: SETTINGS ===
+-- 3. ВКЛАДКА: MISCELLANEOUS
 -- ==========================================
-local SettingsTab = Window:MakeTab({
-    Name = "Settings",
-    Icon = "rbxassetid://4483345998",
-    PremiumOnly = false
-})
+local MovementSection = MiscTab:AddSection("Movement Options")
 
-SettingsTab:AddSection({
-    Name = "Управление скриптом"
-})
-
-SettingsTab:AddBind({
-    Name = "Горячая клавиша меню",
-    Default = Enum.KeyCode.RightControl,
-    Hold = false,
-    Callback = function()
-        print("Клавиша нажата")
+MovementSection:AddSlider("WalkSpeed Multiplier", 16, 100, 16, function(speed)
+    local char = game:GetService("Players").LocalPlayer.Character
+    if char and char:FindFirstChildOfClass("Humanoid") then
+        char:FindFirstChildOfClass("Humanoid").WalkSpeed = speed
     end
-})
+end)
 
-SettingsTab:AddTextbox({
-    Name = "Поле ввода текста",
-    Default = "Текст по умолчанию",
-    TextDisappear = true,
-    Callback = function(Value)
-        print("Введено:", Value)
+MovementSection:AddToggle("BunnyHop / AutoJump", false, function(state)
+    getgenv().BHop = state
+end)
+
+local ServerSection = MiscTab:AddSection("Server Options")
+
+ServerSection:AddButton("Rejoin Server", function()
+    local ts = game:GetService("TeleportService")
+    local p = game:GetService("Players").LocalPlayer
+    ts:TeleportToPlaceInstance(game.PlaceId, game.JobId, p)
+end)
+
+ServerSection:AddButton("Copy Job ID", function()
+    if setclipboard then
+        setclipboard(game.JobId)
     end
-})
+end)
 
-SettingsTab:AddButton({
-    Name = "Уведомление",
-    Callback = function()
-        OrionLib:MakeNotification({
-            Name = "Dark Hub",
-            Content = "Настройки успешно сохранены!",
-            Image = "rbxassetid://4483345998",
-            Time = 4
-        })
-    end
-})
+-- ==========================================
+-- 4. ВКЛАДКА: CONFIGS
+-- ==========================================
+local ConfigSection = ConfigTab:AddSection("Configuration Management")
 
-SettingsTab:AddButton({
-    Name = "Закрыть и выгрузить UI",
-    Callback = function()
-        OrionLib:Destroy()
-    end
-})
+ConfigSection:AddDropdown("Select Config", {"Default", "Legit Hvh", "Rage Test"}, "Default", function(cfg)
+    getgenv().SelectedConfig = cfg
+end)
 
--- Инициализация библиотеки
-OrionLib:Init()
+ConfigSection:AddButton("Load Config", function()
+    print("Config Loaded:", getgenv().SelectedConfig)
+end)
+
+ConfigSection:AddButton("Save Config", function()
+    print("Config Saved:", getgenv().SelectedConfig)
+end)
