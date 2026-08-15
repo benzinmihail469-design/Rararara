@@ -1,158 +1,78 @@
-local OrionLib = loadstring(game:HttpGet(('https://raw.githubusercontent.com/shlexware/Orion/main/source')))()
+local Library = loadstring(game:HttpGet("https://raw.githubusercontent.com/ImInsane-1337/neverlose-ui/refs/heads/main/source/library.lua"))()
 
 -- Создание главного окна
-local Window = OrionLib:MakeWindow({
-    Name = "Dark Hub | Orion Edition",
-    HidePremium = false,
-    SaveConfig = true,
-    ConfigFolder = "DarkHubOrionConfig",
-    IntroEnabled = true,
-    IntroText = "Dark Hub",
-    IntroIcon = "rbxassetid://4483345998"
+local Window = Library:Window({ 
+    Name = "KITI", 
+    SubName = "Release", 
+    MenuKeybind = Enum.KeyCode.RightShift 
 })
 
--- ==========================================
--- === ВКЛАДКА: MAIN ===
--- ==========================================
-local MainTab = Window:MakeTab({
-    Name = "Main",
-    Icon = "rbxassetid://4483345998",
-    PremiumOnly = false
-})
+-- Создание вкладок
+local MainTab = Window:Tab({ Name = "Main", Icon = "rbxassetid://6023426915" })
+local SettingsTab = Window:Tab({ Name = "Settings", Icon = "rbxassetid://6031280882" })
 
-MainTab:AddSection({
-    Name = "Параметры персонажа"
-})
+-- Создание секций (Левая и Правая колонки)
+local CombatSection = MainTab:Section({ Name = "Combat", Side = "Left" })
+local VisualsSection = MainTab:Section({ Name = "Visuals", Side = "Right" })
+local ConfigSection = SettingsTab:Section({ Name = "Menu Config", Side = "Left" })
 
-MainTab:AddToggle({
-    Name = "Включить усилитель",
+-- 1. Переключатель (Toggle)
+CombatSection:Toggle({
+    Name = "Aimbot",
     Default = false,
-    Save = true,
-    Flag = "Toggle_SpeedBoost",
     Callback = function(Value)
-        print("Статус:", Value)
-    end    
-})
-
-MainTab:AddSlider({
-    Name = "Скорость ходьбы (WalkSpeed)",
-    Min = 16,
-    Max = 250,
-    Default = 16,
-    Color = Color3.fromRGB(80, 120, 255),
-    Increment = 1,
-    ValueName = "Speed",
-    Save = true,
-    Flag = "Slider_WalkSpeed",
-    Callback = function(Value)
-        local char = game.Players.LocalPlayer.Character
-        if char and char:FindFirstChild("Humanoid") then
-            char.Humanoid.WalkSpeed = Value
-        end
-    end    
-})
-
-MainTab:AddSlider({
-    Name = "Высота прыжка (JumpPower)",
-    Min = 50,
-    Max = 300,
-    Default = 50,
-    Color = Color3.fromRGB(80, 255, 120),
-    Increment = 1,
-    ValueName = "Power",
-    Save = true,
-    Flag = "Slider_JumpPower",
-    Callback = function(Value)
-        local char = game.Players.LocalPlayer.Character
-        if char and char:FindFirstChild("Humanoid") then
-            char.Humanoid.JumpPower = Value
-        end
-    end    
-})
-
--- ==========================================
--- === ВКЛАДКА: VISUALS ===
--- ==========================================
-local VisualsTab = Window:MakeTab({
-    Name = "Visuals",
-    Icon = "rbxassetid://4483345998",
-    PremiumOnly = false
-})
-
-VisualsTab:AddSection({
-    Name = "Настройки отображения"
-})
-
-VisualsTab:AddDropdown({
-    Name = "Режим подсветки",
-    Default = "Boxes",
-    Options = {"Boxes", "Chams", "Tracers", "Head Dots"},
-    Save = true,
-    Flag = "Dropdown_ESPMode",
-    Callback = function(Value)
-        print("Выбран режим:", Value)
+        print("Aimbot state:", Value)
     end
 })
 
-VisualsTab:AddColorpicker({
-    Name = "Цвет элементов",
-    Default = Color3.fromRGB(255, 0, 85),
-    Save = true,
-    Flag = "Color_Accent",
+-- 2. Слайдер (Slider)
+CombatSection:Slider({
+    Name = "FOV Radius",
+    Min = 10,
+    Max = 500,
+    Default = 90,
+    Unit = "px",
     Callback = function(Value)
-        print("Новый цвет:", Value)
+        print("FOV:", Value)
     end
 })
 
--- ==========================================
--- === ВКЛАДКА: SETTINGS ===
--- ==========================================
-local SettingsTab = Window:MakeTab({
-    Name = "Settings",
-    Icon = "rbxassetid://4483345998",
-    PremiumOnly = false
+-- 3. Выпадающий список (Dropdown)
+CombatSection:Dropdown({
+    Name = "Target Bone",
+    Options = {"Head", "Torso", "HumanoidRootPart"},
+    Default = "Head",
+    Callback = function(Value)
+        print("Target:", Value)
+    end
 })
 
-SettingsTab:AddSection({
-    Name = "Управление скриптом"
+-- 4. Выбор цвета (Colorpicker)
+VisualsSection:Colorpicker({
+    Name = "ESP Color",
+    Default = Color3.fromRGB(0, 255, 150),
+    Callback = function(Value)
+        print("Color changed:", Value)
+    end
 })
 
-SettingsTab:AddBind({
-    Name = "Горячая клавиша меню",
-    Default = Enum.KeyCode.RightControl,
-    Hold = false,
+-- 5. Кнопка с уведомлением (Button)
+VisualsSection:Button({
+    Name = "Trigger Notification",
     Callback = function()
-        print("Клавиша нажата")
-    end
-})
-
-SettingsTab:AddTextbox({
-    Name = "Поле ввода текста",
-    Default = "Текст по умолчанию",
-    TextDisappear = true,
-    Callback = function(Value)
-        print("Введено:", Value)
-    end
-})
-
-SettingsTab:AddButton({
-    Name = "Уведомление",
-    Callback = function()
-        OrionLib:MakeNotification({
-            Name = "Dark Hub",
-            Content = "Настройки успешно сохранены!",
-            Image = "rbxassetid://4483345998",
-            Time = 4
+        Library:Notification({
+            Title = "KITI UI",
+            Text = "Функция успешно активирована!",
+            Duration = 3
         })
     end
 })
 
-SettingsTab:AddButton({
-    Name = "Закрыть и выгрузить UI",
-    Callback = function()
-        OrionLib:Destroy()
+-- 6. Настройка горячей клавиши (Keybind)
+ConfigSection:Keybind({
+    Name = "Menu Keybind",
+    Default = Enum.KeyCode.RightShift,
+    Callback = function(Key)
+        print("New menu key:", Key)
     end
 })
-
--- Инициализация библиотеки
-OrionLib:Init()
