@@ -1,64 +1,106 @@
+-- Загрузка библиотеки Neverlose UI (raw ссылка для корректного выполнения)
 local Neverlose_Main = loadstring(game:HttpGet("https://raw.githubusercontent.com/Mana42138/Neverlose-UI/main/Source.lua"))()
 
 -- Создание главного окна
-local Window = Neverlose_Main:Window({
-    Title = "KITI",
-    SubTitle = "Release",
-    Size = UDim2.fromOffset(600, 400)
-})
+local Window = Neverlose_Main:AddWindow("Dark Hub", "Neverlose Edition")
 
--- Создание вкладок
-local MainTab = Window:Tab("Main", "rbxassetid://6023426915")
-local SettingsTab = Window:Tab("Settings", "rbxassetid://6031280882")
+-- === ВКЛАДКИ (TABS) ===
+local LegitTab = Window:AddTab("Legitbot")
+local VisualsTab = Window:AddTab("Visuals")
+local MiscTab = Window:AddTab("Miscellaneous")
+local ConfigTab = Window:AddTab("Configs")
 
--- Секции (Левая и Правая стороны)
-local CombatSection = MainTab:Section("Combat", "Left")
-local VisualsSection = MainTab:Section("Visuals", "Right")
-local ConfigSection = SettingsTab:Section("Config", "Left")
+-- ==========================================
+-- 1. ВКЛАДКА: LEGITBOT
+-- ==========================================
+local AimSection = LegitTab:AddSection("Aimbot Settings")
 
--- 1. Переключатель (Toggle)
-CombatSection:Toggle({
-    Name = "Aimbot",
-    Default = false,
-    Callback = function(State)
-        print("Aimbot включен:", State)
+AimSection:AddToggle("Enable Aimbot", false, function(state)
+    getgenv().AimbotEnabled = state
+end)
+
+AimSection:AddSlider("Aimbot Smooth", 1, 20, 5, function(val)
+    getgenv().AimbotSmooth = val
+end)
+
+AimSection:AddSlider("FOV Radius", 10, 500, 90, function(val)
+    getgenv().AimbotFOV = val
+end)
+
+AimSection:AddDropdown("Target Bone", {"Head", "Torso", "HumanoidRootPart"}, "Head", function(selected)
+    getgenv().AimTargetBone = selected
+end)
+
+AimSection:AddKeybind("Aimbot Key", Enum.KeyCode.E, function()
+    print("Aimbot key pressed")
+end)
+
+-- ==========================================
+-- 2. ВКЛАДКА: VISUALS
+-- ==========================================
+local EspSection = VisualsTab:AddSection("Player ESP")
+
+EspSection:AddToggle("Enable Player ESP", false, function(state)
+    _G.ESPEnabled = state
+end)
+
+EspSection:AddToggle("Enable Weapon ESP", false, function(state)
+    _G.GunESPEnabled = state
+end)
+
+EspSection:AddColorpicker("ESP Color", Color3.fromRGB(0, 162, 255), function(color)
+    getgenv().ESPColor = color
+end)
+
+local RenderSection = VisualsTab:AddSection("World & Camera")
+
+RenderSection:AddSlider("Camera FOV", 70, 120, 70, function(val)
+    game:GetService("Workspace").CurrentCamera.FieldOfView = val
+end)
+
+-- ==========================================
+-- 3. ВКЛАДКА: MISCELLANEOUS
+-- ==========================================
+local MovementSection = MiscTab:AddSection("Movement Options")
+
+MovementSection:AddSlider("WalkSpeed Multiplier", 16, 100, 16, function(speed)
+    local char = game:GetService("Players").LocalPlayer.Character
+    if char and char:FindFirstChildOfClass("Humanoid") then
+        char:FindFirstChildOfClass("Humanoid").WalkSpeed = speed
     end
-})
+end)
 
--- 2. Ползунок (Slider)
-CombatSection:Slider({
-    Name = "FOV Radius",
-    Min = 10,
-    Max = 300,
-    Default = 90,
-    Callback = function(Value)
-        print("Текущий FOV:", Value)
-    end
-})
+MovementSection:AddToggle("BunnyHop / AutoJump", false, function(state)
+    getgenv().BHop = state
+end)
 
--- 3. Выпадающий список (Dropdown)
-CombatSection:Dropdown({
-    Name = "Target Bone",
-    Options = {"Head", "Torso", "HumanoidRootPart"},
-    Default = "Head",
-    Callback = function(Option)
-        print("Выбранная цель:", Option)
-    end
-})
+local ServerSection = MiscTab:AddSection("Server Options")
 
--- 4. Выбор цвета (Colorpicker)
-VisualsSection:Colorpicker({
-    Name = "ESP Color",
-    Default = Color3.fromRGB(0, 255, 120),
-    Callback = function(Color)
-        print("Выбран цвет:", Color)
-    end
-})
+ServerSection:AddButton("Rejoin Server", function()
+    local ts = game:GetService("TeleportService")
+    local p = game:GetService("Players").LocalPlayer
+    ts:TeleportToPlaceInstance(game.PlaceId, game.JobId, p)
+end)
 
--- 5. Кнопка (Button)
-VisualsSection:Button({
-    Name = "Reset Settings",
-    Callback = function()
-        print("Настройки сброшены!")
+ServerSection:AddButton("Copy Job ID", function()
+    if setclipboard then
+        setclipboard(game.JobId)
     end
-})
+end)
+
+-- ==========================================
+-- 4. ВКЛАДКА: CONFIGS
+-- ==========================================
+local ConfigSection = ConfigTab:AddSection("Configuration Management")
+
+ConfigSection:AddDropdown("Select Config", {"Default", "Legit Hvh", "Rage Test"}, "Default", function(cfg)
+    getgenv().SelectedConfig = cfg
+end)
+
+ConfigSection:AddButton("Load Config", function()
+    print("Config Loaded:", getgenv().SelectedConfig)
+end)
+
+ConfigSection:AddButton("Save Config", function()
+    print("Config Saved:", getgenv().SelectedConfig)
+end)
