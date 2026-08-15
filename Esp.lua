@@ -1,106 +1,106 @@
--- Загрузка библиотеки Neverlose UI (raw ссылка для корректного выполнения)
-local Neverlose_Main = loadstring(game:HttpGet("https://raw.githubusercontent.com/Mana42138/Neverlose-UI/main/Source.lua"))()
+local Library = loadstring(game:HttpGet("https://raw.githubusercontent.com/deividcomsono/Obsidian/refs/heads/main/Library.lua"))()
 
--- Создание главного окна
-local Window = Neverlose_Main:AddWindow("Dark Hub", "Neverlose Edition")
+local Window = Library:CreateWindow({
+    Title = "Example",
+    Footer = "v1.0.0", --small text in the bottom of page
+    ToggleKeybind = Enum.KeyCode.RightControl,
+    Center = true,
+    AutoShow = true,
+    Resizable = false, --not rezizeable
+    Size = UDim2.fromOffset(700, 500) -- size of ui
+})
 
--- === ВКЛАДКИ (TABS) ===
-local LegitTab = Window:AddTab("Legitbot")
-local VisualsTab = Window:AddTab("Visuals")
-local MiscTab = Window:AddTab("Miscellaneous")
-local ConfigTab = Window:AddTab("Configs")
+local KeyTab = Window:AddKeyTab("Key System") -- use addkeytab because this will be for our key box
+local InfoTab = Window:AddTab("Info", "info") -- this will be for how to get key
+local UiTab = Window:AddTab("UI", "settings") -- to unload ui
 
--- ==========================================
--- 1. ВКЛАДКА: LEGITBOT
--- ==========================================
-local AimSection = LegitTab:AddSection("Aimbot Settings")
 
-AimSection:AddToggle("Enable Aimbot", false, function(state)
-    getgenv().AimbotEnabled = state
+
+KeyTab:AddLabel({
+	Text = "Example Key Title\nDefault Key is 'yourkey'",
+	DoesWrap = true,
+	Size = 36,
+})
+
+local examplekey = "yourkey" --change this to any key [TIP: You can also use HWID Keys if you wanna earn money like Luarmor, Platoboost, PandaDevelopment, etc etc instead of a string, just replace the string to the variable to access the HWID Key System]
+KeyTab:AddKeyBox(examplekey, function(Success)  --you can also add another variable to get the text currently in keybox, here is how: function(Success, RecivedKey) recived key is the input, a use for this would be for multiple keys at once, because success is a bool (if Sucsess then) but RecivedKey can be used as a string (if RecivedKey == your key)
+	if Success then
+      --this is for if the key is correct
+      Library:Notify("Correct Key!", 5) 
+      --you can also replace it with unloading ui and loading a script
+	else
+	  --this is if its wrong
+	  Library:Notify("Incorrect Key!", 5) 
+	end
 end)
 
-AimSection:AddSlider("Aimbot Smooth", 1, 20, 5, function(val)
-    getgenv().AimbotSmooth = val
-end)
+KeyTab:AddLabel({
+    Text = "\nDon't have the key? Go to the <font color='rgb(0, 195, 255)'>Info</font> Tab!", --or any text on how to get key
+    DoesWrap = true,
+    Size = 16,
+})
 
-AimSection:AddSlider("FOV Radius", 10, 500, 90, function(val)
-    getgenv().AimbotFOV = val
-end)
+local LeftGroupbox = InfoTab:AddLeftGroupbox("How To Get Key", "key")
 
-AimSection:AddDropdown("Target Bone", {"Head", "Torso", "HumanoidRootPart"}, "Head", function(selected)
-    getgenv().AimTargetBone = selected
-end)
+local WrappedLabel = LeftGroupbox:AddLabel({
+    Text = "Heres where you can add your text on how you can get key! You can use buttons and a setclipboard() fuction to copy the link, here are the example buttons you can use for copying key links! (does not actually copy, just prints)",
+    DoesWrap = true
+})
 
-AimSection:AddKeybind("Aimbot Key", Enum.KeyCode.E, function()
-    print("Aimbot key pressed")
-end)
+local Button = LeftGroupbox:AddButton({
+    Text = "<font color='rgb(255, 172, 28)'>Linkvertise</font>",
+    Func = function()
+        print("Copied Linkvertise!")
+    end,
+    DoubleClick = false -- Requires double-click
+})
 
--- ==========================================
--- 2. ВКЛАДКА: VISUALS
--- ==========================================
-local EspSection = VisualsTab:AddSection("Player ESP")
 
-EspSection:AddToggle("Enable Player ESP", false, function(state)
-    _G.ESPEnabled = state
-end)
-
-EspSection:AddToggle("Enable Weapon ESP", false, function(state)
-    _G.GunESPEnabled = state
-end)
-
-EspSection:AddColorpicker("ESP Color", Color3.fromRGB(0, 162, 255), function(color)
-    getgenv().ESPColor = color
-end)
-
-local RenderSection = VisualsTab:AddSection("World & Camera")
-
-RenderSection:AddSlider("Camera FOV", 70, 120, 70, function(val)
-    game:GetService("Workspace").CurrentCamera.FieldOfView = val
-end)
-
--- ==========================================
--- 3. ВКЛАДКА: MISCELLANEOUS
--- ==========================================
-local MovementSection = MiscTab:AddSection("Movement Options")
-
-MovementSection:AddSlider("WalkSpeed Multiplier", 16, 100, 16, function(speed)
-    local char = game:GetService("Players").LocalPlayer.Character
-    if char and char:FindFirstChildOfClass("Humanoid") then
-        char:FindFirstChildOfClass("Humanoid").WalkSpeed = speed
+--OPTIONAL: Additional buttons to copy links
+Button:AddButton({
+    Text = "<font color='rgb(0, 255, 0)'>work.inc</font>",
+    Func = function()
+        print("Copied work.inc!!")
     end
-end)
+})
 
-MovementSection:AddToggle("BunnyHop / AutoJump", false, function(state)
-    getgenv().BHop = state
-end)
+local RightGroupbox = InfoTab:AddRightGroupbox("Help", "info")
 
-local ServerSection = MiscTab:AddSection("Server Options")
+RightGroupbox:AddLabel({
+    Text = "Optional: Copies Discord Link, Great if users are having trouble getting key!",
+    DoesWrap = true
+})
 
-ServerSection:AddButton("Rejoin Server", function()
-    local ts = game:GetService("TeleportService")
-    local p = game:GetService("Players").LocalPlayer
-    ts:TeleportToPlaceInstance(game.PlaceId, game.JobId, p)
-end)
+local Button = RightGroupbox:AddButton({
+    Text = "Copy Discord",
+    Func = function()
+        print("Copied Discord!")
+    end,
+    DoubleClick = false -- Requires double-click for risky actions
+})
 
-ServerSection:AddButton("Copy Job ID", function()
-    if setclipboard then
-        setclipboard(game.JobId)
+
+local UIGroupbox = UiTab:AddLeftGroupbox("Menu", "settings")
+
+local KeyLabel = UIGroupbox:AddLabel("Menu Bind") --creates a label to attach keybind since it cant be standalone
+
+local Keybind = KeyLabel:AddKeyPicker("MyKeybind", {
+    Default = "MB2",
+    Text = "Menu Bind",
+    Mode = "Toggle", -- Options: "Toggle", "Hold", "Always"
+    
+    -- Sets the toggle's value according to the keybind state if Mode is Toggle
+    SyncToggleState = false,
+    
+    Callback = function(Value)
+        Library:Unload()
     end
-end)
+})
 
--- ==========================================
--- 4. ВКЛАДКА: CONFIGS
--- ==========================================
-local ConfigSection = ConfigTab:AddSection("Configuration Management")
-
-ConfigSection:AddDropdown("Select Config", {"Default", "Legit Hvh", "Rage Test"}, "Default", function(cfg)
-    getgenv().SelectedConfig = cfg
-end)
-
-ConfigSection:AddButton("Load Config", function()
-    print("Config Loaded:", getgenv().SelectedConfig)
-end)
-
-ConfigSection:AddButton("Save Config", function()
-    print("Config Saved:", getgenv().SelectedConfig)
-end)
+local Button = UIGroupbox:AddButton({
+    Text = "Unload",
+    Func = function()
+        Library:Unload()
+    end,
+    DoubleClick = false -- Requires double-click for risky actions
+})
