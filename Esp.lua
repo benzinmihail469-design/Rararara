@@ -1,114 +1,158 @@
-local Library = loadstring(game:HttpGet("https://raw.githubusercontent.com/ImInsane-1337/neverlose-ui/refs/heads/main/source/library.lua"))()
-local CheatName = "MyProject"
+local OrionLib = loadstring(game:HttpGet(('https://raw.githubusercontent.com/shlexware/Orion/main/source')))()
 
-Library.Folders = {
-    Directory = CheatName,
-    Configs = CheatName .. "/Configs",
-    Assets = CheatName .. "/Assets",
-}
-
-local Accent = Color3.fromRGB(255, 80, 80)
-local Gradient = Color3.fromRGB(120, 20, 20)
-
-Library.Theme.Accent = Accent
-Library.Theme.AccentGradient = Gradient
-Library:ChangeTheme("Accent", Accent)
-Library:ChangeTheme("AccentGradient", Gradient)
-local Window = Library:Window({
-    Name = "Like Neverlose UI",
-    SubName = "Example btw",
-    Logo = "120959262762131"
+-- Создание главного окна
+local Window = OrionLib:MakeWindow({
+    Name = "Dark Hub | Orion Edition",
+    HidePremium = false,
+    SaveConfig = true,
+    ConfigFolder = "DarkHubOrionConfig",
+    IntroEnabled = true,
+    IntroText = "Dark Hub",
+    IntroIcon = "rbxassetid://4483345998"
 })
 
-local KeybindList = Library:KeybindList("Keybinds")
-Library:Watermark({
-    "Like Neverlose UI",
-    "by ImInsane",
-    120959262762131
+-- ==========================================
+-- === ВКЛАДКА: MAIN ===
+-- ==========================================
+local MainTab = Window:MakeTab({
+    Name = "Main",
+    Icon = "rbxassetid://4483345998",
+    PremiumOnly = false
 })
 
-task.spawn(function()
-    while true do
-        local FPS = math.floor(1 / game:GetService("RunService").RenderStepped:Wait())
-        
-        Library:Watermark({
-            "Like Neverlose UI",
-            "by ImInsane",
-            120959262762131,
-            "FPS: " .. FPS
-        })
-        task.wait(0.5)
-    end
-end)
+MainTab:AddSection({
+    Name = "Параметры персонажа"
+})
 
-Window:Category("Main")
-
-local LegitPage = Window:Page({Name = "Legit", Icon = "138827881557940"})
-local MainSection = LegitPage:Section({Name = "Main Features", Side = 1})
-
-MainSection:Toggle({
-    Name = "Enabled",
-    Flag = "LegitEnabled",
-    Default = true,
+MainTab:AddToggle({
+    Name = "Включить усилитель",
+    Default = false,
+    Save = true,
+    Flag = "Toggle_SpeedBoost",
     Callback = function(Value)
-        print("Legit Enabled:", Value)
-    end
+        print("Статус:", Value)
+    end    
 })
 
-MainSection:Slider({
-    Name = "Speed Hack",
-    Flag = "SpeedSlider",
-    Min = 1,
-    Max = 100,
+MainTab:AddSlider({
+    Name = "Скорость ходьбы (WalkSpeed)",
+    Min = 16,
+    Max = 250,
     Default = 16,
-    Suffix = " studs",
+    Color = Color3.fromRGB(80, 120, 255),
+    Increment = 1,
+    ValueName = "Speed",
+    Save = true,
+    Flag = "Slider_WalkSpeed",
     Callback = function(Value)
-        print("Speed set to:", Value)
+        local char = game.Players.LocalPlayer.Character
+        if char and char:FindFirstChild("Humanoid") then
+            char.Humanoid.WalkSpeed = Value
+        end
+    end    
+})
+
+MainTab:AddSlider({
+    Name = "Высота прыжка (JumpPower)",
+    Min = 50,
+    Max = 300,
+    Default = 50,
+    Color = Color3.fromRGB(80, 255, 120),
+    Increment = 1,
+    ValueName = "Power",
+    Save = true,
+    Flag = "Slider_JumpPower",
+    Callback = function(Value)
+        local char = game.Players.LocalPlayer.Character
+        if char and char:FindFirstChild("Humanoid") then
+            char.Humanoid.JumpPower = Value
+        end
+    end    
+})
+
+-- ==========================================
+-- === ВКЛАДКА: VISUALS ===
+-- ==========================================
+local VisualsTab = Window:MakeTab({
+    Name = "Visuals",
+    Icon = "rbxassetid://4483345998",
+    PremiumOnly = false
+})
+
+VisualsTab:AddSection({
+    Name = "Настройки отображения"
+})
+
+VisualsTab:AddDropdown({
+    Name = "Режим подсветки",
+    Default = "Boxes",
+    Options = {"Boxes", "Chams", "Tracers", "Head Dots"},
+    Save = true,
+    Flag = "Dropdown_ESPMode",
+    Callback = function(Value)
+        print("Выбран режим:", Value)
     end
 })
 
-MainSection:Dropdown({
-    Name = "Hitbox Type",
-    Flag = "HitboxType",
-    Default = {"Head"},
-    Items = {"Head", "Torso", "Arms", "Legs"},
-    Multi = true,
+VisualsTab:AddColorpicker({
+    Name = "Цвет элементов",
+    Default = Color3.fromRGB(255, 0, 85),
+    Save = true,
+    Flag = "Color_Accent",
     Callback = function(Value)
-        print("Selected Hitboxes:", table.concat(Value, ", "))
+        print("Новый цвет:", Value)
     end
 })
 
-MainSection:Label("ESP Color"):Colorpicker({
-    Name = "Color",
-    Flag = "EspColor",
-    Default = Color3.fromRGB(255, 255, 255),
-    Callback = function(Value)
-        print("Color changed")
-    end
+-- ==========================================
+-- === ВКЛАДКА: SETTINGS ===
+-- ==========================================
+local SettingsTab = Window:MakeTab({
+    Name = "Settings",
+    Icon = "rbxassetid://4483345998",
+    PremiumOnly = false
 })
 
-local MiscSection = LegitPage:Section({Name = "Misc", Side = 2})
-MiscSection:Button({
-    Name = "Test Notification",
+SettingsTab:AddSection({
+    Name = "Управление скриптом"
+})
+
+SettingsTab:AddBind({
+    Name = "Горячая клавиша меню",
+    Default = Enum.KeyCode.RightControl,
+    Hold = false,
     Callback = function()
-        Library:Notification({
-            Title = "System",
-            Description = "This is a test notification!",
-            Duration = 5,
-            Icon = "73789337996373"
+        print("Клавиша нажата")
+    end
+})
+
+SettingsTab:AddTextbox({
+    Name = "Поле ввода текста",
+    Default = "Текст по умолчанию",
+    TextDisappear = true,
+    Callback = function(Value)
+        print("Введено:", Value)
+    end
+})
+
+SettingsTab:AddButton({
+    Name = "Уведомление",
+    Callback = function()
+        OrionLib:MakeNotification({
+            Name = "Dark Hub",
+            Content = "Настройки успешно сохранены!",
+            Image = "rbxassetid://4483345998",
+            Time = 4
         })
     end
 })
 
-MiscSection:Keybind({
-    Name = "Test keybind",
-    Flag = "testkeybind",
-    Default = Enum.KeyCode.Delete,
-    Callback = function(Value)
-        print("Keybind pressed")
+SettingsTab:AddButton({
+    Name = "Закрыть и выгрузить UI",
+    Callback = function()
+        OrionLib:Destroy()
     end
 })
 
-Window:Category("Settings")
-local SettingsPage = Library:CreateSettingsPage(Window, KeybindList)
-Window:Init()
+-- Инициализация библиотеки
+OrionLib:Init()
