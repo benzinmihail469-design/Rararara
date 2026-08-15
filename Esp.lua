@@ -1,39 +1,38 @@
-local Library = loadstring(game:HttpGet("https://raw.githubusercontent.com/ImInsane-1337/neverlose-ui/refs/heads/main/source/library.lua"))()
+local Neverlose_Main = loadstring(game:HttpGet("https://raw.githubusercontent.com/Mana42138/Neverlose-UI/main/Source.lua"))()
 
 -- Создание главного окна
-local Window = Library:Window({ 
-    Name = "KITI", 
-    SubName = "Release", 
-    MenuKeybind = Enum.KeyCode.RightShift 
+local Window = Neverlose_Main:Window({
+    Title = "KITI",
+    SubTitle = "Release",
+    Size = UDim2.fromOffset(600, 400)
 })
 
 -- Создание вкладок
-local MainTab = Window:Tab({ Name = "Main", Icon = "rbxassetid://6023426915" })
-local SettingsTab = Window:Tab({ Name = "Settings", Icon = "rbxassetid://6031280882" })
+local MainTab = Window:Tab("Main", "rbxassetid://6023426915")
+local SettingsTab = Window:Tab("Settings", "rbxassetid://6031280882")
 
--- Создание секций (Левая и Правая колонки)
-local CombatSection = MainTab:Section({ Name = "Combat", Side = "Left" })
-local VisualsSection = MainTab:Section({ Name = "Visuals", Side = "Right" })
-local ConfigSection = SettingsTab:Section({ Name = "Menu Config", Side = "Left" })
+-- Секции (Левая и Правая стороны)
+local CombatSection = MainTab:Section("Combat", "Left")
+local VisualsSection = MainTab:Section("Visuals", "Right")
+local ConfigSection = SettingsTab:Section("Config", "Left")
 
 -- 1. Переключатель (Toggle)
 CombatSection:Toggle({
     Name = "Aimbot",
     Default = false,
-    Callback = function(Value)
-        print("Aimbot state:", Value)
+    Callback = function(State)
+        print("Aimbot включен:", State)
     end
 })
 
--- 2. Слайдер (Slider)
+-- 2. Ползунок (Slider)
 CombatSection:Slider({
     Name = "FOV Radius",
     Min = 10,
-    Max = 500,
+    Max = 300,
     Default = 90,
-    Unit = "px",
     Callback = function(Value)
-        print("FOV:", Value)
+        print("Текущий FOV:", Value)
     end
 })
 
@@ -42,37 +41,24 @@ CombatSection:Dropdown({
     Name = "Target Bone",
     Options = {"Head", "Torso", "HumanoidRootPart"},
     Default = "Head",
-    Callback = function(Value)
-        print("Target:", Value)
+    Callback = function(Option)
+        print("Выбранная цель:", Option)
     end
 })
 
 -- 4. Выбор цвета (Colorpicker)
 VisualsSection:Colorpicker({
     Name = "ESP Color",
-    Default = Color3.fromRGB(0, 255, 150),
-    Callback = function(Value)
-        print("Color changed:", Value)
+    Default = Color3.fromRGB(0, 255, 120),
+    Callback = function(Color)
+        print("Выбран цвет:", Color)
     end
 })
 
--- 5. Кнопка с уведомлением (Button)
+-- 5. Кнопка (Button)
 VisualsSection:Button({
-    Name = "Trigger Notification",
+    Name = "Reset Settings",
     Callback = function()
-        Library:Notification({
-            Title = "KITI UI",
-            Text = "Функция успешно активирована!",
-            Duration = 3
-        })
-    end
-})
-
--- 6. Настройка горячей клавиши (Keybind)
-ConfigSection:Keybind({
-    Name = "Menu Keybind",
-    Default = Enum.KeyCode.RightShift,
-    Callback = function(Key)
-        print("New menu key:", Key)
+        print("Настройки сброшены!")
     end
 })
