@@ -1,103 +1,75 @@
---Credit to xz#1111 for source
-local Ui = loadstring(game:HttpGet("https://raw.githubusercontent.com/drillygzzly/Roblox-UI-Libs/main/Abyss%20Lib/Abyss%20Lib%20Source.lua"))()
-local Ui = Library
+local DiscordLib = loadstring(game:HttpGet"https://raw.githubusercontent.com/dawid-scripts/UI-Libs/main/discord%20lib.txt")()
 
-local LoadTime = tick()
+local win = DiscordLib:Window("discord library")
 
-local Loader = Library.CreateLoader(
-    "Title Here", 
-    Vector2.new(300, 300)
-)
+local serv = win:Server("Preview", "")
 
-local Window = Library.Window(
-    "Text Here", 
-    Vector2.new(500, 620)
-)
+local btns = serv:Channel("Buttons")
 
-Window.SendNotification(
-    "Normal", -- Normal, Warning, Error 
-    "Press RightShift to open menu and close menu!", 
-    10
-)
+btns:Button("Kill all", function()
+DiscordLib:Notification("Notification", "Killed everyone!", "Okay!")
+end)
 
-Window.Watermark(
-    "Text Here"
-)
--- Window:Visible = true
+btns:Seperator()
 
--- // UI Main \\ --
-local Tab1 = Window:Tab("Tab1")
-local Section1 = Tab1:Section(
-    "Section1", 
-    "Left"
-)
+btns:Button("Get max level", function()
+DiscordLib:Notification("Notification", "Max level!", "Okay!")
+end)
 
+local tgls = serv:Channel("Toggles")
 
-Section1:Toggle({
-    Title = "Toggle1", 
-    Flag = "Toggle_1",
-    Type = "Dangerous",
-    Callback = function(v)
-        print("Value = "..v)
-    end
-}): -- Toggle Keybind Below
-    Keybind({
-    Title = "KeybindToggle1",
-    Flag = "Keybind_Toggle_1", 
-    Key = Enum.UserInputType.MouseButton2, 
-    StateType = "Toggle"
-})
+tgls:Toggle("Auto-Farm",false, function(bool)
+print(bool)
+end)
 
-Section1:Toggle({
-    Title = "Toggle2", 
-    Flag = "Toggle_2"
-    
-}):
-Colorpicker({
-    Color = Library.Theme.Accent[2], 
-    Flag = "Toggle2Color"
-})
+local sldrs = serv:Channel("Sliders")
+
+local sldr = sldrs:Slider("Slide me!", 0, 1000, 400, function(t)
+print(t)
+end)
+
+sldrs:Button("Change to 50", function()
+sldr:Change(50)
+end)
+
+local drops = serv:Channel("Dropdowns")
 
 
-Section1:Slider({
-    Title = "Slider1", 
-    Flag = "Slider_1", 
-    Symbol = "", 
-    Default = 0, 
-    Min = 0, 
-    Max = 20, 
-    Decimals = 1,
-    Callback = function(v)
-        print("Value = "..v)
-    end
-})
-Section1:Dropdown({
-    Title = "Dropdown1", 
-    List = {"1", "2" ,"3"}, 
-    Default = "1", 
-    Flag = "DropDown_1",
-    Callback = function(v)
-        print("Value = "..v)
-    end
-})
+local drop = drops:Dropdown("Pick me!",{"Option 1","Option 2","Option 3","Option 4","Option 5"}, function(bool)
+print(bool)
+end)
 
-Section1:Button({
-    Title = "Button1",
-    Callback = function()
-        print("Pressed!")
-    end
-})
+drops:Button("Clear", function()
+drop:Clear()
+end)
 
---Section1:Colorpicker({
-    --Title = "ColorPicker1"
---})
+drops:Button("Add option", function()
+drop:Add("Option")
+end)
 
---Section1:Label({
-    --Title = "Label1"
---})
+local clrs = serv:Channel("Colorpickers")
 
---Tab1:AddPlayerlist()
-Window:AddSettingsTab()
-Window:SwitchTab(Tab1)
-Window.ToggleAnime(false)
-LoadTime = math.floor((tick() - LoadTime) * 1000)
+clrs:Colorpicker("ESP Color", Color3.fromRGB(255,1,1), function(t)
+print(t)
+end)
+
+local textbs = serv:Channel("Textboxes")
+
+textbs:Textbox("Gun power", "Type here!", true, function(t)
+print(t)
+end)
+
+local lbls = serv:Channel("Labels")
+
+lbls:Label("This is just a label.")
+
+local bnds = serv:Channel("Binds")
+
+bnds:Bind("Kill bind", Enum.KeyCode.RightShift, function()
+print("Killed everyone!")
+end)
+
+serv:Channel("by dawid#7205")
+
+
+win:Server("Main", "http://www.roblox.com/asset/?id=6031075938")
