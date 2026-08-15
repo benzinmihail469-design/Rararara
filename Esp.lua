@@ -1,106 +1,505 @@
-local Library = loadstring(game:HttpGet("https://raw.githubusercontent.com/deividcomsono/Obsidian/refs/heads/main/Library.lua"))()
+--[[
+		Example Compkiller UI
+	
+	Author: 4lpaca
+	
+	Press Left Alt to open / close
+]]
 
-local Window = Library:CreateWindow({
-    Title = "Example",
-    Footer = "v1.0.0", --small text in the bottom of page
-    ToggleKeybind = Enum.KeyCode.RightControl,
-    Center = true,
-    AutoShow = true,
-    Resizable = false, --not rezizeable
-    Size = UDim2.fromOffset(700, 500) -- size of ui
-})
+local Compkiller = loadstring(game:HttpGet("https://raw.githubusercontent.com/4lpaca-pin/CompKiller/refs/heads/main/src/source.luau"))();
 
-local KeyTab = Window:AddKeyTab("Key System") -- use addkeytab because this will be for our key box
-local InfoTab = Window:AddTab("Info", "info") -- this will be for how to get key
-local UiTab = Window:AddTab("UI", "settings") -- to unload ui
+-- Create Notification --
+local Notifier = Compkiller.newNotify();
 
+-- Create Config Mamager --
+local ConfigManager = Compkiller:ConfigManager({
+	Directory = "Compkiller-UI",
+	Config = "Example-Configs"
+});
 
+-- Loading UI (Icon <string> , Duration <number>) --
+Compkiller:Loader("rbxassetid://120245531583106" , 2.5).yield();
 
-KeyTab:AddLabel({
-	Text = "Example Key Title\nDefault Key is 'yourkey'",
-	DoesWrap = true,
-	Size = 36,
-})
+-- Creating Window --
+local Window = Compkiller.new({
+	Name = "COMPKILLER",
+	Keybind = "LeftAlt",
+	Logo = "rbxassetid://120245531583106",
+	Scale = Compkiller.Scale.Window, -- Leave blank if you want automatic scale [PC, Mobile].
+	TextSize = 15,
+});
 
-local examplekey = "yourkey" --change this to any key [TIP: You can also use HWID Keys if you wanna earn money like Luarmor, Platoboost, PandaDevelopment, etc etc instead of a string, just replace the string to the variable to access the HWID Key System]
-KeyTab:AddKeyBox(examplekey, function(Success)  --you can also add another variable to get the text currently in keybox, here is how: function(Success, RecivedKey) recived key is the input, a use for this would be for multiple keys at once, because success is a bool (if Sucsess then) but RecivedKey can be used as a string (if RecivedKey == your key)
-	if Success then
-      --this is for if the key is correct
-      Library:Notify("Correct Key!", 5) 
-      --you can also replace it with unloading ui and loading a script
-	else
-	  --this is if its wrong
-	  Library:Notify("Incorrect Key!", 5) 
+-- Notification --
+
+Notifier.new({
+	Title = "Notification",
+	Content = "Thank you for use this script!",
+	Duration = 10,
+	Icon = "rbxassetid://120245531583106"
+});
+
+-- Watermark --
+local Watermark = Window:Watermark();
+
+Watermark:AddText({
+	Icon = "user",
+	Text = "4lpaca",
+});
+
+Watermark:AddText({
+	Icon = "clock",
+	Text = Compkiller:GetDate(),
+});
+
+local Time = Watermark:AddText({
+	Icon = "timer",
+	Text = "TIME",
+});
+
+task.spawn(function()
+	while true do task.wait()
+		Time:SetText(Compkiller:GetTimeNow());
 	end
 end)
 
-KeyTab:AddLabel({
-    Text = "\nDon't have the key? Go to the <font color='rgb(0, 195, 255)'>Info</font> Tab!", --or any text on how to get key
-    DoesWrap = true,
-    Size = 16,
+Watermark:AddText({
+	Icon = "server",
+	Text = Compkiller.Version,
+});
+
+-- Creating Tab Category --
+Window:DrawCategory({
+	Name = "Example"
+});
+
+-- Creating Tab --
+local NormalTab = Window:DrawTab({
+	Name = "Example Tab",
+	Icon = "apple",
+	EnableScrolling = true
+});
+
+-- Creating Section --
+local NormalSection = NormalTab:DrawSection({
+	Name = "Section",
+	Position = 'left'	
+});
+
+local Toggle = NormalSection:AddToggle({
+	Name = "Toggle",
+	Flag = "Toggle_Example", -- Leave it blank will not save to config
+	Default = false,
+	Callback = print,
+});
+
+-- Add Keybind To Toggle --
+local Keybind = Toggle.Link:AddKeybind({
+	Default = "E",
+	Flag = "Option_Keybind",
+	Callback = print
+});
+
+-- Helper --
+Toggle.Link:AddHelper({
+	Text = "Very cool toggle!"
 })
 
-local LeftGroupbox = InfoTab:AddLeftGroupbox("How To Get Key", "key")
+-- Add Option To Toggle --
+local Toggle2 = NormalSection:AddToggle({
+	Name = "Toggle",
+	Flag = "Toggle_Example2", -- Leave it blank will not save to config
+	Default = false,
+	Callback = print,
+});
 
-local WrappedLabel = LeftGroupbox:AddLabel({
-    Text = "Heres where you can add your text on how you can get key! You can use buttons and a setclipboard() fuction to copy the link, here are the example buttons you can use for copying key links! (does not actually copy, just prints)",
-    DoesWrap = true
+local Option = Toggle2.Link:AddOption()
+
+Option:AddToggle({
+	Name= "Example",
+	Flag = "Toggle_Example3",
+	Callback = print
+});
+
+do
+	local Toggle2 = NormalSection:AddToggle({
+		Name = "Risky Feature",
+		Flag = "Toggle_Example5", -- Leave it blank will not save to config
+		Default = false,
+		Risky = true,
+		Callback = print,
+	});
+
+	local Option = Toggle2.Link:AddOption()
+
+	Option:AddToggle({
+		Risky = true,
+		Name= "Risky Feature",
+		Flag = "Toggle_Example6",
+		Callback = print
+	});
+end
+
+NormalSection:AddKeybind({
+	Name = "Keybind",
+	Default = "LeftAlt",
+	Flag = "Keybind_Example",
+	Callback = print,
+});
+
+NormalSection:AddSlider({
+	Name = "Slider",
+	Min = 0,
+	Max = 100,
+	Default = 50,
+	Round = 0,
+	Flag = "Slider_Example",
+	Callback = print
+});
+
+NormalSection:AddColorPicker({
+	Name = "ColorPicker",
+	Default = Color3.fromRGB(0, 255, 140),
+	Flag = "Color_Picker_Example",
+	Callback = print
 })
 
-local Button = LeftGroupbox:AddButton({
-    Text = "<font color='rgb(255, 172, 28)'>Linkvertise</font>",
-    Func = function()
-        print("Copied Linkvertise!")
-    end,
-    DoubleClick = false -- Requires double-click
+NormalSection:AddDropdown({
+	Name = "Single Dropdown",
+	Default = "Head",
+	Flag = "Single_Dropdown",
+	Values = {"Head","Body","Arms","Legs"},
+	Callback = print
 })
 
-
---OPTIONAL: Additional buttons to copy links
-Button:AddButton({
-    Text = "<font color='rgb(0, 255, 0)'>work.inc</font>",
-    Func = function()
-        print("Copied work.inc!!")
-    end
+NormalSection:AddDropdown({
+	Name = "Multi Dropdown",
+	Default = {"Head"},
+	Multi = true,
+	Flag = "Multi_Dropdown",
+	Values = {"Head","Body","Arms","Legs"},
+	Callback = print
 })
 
-local RightGroupbox = InfoTab:AddRightGroupbox("Help", "info")
-
-RightGroupbox:AddLabel({
-    Text = "Optional: Copies Discord Link, Great if users are having trouble getting key!",
-    DoesWrap = true
+NormalSection:AddButton({
+	Name = "Button",
+	Callback = function()
+		print('PRINT!')
+	end,
 })
 
-local Button = RightGroupbox:AddButton({
-    Text = "Copy Discord",
-    Func = function()
-        print("Copied Discord!")
-    end,
-    DoubleClick = false -- Requires double-click for risky actions
+NormalSection:AddParagraph({
+	Title = "Paragraph",
+	Content = "Very cool paragraph\nAll element in this scrtion\nwill be saved to the config!"
 })
 
-
-local UIGroupbox = UiTab:AddLeftGroupbox("Menu", "settings")
-
-local KeyLabel = UIGroupbox:AddLabel("Menu Bind") --creates a label to attach keybind since it cant be standalone
-
-local Keybind = KeyLabel:AddKeyPicker("MyKeybind", {
-    Default = "MB2",
-    Text = "Menu Bind",
-    Mode = "Toggle", -- Options: "Toggle", "Hold", "Always"
-    
-    -- Sets the toggle's value according to the keybind state if Mode is Toggle
-    SyncToggleState = false,
-    
-    Callback = function(Value)
-        Library:Unload()
-    end
+NormalSection:AddTextBox({
+	Name = "Textbox",
+	Placeholder = "Placeholder",
+	Default = "Hello, World",
+	Callback = print
 })
 
-local Button = UIGroupbox:AddButton({
-    Text = "Unload",
-    Func = function()
-        Library:Unload()
-    end,
-    DoubleClick = false -- Requires double-click for risky actions
+local DrawElements = function(Tab,Position)
+	do
+		local NormalSectionRight = Tab:DrawSection({
+			Name = "Section",
+			Position = Position
+		});
+
+		local Toggle = NormalSectionRight:AddToggle({
+			Name = "Toggle",
+			Default = false,
+			Callback = print,
+		});
+
+		-- Add Keybind To Toggle --
+		local Keybind = Toggle.Link:AddKeybind({
+			Default = "E",
+			Callback = print
+		});
+
+		-- Add Option To Toggle --
+		local Toggle2 = NormalSectionRight:AddToggle({
+			Name = "Toggle",
+			Default = false,
+			Callback = print,
+		});
+
+		local Option = Toggle2.Link:AddOption()
+
+		Option:AddToggle({
+			Name= "Example",
+			Callback = print
+		});
+
+		NormalSectionRight:AddKeybind({
+			Name = "Keybind",
+			Default = "LeftAlt",
+			Callback = print,
+		});
+
+		NormalSectionRight:AddSlider({
+			Name = "Slider",
+			Min = 0,
+			Max = 100,
+			Default = 50,
+			Round = 0,
+			Callback = print
+		});
+
+		NormalSectionRight:AddColorPicker({
+			Name = "ColorPicker",
+			Default = Color3.fromRGB(0, 255, 140),
+			Callback = print
+		})
+
+		NormalSectionRight:AddDropdown({
+			Name = "Single Dropdown",
+			Default = "Head",
+			Values = {"Head","Body","Arms","Legs"},
+			Callback = print
+		})
+
+		NormalSectionRight:AddDropdown({
+			Name = "Multi Dropdown",
+			Default = {"Head"},
+			Multi = true,
+			Values = {"Head","Body","Arms","Legs"},
+			Callback = print
+		})
+
+		NormalSectionRight:AddButton({
+			Name = "Button",
+			Callback = function()
+				print('PRINT!')
+			end,
+		})
+
+		NormalSectionRight:AddParagraph({
+			Title = "Paragraph",
+			Content = "Very cool paragraph\nAll elements in this section\nwill not be save to the config"
+		})
+	end;
+end;
+
+DrawElements(NormalTab,'right')
+
+-- Single Tab --
+local SingleTab = Window:DrawTab({
+	Name = "Single Tab",
+	Icon = "banana",
+	Type = "Single"
+});
+
+DrawElements(SingleTab,'left')
+
+-- Container Tab --
+local ContainerTab = Window:DrawContainerTab({
+	Name = "Extract Tabs",
+	Icon = "contact",
+});
+
+local ExtractTab = ContainerTab:DrawTab({
+	Name = "Tab 1",
+	Type = "Double"
+});
+
+local SingleExtractTab = ContainerTab:DrawTab({
+	Name = "Tab 2",
+	Type = "Single",
+	EnableScrolling = true, -- this will make tab can scrolling (recommend)
+});
+
+DrawElements(ExtractTab,"left");
+DrawElements(ExtractTab,"right");
+
+DrawElements(SingleExtractTab,"left");
+DrawElements(SingleExtractTab,"right");
+
+Window:DrawCategory({
+	Name = "Misc"
+});
+
+local SettingTab = Window:DrawTab({
+	Icon = "settings-3",
+	Name = "Settings",
+	Type = "Single",
+	EnableScrolling = true
+});
+
+local ThemeTab = Window:DrawTab({
+	Icon = "paintbrush",
+	Name = "Themes",
+	Type = "Single"
+});
+
+local Settings = SettingTab:DrawSection({
+	Name = "UI Settings",
+});
+
+Settings:AddToggle({
+	Name = "Alway Show Frame",
+	Default = false,
+	Callback = function(v)
+		Window.AlwayShowTab = v;
+	end,
+});
+
+Settings:AddColorPicker({
+	Name = "Highlight",
+	Default = Compkiller.Colors.Highlight,
+	Callback = function(v)
+		Compkiller.Colors.Highlight = v;
+		Compkiller:RefreshCurrentColor();
+	end,
+});
+
+Settings:AddColorPicker({
+	Name = "Toggle Color",
+	Default = Compkiller.Colors.Toggle,
+	Callback = function(v)
+		Compkiller.Colors.Toggle = v;
+		
+		Compkiller:RefreshCurrentColor(v);
+	end,
+});
+
+Settings:AddColorPicker({
+	Name = "Drop Color",
+	Default = Compkiller.Colors.DropColor,
+	Callback = function(v)
+		Compkiller.Colors.DropColor = v;
+
+		Compkiller:RefreshCurrentColor(v);
+	end,
+});
+
+Settings:AddColorPicker({
+	Name = "Risky",
+	Default = Compkiller.Colors.Risky,
+	Callback = function(v)
+		Compkiller.Colors.Risky = v;
+
+		Compkiller:RefreshCurrentColor(v);
+	end,
+});
+
+Settings:AddColorPicker({
+	Name = "Mouse Enter",
+	Default = Compkiller.Colors.MouseEnter,
+	Callback = function(v)
+		Compkiller.Colors.MouseEnter = v;
+
+		Compkiller:RefreshCurrentColor(v);
+	end,
+});
+
+Settings:AddColorPicker({
+	Name = "Block Color",
+	Default = Compkiller.Colors.BlockColor,
+	Callback = function(v)
+		Compkiller.Colors.BlockColor = v;
+
+		Compkiller:RefreshCurrentColor(v);
+	end,
+});
+
+Settings:AddColorPicker({
+	Name = "Background Color",
+	Default = Compkiller.Colors.BGDBColor,
+	Callback = function(v)
+		Compkiller.Colors.BGDBColor = v;
+
+		Compkiller:RefreshCurrentColor(v);
+	end,
+});
+
+Settings:AddColorPicker({
+	Name = "Block Background Color",
+	Default = Compkiller.Colors.BlockBackground,
+	Callback = function(v)
+		Compkiller.Colors.BlockBackground = v;
+
+		Compkiller:RefreshCurrentColor(v);
+	end,
+});
+
+Settings:AddColorPicker({
+	Name = "Stroke Color",
+	Default = Compkiller.Colors.StrokeColor,
+	Callback = function(v)
+		Compkiller.Colors.StrokeColor = v;
+
+		Compkiller:RefreshCurrentColor(v);
+	end,
+});
+
+Settings:AddColorPicker({
+	Name = "High Stroke Color",
+	Default = Compkiller.Colors.HighStrokeColor,
+	Callback = function(v)
+		Compkiller.Colors.HighStrokeColor = v;
+
+		Compkiller:RefreshCurrentColor(v);
+	end,
+});
+
+Settings:AddColorPicker({
+	Name = "Switch Color",
+	Default = Compkiller.Colors.SwitchColor,
+	Callback = function(v)
+		Compkiller.Colors.SwitchColor = v;
+
+		Compkiller:RefreshCurrentColor(v);
+	end,
+});
+
+Settings:AddColorPicker({
+	Name = "Line Color",
+	Default = Compkiller.Colors.LineColor,
+	Callback = function(v)
+		Compkiller.Colors.LineColor = v;
+
+		Compkiller:RefreshCurrentColor(v);
+	end,
+});
+
+Settings:AddButton({
+	Name = "Get Theme",
+	Callback = function()
+		print(Compkiller:GetTheme())
+		
+		Notifier.new({
+			Title = "Notification",
+			Content = "Copied Them Color to your clipboard",
+			Duration = 5,
+			Icon = "rbxassetid://120245531583106"
+		});
+	end,
+});
+
+ThemeTab:DrawSection({
+	Name = "UI Themes"
+}):AddDropdown({
+	Name = "Select Theme",
+	Default = "Default",
+	Values = {
+		"Default",
+		"Dark Green",
+		"Dark Blue",
+		"Purple Rose",
+		"Skeet"
+	},
+	Callback = function(v)
+		Compkiller:SetTheme(v)
+	end,
 })
+
+-- Creating Config Tab --
+local ConfigUI = Window:DrawConfig({
+	Name = "Config",
+	Icon = "folder",
+	Config = ConfigManager
+});
+
+ConfigUI:Init();
