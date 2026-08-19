@@ -7,7 +7,7 @@ local LocalPlayer = Players.LocalPlayer
 local TweenInfoFast = TweenInfo.new(0.2, Enum.EasingStyle.Quart, Enum.EasingDirection.Out)
 
 -- Dimensions Configuration
-local MainWidth = 530  -- С‚РµР»РµС„РѕРЅРЅС‹Р№ СЂР°Р·РјРµСЂ
+local MainWidth = 530 -- размер телефона
 local MainHeight = 320
 local SidebarWidth = 140
 local HeaderHeight = 36
