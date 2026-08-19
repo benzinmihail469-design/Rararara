@@ -197,13 +197,32 @@ for _, col in ipairs({LeftColumn, RightColumn}) do
     layout.Parent = col
 end
 
--- 6. Helper Function: Create Tabs
+-- 6. Helper Functions: Create Tab Sections & Tabs
 local ActiveTabButton = nil
+
+local function CreateTabSection(title)
+    local SectionLabel = Instance.new("TextLabel")
+    SectionLabel.Name = title .. "Section"
+    SectionLabel.Size = UDim2.new(1, 0, 0, 18)
+    SectionLabel.BackgroundTransparency = 1
+    SectionLabel.Text = string.upper(title)
+    SectionLabel.Font = Enum.Font.GothamBold
+    SectionLabel.TextSize = 9
+    SectionLabel.TextColor3 = Color3.fromRGB(70, 78, 95)
+    SectionLabel.TextXAlignment = Enum.TextXAlignment.Left
+    SectionLabel.Parent = TabContainer
+
+    local Padding = Instance.new("UIPadding")
+    Padding.PaddingLeft = UDim.new(0, 6)
+    Padding.Parent = SectionLabel
+
+    return SectionLabel
+end
 
 local function CreateTab(name)
     local TabButton = Instance.new("TextButton")
     TabButton.Name = name .. "Tab"
-    TabButton.Size = UDim2.new(1, 0, 0, 30)
+    TabButton.Size = UDim2.new(1, 0, 0, 26)
     TabButton.BackgroundColor3 = Color3.fromRGB(18, 22, 32)
     TabButton.BackgroundTransparency = 1
     TabButton.Text = ""
@@ -226,7 +245,7 @@ local function CreateTab(name)
     Title.Parent = TabButton
 
     TabButton.MouseButton1Click:Connect(function()
-        if ActiveTabButton then
+        if ActiveTabButton and ActiveTabButton ~= TabButton then
             TweenService:Create(ActiveTabButton, TweenInfoFast, {BackgroundTransparency = 1}):Play()
             TweenService:Create(ActiveTabButton:FindFirstChildOfClass("TextLabel"), TweenInfoFast, {TextColor3 = Color3.fromRGB(110, 118, 135)}):Play()
         end
@@ -239,16 +258,23 @@ local function CreateTab(name)
     return TabButton
 end
 
--- Populate Tabs
-local Tabs = {"Ragebot", "Legitbot", "Visuals", "World", "Misc", "Settings"}
-for i, tabName in ipairs(Tabs) do
-    local btn = CreateTab(tabName)
-    if i == 1 then
-        ActiveTabButton = btn
-        btn.BackgroundTransparency = 0
-        btn:FindFirstChildOfClass("TextLabel").TextColor3 = Color3.fromRGB(240, 245, 255)
-    end
-end
+-- Populate Tabs with Sections
+CreateTabSection("Main")
+local DefaultTab = CreateTab("Ragebot")
+CreateTab("Legitbot")
+
+CreateTabSection("Visuals")
+CreateTab("Visuals")
+CreateTab("World")
+
+CreateTabSection("Other")
+CreateTab("Misc")
+CreateTab("Settings")
+
+-- Activate First Tab
+ActiveTabButton = DefaultTab
+DefaultTab.BackgroundTransparency = 0
+DefaultTab:FindFirstChildOfClass("TextLabel").TextColor3 = Color3.fromRGB(240, 245, 255)
 
 -- 7. Smooth Dragging Mechanism
 local Dragging, DragInput, DragStart, StartPos
