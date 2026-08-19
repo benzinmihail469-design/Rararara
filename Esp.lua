@@ -357,7 +357,8 @@ function NeverLose:AddToggle(Handler, Config)
     Config = NeverLose:ProcessParams(Config , { 
         Default = false, 
         Flag = nil, 
-        Callback = EmptyFunction, 
+        Callback = EmptyFunction,
+        Label = "Toggle"
     }); 
     
     local Signal = Handler.Signal or {GetValue = function() return true end, Connect = function() return {Disconnect = function() end} end}
@@ -407,7 +408,7 @@ function NeverLose:AddToggle(Handler, Config)
     Label.Position = UDim2.new(0, 35, 0, 0)
     Label.Size = UDim2.new(1, -35, 1, 0)
     Label.BackgroundTransparency = 1
-    Label.Text = Config.Label or "Toggle"
+    Label.Text = Config.Label
     Label.TextColor3 = Color3.fromRGB(255, 255, 255)
     Label.Font = Enum.Font.GothamMedium
     Label.TextSize = 12
@@ -998,6 +999,299 @@ function NeverLose:AddColorPicker(Handler, Config)
     return ColorPickerLib; 
 end; 
 
+-- Dropdown (Выпадающий список)
+function NeverLose:AddDropdown(Handler, Config)
+    Config = NeverLose:ProcessParams(Config, {
+        Default = nil,
+        Options = {},
+        Multi = false,
+        Flag = nil,
+        Size = 150,
+        Label = "Dropdown",
+        Callback = EmptyFunction,
+    });
+
+    local Signal = Handler.Signal or {GetValue = function() return true end, Connect = function() return {Disconnect = function() end} end}
+    
+    local DropdownLib = { Values = Config.Multi and (Config.Default or {}) or Config.Default };
+    local Open = false;
+    
+    -- Создаем контейнер
+    local ElementContainer = Instance.new("Frame")
+    ElementContainer.Parent = Handler.Container
+    ElementContainer.Size = UDim2.new(1, 0, 0, 25)
+    ElementContainer.BackgroundTransparency = 1
+    
+    -- Добавляем лейбл
+    local Label = Instance.new("TextLabel")
+    Label.Parent = ElementContainer
+    Label.Position = UDim2.new(0, 0, 0, 0)
+    Label.Size = UDim2.new(1, -(Config.Size + 5), 1, 0)
+    Label.BackgroundTransparency = 1
+    Label.Text = Config.Label
+    Label.TextColor3 = Color3.fromRGB(255, 255, 255)
+    Label.Font = Enum.Font.GothamMedium
+    Label.TextSize = 12
+    Label.TextXAlignment = Enum.TextXAlignment.Left
+
+    local Dropdown = Instance.new("Frame")
+    local UICorner = Instance.new("UICorner")
+    local UIStroke = Instance.new("UIStroke")
+    local SelectedText = Instance.new("TextLabel")
+    local Icon = Instance.new("TextLabel")
+    local Container = Instance.new("Frame")
+    local UIListLayout = Instance.new("UIListLayout")
+
+    Dropdown.Name = NeverLose.RandomString();
+    Dropdown.Parent = ElementContainer
+    Dropdown.AnchorPoint = Vector2.new(1, 0.5)
+    Dropdown.Position = UDim2.new(1, 0, 0.5, 0)
+    Dropdown.BackgroundColor3 = Color3.fromRGB(26, 28, 36)
+    Dropdown.BorderColor3 = Color3.fromRGB(0, 0, 0)
+    Dropdown.BorderSizePixel = 0
+    Dropdown.Size = UDim2.new(0, Config.Size, 0, 18)
+    Dropdown.ZIndex = ZINdex + 13
+
+    UICorner.CornerRadius = UDim.new(0, 4)
+    UICorner.Parent = Dropdown
+
+    UIStroke.Transparency = 0.650
+    UIStroke.Color = Color3.fromRGB(45, 48, 58)
+    UIStroke.Parent = Dropdown
+
+    SelectedText.Name = NeverLose.RandomString();
+    SelectedText.Parent = Dropdown
+    SelectedText.Position = UDim2.new(0, 6, 0, 0)
+    SelectedText.Size = UDim2.new(1, -22, 1, 0)
+    SelectedText.BackgroundTransparency = 1
+    SelectedText.TextColor3 = Color3.fromRGB(255, 255, 255)
+    SelectedText.Font = Enum.Font.GothamMedium
+    SelectedText.TextSize = 10
+    SelectedText.TextXAlignment = Enum.TextXAlignment.Left
+    SelectedText.TextTruncate = Enum.TextTruncate.AtEnd
+    SelectedText.ZIndex = ZINdex + 14
+
+    Icon.Name = NeverLose.RandomString();
+    Icon.Parent = Dropdown
+    Icon.Position = UDim2.new(1, -16, 0, 0)
+    Icon.Size = UDim2.new(0, 12, 1, 0)
+    Icon.BackgroundTransparency = 1
+    Icon.Font = Enum.Font.GothamBold
+    Icon.Text = "▼"
+    Icon.TextColor3 = Color3.fromRGB(200, 200, 200)
+    Icon.TextSize = 12
+    Icon.ZIndex = ZINdex + 14
+
+    Container.Name = NeverLose.RandomString();
+    Container.Parent = Dropdown
+    Container.Position = UDim2.new(0, 0, 1, 4)
+    Container.Size = UDim2.new(1, 0, 0, 0)
+    Container.BackgroundColor3 = Color3.fromRGB(20, 22, 28)
+    Container.ClipsDescendants = true
+    Container.Visible = false
+    Container.ZIndex = ZINdex + 25
+
+    local ContainerCorner = Instance.new("UICorner")
+    ContainerCorner.CornerRadius = UDim.new(0, 4)
+    ContainerCorner.Parent = Container
+
+    UIListLayout.Parent = Container
+    UIListLayout.SortOrder = Enum.SortOrder.LayoutOrder
+
+    local function UpdateText()
+        if Config.Multi then
+            local selected = {}
+            for k, v in pairs(DropdownLib.Values) do
+                if v then table.insert(selected, k) end
+            end
+            SelectedText.Text = #selected > 0 and table.concat(selected, ", ") or "None"
+        else
+            SelectedText.Text = tostring(DropdownLib.Values or "None")
+        end
+    end
+
+    function DropdownLib:Refresh(newOptions)
+        Config.Options = newOptions or Config.Options
+        for _, child in ipairs(Container:GetChildren()) do
+            if child:IsA("Frame") then child:Destroy() end
+        end
+
+        for i, opt in ipairs(Config.Options) do
+            local Item = Instance.new("Frame")
+            Item.Size = UDim2.new(1, 0, 0, 18)
+            Item.BackgroundTransparency = 1
+            Item.Parent = Container
+
+            local ItemText = Instance.new("TextLabel")
+            ItemText.Parent = Item
+            ItemText.Size = UDim2.new(1, -10, 1, 0)
+            ItemText.Position = UDim2.new(0, 5, 0, 0)
+            ItemText.BackgroundTransparency = 1
+            ItemText.Text = tostring(opt)
+            ItemText.Font = Enum.Font.GothamMedium
+            ItemText.TextSize = 10
+            ItemText.TextColor3 = Color3.fromRGB(180, 180, 180)
+            ItemText.TextXAlignment = Enum.TextXAlignment.Left
+
+            NeverLose:CreateInput(Item, function()
+                if Config.Multi then
+                    DropdownLib.Values[opt] = not DropdownLib.Values[opt]
+                    ItemText.TextColor3 = DropdownLib.Values[opt] and NeverLose.AccentColor or Color3.fromRGB(180, 180, 180)
+                else
+                    DropdownLib.Values = opt
+                    Open = false
+                    Container.Visible = false
+                end
+                UpdateText()
+                Config.Callback(DropdownLib.Values)
+            end)
+        end
+    end
+
+    DropdownLib:Refresh(Config.Options)
+    UpdateText()
+
+    NeverLose:CreateInput(Dropdown, function()
+        Open = not Open
+        Container.Visible = Open
+        Container.Size = Open and UDim2.new(1, 0, 0, math.min(#Config.Options * 18, 120)) or UDim2.new(1, 0, 0, 0)
+    end)
+
+    function DropdownLib:GetValue() return DropdownLib.Values end
+    function DropdownLib:SetValue(val)
+        DropdownLib.Values = val
+        UpdateText()
+        Config.Callback(DropdownLib.Values)
+    end
+
+    if Config.Flag then NeverLose.Flags[Config.Flag] = DropdownLib end
+    return DropdownLib
+end
+
+-- Button (Кнопка)
+function NeverLose:AddButton(Handler, Config)
+    Config = NeverLose:ProcessParams(Config, {
+        Text = "Button",
+        Callback = EmptyFunction,
+    });
+
+    local Signal = Handler.Signal or {GetValue = function() return true end, Connect = function() return {Disconnect = function() end} end}
+
+    local Button = Instance.new("Frame")
+    local UICorner = Instance.new("UICorner")
+    local UIStroke = Instance.new("UIStroke")
+    local TextLabel = Instance.new("TextLabel")
+
+    Button.Name = NeverLose.RandomString();
+    Button.Parent = Handler.Container
+    Button.BackgroundColor3 = Color3.fromRGB(26, 28, 36)
+    Button.BorderColor3 = Color3.fromRGB(0, 0, 0)
+    Button.BorderSizePixel = 0
+    Button.ClipsDescendants = true
+    Button.Size = UDim2.new(1, 0, 0, 22)
+    Button.ZIndex = ZINdex + 13
+
+    UICorner.CornerRadius = UDim.new(0, 4)
+    UICorner.Parent = Button
+
+    UIStroke.Transparency = 0.650
+    UIStroke.Color = Color3.fromRGB(45, 48, 58)
+    UIStroke.Parent = Button
+
+    TextLabel.Parent = Button
+    TextLabel.Size = UDim2.new(1, 0, 1, 0)
+    TextLabel.BackgroundTransparency = 1
+    TextLabel.Text = Config.Text
+    TextLabel.TextColor3 = Color3.fromRGB(255, 255, 255)
+    TextLabel.Font = Enum.Font.GothamMedium
+    TextLabel.TextSize = 10
+    TextLabel.ZIndex = ZINdex + 14
+
+    local ButtonLib = {}
+
+    ButtonLib.SetRender = function(value)
+        if value then
+            NeverLose.PlayAnimate(Button, SlowyTween, { BackgroundTransparency = 0 })
+            NeverLose.PlayAnimate(UIStroke, SlowyTween, { Transparency = 0.650 })
+            NeverLose.PlayAnimate(TextLabel, SlowyTween, { TextTransparency = 0 })
+        else
+            NeverLose.PlayAnimate(Button, SlowyTween, { BackgroundTransparency = 1 })
+            NeverLose.PlayAnimate(UIStroke, SlowyTween, { Transparency = 1 })
+            NeverLose.PlayAnimate(TextLabel, SlowyTween, { TextTransparency = 1 })
+        end
+    end
+
+    ButtonLib.SetRender(Signal:GetValue())
+    Signal:Connect(ButtonLib.SetRender)
+
+    local input = NeverLose:CreateInput(Button, function()
+        Config.Callback()
+    end)
+
+    NeverLose:AddSignal(input.MouseEnter:Connect(function()
+        NeverLose.PlayAnimate(Button, SlowyTween, { BackgroundColor3 = Color3.fromRGB(35, 38, 48) })
+    end))
+
+    NeverLose:AddSignal(input.MouseLeave:Connect(function()
+        NeverLose.PlayAnimate(Button, SlowyTween, { BackgroundColor3 = Color3.fromRGB(26, 28, 36) })
+    end))
+
+    return ButtonLib
+end
+
+-- Label (Текстовая надпись)
+function NeverLose:AddLabel(Handler, Config)
+    local Text = typeof(Config) == "string" and Config or (Config.Text or "")
+
+    local Label = Instance.new("Frame")
+    local TextLabel = Instance.new("TextLabel")
+
+    Label.Name = NeverLose.RandomString();
+    Label.Parent = Handler.Container
+    Label.BackgroundTransparency = 1
+    Label.Size = UDim2.new(1, 0, 0, 16)
+    Label.ZIndex = ZINdex + 13
+
+    TextLabel.Parent = Label
+    TextLabel.Size = UDim2.new(1, 0, 1, 0)
+    TextLabel.BackgroundTransparency = 1
+    TextLabel.Text = Text
+    TextLabel.TextColor3 = Color3.fromRGB(200, 200, 200)
+    TextLabel.Font = Enum.Font.GothamMedium
+    TextLabel.TextSize = 10
+    TextLabel.TextXAlignment = Enum.TextXAlignment.Left
+    TextLabel.ZIndex = ZINdex + 14
+
+    local LabelLib = {}
+    function LabelLib:SetText(newText)
+        TextLabel.Text = newText
+    end
+
+    return LabelLib
+end
+
+-- Divider (Линия-разделитель)
+function NeverLose:AddDivider(Handler)
+    local Divider = Instance.new("Frame")
+    local Line = Instance.new("Frame")
+
+    Divider.Name = NeverLose.RandomString();
+    Divider.Parent = Handler.Container
+    Divider.BackgroundTransparency = 1
+    Divider.Size = UDim2.new(1, 0, 0, 8)
+    Divider.ZIndex = ZINdex + 13
+
+    Line.Parent = Divider
+    Line.AnchorPoint = Vector2.new(0.5, 0.5)
+    Line.Position = UDim2.new(0.5, 0, 0.5, 0)
+    Line.Size = UDim2.new(1, 0, 0, 1)
+    Line.BackgroundColor3 = Color3.fromRGB(45, 48, 58)
+    Line.BorderSizePixel = 0
+    Line.ZIndex = ZINdex + 14
+
+    return Divider
+end
+
 -- Option Window & Button (Кнопка доп. настроек / Окно опций)
 function NeverLose:AddOption(Handler, GearIcon) 
     local Signal = Handler.Signal or {GetValue = function() return true end, Connect = function() return {Disconnect = function() end} end}
@@ -1015,7 +1309,6 @@ function NeverLose:AddOption(Handler, GearIcon)
     Option.ClipsDescendants = true 
     Option.Size = UDim2.new(0, 20, 0, 18) 
     Option.ZIndex = ZINdex + 13 
-    Option.LayoutOrder = -(#Handler.Container:GetChildren() + 5); 
     
     Icon.Name = NeverLose.RandomString(); 
     Icon.Parent = Option 
@@ -1209,7 +1502,9 @@ Handler.Signal = {
     SetValue = function() end
 }
 
--- Создаем различные GUI элементы
+-- Пример использования всех элементов
+local label1 = NeverLose:AddLabel(Handler, "Основные настройки:")
+
 local toggle = NeverLose:AddToggle(Handler, {
     Default = true,
     Flag = "Toggle1",
@@ -1242,12 +1537,27 @@ local keybind = NeverLose:AddKeybind(Handler, {
     end
 })
 
+local divider1 = NeverLose:AddDivider(Handler)
+
+local label2 = NeverLose:AddLabel(Handler, "Визуальные настройки:")
+
 local colorpicker = NeverLose:AddColorPicker(Handler, {
     Default = Color3.fromRGB(255, 0, 0),
     Flag = "Color1",
     Label = "Цвет",
     Callback = function(color)
         print("Color selected")
+    end
+})
+
+local dropdown = NeverLose:AddDropdown(Handler, {
+    Default = "Option 1",
+    Options = {"Option 1", "Option 2", "Option 3"},
+    Multi = false,
+    Flag = "Dropdown1",
+    Label = "Выбор режима",
+    Callback = function(value)
+        print("Dropdown: " .. tostring(value))
     end
 })
 
@@ -1262,5 +1572,13 @@ local textinput = NeverLose:AddTextInput(Handler, {
     end
 })
 
+local button = NeverLose:AddButton(Handler, {
+    Text = "Нажми меня!",
+    Callback = function()
+        print("Button clicked!")
+    end
+})
+
 print("Библиотека NeverLose успешно загружена!")
+print("Доступны все компоненты: Toggle, Slider, Keybind, ColorPicker, Dropdown, Button, Label, Divider, TextInput, Option")
 print("Нажмите RightShift, чтобы показать/скрыть окно")
