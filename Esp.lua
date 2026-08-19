@@ -4,6 +4,8 @@ local UserInputService = game:GetService("UserInputService")
 local TweenService = game:GetService("TweenService")
 local HttpService = game:GetService("HttpService")
 local TextService = game:GetService("TextService")
+local RunService = game:GetService("RunService")
+local Lighting = game:GetService("Lighting")
 local ScreenGui = Instance.new("ScreenGui")
 ScreenGui.Parent = game:GetService("CoreGui")
 
@@ -25,7 +27,8 @@ local ManualTween = TweenInfo.new(0.15, Enum.EasingStyle.Quad, Enum.EasingDirect
 local EmptyFunction = function() end
 local ZINdex = 0
 
--- Вспомогательные функции
+-- ========== ВСПОМОГАТЕЛЬНЫЕ ФУНКЦИИ ==========
+
 function NeverLose:ProcessParams(provided, defaults)
     provided = provided or {}
     for k, v in pairs(defaults) do
@@ -188,7 +191,8 @@ function NeverLose:AddSignal(connection)
     return connection
 end
 
--- Система сохранения/загрузки
+-- ========== СИСТЕМА СОХРАНЕНИЯ/ЗАГРУЗКИ ==========
+
 function NeverLose:SaveConfig(name)
     local data = {}
     for flag, elem in pairs(NeverLose.Flags) do
@@ -226,12 +230,140 @@ function NeverLose:LoadConfig(name)
     end
 end
 
--- Настройки
+-- ========== НАСТРОЙКИ ==========
+
 NeverLose.AccentColor = Color3.fromRGB(0, 150, 255)
 NeverLose.Flags = {}
 NeverLose.Tabs = {}
 
--- Функция создания главного окна
+-- ========== ЛОКАЛИЗАЦИЯ ==========
+
+NeverLose.CurrentLang = "EN"
+NeverLose.Translations = {
+    EN = {
+        Legitbot = "Legitbot",
+        Visuals = "Visuals",
+        Settings = "Settings",
+        Configs = "Configs",
+        Enabled = "Enabled",
+        FOV = "Field of View",
+        MainSettings = "Main Settings",
+        Targeting = "Targeting",
+        Configuration = "Configuration",
+        SaveConfig = "Save Config",
+        LoadConfig = "Load Config",
+        Saved = "Saved successfully!",
+        Loaded = "Loaded successfully!",
+        Config = "Config",
+        Hitbox = "Hitbox",
+        AccentColor = "Accent Color",
+        Welcome = "Welcome",
+        LoadedMessage = "NeverLose library loaded!",
+    },
+    RU = {
+        Legitbot = "Легитбот",
+        Visuals = "Визуалы",
+        Settings = "Настройки",
+        Configs = "Конфиги",
+        Enabled = "Включено",
+        FOV = "Угол обзора",
+        MainSettings = "Основные настройки",
+        Targeting = "Прицеливание",
+        Configuration = "Конфигурация",
+        SaveConfig = "Сохранить конфиг",
+        LoadConfig = "Загрузить конфиг",
+        Saved = "Успешно сохранено!",
+        Loaded = "Успешно загружено!",
+        Config = "Конфиг",
+        Hitbox = "Хитбокс",
+        AccentColor = "Акцентный цвет",
+        Welcome = "Добро пожаловать",
+        LoadedMessage = "Библиотека NeverLose загружена!",
+    }
+}
+
+function NeverLose:SetLanguage(lang)
+    if NeverLose.Translations[lang] then
+        NeverLose.CurrentLang = lang
+    end
+end
+
+function NeverLose:GetText(key)
+    local dict = NeverLose.Translations[NeverLose.CurrentLang] or NeverLose.Translations["EN"]
+    return dict[key] or key
+end
+
+-- ========== ГРАФИЧЕСКИЕ ЭФФЕКТЫ ==========
+
+-- UI Blur Effect (Эффект размытия заднего фона)
+function NeverLose:ToggleBlur(state, intensity)
+    local Blur = Lighting:FindFirstChild("NeverLose_Blur")
+    if state then
+        if not Blur then
+            Blur = Instance.new("BlurEffect")
+            Blur.Name = "NeverLose_Blur"
+            Blur.Parent = Lighting
+        end
+        TweenService:Create(Blur, SlowyTween, { Size = intensity or 16 }):Play()
+    else
+        if Blur then
+            local tween = TweenService:Create(Blur, SlowyTween, { Size = 0 })
+            tween:Play()
+            tween.Completed:Connect(function()
+                if Blur.Size == 0 then Blur:Destroy() end
+            end)
+        end
+    end
+end
+
+-- FOV Circle Overlay (Индикация радиуса Аимбота)
+function NeverLose:CreateFOVCircle(Config)
+    Config = NeverLose:ProcessParams(Config, {
+        Radius = 100,
+        Color = NeverLose.AccentColor,
+        Visible = false,
+        Thickness = 1.5,
+    })
+
+    if not Drawing then 
+        warn("Drawing library not available")
+        return nil 
+    end
+
+    local FOVCircle = Drawing.new("Circle")
+    FOVCircle.Thickness = Config.Thickness
+    FOVCircle.NumSides = 64
+    FOVCircle.Radius = Config.Radius
+    FOVCircle.Filled = false
+    FOVCircle.Visible = Config.Visible
+    FOVCircle.Color = Config.Color
+    FOVCircle.Transparency = 1
+
+    local Connection
+    Connection = RunService.RenderStepped:Connect(function()
+        if FOVCircle.Visible then
+            local MousePos = UserInputService:GetMouseLocation()
+            FOVCircle.Position = Vector2.new(MousePos.X, MousePos.Y)
+        end
+    end)
+
+    return {
+        Circle = FOVCircle,
+        SetVisible = function(visible)
+            FOVCircle.Visible = visible
+        end,
+        SetRadius = function(radius)
+            FOVCircle.Radius = radius
+        end,
+        Destroy = function()
+            Connection:Disconnect()
+            FOVCircle:Remove()
+        end
+    }
+end
+
+-- ========== ФУНКЦИЯ СОЗДАНИЯ ГЛАВНОГО ОКНА ==========
+
 function NeverLose:CreateWindow(Config)
     Config = NeverLose:ProcessParams(Config, {
         Title = "Neverlose.cc",
@@ -399,7 +531,6 @@ function NeverLose:AddTab(Handler, Config)
     Page.ScrollBarThickness = 2
     Page.ScrollBarImageColor3 = NeverLose.AccentColor
 
-    -- Создаем UIListLayout для страницы
     local PageLayout = Instance.new("UIListLayout")
     PageLayout.Parent = Page
     PageLayout.SortOrder = Enum.SortOrder.LayoutOrder
@@ -415,7 +546,6 @@ function NeverLose:AddTab(Handler, Config)
             end
         end
         Page.Visible = true
-        -- Обновляем цвета вкладок
         for _, tab in ipairs(NeverLose.Tabs) do
             if tab.TabButton then
                 tab.TabButton.BackgroundTransparency = 1
@@ -1620,7 +1750,6 @@ function NeverLose:Notification(Config)
         Duration = 3,
     })
 
-    -- Создаем контейнер для уведомлений если его нет
     if not NotificationHolder then
         NotificationHolder = Instance.new("Frame")
         NotificationHolder.Name = "NotificationHolder"
@@ -1754,29 +1883,36 @@ function NeverLose:CreateKeybindList()
     return KeyList
 end
 
--- ========== ПРИМЕР ИСПОЛЬЗОВАНИЯ ==========
+-- ========== ПОЛНЫЙ ПРИМЕР СБОРКИ МЕНЮ ==========
 
--- Создаем окно
-local MainWindow = NeverLose:CreateWindow({
-    Title = "Neverlose.cc",
-    SubTitle = "Full Edition",
+-- Инициализация окна
+local Window = NeverLose:CreateWindow({
+    Title = "Neverlose",
+    SubTitle = "Roblox v2.0",
+    Size = Vector2.new(620, 420),
     ToggleKey = Enum.KeyCode.RightShift
 })
 
--- Создаем контейнер для Handler
+-- Размытие заднего плана
+NeverLose:ToggleBlur(true, 18)
+
+-- Создаем Handler для вкладок
 local Handler = {}
-Handler.PageContainer = MainWindow.PageContainer
-Handler.TabContainer = MainWindow.TabContainer
+Handler.PageContainer = Window.PageContainer
+Handler.TabContainer = Window.TabContainer
 
--- Создаем вкладки
-local Tab1 = NeverLose:AddTab(Handler, {
-    Name = "Основные",
-    Icon = "rbxassetid://0"
+-- Добавление вкладок
+local LegitTab = NeverLose:AddTab(Handler, { 
+    Name = NeverLose:GetText("Legitbot"), 
+    Icon = "rbxassetid://0" 
 })
-
-local Tab2 = NeverLose:AddTab(Handler, {
-    Name = "Настройки",
-    Icon = "rbxassetid://0"
+local VisualsTab = NeverLose:AddTab(Handler, { 
+    Name = NeverLose:GetText("Visuals"), 
+    Icon = "rbxassetid://0" 
+})
+local ConfigsTab = NeverLose:AddTab(Handler, { 
+    Name = NeverLose:GetText("Configs"), 
+    Icon = "rbxassetid://0" 
 })
 
 -- Активируем первую вкладку
@@ -1785,136 +1921,159 @@ for _, tab in ipairs(NeverLose.Tabs) do
         tab.Page.Visible = false
     end
 end
-Tab1.Page.Visible = true
+LegitTab.Page.Visible = true
 
--- Создаем Handler для элементов
+-- Создаем секции для Legitbot
 local ElementHandler = {}
-ElementHandler.Container = NeverLose:AddSection({ Page = Tab1.Page }, {
-    Name = "Основные настройки"
-})
+ElementHandler.Page = LegitTab.Page
 ElementHandler.Signal = { 
     GetValue = function() return true end,
     Connect = function() return {Disconnect = function() end} end,
     SetValue = function() end
 }
 
--- Добавляем элементы
-local toggle = NeverLose:AddToggle(ElementHandler, {
-    Default = true,
-    Flag = "Toggle1",
-    Label = "Включить функцию",
-    Callback = function(value)
-        print("Toggle: " .. tostring(value))
+local MainSection = {}
+MainSection.Container = NeverLose:AddSection(ElementHandler, { 
+    Name = NeverLose:GetText("MainSettings")
+})
+
+local TargetSection = {}
+TargetSection.Container = NeverLose:AddSection(ElementHandler, { 
+    Name = NeverLose:GetText("Targeting")
+})
+
+-- Добавление элементов управления в MainSection
+MainSection.Signal = ElementHandler.Signal
+
+NeverLose:AddToggle(MainSection, {
+    Default = false,
+    Flag = "Legit_Enabled",
+    Label = NeverLose:GetText("Enabled"),
+    Callback = function(state)
+        print("Aimbot:", state)
+        if state and FOVCircle then
+            FOVCircle:SetVisible(true)
+        elseif FOVCircle then
+            FOVCircle:SetVisible(false)
+        end
     end
 })
 
-local slider = NeverLose:AddSlider(ElementHandler, {
-    Default = 50,
+NeverLose:AddSlider(MainSection, {
+    Default = 90,
     Min = 0,
-    Max = 100,
-    Type = "%",
-    Rounding = 0,
-    Flag = "Slider1",
-    Label = "Громкость",
-    Callback = function(value)
-        print("Slider: " .. tostring(value))
+    Max = 300,
+    Type = "°",
+    Flag = "Legit_FOV",
+    Label = NeverLose:GetText("FOV"),
+    Callback = function(val)
+        print("FOV:", val)
+        if FOVCircle then
+            FOVCircle:SetRadius(val)
+        end
     end
 })
 
-local dropdown = NeverLose:AddDropdown(ElementHandler, {
-    Default = "Option 1",
-    Options = {"Option 1", "Option 2", "Option 3"},
+-- Добавление элементов управления в TargetSection
+TargetSection.Signal = ElementHandler.Signal
+
+NeverLose:AddDropdown(TargetSection, {
+    Default = "Head",
+    Options = { "Head", "Torso", "HumanoidRootPart" },
     Multi = false,
-    Flag = "Dropdown1",
-    Label = "Выбор режима",
-    Callback = function(value)
-        print("Dropdown: " .. tostring(value))
+    Flag = "Legit_Hitbox",
+    Label = NeverLose:GetText("Hitbox"),
+    Callback = function(selected)
+        print("Hitbox:", selected)
     end
 })
 
--- Создаем вторую секцию
-local ElementHandler2 = {}
-ElementHandler2.Container = NeverLose:AddSection({ Page = Tab1.Page }, {
-    Name = "Визуальные настройки"
-})
-ElementHandler2.Signal = { 
-    GetValue = function() return true end,
-    Connect = function() return {Disconnect = function() end} end,
-    SetValue = function() end
-}
-
-local colorpicker = NeverLose:AddColorPicker(ElementHandler2, {
-    Default = Color3.fromRGB(255, 0, 0),
-    Flag = "Color1",
-    Label = "Цвет",
+NeverLose:AddColorPicker(TargetSection, {
+    Default = Color3.fromRGB(0, 150, 255),
+    Flag = "Accent_Color",
+    Label = NeverLose:GetText("AccentColor"),
     Callback = function(color)
-        print("Color selected")
+        NeverLose.AccentColor = color
+        if FOVCircle then
+            FOVCircle.Circle.Color = color
+        end
     end
 })
 
-local keybind = NeverLose:AddKeybind(ElementHandler2, {
-    Default = "F",
-    Blacklist = {"Escape", "P"},
-    Flag = "Keybind1",
-    Label = "Клавиша",
-    Callback = function(key)
-        print("Keybind: " .. tostring(key))
-    end
+-- Создаем FOV Circle
+local FOVCircle = NeverLose:CreateFOVCircle({
+    Radius = 90,
+    Color = NeverLose.AccentColor,
+    Visible = false,
+    Thickness = 1.5
 })
 
-local button = NeverLose:AddButton(ElementHandler2, {
-    Text = "Нажми меня!",
+-- Секция сохранения конфигов
+local ConfigSection = {}
+ConfigSection.Container = NeverLose:AddSection({ Page = ConfigsTab.Page }, { 
+    Name = NeverLose:GetText("Configuration")
+})
+ConfigSection.Signal = ElementHandler.Signal
+
+NeverLose:AddButton(ConfigSection, {
+    Text = NeverLose:GetText("SaveConfig"),
     Callback = function()
-        NeverLose:Notification({
-            Title = "Уведомление",
-            Text = "Кнопка была нажата!",
-            Duration = 3
+        NeverLose:SaveConfig("default")
+        NeverLose:Notification({ 
+            Title = NeverLose:GetText("Config"), 
+            Text = NeverLose:GetText("Saved"), 
+            Duration = 3 
         })
-        print("Button clicked!")
     end
 })
 
--- Добавляем элементы на вторую вкладку
-local ElementHandler3 = {}
-ElementHandler3.Container = NeverLose:AddSection({ Page = Tab2.Page }, {
-    Name = "Дополнительные настройки"
-})
-ElementHandler3.Signal = { 
-    GetValue = function() return true end,
-    Connect = function() return {Disconnect = function() end} end,
-    SetValue = function() end
-}
-
-local textinput = NeverLose:AddTextInput(ElementHandler3, {
-    Default = "Hello",
-    Placeholder = "Type here...",
-    Flag = "Text1",
-    Size = 150,
-    Label = "Текст",
-    Callback = function(text)
-        print("Text: " .. text)
+NeverLose:AddButton(ConfigSection, {
+    Text = NeverLose:GetText("LoadConfig"),
+    Callback = function()
+        NeverLose:LoadConfig("default")
+        NeverLose:Notification({ 
+            Title = NeverLose:GetText("Config"), 
+            Text = NeverLose:GetText("Loaded"), 
+            Duration = 3 
+        })
     end
 })
 
-local divider = NeverLose:AddDivider(ElementHandler3)
+-- Кнопка смены языка
+NeverLose:AddButton(ConfigSection, {
+    Text = "Switch to RU / EN",
+    Callback = function()
+        if NeverLose.CurrentLang == "EN" then
+            NeverLose:SetLanguage("RU")
+        else
+            NeverLose:SetLanguage("EN")
+        end
+        NeverLose:Notification({
+            Title = "Language",
+            Text = "Switched to " .. NeverLose.CurrentLang,
+            Duration = 2
+        })
+    end
+})
 
-local label = NeverLose:AddLabel(ElementHandler3, "Это пример текстовой надписи")
+-- Установка водяного знака
+NeverLose:SetWatermark("Neverlose.cc | User: Dev | 60 FPS")
 
--- Создаем водяной знак
-NeverLose:SetWatermark("Neverlose.cc | Full Edition | FPS: 60")
-
--- Создаем список биндов
-local KeybindList = NeverLose:CreateKeybindList()
-
--- Отправляем тестовое уведомление
+-- Отправка приветственного уведомления
 task.delay(1, function()
     NeverLose:Notification({
-        Title = "Добро пожаловать",
-        Text = "Библиотека NeverLose загружена!",
+        Title = NeverLose:GetText("Welcome"),
+        Text = NeverLose:GetText("LoadedMessage"),
         Duration = 4
     })
 end)
 
-print("Библиотека NeverLose успешно загружена!")
-print("Доступны все компоненты!")
-print("Нажмите RightShift, чтобы показать/скрыть окно")
+print("NeverLose библиотека полностью загружена!")
+print("Доступны все компоненты:")
+print("✓ Вкладки, Секции")
+print("✓ Toggle, Slider, Keybind, ColorPicker, Dropdown, Button, Label, Divider, TextInput, Option")
+print("✓ Уведомления, Водяной знак, Список биндов")
+print("✓ Размытие фона, FOV круг")
+print("✓ Локализация EN/RU")
+print("✓ Сохранение/загрузка конфигов")
+print("Нажмите RightShift для показа/скрытия меню")
