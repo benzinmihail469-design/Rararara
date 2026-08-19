@@ -13,7 +13,7 @@ ScreenGui.Parent = CoreGui
 -- Главный контейнер (Main Frame)
 local MainFrame = Instance.new("Frame")
 MainFrame.Name = "MainFrame"
-MainFrame.Size = UDim2.fromOffset(540, 480)
+MainFrame.Size = UDim2.fromOffset(640, 380)
 MainFrame.Position = UDim2.new(0.5, -320, 0.5, -240)
 MainFrame.BackgroundColor3 = Color3.fromRGB(8, 8, 13) -- Основной цвет Neverlose
 MainFrame.BorderSizePixel = 0
