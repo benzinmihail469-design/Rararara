@@ -189,8 +189,53 @@ function NeverLose:CreateOptionWindow(parent, zindex)
     return Window
 end
 
-function NeverLose:AddSignal(connection)
-    return connection
+-- ========== СИСТЕМА ПОДПИСОК ==========
+
+NeverLose.Connections = {}
+
+function NeverLose:AddSignal(Connection)
+    table.insert(NeverLose.Connections, Connection)
+    return Connection
+end
+
+-- ========== СИСТЕМА ВЫГРУЗКИ И ОЧИСТКИ ==========
+
+function NeverLose:Unload()
+    -- Отключение всех подписок на события
+    for _, conn in ipairs(NeverLose.Connections) do
+        if conn and conn.Connected then
+            conn:Disconnect()
+        end
+    end
+    table.clear(NeverLose.Connections)
+    
+    -- Удаление блюра и интерфейса
+    NeverLose:ToggleBlur(false)
+    if ScreenGui then
+        ScreenGui:Destroy()
+    end
+    
+    -- Удаление FOV Circle
+    if NeverLose.FOVCircleInstance then
+        NeverLose.FOVCircleInstance:Destroy()
+    end
+    
+    -- Удаление Drawing элементов
+    if NeverLose.CrosshairLines then
+        for _, line in pairs(NeverLose.CrosshairLines) do
+            if line and line.Remove then
+                line:Remove()
+            end
+        end
+        NeverLose.CrosshairLines = nil
+    end
+    
+    -- Очистка таблиц состояния
+    table.clear(NeverLose.Flags)
+    table.clear(NeverLose.Tabs)
+    table.clear(NeverLose.ESPObjects)
+    
+    print("NeverLose библиотека выгружена!")
 end
 
 -- ========== СИСТЕМА СОХРАНЕНИЯ/ЗАГРУЗКИ ==========
@@ -238,6 +283,7 @@ NeverLose.AccentColor = Color3.fromRGB(0, 150, 255)
 NeverLose.Flags = {}
 NeverLose.Tabs = {}
 NeverLose.ESPObjects = {}
+NeverLose.KeybindModes = {}
 
 -- ========== ЛОКАЛИЗАЦИЯ ==========
 
@@ -266,6 +312,12 @@ NeverLose.Translations = {
         BoxESP = "Box ESP",
         NameESP = "Name ESP",
         EnabledESP = "Enable ESP",
+        Crosshair = "Crosshair",
+        KeybindMode = "Keybind Mode",
+        Always = "Always",
+        Toggle = "Toggle",
+        Hold = "Hold",
+        Unload = "Unload Script",
     },
     RU = {
         Legitbot = "Легитбот",
@@ -290,6 +342,12 @@ NeverLose.Translations = {
         BoxESP = "Бокс ESP",
         NameESP = "Имя ESP",
         EnabledESP = "Включить ESP",
+        Crosshair = "Прицел",
+        KeybindMode = "Режим клавиш",
+        Always = "Всегда",
+        Toggle = "Переключение",
+        Hold = "Удержание",
+        Unload = "Выгрузить скрипт",
     }
 }
 
@@ -357,6 +415,9 @@ function NeverLose:CreateFOVCircle(Config)
             FOVCircle.Position = Vector2.new(MousePos.X, MousePos.Y)
         end
     end)
+    
+    NeverLose:AddSignal(Connection)
+    NeverLose.FOVCircleInstance = FOVCircle
 
     return {
         Circle = FOVCircle,
@@ -491,6 +552,158 @@ function NeverLose:SetESPColor(color, nameColor)
         obj.Box.Color = color or obj.Config.BoxColor
         obj.Name.Color = nameColor or obj.Config.NameColor
     end
+end
+
+-- ========== КАСТОМНЫЙ ПРИЦЕЛ ==========
+
+function NeverLose:CreateCrosshair(Config)
+    Config = NeverLose:ProcessParams(Config, {
+        Size = 8,
+        Gap = 3,
+        Color = NeverLose.AccentColor,
+        Visible = false,
+    })
+    
+    if not Drawing then return end
+    
+    NeverLose.CrosshairLines = {
+        Top = Drawing.new("Line"),
+        Bottom = Drawing.new("Line"),
+        Left = Drawing.new("Line"),
+        Right = Drawing.new("Line")
+    }
+    
+    for _, line in pairs(NeverLose.CrosshairLines) do
+        line.Thickness = 1.5
+        line.Color = Config.Color
+        line.Visible = Config.Visible
+    end
+    
+    local Connection = RunService.RenderStepped:Connect(function()
+        if Config.Visible then
+            local Mouse = UserInputService:GetMouseLocation()
+            local x, y = Mouse.X, Mouse.Y
+            local lines = NeverLose.CrosshairLines
+            
+            lines.Top.From = Vector2.new(x, y - Config.Gap)
+            lines.Top.To = Vector2.new(x, y - Config.Gap - Config.Size)
+            lines.Bottom.From = Vector2.new(x, y + Config.Gap)
+            lines.Bottom.To = Vector2.new(x, y + Config.Gap + Config.Size)
+            lines.Left.From = Vector2.new(x - Config.Gap, y)
+            lines.Left.To = Vector2.new(x - Config.Gap - Config.Size, y)
+            lines.Right.From = Vector2.new(x + Config.Gap, y)
+            lines.Right.To = Vector2.new(x + Config.Gap + Config.Size, y)
+            
+            for _, line in pairs(lines) do
+                line.Visible = true
+            end
+        else
+            for _, line in pairs(NeverLose.CrosshairLines) do
+                line.Visible = false
+            end
+        end
+    end)
+    
+    NeverLose:AddSignal(Connection)
+    
+    return {
+        SetVisible = function(visible)
+            Config.Visible = visible
+        end,
+        SetColor = function(color)
+            Config.Color = color
+            for _, line in pairs(NeverLose.CrosshairLines) do
+                line.Color = color
+            end
+        end,
+        Destroy = function()
+            Connection:Disconnect()
+            for _, line in pairs(NeverLose.CrosshairLines) do
+                line:Remove()
+            end
+            NeverLose.CrosshairLines = nil
+        end
+    }
+end
+
+-- ========== КАСТОМНЫЙ КУРСОР ==========
+
+function NeverLose:EnableCustomCursor(state)
+    UserInputService.MouseIconEnabled = not state
+    if not state or not Drawing then return end
+    
+    local Cursor = Drawing.new("Triangle")
+    Cursor.Thickness = 1
+    Cursor.Filled = true
+    Cursor.Color = NeverLose.AccentColor
+    Cursor.Visible = true
+    
+    local Connection = RunService.RenderStepped:Connect(function()
+        local Mouse = UserInputService:GetMouseLocation()
+        Cursor.PointA = Vector2.new(Mouse.X, Mouse.Y)
+        Cursor.PointB = Vector2.new(Mouse.X + 12, Mouse.Y + 12)
+        Cursor.PointC = Vector2.new(Mouse.X + 4, Mouse.Y + 14)
+    end)
+    
+    NeverLose:AddSignal(Connection)
+    
+    return {
+        SetColor = function(color)
+            Cursor.Color = color
+        end,
+        Destroy = function()
+            Connection:Disconnect()
+            Cursor:Remove()
+            UserInputService.MouseIconEnabled = true
+        end
+    }
+end
+
+-- ========== KEYBIND MODE MANAGER ==========
+
+function NeverLose:BindMode(Flag, DefaultMode)
+    local Mode = DefaultMode or "Toggle" -- Options: "Always", "Toggle", "Hold"
+    local Active = false
+    local ModeSelector = {
+        Mode = Mode,
+        IsActive = function()
+            if Mode == "Always" then
+                return true
+            end
+            return Active
+        end,
+        SetMode = function(newMode)
+            Mode = newMode
+            Active = false
+        end,
+        GetMode = function()
+            return Mode
+        end
+    }
+    
+    local inputBeganConnection = UserInputService.InputBegan:Connect(function(input, gpe)
+        if gpe then return end
+        local Bind = NeverLose.Flags[Flag]
+        if Bind and input.KeyCode.Name == Bind:GetValue() then
+            if Mode == "Toggle" then
+                Active = not Active
+            elseif Mode == "Hold" then
+                Active = true
+            end
+        end
+    end)
+    
+    local inputEndedConnection = UserInputService.InputEnded:Connect(function(input)
+        local Bind = NeverLose.Flags[Flag]
+        if Bind and input.KeyCode.Name == Bind:GetValue() and Mode == "Hold" then
+            Active = false
+        end
+    end)
+    
+    NeverLose:AddSignal(inputBeganConnection)
+    NeverLose:AddSignal(inputEndedConnection)
+    
+    return ModeSelector
 end
 
 -- ========== ФУНКЦИЯ СОЗДАНИЯ ГЛАВНОГО ОКНА ==========
@@ -2129,6 +2342,12 @@ NeverLose:AddColorPicker(TargetSection, {
             FOVCircle.Circle.Color = color
         end
         NeverLose:SetESPColor(color, color)
+        if Crosshair then
+            Crosshair:SetColor(color)
+        end
+        if Cursor then
+            Cursor:SetColor(color)
+        end
     end
 })
 
@@ -2150,21 +2369,19 @@ VisualHandler.Signal = {
     SetValue = function() end
 }
 
+-- Секция ESP
 local ESPSection = {}
 ESPSection.Container = NeverLose:AddSection(VisualHandler, { 
     Name = NeverLose:GetText("ESP")
 })
-
 ESPSection.Signal = VisualHandler.Signal
 
--- Toggle для включения ESP
 local espToggle = NeverLose:AddToggle(ESPSection, {
     Default = false,
     Flag = "ESP_Enabled",
     Label = NeverLose:GetText("EnabledESP"),
     Callback = function(state)
         if state then
-            -- Добавляем ESP для всех игроков
             for _, player in ipairs(Players:GetPlayers()) do
                 if player ~= Players.LocalPlayer then
                     NeverLose:AddESP(player, {
@@ -2175,7 +2392,6 @@ local espToggle = NeverLose:AddToggle(ESPSection, {
                     })
                 end
             end
-            -- Подключаемся к событиям добавления игроков
             if not espConnection then
                 espConnection = Players.PlayerAdded:Connect(function(player)
                     if espToggle:GetValue() then
@@ -2187,9 +2403,9 @@ local espToggle = NeverLose:AddToggle(ESPSection, {
                         })
                     end
                 end)
+                NeverLose:AddSignal(espConnection)
             end
         else
-            -- Очищаем ESP
             NeverLose:ClearESP()
             if espConnection then
                 espConnection:Disconnect()
@@ -2199,7 +2415,6 @@ local espToggle = NeverLose:AddToggle(ESPSection, {
     end
 })
 
--- Toggle для Box ESP
 NeverLose:AddToggle(ESPSection, {
     Default = true,
     Flag = "ESP_Box",
@@ -2211,7 +2426,6 @@ NeverLose:AddToggle(ESPSection, {
     end
 })
 
--- Toggle для Name ESP
 NeverLose:AddToggle(ESPSection, {
     Default = true,
     Flag = "ESP_Name",
@@ -2220,6 +2434,66 @@ NeverLose:AddToggle(ESPSection, {
         for _, obj in ipairs(NeverLose.ESPObjects) do
             obj.Name.Visible = state and espToggle:GetValue()
         end
+    end
+})
+
+-- Секция Crosshair
+local CrosshairSection = {}
+CrosshairSection.Container = NeverLose:AddSection(VisualHandler, { 
+    Name = NeverLose:GetText("Crosshair")
+})
+CrosshairSection.Signal = VisualHandler.Signal
+
+local crosshairToggle = NeverLose:AddToggle(CrosshairSection, {
+    Default = false,
+    Flag = "Crosshair_Enabled",
+    Label = NeverLose:GetText("Crosshair"),
+    Callback = function(state)
+        if Crosshair then
+            Crosshair:SetVisible(state)
+        end
+    end
+})
+
+-- Создаем прицел
+local Crosshair = NeverLose:CreateCrosshair({
+    Size = 8,
+    Gap = 3,
+    Color = NeverLose.AccentColor,
+    Visible = false
+})
+
+-- Секция Keybind Modes
+local ModeSection = {}
+ModeSection.Container = NeverLose:AddSection(VisualHandler, { 
+    Name = NeverLose:GetText("KeybindMode")
+})
+ModeSection.Signal = VisualHandler.Signal
+
+-- Создаем Keybind для аимбота
+local aimbotKey = NeverLose:AddKeybind(ModeSection, {
+    Default = "F",
+    Flag = "Aimbot_Key",
+    Label = "Aimbot Key"
+})
+
+-- Менеджер режимов клавиш
+local ModeSelector = NeverLose:BindMode("Aimbot_Key", "Toggle")
+
+-- Добавляем Dropdown для выбора режима
+NeverLose:AddDropdown(ModeSection, {
+    Default = "Toggle",
+    Options = {"Always", "Toggle", "Hold"},
+    Multi = false,
+    Flag = "Keybind_Mode",
+    Label = "Mode",
+    Callback = function(mode)
+        ModeSelector:SetMode(mode)
+        NeverLose:Notification({
+            Title = "Keybind Mode",
+            Text = "Mode set to: " .. mode,
+            Duration = 2
+        })
     end
 })
 
@@ -2256,6 +2530,13 @@ NeverLose:AddButton(ConfigSection, {
 })
 
 NeverLose:AddButton(ConfigSection, {
+    Text = NeverLose:GetText("Unload"),
+    Callback = function()
+        NeverLose:Unload()
+    end
+})
+
+NeverLose:AddButton(ConfigSection, {
     Text = "Switch to RU / EN",
     Callback = function()
         if NeverLose.CurrentLang == "EN" then
@@ -2277,6 +2558,9 @@ NeverLose:SetWatermark("Neverlose.cc | User: Dev | 60 FPS")
 -- Создаем список биндов
 local KeybindList = NeverLose:CreateKeybindList()
 
+-- Включаем кастомный курсор
+local Cursor = NeverLose:EnableCustomCursor(true)
+
 -- Отправка приветственного уведомления
 task.delay(1, function()
     NeverLose:Notification({
@@ -2287,12 +2571,12 @@ task.delay(1, function()
 end)
 
 print("NeverLose библиотека полностью загружена!")
-print("Доступны все компоненты:")
-print("✓ Вкладки, Секции")
-print("✓ Toggle, Slider, Keybind, ColorPicker, Dropdown, Button, Label, Divider, TextInput, Option")
-print("✓ Уведомления, Водяной знак, Список биндов")
-print("✓ Размытие фона, FOV круг")
-print("✓ Локализация EN/RU")
-print("✓ Сохранение/загрузка конфигов")
-print("✓ ESP система (Box + Name)")
+print("Доступны все 7 частей:")
+print("✓ Часть 1: Основные компоненты GUI")
+print("✓ Часть 2: Структурные модули")
+print("✓ Часть 3: Системные окна и HUD")
+print("✓ Часть 4: Графические эффекты")
+print("✓ Часть 5: Локализация и сборка")
+print("✓ Часть 6: ESP система")
+print("✓ Часть 7: Выгрузка, Прицел, Курсор, Режимы клавиш")
 print("Нажмите RightShift для показа/скрытия меню")
