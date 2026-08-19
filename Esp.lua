@@ -6,11 +6,10 @@ local Players = game:GetService("Players")
 local LocalPlayer = Players.LocalPlayer
 local TweenInfoFast = TweenInfo.new(0.2, Enum.EasingStyle.Quart, Enum.EasingDirection.Out)
 
--- Dynamic Dimensions Configuration
-local IsMobile = UserInputService.TouchEnabled and not UserInputService.KeyboardEnabled
-local MainWidth = IsMobile and 530 or 570
-local MainHeight = IsMobile and 320 or 340
-local SidebarWidth = IsMobile and 140 or 150
+-- Dimensions Configuration
+local MainWidth = 530  -- телефонный размер
+local MainHeight = 320
+local SidebarWidth = 140
 local HeaderHeight = 36
 local FooterHeight = 42
 
