@@ -1,277 +1,577 @@
--- Services
-local UserInputService = game:GetService("UserInputService")
-local TweenService = game:GetService("TweenService")
-local Players = game:GetService("Players")
+local Library do 
+    local Workspace = game:GetService("Workspace")
+    local UserInputService = game:GetService("UserInputService")
+    local Players = game:GetService("Players")
+    local HttpService = game:GetService("HttpService")
+    local RunService = game:GetService("RunService")
+    local CoreGui = cloneref and cloneref(game:GetService("CoreGui")) or game:GetService("CoreGui")
+    local TweenService = game:GetService("TweenService")
+    local Lighting = game:GetService("Lighting")
 
-local LocalPlayer = Players.LocalPlayer
-local TweenInfoFast = TweenInfo.new(0.2, Enum.EasingStyle.Quart, Enum.EasingDirection.Out)
+    gethui = gethui or function()
+        return CoreGui
+    end
 
--- Dimensions Configuration
-local MainWidth = 530  -- телефонный размер
-local MainHeight = 320
-local SidebarWidth = 140
-local HeaderHeight = 36
-local FooterHeight = 42
+    local LocalPlayer = Players.LocalPlayer
+    local Camera = Workspace.CurrentCamera
+    local Mouse = LocalPlayer:GetMouse()
 
--- Parent Container Detection
-local TargetParent = (gethui and gethui()) or game:GetService("CoreGui") or LocalPlayer:WaitForChild("PlayerGui")
+    local FromRGB = Color3.fromRGB
+    local FromHSV = Color3.fromHSV
+    local FromHex = Color3.fromHex
 
--- 1. ScreenGui Initialization
-local ScreenGui = Instance.new("ScreenGui")
-ScreenGui.Name = "NeverloseMainWindow"
-ScreenGui.ResetOnSpawn = false
-ScreenGui.ZIndexBehavior = Enum.ZIndexBehavior.Sibling
-ScreenGui.Parent = TargetParent
+    local RGBSequence = ColorSequence.new
+    local RGBSequenceKeypoint = ColorSequenceKeypoint.new
+    local NumSequence = NumberSequence.new
+    local NumSequenceKeypoint = NumberSequenceKeypoint.new
 
--- 2. Main Window Frame
-local MainWindow = Instance.new("Frame")
-MainWindow.Name = "MainFrame"
-MainWindow.Size = UDim2.new(0, MainWidth, 0, MainHeight)
-MainWindow.Position = UDim2.new(0.5, -MainWidth / 2, 0.5, -MainHeight / 2)
-MainWindow.BackgroundColor3 = Color3.fromRGB(10, 12, 18)
-MainWindow.BorderSizePixel = 0
-MainWindow.ClipsDescendants = true
-MainWindow.Parent = ScreenGui
+    local UDim2New = UDim2.new
+    local UDimNew = UDim.new
+    local UDim2FromOffset = UDim2.fromOffset
+    local Vector2New = Vector2.new
+    local Vector3New = Vector3.new
 
-local MainCorner = Instance.new("UICorner")
-MainCorner.CornerRadius = UDim.new(0, 10)
-MainCorner.Parent = MainWindow
+    local MathClamp = math.clamp
+    local MathFloor = math.floor
 
-local MainStroke = Instance.new("UIStroke")
-MainStroke.Color = Color3.fromRGB(28, 33, 46)
-MainStroke.Thickness = 1
-MainStroke.Parent = MainWindow
+    local TableInsert = table.insert
+    local TableClone = table.clone
 
--- 3. Left Sidebar (Navigation & Profile)
-local Sidebar = Instance.new("Frame")
-Sidebar.Name = "Sidebar"
-Sidebar.Size = UDim2.new(0, SidebarWidth, 1, 0)
-Sidebar.Position = UDim2.new(0, 0, 0, 0)
-Sidebar.BackgroundColor3 = Color3.fromRGB(13, 16, 24)
-Sidebar.BorderSizePixel = 0
-Sidebar.Parent = MainWindow
+    local StringFormat = string.format
+    local StringGSub = string.gsub
 
-local SidebarCorner = Instance.new("UICorner")
-SidebarCorner.CornerRadius = UDim.new(0, 10)
-SidebarCorner.Parent = Sidebar
+    local InstanceNew = Instance.new
 
--- Brand Logo
-local LogoText = Instance.new("TextLabel")
-LogoText.Name = "Logo"
-LogoText.Size = UDim2.new(1, -20, 0, HeaderHeight)
-LogoText.Position = UDim2.new(0, 12, 0, 0)
-LogoText.BackgroundTransparency = 1
-LogoText.Text = "NEVERLOSE"
-LogoText.Font = Enum.Font.GothamBold
-LogoText.TextSize = 14
-LogoText.TextColor3 = Color3.fromRGB(0, 162, 255)
-LogoText.TextXAlignment = Enum.TextXAlignment.Left
-LogoText.Parent = Sidebar
+    local IsMobile = UserInputService.TouchEnabled or false
 
--- Tab Navigation Container
-local TabContainer = Instance.new("Frame")
-TabContainer.Name = "TabContainer"
-TabContainer.Size = UDim2.new(1, -16, 1, -(HeaderHeight + FooterHeight + 20))
-TabContainer.Position = UDim2.new(0, 8, 0, HeaderHeight + 5)
-TabContainer.BackgroundTransparency = 1
-TabContainer.Parent = Sidebar
+    Library = {
+        Theme =  { },
+        ToClean = { },
 
-local TabListLayout = Instance.new("UIListLayout")
-TabListLayout.SortOrder = Enum.SortOrder.LayoutOrder
-TabListLayout.Padding = UDim.new(0, 4)
-TabListLayout.Parent = TabContainer
+        MenuKeybind = tostring(Enum.KeyCode.Insert), 
 
--- User Profile Widget (Footer)
-local UserProfile = Instance.new("Frame")
-UserProfile.Name = "UserProfile"
-UserProfile.Size = UDim2.new(1, -16, 0, FooterHeight)
-UserProfile.Position = UDim2.new(0, 8, 1, -(FooterHeight + 8))
-UserProfile.BackgroundColor3 = Color3.fromRGB(18, 22, 32)
-UserProfile.BorderSizePixel = 0
-UserProfile.Parent = Sidebar
+        Flags = { },
 
-local UserProfileCorner = Instance.new("UICorner")
-UserProfileCorner.CornerRadius = UDim.new(0, 6)
-UserProfileCorner.Parent = UserProfile
+        Tween = {
+            Time = 0.3,
+            Style = Enum.EasingStyle.Quad,
+            Direction = Enum.EasingDirection.Out
+        },
 
-local AvatarSize = FooterHeight - 12
-local AvatarImage = Instance.new("ImageLabel")
-AvatarImage.Name = "Avatar"
-AvatarImage.Size = UDim2.new(0, AvatarSize, 0, AvatarSize)
-AvatarImage.Position = UDim2.new(0, 6, 0.5, -AvatarSize / 2)
-AvatarImage.BackgroundColor3 = Color3.fromRGB(28, 33, 46)
-AvatarImage.Image = Players:GetUserThumbnailAsync(LocalPlayer.UserId, Enum.ThumbnailType.HeadShot, Enum.ThumbnailSize.Size420x420)
-AvatarImage.Parent = UserProfile
+        FadeSpeed = 0.2,
 
-local AvatarCorner = Instance.new("UICorner")
-AvatarCorner.CornerRadius = UDim.new(1, 0)
-AvatarCorner.Parent = AvatarImage
+        Folders = {
+            Directory = "lyapossss",
+            Configs = "lyapossss/Configs",
+            Assets = "lyapossss/Assets",
+        },
 
-local UsernameLabel = Instance.new("TextLabel")
-UsernameLabel.Name = "Username"
-UsernameLabel.Size = UDim2.new(1, -(AvatarSize + 16), 0, 15)
-UsernameLabel.Position = UDim2.new(0, AvatarSize + 12, 0, 6)
-UsernameLabel.BackgroundTransparency = 1
-UsernameLabel.Text = LocalPlayer.DisplayName
-UsernameLabel.Font = Enum.Font.GothamBold
-UsernameLabel.TextSize = 11
-UsernameLabel.TextColor3 = Color3.fromRGB(240, 245, 255)
-UsernameLabel.TextXAlignment = Enum.TextXAlignment.Left
-UsernameLabel.Parent = UserProfile
+        Pages = { },
+        Sections = { },
 
-local SubLabel = Instance.new("TextLabel")
-SubLabel.Name = "Subscription"
-SubLabel.Size = UDim2.new(1, -(AvatarSize + 16), 0, 13)
-SubLabel.Position = UDim2.new(0, AvatarSize + 12, 0, 21)
-SubLabel.BackgroundTransparency = 1
-SubLabel.Text = "Lifetime"
-SubLabel.Font = Enum.Font.Gotham
-SubLabel.TextSize = 10
-SubLabel.TextColor3 = Color3.fromRGB(0, 162, 255)
-SubLabel.TextXAlignment = Enum.TextXAlignment.Left
-SubLabel.Parent = UserProfile
+        Connections = { },
+        Threads = { },
 
--- 4. Header Bar
-local Header = Instance.new("Frame")
-Header.Name = "Header"
-Header.Size = UDim2.new(1, -SidebarWidth, 0, HeaderHeight)
-Header.Position = UDim2.new(0, SidebarWidth, 0, 0)
-Header.BackgroundTransparency = 1
-Header.Parent = MainWindow
+        ThemeMap = { },
+        ThemeItems = { },
 
-local ActiveTabTitle = Instance.new("TextLabel")
-ActiveTabTitle.Name = "ActiveTabTitle"
-ActiveTabTitle.Size = UDim2.new(0, 150, 1, 0)
-ActiveTabTitle.Position = UDim2.new(0, 15, 0, 0)
-ActiveTabTitle.BackgroundTransparency = 1
-ActiveTabTitle.Text = "RAGEBOT"
-ActiveTabTitle.Font = Enum.Font.GothamBold
-ActiveTabTitle.TextSize = 13
-ActiveTabTitle.TextColor3 = Color3.fromRGB(240, 245, 255)
-ActiveTabTitle.TextXAlignment = Enum.TextXAlignment.Left
-ActiveTabTitle.Parent = Header
+        OpenFrames = { },
 
-local WatermarkInfo = Instance.new("TextLabel")
-WatermarkInfo.Name = "WatermarkInfo"
-WatermarkInfo.Size = UDim2.new(0, 180, 1, 0)
-WatermarkInfo.Position = UDim2.new(1, -195, 0, 0)
-WatermarkInfo.BackgroundTransparency = 1
-WatermarkInfo.Text = "neverlose.cc | roblox"
-WatermarkInfo.Font = Enum.Font.GothamMedium
-WatermarkInfo.TextSize = 11
-WatermarkInfo.TextColor3 = Color3.fromRGB(90, 98, 115)
-WatermarkInfo.TextXAlignment = Enum.TextXAlignment.Right
-WatermarkInfo.Parent = Header
+        SetFlags = { },
 
--- 5. Content Container (Two-Column Layout)
-local ContentContainer = Instance.new("Frame")
-ContentContainer.Name = "ContentContainer"
-ContentContainer.Size = UDim2.new(1, -(SidebarWidth + 20), 1, -(HeaderHeight + 10))
-ContentContainer.Position = UDim2.new(0, SidebarWidth + 10, 0, HeaderHeight)
-ContentContainer.BackgroundTransparency = 1
-ContentContainer.Parent = MainWindow
+        UnnamedConnections = 0,
+        UnnamedFlags = 0,
 
-local LeftColumn = Instance.new("ScrollingFrame")
-LeftColumn.Name = "LeftColumn"
-LeftColumn.Size = UDim2.new(0.5, -5, 1, 0)
-LeftColumn.Position = UDim2.new(0, 0, 0, 0)
-LeftColumn.BackgroundTransparency = 1
-LeftColumn.ScrollBarThickness = 2
-LeftColumn.ScrollBarImageColor3 = Color3.fromRGB(0, 162, 255)
-LeftColumn.Parent = ContentContainer
+        Holder = nil,
+        NotifHolder = nil,
+        UnusedHolder = nil,
 
-local RightColumn = Instance.new("ScrollingFrame")
-RightColumn.Name = "RightColumn"
-RightColumn.Size = UDim2.new(0.5, -5, 1, 0)
-RightColumn.Position = UDim2.new(0.5, 5, 0, 0)
-RightColumn.BackgroundTransparency = 1
-RightColumn.ScrollBarThickness = 2
-RightColumn.ScrollBarImageColor3 = Color3.fromRGB(0, 162, 255)
-RightColumn.Parent = ContentContainer
+        Font = nil
+    }
 
--- Column Layout Setup
-for _, col in ipairs({LeftColumn, RightColumn}) do
-    local layout = Instance.new("UIListLayout")
-    layout.SortOrder = Enum.SortOrder.LayoutOrder
-    layout.Padding = UDim.new(0, 10)
-    layout.Parent = col
-end
+    Library.__index = Library
+    Library.Sections.__index = Library.Sections
+    Library.Pages.__index = Library.Pages
 
--- 6. Helper Function: Create Tabs
-local ActiveTabButton = nil
+    local Themes = {
+        ["Preset"] = {
+            ["AccentGradient"] = FromRGB(0, 195, 255),
+            ["Background 2"] = FromRGB(10, 10, 12),
+            ["Background"] = FromRGB(12, 12, 14),
+            ["Text"] = FromRGB(235, 235, 235),
+            ["Outline"] = FromRGB(25, 25, 28),
+            ["Section Top"] = FromRGB(28, 27, 31),
+            ["Section Background"] = FromRGB(10, 10, 12),
+            ["Section Background 2"] = FromRGB(14, 14, 16),
+            ["Accent"] = FromRGB(0, 116, 224),
+            ["Element"] = FromRGB(16, 16, 18)
+        }
+    }
 
-local function CreateTab(name)
-    local TabButton = Instance.new("TextButton")
-    TabButton.Name = name .. "Tab"
-    TabButton.Size = UDim2.new(1, 0, 0, 30)
-    TabButton.BackgroundColor3 = Color3.fromRGB(18, 22, 32)
-    TabButton.BackgroundTransparency = 1
-    TabButton.Text = ""
-    TabButton.AutoButtonColor = false
-    TabButton.Parent = TabContainer
+    Library.Theme = TableClone(Themes["Preset"])
 
-    local BtnCorner = Instance.new("UICorner")
-    BtnCorner.CornerRadius = UDim.new(0, 6)
-    BtnCorner.Parent = TabButton
-
-    local Title = Instance.new("TextLabel")
-    Title.Size = UDim2.new(1, -12, 1, 0)
-    Title.Position = UDim2.new(0, 12, 0, 0)
-    Title.BackgroundTransparency = 1
-    Title.Text = name
-    Title.Font = Enum.Font.GothamMedium
-    Title.TextSize = 11
-    Title.TextColor3 = Color3.fromRGB(110, 118, 135)
-    Title.TextXAlignment = Enum.TextXAlignment.Left
-    Title.Parent = TabButton
-
-    TabButton.MouseButton1Click:Connect(function()
-        if ActiveTabButton then
-            TweenService:Create(ActiveTabButton, TweenInfoFast, {BackgroundTransparency = 1}):Play()
-            TweenService:Create(ActiveTabButton:FindFirstChildOfClass("TextLabel"), TweenInfoFast, {TextColor3 = Color3.fromRGB(110, 118, 135)}):Play()
+    for Index, Value in Library.Folders do 
+        if not isfolder(Value) then
+            makefolder(Value)
         end
-        ActiveTabButton = TabButton
-        ActiveTabTitle.Text = string.upper(name)
-        TweenService:Create(TabButton, TweenInfoFast, {BackgroundTransparency = 0}):Play()
-        TweenService:Create(Title, TweenInfoFast, {TextColor3 = Color3.fromRGB(240, 245, 255)}):Play()
-    end)
+    end
 
-    return TabButton
-end
+    local Tween = { } do
+        Tween.__index = Tween
 
--- Populate Tabs
-local Tabs = {"Ragebot", "Legitbot", "Visuals", "World", "Misc", "Settings"}
-for i, tabName in ipairs(Tabs) do
-    local btn = CreateTab(tabName)
-    if i == 1 then
-        ActiveTabButton = btn
-        btn.BackgroundTransparency = 0
-        btn:FindFirstChildOfClass("TextLabel").TextColor3 = Color3.fromRGB(240, 245, 255)
+        Tween.Create = function(self, Item, Info, Goal, IsRawItem)
+            Item = IsRawItem and Item or Item.Instance
+            Info = Info or TweenInfo.new(Library.Tween.Time, Library.Tween.Style, Library.Tween.Direction)
+
+            local NewTween = {
+                Tween = TweenService:Create(Item, Info, Goal),
+                Info = Info,
+                Goal = Goal,
+                Item = Item
+            }
+
+            NewTween.Tween:Play()
+            setmetatable(NewTween, Tween)
+            return NewTween
+        end
+
+        Tween.GetProperty = function(self, Item)
+            Item = Item or self.Item 
+            if Item:IsA("Frame") then
+                return { "BackgroundTransparency" }
+            elseif Item:IsA("TextLabel") or Item:IsA("TextButton") then
+                return { "TextTransparency", "BackgroundTransparency" }
+            elseif Item:IsA("ImageLabel") or Item:IsA("ImageButton") then
+                return { "BackgroundTransparency", "ImageTransparency" }
+            elseif Item:IsA("ScrollingFrame") then
+                return { "BackgroundTransparency", "ScrollBarImageTransparency" }
+            elseif Item:IsA("TextBox") then
+                return { "TextTransparency", "BackgroundTransparency" }
+            elseif Item:IsA("UIStroke") then 
+                return { "Transparency" }
+            end
+        end
+
+        Tween.FadeItem = function(self, Item, Property, Visibility, Speed)
+            local Item = Item or self.Item 
+            local OldTransparency = Item[Property]
+            Item[Property] = Visibility and 1 or OldTransparency
+
+            local NewTween = Tween:Create(Item, TweenInfo.new(Speed or Library.Tween.Time, Library.Tween.Style, Library.Tween.Direction), {
+                [Property] = Visibility and OldTransparency or 1
+            }, true)
+
+            Library:Connect(NewTween.Tween.Completed, function()
+                if not Visibility then 
+                    task.wait()
+                    Item[Property] = OldTransparency
+                end
+            end)
+
+            return NewTween
+        end
+    end
+
+    local Instances = { } do
+        Instances.__index = Instances
+
+        Instances.Create = function(self, Class, Properties)
+            local NewItem = {
+                Instance = InstanceNew(Class),
+                Properties = Properties,
+                Class = Class
+            }
+
+            setmetatable(NewItem, Instances)
+
+            for Property, Value in NewItem.Properties do
+                NewItem.Instance[Property] = Value
+            end
+
+            return NewItem
+        end
+
+        Instances.AddToTheme = function(self, Properties)
+            if not self.Instance then return end
+            Library:AddToTheme(self, Properties)
+        end
+
+        Instances.Connect = function(self, Event, Callback, Name)
+            if not self.Instance or not self.Instance[Event] then return end
+            if IsMobile then
+                if Event == "MouseButton1Down" or Event == "MouseButton1Click" then 
+                    Event = "TouchTap"
+                end
+            end
+            return Library:Connect(self.Instance[Event], Callback, Name)
+        end
+
+        Instances.Tween = function(self, Info, Goal)
+            if not self.Instance then return end
+            return Tween:Create(self, Info, Goal)
+        end
+
+        Instances.OnHover = function(self, Function)
+            if not self.Instance then return end
+            return Library:Connect(self.Instance.MouseEnter, Function)
+        end
+
+        Instances.OnHoverLeave = function(self, Function)
+            if not self.Instance then return end
+            return Library:Connect(self.Instance.MouseLeave, Function)
+        end
+    end
+
+    Library.Font = Font.new("rbxassetid://12187365364", Enum.FontWeight.SemiBold, Enum.FontStyle.Normal)
+
+    Library.Holder = Instances:Create("ScreenGui", {
+        Parent = gethui(),
+        Name = "\0",
+        ZIndexBehavior = Enum.ZIndexBehavior.Global,
+        DisplayOrder = 2,
+        ResetOnSpawn = false
+    })
+
+    Library.UnusedHolder = Instances:Create("ScreenGui", {
+        Parent = gethui(),
+        Name = "\0",
+        ZIndexBehavior = Enum.ZIndexBehavior.Global,
+        Enabled = false,
+        ResetOnSpawn = false
+    })
+
+    Library.Thread = function(self, Function)
+        local NewThread = coroutine.create(Function)
+        coroutine.wrap(function() coroutine.resume(NewThread) end)()
+        TableInsert(self.Threads, NewThread)
+        return NewThread
+    end
+
+    Library.Connect = function(self, Event, Callback, Name)
+        Name = Name or StringFormat("connection_%s", HttpService:GenerateGUID(false))
+        local NewConnection = { Event = Event, Callback = Callback, Name = Name, Connection = nil }
+        Library:Thread(function() NewConnection.Connection = Event:Connect(Callback) end)
+        TableInsert(self.Connections, NewConnection)
+        return NewConnection
+    end
+
+    Library.AddToTheme = function(self, Item, Properties)
+        Item = Item.Instance or Item 
+        local ThemeData = { Item = Item, Properties = Properties }
+        for Property, Value in ThemeData.Properties do
+            if type(Value) == "string" then
+                Item[Property] = self.Theme[Value]
+            else
+                Item[Property] = Value()
+            end
+        end
+        TableInsert(self.ThemeItems, ThemeData)
+        self.ThemeMap[Item] = ThemeData
+    end
+
+    Library.Window = function(self, Data)
+        Data = Data or { }
+
+        local Window = {
+            Name = Data.Name or Data.name or "Window",
+            SubName = Data.SubName or Data.subname or "Fine-tuning for sure wins",
+            Logo = Data.Logo or Data.logo or "1l20959262762131",
+            Pages = { },
+            IsOpen = true
+        }
+
+        local Items = { } do
+            Items["MainFrame"] = Instances:Create("Frame", {
+                Parent = Library.Holder.Instance,
+                Name = "\0",
+                BorderColor3 = FromRGB(0, 0, 0),
+                AnchorPoint = Vector2New(0.5, 0.5),
+                BackgroundTransparency = 0.12,
+                Position = UDim2New(0.5, 0, 0.5, 0),
+                Size = UDim2New(0, 677, 0, 500),
+                ZIndex = 2,
+                BorderSizePixel = 0,
+                BackgroundColor3 = FromRGB(27, 25, 29)
+            }) Items["MainFrame"]:AddToTheme({BackgroundColor3 = "Background"})
+
+            Items["LeftTabs"] = Instances:Create("ScrollingFrame", {
+                Parent = Items["MainFrame"].Instance,
+                Name = "LeftTabs",
+                BorderColor3 = FromRGB(0, 0, 0),
+                BackgroundTransparency = 0.15,
+                Position = UDim2New(0, 0, 0, 55),
+                Size = UDim2New(0, 200, 1, -55),
+                ZIndex = 2,
+                BorderSizePixel = 0,
+                ScrollBarThickness = 0,
+                BackgroundColor3 = FromRGB(27, 25, 29)
+            }) Items["LeftTabs"]:AddToTheme({BackgroundColor3 = "Background"})
+
+            Instances:Create("UIListLayout", {
+                Parent = Items["LeftTabs"].Instance,
+                Padding = UDimNew(0, 6),
+                SortOrder = Enum.SortOrder.LayoutOrder
+            })
+
+            Instances:Create("UIPadding", {
+                Parent = Items["LeftTabs"].Instance,
+                PaddingTop = UDimNew(0, 12),
+                PaddingBottom = UDimNew(0, 12),
+                PaddingRight = UDimNew(0, 10),
+                PaddingLeft = UDimNew(0, 10)
+            })
+
+            Items["Content"] = Instances:Create("Frame", {
+                Parent = Items["MainFrame"].Instance,
+                Name = "Content",
+                BorderColor3 = FromRGB(0, 0, 0),
+                BackgroundTransparency = 1,
+                Position = UDim2New(0, 200, 0, 55),
+                Size = UDim2New(1, -200, 1, -55),
+                ZIndex = 2,
+                BorderSizePixel = 0
+            })
+
+            Items["SettingsButton"] = Instances:Create("TextButton", {
+                Parent = Items["MainFrame"].Instance,
+                Name = "\0",
+                FontFace = Library.Font,
+                Text = "",
+                AutoButtonColor = false,
+                AnchorPoint = Vector2New(1, 0),
+                BorderSizePixel = 0,
+                BackgroundTransparency = 0.2,
+                Position = UDim2New(1, -14, 0, 11),
+                Size = UDim2New(0, 32, 0, 32),
+                ZIndex = 2,
+                BackgroundColor3 = FromRGB(27, 25, 29)
+            }) Items["SettingsButton"]:AddToTheme({BackgroundColor3 = "Element"})
+
+            Items["SettingsIcon"] = Instances:Create("ImageLabel", {
+                Parent = Items["SettingsButton"].Instance,
+                Name = "\0",
+                ImageColor3 = FromRGB(240, 240, 240),
+                ImageTransparency = 0.3,
+                BorderColor3 = FromRGB(0, 0, 0),
+                Size = UDim2New(0, 16, 0, 16),
+                AnchorPoint = Vector2New(0.5, 0.5),
+                Image = "rbxassetid://130510492706892",
+                BackgroundTransparency = 1,
+                Position = UDim2New(0.5, 0, 0.5, 0),
+                ZIndex = 3,
+                BorderSizePixel = 0
+            }) Items["SettingsIcon"]:AddToTheme({ImageColor3 = "Text"})
+        end
+
+        -- Секция/Заголовок категорий в меню вкладок (слева)
+        function Window:TabSection(Name)
+            local SectionHeader = Instances:Create("TextLabel", {
+                Parent = Items["LeftTabs"].Instance,
+                Name = "TabSectionHeader",
+                FontFace = Library.Font,
+                TextColor3 = FromRGB(140, 140, 145),
+                Text = Name:upper(),
+                TextXAlignment = Enum.TextXAlignment.Left,
+                Size = UDim2New(1, 0, 0, 22),
+                BackgroundTransparency = 1,
+                BorderSizePixel = 0,
+                ZIndex = 2,
+                TextSize = 11
+            }) SectionHeader:AddToTheme({TextColor3 = "Text"})
+
+            return SectionHeader
+        end
+
+        -- Добавление новой вкладки
+        function Window:Page(Data)
+            local Page = {
+                Name = Data.Name or Data.name or "Page",
+                Icon = Data.Icon or Data.icon or "",
+                Selected = false
+            }
+
+            local TabButton = Instances:Create("TextButton", {
+                Parent = Items["LeftTabs"].Instance,
+                Name = "TabButton",
+                FontFace = Library.Font,
+                Text = "",
+                AutoButtonColor = false,
+                Size = UDim2New(1, 0, 0, 30),
+                BorderSizePixel = 0,
+                BackgroundTransparency = 1,
+                ZIndex = 2,
+                BackgroundColor3 = FromRGB(35, 33, 38)
+            }) TabButton:AddToTheme({BackgroundColor3 = "Element"})
+
+            Instances:Create("UICorner", {
+                Parent = TabButton.Instance,
+                CornerRadius = UDimNew(0, 5)
+            })
+
+            local TabTitle = Instances:Create("TextLabel", {
+                Parent = TabButton.Instance,
+                Name = "Title",
+                FontFace = Library.Font,
+                TextColor3 = FromRGB(200, 200, 205),
+                Text = Page.Name,
+                TextXAlignment = Enum.TextXAlignment.Left,
+                Position = UDim2New(0, 10, 0, 0),
+                Size = UDim2New(1, -10, 1, 0),
+                BackgroundTransparency = 1,
+                BorderSizePixel = 0,
+                ZIndex = 3,
+                TextSize = 13
+            }) TabTitle:AddToTheme({TextColor3 = "Text"})
+
+            local PageContainer = Instances:Create("ScrollingFrame", {
+                Parent = Items["Content"].Instance,
+                Name = Page.Name .. "_Container",
+                Size = UDim2New(1, -20, 1, -20),
+                Position = UDim2New(0, 10, 0, 10),
+                BackgroundTransparency = 1,
+                BorderSizePixel = 0,
+                Visible = false,
+                ScrollBarThickness = 2,
+                ScrollBarImageColor3 = Library.Theme.Accent,
+                AutomaticCanvasSize = Enum.AutomaticSize.Y
+            }) PageContainer:AddToTheme({ScrollBarImageColor3 = "Accent"})
+
+            local LeftCol = Instances:Create("Frame", {
+                Parent = PageContainer.Instance,
+                Name = "LeftColumn",
+                Size = UDim2New(0.49, 0, 1, 0),
+                Position = UDim2New(0, 0, 0, 0),
+                BackgroundTransparency = 1,
+                BorderSizePixel = 0
+            })
+
+            local RightCol = Instances:Create("Frame", {
+                Parent = PageContainer.Instance,
+                Name = "RightColumn",
+                Size = UDim2New(0.49, 0, 1, 0),
+                Position = UDim2New(0.51, 0, 0, 0),
+                BackgroundTransparency = 1,
+                BorderSizePixel = 0
+            })
+
+            Instances:Create("UIListLayout", {
+                Parent = LeftCol.Instance,
+                Padding = UDimNew(0, 10),
+                SortOrder = Enum.SortOrder.LayoutOrder
+            })
+
+            Instances:Create("UIListLayout", {
+                Parent = RightCol.Instance,
+                Padding = UDimNew(0, 10),
+                SortOrder = Enum.SortOrder.LayoutOrder
+            })
+
+            function Page:Select()
+                for _, P in pairs(Window.Pages) do
+                    P:Deselect()
+                end
+                Page.Selected = true
+                PageContainer.Instance.Visible = true
+                TabButton:Tween(nil, {BackgroundTransparency = 0.2})
+            end
+
+            function Page:Deselect()
+                Page.Selected = false
+                PageContainer.Instance.Visible = false
+                TabButton:Tween(nil, {BackgroundTransparency = 1})
+            end
+
+            TabButton:Connect("MouseButton1Down", function()
+                Page:Select()
+            end)
+
+            -- Создание карточки-секции внутри страницы
+            function Page:Section(Data)
+                local Section = {
+                    Name = Data.Name or Data.name or "Section",
+                    Side = Data.Side or Data.side or "Left"
+                }
+
+                local Target = (Section.Side == "Right" and RightCol) or LeftCol
+
+                local SectionBox = Instances:Create("Frame", {
+                    Parent = Target.Instance,
+                    Name = Section.Name .. "_Section",
+                    Size = UDim2New(1, 0, 0, 0),
+                    AutomaticSize = Enum.AutomaticSize.Y,
+                    BackgroundColor3 = FromRGB(12, 12, 14),
+                    BackgroundTransparency = 0.2,
+                    BorderSizePixel = 0
+                }) SectionBox:AddToTheme({BackgroundColor3 = "Section Background"})
+
+                Instances:Create("UICorner", {
+                    Parent = SectionBox.Instance,
+                    CornerRadius = UDimNew(0, 6)
+                })
+
+                local TopBar = Instances:Create("Frame", {
+                    Parent = SectionBox.Instance,
+                    Name = "TopBar",
+                    Size = UDim2New(1, 0, 0, 26),
+                    BackgroundColor3 = FromRGB(28, 27, 31),
+                    BorderSizePixel = 0
+                }) TopBar:AddToTheme({BackgroundColor3 = "Section Top"})
+
+                Instances:Create("UICorner", {
+                    Parent = TopBar.Instance,
+                    CornerRadius = UDimNew(0, 6)
+                })
+
+                local TitleLabel = Instances:Create("TextLabel", {
+                    Parent = TopBar.Instance,
+                    Name = "Title",
+                    FontFace = Library.Font,
+                    TextColor3 = FromRGB(235, 235, 235),
+                    Text = Section.Name,
+                    TextXAlignment = Enum.TextXAlignment.Left,
+                    Position = UDim2New(0, 10, 0, 0),
+                    Size = UDim2New(1, -10, 1, 0),
+                    BackgroundTransparency = 1,
+                    BorderSizePixel = 0,
+                    TextSize = 13
+                }) TitleLabel:AddToTheme({TextColor3 = "Text"})
+
+                local ElementsHolder = Instances:Create("Frame", {
+                    Parent = SectionBox.Instance,
+                    Name = "Elements",
+                    Position = UDim2New(0, 0, 0, 26),
+                    Size = UDim2New(1, 0, 0, 0),
+                    AutomaticSize = Enum.AutomaticSize.Y,
+                    BackgroundTransparency = 1,
+                    BorderSizePixel = 0
+                })
+
+                Instances:Create("UIListLayout", {
+                    Parent = ElementsHolder.Instance,
+                    Padding = UDimNew(0, 6),
+                    SortOrder = Enum.SortOrder.LayoutOrder
+                })
+
+                Instances:Create("UIPadding", {
+                    Parent = ElementsHolder.Instance,
+                    PaddingTop = UDimNew(0, 8),
+                    PaddingBottom = UDimNew(0, 8),
+                    PaddingLeft = UDimNew(0, 10),
+                    PaddingRight = UDimNew(0, 10)
+                })
+
+                return ElementsHolder
+            end
+
+            TableInsert(Window.Pages, Page)
+
+            if #Window.Pages == 1 then
+                Page:Select()
+            end
+
+            return Page
+        end
+
+        return Window
     end
 end
-
--- 7. Smooth Dragging Mechanism
-local Dragging, DragInput, DragStart, StartPos
-
-Header.InputBegan:Connect(function(input)
-    if input.UserInputType == Enum.UserInputType.MouseButton1 or input.UserInputType == Enum.UserInputType.Touch then
-        Dragging = true
-        DragStart = input.Position
-        StartPos = MainWindow.Position
-    end
-end)
-
-UserInputService.InputChanged:Connect(function(input)
-    if Dragging and (input.UserInputType == Enum.UserInputType.MouseMovement or input.UserInputType == Enum.UserInputType.Touch) then
-        local Delta = input.Position - DragStart
-        TweenService:Create(MainWindow, TweenInfoFast, {
-            Position = UDim2.new(StartPos.X.Scale, StartPos.X.Offset + Delta.X, StartPos.Y.Scale, StartPos.Y.Offset + Delta.Y)
-        }):Play()
-    end
-end)
-
-UserInputService.InputEnded:Connect(function(input)
-    if input.UserInputType == Enum.UserInputType.MouseButton1 or input.UserInputType == Enum.UserInputType.Touch then
-        Dragging = false
-    end
-end)
