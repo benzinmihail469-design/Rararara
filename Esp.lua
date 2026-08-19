@@ -1,4 +1,4 @@
--- Полностью рабочий код библиотеки NeverLose со всеми элементами GUI
+-- Полностью рабочий код библиотеки NeverLose со всеми компонентами
 local NeverLose = {}
 local UserInputService = game:GetService("UserInputService")
 local TweenService = game:GetService("TweenService")
@@ -104,7 +104,6 @@ function NeverLose:CreateColorPicker(parent)
     UICorner.CornerRadius = UDim.new(0, 4)
     UICorner.Parent = ColorPicker.Root
     
-    -- Простая палитра цветов
     local colors = {
         Color3.fromRGB(255, 0, 0),
         Color3.fromRGB(0, 255, 0),
@@ -248,6 +247,7 @@ function NeverLose:CreateWindow(Config)
     local TitleLabel = Instance.new("TextLabel")
     local Sidebar = Instance.new("Frame")
     local PageContainer = Instance.new("Frame")
+    local TabContainer = Instance.new("Frame")
 
     MainFrame.Name = NeverLose.RandomString()
     MainFrame.Parent = ScreenGui
@@ -291,21 +291,23 @@ function NeverLose:CreateWindow(Config)
     Sidebar.BackgroundColor3 = Color3.fromRGB(13, 15, 21)
     Sidebar.BorderSizePixel = 0
 
+    -- Tab Container
+    TabContainer.Name = NeverLose.RandomString()
+    TabContainer.Parent = Sidebar
+    TabContainer.Size = UDim2.new(1, 0, 1, 0)
+    TabContainer.BackgroundTransparency = 1
+
+    local TabListLayout = Instance.new("UIListLayout")
+    TabListLayout.Parent = TabContainer
+    TabListLayout.SortOrder = Enum.SortOrder.LayoutOrder
+    TabListLayout.Padding = UDim.new(0, 2)
+
     -- Page Container
     PageContainer.Name = NeverLose.RandomString()
     PageContainer.Parent = MainFrame
     PageContainer.Position = UDim2.new(0, SidebarWidth + 5, 0, HeaderHeight + 5)
     PageContainer.Size = UDim2.new(1, -(SidebarWidth + 10), 1, -(HeaderHeight + FooterHeight + 10))
     PageContainer.BackgroundTransparency = 1
-
-    -- Создаем список для автоматического размещения элементов
-    local ListLayout = Instance.new("UIListLayout")
-    ListLayout.Parent = PageContainer
-    ListLayout.FillDirection = Enum.FillDirection.Vertical
-    ListLayout.HorizontalAlignment = Enum.HorizontalAlignment.Left
-    ListLayout.VerticalAlignment = Enum.VerticalAlignment.Top
-    ListLayout.Padding = UDim.new(0, 5)
-    ListLayout.SortOrder = Enum.SortOrder.LayoutOrder
 
     -- Dragging Logic
     local Dragging, DragStart, StartPos
@@ -341,6 +343,7 @@ function NeverLose:CreateWindow(Config)
         MainFrame = MainFrame,
         Sidebar = Sidebar,
         PageContainer = PageContainer,
+        TabContainer = TabContainer,
         IsMobile = IsMobile,
         MainWidth = MainWidth,
         MainHeight = MainHeight,
@@ -348,6 +351,141 @@ function NeverLose:CreateWindow(Config)
         HeaderHeight = HeaderHeight,
         FooterHeight = FooterHeight
     }
+end
+
+-- ========== СТРУКТУРНЫЕ МОДУЛИ ==========
+
+-- Tab System (Система вкладок)
+function NeverLose:AddTab(Handler, Config)
+    Config = NeverLose:ProcessParams(Config, {
+        Name = "Tab",
+        Icon = "",
+    })
+
+    local TabButton = Instance.new("Frame")
+    local TabTitle = Instance.new("TextLabel")
+    local TabIcon = Instance.new("ImageLabel")
+
+    TabButton.Name = NeverLose.RandomString()
+    TabButton.Parent = Handler.TabContainer
+    TabButton.Size = UDim2.new(1, 0, 0, 28)
+    TabButton.BackgroundTransparency = 1
+
+    TabIcon.Name = NeverLose.RandomString()
+    TabIcon.Parent = TabButton
+    TabIcon.Position = UDim2.new(0, 8, 0.5, -7)
+    TabIcon.Size = UDim2.new(0, 14, 0, 14)
+    TabIcon.Image = Config.Icon
+    TabIcon.ImageColor3 = Color3.fromRGB(120, 125, 140)
+    TabIcon.BackgroundTransparency = 1
+
+    TabTitle.Name = NeverLose.RandomString()
+    TabTitle.Parent = TabButton
+    TabTitle.Position = UDim2.new(0, 28, 0, 0)
+    TabTitle.Size = UDim2.new(1, -28, 1, 0)
+    TabTitle.BackgroundTransparency = 1
+    TabTitle.Text = Config.Name
+    TabTitle.Font = Enum.Font.GothamMedium
+    TabTitle.TextSize = 11
+    TabTitle.TextColor3 = Color3.fromRGB(120, 125, 140)
+    TabTitle.TextXAlignment = Enum.TextXAlignment.Left
+
+    local Page = Instance.new("ScrollingFrame")
+    Page.Name = NeverLose.RandomString()
+    Page.Parent = Handler.PageContainer
+    Page.Size = UDim2.new(1, 0, 1, 0)
+    Page.BackgroundTransparency = 1
+    Page.Visible = false
+    Page.ScrollBarThickness = 2
+    Page.ScrollBarImageColor3 = NeverLose.AccentColor
+
+    -- Создаем UIListLayout для страницы
+    local PageLayout = Instance.new("UIListLayout")
+    PageLayout.Parent = Page
+    PageLayout.SortOrder = Enum.SortOrder.LayoutOrder
+    PageLayout.Padding = UDim.new(0, 5)
+    PageLayout.HorizontalAlignment = Enum.HorizontalAlignment.Center
+
+    local TabLib = { Page = Page }
+
+    NeverLose:CreateInput(TabButton, function()
+        for _, tab in ipairs(NeverLose.Tabs) do
+            if tab.Page then
+                tab.Page.Visible = false
+            end
+        end
+        Page.Visible = true
+        -- Обновляем цвета вкладок
+        for _, tab in ipairs(NeverLose.Tabs) do
+            if tab.TabButton then
+                tab.TabButton.BackgroundTransparency = 1
+            end
+        end
+        TabButton.BackgroundTransparency = 0.5
+        TabButton.BackgroundColor3 = Color3.fromRGB(20, 22, 30)
+    end)
+
+    TabLib.TabButton = TabButton
+    table.insert(NeverLose.Tabs, TabLib)
+    return TabLib
+end
+
+-- Section / Groupbox (Секция-контейнер)
+function NeverLose:AddSection(Handler, Config)
+    Config = NeverLose:ProcessParams(Config, {
+        Name = "Section",
+    })
+
+    local Section = Instance.new("Frame")
+    local UICorner = Instance.new("UICorner")
+    local UIStroke = Instance.new("UIStroke")
+    local Title = Instance.new("TextLabel")
+    local Container = Instance.new("Frame")
+    local UIListLayout = Instance.new("UIListLayout")
+
+    Section.Name = NeverLose.RandomString()
+    Section.Parent = Handler.Page
+    Section.BackgroundColor3 = Color3.fromRGB(15, 17, 23)
+    Section.BorderSizePixel = 0
+    Section.Size = UDim2.new(0.95, 0, 0, 30)
+    Section.ZIndex = ZINdex + 10
+
+    UICorner.CornerRadius = UDim.new(0, 6)
+    UICorner.Parent = Section
+
+    UIStroke.Transparency = 0.800
+    UIStroke.Color = Color3.fromRGB(45, 48, 58)
+    UIStroke.Parent = Section
+
+    Title.Name = NeverLose.RandomString()
+    Title.Parent = Section
+    Title.Position = UDim2.new(0, 10, 0, 8)
+    Title.Size = UDim2.new(1, -20, 0, 14)
+    Title.BackgroundTransparency = 1
+    Title.Text = string.upper(Config.Name)
+    Title.Font = Enum.Font.GothamBold
+    Title.TextSize = 10
+    Title.TextColor3 = Color3.fromRGB(150, 155, 170)
+    Title.TextXAlignment = Enum.TextXAlignment.Left
+    Title.ZIndex = ZINdex + 11
+
+    Container.Name = NeverLose.RandomString()
+    Container.Parent = Section
+    Container.Position = UDim2.new(0, 10, 0, 28)
+    Container.Size = UDim2.new(1, -20, 0, 0)
+    Container.BackgroundTransparency = 1
+    Container.ZIndex = ZINdex + 11
+
+    UIListLayout.Parent = Container
+    UIListLayout.SortOrder = Enum.SortOrder.LayoutOrder
+    UIListLayout.Padding = UDim.new(0, 4)
+
+    UIListLayout:GetPropertyChangedSignal("AbsoluteContentSize"):Connect(function()
+        Container.Size = UDim2.new(1, -20, 0, UIListLayout.AbsoluteContentSize.Y)
+        Section.Size = UDim2.new(0.95, 0, 0, UIListLayout.AbsoluteContentSize.Y + 36)
+    end)
+
+    return Container
 end
 
 -- ========== GUI ЭЛЕМЕНТЫ ==========
@@ -363,7 +501,6 @@ function NeverLose:AddToggle(Handler, Config)
     
     local Signal = Handler.Signal or {GetValue = function() return true end, Connect = function() return {Disconnect = function() end} end}
     
-    -- Создаем контейнер для элемента
     local ElementContainer = Instance.new("Frame")
     ElementContainer.Parent = Handler.Container
     ElementContainer.Size = UDim2.new(1, 0, 0, 25)
@@ -402,7 +539,6 @@ function NeverLose:AddToggle(Handler, Config)
     UICorner_2.CornerRadius = UDim.new(1, 0) 
     UICorner_2.Parent = Circle 
     
-    -- Добавляем лейбл
     local Label = Instance.new("TextLabel")
     Label.Parent = ElementContainer
     Label.Position = UDim2.new(0, 35, 0, 0)
@@ -503,13 +639,11 @@ function NeverLose:AddSlider(Handler, Config)
         end; 
     end; 
     
-    -- Создаем контейнер
     local ElementContainer = Instance.new("Frame")
     ElementContainer.Parent = Handler.Container
     ElementContainer.Size = UDim2.new(1, 0, 0, 25)
     ElementContainer.BackgroundTransparency = 1
     
-    -- Добавляем лейбл
     local Label = Instance.new("TextLabel")
     Label.Parent = ElementContainer
     Label.Position = UDim2.new(0, 0, 0, 0)
@@ -744,13 +878,11 @@ function NeverLose:AddKeybind(Handler, Config)
     
     local KeybindLib = {}; 
     
-    -- Создаем контейнер
     local ElementContainer = Instance.new("Frame")
     ElementContainer.Parent = Handler.Container
     ElementContainer.Size = UDim2.new(1, 0, 0, 25)
     ElementContainer.BackgroundTransparency = 1
     
-    -- Добавляем лейбл
     local Label = Instance.new("TextLabel")
     Label.Parent = ElementContainer
     Label.Position = UDim2.new(0, 0, 0, 0)
@@ -889,13 +1021,11 @@ function NeverLose:AddColorPicker(Handler, Config)
     
     local ColorPickerLib = {}; 
     
-    -- Создаем контейнер
     local ElementContainer = Instance.new("Frame")
     ElementContainer.Parent = Handler.Container
     ElementContainer.Size = UDim2.new(1, 0, 0, 25)
     ElementContainer.BackgroundTransparency = 1
     
-    -- Добавляем лейбл
     local Label = Instance.new("TextLabel")
     Label.Parent = ElementContainer
     Label.Position = UDim2.new(0, 0, 0, 0)
@@ -1016,13 +1146,11 @@ function NeverLose:AddDropdown(Handler, Config)
     local DropdownLib = { Values = Config.Multi and (Config.Default or {}) or Config.Default };
     local Open = false;
     
-    -- Создаем контейнер
     local ElementContainer = Instance.new("Frame")
     ElementContainer.Parent = Handler.Container
     ElementContainer.Size = UDim2.new(1, 0, 0, 25)
     ElementContainer.BackgroundTransparency = 1
     
-    -- Добавляем лейбл
     local Label = Instance.new("TextLabel")
     Label.Parent = ElementContainer
     Label.Position = UDim2.new(0, 0, 0, 0)
@@ -1292,7 +1420,7 @@ function NeverLose:AddDivider(Handler)
     return Divider
 end
 
--- Option Window & Button (Кнопка доп. настроек / Окно опций)
+-- Option Window & Button
 function NeverLose:AddOption(Handler, GearIcon) 
     local Signal = Handler.Signal or {GetValue = function() return true end, Connect = function() return {Disconnect = function() end} end}
     
@@ -1384,13 +1512,11 @@ function NeverLose:AddTextInput(Handler, Config)
     
     local TextBoxLib = {}; 
     
-    -- Создаем контейнер
     local ElementContainer = Instance.new("Frame")
     ElementContainer.Parent = Handler.Container
     ElementContainer.Size = UDim2.new(1, 0, 0, 25)
     ElementContainer.BackgroundTransparency = 1
     
-    -- Добавляем лейбл
     local Label = Instance.new("TextLabel")
     Label.Parent = ElementContainer
     Label.Position = UDim2.new(0, 0, 0, 0)
@@ -1484,28 +1610,196 @@ function NeverLose:AddTextInput(Handler, Config)
     return TextBoxLib 
 end 
 
--- ========== АВТОМАТИЧЕСКОЕ СОЗДАНИЕ GUI ==========
+-- ========== СИСТЕМНЫЕ ОКНА И HUD ==========
+
+-- Notifications (Система всплывающих уведомлений)
+function NeverLose:Notification(Config)
+    Config = NeverLose:ProcessParams(Config, {
+        Title = "Notification",
+        Text = "Message",
+        Duration = 3,
+    })
+
+    -- Создаем контейнер для уведомлений если его нет
+    if not NotificationHolder then
+        NotificationHolder = Instance.new("Frame")
+        NotificationHolder.Name = "NotificationHolder"
+        NotificationHolder.Parent = ScreenGui
+        NotificationHolder.Size = UDim2.new(0, 240, 0, 0)
+        NotificationHolder.Position = UDim2.new(1, -250, 0, 10)
+        NotificationHolder.BackgroundTransparency = 1
+        
+        local NotifLayout = Instance.new("UIListLayout")
+        NotifLayout.Parent = NotificationHolder
+        NotifLayout.SortOrder = Enum.SortOrder.LayoutOrder
+        NotifLayout.Padding = UDim.new(0, 5)
+        NotifLayout.VerticalAlignment = Enum.VerticalAlignment.Bottom
+    end
+
+    local Notif = Instance.new("Frame")
+    local UICorner = Instance.new("UICorner")
+    local TitleLabel = Instance.new("TextLabel")
+    local TextLabel = Instance.new("TextLabel")
+    local Bar = Instance.new("Frame")
+
+    Notif.Name = NeverLose.RandomString()
+    Notif.Parent = NotificationHolder
+    Notif.Size = UDim2.new(0, 220, 0, 50)
+    Notif.BackgroundColor3 = Color3.fromRGB(15, 17, 23)
+    Notif.BorderSizePixel = 0
+
+    UICorner.CornerRadius = UDim.new(0, 4)
+    UICorner.Parent = Notif
+
+    TitleLabel.Parent = Notif
+    TitleLabel.Position = UDim2.new(0, 10, 0, 6)
+    TitleLabel.Size = UDim2.new(1, -20, 0, 14)
+    TitleLabel.Text = Config.Title
+    TitleLabel.Font = Enum.Font.GothamBold
+    TitleLabel.TextSize = 11
+    TitleLabel.TextColor3 = Color3.fromRGB(255, 255, 255)
+    TitleLabel.TextXAlignment = Enum.TextXAlignment.Left
+    TitleLabel.BackgroundTransparency = 1
+
+    TextLabel.Parent = Notif
+    TextLabel.Position = UDim2.new(0, 10, 0, 22)
+    TextLabel.Size = UDim2.new(1, -20, 0, 20)
+    TextLabel.Text = Config.Text
+    TextLabel.Font = Enum.Font.Gotham
+    TextLabel.TextSize = 10
+    TextLabel.TextColor3 = Color3.fromRGB(180, 185, 200)
+    TextLabel.TextXAlignment = Enum.TextXAlignment.Left
+    TextLabel.BackgroundTransparency = 1
+
+    Bar.Parent = Notif
+    Bar.Position = UDim2.new(0, 0, 1, -2)
+    Bar.Size = UDim2.new(1, 0, 0, 2)
+    Bar.BackgroundColor3 = NeverLose.AccentColor
+    Bar.BorderSizePixel = 0
+
+    TweenService:Create(Bar, TweenInfo.new(Config.Duration, Enum.EasingStyle.Linear), { Size = UDim2.new(0, 0, 0, 2) }):Play()
+
+    task.delay(Config.Duration, function()
+        TweenService:Create(Notif, TweenInfo.new(0.3, Enum.EasingStyle.Quad, Enum.EasingDirection.Out), { BackgroundTransparency = 1 }):Play()
+        task.delay(0.3, function()
+            Notif:Destroy()
+        end)
+    end)
+end
+
+-- Watermark (Информационный оверлей)
+function NeverLose:SetWatermark(Text)
+    local Watermark = Instance.new("Frame")
+    local UICorner = Instance.new("UICorner")
+    local UIStroke = Instance.new("UIStroke")
+    local Label = Instance.new("TextLabel")
+
+    Watermark.Name = NeverLose.RandomString()
+    Watermark.Parent = ScreenGui
+    Watermark.Position = UDim2.new(0, 15, 0, 15)
+    Watermark.BackgroundColor3 = Color3.fromRGB(15, 17, 23)
+    Watermark.Size = UDim2.new(0, 180, 0, 24)
+
+    UICorner.CornerRadius = UDim.new(0, 4)
+    UICorner.Parent = Watermark
+
+    UIStroke.Transparency = 0.700
+    UIStroke.Color = Color3.fromRGB(45, 48, 58)
+    UIStroke.Parent = Watermark
+
+    Label.Parent = Watermark
+    Label.Size = UDim2.new(1, 0, 1, 0)
+    Label.BackgroundTransparency = 1
+    Label.Text = Text or "Neverlose.cc | User | FPS: 60"
+    Label.Font = Enum.Font.GothamMedium
+    Label.TextSize = 10
+    Label.TextColor3 = Color3.fromRGB(220, 220, 220)
+end
+
+-- Keybind List Display (Окно активных биндов)
+function NeverLose:CreateKeybindList()
+    local KeyList = Instance.new("Frame")
+    local UICorner = Instance.new("UICorner")
+    local Title = Instance.new("TextLabel")
+    local Container = Instance.new("Frame")
+    local UIListLayout = Instance.new("UIListLayout")
+
+    KeyList.Name = NeverLose.RandomString()
+    KeyList.Parent = ScreenGui
+    KeyList.Position = UDim2.new(0, 15, 0.4, 0)
+    KeyList.Size = UDim2.new(0, 160, 0, 30)
+    KeyList.BackgroundColor3 = Color3.fromRGB(15, 17, 23)
+
+    UICorner.CornerRadius = UDim.new(0, 4)
+    UICorner.Parent = KeyList
+
+    Title.Name = NeverLose.RandomString()
+    Title.Parent = KeyList
+    Title.Size = UDim2.new(1, 0, 0, 24)
+    Title.Text = "Keybinds"
+    Title.Font = Enum.Font.GothamBold
+    Title.TextSize = 10
+    Title.TextColor3 = Color3.fromRGB(255, 255, 255)
+    Title.BackgroundTransparency = 1
+
+    Container.Name = NeverLose.RandomString()
+    Container.Parent = KeyList
+    Container.Position = UDim2.new(0, 5, 0, 25)
+    Container.Size = UDim2.new(1, -10, 0, 0)
+    Container.BackgroundTransparency = 1
+
+    UIListLayout.Parent = Container
+    UIListLayout.SortOrder = Enum.SortOrder.LayoutOrder
+
+    return KeyList
+end
+
+-- ========== ПРИМЕР ИСПОЛЬЗОВАНИЯ ==========
 
 -- Создаем окно
 local MainWindow = NeverLose:CreateWindow({
-    Title = "Мой ГУИ",
-    SubTitle = "Пример",
+    Title = "Neverlose.cc",
+    SubTitle = "Full Edition",
     ToggleKey = Enum.KeyCode.RightShift
 })
 
--- Создаем контейнер для элементов с методами
+-- Создаем контейнер для Handler
 local Handler = {}
-Handler.Container = MainWindow.PageContainer
-Handler.Signal = { 
+Handler.PageContainer = MainWindow.PageContainer
+Handler.TabContainer = MainWindow.TabContainer
+
+-- Создаем вкладки
+local Tab1 = NeverLose:AddTab(Handler, {
+    Name = "Основные",
+    Icon = "rbxassetid://0"
+})
+
+local Tab2 = NeverLose:AddTab(Handler, {
+    Name = "Настройки",
+    Icon = "rbxassetid://0"
+})
+
+-- Активируем первую вкладку
+for _, tab in ipairs(NeverLose.Tabs) do
+    if tab.Page then
+        tab.Page.Visible = false
+    end
+end
+Tab1.Page.Visible = true
+
+-- Создаем Handler для элементов
+local ElementHandler = {}
+ElementHandler.Container = NeverLose:AddSection({ Page = Tab1.Page }, {
+    Name = "Основные настройки"
+})
+ElementHandler.Signal = { 
     GetValue = function() return true end,
     Connect = function() return {Disconnect = function() end} end,
     SetValue = function() end
 }
 
--- Пример использования всех элементов
-local label1 = NeverLose:AddLabel(Handler, "Основные настройки:")
-
-local toggle = NeverLose:AddToggle(Handler, {
+-- Добавляем элементы
+local toggle = NeverLose:AddToggle(ElementHandler, {
     Default = true,
     Flag = "Toggle1",
     Label = "Включить функцию",
@@ -1514,7 +1808,7 @@ local toggle = NeverLose:AddToggle(Handler, {
     end
 })
 
-local slider = NeverLose:AddSlider(Handler, {
+local slider = NeverLose:AddSlider(ElementHandler, {
     Default = 50,
     Min = 0,
     Max = 100,
@@ -1527,30 +1821,7 @@ local slider = NeverLose:AddSlider(Handler, {
     end
 })
 
-local keybind = NeverLose:AddKeybind(Handler, {
-    Default = "F",
-    Blacklist = {"Escape", "P"},
-    Flag = "Keybind1",
-    Label = "Клавиша",
-    Callback = function(key)
-        print("Keybind: " .. tostring(key))
-    end
-})
-
-local divider1 = NeverLose:AddDivider(Handler)
-
-local label2 = NeverLose:AddLabel(Handler, "Визуальные настройки:")
-
-local colorpicker = NeverLose:AddColorPicker(Handler, {
-    Default = Color3.fromRGB(255, 0, 0),
-    Flag = "Color1",
-    Label = "Цвет",
-    Callback = function(color)
-        print("Color selected")
-    end
-})
-
-local dropdown = NeverLose:AddDropdown(Handler, {
+local dropdown = NeverLose:AddDropdown(ElementHandler, {
     Default = "Option 1",
     Options = {"Option 1", "Option 2", "Option 3"},
     Multi = false,
@@ -1561,7 +1832,60 @@ local dropdown = NeverLose:AddDropdown(Handler, {
     end
 })
 
-local textinput = NeverLose:AddTextInput(Handler, {
+-- Создаем вторую секцию
+local ElementHandler2 = {}
+ElementHandler2.Container = NeverLose:AddSection({ Page = Tab1.Page }, {
+    Name = "Визуальные настройки"
+})
+ElementHandler2.Signal = { 
+    GetValue = function() return true end,
+    Connect = function() return {Disconnect = function() end} end,
+    SetValue = function() end
+}
+
+local colorpicker = NeverLose:AddColorPicker(ElementHandler2, {
+    Default = Color3.fromRGB(255, 0, 0),
+    Flag = "Color1",
+    Label = "Цвет",
+    Callback = function(color)
+        print("Color selected")
+    end
+})
+
+local keybind = NeverLose:AddKeybind(ElementHandler2, {
+    Default = "F",
+    Blacklist = {"Escape", "P"},
+    Flag = "Keybind1",
+    Label = "Клавиша",
+    Callback = function(key)
+        print("Keybind: " .. tostring(key))
+    end
+})
+
+local button = NeverLose:AddButton(ElementHandler2, {
+    Text = "Нажми меня!",
+    Callback = function()
+        NeverLose:Notification({
+            Title = "Уведомление",
+            Text = "Кнопка была нажата!",
+            Duration = 3
+        })
+        print("Button clicked!")
+    end
+})
+
+-- Добавляем элементы на вторую вкладку
+local ElementHandler3 = {}
+ElementHandler3.Container = NeverLose:AddSection({ Page = Tab2.Page }, {
+    Name = "Дополнительные настройки"
+})
+ElementHandler3.Signal = { 
+    GetValue = function() return true end,
+    Connect = function() return {Disconnect = function() end} end,
+    SetValue = function() end
+}
+
+local textinput = NeverLose:AddTextInput(ElementHandler3, {
     Default = "Hello",
     Placeholder = "Type here...",
     Flag = "Text1",
@@ -1572,13 +1896,25 @@ local textinput = NeverLose:AddTextInput(Handler, {
     end
 })
 
-local button = NeverLose:AddButton(Handler, {
-    Text = "Нажми меня!",
-    Callback = function()
-        print("Button clicked!")
-    end
-})
+local divider = NeverLose:AddDivider(ElementHandler3)
+
+local label = NeverLose:AddLabel(ElementHandler3, "Это пример текстовой надписи")
+
+-- Создаем водяной знак
+NeverLose:SetWatermark("Neverlose.cc | Full Edition | FPS: 60")
+
+-- Создаем список биндов
+local KeybindList = NeverLose:CreateKeybindList()
+
+-- Отправляем тестовое уведомление
+task.delay(1, function()
+    NeverLose:Notification({
+        Title = "Добро пожаловать",
+        Text = "Библиотека NeverLose загружена!",
+        Duration = 4
+    })
+end)
 
 print("Библиотека NeverLose успешно загружена!")
-print("Доступны все компоненты: Toggle, Slider, Keybind, ColorPicker, Dropdown, Button, Label, Divider, TextInput, Option")
+print("Доступны все компоненты!")
 print("Нажмите RightShift, чтобы показать/скрыть окно")
