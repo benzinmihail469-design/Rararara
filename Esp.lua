@@ -6,6 +6,8 @@ local HttpService = game:GetService("HttpService")
 local TextService = game:GetService("TextService")
 local RunService = game:GetService("RunService")
 local Lighting = game:GetService("Lighting")
+local Players = game:GetService("Players")
+local Camera = workspace.CurrentCamera
 local ScreenGui = Instance.new("ScreenGui")
 ScreenGui.Parent = game:GetService("CoreGui")
 
@@ -235,6 +237,7 @@ end
 NeverLose.AccentColor = Color3.fromRGB(0, 150, 255)
 NeverLose.Flags = {}
 NeverLose.Tabs = {}
+NeverLose.ESPObjects = {}
 
 -- ========== ЛОКАЛИЗАЦИЯ ==========
 
@@ -259,6 +262,10 @@ NeverLose.Translations = {
         AccentColor = "Accent Color",
         Welcome = "Welcome",
         LoadedMessage = "NeverLose library loaded!",
+        ESP = "ESP",
+        BoxESP = "Box ESP",
+        NameESP = "Name ESP",
+        EnabledESP = "Enable ESP",
     },
     RU = {
         Legitbot = "Легитбот",
@@ -279,6 +286,10 @@ NeverLose.Translations = {
         AccentColor = "Акцентный цвет",
         Welcome = "Добро пожаловать",
         LoadedMessage = "Библиотека NeverLose загружена!",
+        ESP = "ESP",
+        BoxESP = "Бокс ESP",
+        NameESP = "Имя ESP",
+        EnabledESP = "Включить ESP",
     }
 }
 
@@ -360,6 +371,126 @@ function NeverLose:CreateFOVCircle(Config)
             FOVCircle:Remove()
         end
     }
+end
+
+-- ========== ESP СИСТЕМА ==========
+
+function NeverLose:AddESP(TargetPlayer, Config)
+    Config = NeverLose:ProcessParams(Config, {
+        BoxColor = Color3.fromRGB(255, 255, 255),
+        NameColor = Color3.fromRGB(255, 255, 255),
+        BoxVisible = true,
+        NameVisible = true,
+        Thickness = 1,
+    })
+    
+    if TargetPlayer == Players.LocalPlayer then return end
+
+    local Box = Drawing.new("Square")
+    Box.Thickness = Config.Thickness
+    Box.Filled = false
+    Box.Color = Config.BoxColor
+    Box.Visible = false
+
+    local Name = Drawing.new("Text")
+    Name.Text = TargetPlayer.Name
+    Name.Size = 13
+    Name.Center = true
+    Name.Outline = true
+    Name.Color = Config.NameColor
+    Name.Visible = false
+
+    local Connection
+    Connection = RunService.RenderStepped:Connect(function()
+        local Char = TargetPlayer.Character
+        local Root = Char and Char:FindFirstChild("HumanoidRootPart")
+        local Hum = Char and Char:FindFirstChildOfClass("Humanoid")
+
+        if Root and Hum and Hum.Health > 0 then
+            local Pos, OnScreen = Camera:WorldToViewportPoint(Root.Position)
+            if OnScreen then
+                local SizeX = 1000 / Pos.Z
+                local SizeY = 2000 / Pos.Z
+
+                if Config.BoxVisible then
+                    Box.Size = Vector2.new(SizeX, SizeY)
+                    Box.Position = Vector2.new(Pos.X - SizeX / 2, Pos.Y - SizeY / 2)
+                    Box.Visible = true
+                end
+
+                if Config.NameVisible then
+                    Name.Position = Vector2.new(Pos.X, (Pos.Y - SizeY / 2) - 15)
+                    Name.Visible = true
+                end
+                return
+            end
+        end
+
+        Box.Visible = false
+        Name.Visible = false
+    end)
+
+    local ESPObject = {
+        Player = TargetPlayer,
+        Box = Box,
+        Name = Name,
+        Connection = Connection,
+        Config = Config
+    }
+    
+    table.insert(NeverLose.ESPObjects, ESPObject)
+
+    TargetPlayer.AncestryChanged:Connect(function()
+        if not TargetPlayer:IsDescendantOf(game) then
+            Connection:Disconnect()
+            Box:Remove()
+            Name:Remove()
+            for i, obj in ipairs(NeverLose.ESPObjects) do
+                if obj.Player == TargetPlayer then
+                    table.remove(NeverLose.ESPObjects, i)
+                    break
+                end
+            end
+        end
+    end)
+    
+    return ESPObject
+end
+
+function NeverLose:RemoveESP(Player)
+    for i, obj in ipairs(NeverLose.ESPObjects) do
+        if obj.Player == Player then
+            obj.Connection:Disconnect()
+            obj.Box:Remove()
+            obj.Name:Remove()
+            table.remove(NeverLose.ESPObjects, i)
+            return true
+        end
+    end
+    return false
+end
+
+function NeverLose:ClearESP()
+    for _, obj in ipairs(NeverLose.ESPObjects) do
+        obj.Connection:Disconnect()
+        obj.Box:Remove()
+        obj.Name:Remove()
+    end
+    NeverLose.ESPObjects = {}
+end
+
+function NeverLose:ToggleESP(state)
+    for _, obj in ipairs(NeverLose.ESPObjects) do
+        obj.Box.Visible = state
+        obj.Name.Visible = state
+    end
+end
+
+function NeverLose:SetESPColor(color, nameColor)
+    for _, obj in ipairs(NeverLose.ESPObjects) do
+        obj.Box.Color = color or obj.Config.BoxColor
+        obj.Name.Color = nameColor or obj.Config.NameColor
+    end
 end
 
 -- ========== ФУНКЦИЯ СОЗДАНИЯ ГЛАВНОГО ОКНА ==========
@@ -1945,7 +2076,7 @@ TargetSection.Container = NeverLose:AddSection(ElementHandler, {
 -- Добавление элементов управления в MainSection
 MainSection.Signal = ElementHandler.Signal
 
-NeverLose:AddToggle(MainSection, {
+local aimbotToggle = NeverLose:AddToggle(MainSection, {
     Default = false,
     Flag = "Legit_Enabled",
     Label = NeverLose:GetText("Enabled"),
@@ -1997,6 +2128,7 @@ NeverLose:AddColorPicker(TargetSection, {
         if FOVCircle then
             FOVCircle.Circle.Color = color
         end
+        NeverLose:SetESPColor(color, color)
     end
 })
 
@@ -2008,7 +2140,91 @@ local FOVCircle = NeverLose:CreateFOVCircle({
     Thickness = 1.5
 })
 
--- Секция сохранения конфигов
+-- ========== НАСТРОЙКИ VISUALS ==========
+
+local VisualHandler = {}
+VisualHandler.Page = VisualsTab.Page
+VisualHandler.Signal = { 
+    GetValue = function() return true end,
+    Connect = function() return {Disconnect = function() end} end,
+    SetValue = function() end
+}
+
+local ESPSection = {}
+ESPSection.Container = NeverLose:AddSection(VisualHandler, { 
+    Name = NeverLose:GetText("ESP")
+})
+
+ESPSection.Signal = VisualHandler.Signal
+
+-- Toggle для включения ESP
+local espToggle = NeverLose:AddToggle(ESPSection, {
+    Default = false,
+    Flag = "ESP_Enabled",
+    Label = NeverLose:GetText("EnabledESP"),
+    Callback = function(state)
+        if state then
+            -- Добавляем ESP для всех игроков
+            for _, player in ipairs(Players:GetPlayers()) do
+                if player ~= Players.LocalPlayer then
+                    NeverLose:AddESP(player, {
+                        BoxColor = NeverLose.AccentColor,
+                        NameColor = Color3.fromRGB(255, 255, 255),
+                        BoxVisible = true,
+                        NameVisible = true
+                    })
+                end
+            end
+            -- Подключаемся к событиям добавления игроков
+            if not espConnection then
+                espConnection = Players.PlayerAdded:Connect(function(player)
+                    if espToggle:GetValue() then
+                        NeverLose:AddESP(player, {
+                            BoxColor = NeverLose.AccentColor,
+                            NameColor = Color3.fromRGB(255, 255, 255),
+                            BoxVisible = true,
+                            NameVisible = true
+                        })
+                    end
+                end)
+            end
+        else
+            -- Очищаем ESP
+            NeverLose:ClearESP()
+            if espConnection then
+                espConnection:Disconnect()
+                espConnection = nil
+            end
+        end
+    end
+})
+
+-- Toggle для Box ESP
+NeverLose:AddToggle(ESPSection, {
+    Default = true,
+    Flag = "ESP_Box",
+    Label = NeverLose:GetText("BoxESP"),
+    Callback = function(state)
+        for _, obj in ipairs(NeverLose.ESPObjects) do
+            obj.Box.Visible = state and espToggle:GetValue()
+        end
+    end
+})
+
+-- Toggle для Name ESP
+NeverLose:AddToggle(ESPSection, {
+    Default = true,
+    Flag = "ESP_Name",
+    Label = NeverLose:GetText("NameESP"),
+    Callback = function(state)
+        for _, obj in ipairs(NeverLose.ESPObjects) do
+            obj.Name.Visible = state and espToggle:GetValue()
+        end
+    end
+})
+
+-- ========== НАСТРОЙКИ КОНФИГОВ ==========
+
 local ConfigSection = {}
 ConfigSection.Container = NeverLose:AddSection({ Page = ConfigsTab.Page }, { 
     Name = NeverLose:GetText("Configuration")
@@ -2039,7 +2255,6 @@ NeverLose:AddButton(ConfigSection, {
     end
 })
 
--- Кнопка смены языка
 NeverLose:AddButton(ConfigSection, {
     Text = "Switch to RU / EN",
     Callback = function()
@@ -2059,6 +2274,9 @@ NeverLose:AddButton(ConfigSection, {
 -- Установка водяного знака
 NeverLose:SetWatermark("Neverlose.cc | User: Dev | 60 FPS")
 
+-- Создаем список биндов
+local KeybindList = NeverLose:CreateKeybindList()
+
 -- Отправка приветственного уведомления
 task.delay(1, function()
     NeverLose:Notification({
@@ -2076,4 +2294,5 @@ print("✓ Уведомления, Водяной знак, Список бин�
 print("✓ Размытие фона, FOV круг")
 print("✓ Локализация EN/RU")
 print("✓ Сохранение/загрузка конфигов")
+print("✓ ESP система (Box + Name)")
 print("Нажмите RightShift для показа/скрытия меню")
