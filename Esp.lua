@@ -51,6 +51,7 @@ function NeverLose.PlayAnimate(instance, tweenInfo, goals)
 end
 
 function NeverLose:IsMouseOverFrame(frame)
+    if not frame then return false end
     local mouse = UserInputService:GetMouseLocation()
     local pos = frame.AbsolutePosition
     local size = frame.AbsoluteSize
@@ -59,6 +60,7 @@ function NeverLose:IsMouseOverFrame(frame)
 end
 
 function NeverLose:CreateInput(frame, callback)
+    if not frame then return end
     local btn = Instance.new("TextButton")
     btn.Size = UDim2.new(1, 0, 1, 0)
     btn.BackgroundTransparency = 1
@@ -90,19 +92,96 @@ end
 function NeverLose:CreateColorPicker(parent)
     local ColorPicker = {}
     ColorPicker.Root = Instance.new("Frame")
-    -- Здесь должна быть полная реализация палитры цветов
-    -- Упрощенная версия для демонстрации
-    ColorPicker.SetRender = function(value) end
-    ColorPicker.SetValue = function(color) 
-        parent.BackgroundColor3 = color 
+    ColorPicker.Root.Parent = parent
+    ColorPicker.Root.Size = UDim2.new(0, 200, 0, 150)
+    ColorPicker.Root.Position = UDim2.new(0, 0, 1, 5)
+    ColorPicker.Root.BackgroundColor3 = Color3.fromRGB(26, 28, 36)
+    ColorPicker.Root.BorderSizePixel = 0
+    ColorPicker.Root.Visible = false
+    ColorPicker.Root.ZIndex = 100
+    
+    local UICorner = Instance.new("UICorner")
+    UICorner.CornerRadius = UDim.new(0, 4)
+    UICorner.Parent = ColorPicker.Root
+    
+    -- Простая палитра цветов
+    local colors = {
+        Color3.fromRGB(255, 0, 0),
+        Color3.fromRGB(0, 255, 0),
+        Color3.fromRGB(0, 0, 255),
+        Color3.fromRGB(255, 255, 0),
+        Color3.fromRGB(255, 0, 255),
+        Color3.fromRGB(0, 255, 255),
+        Color3.fromRGB(255, 255, 255),
+        Color3.fromRGB(0, 0, 0)
+    }
+    
+    for i, color in ipairs(colors) do
+        local btn = Instance.new("TextButton")
+        btn.Size = UDim2.new(0, 20, 0, 20)
+        btn.Position = UDim2.new(0, (i-1) * 25, 0, 10)
+        btn.BackgroundColor3 = color
+        btn.BorderSizePixel = 1
+        btn.BorderColor3 = Color3.fromRGB(45, 48, 58)
+        btn.Text = ""
+        btn.Parent = ColorPicker.Root
+        
+        local corner = Instance.new("UICorner")
+        corner.CornerRadius = UDim.new(0, 2)
+        corner.Parent = btn
+        
+        btn.MouseButton1Click:Connect(function()
+            ColorPicker.Callback(color)
+            ColorPicker.Root.Visible = false
+        end)
     end
+    
+    ColorPicker.SetRender = function(value)
+        ColorPicker.Root.Visible = value
+    end
+    
+    ColorPicker.SetValue = function(color)
+        parent.BackgroundColor3 = color
+    end
+    
     return ColorPicker
 end
 
 function NeverLose:CreateOptionWindow(parent, zindex)
     local Window = {}
     Window.Root = Instance.new("Frame")
-    Window.Signal = {SetValue = function() end}
+    Window.Root.Parent = parent
+    Window.Root.Size = UDim2.new(0, 150, 0, 100)
+    Window.Root.Position = UDim2.new(1, 5, 0, 0)
+    Window.Root.BackgroundColor3 = Color3.fromRGB(26, 28, 36)
+    Window.Root.BorderSizePixel = 0
+    Window.Root.Visible = false
+    Window.Root.ZIndex = zindex or 100
+    
+    local UICorner = Instance.new("UICorner")
+    UICorner.CornerRadius = UDim.new(0, 4)
+    UICorner.Parent = Window.Root
+    
+    local UIStroke = Instance.new("UIStroke")
+    UIStroke.Transparency = 0.650
+    UIStroke.Color = Color3.fromRGB(45, 48, 58)
+    UIStroke.Parent = Window.Root
+    
+    local label = Instance.new("TextLabel")
+    label.Size = UDim2.new(1, 0, 1, 0)
+    label.BackgroundTransparency = 1
+    label.Text = "Option Window"
+    label.TextColor3 = Color3.fromRGB(255, 255, 255)
+    label.Font = Enum.Font.GothamMedium
+    label.TextSize = 12
+    label.Parent = Window.Root
+    
+    Window.Signal = {
+        SetValue = function(value)
+            Window.Root.Visible = value
+        end
+    }
+    
     return Window
 end
 
@@ -146,6 +225,39 @@ function NeverLose:LoadConfig(name)
             end
         end
     end
+end
+
+-- Функция для создания контейнера с методами
+function NeverLose:CreateHandler(container)
+    local handler = {}
+    handler.Container = container
+    
+    -- Создаем методы для элементов
+    handler.AddToggle = function(self, Config)
+        return self:AddToggle(Config)
+    end
+    
+    handler.AddSlider = function(self, Config)
+        return self:AddSlider(Config)
+    end
+    
+    handler.AddKeybind = function(self, Config)
+        return self:AddKeybind(Config)
+    end
+    
+    handler.AddColorPicker = function(self, Config)
+        return self:AddColorPicker(Config)
+    end
+    
+    handler.AddTextInput = function(self, Config)
+        return self:AddTextInput(Config)
+    end
+    
+    handler.AddOption = function(self, GearIcon)
+        return self:AddOption(GearIcon)
+    end
+    
+    return handler
 end
 
 -- Настройки
@@ -220,7 +332,7 @@ function NeverLose:CreateWindow(Config)
     PageContainer.BackgroundTransparency = 1
 
     -- Dragging Logic
-    local Dragging, DragInput, DragStart, StartPos
+    local Dragging, DragStart, StartPos
     TopBar.InputBegan:Connect(function(input)
         if input.UserInputType == Enum.UserInputType.MouseButton1 or input.UserInputType == Enum.UserInputType.Touch then
             Dragging = true
@@ -265,12 +377,14 @@ end
 -- ========== GUI ЭЛЕМЕНТЫ ==========
 
 -- Toggle (Переключатель)
-function handle:AddToggle(Config) 
+function NeverLose:AddToggle(Handler, Config) 
     Config = NeverLose:ProcessParams(Config , { 
         Default = false, 
         Flag = nil, 
         Callback = EmptyFunction, 
     }); 
+    
+    local Signal = Handler.Signal or {GetValue = function() return true end, Connect = function() return {Disconnect = function() end} end}
     
     local Toggle = Instance.new("Frame") 
     local UICorner = Instance.new("UICorner") 
@@ -278,14 +392,14 @@ function handle:AddToggle(Config)
     local UICorner_2 = Instance.new("UICorner") 
     
     Toggle.Name = NeverLose.RandomString(); 
-    Toggle.Parent = Handler 
+    Toggle.Parent = Handler.Container or Handler
     Toggle.BackgroundColor3 = Color3.fromRGB(10, 13, 21) 
     Toggle.BorderColor3 = Color3.fromRGB(0, 0, 0) 
     Toggle.BorderSizePixel = 0 
     Toggle.ClipsDescendants = true 
     Toggle.Size = UDim2.new(0, 30, 0, 18) 
     Toggle.ZIndex = ZINdex + 13 
-    Toggle.LayoutOrder = -(#Handler:GetChildren() + 5); 
+    Toggle.LayoutOrder = -(#(Handler.Container or Handler):GetChildren() + 5); 
     
     UICorner.CornerRadius = UDim.new(1, 0) 
     UICorner.Parent = Toggle 
@@ -306,7 +420,7 @@ function handle:AddToggle(Config)
     
     local ToggleLib = { Root = Toggle }; 
     
-    ToggleLib.SetUI = LPH_NO_VIRTUALIZE(function(value) 
+    ToggleLib.SetUI = function(value) 
         if value then 
             NeverLose.PlayAnimate(Toggle,SlowyTween,{ BackgroundTransparency = 0, BackgroundColor3 = NeverLose.AccentColor }) 
             NeverLose.PlayAnimate(Circle,SlowyTween,{ BackgroundColor3 = Color3.fromRGB(255, 255, 255), BackgroundTransparency = 0, Position = UDim2.new(0.7, 0, 0.5, 0) }) 
@@ -314,25 +428,25 @@ function handle:AddToggle(Config)
             NeverLose.PlayAnimate(Toggle,SlowyTween,{ BackgroundTransparency = 0, BackgroundColor3 = Color3.fromRGB(10, 13, 21) }) 
             NeverLose.PlayAnimate(Circle,SlowyTween,{ BackgroundColor3 = Color3.fromRGB(255, 255, 255), BackgroundTransparency = 0.500, Position = UDim2.new(0.300000012, 0, 0.5, 0) }) 
         end; 
-    end); 
+    end; 
     
-    ToggleLib.SetVisible = LPH_NO_VIRTUALIZE(function(value) 
+    ToggleLib.SetVisible = function(value) 
         if value then 
             ToggleLib.SetUI(Config.Default); 
         else 
             NeverLose.PlayAnimate(Toggle,SlowyTween,{ BackgroundTransparency = 1, BackgroundColor3 = Color3.fromRGB(10, 13, 21) }) 
             NeverLose.PlayAnimate(Circle,SlowyTween,{ BackgroundColor3 = Color3.fromRGB(255, 255, 255), BackgroundTransparency = 1, Position = UDim2.new(0.300000012, 0, 0.5, 0) }) 
         end; 
-    end); 
+    end; 
     
     ToggleLib.SetUI(Config.Default); 
     ToggleLib.SetVisible(Signal:GetValue()); 
     
-    NeverLose:CreateInput(Toggle , LPH_NO_VIRTUALIZE(function() 
+    NeverLose:CreateInput(Toggle , function() 
         Config.Default = not Config.Default; 
         ToggleLib.SetUI(Config.Default); 
         Config.Callback(Config.Default) 
-    end)) 
+    end) 
     
     ToggleLib.Signal = Signal:Connect(ToggleLib.SetVisible); 
     
@@ -356,7 +470,7 @@ function handle:AddToggle(Config)
 end; 
 
 -- Slider (Ползунок)
-function handle:AddSlider(Config) 
+function NeverLose:AddSlider(Handler, Config) 
     Config = NeverLose:ProcessParams(Config , { 
         Default = 50, 
         Min = 0, 
@@ -369,10 +483,12 @@ function handle:AddSlider(Config)
         Callback = EmptyFunction, 
     }); 
     
+    local Signal = Handler.Signal or {GetValue = function() return true end, Connect = function() return {Disconnect = function() end} end}
+    
     local SliderLib = {}; 
-    SliderLib.GetSize = LPH_NO_VIRTUALIZE(function() 
+    SliderLib.GetSize = function() 
         return (Config.Default - Config.Min) / (Config.Max - Config.Min); 
-    end); 
+    end; 
     
     local FullNumSize = TextService:GetTextSize(string.rep("0",(Config.Rounding + #tostring(Config.Max))+1)..tostring(Config.Type),10,Enum.Font.GothamMedium,Vector2.new(math.huge,math.huge)); 
     SliderLib.MaximumSize = FullNumSize.X; 
@@ -406,7 +522,7 @@ function handle:AddSlider(Config)
     local boxSize = 2; 
     
     Slider.Name = NeverLose.RandomString(); 
-    Slider.Parent = Handler 
+    Slider.Parent = Handler.Container or Handler
     Slider.BackgroundColor3 = Color3.fromRGB(26, 28, 36) 
     Slider.BackgroundTransparency = 1.000 
     Slider.BorderColor3 = Color3.fromRGB(0, 0, 0) 
@@ -414,7 +530,7 @@ function handle:AddSlider(Config)
     Slider.ClipsDescendants = false 
     Slider.Size = UDim2.new(0, Config.Size, 0, 18) 
     Slider.ZIndex = ZINdex + 13 
-    Slider.LayoutOrder = -(#Handler:GetChildren() + 5); 
+    Slider.LayoutOrder = -(#(Handler.Container or Handler):GetChildren() + 5); 
     
     UICorner.CornerRadius = UDim.new(0, 4) 
     UICorner.Parent = Slider 
@@ -501,15 +617,15 @@ function handle:AddSlider(Config)
     UICorner_5.CornerRadius = UDim.new(1, 0) 
     UICorner_5.Parent = Frame 
     
-    local LoadText = LPH_NO_VIRTUALIZE(function() 
+    local LoadText = function() 
         if Config.Nums[Config.Default] then 
             ValueLabel.Text = Config.Nums[Config.Default] 
         else 
             ValueLabel.Text = tostring(Config.Default)..tostring(Config.Type); 
         end; 
-    end); 
+    end; 
     
-    ValueLabel.FocusLost:Connect(LPH_NO_VIRTUALIZE(function() 
+    ValueLabel.FocusLost:Connect(function() 
         local OutVal = NeverLose:ParseInput(ValueLabel.Text , true); 
         if OutVal then 
             local rx = math.clamp(OutVal , Config.Min , Config.Max); 
@@ -525,9 +641,9 @@ function handle:AddSlider(Config)
         else 
             LoadText() 
         end; 
-    end)); 
+    end); 
     
-    SliderLib.SetRender = LPH_NO_VIRTUALIZE(function(value) 
+    SliderLib.SetRender = function(value) 
         if value then 
             NeverLose.PlayAnimate(ValueFrame,SlowyTween,{ BackgroundTransparency = 0, Size = UDim2.new(0, SliderLib.MaximumSize + boxSize, 0, 18) }); 
             NeverLose.PlayAnimate(UIStroke,SlowyTween,{ Transparency = 0.650 }); 
@@ -543,7 +659,7 @@ function handle:AddSlider(Config)
             NeverLose.PlayAnimate(SlideMoving,SlowyTween,{ BackgroundTransparency = 1, Size = UDim2.new(0, 0, 1, 0) }); 
             NeverLose.PlayAnimate(Frame,SlowyTween,{ BackgroundTransparency = 1 }); 
         end; 
-    end); 
+    end; 
     
     SliderLib.SetRender(Signal:GetValue()); 
     SliderLib.Signal = Signal:Connect(SliderLib.SetRender); 
@@ -559,24 +675,24 @@ function handle:AddSlider(Config)
     end; 
     
     local IsHold = false; 
-    SlideMain.InputBegan:Connect(LPH_NO_VIRTUALIZE(function(Input) 
+    SlideMain.InputBegan:Connect(function(Input) 
         if Input.UserInputType == Enum.UserInputType.MouseButton1 or Input.UserInputType == Enum.UserInputType.Touch then 
             IsHold = true 
             Update(Input) 
         end 
-    end)) 
+    end) 
     
-    SlideMain.InputEnded:Connect(LPH_NO_VIRTUALIZE(function(Input) 
+    SlideMain.InputEnded:Connect(function(Input) 
         if Input.UserInputType == Enum.UserInputType.MouseButton1 or Input.UserInputType == Enum.UserInputType.Touch then 
             IsHold = false 
         end 
-    end)) 
+    end) 
     
-    UserInputService.InputChanged:Connect(LPH_NO_VIRTUALIZE(function(Input) 
+    UserInputService.InputChanged:Connect(function(Input) 
         if IsHold and (Input.UserInputType == Enum.UserInputType.MouseMovement or Input.UserInputType == Enum.UserInputType.Touch) then 
             Update(Input) 
         end; 
-    end)); 
+    end); 
     
     function SliderLib:GetValue() 
         return Config.Default; 
@@ -599,13 +715,15 @@ function handle:AddSlider(Config)
 end; 
 
 -- Keybind (Назначение клавиш)
-function handle:AddKeybind(Config) 
+function NeverLose:AddKeybind(Handler, Config) 
     Config = NeverLose:ProcessParams(Config,{ 
         Default = nil, 
         Blacklist = {}, 
         Callback = EmptyFunction, 
         Flag = nil 
     }); 
+    
+    local Signal = Handler.Signal or {GetValue = function() return true end, Connect = function() return {Disconnect = function() end} end}
     
     local KeybindLib = {}; 
     local Keybind = Instance.new("Frame") 
@@ -614,14 +732,14 @@ function handle:AddKeybind(Config)
     local ValueLabel = Instance.new("TextLabel") 
     
     Keybind.Name = NeverLose.RandomString(); 
-    Keybind.Parent = Handler 
+    Keybind.Parent = Handler.Container or Handler
     Keybind.BackgroundColor3 = Color3.fromRGB(26, 28, 36) 
     Keybind.BorderColor3 = Color3.fromRGB(0, 0, 0) 
     Keybind.BorderSizePixel = 0 
     Keybind.ClipsDescendants = true 
     Keybind.Size = UDim2.new(0, 45, 0, 18) 
     Keybind.ZIndex = ZINdex + 13 
-    Keybind.LayoutOrder = -(#Handler:GetChildren() + 5); 
+    Keybind.LayoutOrder = -(#(Handler.Container or Handler):GetChildren() + 5); 
     
     UICorner.CornerRadius = UDim.new(0, 4) 
     UICorner.Parent = Keybind 
@@ -647,7 +765,7 @@ function handle:AddKeybind(Config)
     ValueLabel.TextSize = 10.000 
     ValueLabel.TextTransparency = 0.500 
     
-    KeybindLib.SetRender = LPH_NO_VIRTUALIZE(function(value) 
+    KeybindLib.SetRender = function(value) 
         if value then 
             NeverLose.PlayAnimate(Keybind,SlowyTween, { BackgroundTransparency = 0 }) 
             NeverLose.PlayAnimate(UIStroke,SlowyTween, { Transparency = 0.650 }) 
@@ -657,16 +775,16 @@ function handle:AddKeybind(Config)
             NeverLose.PlayAnimate(UIStroke,SlowyTween, { Transparency = 1 }) 
             NeverLose.PlayAnimate(ValueLabel,SlowyTween, { TextTransparency = 1 }) 
         end; 
-    end); 
+    end; 
     
     function KeybindLib:Update() 
         local size = TextService:GetTextSize(ValueLabel.Text,ValueLabel.TextSize,ValueLabel.Font,Vector2.new(math.huge,math.huge)); 
         NeverLose.PlayAnimate(Keybind , SlowyTween , { Size = UDim2.new(0, size.X + 7, 0, 18) }) 
     end; 
     
-    local IsBlacklist = LPH_NO_VIRTUALIZE(function(v) 
+    local IsBlacklist = function(v) 
         return Config.Blacklist and (Config.Blacklist[v] or table.find(Config.Blacklist,v)) 
-    end); 
+    end; 
     
     KeybindLib:Update() 
     KeybindLib.SetRender(Signal:GetValue()); 
@@ -718,11 +836,14 @@ function handle:AddKeybind(Config)
 end; 
 
 -- ColorPicker (Палитра цвета)
-function handle:AddColorPicker(Config) 
+function NeverLose:AddColorPicker(Handler, Config) 
     Config = NeverLose:ProcessParams(Config , { 
         Default = Color3.fromRGB(255, 255, 255), 
         Callback = EmptyFunction, 
+        Flag = nil
     }); 
+    
+    local Signal = Handler.Signal or {GetValue = function() return true end, Connect = function() return {Disconnect = function() end} end}
     
     if typeof(Config.Default) == 'string' then 
         Config.Default = Color3.fromHex(Config.Default:gsub('#','')); 
@@ -736,7 +857,7 @@ function handle:AddColorPicker(Config)
     local UICorner_2 = Instance.new("UICorner") 
     
     ColorPicker.Name = NeverLose.RandomString(); 
-    ColorPicker.Parent = Handler 
+    ColorPicker.Parent = Handler.Container or Handler
     ColorPicker.BackgroundColor3 = Config.Default; 
     ColorPicker.BackgroundTransparency = 0 
     ColorPicker.BorderColor3 = Color3.fromRGB(0, 0, 0) 
@@ -744,7 +865,7 @@ function handle:AddColorPicker(Config)
     ColorPicker.ClipsDescendants = true 
     ColorPicker.Size = UDim2.new(0, 18, 0, 18) 
     ColorPicker.ZIndex = ZINdex + 13 
-    ColorPicker.LayoutOrder = -(#Handler:GetChildren() + 5); 
+    ColorPicker.LayoutOrder = -(#(Handler.Container or Handler):GetChildren() + 5); 
     
     UICorner.CornerRadius = UDim.new(0, 4) 
     UICorner.Parent = ColorPicker 
@@ -776,7 +897,7 @@ function handle:AddColorPicker(Config)
     end; 
     
     local signal; 
-    NeverLose:CreateInput(ColorPicker , LPH_NO_VIRTUALIZE(function() 
+    NeverLose:CreateInput(ColorPicker , function() 
         if signal then signal:Disconnect(); signal = nil; end; 
         BackendM.SetRender(true); 
         signal = UserInputService.InputBegan:Connect(function(Input) 
@@ -787,9 +908,9 @@ function handle:AddColorPicker(Config)
                 end; 
             end; 
         end) 
-    end)); 
+    end); 
     
-    ColorPickerLib.SetRender = LPH_NO_VIRTUALIZE(function(value) 
+    ColorPickerLib.SetRender = function(value) 
         if value then 
             NeverLose.PlayAnimate(ColorPicker , SlowyTween , { BackgroundTransparency = 0 }) 
             NeverLose.PlayAnimate(UIStroke , SlowyTween , { Transparency = 0.650 }) 
@@ -799,7 +920,7 @@ function handle:AddColorPicker(Config)
             NeverLose.PlayAnimate(UIStroke , SlowyTween , { Transparency = 1 }) 
             NeverLose.PlayAnimate(ImageLabel , SlowyTween , { ImageTransparency = 1 }) 
         end; 
-    end); 
+    end; 
     
     ColorPickerLib.SetRender(Signal:GetValue()); 
     Signal:Connect(ColorPickerLib.SetRender); 
@@ -821,13 +942,15 @@ function handle:AddColorPicker(Config)
 end; 
 
 -- Option Window & Button (Кнопка доп. настроек / Окно опций)
-function handle:AddOption(GearIcon) 
+function NeverLose:AddOption(Handler, GearIcon) 
+    local Signal = Handler.Signal or {GetValue = function() return true end, Connect = function() return {Disconnect = function() end} end}
+    
     local Option = Instance.new("Frame") 
     local Icon = Instance.new("TextLabel") 
     local UICorner = Instance.new("UICorner") 
     
     Option.Name = NeverLose.RandomString(); 
-    Option.Parent = Handler 
+    Option.Parent = Handler.Container or Handler
     Option.BackgroundColor3 = Color3.fromRGB(39, 40, 49) 
     Option.BackgroundTransparency = 1.000 
     Option.BorderColor3 = Color3.fromRGB(0, 0, 0) 
@@ -835,7 +958,7 @@ function handle:AddOption(GearIcon)
     Option.ClipsDescendants = true 
     Option.Size = UDim2.new(0, 20, 0, 18) 
     Option.ZIndex = ZINdex + 13 
-    Option.LayoutOrder = -(#Handler:GetChildren() + 5); 
+    Option.LayoutOrder = -(#(Handler.Container or Handler):GetChildren() + 5); 
     
     Icon.Name = NeverLose.RandomString(); 
     Icon.Parent = Option 
@@ -847,8 +970,8 @@ function handle:AddOption(GearIcon)
     Icon.Position = UDim2.new(0.5, 0, 0.5, 0) 
     Icon.Size = UDim2.new(1, 0, 1, 0) 
     Icon.ZIndex = ZINdex + 14 
-    Icon.FontFace = NeverLose.BuiltInBold 
-    Icon.Text = (GearIcon == 1 and 'gear') or (GearIcon == 2 and 'chevron-large-right') or "three-dots-horizontal"; 
+    Icon.Font = Enum.Font.GothamBold 
+    Icon.Text = (GearIcon == 1 and '⚙') or (GearIcon == 2 and '▶') or "⋮"; 
     Icon.TextColor3 = Color3.fromRGB(223, 223, 223) 
     Icon.TextSize = 16.000 
     Icon.TextTransparency = 0.400 
@@ -859,17 +982,17 @@ function handle:AddOption(GearIcon)
     
     local Window = NeverLose:CreateOptionWindow(Option , ZINdex + 13); 
     local reciveSignal; 
-    Window.SetRender = LPH_NO_VIRTUALIZE(function(value) 
+    Window.SetRender = function(value) 
         if value then 
             NeverLose.PlayAnimate(Icon , SlowyTween , { TextTransparency = 0.400 }) 
         else 
             NeverLose.PlayAnimate(Icon , SlowyTween , { TextTransparency = 1 }) 
         end; 
-    end); 
+    end; 
     Window.SetRender(Signal:GetValue()); 
     Signal:Connect(Window.SetRender); 
     
-    local bthg = NeverLose:CreateInput(Option , LPH_NO_VIRTUALIZE(function() 
+    local bthg = NeverLose:CreateInput(Option , function() 
         if reciveSignal then reciveSignal:Disconnect(); reciveSignal = nil; end; 
         Window.Signal:SetValue(true); 
         reciveSignal = UserInputService.InputBegan:Connect(function(Input) 
@@ -880,23 +1003,23 @@ function handle:AddOption(GearIcon)
                 end 
             end 
         end) 
-    end)); 
+    end); 
     
-    NeverLose:AddSignal(bthg.MouseEnter:Connect(LPH_NO_VIRTUALIZE(function() 
+    NeverLose:AddSignal(bthg.MouseEnter:Connect(function() 
         NeverLose.PlayAnimate(Option , SlowyTween , { BackgroundTransparency = 0.5 }) 
         NeverLose.PlayAnimate(Icon , SlowyTween , { TextTransparency = 0.25 }) 
-    end))); 
+    end)); 
     
-    NeverLose:AddSignal(bthg.MouseLeave:Connect(LPH_NO_VIRTUALIZE(function() 
+    NeverLose:AddSignal(bthg.MouseLeave:Connect(function() 
         NeverLose.PlayAnimate(Option , SlowyTween , { BackgroundTransparency = 1.000 }) 
         NeverLose.PlayAnimate(Icon , SlowyTween , { TextTransparency = 0.400 }) 
-    end))); 
+    end)); 
     
     return Window; 
 end; 
 
 -- TextInput (Поле ввода текста)
-function handle:AddTextInput(Config) 
+function NeverLose:AddTextInput(Handler, Config) 
     Config = NeverLose:ProcessParams(Config , { 
         Default = "", 
         Placeholder = "Placeholder", 
@@ -906,6 +1029,8 @@ function handle:AddTextInput(Config)
         Numeric = false, 
     }); 
     
+    local Signal = Handler.Signal or {GetValue = function() return true end, Connect = function() return {Disconnect = function() end} end}
+    
     local TextBoxLib = {}; 
     local TextInput = Instance.new("Frame") 
     local UICorner = Instance.new("UICorner") 
@@ -913,14 +1038,14 @@ function handle:AddTextInput(Config)
     local TextBox = Instance.new("TextBox") 
     
     TextInput.Name = NeverLose.RandomString(); 
-    TextInput.Parent = Handler 
+    TextInput.Parent = Handler.Container or Handler
     TextInput.BackgroundColor3 = Color3.fromRGB(26, 28, 36) 
     TextInput.BorderColor3 = Color3.fromRGB(0, 0, 0) 
     TextInput.BorderSizePixel = 0 
     TextInput.ClipsDescendants = true 
     TextInput.Size = UDim2.new(0, Config.Size, 0, 18) 
     TextInput.ZIndex = ZINdex + 13 
-    TextInput.LayoutOrder = -(#Handler:GetChildren() + 5); 
+    TextInput.LayoutOrder = -(#(Handler.Container or Handler):GetChildren() + 5); 
     
     UICorner.CornerRadius = UDim.new(0, 4) 
     UICorner.Parent = TextInput 
@@ -942,7 +1067,7 @@ function handle:AddTextInput(Config)
     TextBox.ClearTextOnFocus = false 
     TextBox.ZIndex = ZINdex + 14 
     
-    TextBoxLib.SetRender = LPH_NO_VIRTUALIZE(function(value) 
+    TextBoxLib.SetRender = function(value) 
         if value then 
             NeverLose.PlayAnimate(TextInput, SlowyTween, { BackgroundTransparency = 0 }) 
             NeverLose.PlayAnimate(UIStroke, SlowyTween, { Transparency = 0.650 }) 
@@ -952,12 +1077,12 @@ function handle:AddTextInput(Config)
             NeverLose.PlayAnimate(UIStroke, SlowyTween, { Transparency = 1 }) 
             NeverLose.PlayAnimate(TextBox, SlowyTween, { TextTransparency = 1 }) 
         end 
-    end) 
+    end 
     
     TextBoxLib.SetRender(Signal:GetValue()) 
     Signal:Connect(TextBoxLib.SetRender) 
     
-    TextBox.FocusLost:Connect(LPH_NO_VIRTUALIZE(function() 
+    TextBox.FocusLost:Connect(function() 
         if Config.Numeric then 
             local num = tonumber(TextBox.Text) 
             if num then 
@@ -969,7 +1094,7 @@ function handle:AddTextInput(Config)
             Config.Default = TextBox.Text 
         end 
         Config.Callback(Config.Default) 
-    end)) 
+    end) 
     
     function TextBoxLib:GetValue() 
         return Config.Default 
@@ -997,16 +1122,17 @@ local MainWindow = NeverLose:CreateWindow({
     ToggleKey = Enum.KeyCode.RightShift
 })
 
--- Создаем контейнер для элементов
-local Handler = MainWindow.PageContainer
-local Signal = { 
+-- Создаем контейнер для элементов с методами
+local Handler = {}
+Handler.Container = MainWindow.PageContainer
+Handler.Signal = { 
     GetValue = function() return true end,
     Connect = function() return {Disconnect = function() end} end,
     SetValue = function() end
 }
 
 -- Создаем различные GUI элементы
-local toggle = Handler:AddToggle({
+local toggle = NeverLose:AddToggle(Handler, {
     Default = true,
     Flag = "Toggle1",
     Callback = function(value)
@@ -1014,7 +1140,7 @@ local toggle = Handler:AddToggle({
     end
 })
 
-local slider = Handler:AddSlider({
+local slider = NeverLose:AddSlider(Handler, {
     Default = 50,
     Min = 0,
     Max = 100,
@@ -1026,7 +1152,7 @@ local slider = Handler:AddSlider({
     end
 })
 
-local keybind = Handler:AddKeybind({
+local keybind = NeverLose:AddKeybind(Handler, {
     Default = "F",
     Blacklist = {"Escape", "P"},
     Flag = "Keybind1",
@@ -1035,7 +1161,7 @@ local keybind = Handler:AddKeybind({
     end
 })
 
-local colorpicker = Handler:AddColorPicker({
+local colorpicker = NeverLose:AddColorPicker(Handler, {
     Default = Color3.fromRGB(255, 0, 0),
     Flag = "Color1",
     Callback = function(color)
@@ -1043,7 +1169,7 @@ local colorpicker = Handler:AddColorPicker({
     end
 })
 
-local textinput = Handler:AddTextInput({
+local textinput = NeverLose:AddTextInput(Handler, {
     Default = "Hello",
     Placeholder = "Type here...",
     Flag = "Text1",
