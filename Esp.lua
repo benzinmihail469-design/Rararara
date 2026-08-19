@@ -227,39 +227,6 @@ function NeverLose:LoadConfig(name)
     end
 end
 
--- Функция для создания контейнера с методами
-function NeverLose:CreateHandler(container)
-    local handler = {}
-    handler.Container = container
-    
-    -- Создаем методы для элементов
-    handler.AddToggle = function(self, Config)
-        return self:AddToggle(Config)
-    end
-    
-    handler.AddSlider = function(self, Config)
-        return self:AddSlider(Config)
-    end
-    
-    handler.AddKeybind = function(self, Config)
-        return self:AddKeybind(Config)
-    end
-    
-    handler.AddColorPicker = function(self, Config)
-        return self:AddColorPicker(Config)
-    end
-    
-    handler.AddTextInput = function(self, Config)
-        return self:AddTextInput(Config)
-    end
-    
-    handler.AddOption = function(self, GearIcon)
-        return self:AddOption(GearIcon)
-    end
-    
-    return handler
-end
-
 -- Настройки
 NeverLose.AccentColor = Color3.fromRGB(0, 150, 255)
 NeverLose.Flags = {}
@@ -331,6 +298,15 @@ function NeverLose:CreateWindow(Config)
     PageContainer.Size = UDim2.new(1, -(SidebarWidth + 10), 1, -(HeaderHeight + FooterHeight + 10))
     PageContainer.BackgroundTransparency = 1
 
+    -- Создаем список для автоматического размещения элементов
+    local ListLayout = Instance.new("UIListLayout")
+    ListLayout.Parent = PageContainer
+    ListLayout.FillDirection = Enum.FillDirection.Vertical
+    ListLayout.HorizontalAlignment = Enum.HorizontalAlignment.Left
+    ListLayout.VerticalAlignment = Enum.VerticalAlignment.Top
+    ListLayout.Padding = UDim.new(0, 5)
+    ListLayout.SortOrder = Enum.SortOrder.LayoutOrder
+
     -- Dragging Logic
     local Dragging, DragStart, StartPos
     TopBar.InputBegan:Connect(function(input)
@@ -386,20 +362,27 @@ function NeverLose:AddToggle(Handler, Config)
     
     local Signal = Handler.Signal or {GetValue = function() return true end, Connect = function() return {Disconnect = function() end} end}
     
+    -- Создаем контейнер для элемента
+    local ElementContainer = Instance.new("Frame")
+    ElementContainer.Parent = Handler.Container
+    ElementContainer.Size = UDim2.new(1, 0, 0, 25)
+    ElementContainer.BackgroundTransparency = 1
+    
     local Toggle = Instance.new("Frame") 
     local UICorner = Instance.new("UICorner") 
     local Circle = Instance.new("Frame") 
     local UICorner_2 = Instance.new("UICorner") 
     
     Toggle.Name = NeverLose.RandomString(); 
-    Toggle.Parent = Handler.Container or Handler
+    Toggle.Parent = ElementContainer
+    Toggle.AnchorPoint = Vector2.new(0, 0.5)
+    Toggle.Position = UDim2.new(0, 0, 0.5, 0)
     Toggle.BackgroundColor3 = Color3.fromRGB(10, 13, 21) 
     Toggle.BorderColor3 = Color3.fromRGB(0, 0, 0) 
     Toggle.BorderSizePixel = 0 
     Toggle.ClipsDescendants = true 
     Toggle.Size = UDim2.new(0, 30, 0, 18) 
     Toggle.ZIndex = ZINdex + 13 
-    Toggle.LayoutOrder = -(#(Handler.Container or Handler):GetChildren() + 5); 
     
     UICorner.CornerRadius = UDim.new(1, 0) 
     UICorner.Parent = Toggle 
@@ -417,6 +400,18 @@ function NeverLose:AddToggle(Handler, Config)
     
     UICorner_2.CornerRadius = UDim.new(1, 0) 
     UICorner_2.Parent = Circle 
+    
+    -- Добавляем лейбл
+    local Label = Instance.new("TextLabel")
+    Label.Parent = ElementContainer
+    Label.Position = UDim2.new(0, 35, 0, 0)
+    Label.Size = UDim2.new(1, -35, 1, 0)
+    Label.BackgroundTransparency = 1
+    Label.Text = Config.Label or "Toggle"
+    Label.TextColor3 = Color3.fromRGB(255, 255, 255)
+    Label.Font = Enum.Font.GothamMedium
+    Label.TextSize = 12
+    Label.TextXAlignment = Enum.TextXAlignment.Left
     
     local ToggleLib = { Root = Toggle }; 
     
@@ -481,6 +476,7 @@ function NeverLose:AddSlider(Handler, Config)
         Flag = nil, 
         Size = 125, 
         Callback = EmptyFunction, 
+        Label = "Slider"
     }); 
     
     local Signal = Handler.Signal or {GetValue = function() return true end, Connect = function() return {Disconnect = function() end} end}
@@ -506,6 +502,24 @@ function NeverLose:AddSlider(Handler, Config)
         end; 
     end; 
     
+    -- Создаем контейнер
+    local ElementContainer = Instance.new("Frame")
+    ElementContainer.Parent = Handler.Container
+    ElementContainer.Size = UDim2.new(1, 0, 0, 25)
+    ElementContainer.BackgroundTransparency = 1
+    
+    -- Добавляем лейбл
+    local Label = Instance.new("TextLabel")
+    Label.Parent = ElementContainer
+    Label.Position = UDim2.new(0, 0, 0, 0)
+    Label.Size = UDim2.new(1, -Config.Size - 50, 1, 0)
+    Label.BackgroundTransparency = 1
+    Label.Text = Config.Label
+    Label.TextColor3 = Color3.fromRGB(255, 255, 255)
+    Label.Font = Enum.Font.GothamMedium
+    Label.TextSize = 12
+    Label.TextXAlignment = Enum.TextXAlignment.Left
+    
     local Slider = Instance.new("Frame") 
     local UICorner = Instance.new("UICorner") 
     local ValueFrame = Instance.new("Frame") 
@@ -522,7 +536,9 @@ function NeverLose:AddSlider(Handler, Config)
     local boxSize = 2; 
     
     Slider.Name = NeverLose.RandomString(); 
-    Slider.Parent = Handler.Container or Handler
+    Slider.Parent = ElementContainer
+    Slider.AnchorPoint = Vector2.new(1, 0.5)
+    Slider.Position = UDim2.new(1, 0, 0.5, 0)
     Slider.BackgroundColor3 = Color3.fromRGB(26, 28, 36) 
     Slider.BackgroundTransparency = 1.000 
     Slider.BorderColor3 = Color3.fromRGB(0, 0, 0) 
@@ -530,7 +546,6 @@ function NeverLose:AddSlider(Handler, Config)
     Slider.ClipsDescendants = false 
     Slider.Size = UDim2.new(0, Config.Size, 0, 18) 
     Slider.ZIndex = ZINdex + 13 
-    Slider.LayoutOrder = -(#(Handler.Container or Handler):GetChildren() + 5); 
     
     UICorner.CornerRadius = UDim.new(0, 4) 
     UICorner.Parent = Slider 
@@ -720,26 +735,47 @@ function NeverLose:AddKeybind(Handler, Config)
         Default = nil, 
         Blacklist = {}, 
         Callback = EmptyFunction, 
-        Flag = nil 
+        Flag = nil,
+        Label = "Keybind"
     }); 
     
     local Signal = Handler.Signal or {GetValue = function() return true end, Connect = function() return {Disconnect = function() end} end}
     
     local KeybindLib = {}; 
+    
+    -- Создаем контейнер
+    local ElementContainer = Instance.new("Frame")
+    ElementContainer.Parent = Handler.Container
+    ElementContainer.Size = UDim2.new(1, 0, 0, 25)
+    ElementContainer.BackgroundTransparency = 1
+    
+    -- Добавляем лейбл
+    local Label = Instance.new("TextLabel")
+    Label.Parent = ElementContainer
+    Label.Position = UDim2.new(0, 0, 0, 0)
+    Label.Size = UDim2.new(1, -55, 1, 0)
+    Label.BackgroundTransparency = 1
+    Label.Text = Config.Label
+    Label.TextColor3 = Color3.fromRGB(255, 255, 255)
+    Label.Font = Enum.Font.GothamMedium
+    Label.TextSize = 12
+    Label.TextXAlignment = Enum.TextXAlignment.Left
+    
     local Keybind = Instance.new("Frame") 
     local UICorner = Instance.new("UICorner") 
     local UIStroke = Instance.new("UIStroke") 
     local ValueLabel = Instance.new("TextLabel") 
     
     Keybind.Name = NeverLose.RandomString(); 
-    Keybind.Parent = Handler.Container or Handler
+    Keybind.Parent = ElementContainer
+    Keybind.AnchorPoint = Vector2.new(1, 0.5)
+    Keybind.Position = UDim2.new(1, 0, 0.5, 0)
     Keybind.BackgroundColor3 = Color3.fromRGB(26, 28, 36) 
     Keybind.BorderColor3 = Color3.fromRGB(0, 0, 0) 
     Keybind.BorderSizePixel = 0 
     Keybind.ClipsDescendants = true 
     Keybind.Size = UDim2.new(0, 45, 0, 18) 
     Keybind.ZIndex = ZINdex + 13 
-    Keybind.LayoutOrder = -(#(Handler.Container or Handler):GetChildren() + 5); 
     
     UICorner.CornerRadius = UDim.new(0, 4) 
     UICorner.Parent = Keybind 
@@ -840,7 +876,8 @@ function NeverLose:AddColorPicker(Handler, Config)
     Config = NeverLose:ProcessParams(Config , { 
         Default = Color3.fromRGB(255, 255, 255), 
         Callback = EmptyFunction, 
-        Flag = nil
+        Flag = nil,
+        Label = "Color"
     }); 
     
     local Signal = Handler.Signal or {GetValue = function() return true end, Connect = function() return {Disconnect = function() end} end}
@@ -850,6 +887,25 @@ function NeverLose:AddColorPicker(Handler, Config)
     end; 
     
     local ColorPickerLib = {}; 
+    
+    -- Создаем контейнер
+    local ElementContainer = Instance.new("Frame")
+    ElementContainer.Parent = Handler.Container
+    ElementContainer.Size = UDim2.new(1, 0, 0, 25)
+    ElementContainer.BackgroundTransparency = 1
+    
+    -- Добавляем лейбл
+    local Label = Instance.new("TextLabel")
+    Label.Parent = ElementContainer
+    Label.Position = UDim2.new(0, 0, 0, 0)
+    Label.Size = UDim2.new(1, -25, 1, 0)
+    Label.BackgroundTransparency = 1
+    Label.Text = Config.Label
+    Label.TextColor3 = Color3.fromRGB(255, 255, 255)
+    Label.Font = Enum.Font.GothamMedium
+    Label.TextSize = 12
+    Label.TextXAlignment = Enum.TextXAlignment.Left
+    
     local ColorPicker = Instance.new("Frame") 
     local UICorner = Instance.new("UICorner") 
     local UIStroke = Instance.new("UIStroke") 
@@ -857,7 +913,9 @@ function NeverLose:AddColorPicker(Handler, Config)
     local UICorner_2 = Instance.new("UICorner") 
     
     ColorPicker.Name = NeverLose.RandomString(); 
-    ColorPicker.Parent = Handler.Container or Handler
+    ColorPicker.Parent = ElementContainer
+    ColorPicker.AnchorPoint = Vector2.new(1, 0.5)
+    ColorPicker.Position = UDim2.new(1, 0, 0.5, 0)
     ColorPicker.BackgroundColor3 = Config.Default; 
     ColorPicker.BackgroundTransparency = 0 
     ColorPicker.BorderColor3 = Color3.fromRGB(0, 0, 0) 
@@ -865,7 +923,6 @@ function NeverLose:AddColorPicker(Handler, Config)
     ColorPicker.ClipsDescendants = true 
     ColorPicker.Size = UDim2.new(0, 18, 0, 18) 
     ColorPicker.ZIndex = ZINdex + 13 
-    ColorPicker.LayoutOrder = -(#(Handler.Container or Handler):GetChildren() + 5); 
     
     UICorner.CornerRadius = UDim.new(0, 4) 
     UICorner.Parent = ColorPicker 
@@ -950,7 +1007,7 @@ function NeverLose:AddOption(Handler, GearIcon)
     local UICorner = Instance.new("UICorner") 
     
     Option.Name = NeverLose.RandomString(); 
-    Option.Parent = Handler.Container or Handler
+    Option.Parent = Handler.Container
     Option.BackgroundColor3 = Color3.fromRGB(39, 40, 49) 
     Option.BackgroundTransparency = 1.000 
     Option.BorderColor3 = Color3.fromRGB(0, 0, 0) 
@@ -958,7 +1015,7 @@ function NeverLose:AddOption(Handler, GearIcon)
     Option.ClipsDescendants = true 
     Option.Size = UDim2.new(0, 20, 0, 18) 
     Option.ZIndex = ZINdex + 13 
-    Option.LayoutOrder = -(#(Handler.Container or Handler):GetChildren() + 5); 
+    Option.LayoutOrder = -(#Handler.Container:GetChildren() + 5); 
     
     Icon.Name = NeverLose.RandomString(); 
     Icon.Parent = Option 
@@ -1026,26 +1083,47 @@ function NeverLose:AddTextInput(Handler, Config)
         Callback = print, 
         Flag = nil, 
         Size = 100, 
-        Numeric = false, 
+        Numeric = false,
+        Label = "Text Input"
     }); 
     
     local Signal = Handler.Signal or {GetValue = function() return true end, Connect = function() return {Disconnect = function() end} end}
     
     local TextBoxLib = {}; 
+    
+    -- Создаем контейнер
+    local ElementContainer = Instance.new("Frame")
+    ElementContainer.Parent = Handler.Container
+    ElementContainer.Size = UDim2.new(1, 0, 0, 25)
+    ElementContainer.BackgroundTransparency = 1
+    
+    -- Добавляем лейбл
+    local Label = Instance.new("TextLabel")
+    Label.Parent = ElementContainer
+    Label.Position = UDim2.new(0, 0, 0, 0)
+    Label.Size = UDim2.new(1, -(Config.Size + 5), 1, 0)
+    Label.BackgroundTransparency = 1
+    Label.Text = Config.Label
+    Label.TextColor3 = Color3.fromRGB(255, 255, 255)
+    Label.Font = Enum.Font.GothamMedium
+    Label.TextSize = 12
+    Label.TextXAlignment = Enum.TextXAlignment.Left
+    
     local TextInput = Instance.new("Frame") 
     local UICorner = Instance.new("UICorner") 
     local UIStroke = Instance.new("UIStroke") 
     local TextBox = Instance.new("TextBox") 
     
     TextInput.Name = NeverLose.RandomString(); 
-    TextInput.Parent = Handler.Container or Handler
+    TextInput.Parent = ElementContainer
+    TextInput.AnchorPoint = Vector2.new(1, 0.5)
+    TextInput.Position = UDim2.new(1, 0, 0.5, 0)
     TextInput.BackgroundColor3 = Color3.fromRGB(26, 28, 36) 
     TextInput.BorderColor3 = Color3.fromRGB(0, 0, 0) 
     TextInput.BorderSizePixel = 0 
     TextInput.ClipsDescendants = true 
     TextInput.Size = UDim2.new(0, Config.Size, 0, 18) 
     TextInput.ZIndex = ZINdex + 13 
-    TextInput.LayoutOrder = -(#(Handler.Container or Handler):GetChildren() + 5); 
     
     UICorner.CornerRadius = UDim.new(0, 4) 
     UICorner.Parent = TextInput 
@@ -1135,6 +1213,7 @@ Handler.Signal = {
 local toggle = NeverLose:AddToggle(Handler, {
     Default = true,
     Flag = "Toggle1",
+    Label = "Включить функцию",
     Callback = function(value)
         print("Toggle: " .. tostring(value))
     end
@@ -1147,6 +1226,7 @@ local slider = NeverLose:AddSlider(Handler, {
     Type = "%",
     Rounding = 0,
     Flag = "Slider1",
+    Label = "Громкость",
     Callback = function(value)
         print("Slider: " .. tostring(value))
     end
@@ -1156,6 +1236,7 @@ local keybind = NeverLose:AddKeybind(Handler, {
     Default = "F",
     Blacklist = {"Escape", "P"},
     Flag = "Keybind1",
+    Label = "Клавиша",
     Callback = function(key)
         print("Keybind: " .. tostring(key))
     end
@@ -1164,6 +1245,7 @@ local keybind = NeverLose:AddKeybind(Handler, {
 local colorpicker = NeverLose:AddColorPicker(Handler, {
     Default = Color3.fromRGB(255, 0, 0),
     Flag = "Color1",
+    Label = "Цвет",
     Callback = function(color)
         print("Color selected")
     end
@@ -1174,6 +1256,7 @@ local textinput = NeverLose:AddTextInput(Handler, {
     Placeholder = "Type here...",
     Flag = "Text1",
     Size = 150,
+    Label = "Текст",
     Callback = function(text)
         print("Text: " .. text)
     end
