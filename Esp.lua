@@ -35,6 +35,7 @@ local Library do
     local MathFloor = math.floor
 
     local TableInsert = table.insert
+    local TableRemove = table.remove
     local TableClone = table.clone
     local TableUnpack = table.unpack
 
@@ -117,7 +118,6 @@ local Library do
         end
     end
 
-    -- Tweening
     local Tween = { } do
         Tween.__index = Tween
 
@@ -139,6 +139,7 @@ local Library do
 
         Tween.GetProperty = function(self, Item)
             Item = Item or self.Item 
+
             if Item:IsA("Frame") then
                 return { "BackgroundTransparency" }
             elseif Item:IsA("TextLabel") or Item:IsA("TextButton") then
@@ -155,7 +156,8 @@ local Library do
         end
 
         Tween.FadeItem = function(self, Item, Property, Visibility, Speed)
-            local Item = Item or self.Item 
+            Item = Item or self.Item 
+
             local OldTransparency = Item[Property]
             Item[Property] = Visibility and 1 or OldTransparency
 
@@ -174,7 +176,6 @@ local Library do
         end
     end
 
-    -- Instances
     local Instances = { } do
         Instances.__index = Instances
 
@@ -201,6 +202,15 @@ local Library do
 
         Instances.Connect = function(self, Event, Callback, Name)
             if not self.Instance or not self.Instance[Event] then return end
+
+            if IsMobile then
+                if Event == "MouseButton1Down" or Event == "MouseButton1Click" then 
+                    Event = "TouchTap"
+                elseif Event == "MouseButton2Down" or Event == "MouseButton2Click" then 
+                    Event = "TouchLongPress"
+                end
+            end
+
             return Library:Connect(self.Instance[Event], Callback, Name)
         end
 
@@ -214,14 +224,24 @@ local Library do
             self.Instance:Destroy()
             self = nil
         end
+
+        Instances.OnHover = function(self, Function)
+            if not self.Instance then return end
+            return Library:Connect(self.Instance.MouseEnter, Function)
+        end
+
+        Instances.OnHoverLeave = function(self, Function)
+            if not self.Instance then return end
+            return Library:Connect(self.Instance.MouseLeave, Function)
+        end
     end
 
-    -- Font Setup
-    Library.Font = Font.new("rbxassetid://12187365364", Enum.FontWeight.SemiBold, Enum.FontStyle.Normal)
+    local SemiBold = Font.new("rbxassetid://12187365364", Enum.FontWeight.SemiBold, Enum.FontStyle.Normal)
+    Library.Font = SemiBold
 
     Library.Holder = Instances:Create("ScreenGui", {
         Parent = gethui(),
-        Name = "LibraryHolder",
+        Name = "\0",
         ZIndexBehavior = Enum.ZIndexBehavior.Global,
         DisplayOrder = 2,
         ResetOnSpawn = false
@@ -229,29 +249,11 @@ local Library do
 
     Library.UnusedHolder = Instances:Create("ScreenGui", {
         Parent = gethui(),
-        Name = "UnusedHolder",
+        Name = "\0",
         ZIndexBehavior = Enum.ZIndexBehavior.Global,
         Enabled = false,
         ResetOnSpawn = false
     })
-
-    Library.Unload = function(self)
-        for Index, Value in self.Connections do 
-            Value.Connection:Disconnect()
-        end
-
-        if self.Holder then self.Holder:Clean() end
-        if self.UnusedHolder then self.UnusedHolder:Clean() end
-
-        for _, Object in pairs(self.ToClean) do
-            if Object and Object.Parent then
-                Object:Destroy()
-            end
-        end
-
-        Library = nil 
-        getgenv().Library = nil
-    end
 
     Library.Thread = function(self, Function)
         local NewThread = coroutine.create(Function)
@@ -284,229 +286,219 @@ local Library do
         self.ThemeMap[Item] = ThemeData
     end
 
-    -- Window Creation
+    Library.MakeBlurred = function(self, Item, Window)
+        Item = Item.Instance
+        local DepthOfField = Instances:Create("DepthOfFieldEffect", {
+            Parent = Lighting, Enabled = true, FarIntensity = 0, FocusDistance = 0, InFocusRadius = 1000, NearIntensity = 1
+        })
+        TableInsert(self.ToClean, DepthOfField.Instance)
+    end
+
+    -- Window Structure & Section Engine
     Library.Window = function(self, Data)
         Data = Data or { }
 
         local Window = {
-            Name = Data.Name or Data.name or "Window",
-            SubName = Data.SubName or Data.subname or "Fine-tuning for sure wins",
-            Logo = Data.Logo or Data.logo or "1l20959262762131",
-            
+            Name = Data.Name or "Window",
+            SubName = Data.SubName or "Fine-tuning for sure wins",
+            Logo = Data.Logo or "1l20959262762131",
             Pages = { },
-            Items = { },
-            IsOpen = true
+            IsOpen = true,
+            SelectedPage = nil
         }
 
-        local Items = { } do
-            Items["MainFrame"] = Instances:Create("Frame", {
-                Parent = Library.Holder.Instance,
-                Name = "MainFrame",
-                BorderColor3 = FromRGB(0, 0, 0),
-                AnchorPoint = Vector2New(0.5, 0.5),
-                BackgroundTransparency = 0.12,
-                Position = UDim2New(0.5, 0, 0.5, 0),
-                Size = UDim2New(0, 677, 0, 500),
-                ZIndex = 2,
-                BorderSizePixel = 0,
-                BackgroundColor3 = FromRGB(27, 25, 29)
-            })  Items["MainFrame"]:AddToTheme({BackgroundColor3 = "Background"})
+        local Items = { }
+        Items["MainFrame"] = Instances:Create("Frame", {
+            Parent = Library.Holder.Instance,
+            Name = "\0",
+            BorderColor3 = FromRGB(0, 0, 0),
+            AnchorPoint = Vector2New(0.5, 0.5),
+            BackgroundTransparency = 0.12,
+            Position = UDim2New(0.5, 0, 0.5, 0),
+            Size = UDim2New(0, 677, 0, 644),
+            ZIndex = 2,
+            BorderSizePixel = 0,
+            BackgroundColor3 = FromRGB(27, 25, 29)
+        })  Items["MainFrame"]:AddToTheme({BackgroundColor3 = "Background"})
 
-            Items["LeftTabs"] = Instances:Create("ScrollingFrame", {
-                Parent = Items["MainFrame"].Instance,
-                Name = "LeftTabs",
-                Visible = true,
-                BorderColor3 = FromRGB(0, 0, 0),
-                BackgroundTransparency = 0.15,
-                Size = UDim2New(0, 210, 1, -55),
-                Position = UDim2New(0, 0, 0, 55),
-                ZIndex = 2,
-                BorderSizePixel = 0,
-                ScrollBarThickness = 0,
-                CanvasSize = UDim2New(0, 0, 0, 0),
-                AutomaticCanvasSize = Enum.AutomaticSize.Y,
-                BackgroundColor3 = FromRGB(27, 25, 29)
-            })  Items["LeftTabs"]:AddToTheme({BackgroundColor3 = "Background"})
+        Instances:Create("UICorner", { Parent = Items["MainFrame"].Instance, CornerRadius = UDimNew(0, 6) })
 
-            Instances:Create("UIListLayout", {
-                Parent = Items["LeftTabs"].Instance,
-                Padding = UDimNew(0, 6),
-                SortOrder = Enum.SortOrder.LayoutOrder
-            })
-            
-            Instances:Create("UIPadding", {
-                Parent = Items["LeftTabs"].Instance,
-                PaddingTop = UDimNew(0, 10),
-                PaddingBottom = UDimNew(0, 10),
-                PaddingRight = UDimNew(0, 10),
-                PaddingLeft = UDimNew(0, 10)
-            })
+        -- Header Setup
+        Items["Title"] = Instances:Create("TextLabel", {
+            Parent = Items["MainFrame"].Instance,
+            FontFace = Library.Font,
+            TextColor3 = FromRGB(240, 240, 240),
+            Text = Window.Name,
+            Size = UDim2New(0, 200, 0, 20),
+            Position = UDim2New(0, 15, 0, 12),
+            BackgroundTransparency = 1,
+            TextSize = 16,
+            TextXAlignment = Enum.TextXAlignment.Left
+        })  Items["Title"]:AddToTheme({TextColor3 = "Text"})
 
-            Items["Title"] = Instances:Create("TextLabel", {
-                Parent = Items["MainFrame"].Instance,
-                FontFace = Library.Font,
-                TextColor3 = FromRGB(240, 240, 240),
-                Text = Window.Name,
-                Size = UDim2New(0, 0, 0, 15),
-                BackgroundTransparency = 1,
-                Position = UDim2New(0, 15, 0, 13),
-                TextXAlignment = Enum.TextXAlignment.Left,
-                ZIndex = 2,
-                TextSize = 16
-            })  Items["Title"]:AddToTheme({TextColor3 = "Text"})
+        -- Navigation Container (Tabs)
+        Items["TabHolder"] = Instances:Create("Frame", {
+            Parent = Items["MainFrame"].Instance,
+            Name = "TabHolder",
+            Size = UDim2New(0, 180, 1, -50),
+            Position = UDim2New(0, 10, 0, 40),
+            BackgroundTransparency = 1
+        })
 
-            Items["Content"] = Instances:Create("Frame", {
-                Parent = Items["MainFrame"].Instance,
-                Name = "Content",
-                BackgroundTransparency = 1,
-                Position = UDim2New(0, 210, 0, 55),
-                Size = UDim2New(1, -210, 1, -55),
-                ZIndex = 2
-            })
+        Instances:Create("UIListLayout", {
+            Parent = Items["TabHolder"].Instance,
+            Padding = UDimNew(0, 6),
+            SortOrder = Enum.SortOrder.LayoutOrder
+        })
 
-            Items["CloseButton"] = Instances:Create("TextButton", {
-                Parent = Items["MainFrame"].Instance,
-                Text = "X",
-                FontFace = Library.Font,
-                TextColor3 = FromRGB(240, 240, 240),
-                AnchorPoint = Vector2New(1, 0),
-                Position = UDim2New(1, -10, 0, 10),
-                Size = UDim2New(0, 32, 0, 32),
-                ZIndex = 3,
-                BackgroundColor3 = FromRGB(27, 25, 29)
-            })  Items["CloseButton"]:AddToTheme({BackgroundColor3 = "Element", TextColor3 = "Text"})
-            
-            Items["CloseButton"]:Connect("MouseButton1Down", function()
-                Library:Unload()
-            end)
+        -- Content Container (Pages & Sections)
+        Items["PageContainer"] = Instances:Create("Frame", {
+            Parent = Items["MainFrame"].Instance,
+            Name = "PageContainer",
+            Size = UDim2New(1, -210, 1, -50),
+            Position = UDim2New(0, 200, 0, 40),
+            BackgroundTransparency = 1
+        })
 
-            Items["SettingsButton"] = Instances:Create("TextButton", {
-                Parent = Items["MainFrame"].Instance,
-                Text = "",
-                AnchorPoint = Vector2New(1, 0),
-                Position = UDim2New(1, -48, 0, 10),
-                Size = UDim2New(0, 32, 0, 32),
-                ZIndex = 2,
-                BackgroundColor3 = FromRGB(27, 25, 29)
-            })  Items["SettingsButton"]:AddToTheme({BackgroundColor3 = "Element"})
-
-            Items["SettingsIcon"] = Instances:Create("ImageLabel", {
-                Parent = Items["SettingsButton"].Instance,
-                ImageColor3 = FromRGB(240, 240, 240),
-                ImageTransparency = 0.3,
-                Size = UDim2New(0, 16, 0, 16),
-                AnchorPoint = Vector2New(0.5, 0.5),
-                Image = "rbxassetid://130510492706892",
-                BackgroundTransparency = 1,
-                Position = UDim2New(0.5, 0, 0.5, 0),
-                ZIndex = 3
-            })  Items["SettingsIcon"]:AddToTheme({ImageColor3 = "Text"})
-        end
-
-        -- ========================================================
-        -- СЕКЦИИ ДЛЯ ВКЛАДОК (Tab Section Header)
-        -- ========================================================
-        function Window:TabSection(Title)
-            local SectionHeader = Instances:Create("Frame", {
-                Parent = Items["LeftTabs"].Instance,
-                Name = Title .. "_SectionHeader",
-                Size = UDim2New(1, 0, 0, 22),
-                BackgroundTransparency = 1,
-                ZIndex = 3
-            })
-
-            local Label = Instances:Create("TextLabel", {
-                Parent = SectionHeader.Instance,
-                FontFace = Library.Font,
-                TextColor3 = FromRGB(120, 120, 130),
-                Text = Title:upper(),
-                Size = UDim2New(1, 0, 1, 0),
-                BackgroundTransparency = 1,
-                TextSize = 11,
-                TextXAlignment = Enum.TextXAlignment.Left,
-                ZIndex = 3
-            })  Label:AddToTheme({TextColor3 = "Accent"})
-
-            return SectionHeader
-        end
-
-        -- Создание страницы (вкладки)
+        -- Window:Page Builder
         function Window:Page(PageData)
             PageData = PageData or {}
-            local PageName = PageData.Name or "Tab"
-
             local Page = {
-                Name = PageName,
+                Name = PageData.Name or "Tab",
+                Sections = {},
                 Window = Window
             }
 
-            local TabButton = Instances:Create("TextButton", {
-                Parent = Items["LeftTabs"].Instance,
-                Name = PageName .. "_Button",
-                FontFace = Library.Font,
-                Text = "",
+            -- Tab Button
+            Page.Button = Instances:Create("TextButton", {
+                Parent = Items["TabHolder"].Instance,
                 Size = UDim2New(1, 0, 0, 32),
-                BackgroundColor3 = FromRGB(16, 16, 18),
-                BackgroundTransparency = 0.5,
-                AutoButtonColor = false,
-                ZIndex = 3
-            })  TabButton:AddToTheme({BackgroundColor3 = "Element"})
-
-            Instances:Create("UICorner", {
-                Parent = TabButton.Instance,
-                CornerRadius = UDimNew(0, 6)
-            })
-
-            local TabTitle = Instances:Create("TextLabel", {
-                Parent = TabButton.Instance,
+                Text = Page.Name,
                 FontFace = Library.Font,
-                TextColor3 = FromRGB(200, 200, 200),
-                Text = PageName,
-                Size = UDim2New(1, -10, 1, 0),
-                Position = UDim2New(0, 10, 0, 0),
-                BackgroundTransparency = 1,
-                TextXAlignment = Enum.TextXAlignment.Left,
-                TextSize = 13,
-                ZIndex = 4
-            })  TabTitle:AddToTheme({TextColor3 = "Text"})
+                TextSize = 14,
+                TextColor3 = FromRGB(180, 180, 180),
+                BackgroundColor3 = FromRGB(20, 20, 24),
+                BorderSizePixel = 0,
+                AutoButtonColor = false
+            }) Page.Button:AddToTheme({BackgroundColor3 = "Section Background 2"})
 
-            local PageFrame = Instances:Create("ScrollingFrame", {
-                Parent = Items["Content"].Instance,
-                Name = PageName .. "_Frame",
-                Size = UDim2New(1, -20, 1, -20),
-                Position = UDim2New(0, 10, 0, 10),
+            Instances:Create("UICorner", { Parent = Page.Button.Instance, CornerRadius = UDimNew(0, 4) })
+
+            -- Page Main View Frame
+            Page.Frame = Instances:Create("ScrollingFrame", {
+                Parent = Items["PageContainer"].Instance,
+                Size = UDim2New(1, 0, 1, 0),
                 BackgroundTransparency = 1,
                 Visible = false,
-                ScrollBarThickness = 2,
                 BorderSizePixel = 0,
+                ScrollBarThickness = 2,
                 CanvasSize = UDim2New(0, 0, 0, 0),
                 AutomaticCanvasSize = Enum.AutomaticSize.Y
             })
 
-            Instances:Create("UIListLayout", {
-                Parent = PageFrame.Instance,
-                Padding = UDimNew(0, 10),
-                SortOrder = Enum.SortOrder.LayoutOrder
+            -- Column Grids for Sections
+            Page.LeftColumn = Instances:Create("Frame", {
+                Parent = Page.Frame.Instance,
+                Size = UDim2New(0.49, 0, 1, 0),
+                Position = UDim2New(0, 0, 0, 0),
+                BackgroundTransparency = 1
             })
 
+            Page.RightColumn = Instances:Create("Frame", {
+                Parent = Page.Frame.Instance,
+                Size = UDim2New(0.49, 0, 1, 0),
+                Position = UDim2New(0.51, 0, 0, 0),
+                BackgroundTransparency = 1
+            })
+
+            local LeftList = Instances:Create("UIListLayout", { Parent = Page.LeftColumn.Instance, Padding = UDimNew(0, 10) })
+            local RightList = Instances:Create("UIListLayout", { Parent = Page.RightColumn.Instance, Padding = UDimNew(0, 10) })
+
+            -- Select Page Mechanics
             function Page:Select()
-                for _, p in pairs(Window.Pages) do
-                    p.Frame.Instance.Visible = false
-                    p.Button:Tween(nil, {BackgroundTransparency = 0.5})
+                for _, P in pairs(Window.Pages) do
+                    P.Frame.Instance.Visible = false
+                    P.Button:Tween(nil, {TextColor3 = FromRGB(180, 180, 180)})
                 end
-                PageFrame.Instance.Visible = true
-                TabButton:Tween(nil, {BackgroundTransparency = 0})
+                Page.Frame.Instance.Visible = true
+                Page.Button:Tween(nil, {TextColor3 = Library.Theme.Accent})
+                Window.SelectedPage = Page
             end
 
-            TabButton:Connect("MouseButton1Down", function()
+            Page.Button:Connect("MouseButton1Down", function()
                 Page:Select()
             end)
 
-            Page.Frame = PageFrame
-            Page.Button = TabButton
+            -- Built-in Section Builder (Cекции около вкладок)
+            function Page:Section(SecData)
+                SecData = SecData or {}
+                local Section = {
+                    Name = SecData.Name or "Section",
+                    Side = SecData.Side or "Left" -- "Left" or "Right"
+                }
+
+                local ParentColumn = (Section.Side == "Right" and Page.RightColumn.Instance) or Page.LeftColumn.Instance
+
+                -- Main Section Card
+                Section.Frame = Instances:Create("Frame", {
+                    Parent = ParentColumn,
+                    Size = UDim2New(1, 0, 0, 40),
+                    AutomaticSize = Enum.AutomaticSize.Y,
+                    BackgroundColor3 = FromRGB(16, 16, 20),
+                    BorderSizePixel = 0
+                }) Section.Frame:AddToTheme({BackgroundColor3 = "Section Background"})
+
+                Instances:Create("UICorner", { Parent = Section.Frame.Instance, CornerRadius = UDimNew(0, 5) })
+
+                -- Section Title Bar
+                Section.Header = Instances:Create("Frame", {
+                    Parent = Section.Frame.Instance,
+                    Size = UDim2New(1, 0, 0, 26),
+                    BackgroundColor3 = FromRGB(24, 24, 28),
+                    BorderSizePixel = 0
+                }) Section.Header:AddToTheme({BackgroundColor3 = "Section Top"})
+
+                Instances:Create("UICorner", { Parent = Section.Header.Instance, CornerRadius = UDimNew(0, 5) })
+
+                Section.Title = Instances:Create("TextLabel", {
+                    Parent = Section.Header.Instance,
+                    Text = Section.Name,
+                    FontFace = Library.Font,
+                    TextSize = 13,
+                    TextColor3 = FromRGB(220, 220, 220),
+                    Size = UDim2New(1, -10, 1, 0),
+                    Position = UDim2New(0, 10, 0, 0),
+                    BackgroundTransparency = 1,
+                    TextXAlignment = Enum.TextXAlignment.Left
+                }) Section.Title:AddToTheme({TextColor3 = "Text"})
+
+                -- Section Content Container
+                Section.Container = Instances:Create("Frame", {
+                    Parent = Section.Frame.Instance,
+                    Size = UDim2New(1, 0, 0, 0),
+                    Position = UDim2New(0, 0, 0, 30),
+                    AutomaticSize = Enum.AutomaticSize.Y,
+                    BackgroundTransparency = 1
+                })
+
+                Instances:Create("UIListLayout", {
+                    Parent = Section.Container.Instance,
+                    Padding = UDimNew(0, 6),
+                    SortOrder = Enum.SortOrder.LayoutOrder
+                })
+
+                Instances:Create("UIPadding", {
+                    Parent = Section.Container.Instance,
+                    PaddingLeft = UDimNew(0, 8),
+                    PaddingRight = UDimNew(0, 8),
+                    PaddingBottom = UDimNew(0, 8)
+                })
+
+                TableInsert(Page.Sections, Section)
+                return Section
+            end
 
             TableInsert(Window.Pages, Page)
-
             if #Window.Pages == 1 then
                 Page:Select()
             end
@@ -517,3 +509,5 @@ local Library do
         return Window
     end
 end
+
+return Library
