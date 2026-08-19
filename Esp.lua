@@ -1,235 +1,277 @@
+-- Services
 local UserInputService = game:GetService("UserInputService")
-local CoreGui = cloneref and cloneref(game:GetService("CoreGui")) or game:GetService("CoreGui")
 local TweenService = game:GetService("TweenService")
+local Players = game:GetService("Players")
 
-local gethui = gethui or function()
-    return CoreGui
-end
+local LocalPlayer = Players.LocalPlayer
+local TweenInfoFast = TweenInfo.new(0.2, Enum.EasingStyle.Quart, Enum.EasingDirection.Out)
 
-local FontSemiBold = Font.new("rbxassetid://12187365364", Enum.FontWeight.SemiBold, Enum.FontStyle.Normal)
+-- Dimensions Configuration
+local MainWidth = 530  -- телефонный размер
+local MainHeight = 320
+local SidebarWidth = 140
+local HeaderHeight = 36
+local FooterHeight = 42
 
--- Создаем основной ScreenGui
+-- Parent Container Detection
+local TargetParent = (gethui and gethui()) or game:GetService("CoreGui") or LocalPlayer:WaitForChild("PlayerGui")
+
+-- 1. ScreenGui Initialization
 local ScreenGui = Instance.new("ScreenGui")
-ScreenGui.Name = "DarkHub_UI"
-ScreenGui.Parent = gethui()
+ScreenGui.Name = "NeverloseMainWindow"
 ScreenGui.ResetOnSpawn = false
-ScreenGui.ZIndexBehavior = Enum.ZIndexBehavior.Global
+ScreenGui.ZIndexBehavior = Enum.ZIndexBehavior.Sibling
+ScreenGui.Parent = TargetParent
 
--- Главное окно
-local MainFrame = Instance.new("Frame")
-MainFrame.Name = "MainFrame"
-MainFrame.Parent = ScreenGui
-MainFrame.AnchorPoint = Vector2.new(0.5, 0.5)
-MainFrame.Position = UDim2.new(0.5, 0, 0.5, 0)
-MainFrame.Size = UDim2.new(0, 677, 0, 500)
-MainFrame.BackgroundColor3 = Color3.fromRGB(12, 12, 14)
-MainFrame.BorderSizePixel = 0
+-- 2. Main Window Frame
+local MainWindow = Instance.new("Frame")
+MainWindow.Name = "MainFrame"
+MainWindow.Size = UDim2.new(0, MainWidth, 0, MainHeight)
+MainWindow.Position = UDim2.new(0.5, -MainWidth / 2, 0.5, -MainHeight / 2)
+MainWindow.BackgroundColor3 = Color3.fromRGB(10, 12, 18)
+MainWindow.BorderSizePixel = 0
+MainWindow.ClipsDescendants = true
+MainWindow.Parent = ScreenGui
 
 local MainCorner = Instance.new("UICorner")
-MainCorner.CornerRadius = UDimNew(0, 8)
-MainCorner.Parent = MainFrame
+MainCorner.CornerRadius = UDim.new(0, 10)
+MainCorner.Parent = MainWindow
 
--- Верхняя панель (Шапка)
-local TopBar = Instance.new("Frame")
-TopBar.Name = "TopBar"
-TopBar.Parent = MainFrame
-TopBar.Size = UDim2.new(1, 0, 0, 45)
-TopBar.BackgroundColor3 = Color3.fromRGB(16, 16, 18)
-TopBar.BorderSizePixel = 0
+local MainStroke = Instance.new("UIStroke")
+MainStroke.Color = Color3.fromRGB(28, 33, 46)
+MainStroke.Thickness = 1
+MainStroke.Parent = MainWindow
 
-local TopCorner = Instance.new("UICorner")
-TopCorner.CornerRadius = UDimNew(0, 8)
-TopCorner.Parent = TopBar
+-- 3. Left Sidebar (Navigation & Profile)
+local Sidebar = Instance.new("Frame")
+Sidebar.Name = "Sidebar"
+Sidebar.Size = UDim2.new(0, SidebarWidth, 1, 0)
+Sidebar.Position = UDim2.new(0, 0, 0, 0)
+Sidebar.BackgroundColor3 = Color3.fromRGB(13, 16, 24)
+Sidebar.BorderSizePixel = 0
+Sidebar.Parent = MainWindow
 
-local TitleLabel = Instance.new("TextLabel")
-TitleLabel.Parent = TopBar
-TitleLabel.FontFace = FontSemiBold
-TitleLabel.Text = "DARK HUB"
-TitleLabel.TextColor3 = Color3.fromRGB(235, 235, 235)
-TitleLabel.TextSize = 16
-TitleLabel.TextXAlignment = Enum.TextXAlignment.Left
-TitleLabel.Position = UDim2.new(0, 15, 0, 0)
-TitleLabel.Size = UDim2.new(0, 200, 1, 0)
-TitleLabel.BackgroundTransparency = 1
+local SidebarCorner = Instance.new("UICorner")
+SidebarCorner.CornerRadius = UDim.new(0, 10)
+SidebarCorner.Parent = Sidebar
 
--- Левое меню вкладок
-local LeftTabs = Instance.new("ScrollingFrame")
-LeftTabs.Name = "LeftTabs"
-LeftTabs.Parent = MainFrame
-LeftTabs.Position = UDim2.new(0, 0, 0, 45)
-LeftTabs.Size = UDim2.new(0, 180, 1, -45)
-LeftTabs.BackgroundColor3 = Color3.fromRGB(10, 10, 12)
-LeftTabs.BorderSizePixel = 0
-LeftTabs.ScrollBarThickness = 0
+-- Brand Logo
+local LogoText = Instance.new("TextLabel")
+LogoText.Name = "Logo"
+LogoText.Size = UDim2.new(1, -20, 0, HeaderHeight)
+LogoText.Position = UDim2.new(0, 12, 0, 0)
+LogoText.BackgroundTransparency = 1
+LogoText.Text = "NEVERLOSE"
+LogoText.Font = Enum.Font.GothamBold
+LogoText.TextSize = 14
+LogoText.TextColor3 = Color3.fromRGB(0, 162, 255)
+LogoText.TextXAlignment = Enum.TextXAlignment.Left
+LogoText.Parent = Sidebar
 
-local TabsLayout = Instance.new("UIListLayout")
-TabsLayout.Parent = LeftTabs
-TabsLayout.Padding = UDim.new(0, 6)
-TabsLayout.SortOrder = Enum.SortOrder.LayoutOrder
+-- Tab Navigation Container
+local TabContainer = Instance.new("Frame")
+TabContainer.Name = "TabContainer"
+TabContainer.Size = UDim2.new(1, -16, 1, -(HeaderHeight + FooterHeight + 20))
+TabContainer.Position = UDim2.new(0, 8, 0, HeaderHeight + 5)
+TabContainer.BackgroundTransparency = 1
+TabContainer.Parent = Sidebar
 
-local TabsPadding = Instance.new("UIPadding")
-TabsPadding.Parent = LeftTabs
-TabsPadding.PaddingTop = UDim.new(0, 10)
-TabsPadding.PaddingLeft = UDim.new(0, 10)
-TabsPadding.PaddingRight = UDim.new(0, 10)
+local TabListLayout = Instance.new("UIListLayout")
+TabListLayout.SortOrder = Enum.SortOrder.LayoutOrder
+TabListLayout.Padding = UDim.new(0, 4)
+TabListLayout.Parent = TabContainer
 
--- Контейнер для страниц
-local Content = Instance.new("Frame")
-Content.Name = "Content"
-Content.Parent = MainFrame
-Content.Position = UDim2.new(0, 180, 0, 45)
-Content.Size = UDim2.new(1, -180, 1, -45)
-Content.BackgroundTransparency = 1
+-- User Profile Widget (Footer)
+local UserProfile = Instance.new("Frame")
+UserProfile.Name = "UserProfile"
+UserProfile.Size = UDim2.new(1, -16, 0, FooterHeight)
+UserProfile.Position = UDim2.new(0, 8, 1, -(FooterHeight + 8))
+UserProfile.BackgroundColor3 = Color3.fromRGB(18, 22, 32)
+UserProfile.BorderSizePixel = 0
+UserProfile.Parent = Sidebar
 
--- Функционал управления окном
-local ActivePage = nil
+local UserProfileCorner = Instance.new("UICorner")
+UserProfileCorner.CornerRadius = UDim.new(0, 6)
+UserProfileCorner.Parent = UserProfile
 
--- Функция добавления текста-категории в меню слева
-local function AddTabSection(text)
-    local Label = Instance.new("TextLabel")
-    Label.Parent = LeftTabs
-    Label.FontFace = FontSemiBold
-    Label.Text = text:upper()
-    Label.TextColor3 = Color3.fromRGB(110, 110, 115)
-    Label.TextSize = 10
-    Label.TextXAlignment = Enum.TextXAlignment.Left
-    Label.Size = UDim2.new(1, 0, 0, 20)
-    Label.BackgroundTransparency = 1
+local AvatarSize = FooterHeight - 12
+local AvatarImage = Instance.new("ImageLabel")
+AvatarImage.Name = "Avatar"
+AvatarImage.Size = UDim2.new(0, AvatarSize, 0, AvatarSize)
+AvatarImage.Position = UDim2.new(0, 6, 0.5, -AvatarSize / 2)
+AvatarImage.BackgroundColor3 = Color3.fromRGB(28, 33, 46)
+AvatarImage.Image = Players:GetUserThumbnailAsync(LocalPlayer.UserId, Enum.ThumbnailType.HeadShot, Enum.ThumbnailSize.Size420x420)
+AvatarImage.Parent = UserProfile
+
+local AvatarCorner = Instance.new("UICorner")
+AvatarCorner.CornerRadius = UDim.new(1, 0)
+AvatarCorner.Parent = AvatarImage
+
+local UsernameLabel = Instance.new("TextLabel")
+UsernameLabel.Name = "Username"
+UsernameLabel.Size = UDim2.new(1, -(AvatarSize + 16), 0, 15)
+UsernameLabel.Position = UDim2.new(0, AvatarSize + 12, 0, 6)
+UsernameLabel.BackgroundTransparency = 1
+UsernameLabel.Text = LocalPlayer.DisplayName
+UsernameLabel.Font = Enum.Font.GothamBold
+UsernameLabel.TextSize = 11
+UsernameLabel.TextColor3 = Color3.fromRGB(240, 245, 255)
+UsernameLabel.TextXAlignment = Enum.TextXAlignment.Left
+UsernameLabel.Parent = UserProfile
+
+local SubLabel = Instance.new("TextLabel")
+SubLabel.Name = "Subscription"
+SubLabel.Size = UDim2.new(1, -(AvatarSize + 16), 0, 13)
+SubLabel.Position = UDim2.new(0, AvatarSize + 12, 0, 21)
+SubLabel.BackgroundTransparency = 1
+SubLabel.Text = "Lifetime"
+SubLabel.Font = Enum.Font.Gotham
+SubLabel.TextSize = 10
+SubLabel.TextColor3 = Color3.fromRGB(0, 162, 255)
+SubLabel.TextXAlignment = Enum.TextXAlignment.Left
+SubLabel.Parent = UserProfile
+
+-- 4. Header Bar
+local Header = Instance.new("Frame")
+Header.Name = "Header"
+Header.Size = UDim2.new(1, -SidebarWidth, 0, HeaderHeight)
+Header.Position = UDim2.new(0, SidebarWidth, 0, 0)
+Header.BackgroundTransparency = 1
+Header.Parent = MainWindow
+
+local ActiveTabTitle = Instance.new("TextLabel")
+ActiveTabTitle.Name = "ActiveTabTitle"
+ActiveTabTitle.Size = UDim2.new(0, 150, 1, 0)
+ActiveTabTitle.Position = UDim2.new(0, 15, 0, 0)
+ActiveTabTitle.BackgroundTransparency = 1
+ActiveTabTitle.Text = "RAGEBOT"
+ActiveTabTitle.Font = Enum.Font.GothamBold
+ActiveTabTitle.TextSize = 13
+ActiveTabTitle.TextColor3 = Color3.fromRGB(240, 245, 255)
+ActiveTabTitle.TextXAlignment = Enum.TextXAlignment.Left
+ActiveTabTitle.Parent = Header
+
+local WatermarkInfo = Instance.new("TextLabel")
+WatermarkInfo.Name = "WatermarkInfo"
+WatermarkInfo.Size = UDim2.new(0, 180, 1, 0)
+WatermarkInfo.Position = UDim2.new(1, -195, 0, 0)
+WatermarkInfo.BackgroundTransparency = 1
+WatermarkInfo.Text = "neverlose.cc | roblox"
+WatermarkInfo.Font = Enum.Font.GothamMedium
+WatermarkInfo.TextSize = 11
+WatermarkInfo.TextColor3 = Color3.fromRGB(90, 98, 115)
+WatermarkInfo.TextXAlignment = Enum.TextXAlignment.Right
+WatermarkInfo.Parent = Header
+
+-- 5. Content Container (Two-Column Layout)
+local ContentContainer = Instance.new("Frame")
+ContentContainer.Name = "ContentContainer"
+ContentContainer.Size = UDim2.new(1, -(SidebarWidth + 20), 1, -(HeaderHeight + 10))
+ContentContainer.Position = UDim2.new(0, SidebarWidth + 10, 0, HeaderHeight)
+ContentContainer.BackgroundTransparency = 1
+ContentContainer.Parent = MainWindow
+
+local LeftColumn = Instance.new("ScrollingFrame")
+LeftColumn.Name = "LeftColumn"
+LeftColumn.Size = UDim2.new(0.5, -5, 1, 0)
+LeftColumn.Position = UDim2.new(0, 0, 0, 0)
+LeftColumn.BackgroundTransparency = 1
+LeftColumn.ScrollBarThickness = 2
+LeftColumn.ScrollBarImageColor3 = Color3.fromRGB(0, 162, 255)
+LeftColumn.Parent = ContentContainer
+
+local RightColumn = Instance.new("ScrollingFrame")
+RightColumn.Name = "RightColumn"
+RightColumn.Size = UDim2.new(0.5, -5, 1, 0)
+RightColumn.Position = UDim2.new(0.5, 5, 0, 0)
+RightColumn.BackgroundTransparency = 1
+RightColumn.ScrollBarThickness = 2
+RightColumn.ScrollBarImageColor3 = Color3.fromRGB(0, 162, 255)
+RightColumn.Parent = ContentContainer
+
+-- Column Layout Setup
+for _, col in ipairs({LeftColumn, RightColumn}) do
+    local layout = Instance.new("UIListLayout")
+    layout.SortOrder = Enum.SortOrder.LayoutOrder
+    layout.Padding = UDim.new(0, 10)
+    layout.Parent = col
 end
 
--- Функция создания новой вкладки
-local function CreatePage(name)
-    local Page = {}
-    
-    -- Кнопка в меню
+-- 6. Helper Function: Create Tabs
+local ActiveTabButton = nil
+
+local function CreateTab(name)
     local TabButton = Instance.new("TextButton")
-    TabButton.Parent = LeftTabs
-    TabButton.FontFace = FontSemiBold
-    TabButton.Text = name
-    TabButton.TextColor3 = Color3.fromRGB(180, 180, 185)
-    TabButton.TextSize = 13
-    TabButton.TextXAlignment = Enum.TextXAlignment.Left
+    TabButton.Name = name .. "Tab"
     TabButton.Size = UDim2.new(1, 0, 0, 30)
-    TabButton.BackgroundColor3 = Color3.fromRGB(20, 20, 24)
+    TabButton.BackgroundColor3 = Color3.fromRGB(18, 22, 32)
     TabButton.BackgroundTransparency = 1
+    TabButton.Text = ""
     TabButton.AutoButtonColor = false
+    TabButton.Parent = TabContainer
 
-    local TabPadding = Instance.new("UIPadding")
-    TabPadding.Parent = TabButton
-    TabPadding.PaddingLeft = UDim.new(0, 10)
+    local BtnCorner = Instance.new("UICorner")
+    BtnCorner.CornerRadius = UDim.new(0, 6)
+    BtnCorner.Parent = TabButton
 
-    local TabCorner = Instance.new("UICorner")
-    TabCorner.CornerRadius = UDim.new(0, 5)
-    TabCorner.Parent = TabButton
+    local Title = Instance.new("TextLabel")
+    Title.Size = UDim2.new(1, -12, 1, 0)
+    Title.Position = UDim2.new(0, 12, 0, 0)
+    Title.BackgroundTransparency = 1
+    Title.Text = name
+    Title.Font = Enum.Font.GothamMedium
+    Title.TextSize = 11
+    Title.TextColor3 = Color3.fromRGB(110, 118, 135)
+    Title.TextXAlignment = Enum.TextXAlignment.Left
+    Title.Parent = TabButton
 
-    -- Контейнер содержимого вкладки
-    local PageContainer = Instance.new("ScrollingFrame")
-    PageContainer.Parent = Content
-    PageContainer.Size = UDim2.new(1, -20, 1, -20)
-    PageContainer.Position = UDim2.new(0, 10, 0, 10)
-    PageContainer.BackgroundTransparency = 1
-    PageContainer.Visible = false
-    PageContainer.ScrollBarThickness = 2
-    PageContainer.ScrollBarImageColor3 = Color3.fromRGB(0, 116, 224)
-    PageContainer.AutomaticCanvasSize = Enum.AutomaticSize.Y
-
-    -- Две колонки (Левая и Правая)
-    local LeftColumn = Instance.new("Frame")
-    LeftColumn.Parent = PageContainer
-    LeftColumn.Size = UDim2.new(0.49, 0, 1, 0)
-    LeftColumn.BackgroundTransparency = 1
-
-    local RightColumn = Instance.new("Frame")
-    RightColumn.Parent = PageContainer
-    RightColumn.Position = UDim2.new(0.51, 0, 0, 0)
-    RightColumn.Size = UDim2.new(0.49, 0, 1, 0)
-    RightColumn.BackgroundTransparency = 1
-
-    local LeftLayout = Instance.new("UIListLayout")
-    LeftLayout.Parent = LeftColumn
-    LeftLayout.Padding = UDim.new(0, 10)
-
-    local RightLayout = Instance.new("UIListLayout")
-    RightLayout.Parent = RightColumn
-    RightLayout.Padding = UDim.new(0, 10)
-
-    -- Функция переключения
-    local function Select()
-        if ActivePage then
-            ActivePage.Container.Visible = false
-            ActivePage.Button.BackgroundTransparency = 1
-            ActivePage.Button.TextColor3 = Color3.fromRGB(180, 180, 185)
+    TabButton.MouseButton1Click:Connect(function()
+        if ActiveTabButton then
+            TweenService:Create(ActiveTabButton, TweenInfoFast, {BackgroundTransparency = 1}):Play()
+            TweenService:Create(ActiveTabButton:FindFirstChildOfClass("TextLabel"), TweenInfoFast, {TextColor3 = Color3.fromRGB(110, 118, 135)}):Play()
         end
-        PageContainer.Visible = true
-        TabButton.BackgroundTransparency = 0
-        TabButton.TextColor3 = Color3.fromRGB(255, 255, 255)
-        ActivePage = { Container = PageContainer, Button = TabButton }
-    end
+        ActiveTabButton = TabButton
+        ActiveTabTitle.Text = string.upper(name)
+        TweenService:Create(TabButton, TweenInfoFast, {BackgroundTransparency = 0}):Play()
+        TweenService:Create(Title, TweenInfoFast, {TextColor3 = Color3.fromRGB(240, 245, 255)}):Play()
+    end)
 
-    TabButton.MouseButton1Click:Connect(Select)
-
-    -- Функция создания секции внутри страницы
-    function Page:Section(title, side)
-        local Target = (side == "Right" and RightColumn) or LeftColumn
-
-        local SectionBox = Instance.new("Frame")
-        SectionBox.Parent = Target
-        SectionBox.Size = UDim2.new(1, 0, 0, 0)
-        SectionBox.AutomaticSize = Enum.AutomaticSize.Y
-        SectionBox.BackgroundColor3 = Color3.fromRGB(16, 16, 20)
-        SectionBox.BorderSizePixel = 0
-
-        local SecCorner = Instance.new("UICorner")
-        SecCorner.CornerRadius = UDim.new(0, 6)
-        SecCorner.Parent = SectionBox
-
-        local SecTopBar = Instance.new("Frame")
-        SecTopBar.Parent = SectionBox
-        SecTopBar.Size = UDim2.new(1, 0, 0, 26)
-        SecTopBar.BackgroundColor3 = Color3.fromRGB(24, 24, 28)
-        SecTopBar.BorderSizePixel = 0
-
-        local SecTopCorner = Instance.new("UICorner")
-        SecTopCorner.CornerRadius = UDim.new(0, 6)
-        SecTopCorner.Parent = SecTopBar
-
-        local SecTitle = Instance.new("TextLabel")
-        SecTitle.Parent = SecTopBar
-        SecTitle.FontFace = FontSemiBold
-        SecTitle.Text = title
-        SecTitle.TextColor3 = Color3.fromRGB(220, 220, 220)
-        SecTitle.TextSize = 12
-        SecTitle.TextXAlignment = Enum.TextXAlignment.Left
-        SecTitle.Position = UDim2.new(0, 10, 0, 0)
-        SecTitle.Size = UDim2.new(1, -10, 1, 0)
-        SecTitle.BackgroundTransparency = 1
-
-        local ElementsHolder = Instance.new("Frame")
-        ElementsHolder.Name = "Elements"
-        ElementsHolder.Parent = SectionBox
-        ElementsHolder.Position = UDim2.new(0, 0, 0, 26)
-        ElementsHolder.Size = UDim2.new(1, 0, 0, 0)
-        ElementsHolder.AutomaticSize = Enum.AutomaticSize.Y
-        ElementsHolder.BackgroundTransparency = 1
-
-        local ElLayout = Instance.new("UIListLayout")
-        ElLayout.Parent = ElementsHolder
-        ElLayout.Padding = UDim.new(0, 6)
-
-        local ElPadding = Instance.new("UIPadding")
-        ElPadding.Parent = ElementsHolder
-        ElPadding.PaddingTop = UDim.new(0, 8)
-        ElPadding.PaddingBottom = UDim.new(0, 8)
-        ElPadding.PaddingLeft = UDim.new(0, 10)
-        ElPadding.PaddingRight = UDim.new(0, 10)
-
-        return ElementsHolder
-    end
-
-    if not ActivePage then
-        Select()
-    end
-
-    return Page
+    return TabButton
 end
 
+-- Populate Tabs
+local Tabs = {"Ragebot", "Legitbot", "Visuals", "World", "Misc", "Settings"}
+for i, tabName in ipairs(Tabs) do
+    local btn = CreateTab(tabName)
+    if i == 1 then
+        ActiveTabButton = btn
+        btn.BackgroundTransparency = 0
+        btn:FindFirstChildOfClass("TextLabel").TextColor3 = Color3.fromRGB(240, 245, 255)
+    end
+end
+
+-- 7. Smooth Dragging Mechanism
+local Dragging, DragInput, DragStart, StartPos
+
+Header.InputBegan:Connect(function(input)
+    if input.UserInputType == Enum.UserInputType.MouseButton1 or input.UserInputType == Enum.UserInputType.Touch then
+        Dragging = true
+        DragStart = input.Position
+        StartPos = MainWindow.Position
+    end
+end)
+
+UserInputService.InputChanged:Connect(function(input)
+    if Dragging and (input.UserInputType == Enum.UserInputType.MouseMovement or input.UserInputType == Enum.UserInputType.Touch) then
+        local Delta = input.Position - DragStart
+        TweenService:Create(MainWindow, TweenInfoFast, {
+            Position = UDim2.new(StartPos.X.Scale, StartPos.X.Offset + Delta.X, StartPos.Y.Scale, StartPos.Y.Offset + Delta.Y)
+        }):Play()
+    end
+end)
+
+UserInputService.InputEnded:Connect(function(input)
+    if input.UserInputType == Enum.UserInputType.MouseButton1 or input.UserInputType == Enum.UserInputType.Touch then
+        Dragging = false
+    end
+end)
