@@ -7,7 +7,7 @@ local LocalPlayer = Players.LocalPlayer
 local TweenInfoFast = TweenInfo.new(0.2, Enum.EasingStyle.Quart, Enum.EasingDirection.Out)
 
 -- Dimensions Configuration
-local MainWidth = 530 -- размер телефона
+local MainWidth = 530
 local MainHeight = 320
 local SidebarWidth = 140
 local HeaderHeight = 36
@@ -16,7 +16,7 @@ local FooterHeight = 42
 -- Parent Container Detection
 local TargetParent = (gethui and gethui()) or game:GetService("CoreGui") or LocalPlayer:WaitForChild("PlayerGui")
 
--- Авто-удаление старого GUI, чтобы они не накладывались друг на друга
+-- Авто-очистка старых GUI
 if TargetParent:FindFirstChild("NeverloseMainWindow") then
     TargetParent.NeverloseMainWindow:Destroy()
 end
@@ -28,41 +28,31 @@ ScreenGui.ResetOnSpawn = false
 ScreenGui.ZIndexBehavior = Enum.ZIndexBehavior.Sibling
 ScreenGui.Parent = TargetParent
 
--- 2. Main Window Frame (Полностью прозрачный общий контейнер)
+-- 2. Main Window Frame (Главный тёмный фон правого блока)
 local MainWindow = Instance.new("Frame")
 MainWindow.Name = "MainFrame"
 MainWindow.Size = UDim2.new(0, MainWidth, 0, MainHeight)
 MainWindow.Position = UDim2.new(0.5, -MainWidth / 2, 0.5, -MainHeight / 2)
-MainWindow.BackgroundTransparency = 1
+MainWindow.BackgroundColor3 = Color3.fromRGB(8, 10, 14)
 MainWindow.BorderSizePixel = 0
-MainWindow.ClipsDescendants = false
+MainWindow.ClipsDescendants = true
 MainWindow.Parent = ScreenGui
 
--- 2.1 Main Body (Тёмная подложка ТОЛЬКО для правого блока с контентом)
-local MainBody = Instance.new("Frame")
-MainBody.Name = "MainBody"
-MainBody.Size = UDim2.new(1, -SidebarWidth, 1, 0)
-MainBody.Position = UDim2.new(0, SidebarWidth, 0, 0)
-MainBody.BackgroundColor3 = Color3.fromRGB(10, 12, 18)
-MainBody.BorderSizePixel = 0
-MainBody.ClipsDescendants = true
-MainBody.Parent = MainWindow
-
 local MainCorner = Instance.new("UICorner")
-MainCorner.CornerRadius = UDim.new(0, 10)
-MainCorner.Parent = MainBody
+MainCorner.CornerRadius = UDim.new(0, 8)
+MainCorner.Parent = MainWindow
 
 local MainStroke = Instance.new("UIStroke")
-MainStroke.Color = Color3.fromRGB(28, 33, 46)
+MainStroke.Color = Color3.fromRGB(25, 30, 42)
 MainStroke.Thickness = 1
-MainStroke.Parent = MainBody
+MainStroke.Parent = MainWindow
 
--- 3. Left Sidebar (Полностью прозрачный)
+-- 3. Left Sidebar (Светло-тёмный оттенок как на скриншоте)
 local Sidebar = Instance.new("Frame")
 Sidebar.Name = "Sidebar"
 Sidebar.Size = UDim2.new(0, SidebarWidth, 1, 0)
 Sidebar.Position = UDim2.new(0, 0, 0, 0)
-Sidebar.BackgroundTransparency = 1
+Sidebar.BackgroundColor3 = Color3.fromRGB(14, 18, 26)
 Sidebar.BorderSizePixel = 0
 Sidebar.Parent = MainWindow
 
@@ -74,8 +64,8 @@ LogoText.Position = UDim2.new(0, 12, 0, 0)
 LogoText.BackgroundTransparency = 1
 LogoText.Text = "NEVERLOSE"
 LogoText.Font = Enum.Font.GothamBold
-LogoText.TextSize = 14
-LogoText.TextColor3 = Color3.fromRGB(0, 162, 255)
+LogoText.TextSize = 13
+LogoText.TextColor3 = Color3.fromRGB(240, 245, 255)
 LogoText.TextXAlignment = Enum.TextXAlignment.Left
 LogoText.Parent = Sidebar
 
@@ -89,7 +79,7 @@ TabContainer.Parent = Sidebar
 
 local TabListLayout = Instance.new("UIListLayout")
 TabListLayout.SortOrder = Enum.SortOrder.LayoutOrder
-TabListLayout.Padding = UDim.new(0, 4)
+TabListLayout.Padding = UDim.new(0, 3)
 TabListLayout.Parent = TabContainer
 
 -- User Profile Widget (Footer)
@@ -106,7 +96,7 @@ local AvatarImage = Instance.new("ImageLabel")
 AvatarImage.Name = "Avatar"
 AvatarImage.Size = UDim2.new(0, AvatarSize, 0, AvatarSize)
 AvatarImage.Position = UDim2.new(0, 6, 0.5, -AvatarSize / 2)
-AvatarImage.BackgroundColor3 = Color3.fromRGB(28, 33, 46)
+AvatarImage.BackgroundColor3 = Color3.fromRGB(25, 30, 42)
 AvatarImage.Image = Players:GetUserThumbnailAsync(LocalPlayer.UserId, Enum.ThumbnailType.HeadShot, Enum.ThumbnailSize.Size420x420)
 AvatarImage.Parent = UserProfile
 
@@ -141,10 +131,10 @@ SubLabel.Parent = UserProfile
 -- 4. Header Bar
 local Header = Instance.new("Frame")
 Header.Name = "Header"
-Header.Size = UDim2.new(1, 0, 0, HeaderHeight)
-Header.Position = UDim2.new(0, 0, 0, 0)
+Header.Size = UDim2.new(1, -SidebarWidth, 0, HeaderHeight)
+Header.Position = UDim2.new(0, SidebarWidth, 0, 0)
 Header.BackgroundTransparency = 1
-Header.Parent = MainBody
+Header.Parent = MainWindow
 
 local ActiveTabTitle = Instance.new("TextLabel")
 ActiveTabTitle.Name = "ActiveTabTitle"
@@ -153,7 +143,7 @@ ActiveTabTitle.Position = UDim2.new(0, 15, 0, 0)
 ActiveTabTitle.BackgroundTransparency = 1
 ActiveTabTitle.Text = "RAGEBOT"
 ActiveTabTitle.Font = Enum.Font.GothamBold
-ActiveTabTitle.TextSize = 13
+ActiveTabTitle.TextSize = 12
 ActiveTabTitle.TextColor3 = Color3.fromRGB(240, 245, 255)
 ActiveTabTitle.TextXAlignment = Enum.TextXAlignment.Left
 ActiveTabTitle.Parent = Header
@@ -166,17 +156,17 @@ WatermarkInfo.BackgroundTransparency = 1
 WatermarkInfo.Text = "neverlose.cc | roblox"
 WatermarkInfo.Font = Enum.Font.GothamMedium
 WatermarkInfo.TextSize = 11
-WatermarkInfo.TextColor3 = Color3.fromRGB(90, 98, 115)
+WatermarkInfo.TextColor3 = Color3.fromRGB(80, 88, 105)
 WatermarkInfo.TextXAlignment = Enum.TextXAlignment.Right
 WatermarkInfo.Parent = Header
 
 -- 5. Content Container
 local ContentContainer = Instance.new("Frame")
 ContentContainer.Name = "ContentContainer"
-ContentContainer.Size = UDim2.new(1, -20, 1, -(HeaderHeight + 10))
-ContentContainer.Position = UDim2.new(0, 10, 0, HeaderHeight)
+ContentContainer.Size = UDim2.new(1, -(SidebarWidth + 20), 1, -(HeaderHeight + 10))
+ContentContainer.Position = UDim2.new(0, SidebarWidth + 10, 0, HeaderHeight)
 ContentContainer.BackgroundTransparency = 1
-ContentContainer.Parent = MainBody
+ContentContainer.Parent = MainWindow
 
 local LeftColumn = Instance.new("ScrollingFrame")
 LeftColumn.Name = "LeftColumn"
@@ -203,18 +193,18 @@ for _, col in ipairs({LeftColumn, RightColumn}) do
     layout.Parent = col
 end
 
--- 6. Helper Functions: Create Tab Sections & Tabs
+-- 6. Helper Functions
 local ActiveTabButton = nil
 
 local function CreateTabSection(title)
     local SectionLabel = Instance.new("TextLabel")
     SectionLabel.Name = title .. "Section"
-    SectionLabel.Size = UDim2.new(1, 0, 0, 18)
+    SectionLabel.Size = UDim2.new(1, 0, 0, 16)
     SectionLabel.BackgroundTransparency = 1
     SectionLabel.Text = string.upper(title)
     SectionLabel.Font = Enum.Font.GothamBold
     SectionLabel.TextSize = 9
-    SectionLabel.TextColor3 = Color3.fromRGB(70, 78, 95)
+    SectionLabel.TextColor3 = Color3.fromRGB(60, 68, 85)
     SectionLabel.TextXAlignment = Enum.TextXAlignment.Left
     SectionLabel.Parent = TabContainer
 
@@ -228,15 +218,15 @@ end
 local function CreateTab(name)
     local TabButton = Instance.new("TextButton")
     TabButton.Name = name .. "Tab"
-    TabButton.Size = UDim2.new(1, 0, 0, 26)
-    TabButton.BackgroundColor3 = Color3.fromRGB(18, 22, 32)
+    TabButton.Size = UDim2.new(1, 0, 0, 24)
+    TabButton.BackgroundColor3 = Color3.fromRGB(24, 30, 42)
     TabButton.BackgroundTransparency = 1
     TabButton.Text = ""
     TabButton.AutoButtonColor = false
     TabButton.Parent = TabContainer
 
     local BtnCorner = Instance.new("UICorner")
-    BtnCorner.CornerRadius = UDim.new(0, 6)
+    BtnCorner.CornerRadius = UDim.new(0, 5)
     BtnCorner.Parent = TabButton
 
     local Title = Instance.new("TextLabel")
@@ -257,7 +247,7 @@ local function CreateTab(name)
         end
         ActiveTabButton = TabButton
         ActiveTabTitle.Text = string.upper(name)
-        TweenService:Create(TabButton, TweenInfoFast, {BackgroundTransparency = 0.5}):Play()
+        TweenService:Create(TabButton, TweenInfoFast, {BackgroundTransparency = 0}):Play()
         TweenService:Create(Title, TweenInfoFast, {TextColor3 = Color3.fromRGB(240, 245, 255)}):Play()
     end)
 
@@ -279,10 +269,10 @@ CreateTab("Settings")
 
 -- Activate First Tab
 ActiveTabButton = DefaultTab
-DefaultTab.BackgroundTransparency = 0.5
+DefaultTab.BackgroundTransparency = 0
 DefaultTab:FindFirstChildOfClass("TextLabel").TextColor3 = Color3.fromRGB(240, 245, 255)
 
--- 7. Smooth Dragging Mechanism (Перетаскивание)
+-- 7. Smooth Dragging Mechanism
 local Dragging, DragInput, DragStart, StartPos
 
 local function EnableDrag(frame)
