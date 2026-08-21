@@ -47,8 +47,7 @@ local Sidebar = Instance.new("Frame")
 Sidebar.Name = "Sidebar"
 Sidebar.Size = UDim2.new(0, SidebarWidth, 1, 0)
 Sidebar.Position = UDim2.new(0, 0, 0, 0)
-Sidebar.BackgroundColor3 = Color3.fromRGB(13, 16, 24)
-Sidebar.BackgroundTransparency = 1 -- Прозрачный фон боковой панели
+Sidebar.BackgroundTransparency = 1
 Sidebar.BorderSizePixel = 0
 Sidebar.Parent = MainWindow
 
@@ -87,8 +86,7 @@ local UserProfile = Instance.new("Frame")
 UserProfile.Name = "UserProfile"
 UserProfile.Size = UDim2.new(1, -16, 0, FooterHeight)
 UserProfile.Position = UDim2.new(0, 8, 1, -(FooterHeight + 8))
-UserProfile.BackgroundColor3 = Color3.fromRGB(18, 22, 32)
-UserProfile.BackgroundTransparency = 0.5 -- Сделано слегка полупрозрачным для эстетики
+UserProfile.BackgroundTransparency = 1
 UserProfile.BorderSizePixel = 0
 UserProfile.Parent = Sidebar
 
@@ -253,7 +251,7 @@ local function CreateTab(name)
         end
         ActiveTabButton = TabButton
         ActiveTabTitle.Text = string.upper(name)
-        TweenService:Create(TabButton, TweenInfoFast, {BackgroundTransparency = 0.8}):Play() -- Выделение активной вкладки сделано более прозрачным
+        TweenService:Create(TabButton, TweenInfoFast, {BackgroundTransparency = 0}):Play()
         TweenService:Create(Title, TweenInfoFast, {TextColor3 = Color3.fromRGB(240, 245, 255)}):Play()
     end)
 
@@ -275,7 +273,7 @@ CreateTab("Settings")
 
 -- Activate First Tab
 ActiveTabButton = DefaultTab
-DefaultTab.BackgroundTransparency = 0.8
+DefaultTab.BackgroundTransparency = 0
 DefaultTab:FindFirstChildOfClass("TextLabel").TextColor3 = Color3.fromRGB(240, 245, 255)
 
 -- 7. Smooth Dragging Mechanism
