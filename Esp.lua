@@ -16,6 +16,11 @@ local FooterHeight = 42
 -- Parent Container Detection
 local TargetParent = (gethui and gethui()) or game:GetService("CoreGui") or LocalPlayer:WaitForChild("PlayerGui")
 
+-- Авто-удаление старого GUI, чтобы они не накладывались друг на друга
+if TargetParent:FindFirstChild("NeverloseMainWindow") then
+    TargetParent.NeverloseMainWindow:Destroy()
+end
+
 -- 1. ScreenGui Initialization
 local ScreenGui = Instance.new("ScreenGui")
 ScreenGui.Name = "NeverloseMainWindow"
@@ -23,7 +28,7 @@ ScreenGui.ResetOnSpawn = false
 ScreenGui.ZIndexBehavior = Enum.ZIndexBehavior.Sibling
 ScreenGui.Parent = TargetParent
 
--- 2. Main Window Frame (Контейнер теперь полностью прозрачный)
+-- 2. Main Window Frame (Полностью прозрачный общий контейнер)
 local MainWindow = Instance.new("Frame")
 MainWindow.Name = "MainFrame"
 MainWindow.Size = UDim2.new(0, MainWidth, 0, MainHeight)
@@ -33,7 +38,7 @@ MainWindow.BorderSizePixel = 0
 MainWindow.ClipsDescendants = false
 MainWindow.Parent = ScreenGui
 
--- 2.1 Main Content Body (Тёмная подложка только для правой части с контентом)
+-- 2.1 Main Body (Тёмная подложка ТОЛЬКО для правого блока с контентом)
 local MainBody = Instance.new("Frame")
 MainBody.Name = "MainBody"
 MainBody.Size = UDim2.new(1, -SidebarWidth, 1, 0)
@@ -52,7 +57,7 @@ MainStroke.Color = Color3.fromRGB(28, 33, 46)
 MainStroke.Thickness = 1
 MainStroke.Parent = MainBody
 
--- 3. Left Sidebar (Navigation & Profile) - Прозрачный
+-- 3. Left Sidebar (Полностью прозрачный)
 local Sidebar = Instance.new("Frame")
 Sidebar.Name = "Sidebar"
 Sidebar.Size = UDim2.new(0, SidebarWidth, 1, 0)
@@ -133,7 +138,7 @@ SubLabel.TextColor3 = Color3.fromRGB(0, 162, 255)
 SubLabel.TextXAlignment = Enum.TextXAlignment.Left
 SubLabel.Parent = UserProfile
 
--- 4. Header Bar (Размещён внутри MainBody)
+-- 4. Header Bar
 local Header = Instance.new("Frame")
 Header.Name = "Header"
 Header.Size = UDim2.new(1, 0, 0, HeaderHeight)
@@ -165,7 +170,7 @@ WatermarkInfo.TextColor3 = Color3.fromRGB(90, 98, 115)
 WatermarkInfo.TextXAlignment = Enum.TextXAlignment.Right
 WatermarkInfo.Parent = Header
 
--- 5. Content Container (Размещён внутри MainBody)
+-- 5. Content Container
 local ContentContainer = Instance.new("Frame")
 ContentContainer.Name = "ContentContainer"
 ContentContainer.Size = UDim2.new(1, -20, 1, -(HeaderHeight + 10))
@@ -191,7 +196,6 @@ RightColumn.ScrollBarThickness = 2
 RightColumn.ScrollBarImageColor3 = Color3.fromRGB(0, 162, 255)
 RightColumn.Parent = ContentContainer
 
--- Column Layout Setup
 for _, col in ipairs({LeftColumn, RightColumn}) do
     local layout = Instance.new("UIListLayout")
     layout.SortOrder = Enum.SortOrder.LayoutOrder
@@ -260,7 +264,7 @@ local function CreateTab(name)
     return TabButton
 end
 
--- Populate Tabs with Sections
+-- Populate Tabs
 CreateTabSection("Main")
 local DefaultTab = CreateTab("Ragebot")
 CreateTab("Legitbot")
@@ -278,16 +282,21 @@ ActiveTabButton = DefaultTab
 DefaultTab.BackgroundTransparency = 0.5
 DefaultTab:FindFirstChildOfClass("TextLabel").TextColor3 = Color3.fromRGB(240, 245, 255)
 
--- 7. Smooth Dragging Mechanism (Перетаскивание работает за верхнюю панель)
+-- 7. Smooth Dragging Mechanism (Перетаскивание)
 local Dragging, DragInput, DragStart, StartPos
 
-Header.InputBegan:Connect(function(input)
-    if input.UserInputType == Enum.UserInputType.MouseButton1 or input.UserInputType == Enum.UserInputType.Touch then
-        Dragging = true
-        DragStart = input.Position
-        StartPos = MainWindow.Position
-    end
-end)
+local function EnableDrag(frame)
+    frame.InputBegan:Connect(function(input)
+        if input.UserInputType == Enum.UserInputType.MouseButton1 or input.UserInputType == Enum.UserInputType.Touch then
+            Dragging = true
+            DragStart = input.Position
+            StartPos = MainWindow.Position
+        end
+    end)
+end
+
+EnableDrag(Header)
+EnableDrag(Sidebar)
 
 UserInputService.InputChanged:Connect(function(input)
     if Dragging and (input.UserInputType == Enum.UserInputType.MouseMovement or input.UserInputType == Enum.UserInputType.Touch) then
