@@ -16,7 +16,7 @@ local FooterHeight = 42
 -- Parent Container Detection
 local TargetParent = (gethui and gethui()) or game:GetService("CoreGui") or LocalPlayer:WaitForChild("PlayerGui")
 
--- Авто-очистка старых версий
+-- Авто-очистка старых GUI
 if TargetParent:FindFirstChild("NeverloseMainWindow") then
     TargetParent.NeverloseMainWindow:Destroy()
 end
@@ -28,31 +28,31 @@ ScreenGui.ResetOnSpawn = false
 ScreenGui.ZIndexBehavior = Enum.ZIndexBehavior.Sibling
 ScreenGui.Parent = TargetParent
 
--- 2. Main Window Frame (Точный цвет главного фона)
+-- 2. Main Window Frame (Главный тёмный фон правого блока)
 local MainWindow = Instance.new("Frame")
 MainWindow.Name = "MainFrame"
 MainWindow.Size = UDim2.new(0, MainWidth, 0, MainHeight)
 MainWindow.Position = UDim2.new(0.5, -MainWidth / 2, 0.5, -MainHeight / 2)
-MainWindow.BackgroundColor3 = Color3.fromRGB(10, 12, 16)
+MainWindow.BackgroundColor3 = Color3.fromRGB(8, 10, 14)
 MainWindow.BorderSizePixel = 0
 MainWindow.ClipsDescendants = true
 MainWindow.Parent = ScreenGui
 
 local MainCorner = Instance.new("UICorner")
-MainCorner.CornerRadius = UDim.new(0, 6)
+MainCorner.CornerRadius = UDim.new(0, 8)
 MainCorner.Parent = MainWindow
 
 local MainStroke = Instance.new("UIStroke")
-MainStroke.Color = Color3.fromRGB(28, 35, 48)
+MainStroke.Color = Color3.fromRGB(25, 30, 42)
 MainStroke.Thickness = 1
 MainStroke.Parent = MainWindow
 
--- 3. Left Sidebar (Точный цвет сайдбара Neverlose)
+-- 3. Left Sidebar (Светло-тёмный оттенок как на скриншоте)
 local Sidebar = Instance.new("Frame")
 Sidebar.Name = "Sidebar"
 Sidebar.Size = UDim2.new(0, SidebarWidth, 1, 0)
 Sidebar.Position = UDim2.new(0, 0, 0, 0)
-Sidebar.BackgroundColor3 = Color3.fromRGB(15, 18, 25)
+Sidebar.BackgroundColor3 = Color3.fromRGB(14, 18, 26)
 Sidebar.BorderSizePixel = 0
 Sidebar.Parent = MainWindow
 
@@ -65,7 +65,7 @@ LogoText.BackgroundTransparency = 1
 LogoText.Text = "NEVERLOSE"
 LogoText.Font = Enum.Font.GothamBold
 LogoText.TextSize = 13
-LogoText.TextColor3 = Color3.fromRGB(255, 255, 255)
+LogoText.TextColor3 = Color3.fromRGB(240, 245, 255)
 LogoText.TextXAlignment = Enum.TextXAlignment.Left
 LogoText.Parent = Sidebar
 
@@ -96,7 +96,7 @@ local AvatarImage = Instance.new("ImageLabel")
 AvatarImage.Name = "Avatar"
 AvatarImage.Size = UDim2.new(0, AvatarSize, 0, AvatarSize)
 AvatarImage.Position = UDim2.new(0, 6, 0.5, -AvatarSize / 2)
-AvatarImage.BackgroundColor3 = Color3.fromRGB(28, 35, 48)
+AvatarImage.BackgroundColor3 = Color3.fromRGB(25, 30, 42)
 AvatarImage.Image = Players:GetUserThumbnailAsync(LocalPlayer.UserId, Enum.ThumbnailType.HeadShot, Enum.ThumbnailSize.Size420x420)
 AvatarImage.Parent = UserProfile
 
@@ -124,7 +124,7 @@ SubLabel.BackgroundTransparency = 1
 SubLabel.Text = "Lifetime"
 SubLabel.Font = Enum.Font.Gotham
 SubLabel.TextSize = 10
-SubLabel.TextColor3 = Color3.fromRGB(0, 170, 255)
+SubLabel.TextColor3 = Color3.fromRGB(0, 162, 255)
 SubLabel.TextXAlignment = Enum.TextXAlignment.Left
 SubLabel.Parent = UserProfile
 
@@ -156,7 +156,7 @@ WatermarkInfo.BackgroundTransparency = 1
 WatermarkInfo.Text = "neverlose.cc | roblox"
 WatermarkInfo.Font = Enum.Font.GothamMedium
 WatermarkInfo.TextSize = 11
-WatermarkInfo.TextColor3 = Color3.fromRGB(70, 78, 92)
+WatermarkInfo.TextColor3 = Color3.fromRGB(80, 88, 105)
 WatermarkInfo.TextXAlignment = Enum.TextXAlignment.Right
 WatermarkInfo.Parent = Header
 
@@ -174,7 +174,7 @@ LeftColumn.Size = UDim2.new(0.5, -5, 1, 0)
 LeftColumn.Position = UDim2.new(0, 0, 0, 0)
 LeftColumn.BackgroundTransparency = 1
 LeftColumn.ScrollBarThickness = 2
-LeftColumn.ScrollBarImageColor3 = Color3.fromRGB(0, 170, 255)
+LeftColumn.ScrollBarImageColor3 = Color3.fromRGB(0, 162, 255)
 LeftColumn.Parent = ContentContainer
 
 local RightColumn = Instance.new("ScrollingFrame")
@@ -183,7 +183,7 @@ RightColumn.Size = UDim2.new(0.5, -5, 1, 0)
 RightColumn.Position = UDim2.new(0.5, 5, 0, 0)
 RightColumn.BackgroundTransparency = 1
 RightColumn.ScrollBarThickness = 2
-RightColumn.ScrollBarImageColor3 = Color3.fromRGB(0, 170, 255)
+RightColumn.ScrollBarImageColor3 = Color3.fromRGB(0, 162, 255)
 RightColumn.Parent = ContentContainer
 
 for _, col in ipairs({LeftColumn, RightColumn}) do
@@ -204,7 +204,7 @@ local function CreateTabSection(title)
     SectionLabel.Text = string.upper(title)
     SectionLabel.Font = Enum.Font.GothamBold
     SectionLabel.TextSize = 9
-    SectionLabel.TextColor3 = Color3.fromRGB(60, 68, 82)
+    SectionLabel.TextColor3 = Color3.fromRGB(60, 68, 85)
     SectionLabel.TextXAlignment = Enum.TextXAlignment.Left
     SectionLabel.Parent = TabContainer
 
@@ -219,14 +219,14 @@ local function CreateTab(name)
     local TabButton = Instance.new("TextButton")
     TabButton.Name = name .. "Tab"
     TabButton.Size = UDim2.new(1, 0, 0, 24)
-    TabButton.BackgroundColor3 = Color3.fromRGB(25, 31, 44)
+    TabButton.BackgroundColor3 = Color3.fromRGB(24, 30, 42)
     TabButton.BackgroundTransparency = 1
     TabButton.Text = ""
     TabButton.AutoButtonColor = false
     TabButton.Parent = TabContainer
 
     local BtnCorner = Instance.new("UICorner")
-    BtnCorner.CornerRadius = UDim.new(0, 4)
+    BtnCorner.CornerRadius = UDim.new(0, 5)
     BtnCorner.Parent = TabButton
 
     local Title = Instance.new("TextLabel")
@@ -236,14 +236,14 @@ local function CreateTab(name)
     Title.Text = name
     Title.Font = Enum.Font.GothamMedium
     Title.TextSize = 11
-    Title.TextColor3 = Color3.fromRGB(100, 110, 130)
+    Title.TextColor3 = Color3.fromRGB(110, 118, 135)
     Title.TextXAlignment = Enum.TextXAlignment.Left
     Title.Parent = TabButton
 
     TabButton.MouseButton1Click:Connect(function()
         if ActiveTabButton and ActiveTabButton ~= TabButton then
             TweenService:Create(ActiveTabButton, TweenInfoFast, {BackgroundTransparency = 1}):Play()
-            TweenService:Create(ActiveTabButton:FindFirstChildOfClass("TextLabel"), TweenInfoFast, {TextColor3 = Color3.fromRGB(100, 110, 130)}):Play()
+            TweenService:Create(ActiveTabButton:FindFirstChildOfClass("TextLabel"), TweenInfoFast, {TextColor3 = Color3.fromRGB(110, 118, 135)}):Play()
         end
         ActiveTabButton = TabButton
         ActiveTabTitle.Text = string.upper(name)
