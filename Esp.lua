@@ -43,13 +43,16 @@ MainStroke.Thickness = 1
 MainStroke.Parent = MainWindow
 
 -- 3. Left Sidebar (Navigation & Profile)
+-- 3. Left Sidebar (Navigation & Profile)
 local Sidebar = Instance.new("Frame")
 Sidebar.Name = "Sidebar"
 Sidebar.Size = UDim2.new(0, SidebarWidth, 1, 0)
 Sidebar.Position = UDim2.new(0, 0, 0, 0)
 Sidebar.BackgroundColor3 = Color3.fromRGB(13, 16, 24)
+Sidebar.BackgroundTransparency = 1 -- Сделано прозрачным
 Sidebar.BorderSizePixel = 0
 Sidebar.Parent = MainWindow
+
 
 local SidebarCorner = Instance.new("UICorner")
 SidebarCorner.CornerRadius = UDim.new(0, 10)
