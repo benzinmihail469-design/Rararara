@@ -23,26 +23,36 @@ ScreenGui.ResetOnSpawn = false
 ScreenGui.ZIndexBehavior = Enum.ZIndexBehavior.Sibling
 ScreenGui.Parent = TargetParent
 
--- 2. Main Window Frame
+-- 2. Main Window Frame (Контейнер теперь полностью прозрачный)
 local MainWindow = Instance.new("Frame")
 MainWindow.Name = "MainFrame"
 MainWindow.Size = UDim2.new(0, MainWidth, 0, MainHeight)
 MainWindow.Position = UDim2.new(0.5, -MainWidth / 2, 0.5, -MainHeight / 2)
-MainWindow.BackgroundColor3 = Color3.fromRGB(10, 12, 18)
+MainWindow.BackgroundTransparency = 1
 MainWindow.BorderSizePixel = 0
-MainWindow.ClipsDescendants = true
+MainWindow.ClipsDescendants = false
 MainWindow.Parent = ScreenGui
+
+-- 2.1 Main Content Body (Тёмная подложка только для правой части с контентом)
+local MainBody = Instance.new("Frame")
+MainBody.Name = "MainBody"
+MainBody.Size = UDim2.new(1, -SidebarWidth, 1, 0)
+MainBody.Position = UDim2.new(0, SidebarWidth, 0, 0)
+MainBody.BackgroundColor3 = Color3.fromRGB(10, 12, 18)
+MainBody.BorderSizePixel = 0
+MainBody.ClipsDescendants = true
+MainBody.Parent = MainWindow
 
 local MainCorner = Instance.new("UICorner")
 MainCorner.CornerRadius = UDim.new(0, 10)
-MainCorner.Parent = MainWindow
+MainCorner.Parent = MainBody
 
 local MainStroke = Instance.new("UIStroke")
 MainStroke.Color = Color3.fromRGB(28, 33, 46)
 MainStroke.Thickness = 1
-MainStroke.Parent = MainWindow
+MainStroke.Parent = MainBody
 
--- 3. Left Sidebar (Navigation & Profile)
+-- 3. Left Sidebar (Navigation & Profile) - Прозрачный
 local Sidebar = Instance.new("Frame")
 Sidebar.Name = "Sidebar"
 Sidebar.Size = UDim2.new(0, SidebarWidth, 1, 0)
@@ -50,10 +60,6 @@ Sidebar.Position = UDim2.new(0, 0, 0, 0)
 Sidebar.BackgroundTransparency = 1
 Sidebar.BorderSizePixel = 0
 Sidebar.Parent = MainWindow
-
-local SidebarCorner = Instance.new("UICorner")
-SidebarCorner.CornerRadius = UDim.new(0, 10)
-SidebarCorner.Parent = Sidebar
 
 -- Brand Logo
 local LogoText = Instance.new("TextLabel")
@@ -89,10 +95,6 @@ UserProfile.Position = UDim2.new(0, 8, 1, -(FooterHeight + 8))
 UserProfile.BackgroundTransparency = 1
 UserProfile.BorderSizePixel = 0
 UserProfile.Parent = Sidebar
-
-local UserProfileCorner = Instance.new("UICorner")
-UserProfileCorner.CornerRadius = UDim.new(0, 6)
-UserProfileCorner.Parent = UserProfile
 
 local AvatarSize = FooterHeight - 12
 local AvatarImage = Instance.new("ImageLabel")
@@ -131,13 +133,13 @@ SubLabel.TextColor3 = Color3.fromRGB(0, 162, 255)
 SubLabel.TextXAlignment = Enum.TextXAlignment.Left
 SubLabel.Parent = UserProfile
 
--- 4. Header Bar
+-- 4. Header Bar (Размещён внутри MainBody)
 local Header = Instance.new("Frame")
 Header.Name = "Header"
-Header.Size = UDim2.new(1, -SidebarWidth, 0, HeaderHeight)
-Header.Position = UDim2.new(0, SidebarWidth, 0, 0)
+Header.Size = UDim2.new(1, 0, 0, HeaderHeight)
+Header.Position = UDim2.new(0, 0, 0, 0)
 Header.BackgroundTransparency = 1
-Header.Parent = MainWindow
+Header.Parent = MainBody
 
 local ActiveTabTitle = Instance.new("TextLabel")
 ActiveTabTitle.Name = "ActiveTabTitle"
@@ -163,13 +165,13 @@ WatermarkInfo.TextColor3 = Color3.fromRGB(90, 98, 115)
 WatermarkInfo.TextXAlignment = Enum.TextXAlignment.Right
 WatermarkInfo.Parent = Header
 
--- 5. Content Container (Two-Column Layout)
+-- 5. Content Container (Размещён внутри MainBody)
 local ContentContainer = Instance.new("Frame")
 ContentContainer.Name = "ContentContainer"
-ContentContainer.Size = UDim2.new(1, -(SidebarWidth + 20), 1, -(HeaderHeight + 10))
-ContentContainer.Position = UDim2.new(0, SidebarWidth + 10, 0, HeaderHeight)
+ContentContainer.Size = UDim2.new(1, -20, 1, -(HeaderHeight + 10))
+ContentContainer.Position = UDim2.new(0, 10, 0, HeaderHeight)
 ContentContainer.BackgroundTransparency = 1
-ContentContainer.Parent = MainWindow
+ContentContainer.Parent = MainBody
 
 local LeftColumn = Instance.new("ScrollingFrame")
 LeftColumn.Name = "LeftColumn"
@@ -251,7 +253,7 @@ local function CreateTab(name)
         end
         ActiveTabButton = TabButton
         ActiveTabTitle.Text = string.upper(name)
-        TweenService:Create(TabButton, TweenInfoFast, {BackgroundTransparency = 0}):Play()
+        TweenService:Create(TabButton, TweenInfoFast, {BackgroundTransparency = 0.5}):Play()
         TweenService:Create(Title, TweenInfoFast, {TextColor3 = Color3.fromRGB(240, 245, 255)}):Play()
     end)
 
@@ -273,10 +275,10 @@ CreateTab("Settings")
 
 -- Activate First Tab
 ActiveTabButton = DefaultTab
-DefaultTab.BackgroundTransparency = 0
+DefaultTab.BackgroundTransparency = 0.5
 DefaultTab:FindFirstChildOfClass("TextLabel").TextColor3 = Color3.fromRGB(240, 245, 255)
 
--- 7. Smooth Dragging Mechanism
+-- 7. Smooth Dragging Mechanism (Перетаскивание работает за верхнюю панель)
 local Dragging, DragInput, DragStart, StartPos
 
 Header.InputBegan:Connect(function(input)
