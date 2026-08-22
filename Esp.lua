@@ -497,7 +497,7 @@ function Library:CreateTab(window, tabData)
 end
 
 -- =======================================================
--- СЕТКА КОЛОНОК (NEVERLOSE DUAL COLUMN LAYOUT)
+-- СЕТКА КОЛОНОК (NEVERLOSE DUAL COLUMN LAYOUT) - УМЕНЬШЕННЫЕ ОТСТУПЫ
 -- =======================================================
 function Library:CreateColumns(tabContainer)
     local columnsFrame = Instances:Create("Frame", {
@@ -520,7 +520,7 @@ function Library:CreateColumns(tabContainer)
     
     Instances:Create("UIListLayout", {
         Parent = leftColumn.Instance,
-        Padding = UDim.new(0, 8),
+        Padding = UDim.new(0, 4),  -- Уменьшено с 8 до 4
         SortOrder = Enum.SortOrder.LayoutOrder
     })
     
@@ -536,7 +536,7 @@ function Library:CreateColumns(tabContainer)
     
     Instances:Create("UIListLayout", {
         Parent = rightColumn.Instance,
-        Padding = UDim.new(0, 8),
+        Padding = UDim.new(0, 4),  -- Уменьшено с 8 до 4
         SortOrder = Enum.SortOrder.LayoutOrder
     })
     
@@ -544,7 +544,7 @@ function Library:CreateColumns(tabContainer)
 end
 
 -- =======================================================
--- ЛОГИКА СЕКЦИИ (SECTION / GROUPBOX)
+-- ЛОГИКА СЕКЦИИ (SECTION / GROUPBOX) - УМЕНЬШЕННЫЕ ОТСТУПЫ
 -- =======================================================
 function Library:CreateSection(parentColumn, sectionData)
     sectionData = sectionData or {}
@@ -575,11 +575,11 @@ function Library:CreateSection(parentColumn, sectionData)
         ApplyStrokeMode = Enum.ApplyStrokeMode.Border
     })
     
-    -- Внутренние отступы секции
+    -- Внутренние отступы секции (уменьшены)
     Instances:Create("UIPadding", {
         Parent = sectionFrame.Instance,
-        PaddingTop = UDim.new(0, 10),
-        PaddingBottom = UDim.new(0, 10),
+        PaddingTop = UDim.new(0, 8),      -- Было 10
+        PaddingBottom = UDim.new(0, 8),   -- Было 10
         PaddingLeft = UDim.new(0, 10),
         PaddingRight = UDim.new(0, 10)
     })
@@ -587,14 +587,14 @@ function Library:CreateSection(parentColumn, sectionData)
     Instances:Create("UIListLayout", {
         Parent = sectionFrame.Instance,
         SortOrder = Enum.SortOrder.LayoutOrder,
-        Padding = UDim.new(0, 8)
+        Padding = UDim.new(0, 4)          -- Уменьшено с 8 до 4
     })
     
-    -- Шапка секции (Заголовок)
+    -- Шапка секции (Заголовок) - уменьшена высота
     local headerFrame = Instances:Create("Frame", {
         Parent = sectionFrame.Instance,
         Name = "Header",
-        Size = UDim2.new(1, 0, 0, 16),
+        Size = UDim2.new(1, 0, 0, 14),    -- Было 16
         BackgroundTransparency = 1,
         LayoutOrder = 0,
         ZIndex = 5
@@ -616,7 +616,7 @@ function Library:CreateSection(parentColumn, sectionData)
         CornerRadius = UDim.new(0, 2)
     })
     
-    -- Текст заголовка (Заглавные буквы)
+    -- Текст заголовка (Заглавные буквы) - уменьшен размер
     local titleLabel = Instances:Create("TextLabel", {
         Parent = headerFrame.Instance,
         Name = "Title",
@@ -631,7 +631,7 @@ function Library:CreateSection(parentColumn, sectionData)
         ZIndex = 5
     })
     
-    -- Контейнер для добавления GUI-элементов (Toggles, Sliders, Buttons)
+    -- Контейнер для добавления GUI-элементов
     local elementsContainer = Instances:Create("Frame", {
         Parent = sectionFrame.Instance,
         Name = "Container",
@@ -645,7 +645,7 @@ function Library:CreateSection(parentColumn, sectionData)
     Instances:Create("UIListLayout", {
         Parent = elementsContainer.Instance,
         SortOrder = Enum.SortOrder.LayoutOrder,
-        Padding = UDim.new(0, 6)
+        Padding = UDim.new(0, 4)          -- Уменьшено с 6 до 4
     })
     
     return elementsContainer.Instance
