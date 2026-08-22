@@ -171,35 +171,33 @@ local function MakeResizeable(guiInstance, minSize)
 end
 
 -- =======================================================
--- СИСТЕМА ИКОНОК (ICON SYSTEM)
+-- СИСТЕМА ИКОНОК (ICON SYSTEM) - ИСПРАВЛЕННАЯ ВЕРСИЯ
 -- =======================================================
 local IconLibrary = {
     ["home"] = "rbxassetid://10723407068",
     ["user"] = "rbxassetid://10709789810",
     ["settings"] = "rbxassetid://10734950309",
-    ["combat"] = "rbxassetid://10734975692",
-    ["visuals"] = "rbxassetid://10723414641",
+    ["combat"] = "rbxassetid://10709753149",      -- Мечи / Aimbot
+    ["aimbot"] = "rbxassetid://10709753149",      -- Мечи / Aimbot
+    ["visuals"] = "rbxassetid://10723346959",     -- Глаз / ESP (РАБОЧИЙ ID)
     ["shield"] = "rbxassetid://10709782497",
     ["code"] = "rbxassetid://10709752254",
-    ["check"] = "rbxassetid://10709790644",
-    ["chevron-down"] = "rbxassetid://10709790948",
+    ["misc"] = "rbxassetid://10723343321",        -- Коробка / Misc
     ["folder"] = "rbxassetid://10723345749"
 }
 
 local function ParseIcon(icon)
     if not icon or icon == "" then return "" end
-    local strIcon = tostring(icon)
+    local strIcon = tostring(icon):gsub("%s+", "") -- очистка от пробелов
     
     if IconLibrary[string.lower(strIcon)] then
         return IconLibrary[string.lower(strIcon)]
     end
     
-    if tonumber(strIcon) then
-        return "rbxassetid://" .. strIcon
-    end
-    
-    if string.sub(strIcon, 1, 13) == "rbxassetid://" then
-        return strIcon
+    -- Очищаем ID от лишних букв и опечаток
+    local cleanId = strIcon:match("%d+")
+    if cleanId then
+        return "rbxassetid://" .. cleanId
     end
     
     return strIcon
@@ -499,18 +497,18 @@ function Library:CreateTab(window, tabData)
 end
 
 -- =======================================================
--- 8. ИНИЦИАЛИЗАЦИЯ ОКНА
+-- 8. ИНИЦИАЛИЗАЦИЯ ОКНА (С ИСПРАВЛЕННЫМ ID ЛОГОТИПА)
 -- =======================================================
 local Window = Library:CreateWindow({
     Name = "Dark Hub",
     SubName = "Custom GUI Framework",
-    Logo = "home"  -- Теперь используем "home" как ключ из IconLibrary
+    Logo = "10709752254"  -- Чистый числовой ID без букв "l"
 })
 
 -- =======================================================
--- 9. СОЗДАНИЕ ВКЛАДОК (ПРИМЕР)
+-- 9. СОЗДАНИЕ ВКЛАДОК (С ГАРАНТИРОВАННО РАБОЧИМИ ИКОНКАМИ)
 -- =======================================================
-local CombatTab = Library:CreateTab(Window, {
+local AimbotTab = Library:CreateTab(Window, {
     Name = "Aimbot",
     Icon = "combat"
 })
@@ -525,7 +523,7 @@ local SettingsTab = Library:CreateTab(Window, {
     Icon = "settings"
 })
 
-local CustomIconTab = Library:CreateTab(Window, {
+local MiscTab = Library:CreateTab(Window, {
     Name = "Misc",
-    Icon = "10709782497"
+    Icon = "misc"
 })
