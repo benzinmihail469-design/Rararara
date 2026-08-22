@@ -1,304 +1,357 @@
--- Services
+-- =======================================================
+-- АВТОНОМНЫЙ СКРИПТ ГЛАВНОГО ОКНА (WINDOW GUI)
+-- =======================================================
+
+local Workspace = game:GetService("Workspace")
 local UserInputService = game:GetService("UserInputService")
-local TweenService = game:GetService("TweenService")
 local Players = game:GetService("Players")
+local CoreGui = cloneref and cloneref(game:GetService("CoreGui")) or game:GetService("CoreGui")
+local TweenService = game:GetService("TweenService")
+local RunService = game:GetService("RunService")
 
-local LocalPlayer = Players.LocalPlayer
-local TweenInfoFast = TweenInfo.new(0.2, Enum.EasingStyle.Quart, Enum.EasingDirection.Out)
-
--- Dimensions Configuration
-local MainWidth = 530
-local MainHeight = 320
-local SidebarWidth = 140
-local HeaderHeight = 36
-local FooterHeight = 42
-
--- Parent Container Detection
-local TargetParent = (gethui and gethui()) or game:GetService("CoreGui") or LocalPlayer:WaitForChild("PlayerGui")
-
--- Авто-очистка старых GUI
-if TargetParent:FindFirstChild("NeverloseMainWindow") then
-    TargetParent.NeverloseMainWindow:Destroy()
+local gethui = gethui or function()
+    return CoreGui
 end
 
--- 1. ScreenGui Initialization
-local ScreenGui = Instance.new("ScreenGui")
-ScreenGui.Name = "NeverloseMainWindow"
-ScreenGui.ResetOnSpawn = false
-ScreenGui.ZIndexBehavior = Enum.ZIndexBehavior.Sibling
-ScreenGui.Parent = TargetParent
+-- 1. Настройки темы оформления (Дизайн и Цвета)
+local Theme = {
+    ["Background"] = Color3.fromRGB(12, 12, 14),        -- Основной темно-серый фон
+    ["Background 2"] = Color3.fromRGB(10, 10, 12),      -- Фон боковой панели
+    ["Text"] = Color3.fromRGB(235, 235, 235),           -- Цвет текста
+    ["Outline"] = Color3.fromRGB(25, 25, 28),           -- Границы / рамки
+    ["Accent"] = Color3.fromRGB(0, 116, 224),           -- Синий акцент
+    ["AccentGradient"] = Color3.fromRGB(0, 195, 255),   -- Градиент акцента
+    ["Element"] = Color3.fromRGB(16, 16, 18)            -- Фон элементов (кнопок и т.д.)
+}
 
--- 2. Main Window Frame (Главный тёмный фон правого блока)
-local MainWindow = Instance.new("Frame")
-MainWindow.Name = "MainFrame"
-MainWindow.Size = UDim2.new(0, MainWidth, 0, MainHeight)
-MainWindow.Position = UDim2.new(0.5, -MainWidth / 2, 0.5, -MainHeight / 2)
-MainWindow.BackgroundColor3 = Color3.fromRGB(8, 10, 14)
-MainWindow.BorderSizePixel = 0
-MainWindow.ClipsDescendants = true
-MainWindow.Parent = ScreenGui
+-- 2. Создаем контейнер ScreenGui в CoreGui
+local Holder = Instance.new("ScreenGui")
+Holder.Parent = gethui()
+Holder.Name = "MyCustomGUI_Holder"
+Holder.ZIndexBehavior = Enum.ZIndexBehavior.Global
+Holder.ResetOnSpawn = false
 
-local MainCorner = Instance.new("UICorner")
-MainCorner.CornerRadius = UDim.new(0, 8)
-MainCorner.Parent = MainWindow
-
-local MainStroke = Instance.new("UIStroke")
-MainStroke.Color = Color3.fromRGB(25, 30, 42)
-MainStroke.Thickness = 1
-MainStroke.Parent = MainWindow
-
--- 3. Left Sidebar (Светло-тёмный оттенок как на скриншоте)
-local Sidebar = Instance.new("Frame")
-Sidebar.Name = "Sidebar"
-Sidebar.Size = UDim2.new(0, SidebarWidth, 1, 0)
-Sidebar.Position = UDim2.new(0, 0, 0, 0)
-Sidebar.BackgroundColor3 = Color3.fromRGB(14, 18, 26)
-Sidebar.BorderSizePixel = 0
-Sidebar.Parent = MainWindow
-
--- Brand Logo
-local LogoText = Instance.new("TextLabel")
-LogoText.Name = "Logo"
-LogoText.Size = UDim2.new(1, -20, 0, HeaderHeight)
-LogoText.Position = UDim2.new(0, 12, 0, 0)
-LogoText.BackgroundTransparency = 1
-LogoText.Text = "NEVERLOSE"
-LogoText.Font = Enum.Font.GothamBold
-LogoText.TextSize = 13
-LogoText.TextColor3 = Color3.fromRGB(240, 245, 255)
-LogoText.TextXAlignment = Enum.TextXAlignment.Left
-LogoText.Parent = Sidebar
-
--- Tab Navigation Container
-local TabContainer = Instance.new("Frame")
-TabContainer.Name = "TabContainer"
-TabContainer.Size = UDim2.new(1, -16, 1, -(HeaderHeight + FooterHeight + 20))
-TabContainer.Position = UDim2.new(0, 8, 0, HeaderHeight + 5)
-TabContainer.BackgroundTransparency = 1
-TabContainer.Parent = Sidebar
-
-local TabListLayout = Instance.new("UIListLayout")
-TabListLayout.SortOrder = Enum.SortOrder.LayoutOrder
-TabListLayout.Padding = UDim.new(0, 3)
-TabListLayout.Parent = TabContainer
-
--- User Profile Widget (Footer)
-local UserProfile = Instance.new("Frame")
-UserProfile.Name = "UserProfile"
-UserProfile.Size = UDim2.new(1, -16, 0, FooterHeight)
-UserProfile.Position = UDim2.new(0, 8, 1, -(FooterHeight + 8))
-UserProfile.BackgroundTransparency = 1
-UserProfile.BorderSizePixel = 0
-UserProfile.Parent = Sidebar
-
-local AvatarSize = FooterHeight - 12
-local AvatarImage = Instance.new("ImageLabel")
-AvatarImage.Name = "Avatar"
-AvatarImage.Size = UDim2.new(0, AvatarSize, 0, AvatarSize)
-AvatarImage.Position = UDim2.new(0, 6, 0.5, -AvatarSize / 2)
-AvatarImage.BackgroundColor3 = Color3.fromRGB(25, 30, 42)
-AvatarImage.Image = Players:GetUserThumbnailAsync(LocalPlayer.UserId, Enum.ThumbnailType.HeadShot, Enum.ThumbnailSize.Size420x420)
-AvatarImage.Parent = UserProfile
-
-local AvatarCorner = Instance.new("UICorner")
-AvatarCorner.CornerRadius = UDim.new(1, 0)
-AvatarCorner.Parent = AvatarImage
-
-local UsernameLabel = Instance.new("TextLabel")
-UsernameLabel.Name = "Username"
-UsernameLabel.Size = UDim2.new(1, -(AvatarSize + 16), 0, 15)
-UsernameLabel.Position = UDim2.new(0, AvatarSize + 12, 0, 6)
-UsernameLabel.BackgroundTransparency = 1
-UsernameLabel.Text = LocalPlayer.DisplayName
-UsernameLabel.Font = Enum.Font.GothamBold
-UsernameLabel.TextSize = 11
-UsernameLabel.TextColor3 = Color3.fromRGB(240, 245, 255)
-UsernameLabel.TextXAlignment = Enum.TextXAlignment.Left
-UsernameLabel.Parent = UserProfile
-
-local SubLabel = Instance.new("TextLabel")
-SubLabel.Name = "Subscription"
-SubLabel.Size = UDim2.new(1, -(AvatarSize + 16), 0, 13)
-SubLabel.Position = UDim2.new(0, AvatarSize + 12, 0, 21)
-SubLabel.BackgroundTransparency = 1
-SubLabel.Text = "Lifetime"
-SubLabel.Font = Enum.Font.Gotham
-SubLabel.TextSize = 10
-SubLabel.TextColor3 = Color3.fromRGB(0, 162, 255)
-SubLabel.TextXAlignment = Enum.TextXAlignment.Left
-SubLabel.Parent = UserProfile
-
--- 4. Header Bar
-local Header = Instance.new("Frame")
-Header.Name = "Header"
-Header.Size = UDim2.new(1, -SidebarWidth, 0, HeaderHeight)
-Header.Position = UDim2.new(0, SidebarWidth, 0, 0)
-Header.BackgroundTransparency = 1
-Header.Parent = MainWindow
-
-local ActiveTabTitle = Instance.new("TextLabel")
-ActiveTabTitle.Name = "ActiveTabTitle"
-ActiveTabTitle.Size = UDim2.new(0, 150, 1, 0)
-ActiveTabTitle.Position = UDim2.new(0, 15, 0, 0)
-ActiveTabTitle.BackgroundTransparency = 1
-ActiveTabTitle.Text = "RAGEBOT"
-ActiveTabTitle.Font = Enum.Font.GothamBold
-ActiveTabTitle.TextSize = 12
-ActiveTabTitle.TextColor3 = Color3.fromRGB(240, 245, 255)
-ActiveTabTitle.TextXAlignment = Enum.TextXAlignment.Left
-ActiveTabTitle.Parent = Header
-
-local WatermarkInfo = Instance.new("TextLabel")
-WatermarkInfo.Name = "WatermarkInfo"
-WatermarkInfo.Size = UDim2.new(0, 180, 1, 0)
-WatermarkInfo.Position = UDim2.new(1, -195, 0, 0)
-WatermarkInfo.BackgroundTransparency = 1
-WatermarkInfo.Text = "neverlose.cc | roblox"
-WatermarkInfo.Font = Enum.Font.GothamMedium
-WatermarkInfo.TextSize = 11
-WatermarkInfo.TextColor3 = Color3.fromRGB(80, 88, 105)
-WatermarkInfo.TextXAlignment = Enum.TextXAlignment.Right
-WatermarkInfo.Parent = Header
-
--- 5. Content Container
-local ContentContainer = Instance.new("Frame")
-ContentContainer.Name = "ContentContainer"
-ContentContainer.Size = UDim2.new(1, -(SidebarWidth + 20), 1, -(HeaderHeight + 10))
-ContentContainer.Position = UDim2.new(0, SidebarWidth + 10, 0, HeaderHeight)
-ContentContainer.BackgroundTransparency = 1
-ContentContainer.Parent = MainWindow
-
-local LeftColumn = Instance.new("ScrollingFrame")
-LeftColumn.Name = "LeftColumn"
-LeftColumn.Size = UDim2.new(0.5, -5, 1, 0)
-LeftColumn.Position = UDim2.new(0, 0, 0, 0)
-LeftColumn.BackgroundTransparency = 1
-LeftColumn.ScrollBarThickness = 2
-LeftColumn.ScrollBarImageColor3 = Color3.fromRGB(0, 162, 255)
-LeftColumn.Parent = ContentContainer
-
-local RightColumn = Instance.new("ScrollingFrame")
-RightColumn.Name = "RightColumn"
-RightColumn.Size = UDim2.new(0.5, -5, 1, 0)
-RightColumn.Position = UDim2.new(0.5, 5, 0, 0)
-RightColumn.BackgroundTransparency = 1
-RightColumn.ScrollBarThickness = 2
-RightColumn.ScrollBarImageColor3 = Color3.fromRGB(0, 162, 255)
-RightColumn.Parent = ContentContainer
-
-for _, col in ipairs({LeftColumn, RightColumn}) do
-    local layout = Instance.new("UIListLayout")
-    layout.SortOrder = Enum.SortOrder.LayoutOrder
-    layout.Padding = UDim.new(0, 10)
-    layout.Parent = col
+-- 3. Вспомогательная функция плавных анимаций (Tween)
+local function Tween(instance, info, goal)
+    info = info or TweenInfo.new(0.3, Enum.EasingStyle.Quad, Enum.EasingDirection.Out)
+    local tween = TweenService:Create(instance, info, goal)
+    tween:Play()
+    return tween
 end
 
--- 6. Helper Functions
-local ActiveTabButton = nil
-
-local function CreateTabSection(title)
-    local SectionLabel = Instance.new("TextLabel")
-    SectionLabel.Name = title .. "Section"
-    SectionLabel.Size = UDim2.new(1, 0, 0, 16)
-    SectionLabel.BackgroundTransparency = 1
-    SectionLabel.Text = string.upper(title)
-    SectionLabel.Font = Enum.Font.GothamBold
-    SectionLabel.TextSize = 9
-    SectionLabel.TextColor3 = Color3.fromRGB(60, 68, 85)
-    SectionLabel.TextXAlignment = Enum.TextXAlignment.Left
-    SectionLabel.Parent = TabContainer
-
-    local Padding = Instance.new("UIPadding")
-    Padding.PaddingLeft = UDim.new(0, 6)
-    Padding.Parent = SectionLabel
-
-    return SectionLabel
+-- 4. Хелпер для быстрой сборки UI элементов
+local Instances = {}
+function Instances:Create(className, properties)
+    local inst = Instance.new(className)
+    for prop, val in pairs(properties) do
+        inst[prop] = val
+    end
+    
+    local wrapper = { Instance = inst }
+    
+    function wrapper:Tween(info, goal)
+        return Tween(inst, info, goal)
+    end
+    
+    function wrapper:Connect(event, callback)
+        return inst[event]:Connect(callback)
+    end
+    
+    return wrapper
 end
 
-local function CreateTab(name)
-    local TabButton = Instance.new("TextButton")
-    TabButton.Name = name .. "Tab"
-    TabButton.Size = UDim2.new(1, 0, 0, 24)
-    TabButton.BackgroundColor3 = Color3.fromRGB(24, 30, 42)
-    TabButton.BackgroundTransparency = 1
-    TabButton.Text = ""
-    TabButton.AutoButtonColor = false
-    TabButton.Parent = TabContainer
-
-    local BtnCorner = Instance.new("UICorner")
-    BtnCorner.CornerRadius = UDim.new(0, 5)
-    BtnCorner.Parent = TabButton
-
-    local Title = Instance.new("TextLabel")
-    Title.Size = UDim2.new(1, -12, 1, 0)
-    Title.Position = UDim2.new(0, 12, 0, 0)
-    Title.BackgroundTransparency = 1
-    Title.Text = name
-    Title.Font = Enum.Font.GothamMedium
-    Title.TextSize = 11
-    Title.TextColor3 = Color3.fromRGB(110, 118, 135)
-    Title.TextXAlignment = Enum.TextXAlignment.Left
-    Title.Parent = TabButton
-
-    TabButton.MouseButton1Click:Connect(function()
-        if ActiveTabButton and ActiveTabButton ~= TabButton then
-            TweenService:Create(ActiveTabButton, TweenInfoFast, {BackgroundTransparency = 1}):Play()
-            TweenService:Create(ActiveTabButton:FindFirstChildOfClass("TextLabel"), TweenInfoFast, {TextColor3 = Color3.fromRGB(110, 118, 135)}):Play()
-        end
-        ActiveTabButton = TabButton
-        ActiveTabTitle.Text = string.upper(name)
-        TweenService:Create(TabButton, TweenInfoFast, {BackgroundTransparency = 0}):Play()
-        TweenService:Create(Title, TweenInfoFast, {TextColor3 = Color3.fromRGB(240, 245, 255)}):Play()
-    end)
-
-    return TabButton
-end
-
--- Populate Tabs
-CreateTabSection("Main")
-local DefaultTab = CreateTab("Ragebot")
-CreateTab("Legitbot")
-
-CreateTabSection("Visuals")
-CreateTab("Visuals")
-CreateTab("World")
-
-CreateTabSection("Other")
-CreateTab("Misc")
-CreateTab("Settings")
-
--- Activate First Tab
-ActiveTabButton = DefaultTab
-DefaultTab.BackgroundTransparency = 0
-DefaultTab:FindFirstChildOfClass("TextLabel").TextColor3 = Color3.fromRGB(240, 245, 255)
-
--- 7. Smooth Dragging Mechanism
-local Dragging, DragInput, DragStart, StartPos
-
-local function EnableDrag(frame)
-    frame.InputBegan:Connect(function(input)
+-- 5. Логика перетаскивания окна (Draggable)
+local function MakeDraggable(guiInstance)
+    local dragging, dragStart, startPos
+    
+    guiInstance.InputBegan:Connect(function(input)
         if input.UserInputType == Enum.UserInputType.MouseButton1 or input.UserInputType == Enum.UserInputType.Touch then
-            Dragging = true
-            DragStart = input.Position
-            StartPos = MainWindow.Position
+            dragging = true
+            dragStart = input.Position
+            startPos = guiInstance.Position
+            
+            input.Changed:Connect(function()
+                if input.UserInputState == Enum.UserInputState.End then
+                    dragging = false
+                end
+            end)
+        end
+    end)
+    
+    UserInputService.InputChanged:Connect(function(input)
+        if (input.UserInputType == Enum.UserInputType.MouseMovement or input.UserInputType == Enum.UserInputType.Touch) and dragging then
+            local delta = input.Position - dragStart
+            Tween(guiInstance, TweenInfo.new(0.12, Enum.EasingStyle.Quart, Enum.EasingDirection.Out), {
+                Position = UDim2.new(startPos.X.Scale, startPos.X.Offset + delta.X, startPos.Y.Scale, startPos.Y.Offset + delta.Y)
+            })
         end
     end)
 end
 
-EnableDrag(Header)
-EnableDrag(Sidebar)
+-- 6. Логика изменения размера окна за края (Resizeable)
+local function MakeResizeable(guiInstance, minSize)
+    local resizing, currentSide = false, nil
+    local startMouse, startPos, startSize
+    local edgeThickness = 4
 
-UserInputService.InputChanged:Connect(function(input)
-    if Dragging and (input.UserInputType == Enum.UserInputType.MouseMovement or input.UserInputType == Enum.UserInputType.Touch) then
-        local Delta = input.Position - DragStart
-        TweenService:Create(MainWindow, TweenInfoFast, {
-            Position = UDim2.new(StartPos.X.Scale, StartPos.X.Offset + Delta.X, StartPos.Y.Scale, StartPos.Y.Offset + Delta.Y)
-        }):Play()
+    local function MakeEdge(side, pos, size)
+        local btn = Instance.new("TextButton")
+        btn.Name = "Resize_" .. side
+        btn.Size = size
+        btn.Position = pos
+        btn.BackgroundTransparency = 1
+        btn.Text = ""
+        btn.BorderSizePixel = 0
+        btn.Parent = guiInstance
+        btn.ZIndex = 9999
+        return btn
     end
-end)
 
-UserInputService.InputEnded:Connect(function(input)
-    if input.UserInputType == Enum.UserInputType.MouseButton1 or input.UserInputType == Enum.UserInputType.Touch then
-        Dragging = false
+    local edges = {
+        { Button = MakeEdge("L", UDim2.new(0, 0, 0, 0), UDim2.new(0, edgeThickness, 1, 0)), Side = "L" },
+        { Button = MakeEdge("R", UDim2.new(1, -edgeThickness, 0, 0), UDim2.new(0, edgeThickness, 1, 0)), Side = "R" },
+        { Button = MakeEdge("T", UDim2.new(0, 0, 0, 0), UDim2.new(1, 0, 0, edgeThickness)), Side = "T" },
+        { Button = MakeEdge("B", UDim2.new(0, 0, 1, -edgeThickness), UDim2.new(1, 0, 0, edgeThickness)), Side = "B" },
+    }
+
+    for _, edge in ipairs(edges) do
+        edge.Button.InputBegan:Connect(function(input)
+            if input.UserInputType == Enum.UserInputType.MouseButton1 then
+                resizing = true
+                currentSide = edge.Side
+                startMouse = UserInputService:GetMouseLocation()
+                startPos = Vector2.new(guiInstance.Position.X.Offset, guiInstance.Position.Y.Offset)
+                startSize = Vector2.new(guiInstance.Size.X.Offset, guiInstance.Size.Y.Offset)
+            end
+        end)
     end
-end)
+
+    UserInputService.InputEnded:Connect(function(input)
+        if input.UserInputType == Enum.UserInputType.MouseButton1 then
+            resizing = false
+            currentSide = nil
+        end
+    end)
+
+    RunService.RenderStepped:Connect(function()
+        if not resizing or not currentSide then return end
+        local mouseLoc = UserInputService:GetMouseLocation()
+        local dx = mouseLoc.X - startMouse.X
+        local dy = mouseLoc.Y - startMouse.Y
+        
+        local x, y = startPos.X, startPos.Y
+        local w, h = startSize.X, startSize.Y
+
+        if currentSide == "L" then
+            x = startPos.X + dx
+            w = startSize.X - dx
+        elseif currentSide == "R" then
+            w = startSize.X + dx
+        elseif currentSide == "T" then
+            y = startPos.Y + dy
+            h = startSize.Y - dy
+        elseif currentSide == "B" then
+            h = startSize.Y + dy
+        end
+
+        if w < minSize.X then
+            if currentSide == "L" then x = x - (minSize.X - w) end
+            w = minSize.X
+        end
+        if h < minSize.Y then
+            if currentSide == "T" then y = y - (minSize.Y - h) end
+            h = minSize.Y
+        end
+
+        Tween(guiInstance, TweenInfo.new(0.2, Enum.EasingStyle.Quart, Enum.EasingDirection.Out), {
+            Position = UDim2.fromOffset(x, y),
+            Size = UDim2.fromOffset(w, h)
+        })
+    end)
+end
+
+-- =======================================================
+-- 7. ОСНОВНАЯ ФУНКЦИЯ СОЗДАНИЯ ОКНА (WINDOW)
+-- =======================================================
+local Library = {}
+
+function Library:CreateWindow(data)
+    data = data or {}
+    local windowName = data.Name or "My Custom Window"
+    local subName = data.SubName or "Fine-tuning GUI"
+    local logoId = data.Logo or "1l20959262762131"
+
+    -- Главное окно (MainFrame)
+    local mainFrame = Instances:Create("Frame", {
+        Parent = Holder,
+        Name = "MainFrame",
+        BorderColor3 = Color3.fromRGB(0, 0, 0),
+        AnchorPoint = Vector2.new(0.5, 0.5),
+        BackgroundTransparency = 0.12,
+        Position = UDim2.new(0.5, 0, 0.5, 0),
+        Size = UDim2.new(0, 677, 0, 520),
+        ZIndex = 2,
+        BorderSizePixel = 0,
+        BackgroundColor3 = Theme["Background"]
+    })
+
+    Instances:Create("UICorner", {
+        Parent = mainFrame.Instance,
+        CornerRadius = UDim.new(0, 6)
+    })
+
+    -- Включаем перемещение и изменение размера
+    MakeDraggable(mainFrame.Instance)
+    MakeResizeable(mainFrame.Instance, Vector2.new(500, 350))
+
+    -- Боковая панель ведения вкладок/табов (LeftTabs)
+    local leftTabs = Instances:Create("Frame", {
+        Parent = mainFrame.Instance,
+        Name = "LeftTabs",
+        BorderColor3 = Color3.fromRGB(0, 0, 0),
+        AnchorPoint = Vector2.new(0, 0),
+        BackgroundTransparency = 0.15,
+        Position = UDim2.new(0, 0, 0, 0),
+        Size = UDim2.new(0, 200, 1, 0),
+        ZIndex = 2,
+        BorderSizePixel = 0,
+        BackgroundColor3 = Theme["Background 2"]
+    })
+
+    Instances:Create("UICorner", {
+        Parent = leftTabs.Instance,
+        CornerRadius = UDim.new(0, 6)
+    })
+
+    Instances:Create("UIListLayout", {
+        Parent = leftTabs.Instance,
+        Padding = UDim.new(0, 8),
+        SortOrder = Enum.SortOrder.LayoutOrder
+    })
+
+    Instances:Create("UIPadding", {
+        Parent = leftTabs.Instance,
+        PaddingTop = UDim.new(0, 60),
+        PaddingBottom = UDim.new(0, 15),
+        PaddingRight = UDim.new(0, 12),
+        PaddingLeft = UDim.new(0, 12)
+    })
+
+    -- Логотип
+    local logo = Instances:Create("ImageLabel", {
+        Parent = mainFrame.Instance,
+        Name = "Logo",
+        ImageColor3 = Color3.fromRGB(255, 255, 255),
+        ScaleType = Enum.ScaleType.Fit,
+        Size = UDim2.new(0, 35, 0, 35),
+        Image = "rbxassetid://" .. logoId,
+        BackgroundTransparency = 1,
+        Position = UDim2.new(0, 12, 0, 12),
+        ZIndex = 3,
+        BorderSizePixel = 0
+    })
+
+    Instances:Create("UIGradient", {
+        Parent = logo.Instance,
+        Rotation = -115,
+        Color = ColorSequence.new({
+            ColorSequenceKeypoint.new(0, Theme["Accent"]),
+            ColorSequenceKeypoint.new(1, Theme["AccentGradient"])
+        })
+    })
+
+    -- Главное Название (Title)
+    local title = Instances:Create("TextLabel", {
+        Parent = mainFrame.Instance,
+        Name = "Title",
+        FontFace = Font.new("rbxassetid://12187365364", Enum.FontWeight.SemiBold, Enum.FontStyle.Normal),
+        TextColor3 = Theme["Text"],
+        Text = windowName,
+        AutomaticSize = Enum.AutomaticSize.X,
+        Size = UDim2.new(0, 0, 0, 15),
+        BackgroundTransparency = 1,
+        Position = UDim2.new(0, 55, 0, 13),
+        ZIndex = 3,
+        TextSize = 16,
+        TextXAlignment = Enum.TextXAlignment.Left
+    })
+
+    -- Подзаголовок (SubTitle)
+    local subTitle = Instances:Create("TextLabel", {
+        Parent = mainFrame.Instance,
+        Name = "SubTitle",
+        FontFace = Font.new("rbxassetid://12187365364", Enum.FontWeight.Regular, Enum.FontStyle.Normal),
+        TextColor3 = Theme["Text"],
+        TextTransparency = 0.4,
+        Text = subName,
+        AutomaticSize = Enum.AutomaticSize.X,
+        Size = UDim2.new(0, 0, 0, 15),
+        BackgroundTransparency = 1,
+        Position = UDim2.new(0, 55, 0, 30),
+        ZIndex = 3,
+        TextSize = 13,
+        TextXAlignment = Enum.TextXAlignment.Left
+    })
+
+    -- Область для контента (Справа от боковой панели)
+    local content = Instances:Create("Frame", {
+        Parent = mainFrame.Instance,
+        Name = "ContentArea",
+        BackgroundTransparency = 1,
+        Position = UDim2.new(0, 205, 0, 55),
+        Size = UDim2.new(1, -210, 1, -60),
+        ZIndex = 2
+    })
+
+    -- Кнопка Закрытия Окна (CloseButton)
+    local closeButton = Instances:Create("TextButton", {
+        Parent = mainFrame.Instance,
+        Name = "CloseButton",
+        Text = "",
+        AutoButtonColor = false,
+        AnchorPoint = Vector2.new(1, 0),
+        BackgroundTransparency = 0.2,
+        Position = UDim2.new(1, -12, 0, 12),
+        Size = UDim2.new(0, 32, 0, 32),
+        ZIndex = 3,
+        BackgroundColor3 = Theme["Element"]
+    })
+
+    Instances:Create("UICorner", {
+        Parent = closeButton.Instance,
+        CornerRadius = UDim.new(0, 7)
+    })
+
+    local closeIcon = Instances:Create("ImageLabel", {
+        Parent = closeButton.Instance,
+        Name = "CloseIcon",
+        ImageColor3 = Theme["Text"],
+        ImageTransparency = 0.3,
+        Size = UDim2.new(0, 11, 0, 11),
+        AnchorPoint = Vector2.new(0.5, 0.5),
+        Image = "rbxassetid://130510492706892",
+        BackgroundTransparency = 1,
+        Position = UDim2.new(0.5, 0, 0.5, 0),
+        ZIndex = 4
+    })
+
+    -- При нажатии на крестик окно уничтожается
+    closeButton:Connect("MouseButton1Down", function()
+        Holder:Destroy()
+    end)
+
+    return {
+        MainFrame = mainFrame.Instance,
+        LeftTabs = leftTabs.Instance,
+        Content = content.Instance
+    }
+end
+
+-- =======================================================
+-- 8. ПРИМЕР СОЗДАНИЯ И ЗАПУСКА ОКНА
+-- =======================================================
+local Window = Library:CreateWindow({
+    Name = "Dark Hub",
+    SubName = "Custom GUI Framework",
+    Logo = "1l20959262762131"
+})
