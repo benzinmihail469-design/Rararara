@@ -214,7 +214,7 @@ function Library:CreateWindow(data)
     data = data or {}
     local windowName = data.Name or "My Custom Window"
     local subName = data.SubName or "Fine-tuning GUI"
-    local logoId = data.Logo or "1l20959262762131"
+    local logoIcon = data.Logo or "home"
 
     -- Главное окно (Размер уменьшен до 560x350)
     local mainFrame = Instances:Create("Frame", {
@@ -272,20 +272,25 @@ function Library:CreateWindow(data)
         PaddingLeft = UDim.new(0, 10)
     })
 
-    -- Логотип
+    -- =======================================================
+    -- ЛОГОТИП (ИСПРАВЛЕННАЯ ВЕРСИЯ С PARSEICON)
+    -- =======================================================
+    local logoImage = ParseIcon(logoIcon)
+    
     local logo = Instances:Create("ImageLabel", {
         Parent = mainFrame.Instance,
         Name = "Logo",
         ImageColor3 = Color3.fromRGB(255, 255, 255),
         ScaleType = Enum.ScaleType.Fit,
         Size = UDim2.new(0, 28, 0, 28),
-        Image = "rbxassetid://" .. logoId,
+        Image = logoImage,
         BackgroundTransparency = 1,
         Position = UDim2.new(0, 10, 0, 10),
         ZIndex = 3,
         BorderSizePixel = 0
     })
 
+    -- Градиент для иконки (эффект подсветки)
     Instances:Create("UIGradient", {
         Parent = logo.Instance,
         Rotation = -115,
@@ -499,7 +504,7 @@ end
 local Window = Library:CreateWindow({
     Name = "Dark Hub",
     SubName = "Custom GUI Framework",
-    Logo = "1l20959262762131"
+    Logo = "home"  -- Теперь используем "home" как ключ из IconLibrary
 })
 
 -- =======================================================
