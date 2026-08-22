@@ -1,5 +1,5 @@
 -- =======================================================
--- АВТОНОМНЫЙ СКРИПТ ГЛАВНОГО ОКНА (КОМПАКТНАЯ ВЕРСИЯ)
+-- АВТОНОМНЫЙ СКРИПТ ГЛАВНОГО ОКНА (СНИЖЕННАЯ ВЫСОТА)
 -- =======================================================
 
 local Workspace = game:GetService("Workspace")
@@ -13,7 +13,7 @@ local gethui = gethui or function()
     return CoreGui
 end
 
--- 1. Настройки темы оформления (Дизайн и Цвета)
+-- 1. Тема оформления
 local Theme = {
     ["Background"] = Color3.fromRGB(12, 12, 14),
     ["Background 2"] = Color3.fromRGB(10, 10, 12),
@@ -24,14 +24,14 @@ local Theme = {
     ["Element"] = Color3.fromRGB(16, 16, 18)
 }
 
--- 2. Контейнер ScreenGui
+-- 2. ScreenGui
 local Holder = Instance.new("ScreenGui")
 Holder.Parent = gethui()
 Holder.Name = "MyCustomGUI_Holder"
 Holder.ZIndexBehavior = Enum.ZIndexBehavior.Global
 Holder.ResetOnSpawn = false
 
--- 3. Хелпер плавных анимаций (Tween)
+-- 3. Tween Хелпер
 local function Tween(instance, info, goal)
     info = info or TweenInfo.new(0.3, Enum.EasingStyle.Quad, Enum.EasingDirection.Out)
     local tween = TweenService:Create(instance, info, goal)
@@ -60,7 +60,7 @@ function Instances:Create(className, properties)
     return wrapper
 end
 
--- 5. Логика перетаскивания (Draggable)
+-- 5. Draggable
 local function MakeDraggable(guiInstance)
     local dragging, dragStart, startPos
     
@@ -88,7 +88,7 @@ local function MakeDraggable(guiInstance)
     end)
 end
 
--- 6. Логика изменения размера (Resizeable)
+-- 6. Resizeable
 local function MakeResizeable(guiInstance, minSize)
     local resizing, currentSide = false, nil
     local startMouse, startPos, startSize
@@ -171,7 +171,7 @@ local function MakeResizeable(guiInstance, minSize)
 end
 
 -- =======================================================
--- 7. ФУНКЦИЯ СОЗДАНИЯ ОКНА (WINDOW)
+-- 7. СОЗДАНИЕ ОКНА (WINDOW)
 -- =======================================================
 local Library = {}
 
@@ -181,7 +181,7 @@ function Library:CreateWindow(data)
     local subName = data.SubName or "Fine-tuning GUI"
     local logoId = data.Logo or "1l20959262762131"
 
-    -- Главное окно (Размер уменьшен с 677x520 до 560x410)
+    -- Главное окно (Размер уменьшен до 560x350)
     local mainFrame = Instances:Create("Frame", {
         Parent = Holder,
         Name = "MainFrame",
@@ -189,7 +189,7 @@ function Library:CreateWindow(data)
         AnchorPoint = Vector2.new(0.5, 0.5),
         BackgroundTransparency = 0.12,
         Position = UDim2.new(0.5, 0, 0.5, 0),
-        Size = UDim2.new(0, 560, 0, 410),
+        Size = UDim2.new(0, 560, 0, 350),
         ZIndex = 2,
         BorderSizePixel = 0,
         BackgroundColor3 = Theme["Background"]
@@ -200,11 +200,11 @@ function Library:CreateWindow(data)
         CornerRadius = UDim.new(0, 6)
     })
 
-    -- Перемещение и изменение размера (минимальный порог сжат до 400x280)
+    -- Минимальный размер окна: 400x220
     MakeDraggable(mainFrame.Instance)
-    MakeResizeable(mainFrame.Instance, Vector2.new(400, 280))
+    MakeResizeable(mainFrame.Instance, Vector2.new(400, 220))
 
-    -- Боковая панель вкладок (Ширина сжата с 200 до 165)
+    -- Боковая панель
     local leftTabs = Instances:Create("Frame", {
         Parent = mainFrame.Instance,
         Name = "LeftTabs",
@@ -231,8 +231,8 @@ function Library:CreateWindow(data)
 
     Instances:Create("UIPadding", {
         Parent = leftTabs.Instance,
-        PaddingTop = UDim.new(0, 55),
-        PaddingBottom = UDim.new(0, 12),
+        PaddingTop = UDim.new(0, 50),
+        PaddingBottom = UDim.new(0, 10),
         PaddingRight = UDim.new(0, 10),
         PaddingLeft = UDim.new(0, 10)
     })
@@ -243,7 +243,7 @@ function Library:CreateWindow(data)
         Name = "Logo",
         ImageColor3 = Color3.fromRGB(255, 255, 255),
         ScaleType = Enum.ScaleType.Fit,
-        Size = UDim2.new(0, 30, 0, 30),
+        Size = UDim2.new(0, 28, 0, 28),
         Image = "rbxassetid://" .. logoId,
         BackgroundTransparency = 1,
         Position = UDim2.new(0, 10, 0, 10),
@@ -270,9 +270,9 @@ function Library:CreateWindow(data)
         AutomaticSize = Enum.AutomaticSize.X,
         Size = UDim2.new(0, 0, 0, 14),
         BackgroundTransparency = 1,
-        Position = UDim2.new(0, 48, 0, 10),
+        Position = UDim2.new(0, 45, 0, 9),
         ZIndex = 3,
-        TextSize = 15,
+        TextSize = 14,
         TextXAlignment = Enum.TextXAlignment.Left
     })
 
@@ -287,23 +287,23 @@ function Library:CreateWindow(data)
         AutomaticSize = Enum.AutomaticSize.X,
         Size = UDim2.new(0, 0, 0, 14),
         BackgroundTransparency = 1,
-        Position = UDim2.new(0, 48, 0, 25),
+        Position = UDim2.new(0, 45, 0, 23),
         ZIndex = 3,
-        TextSize = 12,
+        TextSize = 11,
         TextXAlignment = Enum.TextXAlignment.Left
     })
 
-    -- Область контента (Сдвинута под новую ширину боковой панели)
+    -- Контент область
     local content = Instances:Create("Frame", {
         Parent = mainFrame.Instance,
         Name = "ContentArea",
         BackgroundTransparency = 1,
-        Position = UDim2.new(0, 172, 0, 50),
-        Size = UDim2.new(1, -177, 1, -55),
+        Position = UDim2.new(0, 172, 0, 45),
+        Size = UDim2.new(1, -177, 1, -50),
         ZIndex = 2
     })
 
-    -- Кнопка Закрытия
+    -- Кнопка закрытия
     local closeButton = Instances:Create("TextButton", {
         Parent = mainFrame.Instance,
         Name = "CloseButton",
@@ -312,14 +312,14 @@ function Library:CreateWindow(data)
         AnchorPoint = Vector2.new(1, 0),
         BackgroundTransparency = 0.2,
         Position = UDim2.new(1, -10, 0, 10),
-        Size = UDim2.new(0, 28, 0, 28),
+        Size = UDim2.new(0, 26, 0, 26),
         ZIndex = 3,
         BackgroundColor3 = Theme["Element"]
     })
 
     Instances:Create("UICorner", {
         Parent = closeButton.Instance,
-        CornerRadius = UDim.new(0, 6)
+        CornerRadius = UDim.new(0, 5)
     })
 
     local closeIcon = Instances:Create("ImageLabel", {
