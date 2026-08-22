@@ -13,7 +13,16 @@ local gethui = gethui or function()
     return CoreGui
 end
 
--- 1. Настройки темы оформления (Дизайн и Цвета)
+-- =======================================================
+-- РАЗМЕРЫ И НАСТРОЙКИ
+-- =======================================================
+local MainWidth = 530     -- телефонный размер
+local MainHeight = 320
+local SidebarWidth = 140
+local HeaderHeight = 36
+local FooterHeight = 42
+
+-- Настройки темы оформления (Дизайн и Цвета)
 local Theme = {
     ["Background"] = Color3.fromRGB(12, 12, 14),        -- Основной темно-серый фон
     ["Background 2"] = Color3.fromRGB(10, 10, 12),      -- Фон боковой панели
@@ -21,17 +30,17 @@ local Theme = {
     ["Outline"] = Color3.fromRGB(25, 25, 28),           -- Границы / рамки
     ["Accent"] = Color3.fromRGB(0, 116, 224),           -- Синий акцент
     ["AccentGradient"] = Color3.fromRGB(0, 195, 255),   -- Градиент акцента
-    ["Element"] = Color3.fromRGB(16, 16, 18)            -- Фон элементов (кнопок и т.д.)
+    ["Element"] = Color3.fromRGB(16, 16, 18)            -- Фон элементов
 }
 
--- 2. Создаем контейнер ScreenGui в CoreGui
+-- Создаем контейнер ScreenGui в CoreGui
 local Holder = Instance.new("ScreenGui")
 Holder.Parent = gethui()
 Holder.Name = "MyCustomGUI_Holder"
 Holder.ZIndexBehavior = Enum.ZIndexBehavior.Global
 Holder.ResetOnSpawn = false
 
--- 3. Вспомогательная функция плавных анимаций (Tween)
+-- Вспомогательная функция плавных анимаций (Tween)
 local function Tween(instance, info, goal)
     info = info or TweenInfo.new(0.3, Enum.EasingStyle.Quad, Enum.EasingDirection.Out)
     local tween = TweenService:Create(instance, info, goal)
@@ -39,7 +48,7 @@ local function Tween(instance, info, goal)
     return tween
 end
 
--- 4. Хелпер для быстрой сборки UI элементов
+-- Хелпер для быстрой сборки UI элементов
 local Instances = {}
 function Instances:Create(className, properties)
     local inst = Instance.new(className)
@@ -60,7 +69,7 @@ function Instances:Create(className, properties)
     return wrapper
 end
 
--- 5. Логика перетаскивания окна (Draggable)
+-- Логика перетаскивания окна (Draggable)
 local function MakeDraggable(guiInstance)
     local dragging, dragStart, startPos
     
@@ -88,7 +97,7 @@ local function MakeDraggable(guiInstance)
     end)
 end
 
--- 6. Логика изменения размера окна за края (Resizeable)
+-- Логика изменения размера окна за края (Resizeable)
 local function MakeResizeable(guiInstance, minSize)
     local resizing, currentSide = false, nil
     local startMouse, startPos, startSize
@@ -171,14 +180,14 @@ local function MakeResizeable(guiInstance, minSize)
 end
 
 -- =======================================================
--- 7. ОСНОВНАЯ ФУНКЦИЯ СОЗДАНИЯ ОКНА (WINDOW)
+-- ОСНОВНАЯ ФУНКЦИЯ СОЗДАНИЯ ОКНА (WINDOW)
 -- =======================================================
 local Library = {}
 
 function Library:CreateWindow(data)
     data = data or {}
-    local windowName = data.Name or "My Custom Window"
-    local subName = data.SubName or "Fine-tuning GUI"
+    local windowName = data.Name or "Dark Hub"
+    local subName = data.SubName or "Mobile Edition"
     local logoId = data.Logo or "1l20959262762131"
 
     -- Главное окно (MainFrame)
@@ -189,7 +198,7 @@ function Library:CreateWindow(data)
         AnchorPoint = Vector2.new(0.5, 0.5),
         BackgroundTransparency = 0.12,
         Position = UDim2.new(0.5, 0, 0.5, 0),
-        Size = UDim2.new(0, 677, 0, 520),
+        Size = UDim2.new(0, MainWidth, 0, MainHeight),
         ZIndex = 2,
         BorderSizePixel = 0,
         BackgroundColor3 = Theme["Background"]
@@ -200,54 +209,31 @@ function Library:CreateWindow(data)
         CornerRadius = UDim.new(0, 6)
     })
 
-    -- Включаем перемещение и изменение размера
     MakeDraggable(mainFrame.Instance)
-    MakeResizeable(mainFrame.Instance, Vector2.new(500, 350))
+    MakeResizeable(mainFrame.Instance, Vector2.new(380, 240))
 
-    -- Боковая панель ведения вкладок/табов (LeftTabs)
-    local leftTabs = Instances:Create("Frame", {
+    -- 1. Шапка окна (Header)
+    local headerFrame = Instances:Create("Frame", {
         Parent = mainFrame.Instance,
-        Name = "LeftTabs",
-        BorderColor3 = Color3.fromRGB(0, 0, 0),
-        AnchorPoint = Vector2.new(0, 0),
-        BackgroundTransparency = 0.15,
+        Name = "Header",
+        BackgroundTransparency = 1,
         Position = UDim2.new(0, 0, 0, 0),
-        Size = UDim2.new(0, 200, 1, 0),
-        ZIndex = 2,
-        BorderSizePixel = 0,
-        BackgroundColor3 = Theme["Background 2"]
+        Size = UDim2.new(1, 0, 0, HeaderHeight),
+        ZIndex = 3
     })
 
-    Instances:Create("UICorner", {
-        Parent = leftTabs.Instance,
-        CornerRadius = UDim.new(0, 6)
-    })
-
-    Instances:Create("UIListLayout", {
-        Parent = leftTabs.Instance,
-        Padding = UDim.new(0, 8),
-        SortOrder = Enum.SortOrder.LayoutOrder
-    })
-
-    Instances:Create("UIPadding", {
-        Parent = leftTabs.Instance,
-        PaddingTop = UDim.new(0, 60),
-        PaddingBottom = UDim.new(0, 15),
-        PaddingRight = UDim.new(0, 12),
-        PaddingLeft = UDim.new(0, 12)
-    })
-
-    -- Логотип
+    -- Логотип в шапке
+    local logoSize = HeaderHeight - 12
     local logo = Instances:Create("ImageLabel", {
-        Parent = mainFrame.Instance,
+        Parent = headerFrame.Instance,
         Name = "Logo",
         ImageColor3 = Color3.fromRGB(255, 255, 255),
         ScaleType = Enum.ScaleType.Fit,
-        Size = UDim2.new(0, 35, 0, 35),
+        Size = UDim2.new(0, logoSize, 0, logoSize),
         Image = "rbxassetid://" .. logoId,
         BackgroundTransparency = 1,
-        Position = UDim2.new(0, 12, 0, 12),
-        ZIndex = 3,
+        Position = UDim2.new(0, 8, 0.5, -logoSize/2),
+        ZIndex = 4,
         BorderSizePixel = 0
     })
 
@@ -260,98 +246,139 @@ function Library:CreateWindow(data)
         })
     })
 
-    -- Главное Название (Title)
+    -- Название в шапке
     local title = Instances:Create("TextLabel", {
-        Parent = mainFrame.Instance,
+        Parent = headerFrame.Instance,
         Name = "Title",
         FontFace = Font.new("rbxassetid://12187365364", Enum.FontWeight.SemiBold, Enum.FontStyle.Normal),
         TextColor3 = Theme["Text"],
         Text = windowName,
         AutomaticSize = Enum.AutomaticSize.X,
-        Size = UDim2.new(0, 0, 0, 15),
+        Size = UDim2.new(0, 0, 1, 0),
         BackgroundTransparency = 1,
-        Position = UDim2.new(0, 55, 0, 13),
-        ZIndex = 3,
-        TextSize = 16,
+        Position = UDim2.new(0, logoSize + 14, 0, 0),
+        ZIndex = 4,
+        TextSize = 14,
         TextXAlignment = Enum.TextXAlignment.Left
     })
 
-    -- Подзаголовок (SubTitle)
-    local subTitle = Instances:Create("TextLabel", {
-        Parent = mainFrame.Instance,
-        Name = "SubTitle",
-        FontFace = Font.new("rbxassetid://12187365364", Enum.FontWeight.Regular, Enum.FontStyle.Normal),
-        TextColor3 = Theme["Text"],
-        TextTransparency = 0.4,
-        Text = subName,
-        AutomaticSize = Enum.AutomaticSize.X,
-        Size = UDim2.new(0, 0, 0, 15),
-        BackgroundTransparency = 1,
-        Position = UDim2.new(0, 55, 0, 30),
-        ZIndex = 3,
-        TextSize = 13,
-        TextXAlignment = Enum.TextXAlignment.Left
-    })
-
-    -- Область для контента (Справа от боковой панели)
-    local content = Instances:Create("Frame", {
-        Parent = mainFrame.Instance,
-        Name = "ContentArea",
-        BackgroundTransparency = 1,
-        Position = UDim2.new(0, 205, 0, 55),
-        Size = UDim2.new(1, -210, 1, -60),
-        ZIndex = 2
-    })
-
-    -- Кнопка Закрытия Окна (CloseButton)
+    -- Кнопка закрытия в шапке
+    local closeBtnSize = HeaderHeight - 12
     local closeButton = Instances:Create("TextButton", {
-        Parent = mainFrame.Instance,
+        Parent = headerFrame.Instance,
         Name = "CloseButton",
         Text = "",
         AutoButtonColor = false,
-        AnchorPoint = Vector2.new(1, 0),
+        AnchorPoint = Vector2.new(1, 0.5),
         BackgroundTransparency = 0.2,
-        Position = UDim2.new(1, -12, 0, 12),
-        Size = UDim2.new(0, 32, 0, 32),
-        ZIndex = 3,
+        Position = UDim2.new(1, -6, 0.5, 0),
+        Size = UDim2.new(0, closeBtnSize, 0, closeBtnSize),
+        ZIndex = 4,
         BackgroundColor3 = Theme["Element"]
     })
 
     Instances:Create("UICorner", {
         Parent = closeButton.Instance,
-        CornerRadius = UDim.new(0, 7)
+        CornerRadius = UDim.new(0, 5)
     })
 
-    local closeIcon = Instances:Create("ImageLabel", {
+    Instances:Create("ImageLabel", {
         Parent = closeButton.Instance,
         Name = "CloseIcon",
         ImageColor3 = Theme["Text"],
         ImageTransparency = 0.3,
-        Size = UDim2.new(0, 11, 0, 11),
+        Size = UDim2.new(0, 10, 0, 10),
         AnchorPoint = Vector2.new(0.5, 0.5),
         Image = "rbxassetid://130510492706892",
         BackgroundTransparency = 1,
         Position = UDim2.new(0.5, 0, 0.5, 0),
-        ZIndex = 4
+        ZIndex = 5
     })
 
-    -- При нажатии на крестик окно уничтожается
     closeButton:Connect("MouseButton1Down", function()
         Holder:Destroy()
     end)
 
+    -- 2. Боковая панель вкладок (LeftTabs)
+    local leftTabs = Instances:Create("Frame", {
+        Parent = mainFrame.Instance,
+        Name = "LeftTabs",
+        BorderColor3 = Color3.fromRGB(0, 0, 0),
+        BackgroundTransparency = 0.15,
+        Position = UDim2.new(0, 0, 0, HeaderHeight),
+        Size = UDim2.new(0, SidebarWidth, 1, -(HeaderHeight + FooterHeight)),
+        ZIndex = 2,
+        BorderSizePixel = 0,
+        BackgroundColor3 = Theme["Background 2"]
+    })
+
+    Instances:Create("UIListLayout", {
+        Parent = leftTabs.Instance,
+        Padding = UDim.new(0, 4),
+        SortOrder = Enum.SortOrder.LayoutOrder
+    })
+
+    Instances:Create("UIPadding", {
+        Parent = leftTabs.Instance,
+        PaddingTop = UDim.new(0, 6),
+        PaddingBottom = UDim.new(0, 6),
+        PaddingRight = UDim.new(0, 6),
+        PaddingLeft = UDim.new(0, 6)
+    })
+
+    -- 3. Область основного контента (ContentArea)
+    local content = Instances:Create("Frame", {
+        Parent = mainFrame.Instance,
+        Name = "ContentArea",
+        BackgroundTransparency = 1,
+        Position = UDim2.new(0, SidebarWidth + 6, 0, HeaderHeight + 4),
+        Size = UDim2.new(1, -(SidebarWidth + 12), 1, -(HeaderHeight + FooterHeight + 8)),
+        ZIndex = 2
+    })
+
+    -- 4. Подвал окна (Footer)
+    local footerFrame = Instances:Create("Frame", {
+        Parent = mainFrame.Instance,
+        Name = "Footer",
+        BackgroundTransparency = 0.2,
+        Position = UDim2.new(0, 0, 1, -FooterHeight),
+        Size = UDim2.new(1, 0, 0, FooterHeight),
+        ZIndex = 3,
+        BackgroundColor3 = Theme["Background 2"]
+    })
+
+    Instances:Create("UICorner", {
+        Parent = footerFrame.Instance,
+        CornerRadius = UDim.new(0, 6)
+    })
+
+    local footerText = Instances:Create("TextLabel", {
+        Parent = footerFrame.Instance,
+        Name = "FooterText",
+        FontFace = Font.new("rbxassetid://12187365364", Enum.FontWeight.Regular, Enum.FontStyle.Normal),
+        TextColor3 = Theme["Text"],
+        TextTransparency = 0.5,
+        Text = subName,
+        Size = UDim2.new(1, -20, 1, 0),
+        Position = UDim2.new(0, 10, 0, 0),
+        BackgroundTransparency = 1,
+        ZIndex = 4,
+        TextSize = 12,
+        TextXAlignment = Enum.TextXAlignment.Left
+    })
+
     return {
         MainFrame = mainFrame.Instance,
+        Header = headerFrame.Instance,
         LeftTabs = leftTabs.Instance,
-        Content = content.Instance
+        Content = content.Instance,
+        Footer = footerFrame.Instance
     }
 end
 
--- =======================================================
--- 8. ПРИМЕР СОЗДАНИЯ И ЗАПУСКА ОКНА
--- =======================================================
+-- Пример создания
 local Window = Library:CreateWindow({
     Name = "Dark Hub",
-    SubName = "Custom GUI Framework",
+    SubName = "Compact / Mobile Layout",
     Logo = "1l20959262762131"
 })
