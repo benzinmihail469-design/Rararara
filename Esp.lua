@@ -497,6 +497,161 @@ function Library:CreateTab(window, tabData)
 end
 
 -- =======================================================
+-- СЕТКА КОЛОНОК (NEVERLOSE DUAL COLUMN LAYOUT)
+-- =======================================================
+function Library:CreateColumns(tabContainer)
+    local columnsFrame = Instances:Create("Frame", {
+        Parent = tabContainer,
+        Name = "ColumnsContainer",
+        Size = UDim2.new(1, 0, 1, 0),
+        BackgroundTransparency = 1,
+        ZIndex = 3
+    })
+    
+    -- Левая колонка
+    local leftColumn = Instances:Create("Frame", {
+        Parent = columnsFrame.Instance,
+        Name = "LeftColumn",
+        Size = UDim2.new(0.5, -5, 1, 0),
+        Position = UDim2.new(0, 0, 0, 0),
+        BackgroundTransparency = 1,
+        ZIndex = 3
+    })
+    
+    Instances:Create("UIListLayout", {
+        Parent = leftColumn.Instance,
+        Padding = UDim.new(0, 8),
+        SortOrder = Enum.SortOrder.LayoutOrder
+    })
+    
+    -- Правая колонка
+    local rightColumn = Instances:Create("Frame", {
+        Parent = columnsFrame.Instance,
+        Name = "RightColumn",
+        Size = UDim2.new(0.5, -5, 1, 0),
+        Position = UDim2.new(0.5, 5, 0, 0),
+        BackgroundTransparency = 1,
+        ZIndex = 3
+    })
+    
+    Instances:Create("UIListLayout", {
+        Parent = rightColumn.Instance,
+        Padding = UDim.new(0, 8),
+        SortOrder = Enum.SortOrder.LayoutOrder
+    })
+    
+    return leftColumn.Instance, rightColumn.Instance
+end
+
+-- =======================================================
+-- ЛОГИКА СЕКЦИИ (SECTION / GROUPBOX)
+-- =======================================================
+function Library:CreateSection(parentColumn, sectionData)
+    sectionData = sectionData or {}
+    local sectionName = sectionData.Name or "Section"
+    
+    -- Основная карточка секции
+    local sectionFrame = Instances:Create("Frame", {
+        Parent = parentColumn,
+        Name = "Section_" .. sectionName,
+        Size = UDim2.new(1, 0, 0, 0),
+        AutomaticSize = Enum.AutomaticSize.Y,
+        BackgroundColor3 = Theme["Background 2"],
+        BackgroundTransparency = 0.15,
+        BorderSizePixel = 0,
+        ZIndex = 4
+    })
+    
+    Instances:Create("UICorner", {
+        Parent = sectionFrame.Instance,
+        CornerRadius = UDim.new(0, 6)
+    })
+    
+    -- Внешняя обводка (Outline)
+    Instances:Create("UIStroke", {
+        Parent = sectionFrame.Instance,
+        Color = Theme["Outline"],
+        Thickness = 1,
+        ApplyStrokeMode = Enum.ApplyStrokeMode.Border
+    })
+    
+    -- Внутренние отступы секции
+    Instances:Create("UIPadding", {
+        Parent = sectionFrame.Instance,
+        PaddingTop = UDim.new(0, 10),
+        PaddingBottom = UDim.new(0, 10),
+        PaddingLeft = UDim.new(0, 10),
+        PaddingRight = UDim.new(0, 10)
+    })
+    
+    Instances:Create("UIListLayout", {
+        Parent = sectionFrame.Instance,
+        SortOrder = Enum.SortOrder.LayoutOrder,
+        Padding = UDim.new(0, 8)
+    })
+    
+    -- Шапка секции (Заголовок)
+    local headerFrame = Instances:Create("Frame", {
+        Parent = sectionFrame.Instance,
+        Name = "Header",
+        Size = UDim2.new(1, 0, 0, 16),
+        BackgroundTransparency = 1,
+        LayoutOrder = 0,
+        ZIndex = 5
+    })
+    
+    -- Акцентный индикатор слева от названия
+    local accentLine = Instances:Create("Frame", {
+        Parent = headerFrame.Instance,
+        Name = "AccentLine",
+        Size = UDim2.new(0, 3, 1, 0),
+        Position = UDim2.new(0, 0, 0, 0),
+        BackgroundColor3 = Theme["Accent"],
+        BorderSizePixel = 0,
+        ZIndex = 5
+    })
+    
+    Instances:Create("UICorner", {
+        Parent = accentLine.Instance,
+        CornerRadius = UDim.new(0, 2)
+    })
+    
+    -- Текст заголовка (Заглавные буквы)
+    local titleLabel = Instances:Create("TextLabel", {
+        Parent = headerFrame.Instance,
+        Name = "Title",
+        Text = string.upper(sectionName),
+        FontFace = Font.new("rbxassetid://12187365364", Enum.FontWeight.Bold, Enum.FontStyle.Normal),
+        TextColor3 = Theme["Text"],
+        TextSize = 11,
+        Position = UDim2.new(0, 8, 0, 0),
+        Size = UDim2.new(1, -8, 1, 0),
+        BackgroundTransparency = 1,
+        TextXAlignment = Enum.TextXAlignment.Left,
+        ZIndex = 5
+    })
+    
+    -- Контейнер для добавления GUI-элементов (Toggles, Sliders, Buttons)
+    local elementsContainer = Instances:Create("Frame", {
+        Parent = sectionFrame.Instance,
+        Name = "Container",
+        Size = UDim2.new(1, 0, 0, 0),
+        AutomaticSize = Enum.AutomaticSize.Y,
+        BackgroundTransparency = 1,
+        LayoutOrder = 1,
+        ZIndex = 5
+    })
+    
+    Instances:Create("UIListLayout", {
+        Parent = elementsContainer.Instance,
+        SortOrder = Enum.SortOrder.LayoutOrder,
+        Padding = UDim.new(0, 6)
+    })
+    
+    return elementsContainer.Instance
+end
+
+-- =======================================================
 -- 8. ИНИЦИАЛИЗАЦИЯ ОКНА (С ИСПРАВЛЕННЫМ ID ЛОГОТИПА)
 -- =======================================================
 local Window = Library:CreateWindow({
@@ -526,4 +681,48 @@ local SettingsTab = Library:CreateTab(Window, {
 local MiscTab = Library:CreateTab(Window, {
     Name = "Misc",
     Icon = "misc"
+})
+
+-- =======================================================
+-- 10. ПРИМЕР ИСПОЛЬЗОВАНИЯ СЕКЦИЙ И КОЛОНОК
+-- =======================================================
+-- Создаем колонки для вкладки Aimbot
+local LeftCol, RightCol = Library:CreateColumns(AimbotTab)
+
+-- Создаем секции в левой колонке
+local MainAimbotSection = Library:CreateSection(LeftCol, {
+    Name = "Main Settings"
+})
+
+local AccuracySection = Library:CreateSection(LeftCol, {
+    Name = "Accuracy"
+})
+
+-- Создаем секции в правой колонке
+local TargetSection = Library:CreateSection(RightCol, {
+    Name = "Targeting"
+})
+
+local VisibilitySection = Library:CreateSection(RightCol, {
+    Name = "Visibility Checks"
+})
+
+-- Создаем колонки для вкладки Visuals
+local VisLeftCol, VisRightCol = Library:CreateColumns(VisualsTab)
+
+-- Создаем секции для Visuals
+local ESPMainSection = Library:CreateSection(VisLeftCol, {
+    Name = "ESP Main"
+})
+
+local PlayerSection = Library:CreateSection(VisLeftCol, {
+    Name = "Player ESP"
+})
+
+local WorldSection = Library:CreateSection(VisRightCol, {
+    Name = "World ESP"
+})
+
+local MiscVisSection = Library:CreateSection(VisRightCol, {
+    Name = "Misc Visuals"
 })
