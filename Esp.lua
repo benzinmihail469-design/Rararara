@@ -1,5 +1,5 @@
 -- =======================================================
--- АВТОНОМНЫЙ СКРИПТ ГЛАВНОГО ОКНА (WINDOW GUI)
+-- АВТОНОМНЫЙ СКРИПТ ГЛАВНОГО ОКНА (КОМПАКТНАЯ ВЕРСИЯ)
 -- =======================================================
 
 local Workspace = game:GetService("Workspace")
@@ -15,23 +15,23 @@ end
 
 -- 1. Настройки темы оформления (Дизайн и Цвета)
 local Theme = {
-    ["Background"] = Color3.fromRGB(12, 12, 14),        -- Основной темно-серый фон
-    ["Background 2"] = Color3.fromRGB(10, 10, 12),      -- Фон боковой панели
-    ["Text"] = Color3.fromRGB(235, 235, 235),           -- Цвет текста
-    ["Outline"] = Color3.fromRGB(25, 25, 28),           -- Границы / рамки
-    ["Accent"] = Color3.fromRGB(0, 116, 224),           -- Синий акцент
-    ["AccentGradient"] = Color3.fromRGB(0, 195, 255),   -- Градиент акцента
-    ["Element"] = Color3.fromRGB(16, 16, 18)            -- Фон элементов
+    ["Background"] = Color3.fromRGB(12, 12, 14),
+    ["Background 2"] = Color3.fromRGB(10, 10, 12),
+    ["Text"] = Color3.fromRGB(235, 235, 235),
+    ["Outline"] = Color3.fromRGB(25, 25, 28),
+    ["Accent"] = Color3.fromRGB(0, 116, 224),
+    ["AccentGradient"] = Color3.fromRGB(0, 195, 255),
+    ["Element"] = Color3.fromRGB(16, 16, 18)
 }
 
--- 2. Создаем контейнер ScreenGui в CoreGui
+-- 2. Контейнер ScreenGui
 local Holder = Instance.new("ScreenGui")
 Holder.Parent = gethui()
 Holder.Name = "MyCustomGUI_Holder"
 Holder.ZIndexBehavior = Enum.ZIndexBehavior.Global
 Holder.ResetOnSpawn = false
 
--- 3. Вспомогательная функция плавных анимаций (Tween)
+-- 3. Хелпер плавных анимаций (Tween)
 local function Tween(instance, info, goal)
     info = info or TweenInfo.new(0.3, Enum.EasingStyle.Quad, Enum.EasingDirection.Out)
     local tween = TweenService:Create(instance, info, goal)
@@ -39,7 +39,7 @@ local function Tween(instance, info, goal)
     return tween
 end
 
--- 4. Хелпер для быстрой сборки UI элементов
+-- 4. Хелпер создания элементов
 local Instances = {}
 function Instances:Create(className, properties)
     local inst = Instance.new(className)
@@ -60,7 +60,7 @@ function Instances:Create(className, properties)
     return wrapper
 end
 
--- 5. Логика перетаскивания окна (Draggable)
+-- 5. Логика перетаскивания (Draggable)
 local function MakeDraggable(guiInstance)
     local dragging, dragStart, startPos
     
@@ -88,7 +88,7 @@ local function MakeDraggable(guiInstance)
     end)
 end
 
--- 6. Логика изменения размера окна за края (Resizeable)
+-- 6. Логика изменения размера (Resizeable)
 local function MakeResizeable(guiInstance, minSize)
     local resizing, currentSide = false, nil
     local startMouse, startPos, startSize
@@ -171,7 +171,7 @@ local function MakeResizeable(guiInstance, minSize)
 end
 
 -- =======================================================
--- 7. ОСНОВНАЯ ФУНКЦИЯ СОЗДАНИЯ ОКНА (WINDOW)
+-- 7. ФУНКЦИЯ СОЗДАНИЯ ОКНА (WINDOW)
 -- =======================================================
 local Library = {}
 
@@ -181,7 +181,7 @@ function Library:CreateWindow(data)
     local subName = data.SubName or "Fine-tuning GUI"
     local logoId = data.Logo or "1l20959262762131"
 
-    -- Главное окно (MainFrame) — Установлен размер 530x320
+    -- Главное окно (Размер уменьшен с 677x520 до 560x410)
     local mainFrame = Instances:Create("Frame", {
         Parent = Holder,
         Name = "MainFrame",
@@ -189,7 +189,7 @@ function Library:CreateWindow(data)
         AnchorPoint = Vector2.new(0.5, 0.5),
         BackgroundTransparency = 0.12,
         Position = UDim2.new(0.5, 0, 0.5, 0),
-        Size = UDim2.new(0, 530, 0, 320),
+        Size = UDim2.new(0, 560, 0, 410),
         ZIndex = 2,
         BorderSizePixel = 0,
         BackgroundColor3 = Theme["Background"]
@@ -200,11 +200,11 @@ function Library:CreateWindow(data)
         CornerRadius = UDim.new(0, 6)
     })
 
-    -- Включаем перемещение и изменение размера (мин. размер 400x250)
+    -- Перемещение и изменение размера (минимальный порог сжат до 400x280)
     MakeDraggable(mainFrame.Instance)
-    MakeResizeable(mainFrame.Instance, Vector2.new(400, 250))
+    MakeResizeable(mainFrame.Instance, Vector2.new(400, 280))
 
-    -- Боковая панель вкладок (LeftTabs)
+    -- Боковая панель вкладок (Ширина сжата с 200 до 165)
     local leftTabs = Instances:Create("Frame", {
         Parent = mainFrame.Instance,
         Name = "LeftTabs",
@@ -212,7 +212,7 @@ function Library:CreateWindow(data)
         AnchorPoint = Vector2.new(0, 0),
         BackgroundTransparency = 0.15,
         Position = UDim2.new(0, 0, 0, 0),
-        Size = UDim2.new(0, 170, 1, 0),
+        Size = UDim2.new(0, 165, 1, 0),
         ZIndex = 2,
         BorderSizePixel = 0,
         BackgroundColor3 = Theme["Background 2"]
@@ -225,7 +225,7 @@ function Library:CreateWindow(data)
 
     Instances:Create("UIListLayout", {
         Parent = leftTabs.Instance,
-        Padding = UDim.new(0, 8),
+        Padding = UDim.new(0, 6),
         SortOrder = Enum.SortOrder.LayoutOrder
     })
 
@@ -260,7 +260,7 @@ function Library:CreateWindow(data)
         })
     })
 
-    -- Главное Название (Title)
+    -- Заголовок
     local title = Instances:Create("TextLabel", {
         Parent = mainFrame.Instance,
         Name = "Title",
@@ -276,7 +276,7 @@ function Library:CreateWindow(data)
         TextXAlignment = Enum.TextXAlignment.Left
     })
 
-    -- Подзаголовок (SubTitle)
+    -- Подзаголовок
     local subTitle = Instances:Create("TextLabel", {
         Parent = mainFrame.Instance,
         Name = "SubTitle",
@@ -287,23 +287,23 @@ function Library:CreateWindow(data)
         AutomaticSize = Enum.AutomaticSize.X,
         Size = UDim2.new(0, 0, 0, 14),
         BackgroundTransparency = 1,
-        Position = UDim2.new(0, 48, 0, 26),
+        Position = UDim2.new(0, 48, 0, 25),
         ZIndex = 3,
         TextSize = 12,
         TextXAlignment = Enum.TextXAlignment.Left
     })
 
-    -- Область для контента
+    -- Область контента (Сдвинута под новую ширину боковой панели)
     local content = Instances:Create("Frame", {
         Parent = mainFrame.Instance,
         Name = "ContentArea",
         BackgroundTransparency = 1,
-        Position = UDim2.new(0, 175, 0, 50),
-        Size = UDim2.new(1, -180, 1, -55),
+        Position = UDim2.new(0, 172, 0, 50),
+        Size = UDim2.new(1, -177, 1, -55),
         ZIndex = 2
     })
 
-    -- Кнопка Закрытия Окна (CloseButton)
+    -- Кнопка Закрытия
     local closeButton = Instances:Create("TextButton", {
         Parent = mainFrame.Instance,
         Name = "CloseButton",
@@ -347,7 +347,7 @@ function Library:CreateWindow(data)
 end
 
 -- =======================================================
--- 8. ИНИЦИАЛИЗАЦИЯ
+-- 8. ИНИЦИАЛИЗАЦИЯ ОКНА
 -- =======================================================
 local Window = Library:CreateWindow({
     Name = "Dark Hub",
