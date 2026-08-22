@@ -331,7 +331,7 @@ function Library:CreateWindow(data)
         TextXAlignment = Enum.TextXAlignment.Left
     })
 
-    -- Контент область с отступами
+    -- Контент область (с отступами)
     local content = Instances:Create("Frame", {
         Parent = mainFrame.Instance,
         Name = "ContentArea",
@@ -341,13 +341,13 @@ function Library:CreateWindow(data)
         ZIndex = 2
     })
 
-    -- Внутренние отступы для контента (чтобы секции не прилипали к краям)
+    -- Добавляем внутренние отступы для контента
     Instances:Create("UIPadding", {
         Parent = content.Instance,
-        PaddingTop = UDim.new(0, 6),
-        PaddingBottom = UDim.new(0, 6),
-        PaddingLeft = UDim.new(0, 6),
-        PaddingRight = UDim.new(0, 6)
+        PaddingLeft = UDim.new(0, 4),
+        PaddingRight = UDim.new(0, 4),
+        PaddingTop = UDim.new(0, 2),
+        PaddingBottom = UDim.new(0, 2)
     })
 
     -- Кнопка закрытия
@@ -506,7 +506,7 @@ function Library:CreateTab(window, tabData)
 end
 
 -- =======================================================
--- СЕТКА КОЛОНОК (NEVERLOSE DUAL COLUMN LAYOUT) - УМЕНЬШЕННЫЕ ОТСТУПЫ
+-- СЕТКА КОЛОНОК (NEVERLOSE DUAL COLUMN LAYOUT) - ИСПРАВЛЕННЫЕ ОТСТУПЫ
 -- =======================================================
 function Library:CreateColumns(tabContainer)
     local columnsFrame = Instances:Create("Frame", {
@@ -517,11 +517,20 @@ function Library:CreateColumns(tabContainer)
         ZIndex = 3
     })
     
+    -- Добавляем отступы для всей области колонок
+    Instances:Create("UIPadding", {
+        Parent = columnsFrame.Instance,
+        PaddingLeft = UDim.new(0, 2),
+        PaddingRight = UDim.new(0, 8),  -- Увеличен правый отступ
+        PaddingTop = UDim.new(0, 2),
+        PaddingBottom = UDim.new(0, 2)
+    })
+    
     -- Левая колонка
     local leftColumn = Instances:Create("Frame", {
         Parent = columnsFrame.Instance,
         Name = "LeftColumn",
-        Size = UDim2.new(0.5, -6, 1, 0),  -- Увеличен отступ между колонками
+        Size = UDim2.new(0.5, -8, 1, 0),  -- Увеличено расстояние между колонками
         Position = UDim2.new(0, 0, 0, 0),
         BackgroundTransparency = 1,
         ZIndex = 3
@@ -537,8 +546,8 @@ function Library:CreateColumns(tabContainer)
     local rightColumn = Instances:Create("Frame", {
         Parent = columnsFrame.Instance,
         Name = "RightColumn",
-        Size = UDim2.new(0.5, -6, 1, 0),  -- Увеличен отступ между колонками
-        Position = UDim2.new(0.5, 6, 0, 0),  -- Увеличен отступ между колонками
+        Size = UDim2.new(0.5, -8, 1, 0),  -- Увеличено расстояние между колонками
+        Position = UDim2.new(0.5, 8, 0, 0),  -- Увеличен отступ от левой колонки
         BackgroundTransparency = 1,
         ZIndex = 3
     })
@@ -584,7 +593,7 @@ function Library:CreateSection(parentColumn, sectionData)
         ApplyStrokeMode = Enum.ApplyStrokeMode.Border
     })
     
-    -- Внутренние отступы секции
+    -- Внутренние отступы секции (уменьшены)
     Instances:Create("UIPadding", {
         Parent = sectionFrame.Instance,
         PaddingTop = UDim.new(0, 8),
@@ -599,7 +608,7 @@ function Library:CreateSection(parentColumn, sectionData)
         Padding = UDim.new(0, 4)
     })
     
-    -- Шапка секции (Заголовок)
+    -- Шапка секции (Заголовок) - уменьшена высота
     local headerFrame = Instances:Create("Frame", {
         Parent = sectionFrame.Instance,
         Name = "Header",
@@ -625,7 +634,7 @@ function Library:CreateSection(parentColumn, sectionData)
         CornerRadius = UDim.new(0, 2)
     })
     
-    -- Текст заголовка (Заглавные буквы)
+    -- Текст заголовка (Заглавные буквы) - уменьшен размер
     local titleLabel = Instances:Create("TextLabel", {
         Parent = headerFrame.Instance,
         Name = "Title",
