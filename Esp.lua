@@ -331,7 +331,7 @@ function Library:CreateWindow(data)
         TextXAlignment = Enum.TextXAlignment.Left
     })
 
-    -- Контент область
+    -- Контент область с отступами
     local content = Instances:Create("Frame", {
         Parent = mainFrame.Instance,
         Name = "ContentArea",
@@ -339,6 +339,15 @@ function Library:CreateWindow(data)
         Position = UDim2.new(0, 172, 0, 45),
         Size = UDim2.new(1, -177, 1, -50),
         ZIndex = 2
+    })
+
+    -- Внутренние отступы для контента (чтобы секции не прилипали к краям)
+    Instances:Create("UIPadding", {
+        Parent = content.Instance,
+        PaddingTop = UDim.new(0, 6),
+        PaddingBottom = UDim.new(0, 6),
+        PaddingLeft = UDim.new(0, 6),
+        PaddingRight = UDim.new(0, 6)
     })
 
     -- Кнопка закрытия
@@ -512,7 +521,7 @@ function Library:CreateColumns(tabContainer)
     local leftColumn = Instances:Create("Frame", {
         Parent = columnsFrame.Instance,
         Name = "LeftColumn",
-        Size = UDim2.new(0.5, -5, 1, 0),
+        Size = UDim2.new(0.5, -6, 1, 0),  -- Увеличен отступ между колонками
         Position = UDim2.new(0, 0, 0, 0),
         BackgroundTransparency = 1,
         ZIndex = 3
@@ -520,7 +529,7 @@ function Library:CreateColumns(tabContainer)
     
     Instances:Create("UIListLayout", {
         Parent = leftColumn.Instance,
-        Padding = UDim.new(0, 4),  -- Уменьшено с 8 до 4
+        Padding = UDim.new(0, 4),
         SortOrder = Enum.SortOrder.LayoutOrder
     })
     
@@ -528,15 +537,15 @@ function Library:CreateColumns(tabContainer)
     local rightColumn = Instances:Create("Frame", {
         Parent = columnsFrame.Instance,
         Name = "RightColumn",
-        Size = UDim2.new(0.5, -5, 1, 0),
-        Position = UDim2.new(0.5, 5, 0, 0),
+        Size = UDim2.new(0.5, -6, 1, 0),  -- Увеличен отступ между колонками
+        Position = UDim2.new(0.5, 6, 0, 0),  -- Увеличен отступ между колонками
         BackgroundTransparency = 1,
         ZIndex = 3
     })
     
     Instances:Create("UIListLayout", {
         Parent = rightColumn.Instance,
-        Padding = UDim.new(0, 4),  -- Уменьшено с 8 до 4
+        Padding = UDim.new(0, 4),
         SortOrder = Enum.SortOrder.LayoutOrder
     })
     
@@ -575,11 +584,11 @@ function Library:CreateSection(parentColumn, sectionData)
         ApplyStrokeMode = Enum.ApplyStrokeMode.Border
     })
     
-    -- Внутренние отступы секции (уменьшены)
+    -- Внутренние отступы секции
     Instances:Create("UIPadding", {
         Parent = sectionFrame.Instance,
-        PaddingTop = UDim.new(0, 8),      -- Было 10
-        PaddingBottom = UDim.new(0, 8),   -- Было 10
+        PaddingTop = UDim.new(0, 8),
+        PaddingBottom = UDim.new(0, 8),
         PaddingLeft = UDim.new(0, 10),
         PaddingRight = UDim.new(0, 10)
     })
@@ -587,14 +596,14 @@ function Library:CreateSection(parentColumn, sectionData)
     Instances:Create("UIListLayout", {
         Parent = sectionFrame.Instance,
         SortOrder = Enum.SortOrder.LayoutOrder,
-        Padding = UDim.new(0, 4)          -- Уменьшено с 8 до 4
+        Padding = UDim.new(0, 4)
     })
     
-    -- Шапка секции (Заголовок) - уменьшена высота
+    -- Шапка секции (Заголовок)
     local headerFrame = Instances:Create("Frame", {
         Parent = sectionFrame.Instance,
         Name = "Header",
-        Size = UDim2.new(1, 0, 0, 14),    -- Было 16
+        Size = UDim2.new(1, 0, 0, 14),
         BackgroundTransparency = 1,
         LayoutOrder = 0,
         ZIndex = 5
@@ -616,7 +625,7 @@ function Library:CreateSection(parentColumn, sectionData)
         CornerRadius = UDim.new(0, 2)
     })
     
-    -- Текст заголовка (Заглавные буквы) - уменьшен размер
+    -- Текст заголовка (Заглавные буквы)
     local titleLabel = Instances:Create("TextLabel", {
         Parent = headerFrame.Instance,
         Name = "Title",
@@ -645,7 +654,7 @@ function Library:CreateSection(parentColumn, sectionData)
     Instances:Create("UIListLayout", {
         Parent = elementsContainer.Instance,
         SortOrder = Enum.SortOrder.LayoutOrder,
-        Padding = UDim.new(0, 4)          -- Уменьшено с 6 до 4
+        Padding = UDim.new(0, 4)
     })
     
     return elementsContainer.Instance
@@ -657,7 +666,7 @@ end
 local Window = Library:CreateWindow({
     Name = "Dark Hub",
     SubName = "Custom GUI Framework",
-    Logo = "10709752254"  -- Чистый числовой ID без букв "l"
+    Logo = "10709752254"
 })
 
 -- =======================================================
