@@ -1,6 +1,5 @@
 -- =======================================================
--- АВТОНОМНЫЙ СКРИПТ ГЛАВНОГО ОКНА С ВКЛАДКАМИ И ИКОНКАМИ
--- ВКЛЮЧАЯ СЕКЦИИ С СИНИМИ ИКОНКАМИ
+-- АВТОНОМНЫЙ СКРИПТ ГЛАВНОГО ОКНА С ВКЛАДКАМИ, ИКОНКАМИ И СЕКЦИЯМИ
 -- =======================================================
 
 local Workspace = game:GetService("Workspace")
@@ -9,7 +8,6 @@ local Players = game:GetService("Players")
 local CoreGui = cloneref and cloneref(game:GetService("CoreGui")) or game:GetService("CoreGui")
 local TweenService = game:GetService("TweenService")
 local RunService = game:GetService("RunService")
-local HttpService = game:GetService("HttpService")
 
 local gethui = gethui or function()
     return CoreGui
@@ -28,14 +26,28 @@ local Theme = {
     ["Section Background"] = Color3.fromRGB(10, 10, 12),
 }
 
--- 2. ScreenGui
+-- 2. Хелпер парсинга иконок
+local function ParseIcon(icon)
+    if type(icon) == "string" then
+        if string.find(icon, "rbxassetid://") then
+            return icon
+        elseif string.find(icon, "^%d+$") then
+            return "rbxassetid://" .. icon
+        else
+            return icon
+        end
+    end
+    return "rbxassetid://123944728972740"
+end
+
+-- 3. ScreenGui
 local Holder = Instance.new("ScreenGui")
 Holder.Parent = gethui()
 Holder.Name = "MyCustomGUI_Holder"
 Holder.ZIndexBehavior = Enum.ZIndexBehavior.Global
 Holder.ResetOnSpawn = false
 
--- 3. Tween Хелпер
+-- 4. Tween Хелпер
 local function Tween(instance, info, goal)
     info = info or TweenInfo.new(0.3, Enum.EasingStyle.Quad, Enum.EasingDirection.Out)
     local tween = TweenService:Create(instance, info, goal)
@@ -43,7 +55,7 @@ local function Tween(instance, info, goal)
     return tween
 end
 
--- 4. Хелпер создания элементов
+-- 5. Хелпер создания элементов
 local Instances = {}
 function Instances:Create(className, properties)
     local inst = Instance.new(className)
@@ -72,37 +84,6 @@ function Instances:Create(className, properties)
     end
     
     return wrapper
-end
-
--- 5. Функция парсинга иконок
-local function ParseIcon(icon)
-    if type(icon) == "string" then
-        -- Если это ID (только цифры)
-        if icon:match("^%d+$") then
-            return "rbxassetid://" .. icon
-        end
-        -- Если это уже полный путь
-        if icon:match("^rbxassetid://") or icon:match("^http") then
-            return icon
-        end
-        -- Если это название иконки из библиотеки (можно расширить)
-        local IconMap = {
-            ["combat"] = "123944728972740",
-            ["user"] = "100050851789190",
-            ["settings"] = "122669828593160",
-            ["home"] = "1l20959262762131",
-            ["weapon"] = "92464809279921",
-            ["shield"] = "130510492706892",
-            ["health"] = "121760666525660",
-            ["eye"] = "101636617799068",
-            ["chat"] = "81598136527047",
-        }
-        local id = IconMap[icon:lower()]
-        if id then
-            return "rbxassetid://" .. id
-        end
-    end
-    return "rbxassetid://123944728972740" -- Дефолтная иконка
 end
 
 -- 6. Draggable
@@ -221,7 +202,7 @@ end
 local Library = {
     Pages = {},
     UnusedHolder = nil,
-    CurrentWindow = nil
+    CreatedSections = {}
 }
 
 -- Создаем невидимый контейнер для скрытых страниц
@@ -310,7 +291,7 @@ function Library:CreateWindow(data)
         ImageColor3 = Color3.fromRGB(255, 255, 255),
         ScaleType = Enum.ScaleType.Fit,
         Size = UDim2.new(0, 28, 0, 28),
-        Image = ParseIcon(logoId),
+        Image = "rbxassetid://" .. logoId,
         BackgroundTransparency = 1,
         Position = UDim2.new(0, 10, 0, 10),
         ZIndex = 3,
@@ -417,8 +398,9 @@ function Library:CreateWindow(data)
         CloseIcon = closeIcon
     }
 
-    Library.CurrentWindow = Window
-    return setmetatable(Window, Library)
+    -- Возвращаем объект окна с методами
+    local self = setmetatable(Window, Library)
+    return self
 end
 
 -- =======================================================
@@ -508,7 +490,7 @@ function Library:Page(data)
     })
 
     -- UIListLayout для колонок
-    Instances:Create("UIListLayout", {
+    local columnLayout = Instances:Create("UIListLayout", {
         Parent = pageFrame.Instance,
         FillDirection = Enum.FillDirection.Horizontal,
         HorizontalFlex = Enum.UIFlexAlignment.Fill,
@@ -543,7 +525,7 @@ function Library:Page(data)
 
         Instances:Create("UIListLayout", {
             Parent = column.Instance,
-            Padding = UDim.new(0, 6),
+            Padding = UDim.new(0, 5),
             SortOrder = Enum.SortOrder.LayoutOrder
         })
 
@@ -566,6 +548,7 @@ function Library:Page(data)
         Page.Active = bool
         debounce = true
         
+        -- Показываем/скрываем страницу
         pageFrame.Instance.Visible = bool
         pageFrame.Instance.Parent = bool and self.Window.Items.Content.Instance or Library.UnusedHolder
         
@@ -575,6 +558,7 @@ function Library:Page(data)
                 Position = UDim2.new(0, 0, 0, 0)
             })
             
+            -- Показываем элементы внутри секций
             for _, section in pairs(Page.Sections) do
                 if section.TweenElements then
                     task.spawn(function()
@@ -589,6 +573,7 @@ function Library:Page(data)
             })
         end
         
+        -- Анимация прозрачности элементов
         local descendants = pageFrame.Instance:GetDescendants()
         table.insert(descendants, pageFrame.Instance)
         
@@ -615,6 +600,7 @@ function Library:Page(data)
         debounce = false
     end
 
+    -- Обработчик нажатия на кнопку вкладки
     tabButton:Connect("MouseButton1Down", function()
         for _, otherPage in pairs(self.Pages) do
             if otherPage ~= Page then
@@ -624,21 +610,24 @@ function Library:Page(data)
         Page:Turn(not Page.Active)
     end)
 
+    -- Если это первая вкладка, делаем её активной
     if #self.Pages == 0 then
         Page:Turn(true)
     end
 
     table.insert(self.Pages, Page)
+    
     return setmetatable(Page, { __index = Library.Pages or {} })
 end
 
 -- =======================================================
--- 10. СОЗДАНИЕ СЕКЦИИ С СИНЕЙ ИКОНКОЙ (ОБНОВЛЕННАЯ)
+-- 10. ОБНОВЛЕННАЯ ЛОГИКА СЕКЦИИ (С ИКОНКАМИ ВМЕСТО ПОЛОСКИ)
 -- =======================================================
 Library.Pages = Library.Pages or {}
 
-function Library.Pages:CreateSection(parentColumn, sectionData)
+function Library:CreateSection(parentColumn, sectionData)
     sectionData = sectionData or {}
+    
     local sectionName = sectionData.Name or "Section"
     local sectionIcon = sectionData.Icon or ""
     
@@ -659,7 +648,6 @@ function Library.Pages:CreateSection(parentColumn, sectionData)
         CornerRadius = UDim.new(0, 6)
     })
     
-    -- Внешняя обводка (Outline)
     Instances:Create("UIStroke", {
         Parent = sectionFrame.Instance,
         Color = Theme["Outline"],
@@ -667,7 +655,6 @@ function Library.Pages:CreateSection(parentColumn, sectionData)
         ApplyStrokeMode = Enum.ApplyStrokeMode.Border
     })
     
-    -- Внутренние отступы секции
     Instances:Create("UIPadding", {
         Parent = sectionFrame.Instance,
         PaddingTop = UDim.new(0, 10),
@@ -682,7 +669,7 @@ function Library.Pages:CreateSection(parentColumn, sectionData)
         Padding = UDim.new(0, 8)
     })
     
-    -- Шапка секции (Заголовок)
+    -- Шапка секции
     local headerFrame = Instances:Create("Frame", {
         Parent = sectionFrame.Instance,
         Name = "Header",
@@ -692,25 +679,24 @@ function Library.Pages:CreateSection(parentColumn, sectionData)
         ZIndex = 5
     })
     
-    local hasIcon = sectionIcon ~= ""
-    local iconOffset = 0
+    local textXOffset = 0
     
-    -- Синяя иконка секции (Вместо вертикальной полосы)
-    if hasIcon then
-        iconOffset = 22
-        local sectionIconImg = Instances:Create("ImageLabel", {
+    -- Синяя иконка секции (если передана в параметрах)
+    if sectionIcon ~= "" then
+        local iconLabel = Instances:Create("ImageLabel", {
             Parent = headerFrame.Instance,
-            Name = "SectionIcon",
-            Size = UDim2.new(0, 15, 0, 15),
+            Name = "Icon",
+            Size = UDim2.new(0, 14, 0, 14),
             Position = UDim2.new(0, 0, 0.5, -7),
             BackgroundTransparency = 1,
             Image = ParseIcon(sectionIcon),
-            ImageColor3 = Theme["Accent"], -- Синий цвет акцента
+            ImageColor3 = Theme["Accent"], -- Акцентный синий цвет
             ZIndex = 5
         })
+        textXOffset = 20
     end
     
-    -- Текст заголовка (Заглавные буквы)
+    -- Название секции
     local titleLabel = Instances:Create("TextLabel", {
         Parent = headerFrame.Instance,
         Name = "Title",
@@ -718,14 +704,14 @@ function Library.Pages:CreateSection(parentColumn, sectionData)
         FontFace = Font.new("rbxassetid://12187365364", Enum.FontWeight.Bold, Enum.FontStyle.Normal),
         TextColor3 = Theme["Text"],
         TextSize = 11,
-        Position = UDim2.new(0, iconOffset, 0, 0),
-        Size = UDim2.new(1, -iconOffset, 1, 0),
+        Position = UDim2.new(0, textXOffset, 0, 0),
+        Size = UDim2.new(1, -textXOffset, 1, 0),
         BackgroundTransparency = 1,
         TextXAlignment = Enum.TextXAlignment.Left,
         ZIndex = 5
     })
     
-    -- Контейнер для добавления GUI-элементов (Toggles, Sliders, Buttons)
+    -- Контейнер для внутренних элементов
     local elementsContainer = Instances:Create("Frame", {
         Parent = sectionFrame.Instance,
         Name = "Container",
@@ -742,24 +728,19 @@ function Library.Pages:CreateSection(parentColumn, sectionData)
         Padding = UDim.new(0, 6)
     })
     
-    -- Функция для добавления элементов в контейнер секции
+    -- Сохраняем ссылку на секцию
     local Section = {
         Frame = sectionFrame,
         Header = headerFrame,
         Container = elementsContainer,
         Title = titleLabel,
-        Icon = hasIcon and headerFrame.Instance:FindFirstChild("SectionIcon") or nil,
-        Elements = {}
+        Name = sectionName,
+        Icon = sectionIcon
     }
     
-    function Section:AddElement(element)
-        element.Parent = self.Container.Instance
-        table.insert(self.Elements, element)
-        return element
-    end
-    
+    -- Функция для анимации элементов внутри секции
     function Section:TweenElements(bool)
-        local children = self.Container.Instance:GetChildren()
+        local children = elementsContainer.Instance:GetChildren()
         for i, child in ipairs(children) do
             if child:IsA("Frame") or child:IsA("TextLabel") or child:IsA("TextButton") or child:IsA("ImageLabel") then
                 local props = {}
@@ -780,33 +761,14 @@ function Library.Pages:CreateSection(parentColumn, sectionData)
         end
     end
     
-    return Section
+    return elementsContainer.Instance, Section
 end
 
--- Сохраняем обратную совместимость с старым методом Section
-function Library.Pages:Section(data)
-    data = data or {}
-    local side = data.Side or 1
-    local column = self.ColumnFrames[side]
-    
-    local section = self:CreateSection(column.Instance, {
-        Name = data.Name,
-        Icon = data.Icon or ""
-    })
-    
-    -- Добавляем совместимость с старыми методами
-    section.Name = data.Name
-    section.Description = data.Description or ""
-    section.Side = side
-    section.Page = self
-    section.Window = self.Window
-    
-    table.insert(self.Sections, section)
-    return section
-end
+-- Добавляем метод CreateSection в Library
+Library.CreateSection = Library.CreateSection
 
 -- =======================================================
--- 11. ПРИМЕР ИСПОЛЬЗОВАНИЯ
+-- 11. ИНИЦИАЛИЗАЦИЯ ОКНА И ВКЛАДОК
 -- =======================================================
 local Window = Library:CreateWindow({
     Name = "Dark Hub",
@@ -817,36 +779,117 @@ local Window = Library:CreateWindow({
 -- Вкладка 1
 local Page1 = Window:Page({
     Name = "Main",
-    Icon = "home",
+    Icon = "100050851789190",
     Columns = 2
 })
 
--- Создаем секции с синими иконками
-local MainSection = Page1:CreateSection(Page1.ColumnFrames[1].Instance, {
+-- Получаем колонки страницы
+local LeftCol = Page1.ColumnFrames[1].Instance
+local RightCol = Page1.ColumnFrames[2].Instance
+
+-- Создаем секции с передачей имени и синей иконки
+local MainSectionContainer, MainSection = Library:CreateSection(LeftCol, {
     Name = "Main Settings",
     Icon = "combat"
 })
 
-local TargetSection = Page1:CreateSection(Page1.ColumnFrames[2].Instance, {
+local TargetSectionContainer, TargetSection = Library:CreateSection(RightCol, {
     Name = "Targeting",
     Icon = "user"
 })
 
-local SettingsSection = Page1:CreateSection(Page1.ColumnFrames[1].Instance, {
-    Name = "Configuration",
-    Icon = "settings"
+local CustomSectionContainer, CustomSection = Library:CreateSection(LeftCol, {
+    Name = "Misc",
+    Icon = "10723345749"
 })
 
 -- Вкладка 2
 local Page2 = Window:Page({
     Name = "Visuals",
-    Icon = "eye",
+    Icon = "122669828593160",
     Columns = 1
 })
 
-local VisualSection = Page2:CreateSection(Page2.ColumnFrames[1].Instance, {
+local VisualsCol = Page2.ColumnFrames[1].Instance
+
+local VisualsSectionContainer, VisualsSection = Library:CreateSection(VisualsCol, {
     Name = "ESP Settings",
-    Icon = "shield"
+    Icon = "eye"
 })
 
-print("GUI with sections and blue icons loaded successfully!")
+-- =======================================================
+-- 12. ПРИМЕР ДОБАВЛЕНИЯ ЭЛЕМЕНТОВ В СЕКЦИИ
+-- =======================================================
+-- Функция для создания простого toggle элемента
+local function CreateToggle(parent, text, default, callback)
+    local toggleFrame = Instances:Create("Frame", {
+        Parent = parent,
+        Name = "Toggle_" .. text,
+        Size = UDim2.new(1, 0, 0, 24),
+        BackgroundTransparency = 1,
+        ZIndex = 5
+    })
+    
+    local toggleLabel = Instances:Create("TextLabel", {
+        Parent = toggleFrame.Instance,
+        Name = "Label",
+        Text = text,
+        FontFace = Font.new("rbxassetid://12187365364", Enum.FontWeight.Regular, Enum.FontStyle.Normal),
+        TextColor3 = Theme["Text"],
+        TextSize = 12,
+        Size = UDim2.new(1, -40, 1, 0),
+        BackgroundTransparency = 1,
+        TextXAlignment = Enum.TextXAlignment.Left,
+        ZIndex = 5
+    })
+    
+    local toggleButton = Instances:Create("TextButton", {
+        Parent = toggleFrame.Instance,
+        Name = "Button",
+        Text = "",
+        AutoButtonColor = false,
+        Size = UDim2.new(0, 16, 0, 16),
+        Position = UDim2.new(1, -16, 0.5, -8),
+        BackgroundColor3 = default and Theme["Accent"] or Theme["Element"],
+        ZIndex = 5,
+        BorderSizePixel = 0
+    })
+    
+    Instances:Create("UICorner", {
+        Parent = toggleButton.Instance,
+        CornerRadius = UDim.new(0, 3)
+    })
+    
+    local state = default or false
+    
+    toggleButton:Connect("MouseButton1Down", function()
+        state = not state
+        toggleButton.Instance.BackgroundColor3 = state and Theme["Accent"] or Theme["Element"]
+        if callback then callback(state) end
+    end)
+    
+    return toggleFrame.Instance
+end
+
+-- Добавляем примеры элементов в секции
+CreateToggle(MainSectionContainer, "Enable Feature", true, function(val)
+    print("Feature enabled:", val)
+end)
+
+CreateToggle(MainSectionContainer, "Auto Update", false, function(val)
+    print("Auto update:", val)
+end)
+
+CreateToggle(TargetSectionContainer, "Show Target", true, function(val)
+    print("Show target:", val)
+end)
+
+CreateToggle(VisualsSectionContainer, "ESP Enabled", true, function(val)
+    print("ESP enabled:", val)
+end)
+
+CreateToggle(VisualsSectionContainer, "Show Boxes", true, function(val)
+    print("Show boxes:", val)
+end)
+
+print("GUI with sections, icons and toggles loaded successfully!")
