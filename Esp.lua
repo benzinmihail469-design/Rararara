@@ -1,5 +1,5 @@
 -- =======================================================
--- АВТОНОМНЫЙ СКРИПТ (СВОРАЧИВАЕМЫЕ СЕКЦИИ С БЛИКОМ И ТОГГЛАМИ)
+-- АВТОНОМНЫЙ СКРИПТ (СИНИЙ/ЧЕРНЫЙ СТИЛЬ + ПЛАВНЫЕ СЕКЦИИ)
 -- =======================================================
 
 local Workspace = game:GetService("Workspace")
@@ -13,20 +13,21 @@ local gethui = gethui or function()
     return CoreGui
 end
 
--- 1. Цветовая палитра и блики
+-- 1. Цветовая тема (Dark & Neon Blue Style)
 local Theme = {
-    ["Background"] = Color3.fromRGB(12, 12, 14),
-    ["Background 2"] = Color3.fromRGB(10, 10, 12),
-    ["Text"] = Color3.fromRGB(235, 235, 235),
-    ["SubText"] = Color3.fromRGB(140, 140, 145),
-    ["Outline"] = Color3.fromRGB(28, 28, 33),
+    ["Background"] = Color3.fromRGB(10, 10, 12),
+    ["Background 2"] = Color3.fromRGB(14, 14, 18),
+    ["Text"] = Color3.fromRGB(240, 240, 245),
+    ["SubText"] = Color3.fromRGB(130, 135, 145),
+    ["Outline"] = Color3.fromRGB(24, 28, 36),
     ["Accent"] = Color3.fromRGB(0, 140, 255),
-    ["Element"] = Color3.fromRGB(18, 18, 22),
-    ["GlowCenter"] = Color3.fromRGB(220, 230, 255),
-    ["GlowEdge"] = Color3.fromRGB(40, 42, 50),
+    ["AccentGlow"] = Color3.fromRGB(0, 180, 255),
+    ["Element"] = Color3.fromRGB(18, 20, 26),
+    ["GlowCenter"] = Color3.fromRGB(0, 140, 255), -- Синий неоновый блик
+    ["GlowEdge"] = Color3.fromRGB(14, 14, 18),
 }
 
--- 2. СИСТЕМА ИКОНОК
+-- 2. Иконки
 local IconLibrary = {
     ["home"] = "rbxassetid://10723407068",
     ["user"] = "rbxassetid://10709789810",
@@ -46,16 +47,10 @@ local function ParseIcon(icon)
     if not icon or icon == "" then return "" end
     local strIcon = tostring(icon)
     local lower = string.lower(strIcon)
-    if IconLibrary[lower] then
-        return IconLibrary[lower]
-    end
-    if string.sub(strIcon, 1, 13) == "rbxassetid://" then
-        return strIcon
-    end
+    if IconLibrary[lower] then return IconLibrary[lower] end
+    if string.sub(strIcon, 1, 13) == "rbxassetid://" then return strIcon end
     local cleanId = string.match(strIcon, "%d+")
-    if cleanId then
-        return "rbxassetid://" .. cleanId
-    end
+    if cleanId then return "rbxassetid://" .. cleanId end
     return strIcon
 end
 
@@ -89,7 +84,7 @@ function Instances:Create(className, properties)
     return wrapper
 end
 
--- 6. Динамический скролл
+-- 6. Автоматическая прокрутка
 local function BindAutoScroll(scrollingFrame, listLayout, extraPadding)
     extraPadding = extraPadding or 15
     local function updateCanvas()
@@ -99,7 +94,7 @@ local function BindAutoScroll(scrollingFrame, listLayout, extraPadding)
     task.spawn(updateCanvas)
 end
 
--- 7. Перетаскивание (Lerp)
+-- 7. Плавное перетаскивание окно (Lerp)
 local function MakeDraggable(guiInstance, dragHandle)
     dragHandle = dragHandle or guiInstance
     local dragging = false
@@ -170,7 +165,7 @@ function Library:CreateWindow(data)
         Parent = Holder,
         Name = "MainFrame",
         AnchorPoint = Vector2.new(0.5, 0.5),
-        BackgroundTransparency = 0.1,
+        BackgroundTransparency = 0.05,
         Position = UDim2.new(0.5, 0, 0.5, 0),
         Size = UDim2.new(0, 530, 0, 370),
         ZIndex = 2,
@@ -181,7 +176,13 @@ function Library:CreateWindow(data)
 
     Instances:Create("UICorner", {
         Parent = mainFrame.Instance,
-        CornerRadius = UDim.new(0, 6)
+        CornerRadius = UDim.new(0, 8)
+    })
+
+    Instances:Create("UIStroke", {
+        Parent = mainFrame.Instance,
+        Color = Theme["Outline"],
+        Thickness = 1
     })
 
     MakeDraggable(mainFrame.Instance, mainFrame.Instance)
@@ -192,25 +193,25 @@ function Library:CreateWindow(data)
         Position = UDim2.new(0, 0, 0, 0),
         Size = UDim2.new(0, 150, 1, 0),
         BackgroundColor3 = Theme["Background 2"],
-        BackgroundTransparency = 0.15,
+        BackgroundTransparency = 0.2,
         BorderSizePixel = 0,
         ZIndex = 2
     })
 
     Instances:Create("UICorner", {
         Parent = sidebarBackground.Instance,
-        CornerRadius = UDim.new(0, 6)
+        CornerRadius = UDim.new(0, 8)
     })
 
     Instances:Create("ImageLabel", {
         Parent = mainFrame.Instance,
         Name = "Logo",
-        ImageColor3 = Theme["Text"],
+        ImageColor3 = Theme["Accent"],
         ScaleType = Enum.ScaleType.Fit,
-        Size = UDim2.new(0, 24, 0, 24),
+        Size = UDim2.new(0, 22, 0, 22),
         Image = ParseIcon(logoId),
         BackgroundTransparency = 1,
-        Position = UDim2.new(0, 10, 0, 9),
+        Position = UDim2.new(0, 10, 0, 10),
         ZIndex = 5,
         BorderSizePixel = 0
     })
@@ -224,7 +225,7 @@ function Library:CreateWindow(data)
         AutomaticSize = Enum.AutomaticSize.X,
         Size = UDim2.new(0, 0, 0, 14),
         BackgroundTransparency = 1,
-        Position = UDim2.new(0, 40, 0, 8),
+        Position = UDim2.new(0, 38, 0, 8),
         ZIndex = 5,
         TextSize = 13,
         TextXAlignment = Enum.TextXAlignment.Left
@@ -234,13 +235,12 @@ function Library:CreateWindow(data)
         Parent = mainFrame.Instance,
         Name = "SubTitle",
         FontFace = Font.new("rbxassetid://12187365364", Enum.FontWeight.Regular, Enum.FontStyle.Normal),
-        TextColor3 = Theme["Text"],
-        TextTransparency = 0.4,
+        TextColor3 = Theme["SubText"],
         Text = subName,
         AutomaticSize = Enum.AutomaticSize.X,
         Size = UDim2.new(0, 0, 0, 14),
         BackgroundTransparency = 1,
-        Position = UDim2.new(0, 40, 0, 22),
+        Position = UDim2.new(0, 38, 0, 22),
         ZIndex = 5,
         TextSize = 11,
         TextXAlignment = Enum.TextXAlignment.Left
@@ -363,8 +363,8 @@ function Library:CreateTab(window, tabData)
         BackgroundTransparency = 1,
         ScaleType = Enum.ScaleType.Fit,
         Image = ParseIcon(tabIcon),
-        ImageColor3 = Theme["Accent"],
-        ImageTransparency = 0.45,
+        ImageColor3 = Theme["SubText"],
+        ImageTransparency = 0.3,
         ZIndex = 6
     })
 
@@ -373,8 +373,7 @@ function Library:CreateTab(window, tabData)
         Name = "Label",
         Text = tabName,
         FontFace = Font.new("rbxassetid://12187365364", Enum.FontWeight.Medium, Enum.FontStyle.Normal),
-        TextColor3 = Theme["Text"],
-        TextTransparency = 0.5,
+        TextColor3 = Theme["SubText"],
         TextSize = 12,
         Position = UDim2.new(0, 30, 0, 0),
         Size = UDim2.new(1, -34, 1, 0),
@@ -454,14 +453,14 @@ function Library:CreateTab(window, tabData)
         if window.CurrentTab then
             window.CurrentTab.Container.Visible = false
             Tween(window.CurrentTab.Button, TweenInfo.new(0.2), { BackgroundTransparency = 1 })
-            Tween(window.CurrentTab.Icon, TweenInfo.new(0.2), { ImageTransparency = 0.45, ImageColor3 = Theme["Accent"] })
-            Tween(window.CurrentTab.Label, TweenInfo.new(0.2), { TextTransparency = 0.5, TextColor3 = Theme["Text"] })
+            Tween(window.CurrentTab.Icon, TweenInfo.new(0.2), { ImageColor3 = Theme["SubText"] })
+            Tween(window.CurrentTab.Label, TweenInfo.new(0.2), { TextColor3 = Theme["SubText"] })
         end
         window.CurrentTab = tabObject
         tabContainer.Instance.Visible = true
-        Tween(tabButton.Instance, TweenInfo.new(0.2), { BackgroundTransparency = 0.85, BackgroundColor3 = Theme["Element"] })
-        Tween(iconImage.Instance, TweenInfo.new(0.2), { ImageTransparency = 0, ImageColor3 = Theme["Accent"] })
-        Tween(tabLabel.Instance, TweenInfo.new(0.2), { TextTransparency = 0, TextColor3 = Theme["Text"] })
+        Tween(tabButton.Instance, TweenInfo.new(0.2), { BackgroundTransparency = 0.85, BackgroundColor3 = Theme["Accent"] })
+        Tween(iconImage.Instance, TweenInfo.new(0.2), { ImageColor3 = Theme["Accent"] })
+        Tween(tabLabel.Instance, TweenInfo.new(0.2), { TextColor3 = Theme["Text"] })
     end
 
     tabButton:Connect("MouseButton1Click", Activate)
@@ -474,7 +473,7 @@ function Library:CreateTab(window, tabData)
 end
 
 -- =======================================================
--- 10. СВОРАЧИВАЕМАЯ СЕКЦИЯ С БЛИКОМ (В СТИЛЕ SHITARO / NEVERLOSE)
+-- 10. ПЛАВНО СВОРАЧИВАЕМЫЕ СЕКЦИИ (СИНИЙ НЕОНОВЫЙ БЛИК)
 -- =======================================================
 function Library:CreateSection(parentColumn, sectionData)
     sectionData = sectionData or {}
@@ -487,7 +486,7 @@ function Library:CreateSection(parentColumn, sectionData)
         Size = UDim2.new(1, 0, 0, 0),
         AutomaticSize = Enum.AutomaticSize.Y,
         BackgroundColor3 = Theme["Background 2"],
-        BackgroundTransparency = 0.1,
+        BackgroundTransparency = 0.15,
         BorderSizePixel = 0,
         ZIndex = 5,
         ClipsDescendants = true
@@ -505,13 +504,13 @@ function Library:CreateSection(parentColumn, sectionData)
         ApplyStrokeMode = Enum.ApplyStrokeMode.Border
     })
 
-    local sectionLayout = Instances:Create("UIListLayout", {
+    Instances:Create("UIListLayout", {
         Parent = sectionFrame.Instance,
         SortOrder = Enum.SortOrder.LayoutOrder,
         Padding = UDim.new(0, 0)
     })
 
-    -- Кнопка Шапки Секции
+    -- Кнопка Заголовка Секции
     local headerButton = Instances:Create("TextButton", {
         Parent = sectionFrame.Instance,
         Name = "Header",
@@ -551,13 +550,13 @@ function Library:CreateSection(parentColumn, sectionData)
         Position = UDim2.new(1, 0, 0.5, 0),
         BackgroundTransparency = 1,
         Image = ParseIcon("chevron-down"),
-        ImageColor3 = Theme["SubText"],
+        ImageColor3 = Theme["Accent"],
         Rotation = collapsed and 180 or 0,
         ScaleType = Enum.ScaleType.Fit,
         ZIndex = 6
     })
 
-    -- БЛИК / ГРАДИЕНТНАЯ ПОЛОСКА ПОД ЗАГОЛОВКОМ (КАК НА ИЗОБРАЖЕНИИ)
+    -- СИНИЙ НЕОНОВЫЙ ГРАДИЕНТНЫЙ БЛИК ПОД ЗАГОЛОВКОМ
     local glowLine = Instances:Create("Frame", {
         Parent = sectionFrame.Instance,
         Name = "GlowDivider",
@@ -576,25 +575,24 @@ function Library:CreateSection(parentColumn, sectionData)
             ColorSequenceKeypoint.new(1, Theme["GlowEdge"])
         }),
         Transparency = NumberSequence.new({
-            NumberSequenceKeypoint.new(0, 0.6),
+            NumberSequenceKeypoint.new(0, 0.8),
             NumberSequenceKeypoint.new(0.5, 0.0),
-            NumberSequenceKeypoint.new(1, 0.6)
+            NumberSequenceKeypoint.new(1, 0.8)
         })
     })
 
-    -- Контейнер элементов секции
+    -- Контейнер элементов (с плавным Tween изменением высоты)
     local elementsContainer = Instances:Create("Frame", {
         Parent = sectionFrame.Instance,
         Name = "Container",
         Size = UDim2.new(1, 0, 0, 0),
-        AutomaticSize = Enum.AutomaticSize.Y,
         BackgroundTransparency = 1,
         LayoutOrder = 2,
-        Visible = not collapsed,
+        ClipsDescendants = true,
         ZIndex = 6
     })
 
-    Instances:Create("UIPadding", {
+    local elementsPadding = Instances:Create("UIPadding", {
         Parent = elementsContainer.Instance,
         PaddingTop = UDim.new(0, 8),
         PaddingBottom = UDim.new(0, 8),
@@ -602,28 +600,51 @@ function Library:CreateSection(parentColumn, sectionData)
         PaddingRight = UDim.new(0, 10)
     })
 
-    Instances:Create("UIListLayout", {
+    local elementsLayout = Instances:Create("UIListLayout", {
         Parent = elementsContainer.Instance,
         SortOrder = Enum.SortOrder.LayoutOrder,
         Padding = UDim.new(0, 6)
     })
 
-    -- Логика сворачивания
-    local function ToggleCollapse()
-        collapsed = not collapsed
-        elementsContainer.Instance.Visible = not collapsed
-        
-        Tween(arrowIcon.Instance, TweenInfo.new(0.2), {
-            Rotation = collapsed and 180 or 0
-        })
+    -- Функция расчета высоты и анимации сворачивания/раскрытия
+    local function UpdateContainerSize(animated)
+        local contentHeight = elementsLayout.Instance.AbsoluteContentSize.Y + 16 -- Учитываем PaddingTop (8) + PaddingBottom (8)
+        local targetHeight = collapsed and 0 or contentHeight
+
+        if animated then
+            Tween(elementsContainer.Instance, TweenInfo.new(0.25, Enum.EasingStyle.Quad, Enum.EasingDirection.Out), {
+                Size = UDim2.new(1, 0, 0, targetHeight)
+            })
+            Tween(arrowIcon.Instance, TweenInfo.new(0.25, Enum.EasingStyle.Quad, Enum.EasingDirection.Out), {
+                Rotation = collapsed and 180 or 0
+            })
+        else
+            elementsContainer.Instance.Size = UDim2.new(1, 0, 0, targetHeight)
+            arrowIcon.Instance.Rotation = collapsed and 180 or 0
+        end
     end
 
-    headerButton:Connect("MouseButton1Click", ToggleCollapse)
+    -- Перерасчет высоты при добавлении новых элементов
+    elementsLayout.Instance:GetPropertyChangedSignal("AbsoluteContentSize"):Connect(function()
+        if not collapsed then
+            UpdateContainerSize(false)
+        end
+    end)
 
-    -- Методы секции (API)
+    -- Клик по шапке секции
+    headerButton:Connect("MouseButton1Click", function()
+        collapsed = not collapsed
+        UpdateContainerSize(true)
+    end)
+
+    -- Первоначальная установка размера
+    task.spawn(function()
+        UpdateContainerSize(false)
+    end)
+
+    -- Секционные методы (API)
     local SectionAPI = {}
 
-    -- Создание переключателя (Toggle) в стиле вашей картинки
     function SectionAPI:CreateToggle(toggleData)
         toggleData = toggleData or {}
         local toggleName = toggleData.Name or "Toggle"
@@ -712,7 +733,7 @@ function Library:CreateSection(parentColumn, sectionData)
 end
 
 -- =======================================================
--- 11. ИНИЦИАЛИЗАЦИЯ И ТЕСТОВЫЕ ДАННЫЕ (ИЗ СКРИНШОТА)
+-- 11. ИНИЦИАЛИЗАЦИЯ И ТЕСТ
 -- =======================================================
 
 local MainWindow = Library:CreateWindow({
@@ -726,7 +747,7 @@ local MainTab, Cols = Library:CreateTab(MainWindow, {
     Icon = "combat"
 })
 
--- Секции как на вашей картинке
+-- Секции с эффектом синего неонового блеска и плавным разворачиванием
 local AimbotSection = Library:CreateSection(Cols[1], { Name = "Aimbot" })
 AimbotSection:CreateToggle({ Name = "ezez", Default = true })
 AimbotSection:CreateToggle({ Name = "tipo predicti", Default = false })
@@ -737,4 +758,4 @@ SilentBypassSection:CreateToggle({ Name = "включить понос", Default
 local JopaSection = Library:CreateSection(Cols[1], { Name = "jopa" })
 JopaSection:CreateToggle({ Name = "включить жопа...", Default = false })
 
-print("GUI fully updated: Collapsible sections with sleek top glow lines active!")
+print("GUI Updated: Dark-Blue Neon style & Smooth height animations active!")
