@@ -283,7 +283,7 @@ local Library = {
 
 function Library:CreateWindow(data)
     data = data or {}
-    local logoId = data.Logo or "139945623592222"
+    local logoId = data.Logo or "96633168859001"
 
     local Window = {
         CurrentTab = nil,
@@ -349,7 +349,7 @@ function Library:CreateWindow(data)
         ZIndex = 5
     })
 
-    -- Контейнер логотипа
+    -- Контейнер логотипа (контуры убраны)
     local logoContainer = Instances:Create("Frame", {
         Parent = mainFrame.Instance,
         Name = "LogoContainer",
@@ -364,13 +364,6 @@ function Library:CreateWindow(data)
     Instances:Create("UICorner", {
         Parent = logoContainer.Instance,
         CornerRadius = UDim.new(0, 12)
-    })
-
-    Instances:Create("UIStroke", {
-        Parent = logoContainer.Instance,
-        Color = Theme["Outline"],
-        Transparency = 0.85,
-        Thickness = 1
     })
 
     -- Иконка логотипа с гарантированной загрузкой
@@ -914,7 +907,7 @@ end
 -- =======================================================
 
 local MainWindow = Library:CreateWindow({
-    Logo = "139945623592222"
+    Logo = "96633168859001"
 })
 
 local MainTab, Cols = Library:CreateTab(MainWindow, {
@@ -932,4 +925,4 @@ SilentBypassSection:CreateToggle({ Name = "включить понос", Default
 local JopaSection = Library:CreateSection(Cols[1], { Name = "jopa" })
 JopaSection:CreateToggle({ Name = "включить жопа...", Default = false })
 
-print("GUI Updated: Icon preloading & rbxthumb parser applied!")
+print("GUI Updated: Icon changed and borders removed successfully!")
