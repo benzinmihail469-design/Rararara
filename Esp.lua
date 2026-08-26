@@ -1,13 +1,10 @@
 -- =======================================================
--- ИСПРАВЛЕННЫЙ И АДАПТИВНЫЙ GUI (ОРИГИНАЛЬНЫЙ ДИЗАЙН)
+-- ОРИГИНАЛЬНЫЙ ДИЗАЙН С ИСПРАВЛЕННОЙ ВЕРСТКОЙ И АВТО-РАЗМЕРОМ
 -- =======================================================
 
-local Workspace = game:GetService("Workspace")
 local UserInputService = game:GetService("UserInputService")
-local Players = game:GetService("Players")
 local CoreGui = cloneref and cloneref(game:GetService("CoreGui")) or game:GetService("CoreGui")
 local TweenService = game:GetService("TweenService")
-local RunService = game:GetService("RunService")
 
 local gethui = gethui or function()
     return CoreGui
@@ -27,19 +24,22 @@ local function FormatIcon(icon)
     if string.sub(str, 1, 13) == "rbxassetid://" then
         return str
     end
-    return "rbxassetid://" .. str
+    if tonumber(str) then
+        return "rbxassetid://" .. str
+    end
+    return str
 end
 
 -- Оригинальная тема оформления
 local Theme = {
-    ["Background"] = Color3.fromRGB(15, 15, 18),
-    ["Background 2"] = Color3.fromRGB(20, 20, 24),
-    ["Text"] = Color3.fromRGB(240, 240, 240),
-    ["Outline"] = Color3.fromRGB(35, 35, 40),
-    ["Accent"] = Color3.fromRGB(0, 140, 255),
-    ["AccentGradient"] = Color3.fromRGB(0, 210, 255),
-    ["Element"] = Color3.fromRGB(25, 25, 30),
-    ["Section Top"] = Color3.fromRGB(28, 28, 34),
+    ["Background"]         = Color3.fromRGB(15, 15, 18),
+    ["Background 2"]       = Color3.fromRGB(20, 20, 24),
+    ["Text"]               = Color3.fromRGB(240, 240, 240),
+    ["Outline"]            = Color3.fromRGB(35, 35, 40),
+    ["Accent"]             = Color3.fromRGB(0, 140, 255),
+    ["AccentGradient"]     = Color3.fromRGB(0, 210, 255),
+    ["Element"]            = Color3.fromRGB(25, 25, 30),
+    ["Section Top"]        = Color3.fromRGB(28, 28, 34),
     ["Section Background"] = Color3.fromRGB(18, 18, 22),
 }
 
@@ -112,7 +112,7 @@ Library.UnusedHolder.Enabled = false
 Library.UnusedHolder.ResetOnSpawn = false
 Library.UnusedHolder.Parent = gethui()
 
--- 1. Создание главного окна
+-- 1. Создание главного окна (Оригинальные размеры 560x360)
 function Library:CreateWindow(data)
     data = data or {}
     local windowName = data.Name or "Dark Hub"
@@ -148,8 +148,9 @@ function Library:CreateWindow(data)
         Size = UDim2.new(0, 150, 1, -45),
         BackgroundColor3 = Theme["Background 2"],
         BorderSizePixel = 0,
-        ScrollBarThickness = 0,
-        CanvasSize = UDim2.new(1, 0, 0, 0),
+        ScrollBarThickness = 2,
+        ScrollBarImageColor3 = Theme["Outline"],
+        CanvasSize = UDim2.new(0, 0, 0, 0),
         AutomaticCanvasSize = Enum.AutomaticSize.Y
     })
 
@@ -219,9 +220,6 @@ function Library:CreateWindow(data)
     Instances:Create("UICorner", { Parent = closeBtn.Instance, CornerRadius = UDim.new(0, 4) })
     closeBtn:Connect("MouseButton1Click", function()
         Holder:Destroy()
-        if Library.UnusedHolder then
-            Library.UnusedHolder:Destroy()
-        end
     end)
 
     -- Контейнер для содержимого
@@ -290,7 +288,7 @@ function Library:Page(data)
         TextXAlignment = Enum.TextXAlignment.Left
     })
 
-    -- Фрейм страницы
+    -- Фрейм самой страницы
     local pageFrame = Instances:Create("Frame", {
         Parent = Library.UnusedHolder,
         Name = "Page_" .. Page.Name,
@@ -311,11 +309,11 @@ function Library:Page(data)
             BorderSizePixel = 0,
             ScrollBarThickness = 2,
             ScrollBarImageColor3 = Theme["Accent"],
-            CanvasSize = UDim2.new(1, 0, 0, 0),
+            CanvasSize = UDim2.new(0, 0, 0, 0),
             AutomaticCanvasSize = Enum.AutomaticSize.Y
         })
 
-        local colLayout = Instances:Create("UIListLayout", {
+        Instances:Create("UIListLayout", {
             Parent = col.Instance,
             Padding = UDim.new(0, 8),
             SortOrder = Enum.SortOrder.LayoutOrder
@@ -348,7 +346,6 @@ function Library:Page(data)
 
     table.insert(self.Pages, Page)
 
-    -- Автоматическая активация первой вкладки
     if #self.Pages == 1 then
         Page:Turn(true)
     end
@@ -356,7 +353,7 @@ function Library:Page(data)
     return setmetatable(Page, { __index = Library.Pages })
 end
 
--- 3. Создание секции (Section)
+-- 3. Создание секции (Section) + Методы создания элементов внутри
 Library.Pages = Library.Pages or {}
 function Library.Pages:Section(data)
     data = data or {}
@@ -375,7 +372,8 @@ function Library.Pages:Section(data)
         Name = "SectionFrame_" .. Section.Name,
         Size = UDim2.new(1, -4, 0, 40),
         BackgroundColor3 = Theme["Section Background"],
-        BorderSizePixel = 0
+        BorderSizePixel = 0,
+        ClipsDescendants = true
     })
 
     Instances:Create("UICorner", { Parent = sectionFrame.Instance, CornerRadius = UDim.new(0, 6) })
@@ -437,13 +435,13 @@ function Library.Pages:Section(data)
         BackgroundTransparency = 1
     })
 
-    local contentLayout = Instances:Create("UIListLayout", {
+    local listLayout = Instances:Create("UIListLayout", {
         Parent = contentFrame.Instance,
         Padding = UDim.new(0, 6),
         SortOrder = Enum.SortOrder.LayoutOrder
     })
 
-    local contentPadding = Instances:Create("UIPadding", {
+    local padding = Instances:Create("UIPadding", {
         Parent = contentFrame.Instance,
         PaddingTop = UDim.new(0, 6),
         PaddingBottom = UDim.new(0, 8),
@@ -451,22 +449,84 @@ function Library.Pages:Section(data)
         PaddingRight = UDim.new(0, 8)
     })
 
-    -- Динамический расчет высоты фрейма секции
+    -- ТОЧНЫЙ РАСЧЕТ ВЫСОТЫ СЕКЦИИ (Убирает наложение элементов)
     local function UpdateHeight()
-        local height = contentLayout.Instance.AbsoluteContentSize.Y + contentPadding.Instance.PaddingTop.Offset + contentPadding.Instance.PaddingBottom.Offset
-        contentFrame.Instance.Size = UDim2.new(1, 0, 0, height)
-        sectionFrame.Instance.Size = UDim2.new(1, -4, 0, topHeaderHeight + height)
+        local h = listLayout.Instance.AbsoluteContentSize.Y + padding.Instance.PaddingTop.Offset + padding.Instance.PaddingBottom.Offset
+        contentFrame.Instance.Size = UDim2.new(1, 0, 0, h)
+        sectionFrame.Instance.Size = UDim2.new(1, -4, 0, topHeaderHeight + h)
     end
-
-    contentLayout.Instance:GetPropertyChangedSignal("AbsoluteContentSize"):Connect(UpdateHeight)
+    listLayout.Instance:GetPropertyChangedSignal("AbsoluteContentSize"):Connect(UpdateHeight)
     task.defer(UpdateHeight)
 
     Section.Content = contentFrame.Instance
+
+    -- Метод добавления кнопки
+    function Section:Button(text, callback)
+        callback = callback or function() end
+        local btn = Instances:Create("TextButton", {
+            Parent = Section.Content,
+            Name = "Button_" .. text,
+            Text = text,
+            Font = Enum.Font.GothamMedium,
+            TextColor3 = Theme["Text"],
+            TextSize = 11,
+            Size = UDim2.new(1, 0, 0, 26),
+            BackgroundColor3 = Theme["Element"],
+            BorderSizePixel = 0
+        })
+        Instances:Create("UICorner", { Parent = btn.Instance, CornerRadius = UDim.new(0, 4) })
+        btn:Connect("MouseButton1Click", callback)
+        return btn
+    end
+
+    -- Метод добавления переключателя (Toggle)
+    function Section:Toggle(text, default, callback)
+        callback = callback or function() end
+        local state = default or false
+
+        local toggleBtn = Instances:Create("TextButton", {
+            Parent = Section.Content,
+            Name = "Toggle_" .. text,
+            Text = "",
+            Size = UDim2.new(1, 0, 0, 26),
+            BackgroundColor3 = Theme["Element"],
+            BorderSizePixel = 0
+        })
+        Instances:Create("UICorner", { Parent = toggleBtn.Instance, CornerRadius = UDim.new(0, 4) })
+
+        local label = Instances:Create("TextLabel", {
+            Parent = toggleBtn.Instance,
+            Font = Enum.Font.Gotham,
+            Text = text,
+            TextColor3 = Theme["Text"],
+            TextSize = 11,
+            Position = UDim2.new(0, 8, 0, 0),
+            Size = UDim2.new(1, -40, 1, 0),
+            BackgroundTransparency = 1,
+            TextXAlignment = Enum.TextXAlignment.Left
+        })
+
+        local indicator = Instances:Create("Frame", {
+            Parent = toggleBtn.Instance,
+            Position = UDim2.new(1, -22, 0.5, -7),
+            Size = UDim2.new(0, 14, 0, 14),
+            BackgroundColor3 = state and Theme["Accent"] or Color3.fromRGB(45, 45, 50),
+            BorderSizePixel = 0
+        })
+        Instances:Create("UICorner", { Parent = indicator.Instance, CornerRadius = UDim.new(0, 3) })
+
+        toggleBtn:Connect("MouseButton1Click", function()
+            state = not state
+            indicator:Tween(nil, {BackgroundColor3 = state and Theme["Accent"] or Color3.fromRGB(45, 45, 50)})
+            callback(state)
+        end)
+    end
+
     return Section
 end
 
 -- =======================================================
--- ПРИМЕР ИНИЦИАЛИЗАЦИИ И ПРОВЕРКИ
+-- ПРИМЕР ИНИЦИАЛИЗАЦИИ И НАПОЛНЕНИЯ ОКНА
 -- =======================================================
 
 local Window = Library:CreateWindow({
@@ -489,12 +549,24 @@ local Section1 = Page1:Section({
     Side = 1
 })
 
+Section1:Toggle("Speed Boost", false, function(val)
+    print("Speed Boost:", val)
+end)
+
+Section1:Button("Reset Speed", function()
+    print("Speed reset")
+end)
+
 local Section2 = Page1:Section({
     Name = "Combat",
     Description = "Combat automation features",
     Icon = "123944728972740",
     Side = 2
 })
+
+Section2:Toggle("Auto Attack", true, function(val)
+    print("Auto Attack:", val)
+end)
 
 -- 2. Вторая вкладка
 local Page2 = Window:Page({
@@ -510,4 +582,8 @@ local Section3 = Page2:Section({
     Side = 1
 })
 
-print("[Dark Hub] GUI успешно загружен с оригинальным дизайном!")
+Section3:Toggle("Enable ESP", true, function(val)
+    print("ESP:", val)
+end)
+
+print("[Dark Hub] Исходный интерфейс полностью восстановлен и работает без наложений!")
