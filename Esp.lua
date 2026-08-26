@@ -1,5 +1,5 @@
 -- =======================================================
--- АВТОНОМНЫЙ СКРИПТ ГЛАВНОГО ОКНА С БЕЗБАГОВЫМ DRAG (CLAMP & TOUCH)
+-- АВТОНОМНЫЙ СКРИПТ ГЛАВНОГО ОКНА (ФИКСИРОВАННЫЙ РАЗМЕР, СВОБОДНЫЙ DRAG ЗА ЛЮБЫЕ КРАЯ)
 -- =======================================================
 
 local Workspace = game:GetService("Workspace")
@@ -106,7 +106,7 @@ function Instances:Create(className, properties)
     return wrapper
 end
 
--- 6. НАДЁЖНАЯ СИСТЕМА ПЕРЕТАСКИВАНИЯ (С ОГРАНИЧЕНИЕМ В ПРЕДЕЛАХ ЭКРАНА)
+-- 6. ПЕРЕТАСКИВАНИЕ ЗА ЛЮБЫЕ КРАЯ (БЕЗ ОГРАНИЧЕНИЙ ЭКРАНА)
 local function MakeDraggable(guiInstance, dragHandle)
     dragHandle = dragHandle or guiInstance
     local dragging = false
@@ -135,15 +135,7 @@ local function MakeDraggable(guiInstance, dragHandle)
             local targetX = startPos.X + delta.X
             local targetY = startPos.Y + delta.Y
 
-            -- Ограничиваем окно строго рамками видимого экрана
-            local camera = Workspace.CurrentCamera
-            if camera then
-                local viewport = camera.ViewportSize
-                local size = guiInstance.AbsoluteSize
-                targetX = math.clamp(targetX, 0, math.max(0, viewport.X - size.X))
-                targetY = math.clamp(targetY, 0, math.max(0, viewport.Y - size.Y))
-            end
-
+            -- Перемещение без каких-либо границ и зажимов (Clamp убран)
             local ap = guiInstance.AnchorPoint
             local size = guiInstance.AbsoluteSize
             guiInstance.Position = UDim2.fromOffset(targetX + (size.X * ap.X), targetY + (size.Y * ap.Y))
@@ -151,88 +143,8 @@ local function MakeDraggable(guiInstance, dragHandle)
     end)
 end
 
--- 7. Изменение размера (Resizeable)
-local function MakeResizeable(guiInstance, minSize)
-    local resizing, currentSide = false, nil
-    local startMouse, startPos, startSize
-    local edgeThickness = 6
-
-    local function MakeEdge(side, pos, size)
-        local btn = Instance.new("TextButton")
-        btn.Name = "Resize_" .. side
-        btn.Size = size
-        btn.Position = pos
-        btn.BackgroundTransparency = 1
-        btn.Text = ""
-        btn.BorderSizePixel = 0
-        btn.Parent = guiInstance
-        btn.ZIndex = 9999
-        return btn
-    end
-
-    local edges = {
-        { Button = MakeEdge("L", UDim2.new(0, 0, 0, 0), UDim2.new(0, edgeThickness, 1, 0)), Side = "L" },
-        { Button = MakeEdge("R", UDim2.new(1, -edgeThickness, 0, 0), UDim2.new(0, edgeThickness, 1, 0)), Side = "R" },
-        { Button = MakeEdge("T", UDim2.new(0, 0, 0, 0), UDim2.new(1, 0, 0, edgeThickness)), Side = "T" },
-        { Button = MakeEdge("B", UDim2.new(0, 0, 1, -edgeThickness), UDim2.new(1, 0, 0, edgeThickness)), Side = "B" },
-    }
-
-    for _, edge in ipairs(edges) do
-        edge.Button.InputBegan:Connect(function(input)
-            if input.UserInputType == Enum.UserInputType.MouseButton1 or input.UserInputType == Enum.UserInputType.Touch then
-                resizing = true
-                currentSide = edge.Side
-                startMouse = UserInputService:GetMouseLocation()
-                startPos = Vector2.new(guiInstance.Position.X.Offset, guiInstance.Position.Y.Offset)
-                startSize = Vector2.new(guiInstance.Size.X.Offset, guiInstance.Size.Y.Offset)
-            end
-        end)
-    end
-
-    UserInputService.InputEnded:Connect(function(input)
-        if input.UserInputType == Enum.UserInputType.MouseButton1 or input.UserInputType == Enum.UserInputType.Touch then
-            resizing = false
-            currentSide = nil
-        end
-    end)
-
-    RunService.RenderStepped:Connect(function()
-        if not resizing or not currentSide then return end
-        local mouseLoc = UserInputService:GetMouseLocation()
-        local dx = mouseLoc.X - startMouse.X
-        local dy = mouseLoc.Y - startMouse.Y
-        
-        local x, y = startPos.X, startPos.Y
-        local w, h = startSize.X, startSize.Y
-
-        if currentSide == "L" then
-            x = startPos.X + dx
-            w = startSize.X - dx
-        elseif currentSide == "R" then
-            w = startSize.X + dx
-        elseif currentSide == "T" then
-            y = startPos.Y + dy
-            h = startSize.Y - dy
-        elseif currentSide == "B" then
-            h = startSize.Y + dy
-        end
-
-        if w < minSize.X then
-            if currentSide == "L" then x = x - (minSize.X - w) end
-            w = minSize.X
-        end
-        if h < minSize.Y then
-            if currentSide == "T" then y = y - (minSize.Y - h) end
-            h = minSize.Y
-        end
-
-        guiInstance.Position = UDim2.fromOffset(x, y)
-        guiInstance.Size = UDim2.fromOffset(w, h)
-    end)
-end
-
 -- =======================================================
--- 8. СОЗДАНИЕ ОКНА (WINDOW)
+-- 7. СОЗДАНИЕ ОКНА (WINDOW)
 -- =======================================================
 local Library = {
     Windows = {},
@@ -253,7 +165,7 @@ function Library:CreateWindow(data)
         Content = nil
     }
 
-    -- Главное окно
+    -- Главное окно (Фиксированный размер: нельзя сжать)
     local mainFrame = Instances:Create("Frame", {
         Parent = Holder,
         Name = "MainFrame",
@@ -264,7 +176,8 @@ function Library:CreateWindow(data)
         Size = UDim2.new(0, 520, 0, 370),
         ZIndex = 2,
         BorderSizePixel = 0,
-        BackgroundColor3 = Theme["Background"]
+        BackgroundColor3 = Theme["Background"],
+        Active = true
     })
 
     Instances:Create("UICorner", {
@@ -272,18 +185,8 @@ function Library:CreateWindow(data)
         CornerRadius = UDim.new(0, 6)
     })
 
-    -- Зона хватания за верхнюю шапку
-    local dragZone = Instances:Create("Frame", {
-        Parent = mainFrame.Instance,
-        Name = "DragZone",
-        BackgroundTransparency = 1,
-        Position = UDim2.new(0, 0, 0, 0),
-        Size = UDim2.new(1, -40, 0, 40),
-        ZIndex = 10
-    })
-
-    MakeDraggable(mainFrame.Instance, dragZone.Instance)
-    MakeResizeable(mainFrame.Instance, Vector2.new(380, 270))
+    -- Перетаскивание включено для всего корпуса и любого края окна
+    MakeDraggable(mainFrame.Instance, mainFrame.Instance)
 
     -- Левый тулбар для вкладок
     local leftTabs = Instances:Create("ScrollingFrame", {
@@ -427,7 +330,7 @@ function Library:CreateWindow(data)
 end
 
 -- =======================================================
--- 9. ЛОГИКА ВКЛАДОК
+-- 8. ЛОГИКА ВКЛАДОК
 -- =======================================================
 function Library:CreateTab(window, tabData)
     tabData = tabData or {}
@@ -577,7 +480,7 @@ function Library:CreateTab(window, tabData)
 end
 
 -- =======================================================
--- 10. ЛОГИКА СЕКЦИИ
+-- 9. ЛОГИКА СЕКЦИИ
 -- =======================================================
 function Library:CreateSection(parentColumn, sectionData)
     sectionData = sectionData or {}
@@ -681,7 +584,7 @@ function Library:CreateSection(parentColumn, sectionData)
 end
 
 -- =======================================================
--- 11. ИНИЦИАЛИЗАЦИЯ
+-- 10. ИНИЦИАЛИЗАЦИЯ
 -- =======================================================
 
 local MainWindow = Library:CreateWindow({
@@ -725,4 +628,4 @@ local ConfigSection = Library:CreateSection(SettingsColumns[1], {
     Icon = "settings"
 })
 
-print("GUI Loaded Successfully without Drag issues!")
+print("GUI Loaded Successfully (Fixed Size, Unbounded Drag)!")
