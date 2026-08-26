@@ -278,7 +278,7 @@ local Library = {
 
 function Library:CreateWindow(data)
     data = data or {}
-    local logoId = data.Logo or "10723407068"
+    local logoId = data.Logo or "139945623592222"
 
     local Window = {
         CurrentTab = nil,
@@ -902,7 +902,7 @@ end
 -- =======================================================
 
 local MainWindow = Library:CreateWindow({
-    Logo = "10723407068"
+    Logo = "139945623592222"
 })
 
 local MainTab, Cols = Library:CreateTab(MainWindow, {
@@ -920,4 +920,4 @@ SilentBypassSection:CreateToggle({ Name = "включить понос", Default
 local JopaSection = Library:CreateSection(Cols[1], { Name = "jopa" })
 JopaSection:CreateToggle({ Name = "включить жопа...", Default = false })
 
-print("GUI Updated: Logo container outline softened!")
+print("GUI Updated: Custom icon ID set!")
