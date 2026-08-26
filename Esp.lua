@@ -321,7 +321,7 @@ function Library:CreateWindow(data)
     -- Инициализация созвездия
     CreateConstellationBackground(mainFrame.Instance, 35, 80)
 
-    -- Боковая панель
+    -- Боковая панель (с ClipsDescendants для красивой обрезки по углам окна)
     local sidebarBackground = Instances:Create("Frame", {
         Parent = mainFrame.Instance,
         Name = "SidebarBackground",
@@ -330,7 +330,8 @@ function Library:CreateWindow(data)
         BackgroundColor3 = Theme["Background 2"],
         BackgroundTransparency = 0.1,
         BorderSizePixel = 0,
-        ZIndex = 3
+        ZIndex = 3,
+        ClipsDescendants = true
     })
 
     Instances:Create("UICorner", {
@@ -349,25 +350,19 @@ function Library:CreateWindow(data)
         ZIndex = 5
     })
 
-    -- Контейнер логотипа (добавлен ClipsDescendants для красивой обрезки по краям)
+    -- Контейнер логотипа (растянут на всю ширину сайдбара от края до края)
     local logoContainer = Instances:Create("Frame", {
-        Parent = mainFrame.Instance,
+        Parent = sidebarBackground.Instance,
         Name = "LogoContainer",
-        AnchorPoint = Vector2.new(0.5, 0),
-        Position = UDim2.new(0, 75, 0, 15),
-        Size = UDim2.new(0, 75, 0, 75),
+        Position = UDim2.new(0, 0, 0, 0),
+        Size = UDim2.new(1, 0, 0, 104),
         BackgroundColor3 = Theme["Element"],
         BorderSizePixel = 0,
         ZIndex = 5,
         ClipsDescendants = true
     })
 
-    Instances:Create("UICorner", {
-        Parent = logoContainer.Instance,
-        CornerRadius = UDim.new(0, 12)
-    })
-
-    -- Иконка логотипа растянута ровно до краев контейнера
+    -- Иконка логотипа растянута на весь контейнер до самых краев
     local logoIcon = Instances:Create("ImageLabel", {
         Parent = logoContainer.Instance,
         Name = "Logo",
@@ -926,4 +921,4 @@ SilentBypassSection:CreateToggle({ Name = "включить понос", Default
 local JopaSection = Library:CreateSection(Cols[1], { Name = "jopa" })
 JopaSection:CreateToggle({ Name = "включить жопа...", Default = false })
 
-print("GUI Updated: Icon stretched to edges successfully!")
+print("GUI Updated: Logo stretched to full sidebar width successfully!")
