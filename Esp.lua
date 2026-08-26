@@ -1,5 +1,5 @@
 -- =======================================================
--- АВТОНОМНЫЙ СКРИПТ (СИНИЙ/ЧЕРНЫЙ СТИЛЬ + ИНТЕРАКТИВНОЕ СОЗВЕЗДИЕ)
+-- АВТОНОМНЫЙ СКРИПТ (СИНИЙ/ЧЕРНЫЙ СТИЛЬ + ЧЕТКИЕ ЛИНИИ СОЗВЕЗДИЯ)
 -- =======================================================
 
 local Workspace = game:GetService("Workspace")
@@ -25,8 +25,8 @@ local Theme = {
     ["Element"] = Color3.fromRGB(18, 20, 26),
     ["GlowCenter"] = Color3.fromRGB(0, 140, 255),
     ["GlowEdge"] = Color3.fromRGB(14, 15, 20),
-    ["Node"] = Color3.fromRGB(100, 180, 255),
-    ["Line"] = Color3.fromRGB(0, 140, 255)
+    ["Node"] = Color3.fromRGB(120, 200, 255),
+    ["Line"] = Color3.fromRGB(0, 160, 255)
 }
 
 -- 2. Иконки
@@ -145,8 +145,8 @@ end
 -- 8. СИСТЕМА ДИНАМИЧЕСКОГО СОЗВЕЗДИЯ (PARTICLE NETWORK)
 -- =======================================================
 local function CreateConstellationBackground(parentFrame, numNodes, maxDistance)
-    numNodes = numNodes or 18
-    maxDistance = maxDistance or 105
+    numNodes = numNodes or 22
+    maxDistance = maxDistance or 120
 
     local bgContainer = Instances:Create("Frame", {
         Parent = parentFrame,
@@ -154,7 +154,7 @@ local function CreateConstellationBackground(parentFrame, numNodes, maxDistance)
         Size = UDim2.new(1, 0, 1, 0),
         BackgroundTransparency = 1,
         ClipsDescendants = true,
-        ZIndex = 1
+        ZIndex = 2
     })
 
     local nodes = {}
@@ -166,12 +166,12 @@ local function CreateConstellationBackground(parentFrame, numNodes, maxDistance)
         local dot = Instances:Create("Frame", {
             Parent = bgContainer.Instance,
             Name = "Node_" .. i,
-            Size = UDim2.new(0, 3, 0, 3),
+            Size = UDim2.new(0, 4, 0, 4),
             AnchorPoint = Vector2.new(0.5, 0.5),
             BackgroundColor3 = Theme["Node"],
-            BackgroundTransparency = 0.3,
+            BackgroundTransparency = 0.1,
             BorderSizePixel = 0,
-            ZIndex = 2
+            ZIndex = 3
         })
 
         Instances:Create("UICorner", {
@@ -182,7 +182,7 @@ local function CreateConstellationBackground(parentFrame, numNodes, maxDistance)
         table.insert(nodes, {
             Gui = dot.Instance,
             Pos = Vector2.new(rng:NextNumber(10, 520), rng:NextNumber(10, 360)),
-            Vel = Vector2.new(rng:NextNumber(-25, 25), rng:NextNumber(-25, 25))
+            Vel = Vector2.new(rng:NextNumber(-30, 30), rng:NextNumber(-30, 30))
         })
     end
 
@@ -195,7 +195,7 @@ local function CreateConstellationBackground(parentFrame, numNodes, maxDistance)
                 AnchorPoint = Vector2.new(0.5, 0.5),
                 BackgroundColor3 = Theme["Line"],
                 BorderSizePixel = 0,
-                ZIndex = 1,
+                ZIndex = 2,
                 Visible = false
             })
             linesPool[index] = line.Instance
@@ -252,12 +252,12 @@ local function CreateConstellationBackground(parentFrame, numNodes, maxDistance)
                     local mid = (p1 + p2) / 2
                     local diff = p2 - p1
                     local angle = math.deg(math.atan2(diff.Y, diff.X))
-                    local alpha = (dist / maxDistance)
+                    local alpha = dist / maxDistance
 
                     line.Position = UDim2.new(0, mid.X, 0, mid.Y)
-                    line.Size = UDim2.new(0, dist, 0, 1)
+                    line.Size = UDim2.new(0, dist, 0, 1.5)
                     line.Rotation = angle
-                    line.BackgroundTransparency = 0.35 + (alpha * 0.6)
+                    line.BackgroundTransparency = math.clamp(alpha * 0.85, 0.15, 0.85)
                     line.Visible = true
 
                     lineIdx = lineIdx + 1
@@ -298,10 +298,10 @@ function Library:CreateWindow(data)
         Parent = Holder,
         Name = "MainFrame",
         AnchorPoint = Vector2.new(0.5, 0.5),
-        BackgroundTransparency = 0.05,
+        BackgroundTransparency = 0,
         Position = UDim2.new(0.5, 0, 0.5, 0),
         Size = UDim2.new(0, 530, 0, 370),
-        ZIndex = 2,
+        ZIndex = 1,
         BorderSizePixel = 0,
         BackgroundColor3 = Theme["Background"],
         ClipsDescendants = true,
@@ -321,8 +321,8 @@ function Library:CreateWindow(data)
 
     MakeDraggable(mainFrame.Instance, mainFrame.Instance)
 
-    -- Инициализация фона с двигающимися линиями и точками
-    CreateConstellationBackground(mainFrame.Instance, 18, 110)
+    -- Инициализация линий и точек поверх заднего фона окна
+    CreateConstellationBackground(mainFrame.Instance, 22, 120)
 
     local sidebarBackground = Instances:Create("Frame", {
         Parent = mainFrame.Instance,
@@ -330,9 +330,9 @@ function Library:CreateWindow(data)
         Position = UDim2.new(0, 0, 0, 0),
         Size = UDim2.new(0, 150, 1, 0),
         BackgroundColor3 = Theme["Background 2"],
-        BackgroundTransparency = 0.3,
+        BackgroundTransparency = 0.35,
         BorderSizePixel = 0,
-        ZIndex = 2
+        ZIndex = 3
     })
 
     Instances:Create("UICorner", {
@@ -422,7 +422,7 @@ function Library:CreateWindow(data)
         BackgroundTransparency = 1,
         Position = UDim2.new(0, 156, 0, 42),
         Size = UDim2.new(1, -161, 1, -46),
-        ZIndex = 3,
+        ZIndex = 4,
         ClipsDescendants = true
     })
 
@@ -623,7 +623,7 @@ function Library:CreateSection(parentColumn, sectionData)
         Size = UDim2.new(1, 0, 0, 0),
         AutomaticSize = Enum.AutomaticSize.Y,
         BackgroundColor3 = Theme["Background 2"],
-        BackgroundTransparency = 0.2,
+        BackgroundTransparency = 0.15,
         BorderSizePixel = 0,
         ZIndex = 5,
         ClipsDescendants = true
@@ -887,4 +887,4 @@ SilentBypassSection:CreateToggle({ Name = "включить понос", Default
 local JopaSection = Library:CreateSection(Cols[1], { Name = "jopa" })
 JopaSection:CreateToggle({ Name = "включить жопа...", Default = false })
 
-print("GUI Updated: Constellation network background active!")
+print("GUI Fixed: Constellation lines rendering logic adjusted & clearly visible!")
