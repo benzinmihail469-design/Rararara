@@ -233,10 +233,10 @@ local function CreateConstellationBackground(parentFrame, numNodes, maxDistance)
 
             if node.Pos.Y <= 5 then
                 node.Pos = Vector2.new(node.Pos.X, 5)
-                node.Vel = Vector2.new(node.Pos.X, -node.Vel.Y)
+                node.Vel = Vector2.new(node.Vel.X, -node.Vel.Y)
             elseif node.Pos.Y >= height - 5 then
                 node.Pos = Vector2.new(node.Pos.X, height - 5)
-                node.Vel = Vector2.new(node.Pos.X, -node.Vel.Y)
+                node.Vel = Vector2.new(node.Vel.X, -node.Vel.Y)
             end
 
             node.Gui.Position = UDim2.new(0, node.Pos.X, 0, node.Pos.Y)
@@ -349,25 +349,20 @@ function Library:CreateWindow(data)
         ZIndex = 5
     })
 
-    -- Компактный контейнер логотипа (аккуратный размер 42x42 без квадратного фона)
+    -- Аккуратный контейнер логотипа (соразмерный как на 2 фото)
     local logoContainer = Instances:Create("Frame", {
         Parent = mainFrame.Instance,
         Name = "LogoContainer",
         AnchorPoint = Vector2.new(0.5, 0),
-        Position = UDim2.new(0, 75, 0, 12),
-        Size = UDim2.new(0, 42, 0, 42),
+        Position = UDim2.new(0, 75, 0, 15),
+        Size = UDim2.new(0, 46, 0, 46),
         BackgroundTransparency = 1,
         BorderSizePixel = 0,
         ZIndex = 5,
         ClipsDescendants = true
     })
 
-    Instances:Create("UICorner", {
-        Parent = logoContainer.Instance,
-        CornerRadius = UDim.new(0, 8)
-    })
-
-    -- Иконка логотипа
+    -- Иконка логотипа по центру контейнера c сохранением пропорций (Fit)
     local logoIcon = Instances:Create("ImageLabel", {
         Parent = logoContainer.Instance,
         Name = "Logo",
@@ -390,11 +385,11 @@ function Library:CreateWindow(data)
         end)
     end)
 
-    -- Горизонтальная разделительная линия под компактным логотипом
+    -- Горизонтальная разделительная линия под логотипом
     local headerDivider = Instances:Create("Frame", {
         Parent = mainFrame.Instance,
         Name = "HeaderDivider",
-        Position = UDim2.new(0, 12, 0, 62),
+        Position = UDim2.new(0, 12, 0, 73),
         Size = UDim2.new(0, 126, 0, 1),
         BackgroundColor3 = Color3.fromRGB(255, 255, 255),
         BorderSizePixel = 0,
@@ -415,13 +410,13 @@ function Library:CreateWindow(data)
         })
     })
 
-    -- Список вкладок
+    -- Список вкладок (смещен под уменьшенную шапку)
     local leftTabs = Instances:Create("ScrollingFrame", {
         Parent = mainFrame.Instance,
         Name = "LeftTabs",
         BackgroundTransparency = 1,
-        Position = UDim2.new(0, 0, 0, 68),
-        Size = UDim2.new(0, 150, 1, -68),
+        Position = UDim2.new(0, 0, 0, 80),
+        Size = UDim2.new(0, 150, 1, -80),
         ZIndex = 4,
         BorderSizePixel = 0,
         ScrollBarThickness = 3,
@@ -651,7 +646,7 @@ function Library:CreateTab(window, tabData)
 end
 
 -- =======================================================
--- 11. ПЛАВНО СВОРАЧИВАЕМЫЕ СЕКЦИИ
+-- 11. ПЛАВНО СВОРАЧИВАЕМЫЕ СЕКЦИИ (НЕОНОВЫЙ СИНИЙ БЛИК)
 -- =======================================================
 function Library:CreateSection(parentColumn, sectionData)
     sectionData = sectionData or {}
@@ -733,6 +728,7 @@ function Library:CreateSection(parentColumn, sectionData)
         ZIndex = 6
     })
 
+    -- СИНИЙ НЕОНОВЫЙ ГРАДИЕНТНЫЙ БЛИК
     local glowLine = Instances:Create("Frame", {
         Parent = sectionFrame.Instance,
         Name = "GlowDivider",
@@ -925,4 +921,4 @@ SilentBypassSection:CreateToggle({ Name = "включить понос", Default
 local JopaSection = Library:CreateSection(Cols[1], { Name = "jopa" })
 JopaSection:CreateToggle({ Name = "включить жопа...", Default = false })
 
-print("GUI Updated: Logo resized nicely and background removed!")
+print("GUI Updated: Logo icon correctly sized and proportioned!")
