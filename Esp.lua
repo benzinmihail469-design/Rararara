@@ -1,5 +1,5 @@
 -- =======================================================
--- АВТОНОМНЫЙ СКРИПТ (ФИКС НАЛЕЗАНИЯ ВКЛАДОК НА ЗАГОЛОВОК + ПЛАВНОСТЬ)
+-- АВТОНОМНЫЙ СКРИПТ (СВОРАЧИВАЕМЫЕ СЕКЦИИ С БЛИКОМ И ТОГГЛАМИ)
 -- =======================================================
 
 local Workspace = game:GetService("Workspace")
@@ -13,17 +13,17 @@ local gethui = gethui or function()
     return CoreGui
 end
 
--- 1. Тема оформления
+-- 1. Цветовая палитра и блики
 local Theme = {
     ["Background"] = Color3.fromRGB(12, 12, 14),
     ["Background 2"] = Color3.fromRGB(10, 10, 12),
     ["Text"] = Color3.fromRGB(235, 235, 235),
-    ["Outline"] = Color3.fromRGB(25, 25, 28),
-    ["Accent"] = Color3.fromRGB(0, 116, 224),
-    ["AccentGradient"] = Color3.fromRGB(0, 195, 255),
-    ["Element"] = Color3.fromRGB(16, 16, 18),
-    ["Section Top"] = Color3.fromRGB(28, 27, 31),
-    ["Section Background"] = Color3.fromRGB(10, 10, 12),
+    ["SubText"] = Color3.fromRGB(140, 140, 145),
+    ["Outline"] = Color3.fromRGB(28, 28, 33),
+    ["Accent"] = Color3.fromRGB(0, 140, 255),
+    ["Element"] = Color3.fromRGB(18, 18, 22),
+    ["GlowCenter"] = Color3.fromRGB(220, 230, 255),
+    ["GlowEdge"] = Color3.fromRGB(40, 42, 50),
 }
 
 -- 2. СИСТЕМА ИКОНОК
@@ -69,7 +69,7 @@ Holder.IgnoreGuiInset = true
 
 -- 4. Tween Хелпер
 local function Tween(instance, info, goal)
-    info = info or TweenInfo.new(0.3, Enum.EasingStyle.Quad, Enum.EasingDirection.Out)
+    info = info or TweenInfo.new(0.25, Enum.EasingStyle.Quad, Enum.EasingDirection.Out)
     local tween = TweenService:Create(instance, info, goal)
     tween:Play()
     return tween
@@ -84,19 +84,12 @@ function Instances:Create(className, properties)
     end
     
     local wrapper = { Instance = inst }
-    
-    function wrapper:Tween(info, goal)
-        return Tween(inst, info, goal)
-    end
-    
-    function wrapper:Connect(event, callback)
-        return inst[event]:Connect(callback)
-    end
-    
+    function wrapper:Tween(info, goal) return Tween(inst, info, goal) end
+    function wrapper:Connect(event, callback) return inst[event]:Connect(callback) end
     return wrapper
 end
 
--- 6. ХЕЛПЕР ДИНАМИЧЕСКОГО СКРОЛЛА
+-- 6. Динамический скролл
 local function BindAutoScroll(scrollingFrame, listLayout, extraPadding)
     extraPadding = extraPadding or 15
     local function updateCanvas()
@@ -106,7 +99,7 @@ local function BindAutoScroll(scrollingFrame, listLayout, extraPadding)
     task.spawn(updateCanvas)
 end
 
--- 7. ПЛАВНАЯ СИСТЕМА ПЕРЕТАСКИВАНИЯ (С ИНТЕРПОЛЯЦИЕЙ LERP)
+-- 7. Перетаскивание (Lerp)
 local function MakeDraggable(guiInstance, dragHandle)
     dragHandle = dragHandle or guiInstance
     local dragging = false
@@ -161,8 +154,8 @@ local Library = {
 
 function Library:CreateWindow(data)
     data = data or {}
-    local windowName = data.Name or "My Custom Window"
-    local subName = data.SubName or "Fine-tuning GUI"
+    local windowName = data.Name or "Dark Hub"
+    local subName = data.SubName or "Custom GUI Framework"
     local logoId = data.Logo or "10723407068"
 
     local Window = {
@@ -173,12 +166,11 @@ function Library:CreateWindow(data)
         Content = nil
     }
 
-    -- Главный корпус окна
     local mainFrame = Instances:Create("Frame", {
         Parent = Holder,
         Name = "MainFrame",
         AnchorPoint = Vector2.new(0.5, 0.5),
-        BackgroundTransparency = 0.12,
+        BackgroundTransparency = 0.1,
         Position = UDim2.new(0.5, 0, 0.5, 0),
         Size = UDim2.new(0, 530, 0, 370),
         ZIndex = 2,
@@ -194,7 +186,6 @@ function Library:CreateWindow(data)
 
     MakeDraggable(mainFrame.Instance, mainFrame.Instance)
 
-    -- Левая плашка-фон для боковой панели
     local sidebarBackground = Instances:Create("Frame", {
         Parent = mainFrame.Instance,
         Name = "SidebarBackground",
@@ -211,8 +202,7 @@ function Library:CreateWindow(data)
         CornerRadius = UDim.new(0, 6)
     })
 
-    -- Заголовок и иконка (Зафиксированы сверху над списком вкладок)
-    local logo = Instances:Create("ImageLabel", {
+    Instances:Create("ImageLabel", {
         Parent = mainFrame.Instance,
         Name = "Logo",
         ImageColor3 = Theme["Text"],
@@ -225,7 +215,7 @@ function Library:CreateWindow(data)
         BorderSizePixel = 0
     })
 
-    local title = Instances:Create("TextLabel", {
+    Instances:Create("TextLabel", {
         Parent = mainFrame.Instance,
         Name = "Title",
         FontFace = Font.new("rbxassetid://12187365364", Enum.FontWeight.SemiBold, Enum.FontStyle.Normal),
@@ -240,7 +230,7 @@ function Library:CreateWindow(data)
         TextXAlignment = Enum.TextXAlignment.Left
     })
 
-    local subTitle = Instances:Create("TextLabel", {
+    Instances:Create("TextLabel", {
         Parent = mainFrame.Instance,
         Name = "SubTitle",
         FontFace = Font.new("rbxassetid://12187365364", Enum.FontWeight.Regular, Enum.FontStyle.Normal),
@@ -256,7 +246,6 @@ function Library:CreateWindow(data)
         TextXAlignment = Enum.TextXAlignment.Left
     })
 
-    -- Контейнер прокрутки вкладок (Смещен ниже заголовка Y = 42, обрезает элементы границей)
     local leftTabs = Instances:Create("ScrollingFrame", {
         Parent = mainFrame.Instance,
         Name = "LeftTabs",
@@ -290,7 +279,6 @@ function Library:CreateWindow(data)
 
     BindAutoScroll(leftTabs.Instance, leftTabsLayout.Instance, 15)
 
-    -- Контентная область
     local content = Instances:Create("Frame", {
         Parent = mainFrame.Instance,
         Name = "ContentArea",
@@ -301,7 +289,6 @@ function Library:CreateWindow(data)
         ClipsDescendants = true
     })
 
-    -- Кнопка закрытия
     local closeButton = Instances:Create("TextButton", {
         Parent = mainFrame.Instance,
         Name = "CloseButton",
@@ -320,7 +307,7 @@ function Library:CreateWindow(data)
         CornerRadius = UDim.new(0, 5)
     })
 
-    local closeIcon = Instances:Create("ImageLabel", {
+    Instances:Create("ImageLabel", {
         Parent = closeButton.Instance,
         Name = "CloseIcon",
         ImageColor3 = Theme["Text"],
@@ -412,7 +399,7 @@ function Library:CreateTab(window, tabData)
         ScrollingEnabled = true
     })
 
-    local tabLayout = Instances:Create("UIListLayout", {
+    Instances:Create("UIListLayout", {
         Parent = tabContainer.Instance,
         FillDirection = Enum.FillDirection.Horizontal,
         SortOrder = Enum.SortOrder.LayoutOrder,
@@ -445,8 +432,8 @@ function Library:CreateTab(window, tabData)
         })
 
         colLayout.Instance:GetPropertyChangedSignal("AbsoluteContentSize"):Connect(function()
-            local h1 = tabContainer.Instance.Column_1.UIListLayout.AbsoluteContentSize.Y
-            local h2 = tabContainer.Instance.Column_2.UIListLayout.AbsoluteContentSize.Y
+            local h1 = tabContainer.Instance:FindFirstChild("Column_1") and tabContainer.Instance.Column_1.UIListLayout.AbsoluteContentSize.Y or 0
+            local h2 = tabContainer.Instance:FindFirstChild("Column_2") and tabContainer.Instance.Column_2.UIListLayout.AbsoluteContentSize.Y or 0
             local maxHeight = math.max(h1, h2)
             tabContainer.Instance.CanvasSize = UDim2.new(0, 0, 0, maxHeight + 25)
         end)
@@ -466,32 +453,15 @@ function Library:CreateTab(window, tabData)
         if window.CurrentTab == tabObject then return end
         if window.CurrentTab then
             window.CurrentTab.Container.Visible = false
-            Tween(window.CurrentTab.Button, TweenInfo.new(0.2), {
-                BackgroundTransparency = 1
-            })
-            Tween(window.CurrentTab.Icon, TweenInfo.new(0.2), {
-                ImageTransparency = 0.45,
-                ImageColor3 = Theme["Accent"]
-            })
-            Tween(window.CurrentTab.Label, TweenInfo.new(0.2), {
-                TextTransparency = 0.5,
-                TextColor3 = Theme["Text"]
-            })
+            Tween(window.CurrentTab.Button, TweenInfo.new(0.2), { BackgroundTransparency = 1 })
+            Tween(window.CurrentTab.Icon, TweenInfo.new(0.2), { ImageTransparency = 0.45, ImageColor3 = Theme["Accent"] })
+            Tween(window.CurrentTab.Label, TweenInfo.new(0.2), { TextTransparency = 0.5, TextColor3 = Theme["Text"] })
         end
         window.CurrentTab = tabObject
         tabContainer.Instance.Visible = true
-        Tween(tabButton.Instance, TweenInfo.new(0.2), {
-            BackgroundTransparency = 0.85,
-            BackgroundColor3 = Theme["Element"]
-        })
-        Tween(iconImage.Instance, TweenInfo.new(0.2), {
-            ImageTransparency = 0,
-            ImageColor3 = Theme["Accent"]
-        })
-        Tween(tabLabel.Instance, TweenInfo.new(0.2), {
-            TextTransparency = 0,
-            TextColor3 = Theme["Text"]
-        })
+        Tween(tabButton.Instance, TweenInfo.new(0.2), { BackgroundTransparency = 0.85, BackgroundColor3 = Theme["Element"] })
+        Tween(iconImage.Instance, TweenInfo.new(0.2), { ImageTransparency = 0, ImageColor3 = Theme["Accent"] })
+        Tween(tabLabel.Instance, TweenInfo.new(0.2), { TextTransparency = 0, TextColor3 = Theme["Text"] })
     end
 
     tabButton:Connect("MouseButton1Click", Activate)
@@ -504,12 +474,12 @@ function Library:CreateTab(window, tabData)
 end
 
 -- =======================================================
--- 10. ЛОГИКА СЕКЦИИ
+-- 10. СВОРАЧИВАЕМАЯ СЕКЦИЯ С БЛИКОМ (В СТИЛЕ SHITARO / NEVERLOSE)
 -- =======================================================
 function Library:CreateSection(parentColumn, sectionData)
     sectionData = sectionData or {}
     local sectionName = sectionData.Name or "Section"
-    local sectionIcon = sectionData.Icon or "folder"
+    local collapsed = sectionData.Collapsed or false
 
     local sectionFrame = Instances:Create("Frame", {
         Parent = parentColumn,
@@ -517,9 +487,10 @@ function Library:CreateSection(parentColumn, sectionData)
         Size = UDim2.new(1, 0, 0, 0),
         AutomaticSize = Enum.AutomaticSize.Y,
         BackgroundColor3 = Theme["Background 2"],
-        BackgroundTransparency = 0.15,
+        BackgroundTransparency = 0.1,
         BorderSizePixel = 0,
-        ZIndex = 5
+        ZIndex = 5,
+        ClipsDescendants = true
     })
 
     Instances:Create("UICorner", {
@@ -534,68 +505,101 @@ function Library:CreateSection(parentColumn, sectionData)
         ApplyStrokeMode = Enum.ApplyStrokeMode.Border
     })
 
-    Instances:Create("UIPadding", {
-        Parent = sectionFrame.Instance,
-        PaddingTop = UDim.new(0, 10),
-        PaddingBottom = UDim.new(0, 10),
-        PaddingLeft = UDim.new(0, 10),
-        PaddingRight = UDim.new(0, 10)
-    })
-
-    Instances:Create("UIListLayout", {
+    local sectionLayout = Instances:Create("UIListLayout", {
         Parent = sectionFrame.Instance,
         SortOrder = Enum.SortOrder.LayoutOrder,
-        Padding = UDim.new(0, 8)
+        Padding = UDim.new(0, 0)
     })
 
-    local headerFrame = Instances:Create("Frame", {
+    -- Кнопка Шапки Секции
+    local headerButton = Instances:Create("TextButton", {
         Parent = sectionFrame.Instance,
         Name = "Header",
-        Size = UDim2.new(1, 0, 0, 16),
+        Size = UDim2.new(1, 0, 0, 28),
         BackgroundTransparency = 1,
+        Text = "",
+        AutoButtonColor = false,
         LayoutOrder = 0,
         ZIndex = 6
     })
 
-    local parsedIcon = ParseIcon(sectionIcon)
-    local titleOffset = 0
-    if parsedIcon ~= "" then
-        local sectionIconImage = Instances:Create("ImageLabel", {
-            Parent = headerFrame.Instance,
-            Name = "SectionIcon",
-            Size = UDim2.new(0, 15, 0, 15),
-            Position = UDim2.new(0, 0, 0.5, -7),
-            BackgroundTransparency = 1,
-            ScaleType = Enum.ScaleType.Fit,
-            Image = parsedIcon,
-            ImageColor3 = Theme["Accent"],
-            ZIndex = 6
-        })
-        titleOffset = 21
-    end
+    Instances:Create("UIPadding", {
+        Parent = headerButton.Instance,
+        PaddingLeft = UDim.new(0, 10),
+        PaddingRight = UDim.new(0, 10)
+    })
 
     local titleLabel = Instances:Create("TextLabel", {
-        Parent = headerFrame.Instance,
+        Parent = headerButton.Instance,
         Name = "Title",
-        Text = string.upper(sectionName),
+        Text = sectionName,
         FontFace = Font.new("rbxassetid://12187365364", Enum.FontWeight.Bold, Enum.FontStyle.Normal),
         TextColor3 = Theme["Text"],
-        TextSize = 11,
-        Position = UDim2.new(0, titleOffset, 0, 0),
-        Size = UDim2.new(1, -titleOffset, 1, 0),
+        TextSize = 12,
+        Size = UDim2.new(1, -20, 1, 0),
+        Position = UDim2.new(0, 0, 0, 0),
         BackgroundTransparency = 1,
         TextXAlignment = Enum.TextXAlignment.Left,
         ZIndex = 6
     })
 
+    local arrowIcon = Instances:Create("ImageLabel", {
+        Parent = headerButton.Instance,
+        Name = "Arrow",
+        Size = UDim2.new(0, 12, 0, 12),
+        AnchorPoint = Vector2.new(1, 0.5),
+        Position = UDim2.new(1, 0, 0.5, 0),
+        BackgroundTransparency = 1,
+        Image = ParseIcon("chevron-down"),
+        ImageColor3 = Theme["SubText"],
+        Rotation = collapsed and 180 or 0,
+        ScaleType = Enum.ScaleType.Fit,
+        ZIndex = 6
+    })
+
+    -- БЛИК / ГРАДИЕНТНАЯ ПОЛОСКА ПОД ЗАГОЛОВКОМ (КАК НА ИЗОБРАЖЕНИИ)
+    local glowLine = Instances:Create("Frame", {
+        Parent = sectionFrame.Instance,
+        Name = "GlowDivider",
+        Size = UDim2.new(1, 0, 0, 1),
+        BackgroundColor3 = Color3.fromRGB(255, 255, 255),
+        BorderSizePixel = 0,
+        LayoutOrder = 1,
+        ZIndex = 7
+    })
+
+    Instances:Create("UIGradient", {
+        Parent = glowLine.Instance,
+        Color = ColorSequence.new({
+            ColorSequenceKeypoint.new(0, Theme["GlowEdge"]),
+            ColorSequenceKeypoint.new(0.5, Theme["GlowCenter"]),
+            ColorSequenceKeypoint.new(1, Theme["GlowEdge"])
+        }),
+        Transparency = NumberSequence.new({
+            NumberSequenceKeypoint.new(0, 0.6),
+            NumberSequenceKeypoint.new(0.5, 0.0),
+            NumberSequenceKeypoint.new(1, 0.6)
+        })
+    })
+
+    -- Контейнер элементов секции
     local elementsContainer = Instances:Create("Frame", {
         Parent = sectionFrame.Instance,
         Name = "Container",
         Size = UDim2.new(1, 0, 0, 0),
         AutomaticSize = Enum.AutomaticSize.Y,
         BackgroundTransparency = 1,
-        LayoutOrder = 1,
+        LayoutOrder = 2,
+        Visible = not collapsed,
         ZIndex = 6
+    })
+
+    Instances:Create("UIPadding", {
+        Parent = elementsContainer.Instance,
+        PaddingTop = UDim.new(0, 8),
+        PaddingBottom = UDim.new(0, 8),
+        PaddingLeft = UDim.new(0, 10),
+        PaddingRight = UDim.new(0, 10)
     })
 
     Instances:Create("UIListLayout", {
@@ -604,11 +608,111 @@ function Library:CreateSection(parentColumn, sectionData)
         Padding = UDim.new(0, 6)
     })
 
-    return elementsContainer.Instance
+    -- Логика сворачивания
+    local function ToggleCollapse()
+        collapsed = not collapsed
+        elementsContainer.Instance.Visible = not collapsed
+        
+        Tween(arrowIcon.Instance, TweenInfo.new(0.2), {
+            Rotation = collapsed and 180 or 0
+        })
+    end
+
+    headerButton:Connect("MouseButton1Click", ToggleCollapse)
+
+    -- Методы секции (API)
+    local SectionAPI = {}
+
+    -- Создание переключателя (Toggle) в стиле вашей картинки
+    function SectionAPI:CreateToggle(toggleData)
+        toggleData = toggleData or {}
+        local toggleName = toggleData.Name or "Toggle"
+        local state = toggleData.Default or false
+        local callback = toggleData.Callback or function() end
+
+        local toggleButton = Instances:Create("TextButton", {
+            Parent = elementsContainer.Instance,
+            Name = "Toggle_" .. toggleName,
+            Size = UDim2.new(1, 0, 0, 22),
+            BackgroundTransparency = 1,
+            Text = "",
+            AutoButtonColor = false,
+            ZIndex = 7
+        })
+
+        local checkBox = Instances:Create("Frame", {
+            Parent = toggleButton.Instance,
+            Name = "CheckBox",
+            Size = UDim2.new(0, 15, 0, 15),
+            Position = UDim2.new(0, 0, 0.5, -7.5),
+            BackgroundColor3 = state and Theme["Accent"] or Theme["Element"],
+            BorderSizePixel = 0,
+            ZIndex = 8
+        })
+
+        Instances:Create("UICorner", {
+            Parent = checkBox.Instance,
+            CornerRadius = UDim.new(0, 4)
+        })
+
+        local checkStroke = Instances:Create("UIStroke", {
+            Parent = checkBox.Instance,
+            Color = state and Theme["Accent"] or Theme["Outline"],
+            Thickness = 1
+        })
+
+        local checkMark = Instances:Create("ImageLabel", {
+            Parent = checkBox.Instance,
+            Name = "CheckMark",
+            Size = UDim2.new(0, 9, 0, 9),
+            AnchorPoint = Vector2.new(0.5, 0.5),
+            Position = UDim2.new(0.5, 0, 0.5, 0),
+            BackgroundTransparency = 1,
+            Image = ParseIcon("check"),
+            ImageColor3 = Color3.fromRGB(255, 255, 255),
+            ImageTransparency = state and 0 or 1,
+            ZIndex = 9
+        })
+
+        local toggleLabel = Instances:Create("TextLabel", {
+            Parent = toggleButton.Instance,
+            Name = "Label",
+            Text = toggleName,
+            FontFace = Font.new("rbxassetid://12187365364", Enum.FontWeight.Medium, Enum.FontStyle.Normal),
+            TextColor3 = state and Theme["Text"] or Theme["SubText"],
+            TextSize = 12,
+            Position = UDim2.new(0, 23, 0, 0),
+            Size = UDim2.new(1, -23, 1, 0),
+            BackgroundTransparency = 1,
+            TextXAlignment = Enum.TextXAlignment.Left,
+            ZIndex = 8
+        })
+
+        toggleButton:Connect("MouseButton1Click", function()
+            state = not state
+            Tween(checkBox.Instance, TweenInfo.new(0.15), {
+                BackgroundColor3 = state and Theme["Accent"] or Theme["Element"]
+            })
+            Tween(checkStroke.Instance, TweenInfo.new(0.15), {
+                Color = state and Theme["Accent"] or Theme["Outline"]
+            })
+            Tween(checkMark.Instance, TweenInfo.new(0.15), {
+                ImageTransparency = state and 0 or 1
+            })
+            Tween(toggleLabel.Instance, TweenInfo.new(0.15), {
+                TextColor3 = state and Theme["Text"] or Theme["SubText"]
+            })
+            callback(state)
+        end)
+
+        return toggleButton.Instance
+    end
+
+    return SectionAPI
 end
 
 -- =======================================================
--- 11. ИНИЦИАЛИЗАЦИЯ
+-- 11. ИНИЦИАЛИЗАЦИЯ И ТЕСТОВЫЕ ДАННЫЕ (ИЗ СКРИНШОТА)
 -- =======================================================
 
 local MainWindow = Library:CreateWindow({
@@ -617,17 +721,20 @@ local MainWindow = Library:CreateWindow({
     Logo = "10723407068"
 })
 
--- Создаем 12 вкладок для проверки скролла
-for i = 1, 12 do
-    local tab, cols = Library:CreateTab(MainWindow, {
-        Name = "Tab " .. i,
-        Icon = (i % 2 == 0 and "combat" or "visuals")
-    })
+local MainTab, Cols = Library:CreateTab(MainWindow, {
+    Name = "Main",
+    Icon = "combat"
+})
 
-    for j = 1, 4 do
-        Library:CreateSection(cols[1], { Name = "Section " .. j .. "A", Icon = "zap" })
-        Library:CreateSection(cols[2], { Name = "Section " .. j .. "B", Icon = "shield" })
-    end
-end
+-- Секции как на вашей картинке
+local AimbotSection = Library:CreateSection(Cols[1], { Name = "Aimbot" })
+AimbotSection:CreateToggle({ Name = "ezez", Default = true })
+AimbotSection:CreateToggle({ Name = "tipo predicti", Default = false })
 
-print("GUI Fixed: Tab scrolling bounded below header cleanly!")
+local SilentBypassSection = Library:CreateSection(Cols[2], { Name = "silent аимбайпас" })
+SilentBypassSection:CreateToggle({ Name = "включить понос", Default = false })
+
+local JopaSection = Library:CreateSection(Cols[1], { Name = "jopa" })
+JopaSection:CreateToggle({ Name = "включить жопа...", Default = false })
+
+print("GUI fully updated: Collapsible sections with sleek top glow lines active!")
