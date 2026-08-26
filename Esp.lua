@@ -1,5 +1,5 @@
 -- =======================================================
--- АВТОНОМНЫЙ СКРИПТ ГЛАВНОГО ОКНА С ИСПРАВЛЕННЫМ DRAG ДЛЯ МОБИЛОК
+-- АВТОНОМНЫЙ СКРИПТ ГЛАВНОГО ОКНА С БЕЗБАГОВЫМ DRAG (CLAMP & TOUCH)
 -- =======================================================
 
 local Workspace = game:GetService("Workspace")
@@ -106,22 +106,24 @@ function Instances:Create(className, properties)
     return wrapper
 end
 
--- 6. Исправленный Draggable (привязывается только к верхней панели)
+-- 6. НАДЁЖНАЯ СИСТЕМА ПЕРЕТАСКИВАНИЯ (С ОГРАНИЧЕНИЕМ В ПРЕДЕЛАХ ЭКРАНА)
 local function MakeDraggable(guiInstance, dragHandle)
     dragHandle = dragHandle or guiInstance
-    local dragging, dragStart, startPos = false, nil, nil
+    local dragging = false
+    local dragStart = Vector3.zero
+    local startPos = Vector2.zero
 
     dragHandle.InputBegan:Connect(function(input)
         if input.UserInputType == Enum.UserInputType.MouseButton1 or input.UserInputType == Enum.UserInputType.Touch then
             dragging = true
             dragStart = input.Position
-            startPos = guiInstance.Position
+            startPos = Vector2.new(guiInstance.AbsolutePosition.X, guiInstance.AbsolutePosition.Y)
 
-            local endConnection
-            endConnection = UserInputService.InputEnded:Connect(function(endInput)
+            local conn
+            conn = UserInputService.InputEnded:Connect(function(endInput)
                 if endInput.UserInputType == Enum.UserInputType.MouseButton1 or endInput.UserInputType == Enum.UserInputType.Touch then
                     dragging = false
-                    if endConnection then endConnection:Disconnect() end
+                    if conn then conn:Disconnect() end
                 end
             end)
         end
@@ -130,12 +132,21 @@ local function MakeDraggable(guiInstance, dragHandle)
     UserInputService.InputChanged:Connect(function(input)
         if dragging and (input.UserInputType == Enum.UserInputType.MouseMovement or input.UserInputType == Enum.UserInputType.Touch) then
             local delta = input.Position - dragStart
-            guiInstance.Position = UDim2.new(
-                startPos.X.Scale,
-                startPos.X.Offset + delta.X,
-                startPos.Y.Scale,
-                startPos.Y.Offset + delta.Y
-            )
+            local targetX = startPos.X + delta.X
+            local targetY = startPos.Y + delta.Y
+
+            -- Ограничиваем окно строго рамками видимого экрана
+            local camera = Workspace.CurrentCamera
+            if camera then
+                local viewport = camera.ViewportSize
+                local size = guiInstance.AbsoluteSize
+                targetX = math.clamp(targetX, 0, math.max(0, viewport.X - size.X))
+                targetY = math.clamp(targetY, 0, math.max(0, viewport.Y - size.Y))
+            end
+
+            local ap = guiInstance.AnchorPoint
+            local size = guiInstance.AbsoluteSize
+            guiInstance.Position = UDim2.fromOffset(targetX + (size.X * ap.X), targetY + (size.Y * ap.Y))
         end
     end)
 end
@@ -144,7 +155,7 @@ end
 local function MakeResizeable(guiInstance, minSize)
     local resizing, currentSide = false, nil
     local startMouse, startPos, startSize
-    local edgeThickness = 4
+    local edgeThickness = 6
 
     local function MakeEdge(side, pos, size)
         local btn = Instance.new("TextButton")
@@ -215,10 +226,8 @@ local function MakeResizeable(guiInstance, minSize)
             h = minSize.Y
         end
 
-        Tween(guiInstance, TweenInfo.new(0.2, Enum.EasingStyle.Quart, Enum.EasingDirection.Out), {
-            Position = UDim2.fromOffset(x, y),
-            Size = UDim2.fromOffset(w, h)
-        })
+        guiInstance.Position = UDim2.fromOffset(x, y)
+        guiInstance.Size = UDim2.fromOffset(w, h)
     end)
 end
 
@@ -263,20 +272,20 @@ function Library:CreateWindow(data)
         CornerRadius = UDim.new(0, 6)
     })
 
-    -- Зона хватания для перетаскивания (Шапка)
+    -- Зона хватания за верхнюю шапку
     local dragZone = Instances:Create("Frame", {
         Parent = mainFrame.Instance,
         Name = "DragZone",
         BackgroundTransparency = 1,
         Position = UDim2.new(0, 0, 0, 0),
-        Size = UDim2.new(1, -35, 0, 40),
+        Size = UDim2.new(1, -40, 0, 40),
         ZIndex = 10
     })
 
     MakeDraggable(mainFrame.Instance, dragZone.Instance)
     MakeResizeable(mainFrame.Instance, Vector2.new(380, 270))
 
-    -- Левый тулбар для вкладок (С поддержкой прокрутки)
+    -- Левый тулбар для вкладок
     local leftTabs = Instances:Create("ScrollingFrame", {
         Parent = mainFrame.Instance,
         Name = "LeftTabs",
@@ -425,7 +434,6 @@ function Library:CreateTab(window, tabData)
     local tabName = tabData.Name or "Tab"
     local tabIcon = tabData.Icon or "folder"
 
-    -- Кнопка переключения в левой панели
     local tabButton = Instances:Create("TextButton", {
         Parent = window.LeftTabs,
         Name = "Tab_" .. tabName,
@@ -441,7 +449,6 @@ function Library:CreateTab(window, tabData)
         CornerRadius = UDim.new(0, 5)
     })
 
-    -- Иконка вкладки
     local iconImage = Instances:Create("ImageLabel", {
         Parent = tabButton.Instance,
         Name = "Icon",
@@ -455,7 +462,6 @@ function Library:CreateTab(window, tabData)
         ZIndex = 4
     })
 
-    -- Название вкладки
     local tabLabel = Instances:Create("TextLabel", {
         Parent = tabButton.Instance,
         Name = "Label",
@@ -471,7 +477,6 @@ function Library:CreateTab(window, tabData)
         ZIndex = 4
     })
 
-    -- Контейнер контента вкладки
     local tabContainer = Instances:Create("ScrollingFrame", {
         Parent = window.Content,
         Name = "Container_" .. tabName,
@@ -487,7 +492,6 @@ function Library:CreateTab(window, tabData)
         CanvasSize = UDim2.new(0, 0, 0, 0)
     })
 
-    -- Горизонтальная раскладка 2 колонок
     Instances:Create("UIListLayout", {
         Parent = tabContainer.Instance,
         FillDirection = Enum.FillDirection.Horizontal,
@@ -503,7 +507,6 @@ function Library:CreateTab(window, tabData)
         PaddingLeft = UDim.new(0, 5)
     })
 
-    -- Создаем 2 колонки
     local columns = {}
     for i = 1, 2 do
         local column = Instances:Create("Frame", {
@@ -532,7 +535,6 @@ function Library:CreateTab(window, tabData)
         Columns = columns
     }
 
-    -- Переключение
     local function Activate()
         if window.CurrentTab == tabObject then return end
         if window.CurrentTab then
@@ -582,7 +584,6 @@ function Library:CreateSection(parentColumn, sectionData)
     local sectionName = sectionData.Name or "Section"
     local sectionIcon = sectionData.Icon or "folder"
 
-    -- Карточка секции
     local sectionFrame = Instances:Create("Frame", {
         Parent = parentColumn,
         Name = "Section_" .. sectionName,
@@ -620,7 +621,6 @@ function Library:CreateSection(parentColumn, sectionData)
         Padding = UDim.new(0, 8)
     })
 
-    -- Шапка секции (Header)
     local headerFrame = Instances:Create("Frame", {
         Parent = sectionFrame.Instance,
         Name = "Header",
@@ -630,7 +630,6 @@ function Library:CreateSection(parentColumn, sectionData)
         ZIndex = 5
     })
 
-    -- Синяя иконка секции
     local parsedIcon = ParseIcon(sectionIcon)
     local titleOffset = 0
     if parsedIcon ~= "" then
@@ -648,7 +647,6 @@ function Library:CreateSection(parentColumn, sectionData)
         titleOffset = 21
     end
 
-    -- Заголовок секции
     local titleLabel = Instances:Create("TextLabel", {
         Parent = headerFrame.Instance,
         Name = "Title",
@@ -663,7 +661,6 @@ function Library:CreateSection(parentColumn, sectionData)
         ZIndex = 5
     })
 
-    -- Контейнер для элементов
     local elementsContainer = Instances:Create("Frame", {
         Parent = sectionFrame.Instance,
         Name = "Container",
@@ -684,17 +681,15 @@ function Library:CreateSection(parentColumn, sectionData)
 end
 
 -- =======================================================
--- 11. ПРИМЕР ИСПОЛЬЗОВАНИЯ
+-- 11. ИНИЦИАЛИЗАЦИЯ
 -- =======================================================
 
--- Создаем окно
 local MainWindow = Library:CreateWindow({
     Name = "Dark Hub",
     SubName = "Custom GUI Framework",
     Logo = "10723407068"
 })
 
--- Создаем вкладки
 local CombatTab, CombatColumns = Library:CreateTab(MainWindow, {
     Name = "Aimbot",
     Icon = "combat"
@@ -710,7 +705,6 @@ local SettingsTab, SettingsColumns = Library:CreateTab(MainWindow, {
     Icon = "settings"
 })
 
--- Создаем секции внутри вкладок
 local MainAimbotSection = Library:CreateSection(CombatColumns[1], {
     Name = "Main Settings",
     Icon = "zap"
@@ -731,4 +725,4 @@ local ConfigSection = Library:CreateSection(SettingsColumns[1], {
     Icon = "settings"
 })
 
-print("GUI loaded successfully!")
+print("GUI Loaded Successfully without Drag issues!")
