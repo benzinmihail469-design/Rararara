@@ -349,7 +349,7 @@ function Library:CreateWindow(data)
         ZIndex = 5
     })
 
-    -- Контейнер логотипа (контуры убраны)
+    -- Контейнер логотипа (добавлен ClipsDescendants для красивой обрезки по краям)
     local logoContainer = Instances:Create("Frame", {
         Parent = mainFrame.Instance,
         Name = "LogoContainer",
@@ -358,7 +358,8 @@ function Library:CreateWindow(data)
         Size = UDim2.new(0, 75, 0, 75),
         BackgroundColor3 = Theme["Element"],
         BorderSizePixel = 0,
-        ZIndex = 5
+        ZIndex = 5,
+        ClipsDescendants = true
     })
 
     Instances:Create("UICorner", {
@@ -366,15 +367,15 @@ function Library:CreateWindow(data)
         CornerRadius = UDim.new(0, 12)
     })
 
-    -- Иконка логотипа с гарантированной загрузкой
+    -- Иконка логотипа растянута ровно до краев контейнера
     local logoIcon = Instances:Create("ImageLabel", {
         Parent = logoContainer.Instance,
         Name = "Logo",
         ImageColor3 = Color3.fromRGB(255, 255, 255),
-        ScaleType = Enum.ScaleType.Fit,
-        AnchorPoint = Vector2.new(0.5, 0.5),
-        Position = UDim2.new(0.5, 0, 0.5, 0),
-        Size = UDim2.new(0, 54, 0, 54),
+        ScaleType = Enum.ScaleType.Crop,
+        AnchorPoint = Vector2.new(0, 0),
+        Position = UDim2.new(0, 0, 0, 0),
+        Size = UDim2.new(1, 0, 1, 0),
         Image = ParseIcon(logoId),
         BackgroundTransparency = 1,
         ImageTransparency = 0,
@@ -925,4 +926,4 @@ SilentBypassSection:CreateToggle({ Name = "включить понос", Default
 local JopaSection = Library:CreateSection(Cols[1], { Name = "jopa" })
 JopaSection:CreateToggle({ Name = "включить жопа...", Default = false })
 
-print("GUI Updated: Icon changed and borders removed successfully!")
+print("GUI Updated: Icon stretched to edges successfully!")
