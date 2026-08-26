@@ -47,14 +47,16 @@ local IconLibrary = {
 local function ParseIcon(icon)
     if not icon or icon == "" then return "" end
     local strIcon = tostring(icon)
-    if IconLibrary[string.lower(strIcon)] then
-        return IconLibrary[string.lower(strIcon)]
-    end
-    if tonumber(strIcon) then
-        return "rbxassetid://" .. strIcon
+    local lower = string.lower(strIcon)
+    if IconLibrary[lower] then
+        return IconLibrary[lower]
     end
     if string.sub(strIcon, 1, 13) == "rbxassetid://" then
         return strIcon
+    end
+    local cleanId = string.match(strIcon, "%d+")
+    if cleanId then
+        return "rbxassetid://" .. cleanId
     end
     return strIcon
 end
@@ -227,7 +229,7 @@ function Library:CreateWindow(data)
     data = data or {}
     local windowName = data.Name or "My Custom Window"
     local subName = data.SubName or "Fine-tuning GUI"
-    local logoId = data.Logo or "1l20959262762131"
+    local logoId = data.Logo or "10723407068"
 
     local Window = {
         Name = windowName,
@@ -273,7 +275,8 @@ function Library:CreateWindow(data)
         BackgroundColor3 = Theme["Background 2"],
         ScrollBarThickness = 0,
         Active = true,
-        AutomaticCanvasSize = Enum.AutomaticSize.Y
+        AutomaticCanvasSize = Enum.AutomaticSize.Y,
+        CanvasSize = UDim2.new(0, 0, 0, 0)
     })
 
     Instances:Create("UIListLayout", {
@@ -302,7 +305,7 @@ function Library:CreateWindow(data)
         ImageColor3 = Color3.fromRGB(255, 255, 255),
         ScaleType = Enum.ScaleType.Fit,
         Size = UDim2.new(0, 28, 0, 28),
-        Image = "rbxassetid://" .. logoId,
+        Image = ParseIcon(logoId),
         BackgroundTransparency = 1,
         Position = UDim2.new(0, 10, 0, 10),
         ZIndex = 3,
@@ -386,6 +389,7 @@ function Library:CreateWindow(data)
         Name = "CloseIcon",
         ImageColor3 = Theme["Text"],
         ImageTransparency = 0.3,
+        ScaleType = Enum.ScaleType.Fit,
         Size = UDim2.new(0, 10, 0, 10),
         AnchorPoint = Vector2.new(0.5, 0.5),
         Image = "rbxassetid://130510492706892",
@@ -436,9 +440,10 @@ function Library:CreateTab(window, tabData)
         Size = UDim2.new(0, 16, 0, 16),
         Position = UDim2.new(0, 10, 0.5, -8),
         BackgroundTransparency = 1,
+        ScaleType = Enum.ScaleType.Fit,
         Image = ParseIcon(tabIcon),
-        ImageColor3 = Theme["Accent"], -- Всегда синий цвет
-        ImageTransparency = 0.45, -- Прозрачность для неактивного состояния
+        ImageColor3 = Theme["Accent"],
+        ImageTransparency = 0.45,
         ZIndex = 4
     })
 
@@ -458,7 +463,7 @@ function Library:CreateTab(window, tabData)
         ZIndex = 4
     })
 
-    -- Контейнер контента
+    -- Контейнер контента вкладки
     local tabContainer = Instances:Create("ScrollingFrame", {
         Parent = window.Content,
         Name = "Container_" .. tabName,
@@ -468,51 +473,43 @@ function Library:CreateTab(window, tabData)
         ScrollBarThickness = 2,
         ScrollBarImageColor3 = Theme["Accent"],
         Visible = false,
-        ZIndex = 3
+        ZIndex = 3,
+        Active = true,
+        AutomaticCanvasSize = Enum.AutomaticSize.Y,
+        CanvasSize = UDim2.new(0, 0, 0, 0)
     })
 
+    -- Горизонтальная раскладка 2 колонок
     Instances:Create("UIListLayout", {
         Parent = tabContainer.Instance,
-        Padding = UDim.new(0, 6),
-        SortOrder = Enum.SortOrder.LayoutOrder
-    })
-
-    -- Создаем 2 колонки внутри вкладки
-    local columnLayout = Instances:Create("UIListLayout", {
-        Parent = tabContainer.Instance,
         FillDirection = Enum.FillDirection.Horizontal,
-        HorizontalFlex = Enum.UIFlexAlignment.Fill,
-        Padding = UDim.new(0, 10),
-        SortOrder = Enum.SortOrder.LayoutOrder
+        SortOrder = Enum.SortOrder.LayoutOrder,
+        Padding = UDim.new(0, 10)
     })
 
     Instances:Create("UIPadding", {
         Parent = tabContainer.Instance,
         PaddingTop = UDim.new(0, 5),
-        PaddingBottom = UDim.new(0, 5),
-        PaddingRight = UDim.new(0, 5),
+        PaddingBottom = UDim.new(0, 10),
+        PaddingRight = UDim.new(0, 8),
         PaddingLeft = UDim.new(0, 5)
     })
 
-    -- Создаем колонки
+    -- Создаем 2 колонки (Frame с авто-размером по высоте)
     local columns = {}
     for i = 1, 2 do
-        local column = Instances:Create("ScrollingFrame", {
+        local column = Instances:Create("Frame", {
             Parent = tabContainer.Instance,
             Name = "Column_" .. i,
-            Size = UDim2.new(0, 100, 0, 100),
+            Size = UDim2.new(0.5, -5, 0, 0),
+            AutomaticSize = Enum.AutomaticSize.Y,
             BackgroundTransparency = 1,
-            BorderSizePixel = 0,
-            ScrollBarThickness = 2,
-            ScrollBarImageColor3 = Theme["Accent"],
-            Active = true,
-            AutomaticCanvasSize = Enum.AutomaticSize.Y,
-            CanvasSize = UDim2.new(0, 0, 0, 0)
+            BorderSizePixel = 0
         })
 
         Instances:Create("UIListLayout", {
             Parent = column.Instance,
-            Padding = UDim.new(0, 6),
+            Padding = UDim.new(0, 8),
             SortOrder = Enum.SortOrder.LayoutOrder
         })
 
@@ -575,7 +572,7 @@ end
 function Library:CreateSection(parentColumn, sectionData)
     sectionData = sectionData or {}
     local sectionName = sectionData.Name or "Section"
-    local sectionIcon = sectionData.Icon or "folder" -- Иконка секции по умолчанию
+    local sectionIcon = sectionData.Icon or "folder"
 
     -- Карточка секции
     local sectionFrame = Instances:Create("Frame", {
@@ -625,7 +622,7 @@ function Library:CreateSection(parentColumn, sectionData)
         ZIndex = 5
     })
 
-    -- Синяя иконка секции (ВМЕСТО ПОЛОСКИ)
+    -- Синяя иконка секции
     local parsedIcon = ParseIcon(sectionIcon)
     local titleOffset = 0
     if parsedIcon ~= "" then
@@ -635,11 +632,12 @@ function Library:CreateSection(parentColumn, sectionData)
             Size = UDim2.new(0, 15, 0, 15),
             Position = UDim2.new(0, 0, 0.5, -7),
             BackgroundTransparency = 1,
+            ScaleType = Enum.ScaleType.Fit,
             Image = parsedIcon,
-            ImageColor3 = Theme["Accent"], -- СИНИЙ ЦВЕТ ИКОНКИ
+            ImageColor3 = Theme["Accent"],
             ZIndex = 5
         })
-        titleOffset = 21 -- Сдвиг заголовка вправо
+        titleOffset = 21
     end
 
     -- Заголовок секции
@@ -685,7 +683,7 @@ end
 local MainWindow = Library:CreateWindow({
     Name = "Dark Hub",
     SubName = "Custom GUI Framework",
-    Logo = "1l20959262762131"
+    Logo = "10723407068"
 })
 
 -- Создаем вкладки с синими иконками
