@@ -8,6 +8,7 @@ local Players = game:GetService("Players")
 local CoreGui = cloneref and cloneref(game:GetService("CoreGui")) or game:GetService("CoreGui")
 local TweenService = game:GetService("TweenService")
 local RunService = game:GetService("RunService")
+local ContentProvider = game:GetService("ContentProvider")
 
 local gethui = gethui or function()
     return CoreGui
@@ -50,9 +51,13 @@ local function ParseIcon(icon)
     local strIcon = tostring(icon)
     local lower = string.lower(strIcon)
     if IconLibrary[lower] then return IconLibrary[lower] end
-    if string.sub(strIcon, 1, 13) == "rbxassetid://" then return strIcon end
+    if string.sub(strIcon, 1, 11) == "rbxthumb://" then return strIcon end
+    if string.sub(strIcon, 1, 4) == "http" then return strIcon end
+    
     local cleanId = string.match(strIcon, "%d+")
-    if cleanId then return "rbxassetid://" .. cleanId end
+    if cleanId then
+        return "rbxthumb://type=Asset&id=" .. cleanId .. "&w=420&h=420"
+    end
     return strIcon
 end
 
@@ -344,7 +349,7 @@ function Library:CreateWindow(data)
         ZIndex = 5
     })
 
-    -- Крупный контейнер/квадрат для логотипа (с едва заметным контуром)
+    -- Контейнер логотипа
     local logoContainer = Instances:Create("Frame", {
         Parent = mainFrame.Instance,
         Name = "LogoContainer",
@@ -361,7 +366,6 @@ function Library:CreateWindow(data)
         CornerRadius = UDim.new(0, 12)
     })
 
-    -- Мягкий контур контейнера логотипа
     Instances:Create("UIStroke", {
         Parent = logoContainer.Instance,
         Color = Theme["Outline"],
@@ -369,21 +373,28 @@ function Library:CreateWindow(data)
         Thickness = 1
     })
 
-    -- Иконка логотипа с чистым отображением (ImageColor3 = White)
-    Instances:Create("ImageLabel", {
+    -- Иконка логотипа с гарантированной загрузкой
+    local logoIcon = Instances:Create("ImageLabel", {
         Parent = logoContainer.Instance,
         Name = "Logo",
         ImageColor3 = Color3.fromRGB(255, 255, 255),
         ScaleType = Enum.ScaleType.Fit,
         AnchorPoint = Vector2.new(0.5, 0.5),
         Position = UDim2.new(0.5, 0, 0.5, 0),
-        Size = UDim2.new(0, 48, 0, 48),
+        Size = UDim2.new(0, 54, 0, 54),
         Image = ParseIcon(logoId),
         BackgroundTransparency = 1,
         ImageTransparency = 0,
         ZIndex = 6,
         BorderSizePixel = 0
     })
+
+    -- Предзагрузка изображения
+    task.spawn(function()
+        pcall(function()
+            ContentProvider:PreloadAsync({logoIcon.Instance})
+        end)
+    end)
 
     -- Горизонтальная разделительная линия под логотипом
     local headerDivider = Instances:Create("Frame", {
@@ -410,7 +421,7 @@ function Library:CreateWindow(data)
         })
     })
 
-    -- Список вкладок (ниже блока логотипа)
+    -- Список вкладок
     local leftTabs = Instances:Create("ScrollingFrame", {
         Parent = mainFrame.Instance,
         Name = "LeftTabs",
@@ -921,4 +932,4 @@ SilentBypassSection:CreateToggle({ Name = "включить понос", Default
 local JopaSection = Library:CreateSection(Cols[1], { Name = "jopa" })
 JopaSection:CreateToggle({ Name = "включить жопа...", Default = false })
 
-print("GUI Updated: Logo image color fixed to White!")
+print("GUI Updated: Icon preloading & rbxthumb parser applied!")
