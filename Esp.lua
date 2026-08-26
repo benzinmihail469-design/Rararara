@@ -1,5 +1,5 @@
 -- =======================================================
--- АВТОНОМНЫЙ СКРИПТ ГЛАВНОГО ОКНА С ВКЛАДКАМИ И ИКОНКАМИ
+-- АВТОНОМНЫЙ СКРИПТ ГЛАВНОГО ОКНА С СИСТЕМОЙ ИКОНОК
 -- =======================================================
 
 local Workspace = game:GetService("Workspace")
@@ -13,7 +13,43 @@ local gethui = gethui or function()
     return CoreGui
 end
 
--- 1. Тема оформления
+-- =======================================================
+-- 1. СИСТЕМА ИКОНОК (ICON SYSTEM)
+-- =======================================================
+local IconLibrary = {
+    ["home"] = "rbxassetid://10723407068",
+    ["user"] = "rbxassetid://10709789810",
+    ["settings"] = "rbxassetid://10734950309",
+    ["combat"] = "rbxassetid://10734975692",
+    ["visuals"] = "rbxassetid://10723414641",
+    ["shield"] = "rbxassetid://10709782497",
+    ["code"] = "rbxassetid://10709752254",
+    ["check"] = "rbxassetid://10709790644",
+    ["chevron-down"] = "rbxassetid://10709790948",
+    ["folder"] = "rbxassetid://10723345749",
+    ["star"] = "rbxassetid://10734934585",
+    ["zap"] = "rbxassetid://10734983868",
+    ["close"] = "rbxassetid://130510492706892"
+}
+
+local function ParseIcon(icon)
+    if not icon or icon == "" then return "" end
+    local strIcon = tostring(icon)
+    if IconLibrary[string.lower(strIcon)] then
+        return IconLibrary[string.lower(strIcon)]
+    end
+    if tonumber(strIcon) then
+        return "rbxassetid://" .. strIcon
+    end
+    if string.sub(strIcon, 1, 13) == "rbxassetid://" then
+        return strIcon
+    end
+    return strIcon
+end
+
+-- =======================================================
+-- 2. ТЕМА ОФОРМЛЕНИЯ
+-- =======================================================
 local Theme = {
     ["Background"] = Color3.fromRGB(12, 12, 14),
     ["Background 2"] = Color3.fromRGB(10, 10, 12),
@@ -26,14 +62,18 @@ local Theme = {
     ["Section Background"] = Color3.fromRGB(10, 10, 12),
 }
 
--- 2. ScreenGui
+-- =======================================================
+-- 3. SCREEN GUI
+-- =======================================================
 local Holder = Instance.new("ScreenGui")
 Holder.Parent = gethui()
 Holder.Name = "MyCustomGUI_Holder"
 Holder.ZIndexBehavior = Enum.ZIndexBehavior.Global
 Holder.ResetOnSpawn = false
 
--- 3. Tween Хелпер
+-- =======================================================
+-- 4. TWEEN HELPER
+-- =======================================================
 local function Tween(instance, info, goal)
     info = info or TweenInfo.new(0.3, Enum.EasingStyle.Quad, Enum.EasingDirection.Out)
     local tween = TweenService:Create(instance, info, goal)
@@ -41,7 +81,9 @@ local function Tween(instance, info, goal)
     return tween
 end
 
--- 4. Хелпер создания элементов
+-- =======================================================
+-- 5. INSTANCES HELPER
+-- =======================================================
 local Instances = {}
 function Instances:Create(className, properties)
     local inst = Instance.new(className)
@@ -72,7 +114,9 @@ function Instances:Create(className, properties)
     return wrapper
 end
 
--- 5. Draggable
+-- =======================================================
+-- 6. DRAGGABLE
+-- =======================================================
 local function MakeDraggable(guiInstance)
     local dragging, dragStart, startPos
     
@@ -100,7 +144,9 @@ local function MakeDraggable(guiInstance)
     end)
 end
 
--- 6. Resizeable
+-- =======================================================
+-- 7. RESIZEABLE
+-- =======================================================
 local function MakeResizeable(guiInstance, minSize)
     local resizing, currentSide = false, nil
     local startMouse, startPos, startSize
@@ -183,19 +229,12 @@ local function MakeResizeable(guiInstance, minSize)
 end
 
 -- =======================================================
--- 7. СОЗДАНИЕ ОКНА (WINDOW) С ВКЛАДКАМИ
+-- 8. БИБЛИОТЕКА ОКНА
 -- =======================================================
 local Library = {
-    Pages = {},
-    UnusedHolder = nil
+    Tabs = {},
+    CurrentTab = nil
 }
-
--- Создаем невидимый контейнер для скрытых страниц
-Library.UnusedHolder = Instance.new("ScreenGui")
-Library.UnusedHolder.Parent = gethui()
-Library.UnusedHolder.Name = "UnusedHolder"
-Library.UnusedHolder.Enabled = false
-Library.UnusedHolder.ResetOnSpawn = false
 
 function Library:CreateWindow(data)
     data = data or {}
@@ -206,9 +245,9 @@ function Library:CreateWindow(data)
     local Window = {
         Name = windowName,
         SubName = subName,
-        Pages = {},
-        Items = {},
-        IsOpen = true
+        LogoId = logoId,
+        Tabs = {},
+        CurrentTab = nil
     }
 
     -- Главное окно
@@ -219,7 +258,7 @@ function Library:CreateWindow(data)
         AnchorPoint = Vector2.new(0.5, 0.5),
         BackgroundTransparency = 0.12,
         Position = UDim2.new(0.5, 0, 0.5, 0),
-        Size = UDim2.new(0, 560, 0, 400),
+        Size = UDim2.new(0, 580, 0, 420),
         ZIndex = 2,
         BorderSizePixel = 0,
         BackgroundColor3 = Theme["Background"]
@@ -233,7 +272,7 @@ function Library:CreateWindow(data)
     MakeDraggable(mainFrame.Instance)
     MakeResizeable(mainFrame.Instance, Vector2.new(400, 300))
 
-    -- Левый тулбар для вкладок
+    -- Левая панель с вкладками
     local leftTabs = Instances:Create("ScrollingFrame", {
         Parent = mainFrame.Instance,
         Name = "LeftTabs",
@@ -241,7 +280,7 @@ function Library:CreateWindow(data)
         AnchorPoint = Vector2.new(0, 0),
         BackgroundTransparency = 0.15,
         Position = UDim2.new(0, 0, 0, 0),
-        Size = UDim2.new(0, 165, 1, 0),
+        Size = UDim2.new(0, 160, 1, 0),
         ZIndex = 2,
         BorderSizePixel = 0,
         BackgroundColor3 = Theme["Background 2"],
@@ -276,7 +315,7 @@ function Library:CreateWindow(data)
         ImageColor3 = Color3.fromRGB(255, 255, 255),
         ScaleType = Enum.ScaleType.Fit,
         Size = UDim2.new(0, 28, 0, 28),
-        Image = "rbxassetid://" .. logoId,
+        Image = ParseIcon(logoId),
         BackgroundTransparency = 1,
         Position = UDim2.new(0, 10, 0, 10),
         ZIndex = 3,
@@ -330,8 +369,8 @@ function Library:CreateWindow(data)
         Parent = mainFrame.Instance,
         Name = "ContentArea",
         BackgroundTransparency = 1,
-        Position = UDim2.new(0, 172, 0, 45),
-        Size = UDim2.new(1, -177, 1, -50),
+        Position = UDim2.new(0, 168, 0, 45),
+        Size = UDim2.new(1, -175, 1, -50),
         ZIndex = 2,
         ClipsDescendants = true
     })
@@ -362,7 +401,7 @@ function Library:CreateWindow(data)
         ImageTransparency = 0.3,
         Size = UDim2.new(0, 10, 0, 10),
         AnchorPoint = Vector2.new(0.5, 0.5),
-        Image = "rbxassetid://130510492706892",
+        Image = ParseIcon("close"),
         BackgroundTransparency = 1,
         Position = UDim2.new(0.5, 0, 0.5, 0),
         ZIndex = 4
@@ -383,40 +422,27 @@ function Library:CreateWindow(data)
         CloseIcon = closeIcon
     }
 
-    -- Возвращаем объект окна с методами
-    local self = setmetatable(Window, Library)
-    return self
+    setmetatable(Window, { __index = Library })
+    return Window
 end
 
 -- =======================================================
--- 8. СОЗДАНИЕ ВКЛАДКИ (PAGE)
+-- 9. СОЗДАНИЕ ВКЛАДКИ (TAB) С СИНЕЙ ИКОНКОЙ
 -- =======================================================
-function Library:Page(data)
-    data = data or {}
+function Library:CreateTab(tabData)
+    tabData = tabData or {}
+    local tabName = tabData.Name or "Tab"
+    local tabIcon = tabData.Icon or "folder"
     
-    local Page = {
-        Window = self,
-        Name = data.Name or "Page",
-        Icon = data.Icon or "100050851789190",
-        Columns = data.Columns or 2,
-        Items = {},
-        Sections = {},
-        Active = false,
-        ColumnFrames = {}
-    }
-
-    -- Кнопка вкладки (слева)
+    -- Кнопка переключения в левой панели
     local tabButton = Instances:Create("TextButton", {
         Parent = self.Items.LeftTabs.Instance,
-        Name = "Tab_" .. Page.Name,
-        FontFace = Font.new("rbxassetid://12187365364", Enum.FontWeight.Regular, Enum.FontStyle.Normal),
+        Name = "Tab_" .. tabName,
+        Size = UDim2.new(1, 0, 0, 32),
+        BackgroundTransparency = 1,
         Text = "",
         AutoButtonColor = false,
-        BackgroundTransparency = 1,
-        BorderSizePixel = 0,
-        Size = UDim2.new(1, 0, 0, 36),
-        ZIndex = 2,
-        BackgroundColor3 = Theme["Accent"]
+        ZIndex = 3
     })
 
     Instances:Create("UICorner", {
@@ -424,220 +450,187 @@ function Library:Page(data)
         CornerRadius = UDim.new(0, 5)
     })
 
-    -- Иконка вкладки
-    local tabIcon = Instances:Create("ImageLabel", {
+    -- Иконка вкладки (СИНИЙ ЦВЕТ Theme["Accent"])
+    local iconImage = Instances:Create("ImageLabel", {
         Parent = tabButton.Instance,
         Name = "Icon",
-        ImageColor3 = Color3.fromRGB(255, 255, 255),
-        Size = UDim2.new(0, 18, 0, 18),
-        AnchorPoint = Vector2.new(0, 0.5),
-        Image = "rbxassetid://" .. Page.Icon,
+        Size = UDim2.new(0, 16, 0, 16),
+        Position = UDim2.new(0, 10, 0.5, -8),
         BackgroundTransparency = 1,
-        Position = UDim2.new(0, 14, 0.5, 0),
-        ZIndex = 2,
-        BorderSizePixel = 0
+        Image = ParseIcon(tabIcon),
+        ImageColor3 = Theme["Accent"],
+        ImageTransparency = 0.45,
+        ZIndex = 4
     })
 
-    Instances:Create("UIGradient", {
-        Parent = tabIcon.Instance,
-        Rotation = -115,
-        Color = ColorSequence.new({
-            ColorSequenceKeypoint.new(0, Theme["Accent"]),
-            ColorSequenceKeypoint.new(1, Theme["AccentGradient"])
-        })
-    })
-
-    -- Текст вкладки
-    local tabText = Instances:Create("TextLabel", {
+    -- Название вкладки
+    local tabLabel = Instances:Create("TextLabel", {
         Parent = tabButton.Instance,
-        Name = "Text",
-        FontFace = Font.new("rbxassetid://12187365364", Enum.FontWeight.SemiBold, Enum.FontStyle.Normal),
+        Name = "Label",
+        Text = tabName,
+        FontFace = Font.new("rbxassetid://12187365364", Enum.FontWeight.Medium, Enum.FontStyle.Normal),
         TextColor3 = Theme["Text"],
-        Text = Page.Name,
-        AutomaticSize = Enum.AutomaticSize.X,
-        Size = UDim2.new(0, 0, 0, 14),
-        BackgroundTransparency = 1,
-        Position = UDim2.new(0, 40, 0.5, 0),
-        ZIndex = 2,
+        TextTransparency = 0.5,
         TextSize = 13,
-        TextXAlignment = Enum.TextXAlignment.Left
-    })
-
-    -- Контейнер для страницы
-    local pageFrame = Instances:Create("Frame", {
-        Parent = Library.UnusedHolder,
-        Name = "Page_" .. Page.Name,
-        Visible = false,
+        Position = UDim2.new(0, 34, 0, 0),
+        Size = UDim2.new(1, -40, 1, 0),
         BackgroundTransparency = 1,
-        Size = UDim2.new(1, 0, 1, 0),
-        ZIndex = 2,
-        Position = UDim2.new(0, 0, 0, 0)
+        TextXAlignment = Enum.TextXAlignment.Left,
+        ZIndex = 4
     })
 
-    -- UIListLayout для колонок
+    -- Контейнер контента
+    local tabContainer = Instances:Create("ScrollingFrame", {
+        Parent = self.Items.Content.Instance,
+        Name = "Container_" .. tabName,
+        Size = UDim2.new(1, 0, 1, 0),
+        BackgroundTransparency = 1,
+        BorderSizePixel = 0,
+        ScrollBarThickness = 2,
+        ScrollBarImageColor3 = Theme["Accent"],
+        Visible = false,
+        ZIndex = 3
+    })
+
+    Instances:Create("UIListLayout", {
+        Parent = tabContainer.Instance,
+        Padding = UDim.new(0, 6),
+        SortOrder = Enum.SortOrder.LayoutOrder
+    })
+
+    Instances:Create("UIPadding", {
+        Parent = tabContainer.Instance,
+        PaddingTop = UDim.new(0, 6),
+        PaddingBottom = UDim.new(0, 6),
+        PaddingRight = UDim.new(0, 6),
+        PaddingLeft = UDim.new(0, 6)
+    })
+
+    local tabObject = {
+        Button = tabButton.Instance,
+        Container = tabContainer.Instance,
+        Icon = iconImage.Instance,
+        Label = tabLabel.Instance,
+        Name = tabName,
+        Sections = {}
+    }
+
+    -- Переключение вкладки
+    local function Activate()
+        if self.CurrentTab == tabObject then return end
+        
+        if self.CurrentTab then
+            self.CurrentTab.Container.Visible = false
+            Tween(self.CurrentTab.Button, TweenInfo.new(0.2), { BackgroundTransparency = 1 })
+            Tween(self.CurrentTab.Icon, TweenInfo.new(0.2), { ImageTransparency = 0.45, ImageColor3 = Theme["Accent"] })
+            Tween(self.CurrentTab.Label, TweenInfo.new(0.2), { TextTransparency = 0.5, TextColor3 = Theme["Text"] })
+        end
+        
+        self.CurrentTab = tabObject
+        tabContainer.Instance.Visible = true
+        Tween(tabButton.Instance, TweenInfo.new(0.2), { BackgroundTransparency = 0.85, BackgroundColor3 = Theme["Element"] })
+        Tween(iconImage.Instance, TweenInfo.new(0.2), { ImageTransparency = 0, ImageColor3 = Theme["Accent"] })
+        Tween(tabLabel.Instance, TweenInfo.new(0.2), { TextTransparency = 0, TextColor3 = Theme["Text"] })
+    end
+
+    tabButton:Connect("MouseButton1Click", Activate)
+
+    -- Если это первая вкладка, активируем её
+    if not self.CurrentTab then
+        Activate()
+    end
+
+    table.insert(self.Tabs, tabObject)
+    return tabObject
+end
+
+-- =======================================================
+-- 10. СОЗДАНИЕ КОЛОНОК
+-- =======================================================
+function Library:CreateColumns(tabContainer)
+    local columnFrame = Instances:Create("Frame", {
+        Parent = tabContainer.Container,
+        Name = "Columns",
+        Size = UDim2.new(1, 0, 1, 0),
+        BackgroundTransparency = 1,
+        ZIndex = 3
+    })
+
     local columnLayout = Instances:Create("UIListLayout", {
-        Parent = pageFrame.Instance,
+        Parent = columnFrame.Instance,
         FillDirection = Enum.FillDirection.Horizontal,
         HorizontalFlex = Enum.UIFlexAlignment.Fill,
-        Padding = UDim.new(0, 10),
+        Padding = UDim.new(0, 6),
         SortOrder = Enum.SortOrder.LayoutOrder
     })
 
-    Instances:Create("UIPadding", {
-        Parent = pageFrame.Instance,
-        PaddingTop = UDim.new(0, 10),
-        PaddingBottom = UDim.new(0, 10),
-        PaddingRight = UDim.new(0, 10),
-        PaddingLeft = UDim.new(0, 10)
+    -- Колонка 1
+    local column1 = Instances:Create("ScrollingFrame", {
+        Parent = columnFrame.Instance,
+        Name = "Column1",
+        Size = UDim2.new(0.5, -3, 1, 0),
+        BackgroundTransparency = 1,
+        BorderSizePixel = 0,
+        ScrollBarThickness = 2,
+        ScrollBarImageColor3 = Theme["Accent"],
+        Active = true,
+        AutomaticCanvasSize = Enum.AutomaticSize.Y,
+        CanvasSize = UDim2.new(0, 0, 0, 0)
     })
 
-    -- Создаем колонки
-    for i = 1, Page.Columns do
-        local column = Instances:Create("ScrollingFrame", {
-            Parent = pageFrame.Instance,
-            Name = "Column_" .. i,
-            ScrollBarImageColor3 = Theme["Accent"],
-            Active = true,
-            AutomaticCanvasSize = Enum.AutomaticSize.Y,
-            ScrollBarThickness = 2,
-            BorderColor3 = Color3.fromRGB(0, 0, 0),
-            BackgroundTransparency = 1,
-            Size = UDim2.new(0, 100, 0, 100),
-            ZIndex = 2,
-            BorderSizePixel = 0,
-            CanvasSize = UDim2.new(0, 0, 0, 0)
-        })
+    Instances:Create("UIListLayout", {
+        Parent = column1.Instance,
+        Padding = UDim.new(0, 6),
+        SortOrder = Enum.SortOrder.LayoutOrder
+    })
 
-        Instances:Create("UIListLayout", {
-            Parent = column.Instance,
-            Padding = UDim.new(0, 5),
-            SortOrder = Enum.SortOrder.LayoutOrder
-        })
+    -- Колонка 2
+    local column2 = Instances:Create("ScrollingFrame", {
+        Parent = columnFrame.Instance,
+        Name = "Column2",
+        Size = UDim2.new(0.5, -3, 1, 0),
+        BackgroundTransparency = 1,
+        BorderSizePixel = 0,
+        ScrollBarThickness = 2,
+        ScrollBarImageColor3 = Theme["Accent"],
+        Active = true,
+        AutomaticCanvasSize = Enum.AutomaticSize.Y,
+        CanvasSize = UDim2.new(0, 0, 0, 0)
+    })
 
-        Page.ColumnFrames[i] = column
-    end
+    Instances:Create("UIListLayout", {
+        Parent = column2.Instance,
+        Padding = UDim.new(0, 6),
+        SortOrder = Enum.SortOrder.LayoutOrder
+    })
 
-    Page.Items = {
-        TabButton = tabButton,
-        TabIcon = tabIcon,
-        TabText = tabText,
-        PageFrame = pageFrame
-    }
-
-    -- Функция переключения вкладки
-    local debounce = false
-    
-    function Page:Turn(bool)
-        if debounce then return end
-        
-        Page.Active = bool
-        debounce = true
-        
-        -- Показываем/скрываем страницу
-        pageFrame.Instance.Visible = bool
-        pageFrame.Instance.Parent = bool and self.Window.Items.Content.Instance or Library.UnusedHolder
-        
-        if Page.Active then
-            tabButton:Tween(nil, {BackgroundTransparency = 0.25})
-            pageFrame:Tween(TweenInfo.new(0.5, Enum.EasingStyle.Quint, Enum.EasingDirection.Out), {
-                Position = UDim2.new(0, 0, 0, 0)
-            })
-            
-            -- Показываем элементы внутри секций
-            for _, section in pairs(Page.Sections) do
-                if section.TweenElements then
-                    task.spawn(function()
-                        section:TweenElements(true)
-                    end)
-                end
-            end
-        else
-            tabButton:Tween(nil, {BackgroundTransparency = 1})
-            pageFrame:Tween(TweenInfo.new(0.5, Enum.EasingStyle.Quint, Enum.EasingDirection.Out), {
-                Position = UDim2.new(0, 0, 0, 60)
-            })
-        end
-        
-        -- Анимация прозрачности элементов
-        local descendants = pageFrame.Instance:GetDescendants()
-        table.insert(descendants, pageFrame.Instance)
-        
-        for _, child in ipairs(descendants) do
-            if child:IsA("Frame") or child:IsA("TextLabel") or child:IsA("TextButton") or child:IsA("ImageLabel") or child:IsA("ScrollingFrame") then
-                local props = {}
-                if child:IsA("Frame") then
-                    props.BackgroundTransparency = bool and 0 or 1
-                elseif child:IsA("TextLabel") or child:IsA("TextButton") then
-                    props.TextTransparency = bool and 0 or 1
-                    props.BackgroundTransparency = bool and 0 or 1
-                elseif child:IsA("ImageLabel") then
-                    props.ImageTransparency = bool and 0 or 1
-                end
-                
-                for prop, val in pairs(props) do
-                    child[prop] = bool and 0 or 1
-                    Tween(child, TweenInfo.new(0.3, Enum.EasingStyle.Quad, Enum.EasingDirection.Out), {[prop] = bool and 0 or 1})
-                end
-            end
-        end
-        
-        task.wait(0.2)
-        debounce = false
-    end
-
-    -- Обработчик нажатия на кнопку вкладки
-    tabButton:Connect("MouseButton1Down", function()
-        for _, otherPage in pairs(self.Pages) do
-            if otherPage ~= Page then
-                otherPage:Turn(false)
-            end
-        end
-        Page:Turn(not Page.Active)
+    -- Обновляем размеры при изменении
+    columnFrame.Instance:GetPropertyChangedSignal("AbsoluteSize"):Connect(function()
+        column1.Instance.Size = UDim2.new(0.5, -3, 1, 0)
+        column2.Instance.Size = UDim2.new(0.5, -3, 1, 0)
     end)
 
-    -- Если это первая вкладка, делаем её активной
-    if #self.Pages == 0 then
-        Page:Turn(true)
-    end
-
-    table.insert(self.Pages, Page)
-    
-    return setmetatable(Page, { __index = Library.Pages or {} })
+    return column1.Instance, column2.Instance
 end
 
 -- =======================================================
--- 9. СОЗДАНИЕ СЕКЦИИ (SECTION) С ИКОНКОЙ
+-- 11. СОЗДАНИЕ СЕКЦИИ (SECTION) С СИНЕЙ ИКОНКОЙ (БЕЗ ПОЛОСКИ)
 -- =======================================================
-Library.Pages = Library.Pages or {}
+function Library:CreateSection(parentColumn, sectionData)
+    sectionData = sectionData or {}
+    local sectionName = sectionData.Name or "Section"
+    local sectionIcon = sectionData.Icon or "folder"
 
-function Library.Pages:Section(data)
-    data = data or {}
-    
-    local Section = {
-        Page = self,
-        Window = self.Window,
-        Name = data.Name or "Section",
-        Description = data.Description or "",
-        Icon = data.Icon or "123944728972740",
-        Side = data.Side or 1,
-        Items = {},
-        Elements = {}
-    }
-
-    local column = self.ColumnFrames[Section.Side]
-    
-    -- Контейнер секции
+    -- Карточка секции
     local sectionFrame = Instances:Create("Frame", {
-        Parent = column.Instance,
-        Name = "Section_" .. Section.Name,
-        BorderColor3 = Color3.fromRGB(0, 0, 0),
-        BackgroundTransparency = 0.65,
-        ClipsDescendants = true,
-        BorderSizePixel = 0,
-        Size = UDim2.new(1, 0, 0, 45),
-        ZIndex = 2,
+        Parent = parentColumn,
+        Name = "Section_" .. sectionName,
+        Size = UDim2.new(1, 0, 0, 0),
         AutomaticSize = Enum.AutomaticSize.Y,
-        BackgroundColor3 = Theme["Section Background"]
+        BackgroundColor3 = Theme["Background 2"],
+        BackgroundTransparency = 0.15,
+        BorderSizePixel = 0,
+        ZIndex = 4
     })
 
     Instances:Create("UICorner", {
@@ -645,196 +638,153 @@ function Library.Pages:Section(data)
         CornerRadius = UDim.new(0, 6)
     })
 
-    -- Верхняя часть секции
-    local topFrame = Instances:Create("Frame", {
+    Instances:Create("UIStroke", {
         Parent = sectionFrame.Instance,
-        Name = "Top",
-        BackgroundTransparency = 0.65,
-        Size = UDim2.new(1, 0, 0, 55),
-        BorderColor3 = Color3.fromRGB(0, 0, 0),
-        ZIndex = 2,
-        BorderSizePixel = 0,
-        BackgroundColor3 = Theme["Outline"]
-    })
-
-    local topBackground = Instances:Create("Frame", {
-        Parent = topFrame.Instance,
-        Name = "TopBackground",
-        BorderColor3 = Color3.fromRGB(0, 0, 0),
-        BackgroundTransparency = 0.65,
-        Position = UDim2.new(0, 1, 0, 1),
-        Size = UDim2.new(1, -2, 1, -2),
-        ZIndex = 2,
-        BorderSizePixel = 0,
-        BackgroundColor3 = Theme["Section Top"]
-    })
-
-    Instances:Create("UICorner", {
-        Parent = topBackground.Instance,
-        CornerRadius = UDim.new(0, 6)
-    })
-
-    -- Иконка секции
-    local sectionIcon = Instances:Create("ImageLabel", {
-        Parent = topBackground.Instance,
-        Name = "Icon",
-        ImageColor3 = Color3.fromRGB(255, 255, 255),
-        Size = UDim2.new(0, 20, 0, 20),
-        AnchorPoint = Vector2.new(0, 0.5),
-        Image = "rbxassetid://" .. Section.Icon,
-        BackgroundTransparency = 1,
-        Position = UDim2.new(0, 14, 0.5, 0),
-        ZIndex = 2,
-        BorderSizePixel = 0
-    })
-
-    Instances:Create("UIGradient", {
-        Parent = sectionIcon.Instance,
-        Rotation = -115,
-        Color = ColorSequence.new({
-            ColorSequenceKeypoint.new(0, Theme["Accent"]),
-            ColorSequenceKeypoint.new(1, Theme["AccentGradient"])
-        })
-    })
-
-    -- Заголовок секции
-    local sectionTitle = Instances:Create("TextLabel", {
-        Parent = topBackground.Instance,
-        Name = "Title",
-        FontFace = Font.new("rbxassetid://12187365364", Enum.FontWeight.SemiBold, Enum.FontStyle.Normal),
-        TextColor3 = Theme["Text"],
-        Text = Section.Name,
-        AutomaticSize = Enum.AutomaticSize.X,
-        Size = UDim2.new(0, 0, 0, 14),
-        BackgroundTransparency = 1,
-        Position = (Section.Description == "") and UDim2.new(0, 42, 0.5, 0) or UDim2.new(0, 42, 0, 10),
-        ZIndex = 2,
-        TextSize = 13,
-        TextXAlignment = Enum.TextXAlignment.Left
-    })
-
-    -- Описание секции
-    if Section.Description ~= "" then
-        local sectionDesc = Instances:Create("TextLabel", {
-            Parent = topBackground.Instance,
-            Name = "Description",
-            FontFace = Font.new("rbxassetid://12187365364", Enum.FontWeight.Regular, Enum.FontStyle.Normal),
-            TextColor3 = Theme["Text"],
-            TextTransparency = 0.4,
-            Text = Section.Description,
-            AutomaticSize = Enum.AutomaticSize.X,
-            Size = UDim2.new(0, 0, 0, 12),
-            BackgroundTransparency = 1,
-            Position = UDim2.new(0, 42, 0, 28),
-            ZIndex = 2,
-            TextSize = 11,
-            TextXAlignment = Enum.TextXAlignment.Left
-        })
-    end
-
-    -- Контент секции
-    local contentFrame = Instances:Create("Frame", {
-        Parent = sectionFrame.Instance,
-        Name = "Content",
-        BorderColor3 = Color3.fromRGB(0, 0, 0),
-        BackgroundTransparency = 0.65,
-        Position = UDim2.new(0, 1, 0, 55),
-        Size = UDim2.new(1, -2, 1, -56),
-        ZIndex = 2,
-        BorderSizePixel = 0,
-        BackgroundColor3 = Theme["Section Background"]
-    })
-
-    Instances:Create("UICorner", {
-        Parent = contentFrame.Instance,
-        CornerRadius = UDim.new(0, 6)
-    })
-
-    local contentLayout = Instances:Create("UIListLayout", {
-        Parent = contentFrame.Instance,
-        Padding = UDim.new(0, 5),
-        SortOrder = Enum.SortOrder.LayoutOrder
+        Color = Theme["Outline"],
+        Thickness = 1,
+        ApplyStrokeMode = Enum.ApplyStrokeMode.Border
     })
 
     Instances:Create("UIPadding", {
-        Parent = contentFrame.Instance,
-        PaddingTop = UDim.new(0, 12),
-        PaddingBottom = UDim.new(0, 12),
-        PaddingRight = UDim.new(0, 12),
-        PaddingLeft = UDim.new(0, 12)
+        Parent = sectionFrame.Instance,
+        PaddingTop = UDim.new(0, 10),
+        PaddingBottom = UDim.new(0, 10),
+        PaddingLeft = UDim.new(0, 10),
+        PaddingRight = UDim.new(0, 10)
     })
 
-    Section.Items = {
-        Frame = sectionFrame,
-        Top = topFrame,
-        TopBackground = topBackground,
-        Icon = sectionIcon,
-        Title = sectionTitle,
-        Content = contentFrame
-    }
+    Instances:Create("UIListLayout", {
+        Parent = sectionFrame.Instance,
+        SortOrder = Enum.SortOrder.LayoutOrder,
+        Padding = UDim.new(0, 8)
+    })
 
-    function Section:TweenElements(bool)
-        -- Анимируем появление элементов в секции
-        local children = contentFrame.Instance:GetChildren()
-        for i, child in ipairs(children) do
-            if child:IsA("Frame") or child:IsA("TextLabel") or child:IsA("TextButton") or child:IsA("ImageLabel") then
-                local props = {}
-                if child:IsA("Frame") then
-                    props.BackgroundTransparency = bool and 0 or 1
-                elseif child:IsA("TextLabel") or child:IsA("TextButton") then
-                    props.TextTransparency = bool and 0 or 1
-                    props.BackgroundTransparency = bool and 0 or 1
-                elseif child:IsA("ImageLabel") then
-                    props.ImageTransparency = bool and 0 or 1
-                end
-                
-                for prop, val in pairs(props) do
-                    child[prop] = bool and 0 or 1
-                    Tween(child, TweenInfo.new(0.3, Enum.EasingStyle.Quad, Enum.EasingDirection.Out), {[prop] = bool and 0 or 1})
-                end
-            end
-        end
+    -- Шапка секции (Header) - БЕЗ СИНЕЙ ПОЛОСКИ
+    local headerFrame = Instances:Create("Frame", {
+        Parent = sectionFrame.Instance,
+        Name = "Header",
+        Size = UDim2.new(1, 0, 0, 16),
+        BackgroundTransparency = 1,
+        LayoutOrder = 0,
+        ZIndex = 5
+    })
+
+    -- СИНЯЯ ИКОНКА СЕКЦИИ
+    local parsedIcon = ParseIcon(sectionIcon)
+    local titleOffset = 0
+    
+    if parsedIcon ~= "" then
+        local sectionIconImage = Instances:Create("ImageLabel", {
+            Parent = headerFrame.Instance,
+            Name = "SectionIcon",
+            Size = UDim2.new(0, 15, 0, 15),
+            Position = UDim2.new(0, 0, 0.5, -7.5),
+            BackgroundTransparency = 1,
+            Image = parsedIcon,
+            ImageColor3 = Theme["Accent"],
+            ZIndex = 5
+        })
+        titleOffset = 21
     end
 
-    table.insert(self.Sections, Section)
-    return setmetatable(Section, { __index = Library.Sections or {} })
+    -- Заголовок секции
+    local titleLabel = Instances:Create("TextLabel", {
+        Parent = headerFrame.Instance,
+        Name = "Title",
+        Text = string.upper(sectionName),
+        FontFace = Font.new("rbxassetid://12187365364", Enum.FontWeight.Bold, Enum.FontStyle.Normal),
+        TextColor3 = Theme["Text"],
+        TextSize = 11,
+        Position = UDim2.new(0, titleOffset, 0, 0),
+        Size = UDim2.new(1, -titleOffset, 1, 0),
+        BackgroundTransparency = 1,
+        TextXAlignment = Enum.TextXAlignment.Left,
+        ZIndex = 5
+    })
+
+    -- Контейнер для элементов
+    local elementsContainer = Instances:Create("Frame", {
+        Parent = sectionFrame.Instance,
+        Name = "Container",
+        Size = UDim2.new(1, 0, 0, 0),
+        AutomaticSize = Enum.AutomaticSize.Y,
+        BackgroundTransparency = 1,
+        LayoutOrder = 1,
+        ZIndex = 5
+    })
+
+    Instances:Create("UIListLayout", {
+        Parent = elementsContainer.Instance,
+        SortOrder = Enum.SortOrder.LayoutOrder,
+        Padding = UDim.new(0, 6)
+    })
+
+    local sectionObject = {
+        Frame = sectionFrame.Instance,
+        Header = headerFrame.Instance,
+        Title = titleLabel.Instance,
+        Container = elementsContainer.Instance,
+        Name = sectionName
+    }
+
+    return sectionObject
 end
 
 -- =======================================================
--- 10. ИНИЦИАЛИЗАЦИЯ ОКНА И ВКЛАДОК
+-- 12. ПРИМЕР ИСПОЛЬЗОВАНИЯ
 -- =======================================================
+
+-- Создаем окно
 local Window = Library:CreateWindow({
     Name = "Dark Hub",
     SubName = "Custom GUI Framework",
     Logo = "1l20959262762131"
 })
 
--- Вкладка 1
-local Page1 = Window:Page({
-    Name = "Main",
-    Icon = "100050851789190",
-    Columns = 2
+-- Создаем вкладки с синими иконками
+local CombatTab = Window:CreateTab({
+    Name = "Combat",
+    Icon = "combat"
 })
 
-local Section1 = Page1:Section({
-    Name = "Player Settings",
-    Description = "Configure player related settings",
-    Icon = "123944728972740",
-    Side = 1
-})
-
--- Вкладка 2
-local Page2 = Window:Page({
+local VisualsTab = Window:CreateTab({
     Name = "Visuals",
-    Icon = "122669828593160",
-    Columns = 1
+    Icon = "visuals"
 })
 
-local Section2 = Page2:Section({
+local SettingsTab = Window:CreateTab({
+    Name = "Settings",
+    Icon = "settings"
+})
+
+-- Создаем колонки для вкладки Combat
+local LeftCol, RightCol = Window:CreateColumns(CombatTab)
+
+-- Создаем секции с синими иконками (без полоски)
+local MainSection = Window:CreateSection(LeftCol, {
+    Name = "Main Settings",
+    Icon = "zap"
+})
+
+local TargetSection = Window:CreateSection(RightCol, {
+    Name = "Targeting",
+    Icon = "shield"
+})
+
+-- Создаем секции для вкладки Visuals
+local VisualsLeft, VisualsRight = Window:CreateColumns(VisualsTab)
+
+local ESPSection = Window:CreateSection(VisualsLeft, {
     Name = "ESP Settings",
-    Description = "Configure ESP visualization",
-    Icon = "123944728972740",
-    Side = 1
+    Icon = "eye"
 })
 
-print("GUI with tabs and icons loaded successfully!")
+-- Создаем секции для вкладки Settings
+local SettingsLeft, SettingsRight = Window:CreateColumns(SettingsTab)
+
+local UISection = Window:CreateSection(SettingsLeft, {
+    Name = "UI Settings",
+    Icon = "settings"
+})
+
+print("GUI with blue accent icons loaded successfully!")
