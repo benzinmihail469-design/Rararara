@@ -1,5 +1,5 @@
 -- =======================================================
--- АВТОНОМНЫЙ СКРИПТ (СИНИЙ/ЧЕРНЫЙ СТИЛЬ + ЧЕТКИЕ ЛИНИИ СОЗВЕЗДИЯ)
+-- АВТОНОМНЫЙ СКРИПТ (ЭФФЕКТ ТОЛЬКО В СЕКЦИЯХ + УМЕНЬШЕННЫЕ ЛИНИИ)
 -- =======================================================
 
 local Workspace = game:GetService("Workspace")
@@ -142,11 +142,11 @@ local function MakeDraggable(guiInstance, dragHandle)
 end
 
 -- =======================================================
--- 8. СИСТЕМА ДИНАМИЧЕСКОГО СОЗВЕЗДИЯ (PARTICLE NETWORK)
+-- 8. СИСТЕМА ДИНАМИЧЕСКОГО СОЗВЕЗДИЯ (ЛОКАЛЬНО ДЛЯ СЕКЦИЙ)
 -- =======================================================
 local function CreateConstellationBackground(parentFrame, numNodes, maxDistance)
-    numNodes = numNodes or 22
-    maxDistance = maxDistance or 120
+    numNodes = numNodes or 7
+    maxDistance = maxDistance or 65
 
     local bgContainer = Instances:Create("Frame", {
         Parent = parentFrame,
@@ -161,15 +161,15 @@ local function CreateConstellationBackground(parentFrame, numNodes, maxDistance)
     local linesPool = {}
     local rng = Random.new()
 
-    -- Создание узлов (точек)
+    -- Создание узлов (маленьких точек)
     for i = 1, numNodes do
         local dot = Instances:Create("Frame", {
             Parent = bgContainer.Instance,
             Name = "Node_" .. i,
-            Size = UDim2.new(0, 4, 0, 4),
+            Size = UDim2.new(0, 3, 0, 3),
             AnchorPoint = Vector2.new(0.5, 0.5),
             BackgroundColor3 = Theme["Node"],
-            BackgroundTransparency = 0.1,
+            BackgroundTransparency = 0.2,
             BorderSizePixel = 0,
             ZIndex = 3
         })
@@ -181,12 +181,12 @@ local function CreateConstellationBackground(parentFrame, numNodes, maxDistance)
 
         table.insert(nodes, {
             Gui = dot.Instance,
-            Pos = Vector2.new(rng:NextNumber(10, 520), rng:NextNumber(10, 360)),
-            Vel = Vector2.new(rng:NextNumber(-30, 30), rng:NextNumber(-30, 30))
+            Pos = Vector2.new(rng:NextNumber(5, 200), rng:NextNumber(5, 100)),
+            Vel = Vector2.new(rng:NextNumber(-20, 20), rng:NextNumber(-20, 20))
         })
     end
 
-    -- Пул отрезков линий
+    -- Пул отрезков линий (короткие тонкие полоски)
     local function GetLine(index)
         if not linesPool[index] then
             local line = Instances:Create("Frame", {
@@ -216,30 +216,30 @@ local function CreateConstellationBackground(parentFrame, numNodes, maxDistance)
 
         if width <= 0 or height <= 0 then return end
 
-        -- Движение точек
+        -- Движение точек внутри границ секции
         for _, node in ipairs(nodes) do
             node.Pos = node.Pos + node.Vel * dt
 
-            if node.Pos.X <= 5 then
-                node.Pos = Vector2.new(5, node.Pos.Y)
+            if node.Pos.X <= 4 then
+                node.Pos = Vector2.new(4, node.Pos.Y)
                 node.Vel = Vector2.new(-node.Vel.X, node.Vel.Y)
-            elseif node.Pos.X >= width - 5 then
-                node.Pos = Vector2.new(width - 5, node.Pos.Y)
+            elseif node.Pos.X >= width - 4 then
+                node.Pos = Vector2.new(width - 4, node.Pos.Y)
                 node.Vel = Vector2.new(-node.Vel.X, node.Vel.Y)
             end
 
-            if node.Pos.Y <= 5 then
-                node.Pos = Vector2.new(node.Pos.X, 5)
+            if node.Pos.Y <= 4 then
+                node.Pos = Vector2.new(node.Pos.X, 4)
                 node.Vel = Vector2.new(node.Vel.X, -node.Vel.Y)
-            elseif node.Pos.Y >= height - 5 then
-                node.Pos = Vector2.new(node.Pos.X, height - 5)
+            elseif node.Pos.Y >= height - 4 then
+                node.Pos = Vector2.new(node.Pos.X, height - 4)
                 node.Vel = Vector2.new(node.Vel.X, -node.Vel.Y)
             end
 
             node.Gui.Position = UDim2.new(0, node.Pos.X, 0, node.Pos.Y)
         end
 
-        -- Отрисовка линий между близкими точками
+        -- Отрисовка аккуратных коротких линий
         local lineIdx = 1
         for i = 1, #nodes do
             for j = i + 1, #nodes do
@@ -255,9 +255,9 @@ local function CreateConstellationBackground(parentFrame, numNodes, maxDistance)
                     local alpha = dist / maxDistance
 
                     line.Position = UDim2.new(0, mid.X, 0, mid.Y)
-                    line.Size = UDim2.new(0, dist, 0, 1.5)
+                    line.Size = UDim2.new(0, dist, 0, 1) -- Тонкая линия (1px)
                     line.Rotation = angle
-                    line.BackgroundTransparency = math.clamp(alpha * 0.85, 0.15, 0.85)
+                    line.BackgroundTransparency = math.clamp(0.2 + (alpha * 0.75), 0.2, 0.9)
                     line.Visible = true
 
                     lineIdx = lineIdx + 1
@@ -265,7 +265,7 @@ local function CreateConstellationBackground(parentFrame, numNodes, maxDistance)
             end
         end
 
-        -- Скрытие неиспользуемых линий из пула
+        -- Скрытие неиспользуемых линий
         for k = lineIdx, #linesPool do
             linesPool[k].Visible = false
         end
@@ -321,18 +321,15 @@ function Library:CreateWindow(data)
 
     MakeDraggable(mainFrame.Instance, mainFrame.Instance)
 
-    -- Инициализация линий и точек поверх заднего фона окна
-    CreateConstellationBackground(mainFrame.Instance, 22, 120)
-
     local sidebarBackground = Instances:Create("Frame", {
         Parent = mainFrame.Instance,
         Name = "SidebarBackground",
         Position = UDim2.new(0, 0, 0, 0),
         Size = UDim2.new(0, 150, 1, 0),
         BackgroundColor3 = Theme["Background 2"],
-        BackgroundTransparency = 0.35,
+        BackgroundTransparency = 0.2,
         BorderSizePixel = 0,
-        ZIndex = 3
+        ZIndex = 2
     })
 
     Instances:Create("UICorner", {
@@ -610,7 +607,7 @@ function Library:CreateTab(window, tabData)
 end
 
 -- =======================================================
--- 11. ПЛАВНО СВОРАЧИВАЕМЫЕ СЕКЦИИ (НЕОНОВЫЙ СИНИЙ БЛИК)
+-- 11. СЕКЦИИ (ЭФФЕКТ СОЗВЕЗДИЯ ВНУТРИ СЕКЦИИ)
 -- =======================================================
 function Library:CreateSection(parentColumn, sectionData)
     sectionData = sectionData or {}
@@ -623,7 +620,7 @@ function Library:CreateSection(parentColumn, sectionData)
         Size = UDim2.new(1, 0, 0, 0),
         AutomaticSize = Enum.AutomaticSize.Y,
         BackgroundColor3 = Theme["Background 2"],
-        BackgroundTransparency = 0.15,
+        BackgroundTransparency = 0.1,
         BorderSizePixel = 0,
         ZIndex = 5,
         ClipsDescendants = true
@@ -640,6 +637,9 @@ function Library:CreateSection(parentColumn, sectionData)
         Thickness = 1,
         ApplyStrokeMode = Enum.ApplyStrokeMode.Border
     })
+
+    -- Запуск эффекта динамических точек и линий ТОЛЬКО внутри этой секции
+    CreateConstellationBackground(sectionFrame.Instance, 7, 65)
 
     Instances:Create("UIListLayout", {
         Parent = sectionFrame.Instance,
@@ -887,4 +887,4 @@ SilentBypassSection:CreateToggle({ Name = "включить понос", Default
 local JopaSection = Library:CreateSection(Cols[1], { Name = "jopa" })
 JopaSection:CreateToggle({ Name = "включить жопа...", Default = false })
 
-print("GUI Fixed: Constellation lines rendering logic adjusted & clearly visible!")
+print("GUI Updated: Constellation effects contained exclusively within sections!")
