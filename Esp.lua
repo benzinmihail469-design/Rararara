@@ -344,7 +344,7 @@ function Library:CreateWindow(data)
         ZIndex = 5
     })
 
-    -- Крупный контейнер/квадрат для логотипа в центре верхней части сайдбара
+    -- Крупный контейнер/квадрат для логотипа (с едва заметным контуром)
     local logoContainer = Instances:Create("Frame", {
         Parent = mainFrame.Instance,
         Name = "LogoContainer",
@@ -361,9 +361,11 @@ function Library:CreateWindow(data)
         CornerRadius = UDim.new(0, 12)
     })
 
+    -- Практически невидимый/мягкий контур контейнера логотипа
     Instances:Create("UIStroke", {
         Parent = logoContainer.Instance,
         Color = Theme["Outline"],
+        Transparency = 0.85,
         Thickness = 1
     })
 
@@ -382,7 +384,7 @@ function Library:CreateWindow(data)
         BorderSizePixel = 0
     })
 
-    -- Горизонтальная разделительная линия под крупным логотипом
+    -- Горизонтальная разделительная линия под логотипом
     local headerDivider = Instances:Create("Frame", {
         Parent = mainFrame.Instance,
         Name = "HeaderDivider",
@@ -407,7 +409,7 @@ function Library:CreateWindow(data)
         })
     })
 
-    -- Список вкладок (смещен ниже крупного блока логотипа)
+    -- Список вкладок (ниже блока логотипа)
     local leftTabs = Instances:Create("ScrollingFrame", {
         Parent = mainFrame.Instance,
         Name = "LeftTabs",
@@ -918,4 +920,4 @@ SilentBypassSection:CreateToggle({ Name = "включить понос", Default
 local JopaSection = Library:CreateSection(Cols[1], { Name = "jopa" })
 JopaSection:CreateToggle({ Name = "включить жопа...", Default = false })
 
-print("GUI Updated: Made top logo container larger and centered!")
+print("GUI Updated: Logo container outline softened!")
