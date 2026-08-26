@@ -907,7 +907,7 @@ end
 -- =======================================================
 
 local MainWindow = Library:CreateWindow({
-    Logo = "96633168859001"
+    Logo = "95894290284220"
 })
 
 local MainTab, Cols = Library:CreateTab(MainWindow, {
