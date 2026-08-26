@@ -361,7 +361,7 @@ function Library:CreateWindow(data)
         CornerRadius = UDim.new(0, 12)
     })
 
-    -- Практически невидимый/мягкий контур контейнера логотипа
+    -- Мягкий контур контейнера логотипа
     Instances:Create("UIStroke", {
         Parent = logoContainer.Instance,
         Color = Theme["Outline"],
@@ -369,17 +369,18 @@ function Library:CreateWindow(data)
         Thickness = 1
     })
 
-    -- Крупная иконка логотипа внутри контейнера
+    -- Иконка логотипа с чистым отображением (ImageColor3 = White)
     Instances:Create("ImageLabel", {
         Parent = logoContainer.Instance,
         Name = "Logo",
-        ImageColor3 = Theme["Accent"],
+        ImageColor3 = Color3.fromRGB(255, 255, 255),
         ScaleType = Enum.ScaleType.Fit,
         AnchorPoint = Vector2.new(0.5, 0.5),
         Position = UDim2.new(0.5, 0, 0.5, 0),
         Size = UDim2.new(0, 48, 0, 48),
         Image = ParseIcon(logoId),
         BackgroundTransparency = 1,
+        ImageTransparency = 0,
         ZIndex = 6,
         BorderSizePixel = 0
     })
@@ -920,4 +921,4 @@ SilentBypassSection:CreateToggle({ Name = "включить понос", Default
 local JopaSection = Library:CreateSection(Cols[1], { Name = "jopa" })
 JopaSection:CreateToggle({ Name = "включить жопа...", Default = false })
 
-print("GUI Updated: Custom icon ID set!")
+print("GUI Updated: Logo image color fixed to White!")
