@@ -233,10 +233,10 @@ local function CreateConstellationBackground(parentFrame, numNodes, maxDistance)
 
             if node.Pos.Y <= 5 then
                 node.Pos = Vector2.new(node.Pos.X, 5)
-                node.Vel = Vector2.new(node.Vel.X, -node.Vel.Y)
+                node.Vel = Vector2.new(node.Pos.X, -node.Vel.Y)
             elseif node.Pos.Y >= height - 5 then
                 node.Pos = Vector2.new(node.Pos.X, height - 5)
-                node.Vel = Vector2.new(node.Vel.X, -node.Vel.Y)
+                node.Vel = Vector2.new(node.Pos.X, -node.Vel.Y)
             end
 
             node.Gui.Position = UDim2.new(0, node.Pos.X, 0, node.Pos.Y)
@@ -349,13 +349,13 @@ function Library:CreateWindow(data)
         ZIndex = 5
     })
 
-    -- Контейнер логотипа (теперь полностью прозрачный без квадратного фона)
+    -- Компактный контейнер логотипа (аккуратный размер 42x42 без квадратного фона)
     local logoContainer = Instances:Create("Frame", {
         Parent = mainFrame.Instance,
         Name = "LogoContainer",
         AnchorPoint = Vector2.new(0.5, 0),
-        Position = UDim2.new(0, 75, 0, 15),
-        Size = UDim2.new(0, 75, 0, 75),
+        Position = UDim2.new(0, 75, 0, 12),
+        Size = UDim2.new(0, 42, 0, 42),
         BackgroundTransparency = 1,
         BorderSizePixel = 0,
         ZIndex = 5,
@@ -364,17 +364,17 @@ function Library:CreateWindow(data)
 
     Instances:Create("UICorner", {
         Parent = logoContainer.Instance,
-        CornerRadius = UDim.new(0, 12)
+        CornerRadius = UDim.new(0, 8)
     })
 
-    -- Иконка логотипа на всю зону контейнера
+    -- Иконка логотипа
     local logoIcon = Instances:Create("ImageLabel", {
         Parent = logoContainer.Instance,
         Name = "Logo",
         ImageColor3 = Color3.fromRGB(255, 255, 255),
-        ScaleType = Enum.ScaleType.Crop,
-        AnchorPoint = Vector2.new(0, 0),
-        Position = UDim2.new(0, 0, 0, 0),
+        ScaleType = Enum.ScaleType.Fit,
+        AnchorPoint = Vector2.new(0.5, 0.5),
+        Position = UDim2.new(0.5, 0, 0.5, 0),
         Size = UDim2.new(1, 0, 1, 0),
         Image = ParseIcon(logoId),
         BackgroundTransparency = 1,
@@ -390,11 +390,11 @@ function Library:CreateWindow(data)
         end)
     end)
 
-    -- Горизонтальная разделительная линия под логотипом
+    -- Горизонтальная разделительная линия под компактным логотипом
     local headerDivider = Instances:Create("Frame", {
         Parent = mainFrame.Instance,
         Name = "HeaderDivider",
-        Position = UDim2.new(0, 12, 0, 105),
+        Position = UDim2.new(0, 12, 0, 62),
         Size = UDim2.new(0, 126, 0, 1),
         BackgroundColor3 = Color3.fromRGB(255, 255, 255),
         BorderSizePixel = 0,
@@ -420,8 +420,8 @@ function Library:CreateWindow(data)
         Parent = mainFrame.Instance,
         Name = "LeftTabs",
         BackgroundTransparency = 1,
-        Position = UDim2.new(0, 0, 0, 112),
-        Size = UDim2.new(0, 150, 1, -112),
+        Position = UDim2.new(0, 0, 0, 68),
+        Size = UDim2.new(0, 150, 1, -68),
         ZIndex = 4,
         BorderSizePixel = 0,
         ScrollBarThickness = 3,
@@ -651,7 +651,7 @@ function Library:CreateTab(window, tabData)
 end
 
 -- =======================================================
--- 11. ПЛАВНО СВОРАЧИВАЕМЫЕ СЕКЦИИ (НЕОНОВЫЙ СИНИЙ БЛИК)
+-- 11. ПЛАВНО СВОРАЧИВАЕМЫЕ СЕКЦИИ
 -- =======================================================
 function Library:CreateSection(parentColumn, sectionData)
     sectionData = sectionData or {}
@@ -733,7 +733,6 @@ function Library:CreateSection(parentColumn, sectionData)
         ZIndex = 6
     })
 
-    -- СИНИЙ НЕОНОВЫЙ ГРАДИЕНТНЫЙ БЛИК
     local glowLine = Instances:Create("Frame", {
         Parent = sectionFrame.Instance,
         Name = "GlowDivider",
@@ -926,4 +925,4 @@ SilentBypassSection:CreateToggle({ Name = "включить понос", Default
 local JopaSection = Library:CreateSection(Cols[1], { Name = "jopa" })
 JopaSection:CreateToggle({ Name = "включить жопа...", Default = false })
 
-print("GUI Updated: Logo background square removed successfully!")
+print("GUI Updated: Logo resized nicely and background removed!")
