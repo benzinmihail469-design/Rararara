@@ -29,7 +29,7 @@ GlobalWindow.Parent = CoreGui
 
 NeverLose.ScreenGui = GlobalWindow
 
-function NeverLose:SetIconMode(Label: TextLabel, IconName: string)
+function NeverLose:SetIconMode(Label, IconName)
     local useBold = string.lower(string.sub(IconName, -5)) == '-bold'
     if useBold then
         Label.Text = IconName:sub(1, -6)
@@ -40,7 +40,7 @@ function NeverLose:SetIconMode(Label: TextLabel, IconName: string)
     end
 end
 
-function NeverLose:Drag(InputFrame: Frame, MoveFrame: Frame, Speed: number)
+function NeverLose:Drag(InputFrame, MoveFrame, Speed)
     local dragToggle, dragStart, startPos = false, nil, nil
     local Tween = TweenInfo.new(Speed or 0.1)
 
@@ -73,7 +73,7 @@ function NeverLose:Drag(InputFrame: Frame, MoveFrame: Frame, Speed: number)
     end)
 end
 
-function NeverLose:CreateWindow(TitleText: string)
+function NeverLose:CreateWindow(TitleText)
     local Window = {
         Tabs = {},
         CurrentTab = nil
@@ -138,7 +138,7 @@ function NeverLose:CreateWindow(TitleText: string)
     ContainerArea.Size = UDim2.new(1, -(NeverLose.IsMobile and 45 or 120), 1, -36)
     ContainerArea.BackgroundTransparency = 1
 
-    function Window:CreateTab(Name: string, IconName: string)
+    function Window:CreateTab(Name, IconName)
         local Tab = {}
 
         local TabBtn = Instance.new("TextButton", TabBar)
