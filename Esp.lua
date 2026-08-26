@@ -1,5 +1,5 @@
 -- =======================================================
--- АВТОНОМНЫЙ СКРИПТ ГЛАВНОГО ОКНА (ФИКСИРОВАННЫЙ РАЗМЕР, СВОБОДНЫЙ DRAG ЗА ЛЮБЫЕ КРАЯ)
+-- АВТОНОМНЫЙ СКРИПТ ГЛАВНОГО ОКНА (ПЛАВНЫЙ DRAG И ПОЛНАЯ ПРОКРУТКА)
 -- =======================================================
 
 local Workspace = game:GetService("Workspace")
@@ -59,7 +59,7 @@ local function ParseIcon(icon)
     return strIcon
 end
 
--- 3. ScreenGui (Игнорирование системных отступов)
+-- 3. ScreenGui
 local Holder = Instance.new("ScreenGui")
 Holder.Parent = gethui()
 Holder.Name = "MyCustomGUI_Holder"
@@ -106,39 +106,41 @@ function Instances:Create(className, properties)
     return wrapper
 end
 
--- 6. ПЕРЕТАСКИВАНИЕ ЗА ЛЮБЫЕ КРАЯ (БЕЗ ОГРАНИЧЕНИЙ ЭКРАНА)
+-- 6. ПЛАВНАЯ СИСТЕМА ПЕРЕТАСКИВАНИЯ (БЕЗ ДЁРГАНИЙ И БЕЗ ГРАНИЦ)
 local function MakeDraggable(guiInstance, dragHandle)
     dragHandle = dragHandle or guiInstance
     local dragging = false
     local dragStart = Vector3.zero
-    local startPos = Vector2.zero
+    local startPos = UDim2.new()
 
     dragHandle.InputBegan:Connect(function(input)
         if input.UserInputType == Enum.UserInputType.MouseButton1 or input.UserInputType == Enum.UserInputType.Touch then
             dragging = true
             dragStart = input.Position
-            startPos = Vector2.new(guiInstance.AbsolutePosition.X, guiInstance.AbsolutePosition.Y)
+            startPos = guiInstance.Position
 
-            local conn
-            conn = UserInputService.InputEnded:Connect(function(endInput)
-                if endInput.UserInputType == Enum.UserInputType.MouseButton1 or endInput.UserInputType == Enum.UserInputType.Touch then
-                    dragging = false
-                    if conn then conn:Disconnect() end
+            local moveConn, endConn
+
+            moveConn = UserInputService.InputChanged:Connect(function(changedInput)
+                if dragging and (changedInput.UserInputType == Enum.UserInputType.MouseMovement or changedInput.UserInputType == Enum.UserInputType.Touch) then
+                    local delta = changedInput.Position - dragStart
+                    -- Прямое добавление смещения исключает микро-сдвиги и дёргание
+                    guiInstance.Position = UDim2.new(
+                        startPos.X.Scale,
+                        startPos.X.Offset + delta.X,
+                        startPos.Y.Scale,
+                        startPos.Y.Offset + delta.Y
+                    )
                 end
             end)
-        end
-    end)
 
-    UserInputService.InputChanged:Connect(function(input)
-        if dragging and (input.UserInputType == Enum.UserInputType.MouseMovement or input.UserInputType == Enum.UserInputType.Touch) then
-            local delta = input.Position - dragStart
-            local targetX = startPos.X + delta.X
-            local targetY = startPos.Y + delta.Y
-
-            -- Перемещение без каких-либо границ и зажимов (Clamp убран)
-            local ap = guiInstance.AnchorPoint
-            local size = guiInstance.AbsoluteSize
-            guiInstance.Position = UDim2.fromOffset(targetX + (size.X * ap.X), targetY + (size.Y * ap.Y))
+            endConn = UserInputService.InputEnded:Connect(function(endInput)
+                if endInput.UserInputType == Enum.UserInputType.MouseButton1 or endInput.UserInputType == Enum.UserInputType.Touch then
+                    dragging = false
+                    if moveConn then moveConn:Disconnect() end
+                    if endConn then endConn:Disconnect() end
+                end
+            end)
         end
     end)
 end
@@ -165,7 +167,7 @@ function Library:CreateWindow(data)
         Content = nil
     }
 
-    -- Главное окно (Фиксированный размер: нельзя сжать)
+    -- Главный корпус окна
     local mainFrame = Instances:Create("Frame", {
         Parent = Holder,
         Name = "MainFrame",
@@ -185,27 +187,27 @@ function Library:CreateWindow(data)
         CornerRadius = UDim.new(0, 6)
     })
 
-    -- Перетаскивание включено для всего корпуса и любого края окна
+    -- Перетаскивание за корпус и края
     MakeDraggable(mainFrame.Instance, mainFrame.Instance)
 
-    -- Левый тулбар для вкладок
+    -- Панель скролла вкладок (Слева)
     local leftTabs = Instances:Create("ScrollingFrame", {
         Parent = mainFrame.Instance,
         Name = "LeftTabs",
         BorderColor3 = Color3.fromRGB(0, 0, 0),
-        AnchorPoint = Vector2.new(0, 0),
         BackgroundTransparency = 0.15,
         Position = UDim2.new(0, 0, 0, 0),
         Size = UDim2.new(0, 150, 1, 0),
-        ZIndex = 2,
+        ZIndex = 3,
         BorderSizePixel = 0,
         BackgroundColor3 = Theme["Background 2"],
-        ScrollBarThickness = 2,
+        ScrollBarThickness = 3,
         ScrollBarImageColor3 = Theme["Accent"],
         ScrollingDirection = Enum.ScrollingDirection.Y,
         Active = true,
         AutomaticCanvasSize = Enum.AutomaticSize.Y,
-        CanvasSize = UDim2.new(0, 0, 0, 0)
+        CanvasSize = UDim2.new(0, 0, 0, 0),
+        ElasticBehavior = Enum.ElasticBehavior.WhenScrollable
     })
 
     Instances:Create("UIListLayout", {
@@ -218,8 +220,8 @@ function Library:CreateWindow(data)
         Parent = leftTabs.Instance,
         PaddingTop = UDim.new(0, 50),
         PaddingBottom = UDim.new(0, 10),
-        PaddingRight = UDim.new(0, 8),
-        PaddingLeft = UDim.new(0, 8)
+        PaddingRight = UDim.new(0, 6),
+        PaddingLeft = UDim.new(0, 6)
     })
 
     Instances:Create("UICorner", {
@@ -227,7 +229,7 @@ function Library:CreateWindow(data)
         CornerRadius = UDim.new(0, 6)
     })
 
-    -- Главная иконка
+    -- Иконка
     local logo = Instances:Create("ImageLabel", {
         Parent = mainFrame.Instance,
         Name = "Logo",
@@ -237,7 +239,7 @@ function Library:CreateWindow(data)
         Image = ParseIcon(logoId),
         BackgroundTransparency = 1,
         Position = UDim2.new(0, 10, 0, 10),
-        ZIndex = 3,
+        ZIndex = 4,
         BorderSizePixel = 0
     })
 
@@ -252,7 +254,7 @@ function Library:CreateWindow(data)
         Size = UDim2.new(0, 0, 0, 14),
         BackgroundTransparency = 1,
         Position = UDim2.new(0, 40, 0, 9),
-        ZIndex = 3,
+        ZIndex = 4,
         TextSize = 13,
         TextXAlignment = Enum.TextXAlignment.Left
     })
@@ -269,19 +271,19 @@ function Library:CreateWindow(data)
         Size = UDim2.new(0, 0, 0, 14),
         BackgroundTransparency = 1,
         Position = UDim2.new(0, 40, 0, 23),
-        ZIndex = 3,
+        ZIndex = 4,
         TextSize = 11,
         TextXAlignment = Enum.TextXAlignment.Left
     })
 
-    -- Контент область
+    -- Контентная область
     local content = Instances:Create("Frame", {
         Parent = mainFrame.Instance,
         Name = "ContentArea",
         BackgroundTransparency = 1,
         Position = UDim2.new(0, 156, 0, 42),
         Size = UDim2.new(1, -161, 1, -46),
-        ZIndex = 2,
+        ZIndex = 3,
         ClipsDescendants = true
     })
 
@@ -295,7 +297,7 @@ function Library:CreateWindow(data)
         BackgroundTransparency = 0.2,
         Position = UDim2.new(1, -10, 0, 10),
         Size = UDim2.new(0, 24, 0, 24),
-        ZIndex = 11,
+        ZIndex = 10,
         BackgroundColor3 = Theme["Element"]
     })
 
@@ -315,7 +317,7 @@ function Library:CreateWindow(data)
         Image = "rbxassetid://130510492706892",
         BackgroundTransparency = 1,
         Position = UDim2.new(0.5, 0, 0.5, 0),
-        ZIndex = 12
+        ZIndex = 11
     })
 
     closeButton:Connect("MouseButton1Down", function()
@@ -330,21 +332,22 @@ function Library:CreateWindow(data)
 end
 
 -- =======================================================
--- 8. ЛОГИКА ВКЛАДОК
+-- 8. ЛОГИКА ВКЛАДОК (С ПРОКРУТКОЙ ФУНКЦИЙ)
 -- =======================================================
 function Library:CreateTab(window, tabData)
     tabData = tabData or {}
     local tabName = tabData.Name or "Tab"
     local tabIcon = tabData.Icon or "folder"
 
+    -- Кнопка переключения
     local tabButton = Instances:Create("TextButton", {
         Parent = window.LeftTabs,
         Name = "Tab_" .. tabName,
-        Size = UDim2.new(1, 0, 0, 30),
+        Size = UDim2.new(1, 0, 0, 32),
         BackgroundTransparency = 1,
         Text = "",
         AutoButtonColor = false,
-        ZIndex = 3
+        ZIndex = 4
     })
 
     Instances:Create("UICorner", {
@@ -355,14 +358,14 @@ function Library:CreateTab(window, tabData)
     local iconImage = Instances:Create("ImageLabel", {
         Parent = tabButton.Instance,
         Name = "Icon",
-        Size = UDim2.new(0, 15, 0, 15),
-        Position = UDim2.new(0, 10, 0.5, -7),
+        Size = UDim2.new(0, 16, 0, 16),
+        Position = UDim2.new(0, 8, 0.5, -8),
         BackgroundTransparency = 1,
         ScaleType = Enum.ScaleType.Fit,
         Image = ParseIcon(tabIcon),
         ImageColor3 = Theme["Accent"],
         ImageTransparency = 0.45,
-        ZIndex = 4
+        ZIndex = 5
     })
 
     local tabLabel = Instances:Create("TextLabel", {
@@ -373,26 +376,29 @@ function Library:CreateTab(window, tabData)
         TextColor3 = Theme["Text"],
         TextTransparency = 0.5,
         TextSize = 12,
-        Position = UDim2.new(0, 32, 0, 0),
-        Size = UDim2.new(1, -36, 1, 0),
+        Position = UDim2.new(0, 30, 0, 0),
+        Size = UDim2.new(1, -34, 1, 0),
         BackgroundTransparency = 1,
         TextXAlignment = Enum.TextXAlignment.Left,
-        ZIndex = 4
+        ZIndex = 5
     })
 
+    -- Контейнер функций вкладки с возможностью прокрутки (ScrollingFrame)
     local tabContainer = Instances:Create("ScrollingFrame", {
         Parent = window.Content,
         Name = "Container_" .. tabName,
         Size = UDim2.new(1, 0, 1, 0),
         BackgroundTransparency = 1,
         BorderSizePixel = 0,
-        ScrollBarThickness = 2,
+        ScrollBarThickness = 3,
         ScrollBarImageColor3 = Theme["Accent"],
         Visible = false,
-        ZIndex = 3,
+        ZIndex = 4,
         Active = true,
+        ScrollingDirection = Enum.ScrollingDirection.Y,
         AutomaticCanvasSize = Enum.AutomaticSize.Y,
-        CanvasSize = UDim2.new(0, 0, 0, 0)
+        CanvasSize = UDim2.new(0, 0, 0, 0),
+        ElasticBehavior = Enum.ElasticBehavior.WhenScrollable
     })
 
     Instances:Create("UIListLayout", {
@@ -404,12 +410,13 @@ function Library:CreateTab(window, tabData)
 
     Instances:Create("UIPadding", {
         Parent = tabContainer.Instance,
-        PaddingTop = UDim.new(0, 5),
-        PaddingBottom = UDim.new(0, 10),
-        PaddingRight = UDim.new(0, 8),
-        PaddingLeft = UDim.new(0, 5)
+        PaddingTop = UDim.new(0, 4),
+        PaddingBottom = UDim.new(0, 12),
+        PaddingRight = UDim.new(0, 6),
+        PaddingLeft = UDim.new(0, 4)
     })
 
+    -- Две колонки для размещения секций
     local columns = {}
     for i = 1, 2 do
         local column = Instances:Create("Frame", {
@@ -495,7 +502,7 @@ function Library:CreateSection(parentColumn, sectionData)
         BackgroundColor3 = Theme["Background 2"],
         BackgroundTransparency = 0.15,
         BorderSizePixel = 0,
-        ZIndex = 4
+        ZIndex = 5
     })
 
     Instances:Create("UICorner", {
@@ -530,7 +537,7 @@ function Library:CreateSection(parentColumn, sectionData)
         Size = UDim2.new(1, 0, 0, 16),
         BackgroundTransparency = 1,
         LayoutOrder = 0,
-        ZIndex = 5
+        ZIndex = 6
     })
 
     local parsedIcon = ParseIcon(sectionIcon)
@@ -545,7 +552,7 @@ function Library:CreateSection(parentColumn, sectionData)
             ScaleType = Enum.ScaleType.Fit,
             Image = parsedIcon,
             ImageColor3 = Theme["Accent"],
-            ZIndex = 5
+            ZIndex = 6
         })
         titleOffset = 21
     end
@@ -561,7 +568,7 @@ function Library:CreateSection(parentColumn, sectionData)
         Size = UDim2.new(1, -titleOffset, 1, 0),
         BackgroundTransparency = 1,
         TextXAlignment = Enum.TextXAlignment.Left,
-        ZIndex = 5
+        ZIndex = 6
     })
 
     local elementsContainer = Instances:Create("Frame", {
@@ -571,7 +578,7 @@ function Library:CreateSection(parentColumn, sectionData)
         AutomaticSize = Enum.AutomaticSize.Y,
         BackgroundTransparency = 1,
         LayoutOrder = 1,
-        ZIndex = 5
+        ZIndex = 6
     })
 
     Instances:Create("UIListLayout", {
@@ -584,7 +591,7 @@ function Library:CreateSection(parentColumn, sectionData)
 end
 
 -- =======================================================
--- 10. ИНИЦИАЛИЗАЦИЯ
+-- 10. ИНИЦИАЛИЗАЦИЯ И ПРИМЕР МНОГОЧИСЛЕННЫХ ЭЛЕМЕНТОВ
 -- =======================================================
 
 local MainWindow = Library:CreateWindow({
@@ -593,39 +600,24 @@ local MainWindow = Library:CreateWindow({
     Logo = "10723407068"
 })
 
-local CombatTab, CombatColumns = Library:CreateTab(MainWindow, {
-    Name = "Aimbot",
-    Icon = "combat"
-})
+-- Создаем несколько вкладок для проверки скролла панели вкладок
+local CombatTab, CombatColumns = Library:CreateTab(MainWindow, { Name = "Aimbot", Icon = "combat" })
+local VisualsTab, VisualsColumns = Library:CreateTab(MainWindow, { Name = "Visuals", Icon = "visuals" })
+local SettingsTab, SettingsColumns = Library:CreateTab(MainWindow, { Name = "Settings", Icon = "settings" })
+local ExtraTab1, ExtraColumns1 = Library:CreateTab(MainWindow, { Name = "Misc", Icon = "star" })
+local ExtraTab2, ExtraColumns2 = Library:CreateTab(MainWindow, { Name = "Configs", Icon = "folder" })
 
-local VisualsTab, VisualsColumns = Library:CreateTab(MainWindow, {
-    Name = "Visuals",
-    Icon = "visuals"
-})
+-- Создаем секции внутри вкладок
+local MainAimbotSection = Library:CreateSection(CombatColumns[1], { Name = "Main Settings", Icon = "zap" })
+local TargetSection = Library:CreateSection(CombatColumns[2], { Name = "Targeting", Icon = "shield" })
 
-local SettingsTab, SettingsColumns = Library:CreateTab(MainWindow, {
-    Name = "Settings",
-    Icon = "settings"
-})
+local VisualSection = Library:CreateSection(VisualsColumns[1], { Name = "ESP Settings", Icon = "visuals" })
+local ConfigSection = Library:CreateSection(SettingsColumns[1], { Name = "Configuration", Icon = "settings" })
 
-local MainAimbotSection = Library:CreateSection(CombatColumns[1], {
-    Name = "Main Settings",
-    Icon = "zap"
-})
+-- Создаем множество доп. секций для проверки скролла внутри самой вкладки
+for i = 1, 5 do
+    Library:CreateSection(CombatColumns[1], { Name = "Extra Section " .. i, Icon = "code" })
+    Library:CreateSection(CombatColumns[2], { Name = "Sub Section " .. i, Icon = "check" })
+end
 
-local TargetSection = Library:CreateSection(CombatColumns[2], {
-    Name = "Targeting",
-    Icon = "shield"
-})
-
-local VisualSection = Library:CreateSection(VisualsColumns[1], {
-    Name = "ESP Settings",
-    Icon = "visuals"
-})
-
-local ConfigSection = Library:CreateSection(SettingsColumns[1], {
-    Name = "Configuration",
-    Icon = "settings"
-})
-
-print("GUI Loaded Successfully (Fixed Size, Unbounded Drag)!")
+print("GUI loaded cleanly with fixed dragging and scrollable containers!")
