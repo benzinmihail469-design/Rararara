@@ -1,5 +1,5 @@
 -- =======================================================
--- АВТОНОМНЫЙ СКРИПТ (СИНИЙ/ЧЕРНЫЙ СТИЛЬ + ОГРАНИЧЕНИЕ СОЗВЕЗДИЯ)
+-- АВТОНОМНЫЙ СКРИПТ (СИНИЙ/ЧЕРНЫЙ СТИЛЬ + НАСЫЩЕННОЕ СОЗВЕЗДИЕ)
 -- =======================================================
 
 local Workspace = game:GetService("Workspace")
@@ -145,8 +145,8 @@ end
 -- 8. СИСТЕМА ДИНАМИЧЕСКОГО СОЗВЕЗДИЯ (PARTICLE NETWORK)
 -- =======================================================
 local function CreateConstellationBackground(parentFrame, numNodes, maxDistance)
-    numNodes = numNodes or 18
-    maxDistance = maxDistance or 85 -- Уменьшена длина линий связи
+    numNodes = numNodes or 35 -- Увеличено число частиц для густоты
+    maxDistance = maxDistance or 80 -- Оптимальная дистанция связи
 
     local bgContainer = Instances:Create("Frame", {
         Parent = parentFrame,
@@ -166,10 +166,10 @@ local function CreateConstellationBackground(parentFrame, numNodes, maxDistance)
         local dot = Instances:Create("Frame", {
             Parent = bgContainer.Instance,
             Name = "Node_" .. i,
-            Size = UDim2.new(0, 3, 0, 3), -- Чуть уменьшенный размер точек
+            Size = UDim2.new(0, 3, 0, 3),
             AnchorPoint = Vector2.new(0.5, 0.5),
             BackgroundColor3 = Theme["Node"],
-            BackgroundTransparency = 0.1,
+            BackgroundTransparency = 0.15,
             BorderSizePixel = 0,
             ZIndex = 3
         })
@@ -181,8 +181,8 @@ local function CreateConstellationBackground(parentFrame, numNodes, maxDistance)
 
         table.insert(nodes, {
             Gui = dot.Instance,
-            Pos = Vector2.new(rng:NextNumber(160, 520), rng:NextNumber(10, 360)), -- Точки спавнятся за пределами сайдбара
-            Vel = Vector2.new(rng:NextNumber(-25, 25), rng:NextNumber(-25, 25))
+            Pos = Vector2.new(rng:NextNumber(160, 520), rng:NextNumber(10, 360)),
+            Vel = Vector2.new(rng:NextNumber(-22, 22), rng:NextNumber(-22, 22))
         })
     end
 
@@ -216,7 +216,7 @@ local function CreateConstellationBackground(parentFrame, numNodes, maxDistance)
 
         if width <= 0 or height <= 0 then return end
 
-        local minX = 155 -- Ограничение: точки не заходят правее сайдбара (ширина 150px)
+        local minX = 155 -- Ограничение: точки заходят только в рабочую область (правее 155px)
 
         -- Движение точек
         for _, node in ipairs(nodes) do
@@ -257,9 +257,9 @@ local function CreateConstellationBackground(parentFrame, numNodes, maxDistance)
                     local alpha = dist / maxDistance
 
                     line.Position = UDim2.new(0, mid.X, 0, mid.Y)
-                    line.Size = UDim2.new(0, dist, 0, 1) -- Уменьшена толщина линии до 1px
+                    line.Size = UDim2.new(0, dist, 0, 1)
                     line.Rotation = angle
-                    line.BackgroundTransparency = math.clamp(alpha * 0.85, 0.25, 0.9)
+                    line.BackgroundTransparency = math.clamp(alpha * 0.9, 0.3, 0.95)
                     line.Visible = true
 
                     lineIdx = lineIdx + 1
@@ -323,8 +323,8 @@ function Library:CreateWindow(data)
 
     MakeDraggable(mainFrame.Instance, mainFrame.Instance)
 
-    -- Инициализация ограниченного созвездия
-    CreateConstellationBackground(mainFrame.Instance, 18, 85)
+    -- Инициализация созвездия (35 частиц для густого эффекта)
+    CreateConstellationBackground(mainFrame.Instance, 35, 80)
 
     local sidebarBackground = Instances:Create("Frame", {
         Parent = mainFrame.Instance,
@@ -889,4 +889,4 @@ SilentBypassSection:CreateToggle({ Name = "включить понос", Default
 local JopaSection = Library:CreateSection(Cols[1], { Name = "jopa" })
 JopaSection:CreateToggle({ Name = "включить жопа...", Default = false })
 
-print("GUI Updated: Constellation bounds restricted to content area!")
+print("GUI Updated: Added more constellation nodes!")
