@@ -1,5 +1,5 @@
 -- =======================================================
--- АВТОНОМНЫЙ СКРИПТ (СИНИЙ/ЧЕРНЫЙ СТИЛЬ + ПЛАВНЫЕ СЕКЦИИ)
+-- АВТОНОМНЫЙ СКРИПТ (СИНИЙ/ЧЕРНЫЙ СТИЛЬ + ИНТЕРАКТИВНОЕ СОЗВЕЗДИЕ)
 -- =======================================================
 
 local Workspace = game:GetService("Workspace")
@@ -15,16 +15,18 @@ end
 
 -- 1. Цветовая тема (Dark & Neon Blue Style)
 local Theme = {
-    ["Background"] = Color3.fromRGB(10, 10, 12),
-    ["Background 2"] = Color3.fromRGB(14, 14, 18),
+    ["Background"] = Color3.fromRGB(10, 10, 14),
+    ["Background 2"] = Color3.fromRGB(14, 15, 20),
     ["Text"] = Color3.fromRGB(240, 240, 245),
     ["SubText"] = Color3.fromRGB(130, 135, 145),
-    ["Outline"] = Color3.fromRGB(24, 28, 36),
+    ["Outline"] = Color3.fromRGB(24, 28, 38),
     ["Accent"] = Color3.fromRGB(0, 140, 255),
     ["AccentGlow"] = Color3.fromRGB(0, 180, 255),
     ["Element"] = Color3.fromRGB(18, 20, 26),
-    ["GlowCenter"] = Color3.fromRGB(0, 140, 255), -- Синий неоновый блик
-    ["GlowEdge"] = Color3.fromRGB(14, 14, 18),
+    ["GlowCenter"] = Color3.fromRGB(0, 140, 255),
+    ["GlowEdge"] = Color3.fromRGB(14, 15, 20),
+    ["Node"] = Color3.fromRGB(100, 180, 255),
+    ["Line"] = Color3.fromRGB(0, 140, 255)
 }
 
 -- 2. Иконки
@@ -94,7 +96,7 @@ local function BindAutoScroll(scrollingFrame, listLayout, extraPadding)
     task.spawn(updateCanvas)
 end
 
--- 7. Плавное перетаскивание окно (Lerp)
+-- 7. Плавное перетаскивание окна (Lerp)
 local function MakeDraggable(guiInstance, dragHandle)
     dragHandle = dragHandle or guiInstance
     local dragging = false
@@ -140,7 +142,138 @@ local function MakeDraggable(guiInstance, dragHandle)
 end
 
 -- =======================================================
--- 8. СОЗДАНИЕ ОКНА (WINDOW)
+-- 8. СИСТЕМА ДИНАМИЧЕСКОГО СОЗВЕЗДИЯ (PARTICLE NETWORK)
+-- =======================================================
+local function CreateConstellationBackground(parentFrame, numNodes, maxDistance)
+    numNodes = numNodes or 18
+    maxDistance = maxDistance or 105
+
+    local bgContainer = Instances:Create("Frame", {
+        Parent = parentFrame,
+        Name = "ConstellationBG",
+        Size = UDim2.new(1, 0, 1, 0),
+        BackgroundTransparency = 1,
+        ClipsDescendants = true,
+        ZIndex = 1
+    })
+
+    local nodes = {}
+    local linesPool = {}
+    local rng = Random.new()
+
+    -- Создание узлов (точек)
+    for i = 1, numNodes do
+        local dot = Instances:Create("Frame", {
+            Parent = bgContainer.Instance,
+            Name = "Node_" .. i,
+            Size = UDim2.new(0, 3, 0, 3),
+            AnchorPoint = Vector2.new(0.5, 0.5),
+            BackgroundColor3 = Theme["Node"],
+            BackgroundTransparency = 0.3,
+            BorderSizePixel = 0,
+            ZIndex = 2
+        })
+
+        Instances:Create("UICorner", {
+            Parent = dot.Instance,
+            CornerRadius = UDim.new(1, 0)
+        })
+
+        table.insert(nodes, {
+            Gui = dot.Instance,
+            Pos = Vector2.new(rng:NextNumber(10, 520), rng:NextNumber(10, 360)),
+            Vel = Vector2.new(rng:NextNumber(-25, 25), rng:NextNumber(-25, 25))
+        })
+    end
+
+    -- Пул отрезков линий
+    local function GetLine(index)
+        if not linesPool[index] then
+            local line = Instances:Create("Frame", {
+                Parent = bgContainer.Instance,
+                Name = "Line_" .. index,
+                AnchorPoint = Vector2.new(0.5, 0.5),
+                BackgroundColor3 = Theme["Line"],
+                BorderSizePixel = 0,
+                ZIndex = 1,
+                Visible = false
+            })
+            linesPool[index] = line.Instance
+        end
+        return linesPool[index]
+    end
+
+    -- Обновление позиций и соединений
+    local renderConn
+    renderConn = RunService.RenderStepped:Connect(function(dt)
+        if not parentFrame:IsDescendantOf(game) then
+            renderConn:Disconnect()
+            return
+        end
+
+        local width = parentFrame.AbsoluteSize.X
+        local height = parentFrame.AbsoluteSize.Y
+
+        if width <= 0 or height <= 0 then return end
+
+        -- Движение точек
+        for _, node in ipairs(nodes) do
+            node.Pos = node.Pos + node.Vel * dt
+
+            if node.Pos.X <= 5 then
+                node.Pos = Vector2.new(5, node.Pos.Y)
+                node.Vel = Vector2.new(-node.Vel.X, node.Vel.Y)
+            elseif node.Pos.X >= width - 5 then
+                node.Pos = Vector2.new(width - 5, node.Pos.Y)
+                node.Vel = Vector2.new(-node.Vel.X, node.Vel.Y)
+            end
+
+            if node.Pos.Y <= 5 then
+                node.Pos = Vector2.new(node.Pos.X, 5)
+                node.Vel = Vector2.new(node.Vel.X, -node.Vel.Y)
+            elseif node.Pos.Y >= height - 5 then
+                node.Pos = Vector2.new(node.Pos.X, height - 5)
+                node.Vel = Vector2.new(node.Vel.X, -node.Vel.Y)
+            end
+
+            node.Gui.Position = UDim2.new(0, node.Pos.X, 0, node.Pos.Y)
+        end
+
+        -- Отрисовка линий между близкими точками
+        local lineIdx = 1
+        for i = 1, #nodes do
+            for j = i + 1, #nodes do
+                local p1 = nodes[i].Pos
+                local p2 = nodes[j].Pos
+                local dist = (p1 - p2).Magnitude
+
+                if dist < maxDistance then
+                    local line = GetLine(lineIdx)
+                    local mid = (p1 + p2) / 2
+                    local diff = p2 - p1
+                    local angle = math.deg(math.atan2(diff.Y, diff.X))
+                    local alpha = (dist / maxDistance)
+
+                    line.Position = UDim2.new(0, mid.X, 0, mid.Y)
+                    line.Size = UDim2.new(0, dist, 0, 1)
+                    line.Rotation = angle
+                    line.BackgroundTransparency = 0.35 + (alpha * 0.6)
+                    line.Visible = true
+
+                    lineIdx = lineIdx + 1
+                end
+            end
+        end
+
+        -- Скрытие неиспользуемых линий из пула
+        for k = lineIdx, #linesPool do
+            linesPool[k].Visible = false
+        end
+    end)
+end
+
+-- =======================================================
+-- 9. СОЗДАНИЕ ОКНА (WINDOW)
 -- =======================================================
 local Library = {
     Windows = {},
@@ -171,6 +304,7 @@ function Library:CreateWindow(data)
         ZIndex = 2,
         BorderSizePixel = 0,
         BackgroundColor3 = Theme["Background"],
+        ClipsDescendants = true,
         Active = true
     })
 
@@ -187,13 +321,16 @@ function Library:CreateWindow(data)
 
     MakeDraggable(mainFrame.Instance, mainFrame.Instance)
 
+    -- Инициализация фона с двигающимися линиями и точками
+    CreateConstellationBackground(mainFrame.Instance, 18, 110)
+
     local sidebarBackground = Instances:Create("Frame", {
         Parent = mainFrame.Instance,
         Name = "SidebarBackground",
         Position = UDim2.new(0, 0, 0, 0),
         Size = UDim2.new(0, 150, 1, 0),
         BackgroundColor3 = Theme["Background 2"],
-        BackgroundTransparency = 0.2,
+        BackgroundTransparency = 0.3,
         BorderSizePixel = 0,
         ZIndex = 2
     })
@@ -333,7 +470,7 @@ function Library:CreateWindow(data)
 end
 
 -- =======================================================
--- 9. ЛОГИКА ВКЛАДОК
+-- 10. ЛОГИКА ВКЛАДОК
 -- =======================================================
 function Library:CreateTab(window, tabData)
     tabData = tabData or {}
@@ -473,7 +610,7 @@ function Library:CreateTab(window, tabData)
 end
 
 -- =======================================================
--- 10. ПЛАВНО СВОРАЧИВАЕМЫЕ СЕКЦИИ (СИНИЙ НЕОНОВЫЙ БЛИК)
+-- 11. ПЛАВНО СВОРАЧИВАЕМЫЕ СЕКЦИИ (НЕОНОВЫЙ СИНИЙ БЛИК)
 -- =======================================================
 function Library:CreateSection(parentColumn, sectionData)
     sectionData = sectionData or {}
@@ -486,7 +623,7 @@ function Library:CreateSection(parentColumn, sectionData)
         Size = UDim2.new(1, 0, 0, 0),
         AutomaticSize = Enum.AutomaticSize.Y,
         BackgroundColor3 = Theme["Background 2"],
-        BackgroundTransparency = 0.15,
+        BackgroundTransparency = 0.2,
         BorderSizePixel = 0,
         ZIndex = 5,
         ClipsDescendants = true
@@ -510,7 +647,6 @@ function Library:CreateSection(parentColumn, sectionData)
         Padding = UDim.new(0, 0)
     })
 
-    -- Кнопка Заголовка Секции
     local headerButton = Instances:Create("TextButton", {
         Parent = sectionFrame.Instance,
         Name = "Header",
@@ -556,7 +692,7 @@ function Library:CreateSection(parentColumn, sectionData)
         ZIndex = 6
     })
 
-    -- СИНИЙ НЕОНОВЫЙ ГРАДИЕНТНЫЙ БЛИК ПОД ЗАГОЛОВКОМ
+    -- СИНИЙ НЕОНОВЫЙ ГРАДИЕНТНЫЙ БЛИК
     local glowLine = Instances:Create("Frame", {
         Parent = sectionFrame.Instance,
         Name = "GlowDivider",
@@ -581,7 +717,6 @@ function Library:CreateSection(parentColumn, sectionData)
         })
     })
 
-    -- Контейнер элементов (с плавным Tween изменением высоты)
     local elementsContainer = Instances:Create("Frame", {
         Parent = sectionFrame.Instance,
         Name = "Container",
@@ -592,7 +727,7 @@ function Library:CreateSection(parentColumn, sectionData)
         ZIndex = 6
     })
 
-    local elementsPadding = Instances:Create("UIPadding", {
+    Instances:Create("UIPadding", {
         Parent = elementsContainer.Instance,
         PaddingTop = UDim.new(0, 8),
         PaddingBottom = UDim.new(0, 8),
@@ -606,9 +741,8 @@ function Library:CreateSection(parentColumn, sectionData)
         Padding = UDim.new(0, 6)
     })
 
-    -- Функция расчета высоты и анимации сворачивания/раскрытия
     local function UpdateContainerSize(animated)
-        local contentHeight = elementsLayout.Instance.AbsoluteContentSize.Y + 16 -- Учитываем PaddingTop (8) + PaddingBottom (8)
+        local contentHeight = elementsLayout.Instance.AbsoluteContentSize.Y + 16
         local targetHeight = collapsed and 0 or contentHeight
 
         if animated then
@@ -624,25 +758,21 @@ function Library:CreateSection(parentColumn, sectionData)
         end
     end
 
-    -- Перерасчет высоты при добавлении новых элементов
     elementsLayout.Instance:GetPropertyChangedSignal("AbsoluteContentSize"):Connect(function()
         if not collapsed then
             UpdateContainerSize(false)
         end
     end)
 
-    -- Клик по шапке секции
     headerButton:Connect("MouseButton1Click", function()
         collapsed = not collapsed
         UpdateContainerSize(true)
     end)
 
-    -- Первоначальная установка размера
     task.spawn(function()
         UpdateContainerSize(false)
     end)
 
-    -- Секционные методы (API)
     local SectionAPI = {}
 
     function SectionAPI:CreateToggle(toggleData)
@@ -733,7 +863,7 @@ function Library:CreateSection(parentColumn, sectionData)
 end
 
 -- =======================================================
--- 11. ИНИЦИАЛИЗАЦИЯ И ТЕСТ
+-- 12. ИНИЦИАЛИЗАЦИЯ И ТЕСТ
 -- =======================================================
 
 local MainWindow = Library:CreateWindow({
@@ -747,7 +877,6 @@ local MainTab, Cols = Library:CreateTab(MainWindow, {
     Icon = "combat"
 })
 
--- Секции с эффектом синего неонового блеска и плавным разворачиванием
 local AimbotSection = Library:CreateSection(Cols[1], { Name = "Aimbot" })
 AimbotSection:CreateToggle({ Name = "ezez", Default = true })
 AimbotSection:CreateToggle({ Name = "tipo predicti", Default = false })
@@ -758,4 +887,4 @@ SilentBypassSection:CreateToggle({ Name = "включить понос", Default
 local JopaSection = Library:CreateSection(Cols[1], { Name = "jopa" })
 JopaSection:CreateToggle({ Name = "включить жопа...", Default = false })
 
-print("GUI Updated: Dark-Blue Neon style & Smooth height animations active!")
+print("GUI Updated: Constellation network background active!")
