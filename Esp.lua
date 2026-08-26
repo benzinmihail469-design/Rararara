@@ -344,12 +344,13 @@ function Library:CreateWindow(data)
         ZIndex = 5
     })
 
-    -- Контейнер/квадрат для иконки
+    -- Крупный контейнер/квадрат для логотипа в центре верхней части сайдбара
     local logoContainer = Instances:Create("Frame", {
         Parent = mainFrame.Instance,
         Name = "LogoContainer",
-        Position = UDim2.new(0, 12, 0, 10),
-        Size = UDim2.new(0, 34, 0, 34),
+        AnchorPoint = Vector2.new(0.5, 0),
+        Position = UDim2.new(0, 75, 0, 15),
+        Size = UDim2.new(0, 75, 0, 75),
         BackgroundColor3 = Theme["Element"],
         BorderSizePixel = 0,
         ZIndex = 5
@@ -357,7 +358,7 @@ function Library:CreateWindow(data)
 
     Instances:Create("UICorner", {
         Parent = logoContainer.Instance,
-        CornerRadius = UDim.new(0, 6)
+        CornerRadius = UDim.new(0, 12)
     })
 
     Instances:Create("UIStroke", {
@@ -366,7 +367,7 @@ function Library:CreateWindow(data)
         Thickness = 1
     })
 
-    -- Иконка внутри контейнера
+    -- Крупная иконка логотипа внутри контейнера
     Instances:Create("ImageLabel", {
         Parent = logoContainer.Instance,
         Name = "Logo",
@@ -374,19 +375,19 @@ function Library:CreateWindow(data)
         ScaleType = Enum.ScaleType.Fit,
         AnchorPoint = Vector2.new(0.5, 0.5),
         Position = UDim2.new(0.5, 0, 0.5, 0),
-        Size = UDim2.new(0, 20, 0, 20),
+        Size = UDim2.new(0, 48, 0, 48),
         Image = ParseIcon(logoId),
         BackgroundTransparency = 1,
         ZIndex = 6,
         BorderSizePixel = 0
     })
 
-    -- Горизонтальная разделительная линия под шапкой сайдбара
+    -- Горизонтальная разделительная линия под крупным логотипом
     local headerDivider = Instances:Create("Frame", {
         Parent = mainFrame.Instance,
         Name = "HeaderDivider",
-        Position = UDim2.new(0, 10, 0, 52),
-        Size = UDim2.new(0, 130, 0, 1),
+        Position = UDim2.new(0, 12, 0, 105),
+        Size = UDim2.new(0, 126, 0, 1),
         BackgroundColor3 = Color3.fromRGB(255, 255, 255),
         BorderSizePixel = 0,
         ZIndex = 5
@@ -406,13 +407,13 @@ function Library:CreateWindow(data)
         })
     })
 
-    -- Список вкладок (сдвинут вниз под разделитель)
+    -- Список вкладок (смещен ниже крупного блока логотипа)
     local leftTabs = Instances:Create("ScrollingFrame", {
         Parent = mainFrame.Instance,
         Name = "LeftTabs",
         BackgroundTransparency = 1,
-        Position = UDim2.new(0, 0, 0, 58),
-        Size = UDim2.new(0, 150, 1, -58),
+        Position = UDim2.new(0, 0, 0, 112),
+        Size = UDim2.new(0, 150, 1, -112),
         ZIndex = 4,
         BorderSizePixel = 0,
         ScrollBarThickness = 3,
@@ -917,4 +918,4 @@ SilentBypassSection:CreateToggle({ Name = "включить понос", Default
 local JopaSection = Library:CreateSection(Cols[1], { Name = "jopa" })
 JopaSection:CreateToggle({ Name = "включить жопа...", Default = false })
 
-print("GUI Updated: Added icon container & stylized dividers!")
+print("GUI Updated: Made top logo container larger and centered!")
