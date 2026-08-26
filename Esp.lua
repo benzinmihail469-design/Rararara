@@ -1,5 +1,5 @@
 -- =======================================================
--- АВТОНОМНЫЙ СКРИПТ (СИНИЙ/ЧЕРНЫЙ СТИЛЬ + НАСЫЩЕННОЕ СОЗВЕЗДИЕ)
+-- АВТОНОМНЫЙ СКРИПТ (СИНИЙ/ЧЕРНЫЙ СТИЛЬ + НЕОНОВЫЙ ХЕДЕР И ИНДИКАТОРЫ)
 -- =======================================================
 
 local Workspace = game:GetService("Workspace")
@@ -145,8 +145,8 @@ end
 -- 8. СИСТЕМА ДИНАМИЧЕСКОГО СОЗВЕЗДИЯ (PARTICLE NETWORK)
 -- =======================================================
 local function CreateConstellationBackground(parentFrame, numNodes, maxDistance)
-    numNodes = numNodes or 35 -- Увеличено число частиц для густоты
-    maxDistance = maxDistance or 80 -- Оптимальная дистанция связи
+    numNodes = numNodes or 35
+    maxDistance = maxDistance or 80
 
     local bgContainer = Instances:Create("Frame", {
         Parent = parentFrame,
@@ -161,7 +161,6 @@ local function CreateConstellationBackground(parentFrame, numNodes, maxDistance)
     local linesPool = {}
     local rng = Random.new()
 
-    -- Создание узлов (точек)
     for i = 1, numNodes do
         local dot = Instances:Create("Frame", {
             Parent = bgContainer.Instance,
@@ -186,7 +185,6 @@ local function CreateConstellationBackground(parentFrame, numNodes, maxDistance)
         })
     end
 
-    -- Пул отрезков линий
     local function GetLine(index)
         if not linesPool[index] then
             local line = Instances:Create("Frame", {
@@ -203,7 +201,6 @@ local function CreateConstellationBackground(parentFrame, numNodes, maxDistance)
         return linesPool[index]
     end
 
-    -- Обновление позиций и соединений
     local renderConn
     renderConn = RunService.RenderStepped:Connect(function(dt)
         if not parentFrame:IsDescendantOf(game) then
@@ -216,9 +213,8 @@ local function CreateConstellationBackground(parentFrame, numNodes, maxDistance)
 
         if width <= 0 or height <= 0 then return end
 
-        local minX = 155 -- Ограничение: точки заходят только в рабочую область (правее 155px)
+        local minX = 155
 
-        -- Движение точек
         for _, node in ipairs(nodes) do
             node.Pos = node.Pos + node.Vel * dt
 
@@ -241,7 +237,6 @@ local function CreateConstellationBackground(parentFrame, numNodes, maxDistance)
             node.Gui.Position = UDim2.new(0, node.Pos.X, 0, node.Pos.Y)
         end
 
-        -- Отрисовка линий между близкими точками
         local lineIdx = 1
         for i = 1, #nodes do
             for j = i + 1, #nodes do
@@ -267,7 +262,6 @@ local function CreateConstellationBackground(parentFrame, numNodes, maxDistance)
             end
         end
 
-        -- Скрытие неиспользуемых линий из пула
         for k = lineIdx, #linesPool do
             linesPool[k].Visible = false
         end
@@ -275,7 +269,7 @@ local function CreateConstellationBackground(parentFrame, numNodes, maxDistance)
 end
 
 -- =======================================================
--- 9. СОЗДАНИЕ ОКНА (WINDOW)
+-- 9. СОЗДАНИЕ ОКНА (WINDOW С ВЕРХНЕЙ СЕКЦИЕЙ В САЙДБАРЕ)
 -- =======================================================
 local Library = {
     Windows = {},
@@ -323,9 +317,9 @@ function Library:CreateWindow(data)
 
     MakeDraggable(mainFrame.Instance, mainFrame.Instance)
 
-    -- Инициализация созвездия (35 частиц для густого эффекта)
     CreateConstellationBackground(mainFrame.Instance, 35, 80)
 
+    -- Боковая панель
     local sidebarBackground = Instances:Create("Frame", {
         Parent = mainFrame.Instance,
         Name = "SidebarBackground",
@@ -342,55 +336,77 @@ function Library:CreateWindow(data)
         CornerRadius = UDim.new(0, 8)
     })
 
+    -- ВЕРХНИЙ РАЗДЕЛ ХЕДЕРА С ЛОГОТИПОМ (Как на фотке)
+    local sidebarHeader = Instances:Create("Frame", {
+        Parent = sidebarBackground.Instance,
+        Name = "SidebarHeader",
+        Position = UDim2.new(0, 0, 0, 0),
+        Size = UDim2.new(1, 0, 0, 68),
+        BackgroundTransparency = 1,
+        ZIndex = 5
+    })
+
+    -- Центральная иконка/логотип
     Instances:Create("ImageLabel", {
-        Parent = mainFrame.Instance,
-        Name = "Logo",
+        Parent = sidebarHeader.Instance,
+        Name = "LogoIcon",
         ImageColor3 = Theme["Accent"],
         ScaleType = Enum.ScaleType.Fit,
-        Size = UDim2.new(0, 22, 0, 22),
+        Size = UDim2.new(0, 26, 0, 26),
+        AnchorPoint = Vector2.new(0.5, 0),
+        Position = UDim2.new(0.5, 0, 0, 10),
         Image = ParseIcon(logoId),
         BackgroundTransparency = 1,
-        Position = UDim2.new(0, 10, 0, 10),
-        ZIndex = 5,
-        BorderSizePixel = 0
+        ZIndex = 6
     })
 
+    -- Заголовок под иконкой
     Instances:Create("TextLabel", {
-        Parent = mainFrame.Instance,
-        Name = "Title",
-        FontFace = Font.new("rbxassetid://12187365364", Enum.FontWeight.SemiBold, Enum.FontStyle.Normal),
+        Parent = sidebarHeader.Instance,
+        Name = "TitleLabel",
+        FontFace = Font.new("rbxassetid://12187365364", Enum.FontWeight.Bold, Enum.FontStyle.Normal),
         TextColor3 = Theme["Text"],
         Text = windowName,
-        AutomaticSize = Enum.AutomaticSize.X,
-        Size = UDim2.new(0, 0, 0, 14),
+        Size = UDim2.new(1, 0, 0, 14),
+        Position = UDim2.new(0, 0, 0, 40),
         BackgroundTransparency = 1,
-        Position = UDim2.new(0, 38, 0, 8),
-        ZIndex = 5,
-        TextSize = 13,
-        TextXAlignment = Enum.TextXAlignment.Left
+        TextSize = 12,
+        TextXAlignment = Enum.TextXAlignment.Center,
+        ZIndex = 6
     })
 
-    Instances:Create("TextLabel", {
-        Parent = mainFrame.Instance,
-        Name = "SubTitle",
-        FontFace = Font.new("rbxassetid://12187365364", Enum.FontWeight.Regular, Enum.FontStyle.Normal),
-        TextColor3 = Theme["SubText"],
-        Text = subName,
-        AutomaticSize = Enum.AutomaticSize.X,
-        Size = UDim2.new(0, 0, 0, 14),
-        BackgroundTransparency = 1,
-        Position = UDim2.new(0, 38, 0, 22),
-        ZIndex = 5,
-        TextSize = 11,
-        TextXAlignment = Enum.TextXAlignment.Left
+    -- НЕОНОВАЯ СИНЯЯ РАЗДЕЛИ ТЕЛЬНАЯ ПОЛОСКА ПОД ЛОГОТИПОМ
+    local headerDivider = Instances:Create("Frame", {
+        Parent = sidebarBackground.Instance,
+        Name = "HeaderDivider",
+        Position = UDim2.new(0, 12, 0, 62),
+        Size = UDim2.new(1, -24, 0, 1),
+        BackgroundColor3 = Color3.fromRGB(255, 255, 255),
+        BorderSizePixel = 0,
+        ZIndex = 6
     })
 
+    Instances:Create("UIGradient", {
+        Parent = headerDivider.Instance,
+        Color = ColorSequence.new({
+            ColorSequenceKeypoint.new(0, Theme["GlowEdge"]),
+            ColorSequenceKeypoint.new(0.5, Theme["GlowCenter"]),
+            ColorSequenceKeypoint.new(1, Theme["GlowEdge"])
+        }),
+        Transparency = NumberSequence.new({
+            NumberSequenceKeypoint.new(0, 0.8),
+            NumberSequenceKeypoint.new(0.5, 0.0),
+            NumberSequenceKeypoint.new(1, 0.8)
+        })
+    })
+
+    -- Список вкладок (Смещен ниже хедера)
     local leftTabs = Instances:Create("ScrollingFrame", {
         Parent = mainFrame.Instance,
         Name = "LeftTabs",
         BackgroundTransparency = 1,
-        Position = UDim2.new(0, 0, 0, 42),
-        Size = UDim2.new(0, 150, 1, -42),
+        Position = UDim2.new(0, 0, 0, 70),
+        Size = UDim2.new(0, 150, 1, -70),
         ZIndex = 4,
         BorderSizePixel = 0,
         ScrollBarThickness = 3,
@@ -418,16 +434,18 @@ function Library:CreateWindow(data)
 
     BindAutoScroll(leftTabs.Instance, leftTabsLayout.Instance, 15)
 
+    -- Область контента
     local content = Instances:Create("Frame", {
         Parent = mainFrame.Instance,
         Name = "ContentArea",
         BackgroundTransparency = 1,
-        Position = UDim2.new(0, 156, 0, 42),
-        Size = UDim2.new(1, -161, 1, -46),
+        Position = UDim2.new(0, 156, 0, 10),
+        Size = UDim2.new(1, -161, 1, -14),
         ZIndex = 4,
         ClipsDescendants = true
     })
 
+    -- Кнопка закрытия
     local closeButton = Instances:Create("TextButton", {
         Parent = mainFrame.Instance,
         Name = "CloseButton",
@@ -472,7 +490,7 @@ function Library:CreateWindow(data)
 end
 
 -- =======================================================
--- 10. ЛОГИКА ВКЛАДОК
+-- 10. ЛОГИКА ВКЛАДОК (С ИНДИКАТОРНОЙ ВЕРТИКАЛЬНОЙ ПОЛОСКОЙ)
 -- =======================================================
 function Library:CreateTab(window, tabData)
     tabData = tabData or {}
@@ -494,11 +512,28 @@ function Library:CreateTab(window, tabData)
         CornerRadius = UDim.new(0, 5)
     })
 
+    -- ВЕРТИКАЛЬНАЯ СИНЯЯ ПОЛОСКА-ИНДИКАТОР АКТИВНОСТИ (как на фотке)
+    local activeBar = Instances:Create("Frame", {
+        Parent = tabButton.Instance,
+        Name = "ActiveBar",
+        Size = UDim2.new(0, 3, 0, 16),
+        Position = UDim2.new(0, 2, 0.5, -8),
+        BackgroundColor3 = Theme["Accent"],
+        BackgroundTransparency = 1,
+        BorderSizePixel = 0,
+        ZIndex = 7
+    })
+
+    Instances:Create("UICorner", {
+        Parent = activeBar.Instance,
+        CornerRadius = UDim.new(1, 0)
+    })
+
     local iconImage = Instances:Create("ImageLabel", {
         Parent = tabButton.Instance,
         Name = "Icon",
         Size = UDim2.new(0, 16, 0, 16),
-        Position = UDim2.new(0, 8, 0.5, -8),
+        Position = UDim2.new(0, 12, 0.5, -8),
         BackgroundTransparency = 1,
         ScaleType = Enum.ScaleType.Fit,
         Image = ParseIcon(tabIcon),
@@ -514,8 +549,8 @@ function Library:CreateTab(window, tabData)
         FontFace = Font.new("rbxassetid://12187365364", Enum.FontWeight.Medium, Enum.FontStyle.Normal),
         TextColor3 = Theme["SubText"],
         TextSize = 12,
-        Position = UDim2.new(0, 30, 0, 0),
-        Size = UDim2.new(1, -34, 1, 0),
+        Position = UDim2.new(0, 34, 0, 0),
+        Size = UDim2.new(1, -38, 1, 0),
         BackgroundTransparency = 1,
         TextXAlignment = Enum.TextXAlignment.Left,
         ZIndex = 6
@@ -584,6 +619,7 @@ function Library:CreateTab(window, tabData)
         Container = tabContainer.Instance,
         Icon = iconImage.Instance,
         Label = tabLabel.Instance,
+        ActiveBar = activeBar.Instance,
         Columns = columns
     }
 
@@ -594,12 +630,14 @@ function Library:CreateTab(window, tabData)
             Tween(window.CurrentTab.Button, TweenInfo.new(0.2), { BackgroundTransparency = 1 })
             Tween(window.CurrentTab.Icon, TweenInfo.new(0.2), { ImageColor3 = Theme["SubText"] })
             Tween(window.CurrentTab.Label, TweenInfo.new(0.2), { TextColor3 = Theme["SubText"] })
+            Tween(window.CurrentTab.ActiveBar, TweenInfo.new(0.2), { BackgroundTransparency = 1 })
         end
         window.CurrentTab = tabObject
         tabContainer.Instance.Visible = true
-        Tween(tabButton.Instance, TweenInfo.new(0.2), { BackgroundTransparency = 0.85, BackgroundColor3 = Theme["Accent"] })
+        Tween(tabButton.Instance, TweenInfo.new(0.2), { BackgroundTransparency = 0.88, BackgroundColor3 = Theme["Accent"] })
         Tween(iconImage.Instance, TweenInfo.new(0.2), { ImageColor3 = Theme["Accent"] })
         Tween(tabLabel.Instance, TweenInfo.new(0.2), { TextColor3 = Theme["Text"] })
+        Tween(activeBar.Instance, TweenInfo.new(0.2), { BackgroundTransparency = 0 })
     end
 
     tabButton:Connect("MouseButton1Click", Activate)
@@ -869,14 +907,18 @@ end
 -- =======================================================
 
 local MainWindow = Library:CreateWindow({
-    Name = "Dark Hub",
-    SubName = "Custom GUI Framework",
+    Name = "SHITARO",
     Logo = "10723407068"
 })
 
 local MainTab, Cols = Library:CreateTab(MainWindow, {
     Name = "Main",
     Icon = "combat"
+})
+
+local VisualsTab, VisualCols = Library:CreateTab(MainWindow, {
+    Name = "Visuals",
+    Icon = "visuals"
 })
 
 local AimbotSection = Library:CreateSection(Cols[1], { Name = "Aimbot" })
@@ -889,4 +931,4 @@ SilentBypassSection:CreateToggle({ Name = "включить понос", Default
 local JopaSection = Library:CreateSection(Cols[1], { Name = "jopa" })
 JopaSection:CreateToggle({ Name = "включить жопа...", Default = false })
 
-print("GUI Updated: Added more constellation nodes!")
+print("GUI Updated: Added sidebar logo section and active tab indicators!")
