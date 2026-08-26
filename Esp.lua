@@ -1,5 +1,5 @@
 -- =======================================================
--- АВТОНОМНЫЙ СКРИПТ ГЛАВНОГО ОКНА С МОБИЛЬНОЙ АДАПТАЦИЕЙ И ПРОКРУТКОЙ
+-- АВТОНОМНЫЙ СКРИПТ ГЛАВНОГО ОКНА С ОПТИМИЗИРОВАННЫМ РАЗМЕРОМ
 -- =======================================================
 
 local Workspace = game:GetService("Workspace")
@@ -239,7 +239,7 @@ function Library:CreateWindow(data)
         Content = nil
     }
 
-    -- Главное окно (Уменьшенный размер для мобильных устройств: 450x290 вместо 560x400)
+    -- Главное окно (Чуть меньше оригинального размера: 520x370)
     local mainFrame = Instances:Create("Frame", {
         Parent = Holder,
         Name = "MainFrame",
@@ -247,7 +247,7 @@ function Library:CreateWindow(data)
         AnchorPoint = Vector2.new(0.5, 0.5),
         BackgroundTransparency = 0.12,
         Position = UDim2.new(0.5, 0, 0.5, 0),
-        Size = UDim2.new(0, 450, 0, 290),
+        Size = UDim2.new(0, 520, 0, 370),
         ZIndex = 2,
         BorderSizePixel = 0,
         BackgroundColor3 = Theme["Background"]
@@ -258,11 +258,10 @@ function Library:CreateWindow(data)
         CornerRadius = UDim.new(0, 6)
     })
 
-    -- Включение перетаскивания и изменение минимального размера под мобильные экраны
     MakeDraggable(mainFrame.Instance)
-    MakeResizeable(mainFrame.Instance, Vector2.new(320, 220))
+    MakeResizeable(mainFrame.Instance, Vector2.new(380, 270))
 
-    -- Левый тулбар для вкладок (С поддержкой прокрутки)
+    -- Левый тулбар с поддержкой скролла
     local leftTabs = Instances:Create("ScrollingFrame", {
         Parent = mainFrame.Instance,
         Name = "LeftTabs",
@@ -270,7 +269,7 @@ function Library:CreateWindow(data)
         AnchorPoint = Vector2.new(0, 0),
         BackgroundTransparency = 0.15,
         Position = UDim2.new(0, 0, 0, 0),
-        Size = UDim2.new(0, 135, 1, 0),
+        Size = UDim2.new(0, 150, 1, 0),
         ZIndex = 2,
         BorderSizePixel = 0,
         BackgroundColor3 = Theme["Background 2"],
@@ -290,10 +289,10 @@ function Library:CreateWindow(data)
 
     Instances:Create("UIPadding", {
         Parent = leftTabs.Instance,
-        PaddingTop = UDim.new(0, 48),
-        PaddingBottom = UDim.new(0, 8),
-        PaddingRight = UDim.new(0, 6),
-        PaddingLeft = UDim.new(0, 6)
+        PaddingTop = UDim.new(0, 52),
+        PaddingBottom = UDim.new(0, 10),
+        PaddingRight = UDim.new(0, 8),
+        PaddingLeft = UDim.new(0, 8)
     })
 
     Instances:Create("UICorner", {
@@ -301,16 +300,16 @@ function Library:CreateWindow(data)
         CornerRadius = UDim.new(0, 6)
     })
 
-    -- Главная иконка (Обычная, без синего градиента)
+    -- Главная иконка (Обычная, без градиента)
     local logo = Instances:Create("ImageLabel", {
         Parent = mainFrame.Instance,
         Name = "Logo",
         ImageColor3 = Theme["Text"],
         ScaleType = Enum.ScaleType.Fit,
-        Size = UDim2.new(0, 22, 0, 22),
+        Size = UDim2.new(0, 25, 0, 25),
         Image = ParseIcon(logoId),
         BackgroundTransparency = 1,
-        Position = UDim2.new(0, 8, 0, 8),
+        Position = UDim2.new(0, 10, 0, 10),
         ZIndex = 3,
         BorderSizePixel = 0
     })
@@ -323,11 +322,11 @@ function Library:CreateWindow(data)
         TextColor3 = Theme["Text"],
         Text = windowName,
         AutomaticSize = Enum.AutomaticSize.X,
-        Size = UDim2.new(0, 0, 0, 12),
+        Size = UDim2.new(0, 0, 0, 13),
         BackgroundTransparency = 1,
-        Position = UDim2.new(0, 35, 0, 7),
+        Position = UDim2.new(0, 42, 0, 9),
         ZIndex = 3,
-        TextSize = 12,
+        TextSize = 13,
         TextXAlignment = Enum.TextXAlignment.Left
     })
 
@@ -340,11 +339,11 @@ function Library:CreateWindow(data)
         TextTransparency = 0.4,
         Text = subName,
         AutomaticSize = Enum.AutomaticSize.X,
-        Size = UDim2.new(0, 0, 0, 12),
+        Size = UDim2.new(0, 0, 0, 13),
         BackgroundTransparency = 1,
-        Position = UDim2.new(0, 35, 0, 20),
+        Position = UDim2.new(0, 42, 0, 22),
         ZIndex = 3,
-        TextSize = 10,
+        TextSize = 11,
         TextXAlignment = Enum.TextXAlignment.Left
     })
 
@@ -353,8 +352,8 @@ function Library:CreateWindow(data)
         Parent = mainFrame.Instance,
         Name = "ContentArea",
         BackgroundTransparency = 1,
-        Position = UDim2.new(0, 140, 0, 38),
-        Size = UDim2.new(1, -144, 1, -42),
+        Position = UDim2.new(0, 156, 0, 42),
+        Size = UDim2.new(1, -161, 1, -46),
         ZIndex = 2,
         ClipsDescendants = true
     })
@@ -367,8 +366,8 @@ function Library:CreateWindow(data)
         AutoButtonColor = false,
         AnchorPoint = Vector2.new(1, 0),
         BackgroundTransparency = 0.2,
-        Position = UDim2.new(1, -8, 0, 8),
-        Size = UDim2.new(0, 22, 0, 22),
+        Position = UDim2.new(1, -10, 0, 10),
+        Size = UDim2.new(0, 24, 0, 24),
         ZIndex = 3,
         BackgroundColor3 = Theme["Element"]
     })
@@ -384,7 +383,7 @@ function Library:CreateWindow(data)
         ImageColor3 = Theme["Text"],
         ImageTransparency = 0.3,
         ScaleType = Enum.ScaleType.Fit,
-        Size = UDim2.new(0, 9, 0, 9),
+        Size = UDim2.new(0, 10, 0, 10),
         AnchorPoint = Vector2.new(0.5, 0.5),
         Image = "rbxassetid://130510492706892",
         BackgroundTransparency = 1,
@@ -415,7 +414,7 @@ function Library:CreateTab(window, tabData)
     local tabButton = Instances:Create("TextButton", {
         Parent = window.LeftTabs,
         Name = "Tab_" .. tabName,
-        Size = UDim2.new(1, 0, 0, 28),
+        Size = UDim2.new(1, 0, 0, 30),
         BackgroundTransparency = 1,
         Text = "",
         AutoButtonColor = false,
@@ -431,8 +430,8 @@ function Library:CreateTab(window, tabData)
     local iconImage = Instances:Create("ImageLabel", {
         Parent = tabButton.Instance,
         Name = "Icon",
-        Size = UDim2.new(0, 14, 0, 14),
-        Position = UDim2.new(0, 8, 0.5, -7),
+        Size = UDim2.new(0, 15, 0, 15),
+        Position = UDim2.new(0, 9, 0.5, -7),
         BackgroundTransparency = 1,
         ScaleType = Enum.ScaleType.Fit,
         Image = ParseIcon(tabIcon),
@@ -449,9 +448,9 @@ function Library:CreateTab(window, tabData)
         FontFace = Font.new("rbxassetid://12187365364", Enum.FontWeight.Medium, Enum.FontStyle.Normal),
         TextColor3 = Theme["Text"],
         TextTransparency = 0.5,
-        TextSize = 11,
-        Position = UDim2.new(0, 28, 0, 0),
-        Size = UDim2.new(1, -32, 1, 0),
+        TextSize = 12,
+        Position = UDim2.new(0, 31, 0, 0),
+        Size = UDim2.new(1, -36, 1, 0),
         BackgroundTransparency = 1,
         TextXAlignment = Enum.TextXAlignment.Left,
         ZIndex = 4
@@ -503,7 +502,7 @@ function Library:CreateTab(window, tabData)
 
         Instances:Create("UIListLayout", {
             Parent = column.Instance,
-            Padding = UDim.new(0, 6),
+            Padding = UDim.new(0, 7),
             SortOrder = Enum.SortOrder.LayoutOrder
         })
 
@@ -594,23 +593,23 @@ function Library:CreateSection(parentColumn, sectionData)
 
     Instances:Create("UIPadding", {
         Parent = sectionFrame.Instance,
-        PaddingTop = UDim.new(0, 8),
-        PaddingBottom = UDim.new(0, 8),
-        PaddingLeft = UDim.new(0, 8),
-        PaddingRight = UDim.new(0, 8)
+        PaddingTop = UDim.new(0, 9),
+        PaddingBottom = UDim.new(0, 9),
+        PaddingLeft = UDim.new(0, 9),
+        PaddingRight = UDim.new(0, 9)
     })
 
     Instances:Create("UIListLayout", {
         Parent = sectionFrame.Instance,
         SortOrder = Enum.SortOrder.LayoutOrder,
-        Padding = UDim.new(0, 6)
+        Padding = UDim.new(0, 7)
     })
 
     -- Шапка секции (Header)
     local headerFrame = Instances:Create("Frame", {
         Parent = sectionFrame.Instance,
         Name = "Header",
-        Size = UDim2.new(1, 0, 0, 14),
+        Size = UDim2.new(1, 0, 0, 15),
         BackgroundTransparency = 1,
         LayoutOrder = 0,
         ZIndex = 5
@@ -623,15 +622,15 @@ function Library:CreateSection(parentColumn, sectionData)
         local sectionIconImage = Instances:Create("ImageLabel", {
             Parent = headerFrame.Instance,
             Name = "SectionIcon",
-            Size = UDim2.new(0, 13, 0, 13),
-            Position = UDim2.new(0, 0, 0.5, -6),
+            Size = UDim2.new(0, 14, 0, 14),
+            Position = UDim2.new(0, 0, 0.5, -7),
             BackgroundTransparency = 1,
             ScaleType = Enum.ScaleType.Fit,
             Image = parsedIcon,
             ImageColor3 = Theme["Accent"],
             ZIndex = 5
         })
-        titleOffset = 18
+        titleOffset = 20
     end
 
     -- Заголовок секции
@@ -641,7 +640,7 @@ function Library:CreateSection(parentColumn, sectionData)
         Text = string.upper(sectionName),
         FontFace = Font.new("rbxassetid://12187365364", Enum.FontWeight.Bold, Enum.FontStyle.Normal),
         TextColor3 = Theme["Text"],
-        TextSize = 10,
+        TextSize = 11,
         Position = UDim2.new(0, titleOffset, 0, 0),
         Size = UDim2.new(1, -titleOffset, 1, 0),
         BackgroundTransparency = 1,
@@ -663,7 +662,7 @@ function Library:CreateSection(parentColumn, sectionData)
     Instances:Create("UIListLayout", {
         Parent = elementsContainer.Instance,
         SortOrder = Enum.SortOrder.LayoutOrder,
-        Padding = UDim.new(0, 5)
+        Padding = UDim.new(0, 6)
     })
 
     return elementsContainer.Instance
