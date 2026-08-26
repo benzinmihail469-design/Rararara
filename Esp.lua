@@ -1,5 +1,5 @@
 -- =======================================================
--- АВТОНОМНЫЙ СКРИПТ (СИНИЙ/ЧЕРНЫЙ СТИЛЬ + НЕОНОВЫЙ ХЕДЕР И ИНДИКАТОРЫ)
+-- АВТОНОМНЫЙ СКРИПТ (СИНИЙ/ЧЕРНЫЙ СТИЛЬ + ОБНОВЛЕННАЯ ШАПКА)
 -- =======================================================
 
 local Workspace = game:GetService("Workspace")
@@ -269,7 +269,7 @@ local function CreateConstellationBackground(parentFrame, numNodes, maxDistance)
 end
 
 -- =======================================================
--- 9. СОЗДАНИЕ ОКНА (WINDOW С ВЕРХНЕЙ СЕКЦИЕЙ В САЙДБАРЕ)
+-- 9. СОЗДАНИЕ ОКНА (WINDOW)
 -- =======================================================
 local Library = {
     Windows = {},
@@ -319,7 +319,6 @@ function Library:CreateWindow(data)
 
     CreateConstellationBackground(mainFrame.Instance, 35, 80)
 
-    -- Боковая панель
     local sidebarBackground = Instances:Create("Frame", {
         Parent = mainFrame.Instance,
         Name = "SidebarBackground",
@@ -336,51 +335,84 @@ function Library:CreateWindow(data)
         CornerRadius = UDim.new(0, 8)
     })
 
-    -- ВЕРХНИЙ РАЗДЕЛ ХЕДЕРА С ЛОГОТИПОМ (Как на фотке)
-    local sidebarHeader = Instances:Create("Frame", {
-        Parent = sidebarBackground.Instance,
-        Name = "SidebarHeader",
-        Position = UDim2.new(0, 0, 0, 0),
-        Size = UDim2.new(1, 0, 0, 68),
-        BackgroundTransparency = 1,
+    -- =======================================================
+    -- СТИЛИЗОВАННЫЙ БЛОК ДЛЯ ИКОНКИ ШАПКИ И РАЗДЕЛИТЕЛЬНЫЕ ПОЛОСЫ
+    -- =======================================================
+    
+    -- Плитка-карточка для иконки
+    local logoContainer = Instances:Create("Frame", {
+        Parent = mainFrame.Instance,
+        Name = "LogoContainer",
+        Size = UDim2.new(0, 26, 0, 26),
+        Position = UDim2.new(0, 10, 0, 7),
+        BackgroundColor3 = Theme["Element"],
+        BackgroundTransparency = 0.2,
+        BorderSizePixel = 0,
         ZIndex = 5
     })
 
-    -- Центральная иконка/логотип
+    Instances:Create("UICorner", {
+        Parent = logoContainer.Instance,
+        CornerRadius = UDim.new(0, 6)
+    })
+
+    Instances:Create("UIStroke", {
+        Parent = logoContainer.Instance,
+        Color = Theme["Accent"],
+        Thickness = 1,
+        Transparency = 0.4
+    })
+
     Instances:Create("ImageLabel", {
-        Parent = sidebarHeader.Instance,
-        Name = "LogoIcon",
-        ImageColor3 = Theme["Accent"],
+        Parent = logoContainer.Instance,
+        Name = "Logo",
+        ImageColor3 = Theme["AccentGlow"],
         ScaleType = Enum.ScaleType.Fit,
-        Size = UDim2.new(0, 26, 0, 26),
-        AnchorPoint = Vector2.new(0.5, 0),
-        Position = UDim2.new(0.5, 0, 0, 10),
+        AnchorPoint = Vector2.new(0.5, 0.5),
+        Position = UDim2.new(0.5, 0, 0.5, 0),
+        Size = UDim2.new(0, 16, 0, 16),
         Image = ParseIcon(logoId),
         BackgroundTransparency = 1,
-        ZIndex = 6
+        ZIndex = 6,
+        BorderSizePixel = 0
     })
 
-    -- Заголовок под иконкой
     Instances:Create("TextLabel", {
-        Parent = sidebarHeader.Instance,
-        Name = "TitleLabel",
-        FontFace = Font.new("rbxassetid://12187365364", Enum.FontWeight.Bold, Enum.FontStyle.Normal),
+        Parent = mainFrame.Instance,
+        Name = "Title",
+        FontFace = Font.new("rbxassetid://12187365364", Enum.FontWeight.SemiBold, Enum.FontStyle.Normal),
         TextColor3 = Theme["Text"],
         Text = windowName,
-        Size = UDim2.new(1, 0, 0, 14),
-        Position = UDim2.new(0, 0, 0, 40),
+        AutomaticSize = Enum.AutomaticSize.X,
+        Size = UDim2.new(0, 0, 0, 14),
         BackgroundTransparency = 1,
-        TextSize = 12,
-        TextXAlignment = Enum.TextXAlignment.Center,
-        ZIndex = 6
+        Position = UDim2.new(0, 44, 0, 7),
+        ZIndex = 5,
+        TextSize = 13,
+        TextXAlignment = Enum.TextXAlignment.Left
     })
 
-    -- НЕОНОВАЯ СИНЯЯ РАЗДЕЛИ ТЕЛЬНАЯ ПОЛОСКА ПОД ЛОГОТИПОМ
+    Instances:Create("TextLabel", {
+        Parent = mainFrame.Instance,
+        Name = "SubTitle",
+        FontFace = Font.new("rbxassetid://12187365364", Enum.FontWeight.Regular, Enum.FontStyle.Normal),
+        TextColor3 = Theme["SubText"],
+        Text = subName,
+        AutomaticSize = Enum.AutomaticSize.X,
+        Size = UDim2.new(0, 0, 0, 14),
+        BackgroundTransparency = 1,
+        Position = UDim2.new(0, 44, 0, 21),
+        ZIndex = 5,
+        TextSize = 11,
+        TextXAlignment = Enum.TextXAlignment.Left
+    })
+
+    -- НЕОНОВАЯ ГРАДИЕНТНАЯ ПОЛОСА ПОД ШАПКОЙ
     local headerDivider = Instances:Create("Frame", {
-        Parent = sidebarBackground.Instance,
+        Parent = mainFrame.Instance,
         Name = "HeaderDivider",
-        Position = UDim2.new(0, 12, 0, 62),
-        Size = UDim2.new(1, -24, 0, 1),
+        Position = UDim2.new(0, 0, 0, 40),
+        Size = UDim2.new(1, 0, 0, 1),
         BackgroundColor3 = Color3.fromRGB(255, 255, 255),
         BorderSizePixel = 0,
         ZIndex = 6
@@ -389,24 +421,23 @@ function Library:CreateWindow(data)
     Instances:Create("UIGradient", {
         Parent = headerDivider.Instance,
         Color = ColorSequence.new({
-            ColorSequenceKeypoint.new(0, Theme["GlowEdge"]),
-            ColorSequenceKeypoint.new(0.5, Theme["GlowCenter"]),
+            ColorSequenceKeypoint.new(0, Theme["GlowCenter"]),
+            ColorSequenceKeypoint.new(0.3, Theme["GlowCenter"]),
             ColorSequenceKeypoint.new(1, Theme["GlowEdge"])
         }),
         Transparency = NumberSequence.new({
-            NumberSequenceKeypoint.new(0, 0.8),
-            NumberSequenceKeypoint.new(0.5, 0.0),
-            NumberSequenceKeypoint.new(1, 0.8)
+            NumberSequenceKeypoint.new(0, 0.2),
+            NumberSequenceKeypoint.new(0.5, 0.5),
+            NumberSequenceKeypoint.new(1, 0.95)
         })
     })
 
-    -- Список вкладок (Смещен ниже хедера)
     local leftTabs = Instances:Create("ScrollingFrame", {
         Parent = mainFrame.Instance,
         Name = "LeftTabs",
         BackgroundTransparency = 1,
-        Position = UDim2.new(0, 0, 0, 70),
-        Size = UDim2.new(0, 150, 1, -70),
+        Position = UDim2.new(0, 0, 0, 43),
+        Size = UDim2.new(0, 150, 1, -43),
         ZIndex = 4,
         BorderSizePixel = 0,
         ScrollBarThickness = 3,
@@ -426,7 +457,7 @@ function Library:CreateWindow(data)
 
     Instances:Create("UIPadding", {
         Parent = leftTabs.Instance,
-        PaddingTop = UDim.new(0, 4),
+        PaddingTop = UDim.new(0, 6),
         PaddingBottom = UDim.new(0, 10),
         PaddingRight = UDim.new(0, 6),
         PaddingLeft = UDim.new(0, 6)
@@ -434,18 +465,16 @@ function Library:CreateWindow(data)
 
     BindAutoScroll(leftTabs.Instance, leftTabsLayout.Instance, 15)
 
-    -- Область контента
     local content = Instances:Create("Frame", {
         Parent = mainFrame.Instance,
         Name = "ContentArea",
         BackgroundTransparency = 1,
-        Position = UDim2.new(0, 156, 0, 10),
-        Size = UDim2.new(1, -161, 1, -14),
+        Position = UDim2.new(0, 156, 0, 43),
+        Size = UDim2.new(1, -161, 1, -47),
         ZIndex = 4,
         ClipsDescendants = true
     })
 
-    -- Кнопка закрытия
     local closeButton = Instances:Create("TextButton", {
         Parent = mainFrame.Instance,
         Name = "CloseButton",
@@ -453,7 +482,7 @@ function Library:CreateWindow(data)
         AutoButtonColor = false,
         AnchorPoint = Vector2.new(1, 0),
         BackgroundTransparency = 0.2,
-        Position = UDim2.new(1, -10, 0, 10),
+        Position = UDim2.new(1, -10, 0, 8),
         Size = UDim2.new(0, 24, 0, 24),
         ZIndex = 10,
         BackgroundColor3 = Theme["Element"]
@@ -490,7 +519,7 @@ function Library:CreateWindow(data)
 end
 
 -- =======================================================
--- 10. ЛОГИКА ВКЛАДОК (С ИНДИКАТОРНОЙ ВЕРТИКАЛЬНОЙ ПОЛОСКОЙ)
+-- 10. ЛОГИКА ВКЛАДОК
 -- =======================================================
 function Library:CreateTab(window, tabData)
     tabData = tabData or {}
@@ -512,28 +541,11 @@ function Library:CreateTab(window, tabData)
         CornerRadius = UDim.new(0, 5)
     })
 
-    -- ВЕРТИКАЛЬНАЯ СИНЯЯ ПОЛОСКА-ИНДИКАТОР АКТИВНОСТИ (как на фотке)
-    local activeBar = Instances:Create("Frame", {
-        Parent = tabButton.Instance,
-        Name = "ActiveBar",
-        Size = UDim2.new(0, 3, 0, 16),
-        Position = UDim2.new(0, 2, 0.5, -8),
-        BackgroundColor3 = Theme["Accent"],
-        BackgroundTransparency = 1,
-        BorderSizePixel = 0,
-        ZIndex = 7
-    })
-
-    Instances:Create("UICorner", {
-        Parent = activeBar.Instance,
-        CornerRadius = UDim.new(1, 0)
-    })
-
     local iconImage = Instances:Create("ImageLabel", {
         Parent = tabButton.Instance,
         Name = "Icon",
         Size = UDim2.new(0, 16, 0, 16),
-        Position = UDim2.new(0, 12, 0.5, -8),
+        Position = UDim2.new(0, 8, 0.5, -8),
         BackgroundTransparency = 1,
         ScaleType = Enum.ScaleType.Fit,
         Image = ParseIcon(tabIcon),
@@ -549,8 +561,8 @@ function Library:CreateTab(window, tabData)
         FontFace = Font.new("rbxassetid://12187365364", Enum.FontWeight.Medium, Enum.FontStyle.Normal),
         TextColor3 = Theme["SubText"],
         TextSize = 12,
-        Position = UDim2.new(0, 34, 0, 0),
-        Size = UDim2.new(1, -38, 1, 0),
+        Position = UDim2.new(0, 30, 0, 0),
+        Size = UDim2.new(1, -34, 1, 0),
         BackgroundTransparency = 1,
         TextXAlignment = Enum.TextXAlignment.Left,
         ZIndex = 6
@@ -581,7 +593,7 @@ function Library:CreateTab(window, tabData)
 
     Instances:Create("UIPadding", {
         Parent = tabContainer.Instance,
-        PaddingTop = UDim.new(0, 4),
+        PaddingTop = UDim.new(0, 6),
         PaddingBottom = UDim.new(0, 12),
         PaddingRight = UDim.new(0, 6),
         PaddingLeft = UDim.new(0, 4)
@@ -619,7 +631,6 @@ function Library:CreateTab(window, tabData)
         Container = tabContainer.Instance,
         Icon = iconImage.Instance,
         Label = tabLabel.Instance,
-        ActiveBar = activeBar.Instance,
         Columns = columns
     }
 
@@ -630,14 +641,12 @@ function Library:CreateTab(window, tabData)
             Tween(window.CurrentTab.Button, TweenInfo.new(0.2), { BackgroundTransparency = 1 })
             Tween(window.CurrentTab.Icon, TweenInfo.new(0.2), { ImageColor3 = Theme["SubText"] })
             Tween(window.CurrentTab.Label, TweenInfo.new(0.2), { TextColor3 = Theme["SubText"] })
-            Tween(window.CurrentTab.ActiveBar, TweenInfo.new(0.2), { BackgroundTransparency = 1 })
         end
         window.CurrentTab = tabObject
         tabContainer.Instance.Visible = true
-        Tween(tabButton.Instance, TweenInfo.new(0.2), { BackgroundTransparency = 0.88, BackgroundColor3 = Theme["Accent"] })
+        Tween(tabButton.Instance, TweenInfo.new(0.2), { BackgroundTransparency = 0.85, BackgroundColor3 = Theme["Accent"] })
         Tween(iconImage.Instance, TweenInfo.new(0.2), { ImageColor3 = Theme["Accent"] })
         Tween(tabLabel.Instance, TweenInfo.new(0.2), { TextColor3 = Theme["Text"] })
-        Tween(activeBar.Instance, TweenInfo.new(0.2), { BackgroundTransparency = 0 })
     end
 
     tabButton:Connect("MouseButton1Click", Activate)
@@ -732,7 +741,7 @@ function Library:CreateSection(parentColumn, sectionData)
         ZIndex = 6
     })
 
-    -- СИНИЙ НЕОНОВЫЙ ГРАДИЕНТНЫЙ БЛИК
+    -- СИНИЙ НЕОНОВЫЙ ГРАДИЕНТНЫЙ БЛИК В СЕКЦИИ
     local glowLine = Instances:Create("Frame", {
         Parent = sectionFrame.Instance,
         Name = "GlowDivider",
@@ -907,18 +916,14 @@ end
 -- =======================================================
 
 local MainWindow = Library:CreateWindow({
-    Name = "SHITARO",
+    Name = "Dark Hub",
+    SubName = "Custom GUI Framework",
     Logo = "10723407068"
 })
 
 local MainTab, Cols = Library:CreateTab(MainWindow, {
     Name = "Main",
     Icon = "combat"
-})
-
-local VisualsTab, VisualCols = Library:CreateTab(MainWindow, {
-    Name = "Visuals",
-    Icon = "visuals"
 })
 
 local AimbotSection = Library:CreateSection(Cols[1], { Name = "Aimbot" })
@@ -931,4 +936,4 @@ SilentBypassSection:CreateToggle({ Name = "включить понос", Default
 local JopaSection = Library:CreateSection(Cols[1], { Name = "jopa" })
 JopaSection:CreateToggle({ Name = "включить жопа...", Default = false })
 
-print("GUI Updated: Added sidebar logo section and active tab indicators!")
+print("GUI Updated: Added logo container and blue gradient dividers!")
