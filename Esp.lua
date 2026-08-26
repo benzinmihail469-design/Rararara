@@ -1,7 +1,6 @@
 -- Standalone Neverlose-style UI Framework (Extracted & Mobile Adapted)
 -- Features: Main Frame, Tab System, Full Builder Icons Engine[span_0](start_span)[span_0](end_span)
 
-local cloneref = cloneref or function(i) return i end
 local TweenService = cloneref(game:GetService('TweenService'))
 local UserInputService = cloneref(game:GetService('UserInputService'))
 local Players = cloneref(game:GetService('Players'))
