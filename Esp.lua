@@ -1,5 +1,5 @@
 -- =======================================================
--- АВТОНОМНЫЙ СКРИПТ ГЛАВНОГО ОКНА С ОПТИМИЗИРОВАННЫМ РАЗМЕРОМ
+-- АВТОНОМНЫЙ СКРИПТ ГЛАВНОГО ОКНА С СОХРАНЕНИЕМ ВСЕХ ФУНКЦИЙ
 -- =======================================================
 
 local Workspace = game:GetService("Workspace")
@@ -26,7 +26,7 @@ local Theme = {
     ["Section Background"] = Color3.fromRGB(10, 10, 12),
 }
 
--- 2. СИСТЕМА ИКОНОК
+-- 2. СИСТЕМА ИКОНОК (ICON SYSTEM)
 local IconLibrary = {
     ["home"] = "rbxassetid://10723407068",
     ["user"] = "rbxassetid://10709789810",
@@ -105,7 +105,7 @@ function Instances:Create(className, properties)
     return wrapper
 end
 
--- 6. Перетаскивание (Draggable) для мыши и тачскрина
+-- 6. Перетаскивание (Draggable) с поддержкой мыши и сенсорных экранов
 local function MakeDraggable(guiInstance)
     local dragging, dragStart, startPos
     
@@ -239,7 +239,7 @@ function Library:CreateWindow(data)
         Content = nil
     }
 
-    -- Главное окно (Чуть меньше оригинального размера: 520x370)
+    -- Главное окно (Slightly reduced size: 520x370 instead of original 560x400)
     local mainFrame = Instances:Create("Frame", {
         Parent = Holder,
         Name = "MainFrame",
@@ -261,7 +261,7 @@ function Library:CreateWindow(data)
     MakeDraggable(mainFrame.Instance)
     MakeResizeable(mainFrame.Instance, Vector2.new(380, 270))
 
-    -- Левый тулбар с поддержкой скролла
+    -- Левый тулбар для вкладок (С поддержкой листания/прокрутки)
     local leftTabs = Instances:Create("ScrollingFrame", {
         Parent = mainFrame.Instance,
         Name = "LeftTabs",
@@ -289,7 +289,7 @@ function Library:CreateWindow(data)
 
     Instances:Create("UIPadding", {
         Parent = leftTabs.Instance,
-        PaddingTop = UDim.new(0, 52),
+        PaddingTop = UDim.new(0, 50),
         PaddingBottom = UDim.new(0, 10),
         PaddingRight = UDim.new(0, 8),
         PaddingLeft = UDim.new(0, 8)
@@ -300,13 +300,13 @@ function Library:CreateWindow(data)
         CornerRadius = UDim.new(0, 6)
     })
 
-    -- Главная иконка (Обычная, без градиента)
+    -- Главная иконка (Обычный цвет текста, без синего градиента)
     local logo = Instances:Create("ImageLabel", {
         Parent = mainFrame.Instance,
         Name = "Logo",
         ImageColor3 = Theme["Text"],
         ScaleType = Enum.ScaleType.Fit,
-        Size = UDim2.new(0, 25, 0, 25),
+        Size = UDim2.new(0, 24, 0, 24),
         Image = ParseIcon(logoId),
         BackgroundTransparency = 1,
         Position = UDim2.new(0, 10, 0, 10),
@@ -322,9 +322,9 @@ function Library:CreateWindow(data)
         TextColor3 = Theme["Text"],
         Text = windowName,
         AutomaticSize = Enum.AutomaticSize.X,
-        Size = UDim2.new(0, 0, 0, 13),
+        Size = UDim2.new(0, 0, 0, 14),
         BackgroundTransparency = 1,
-        Position = UDim2.new(0, 42, 0, 9),
+        Position = UDim2.new(0, 40, 0, 9),
         ZIndex = 3,
         TextSize = 13,
         TextXAlignment = Enum.TextXAlignment.Left
@@ -339,9 +339,9 @@ function Library:CreateWindow(data)
         TextTransparency = 0.4,
         Text = subName,
         AutomaticSize = Enum.AutomaticSize.X,
-        Size = UDim2.new(0, 0, 0, 13),
+        Size = UDim2.new(0, 0, 0, 14),
         BackgroundTransparency = 1,
-        Position = UDim2.new(0, 42, 0, 22),
+        Position = UDim2.new(0, 40, 0, 23),
         ZIndex = 3,
         TextSize = 11,
         TextXAlignment = Enum.TextXAlignment.Left
@@ -431,7 +431,7 @@ function Library:CreateTab(window, tabData)
         Parent = tabButton.Instance,
         Name = "Icon",
         Size = UDim2.new(0, 15, 0, 15),
-        Position = UDim2.new(0, 9, 0.5, -7),
+        Position = UDim2.new(0, 10, 0.5, -7),
         BackgroundTransparency = 1,
         ScaleType = Enum.ScaleType.Fit,
         Image = ParseIcon(tabIcon),
@@ -449,7 +449,7 @@ function Library:CreateTab(window, tabData)
         TextColor3 = Theme["Text"],
         TextTransparency = 0.5,
         TextSize = 12,
-        Position = UDim2.new(0, 31, 0, 0),
+        Position = UDim2.new(0, 32, 0, 0),
         Size = UDim2.new(1, -36, 1, 0),
         BackgroundTransparency = 1,
         TextXAlignment = Enum.TextXAlignment.Left,
@@ -477,24 +477,24 @@ function Library:CreateTab(window, tabData)
         Parent = tabContainer.Instance,
         FillDirection = Enum.FillDirection.Horizontal,
         SortOrder = Enum.SortOrder.LayoutOrder,
-        Padding = UDim.new(0, 8)
+        Padding = UDim.new(0, 10)
     })
 
     Instances:Create("UIPadding", {
         Parent = tabContainer.Instance,
-        PaddingTop = UDim.new(0, 4),
-        PaddingBottom = UDim.new(0, 8),
-        PaddingRight = UDim.new(0, 6),
-        PaddingLeft = UDim.new(0, 4)
+        PaddingTop = UDim.new(0, 5),
+        PaddingBottom = UDim.new(0, 10),
+        PaddingRight = UDim.new(0, 8),
+        PaddingLeft = UDim.new(0, 5)
     })
 
-    -- 2 колонки
+    -- Создаем 2 колонки
     local columns = {}
     for i = 1, 2 do
         local column = Instances:Create("Frame", {
             Parent = tabContainer.Instance,
             Name = "Column_" .. i,
-            Size = UDim2.new(0.5, -4, 0, 0),
+            Size = UDim2.new(0.5, -5, 0, 0),
             AutomaticSize = Enum.AutomaticSize.Y,
             BackgroundTransparency = 1,
             BorderSizePixel = 0
@@ -502,7 +502,7 @@ function Library:CreateTab(window, tabData)
 
         Instances:Create("UIListLayout", {
             Parent = column.Instance,
-            Padding = UDim.new(0, 7),
+            Padding = UDim.new(0, 8),
             SortOrder = Enum.SortOrder.LayoutOrder
         })
 
@@ -593,23 +593,23 @@ function Library:CreateSection(parentColumn, sectionData)
 
     Instances:Create("UIPadding", {
         Parent = sectionFrame.Instance,
-        PaddingTop = UDim.new(0, 9),
-        PaddingBottom = UDim.new(0, 9),
-        PaddingLeft = UDim.new(0, 9),
-        PaddingRight = UDim.new(0, 9)
+        PaddingTop = UDim.new(0, 10),
+        PaddingBottom = UDim.new(0, 10),
+        PaddingLeft = UDim.new(0, 10),
+        PaddingRight = UDim.new(0, 10)
     })
 
     Instances:Create("UIListLayout", {
         Parent = sectionFrame.Instance,
         SortOrder = Enum.SortOrder.LayoutOrder,
-        Padding = UDim.new(0, 7)
+        Padding = UDim.new(0, 8)
     })
 
     -- Шапка секции (Header)
     local headerFrame = Instances:Create("Frame", {
         Parent = sectionFrame.Instance,
         Name = "Header",
-        Size = UDim2.new(1, 0, 0, 15),
+        Size = UDim2.new(1, 0, 0, 16),
         BackgroundTransparency = 1,
         LayoutOrder = 0,
         ZIndex = 5
@@ -622,7 +622,7 @@ function Library:CreateSection(parentColumn, sectionData)
         local sectionIconImage = Instances:Create("ImageLabel", {
             Parent = headerFrame.Instance,
             Name = "SectionIcon",
-            Size = UDim2.new(0, 14, 0, 14),
+            Size = UDim2.new(0, 15, 0, 15),
             Position = UDim2.new(0, 0, 0.5, -7),
             BackgroundTransparency = 1,
             ScaleType = Enum.ScaleType.Fit,
@@ -630,7 +630,7 @@ function Library:CreateSection(parentColumn, sectionData)
             ImageColor3 = Theme["Accent"],
             ZIndex = 5
         })
-        titleOffset = 20
+        titleOffset = 21
     end
 
     -- Заголовок секции
