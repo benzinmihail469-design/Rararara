@@ -1,5 +1,5 @@
 -- =======================================================
--- АВТОНОМНЫЙ СКРИПТ ГЛАВНОГО ОКНА С СОХРАНЕНИЕМ ВСЕХ ФУНКЦИЙ
+-- АВТОНОМНЫЙ СКРИПТ ГЛАВНОГО ОКНА С ИСПРАВЛЕННЫМ DRAG ДЛЯ МОБИЛОК
 -- =======================================================
 
 local Workspace = game:GetService("Workspace")
@@ -26,7 +26,7 @@ local Theme = {
     ["Section Background"] = Color3.fromRGB(10, 10, 12),
 }
 
--- 2. СИСТЕМА ИКОНОК (ICON SYSTEM)
+-- 2. СИСТЕМА ИКОНОК
 local IconLibrary = {
     ["home"] = "rbxassetid://10723407068",
     ["user"] = "rbxassetid://10709789810",
@@ -59,12 +59,13 @@ local function ParseIcon(icon)
     return strIcon
 end
 
--- 3. ScreenGui
+-- 3. ScreenGui (Игнорирование системных отступов)
 local Holder = Instance.new("ScreenGui")
 Holder.Parent = gethui()
 Holder.Name = "MyCustomGUI_Holder"
 Holder.ZIndexBehavior = Enum.ZIndexBehavior.Global
 Holder.ResetOnSpawn = false
+Holder.IgnoreGuiInset = true
 
 -- 4. Tween Хелпер
 local function Tween(instance, info, goal)
@@ -105,32 +106,36 @@ function Instances:Create(className, properties)
     return wrapper
 end
 
--- 6. Перетаскивание (Draggable) с поддержкой мыши и сенсорных экранов
-local function MakeDraggable(guiInstance)
-    local dragging, dragStart, startPos
-    
-    guiInstance.InputBegan:Connect(function(input)
+-- 6. Исправленный Draggable (привязывается только к верхней панели)
+local function MakeDraggable(guiInstance, dragHandle)
+    dragHandle = dragHandle or guiInstance
+    local dragging, dragStart, startPos = false, nil, nil
+
+    dragHandle.InputBegan:Connect(function(input)
         if input.UserInputType == Enum.UserInputType.MouseButton1 or input.UserInputType == Enum.UserInputType.Touch then
             dragging = true
             dragStart = input.Position
             startPos = guiInstance.Position
-            
-            local connection
-            connection = input.Changed:Connect(function()
-                if input.UserInputState == Enum.UserInputState.End then
+
+            local endConnection
+            endConnection = UserInputService.InputEnded:Connect(function(endInput)
+                if endInput.UserInputType == Enum.UserInputType.MouseButton1 or endInput.UserInputType == Enum.UserInputType.Touch then
                     dragging = false
-                    connection:Disconnect()
+                    if endConnection then endConnection:Disconnect() end
                 end
             end)
         end
     end)
-    
+
     UserInputService.InputChanged:Connect(function(input)
-        if (input.UserInputType == Enum.UserInputType.MouseMovement or input.UserInputType == Enum.UserInputType.Touch) and dragging then
+        if dragging and (input.UserInputType == Enum.UserInputType.MouseMovement or input.UserInputType == Enum.UserInputType.Touch) then
             local delta = input.Position - dragStart
-            Tween(guiInstance, TweenInfo.new(0.08, Enum.EasingStyle.Quart, Enum.EasingDirection.Out), {
-                Position = UDim2.new(startPos.X.Scale, startPos.X.Offset + delta.X, startPos.Y.Scale, startPos.Y.Offset + delta.Y)
-            })
+            guiInstance.Position = UDim2.new(
+                startPos.X.Scale,
+                startPos.X.Offset + delta.X,
+                startPos.Y.Scale,
+                startPos.Y.Offset + delta.Y
+            )
         end
     end)
 end
@@ -239,7 +244,7 @@ function Library:CreateWindow(data)
         Content = nil
     }
 
-    -- Главное окно (Slightly reduced size: 520x370 instead of original 560x400)
+    -- Главное окно
     local mainFrame = Instances:Create("Frame", {
         Parent = Holder,
         Name = "MainFrame",
@@ -258,10 +263,20 @@ function Library:CreateWindow(data)
         CornerRadius = UDim.new(0, 6)
     })
 
-    MakeDraggable(mainFrame.Instance)
+    -- Зона хватания для перетаскивания (Шапка)
+    local dragZone = Instances:Create("Frame", {
+        Parent = mainFrame.Instance,
+        Name = "DragZone",
+        BackgroundTransparency = 1,
+        Position = UDim2.new(0, 0, 0, 0),
+        Size = UDim2.new(1, -35, 0, 40),
+        ZIndex = 10
+    })
+
+    MakeDraggable(mainFrame.Instance, dragZone.Instance)
     MakeResizeable(mainFrame.Instance, Vector2.new(380, 270))
 
-    -- Левый тулбар для вкладок (С поддержкой листания/прокрутки)
+    -- Левый тулбар для вкладок (С поддержкой прокрутки)
     local leftTabs = Instances:Create("ScrollingFrame", {
         Parent = mainFrame.Instance,
         Name = "LeftTabs",
@@ -300,7 +315,7 @@ function Library:CreateWindow(data)
         CornerRadius = UDim.new(0, 6)
     })
 
-    -- Главная иконка (Обычный цвет текста, без синего градиента)
+    -- Главная иконка
     local logo = Instances:Create("ImageLabel", {
         Parent = mainFrame.Instance,
         Name = "Logo",
@@ -368,7 +383,7 @@ function Library:CreateWindow(data)
         BackgroundTransparency = 0.2,
         Position = UDim2.new(1, -10, 0, 10),
         Size = UDim2.new(0, 24, 0, 24),
-        ZIndex = 3,
+        ZIndex = 11,
         BackgroundColor3 = Theme["Element"]
     })
 
@@ -388,7 +403,7 @@ function Library:CreateWindow(data)
         Image = "rbxassetid://130510492706892",
         BackgroundTransparency = 1,
         Position = UDim2.new(0.5, 0, 0.5, 0),
-        ZIndex = 4
+        ZIndex = 12
     })
 
     closeButton:Connect("MouseButton1Down", function()
