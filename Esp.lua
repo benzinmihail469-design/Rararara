@@ -432,59 +432,36 @@ function Library:CreateWindow(data)
     })
 
     -- =======================================================
-    -- НОВЫЙ ПОДВАЛ ПРОФИЛЯ (FOOTER) ВНИЗУ САЙДБАРА
+    -- ПОДВАЛ ПРОФИЛЯ В СТИЛЕ КАРТОЧКИ С КОНТУРОМ (КАК НА ФОТО)
     -- =======================================================
-    local profileFooterDivider = Instances:Create("Frame", {
-        Parent = mainFrame.Instance,
-        Name = "ProfileFooterDivider",
-        Position = UDim2.new(0, 10, 1, -62),
-        Size = UDim2.new(0, 140, 0, 1),
-        BackgroundColor3 = Color3.fromRGB(255, 255, 255),
-        BorderSizePixel = 0,
-        ZIndex = 15
-    })
-
-    Instances:Create("UIGradient", {
-        Parent = profileFooterDivider.Instance,
-        Color = ColorSequence.new({
-            ColorSequenceKeypoint.new(0, Theme["Outline"]),
-            ColorSequenceKeypoint.new(0.5, Theme["Accent"]),
-            ColorSequenceKeypoint.new(1, Theme["Outline"])
-        }),
-        Transparency = NumberSequence.new({
-            NumberSequenceKeypoint.new(0, 0.6),
-            NumberSequenceKeypoint.new(0.5, 0.1),
-            NumberSequenceKeypoint.new(1, 0.6)
-        })
-    })
-
     local profileFrame = Instances:Create("Frame", {
         Parent = mainFrame.Instance,
         Name = "ProfileFooter",
-        Position = UDim2.new(0, 8, 1, -55),
+        Position = UDim2.new(0, 8, 1, -56),
         Size = UDim2.new(0, 144, 0, 48),
         BackgroundColor3 = Theme["Element"],
-        BackgroundTransparency = 0.4,
+        BackgroundTransparency = 0.2,
         BorderSizePixel = 0,
         ZIndex = 15
     })
 
     Instances:Create("UICorner", {
         Parent = profileFrame.Instance,
-        CornerRadius = UDim.new(0, 6)
+        CornerRadius = UDim.new(0, 8)
     })
 
     Instances:Create("UIStroke", {
         Parent = profileFrame.Instance,
         Color = Theme["Outline"],
-        Thickness = 1
+        Thickness = 1,
+        ApplyStrokeMode = Enum.ApplyStrokeMode.Border
     })
 
     local avatarContainer = Instances:Create("ImageLabel", {
         Parent = profileFrame.Instance,
         Name = "Avatar",
         BackgroundTransparency = 1,
-        Position = UDim2.new(0, 6, 0.5, -16),
+        Position = UDim2.new(0, 8, 0.5, -16),
         Size = UDim2.new(0, 32, 0, 32),
         Image = "rbxassetid://0",
         ZIndex = 16
@@ -492,7 +469,7 @@ function Library:CreateWindow(data)
 
     Instances:Create("UICorner", {
         Parent = avatarContainer.Instance,
-        CornerRadius = UDim.new(0, 6)
+        CornerRadius = UDim.new(0, 8)
     })
 
     task.spawn(function()
@@ -509,8 +486,8 @@ function Library:CreateWindow(data)
         FontFace = Font.new("rbxassetid://12187365364", Enum.FontWeight.Bold, Enum.FontStyle.Normal),
         TextColor3 = Theme["Text"],
         TextSize = 11,
-        Position = UDim2.new(0, 43, 0, 7),
-        Size = UDim2.new(1, -47, 0, 15),
+        Position = UDim2.new(0, 48, 0, 8),
+        Size = UDim2.new(1, -52, 0, 15),
         BackgroundTransparency = 1,
         TextXAlignment = Enum.TextXAlignment.Left,
         ZIndex = 16,
@@ -524,8 +501,8 @@ function Library:CreateWindow(data)
         FontFace = Font.new("rbxassetid://12187365364", Enum.FontWeight.Regular, Enum.FontStyle.Normal),
         TextColor3 = Theme["SubText"],
         TextSize = 10,
-        Position = UDim2.new(0, 43, 0, 22),
-        Size = UDim2.new(1, -47, 0, 14),
+        Position = UDim2.new(0, 48, 0, 24),
+        Size = UDim2.new(1, -52, 0, 14),
         BackgroundTransparency = 1,
         TextXAlignment = Enum.TextXAlignment.Left,
         ZIndex = 16,
@@ -538,7 +515,7 @@ function Library:CreateWindow(data)
         Name = "LeftTabs",
         BackgroundTransparency = 1,
         Position = UDim2.new(0, 0, 0, 92),
-        Size = UDim2.new(0, 160, 1, -154), -- Скорректирован размер чтобы не перекрывать подвал
+        Size = UDim2.new(0, 160, 1, -154),
         ZIndex = 10,
         BorderSizePixel = 0,
         ScrollBarThickness = 2,
