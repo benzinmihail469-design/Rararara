@@ -1,5 +1,5 @@
 -- =======================================================
--- АВТОНОМНЫЙ СКРИПТ (СИНИЙ/ЧЕРНЫЙ СТИЛЬ + КОНТУР И АНИМАЦИЯ ВКЛАДОК)
+-- АВТОНОМНЫЙ СКРИПТ (ИСПРАВЛЕНЫ ОТСТУПЫ И НАЛОЖЕНИЕ КОНТУРА ПОДВКЛАДОК)
 -- =======================================================
 
 local Workspace = game:GetService("Workspace")
@@ -522,7 +522,7 @@ function Library:CreateWindow(data)
 end
 
 -- =======================================================
--- 10. СИСТЕМА ВКЛАДОК И ПОДВКЛАДОК (С РАЗДЕПИТЕЛЬНЫМ КОНТУРОМ И АНИМАЦИЕЙ)
+-- 10. СИСТЕМА ВКЛАДОК И ПОДВКЛАДОК (ИСПРАВЛЕННЫЕ ОТСТУПЫ)
 -- =======================================================
 function Library:CreateTab(window, tabData)
     tabData = tabData or {}
@@ -567,7 +567,6 @@ function Library:CreateTab(window, tabData)
         CornerRadius = UDim.new(0, 6)
     })
 
-    -- Контур (Stroke) для активной вкладки
     local tabStroke = Instances:Create("UIStroke", {
         Parent = tabButton.Instance,
         Color = Theme["Accent"],
@@ -576,7 +575,6 @@ function Library:CreateTab(window, tabData)
         ApplyStrokeMode = Enum.ApplyStrokeMode.Border
     })
 
-    -- Синий индикатор активной вкладки
     local activeIndicator = Instances:Create("Frame", {
         Parent = tabButton.Instance,
         Name = "ActiveIndicator",
@@ -655,6 +653,7 @@ function Library:CreateTab(window, tabData)
         ZIndex = 6
     })
 
+    -- Контейнер для подвкладок с исправленными внутренними отступами
     local subTabsContainer = Instances:Create("Frame", {
         Parent = tabGroupFrame.Instance,
         Name = "SubTabsContainer",
@@ -668,12 +667,15 @@ function Library:CreateTab(window, tabData)
     local subListLayout = Instances:Create("UIListLayout", {
         Parent = subTabsContainer.Instance,
         SortOrder = Enum.SortOrder.LayoutOrder,
-        Padding = UDim.new(0, 2)
+        Padding = UDim.new(0, 5) -- Увеличен разрыв между подвкладками, чтобы контур не накладывался
     })
 
     Instances:Create("UIPadding", {
         Parent = subTabsContainer.Instance,
-        PaddingLeft = UDim.new(0, 12)
+        PaddingLeft = UDim.new(0, 12),
+        PaddingRight = UDim.new(0, 8), -- Добавлен отступ справа
+        PaddingTop = UDim.new(0, 3),   -- Отступ сверху
+        PaddingBottom = UDim.new(0, 5) -- Отступ снизу
     })
 
     local defaultMainContainer = Instances:Create("ScrollingFrame", {
@@ -750,8 +752,6 @@ function Library:CreateTab(window, tabData)
 
     local function DeselectTab()
         Tween(tabButton.Instance, TweenInfo.new(0.2), { BackgroundTransparency = 1 })
-        
-        -- Скрытие контура и индикатора
         Tween(tabStroke.Instance, TweenInfo.new(0.2), { Transparency = 1, Color = Theme["Outline"] })
         Tween(activeIndicator.Instance, TweenInfo.new(0.2, Enum.EasingStyle.Quad, Enum.EasingDirection.Out), { 
             BackgroundTransparency = 1,
@@ -780,8 +780,6 @@ function Library:CreateTab(window, tabData)
         Library.ActiveTabObject = TabObject
 
         Tween(tabButton.Instance, TweenInfo.new(0.2), { BackgroundTransparency = 0.85, BackgroundColor3 = Theme["Accent"] })
-        
-        -- Появление синего контура разделителя и индикатора
         Tween(tabStroke.Instance, TweenInfo.new(0.25), { Transparency = 0.55, Color = Theme["Accent"] })
         Tween(activeIndicator.Instance, TweenInfo.new(0.28, Enum.EasingStyle.Back, Enum.EasingDirection.Out), { 
             BackgroundTransparency = 0,
@@ -818,14 +816,14 @@ function Library:CreateTab(window, tabData)
     tabButton:Connect("MouseButton1Click", function()
         if TabObject.HasSubTabs then
             TabObject.Expanded = not TabObject.Expanded
-            local targetHeight = TabObject.Expanded and TabObject.SubListLayout.AbsoluteContentSize.Y or 0
+            local targetHeight = TabObject.Expanded and (TabObject.SubListLayout.AbsoluteContentSize.Y + 8) or 0
             Tween(subTabsContainer.Instance, TweenInfo.new(0.25), { Size = UDim2.new(1, 0, 0, targetHeight) })
             Tween(arrowIcon.Instance, TweenInfo.new(0.25), { Rotation = TabObject.Expanded and 0 or 180 })
         end
         ActivateTab()
     end)
 
-    -- МЕТОД ДЛЯ СОЗДАНИЯ ПОДВКЛАДОК (SUBTABS)
+    -- СОЗДАНИЕ ПОДВКЛАДОК
     function TabObject:CreateSubTab(subData)
         subData = subData or {}
         local subName = subData.Name or "SubTab"
@@ -839,7 +837,7 @@ function Library:CreateTab(window, tabData)
         local subButton = Instances:Create("TextButton", {
             Parent = subTabsContainer.Instance,
             Name = "SubTab_" .. subName,
-            Size = UDim2.new(1, 0, 0, 26),
+            Size = UDim2.new(1, 0, 0, 24),
             BackgroundTransparency = 1,
             Text = "",
             AutoButtonColor = false,
@@ -878,8 +876,8 @@ function Library:CreateTab(window, tabData)
             FontFace = Font.new("rbxassetid://12187365364", Enum.FontWeight.Medium, Enum.FontStyle.Normal),
             TextColor3 = Theme["SubText"],
             TextSize = 11,
-            Position = UDim2.new(0, 14, 0, 0),
-            Size = UDim2.new(1, -18, 1, 0),
+            Position = UDim2.new(0, 12, 0, 0),
+            Size = UDim2.new(1, -14, 1, 0),
             BackgroundTransparency = 1,
             TextXAlignment = Enum.TextXAlignment.Left,
             ZIndex = 6
@@ -1004,11 +1002,11 @@ function Library:CreateTab(window, tabData)
         task.spawn(function()
             subListLayout.Instance:GetPropertyChangedSignal("AbsoluteContentSize"):Connect(function()
                 if TabObject.Expanded then
-                    subTabsContainer.Instance.Size = UDim2.new(1, 0, 0, subListLayout.AbsoluteContentSize.Y)
+                    subTabsContainer.Instance.Size = UDim2.new(1, 0, 0, subListLayout.AbsoluteContentSize.Y + 8)
                 end
             end)
             if TabObject.Expanded then
-                subTabsContainer.Instance.Size = UDim2.new(1, 0, 0, subListLayout.AbsoluteContentSize.Y)
+                subTabsContainer.Instance.Size = UDim2.new(1, 0, 0, subListLayout.AbsoluteContentSize.Y + 8)
             end
         end)
 
