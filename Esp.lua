@@ -1401,23 +1401,43 @@ function Library:CreateSection(parentColumn, sectionData)
     local SectionAPI = {}
 
     -- ====================================================================
-    -- ОБНОВЛЕННЫЙ Toggle С ЭФФЕКТАМИ НАЖАТИЯ И АНИМАЦИЕЙ ГАЛОЧКИ
+    -- ОБНОВЛЕННЫЙ Toggle С КНОПКОЙ «ТРИ ТОЧКИ» (•••)
     -- ====================================================================
     function SectionAPI:CreateToggle(toggleData)
         toggleData = toggleData or {}
         local toggleName = toggleData.Name or "Toggle"
         local state = toggleData.Default or false
         local callback = toggleData.Callback or function() end
+        local settingsCallback = toggleData.Settings or nil
 
-        local toggleButton = Instances:Create("TextButton", {
+        -- Главный контейнер-хост для элемента и его поднастроек
+        local itemHost = Instances:Create("Frame", {
             Parent = elementsContainer.Instance,
+            Name = "ToggleHost_" .. toggleName,
+            Size = UDim2.new(1, 0, 0, 22),
+            AutomaticSize = Enum.AutomaticSize.Y,
+            BackgroundTransparency = 1,
+            BorderSizePixel = 0,
+            ZIndex = 7
+        })
+
+        Instances:Create("UIListLayout", {
+            Parent = itemHost.Instance,
+            SortOrder = Enum.SortOrder.LayoutOrder,
+            Padding = UDim.new(0, 6)
+        })
+
+        -- Основная строка Toggle
+        local toggleButton = Instances:Create("TextButton", {
+            Parent = itemHost.Instance,
             Name = "Toggle_" .. toggleName,
             Size = UDim2.new(1, 0, 0, 22),
             BackgroundTransparency = 1,
             Text = "",
             AutoButtonColor = false,
             ZIndex = 7,
-            Active = true
+            Active = true,
+            LayoutOrder = 1
         })
 
         local checkBox = Instances:Create("Frame", {
@@ -1463,13 +1483,13 @@ function Library:CreateSection(parentColumn, sectionData)
             TextColor3 = state and Theme["Text"] or Theme["SubText"],
             TextSize = 12,
             Position = UDim2.new(0, 23, 0, 0),
-            Size = UDim2.new(1, -23, 1, 0),
+            Size = UDim2.new(1, settingsCallback and -50 or -23, 1, 0),
             BackgroundTransparency = 1,
             TextXAlignment = Enum.TextXAlignment.Left,
             ZIndex = 8
         })
 
-        -- Подсветка контура при наведении
+        -- Подсветка при наведении
         toggleButton:Connect("MouseEnter", function()
             checkStroke:Tween(TweenInfo.new(0.15, Enum.EasingStyle.Quad, Enum.EasingDirection.Out), {
                 Color = Theme["Accent"]
@@ -1482,7 +1502,7 @@ function Library:CreateSection(parentColumn, sectionData)
             })
         end)
 
-        -- Анимация сжатия при зажатии пальцем / мышкой
+        -- Эффект нажатия
         toggleButton:Connect("MouseButton1Down", function()
             checkBox:Tween(TweenInfo.new(0.08, Enum.EasingStyle.Quad, Enum.EasingDirection.Out), {
                 Size = UDim2.new(0, 12, 0, 12)
@@ -1495,7 +1515,7 @@ function Library:CreateSection(parentColumn, sectionData)
             })
         end)
 
-        -- Включение / выключение с анимацией размера галочки и цвета
+        -- Клик включения / выключения
         toggleButton:Connect("MouseButton1Click", function()
             state = not state
             
@@ -1517,6 +1537,115 @@ function Library:CreateSection(parentColumn, sectionData)
 
             pcall(callback, state)
         end)
+
+        -- Если передана функция Settings, добавляем три точки
+        if settingsCallback then
+            local optionsExpanded = false
+            
+            local dotsBtn = Instances:Create("TextButton", {
+                Parent = toggleButton.Instance,
+                Name = "ThreeDots",
+                AnchorPoint = Vector2.new(1, 0.5),
+                Position = UDim2.new(1, 0, 0.5, 0),
+                Size = UDim2.new(0, 22, 0, 18),
+                BackgroundTransparency = 1,
+                Text = "•••",
+                TextColor3 = Theme["SubText"],
+                TextSize = 13,
+                FontFace = Font.new("rbxassetid://12187365364", Enum.FontWeight.Bold, Enum.FontStyle.Normal),
+                AutoButtonColor = false,
+                ZIndex = 9
+            })
+
+            local settingsPanel = Instances:Create("Frame", {
+                Parent = itemHost.Instance,
+                Name = "SettingsPanel",
+                Size = UDim2.new(1, 0, 0, 0),
+                BackgroundColor3 = Theme["Element"],
+                BackgroundTransparency = 0.2,
+                BorderSizePixel = 0,
+                ClipsDescendants = true,
+                LayoutOrder = 2,
+                ZIndex = 8
+            })
+
+            Instances:Create("UICorner", {
+                Parent = settingsPanel.Instance,
+                CornerRadius = UDim.new(0, 6)
+            })
+
+            local panelStroke = Instances:Create("UIStroke", {
+                Parent = settingsPanel.Instance,
+                Color = Theme["Outline"],
+                Thickness = 1,
+                Transparency = 0.5
+            })
+
+            Instances:Create("UIPadding", {
+                Parent = settingsPanel.Instance,
+                PaddingTop = UDim.new(0, 6),
+                PaddingBottom = UDim.new(0, 6),
+                PaddingLeft = UDim.new(0, 8),
+                PaddingRight = UDim.new(0, 8)
+            })
+
+            local panelLayout = Instances:Create("UIListLayout", {
+                Parent = settingsPanel.Instance,
+                SortOrder = Enum.SortOrder.LayoutOrder,
+                Padding = UDim.new(0, 6)
+            })
+
+            -- Создаем API для добавления элементов внутрь панели настроек
+            local SubAPI = {}
+            
+            function SubAPI:Slider(sData)
+                local oldElements = elementsContainer
+                elementsContainer = settingsPanel
+                local res = SectionAPI:Slider(sData)
+                elementsContainer = oldElements
+                return res
+            end
+
+            function SubAPI:Button(bData)
+                local oldElements = elementsContainer
+                elementsContainer = settingsPanel
+                local res = SectionAPI:Button(bData)
+                elementsContainer = oldElements
+                return res
+            end
+
+            pcall(settingsCallback, SubAPI)
+
+            -- Наведение на три точки
+            dotsBtn:Connect("MouseEnter", function()
+                dotsBtn:Tween(TweenInfo.new(0.15), { TextColor3 = Theme["Accent"] })
+            end)
+
+            dotsBtn:Connect("MouseLeave", function()
+                if not optionsExpanded then
+                    dotsBtn:Tween(TweenInfo.new(0.15), { TextColor3 = Theme["SubText"] })
+                end
+            end)
+
+            -- Открытие / закрытие панели настроек
+            dotsBtn:Connect("MouseButton1Click", function()
+                optionsExpanded = not optionsExpanded
+                local contentHeight = panelLayout.Instance.AbsoluteContentSize.Y + 12
+                local targetHeight = optionsExpanded and contentHeight or 0
+                
+                dotsBtn:Tween(TweenInfo.new(0.2), {
+                    TextColor3 = optionsExpanded and Theme["Accent"] or Theme["SubText"]
+                })
+                
+                panelStroke:Tween(TweenInfo.new(0.2), {
+                    Color = optionsExpanded and Theme["Accent"] or Theme["Outline"]
+                })
+                
+                settingsPanel:Tween(TweenInfo.new(0.25, Enum.EasingStyle.Quad, Enum.EasingDirection.Out), {
+                    Size = UDim2.new(1, 0, 0, targetHeight)
+                })
+            end)
+        end
 
         return toggleButton.Instance
     end
@@ -1837,8 +1966,50 @@ local VisualsTab = Library:CreateTab(MainWindow, {
 
 local PlayersSubContainer, PlayersCols = VisualsTab:CreateSubTab({ Name = "Players", Icon = "user" })
 local PlayersSection = Library:CreateSection(PlayersCols[1], { Name = "ESP Players", Icon = "eye" })
-PlayersSection:CreateToggle({ Name = "Box ESP", Default = true })
-PlayersSection:CreateToggle({ Name = "Tracers", Default = false })
+
+-- Toggle с настройками (три точки)
+PlayersSection:CreateToggle({
+    Name = "Box ESP",
+    Default = true,
+    Callback = function(State)
+        print("Box ESP State:", State)
+    end,
+    Settings = function(sub)
+        sub:Slider({
+            Title = "Box Thickness",
+            Min = 1,
+            Max = 5,
+            Default = 1,
+            Unit = "px",
+            Callback = function(val)
+                print("Box Thickness:", val)
+            end
+        })
+        sub:Button({
+            Title = "Reset Box Color",
+            Callback = function()
+                print("Color Reset!")
+            end
+        })
+    end
+})
+
+PlayersSection:CreateToggle({
+    Name = "Tracers",
+    Default = false,
+    Settings = function(sub)
+        sub:Slider({
+            Title = "Tracer Length",
+            Min = 50,
+            Max = 500,
+            Default = 200,
+            Unit = " studs",
+            Callback = function(val)
+                print("Tracer Length:", val)
+            end
+        })
+    end
+})
 
 local VisualsSection = Library:CreateSection(PlayersCols[2], { Name = "ESP Settings", Icon = "settings" })
 VisualsSection:Slider({
