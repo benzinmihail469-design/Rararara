@@ -1702,7 +1702,7 @@ function Library:CreateSection(parentColumn, sectionData)
             BorderSizePixel = 0,
             ZIndex = 9,
             Active = true,
-            ClipsDescendants = true
+            ClipsDescendants = false -- ИСПРАВЛЕНО: отключено обрезание дочерних элементов
         })
 
         Instances:Create("UICorner", {
