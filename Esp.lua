@@ -1651,7 +1651,7 @@ function Library:CreateSection(parentColumn, sectionData)
     end
 
     -- ====================================================================
-    -- СИСТЕМА ДРОПДАУНОВ С СИНИМ АКЦЕНТОМ И РАЗДЕЛИТЕЛЕМ У АКТИВНОГО ЭЛЕМЕНТА
+    -- СИСТЕМА ДРОПДАУНОВ С АНИМАЦИЕЙ, ГРАДИЕНТОМ И РАЗДЕЛИТЕЛЬНОЙ ПОЛОСОЙ
     -- ====================================================================
     function SectionAPI:CreateDropdown(dropdownData)
         dropdownData = dropdownData or {}
@@ -1696,12 +1696,13 @@ function Library:CreateSection(parentColumn, sectionData)
             Position = UDim2.new(1, 0, 0, 0),
             Size = UDim2.new(0.55, 0, 0, 24),
             BackgroundColor3 = Theme["Element"],
-            BackgroundTransparency = 0.2,
+            BackgroundTransparency = 0.15,
             Text = "",
             AutoButtonColor = false,
             BorderSizePixel = 0,
             ZIndex = 9,
-            Active = true
+            Active = true,
+            ClipsDescendants = true
         })
 
         Instances:Create("UICorner", {
@@ -1713,6 +1714,32 @@ function Library:CreateSection(parentColumn, sectionData)
             Parent = dropHeader.Instance,
             Color = Theme["Outline"],
             Thickness = 1
+        })
+
+        -- Разделительная линия снизу плашки в закрытом состоянии
+        local headerBottomLine = Instances:Create("Frame", {
+            Parent = dropHeader.Instance,
+            Name = "BottomBorder",
+            AnchorPoint = Vector2.new(0, 1),
+            Position = UDim2.new(0, 0, 1, 0),
+            Size = UDim2.new(1, 0, 0, 1.5),
+            BackgroundColor3 = Color3.fromRGB(255, 255, 255),
+            BorderSizePixel = 0,
+            ZIndex = 11
+        })
+
+        Instances:Create("UIGradient", {
+            Parent = headerBottomLine.Instance,
+            Color = ColorSequence.new({
+                ColorSequenceKeypoint.new(0, Theme["Outline"]),
+                ColorSequenceKeypoint.new(0.5, Theme["Accent"]),
+                ColorSequenceKeypoint.new(1, Theme["Outline"])
+            }),
+            Transparency = NumberSequence.new({
+                NumberSequenceKeypoint.new(0, 0.4),
+                NumberSequenceKeypoint.new(0.5, 0.0),
+                NumberSequenceKeypoint.new(1, 0.4)
+            })
         })
 
         local valueLabel = Instances:Create("TextLabel", {
@@ -1744,7 +1771,7 @@ function Library:CreateSection(parentColumn, sectionData)
             ZIndex = 10
         })
 
-        -- Выпадающее меню под плашкой (темный черно-синий фон)
+        -- Выпадающее меню под плашкой
         local optionsList = Instances:Create("Frame", {
             Parent = dropHeader.Instance,
             Name = "OptionsList",
@@ -1786,21 +1813,21 @@ function Library:CreateSection(parentColumn, sectionData)
         local optionButtons = {}
         local DropdownAPI = {}
 
-        -- Обновление высоты при разворачивании
+        -- Плавная анимация раскрытия и скрытия полосы
         local function UpdateHeight()
             local listHeight = listLayout.Instance.AbsoluteContentSize.Y + 8
             local targetListHeight = expanded and listHeight or 0
             local targetHostHeight = expanded and (24 + 4 + listHeight) or 24
             
-            Tween(optionsList.Instance, TweenInfo.new(0.25, Enum.EasingStyle.Quad, Enum.EasingDirection.Out), {
+            Tween(optionsList.Instance, TweenInfo.new(0.25, Enum.EasingStyle.Quart, Enum.EasingDirection.Out), {
                 Size = UDim2.new(1, 0, 0, targetListHeight)
             })
             
-            Tween(dropHost.Instance, TweenInfo.new(0.25, Enum.EasingStyle.Quad, Enum.EasingDirection.Out), {
+            Tween(dropHost.Instance, TweenInfo.new(0.25, Enum.EasingStyle.Quart, Enum.EasingDirection.Out), {
                 Size = UDim2.new(1, 0, 0, targetHostHeight)
             })
             
-            Tween(arrowIcon.Instance, TweenInfo.new(0.25, Enum.EasingStyle.Quad, Enum.EasingDirection.Out), {
+            Tween(arrowIcon.Instance, TweenInfo.new(0.25, Enum.EasingStyle.Quart, Enum.EasingDirection.Out), {
                 Rotation = expanded and 180 or 0,
                 ImageColor3 = expanded and Theme["Accent"] or Theme["SubText"]
             })
@@ -1808,9 +1835,13 @@ function Library:CreateSection(parentColumn, sectionData)
             Tween(headerStroke, TweenInfo.new(0.25), {
                 Color = expanded and Theme["Accent"] or Theme["Outline"]
             })
+            
+            Tween(headerBottomLine.Instance, TweenInfo.new(0.2), {
+                BackgroundTransparency = expanded and 1 or 0
+            })
         end
 
-        -- Отрисовка элементов списка
+        -- Отрисовка списка с синим градиентным оттенком и боковой полоской
         local function RefreshOptions()
             for _, btn in pairs(optionButtons) do
                 btn:Destroy()
@@ -1822,9 +1853,9 @@ function Library:CreateSection(parentColumn, sectionData)
                 local optBtn = Instances:Create("TextButton", {
                     Parent = optionsList.Instance,
                     Name = "Option_" .. tostring(opt),
-                    Size = UDim2.new(1, 0, 0, 20),
-                    BackgroundColor3 = isSelected and Theme["Element"] or Color3.fromRGB(15, 15, 20),
-                    BackgroundTransparency = isSelected and 0.4 or 1,
+                    Size = UDim2.new(1, 0, 0, 22),
+                    BackgroundColor3 = Color3.fromRGB(255, 255, 255),
+                    BackgroundTransparency = isSelected and 0.85 or 1,
                     Text = "",
                     AutoButtonColor = false,
                     BorderSizePixel = 0,
@@ -1837,7 +1868,22 @@ function Library:CreateSection(parentColumn, sectionData)
                     CornerRadius = UDim.new(0, 3)
                 })
 
-                -- Вертикальная разделительная синяя полоска слева у выбранного элемента
+                -- Градиент синего оттенка (переход от светлого/синего к темному)
+                local optGradient = Instances:Create("UIGradient", {
+                    Parent = optBtn.Instance,
+                    Color = ColorSequence.new({
+                        ColorSequenceKeypoint.new(0, Theme["Accent"]),
+                        ColorSequenceKeypoint.new(0.35, Color3.fromRGB(15, 35, 65)),
+                        ColorSequenceKeypoint.new(1, Theme["Background 2"])
+                    }),
+                    Transparency = NumberSequence.new({
+                        NumberSequenceKeypoint.new(0, 0.25),
+                        NumberSequenceKeypoint.new(1, 0.9)
+                    }),
+                    Rotation = 0
+                })
+
+                -- Вертикальная синяя полоска-индикатор слева у выбранного элемента (| rust)
                 local sideBar = Instances:Create("Frame", {
                     Parent = optBtn.Instance,
                     Name = "SideBarIndicator",
@@ -1859,11 +1905,11 @@ function Library:CreateSection(parentColumn, sectionData)
                     Parent = optBtn.Instance,
                     Name = "Label",
                     Text = tostring(opt),
-                    FontFace = Font.new("rbxassetid://12187365364", Enum.FontWeight.Regular, Enum.FontStyle.Normal),
+                    FontFace = Font.new("rbxassetid://12187365364", Enum.FontWeight.Medium, Enum.FontStyle.Normal),
                     TextColor3 = isSelected and Theme["Text"] or Theme["SubText"],
                     TextSize = 11,
-                    Position = UDim2.new(0, isSelected and 10 or 6, 0, 0),
-                    Size = UDim2.new(1, isSelected and -28 or -22, 1, 0),
+                    Position = UDim2.new(0, isSelected and 12 or 8, 0, 0),
+                    Size = UDim2.new(1, isSelected and -30 or -16, 1, 0),
                     BackgroundTransparency = 1,
                     TextXAlignment = Enum.TextXAlignment.Left,
                     TextTruncate = Enum.TextTruncate.AtEnd,
@@ -1884,11 +1930,11 @@ function Library:CreateSection(parentColumn, sectionData)
                     ZIndex = 22
                 })
 
+                -- Анимации наведения
                 optBtn:Connect("MouseEnter", function()
                     if opt ~= selected then
                         Tween(optBtn.Instance, TweenInfo.new(0.15), {
-                            BackgroundTransparency = 0.8,
-                            BackgroundColor3 = Theme["Element"]
+                            BackgroundTransparency = 0.92
                         })
                         Tween(optLabel.Instance, TweenInfo.new(0.15), {
                             TextColor3 = Theme["Text"]
