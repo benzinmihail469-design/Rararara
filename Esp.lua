@@ -1,5 +1,5 @@
 -- =======================================================
--- АВТОНОМНЫЙ СКРИПТ (ИСПРАВЛЕНА РАБОТА ВКЛАДОК И ПОДВКЛАДОК)
+-- АВТОНОМНЫЙ СКРИПТ (ИСПРАВЛЕНА АНИМАЦИЯ И ПОВОРОТ СТРЕЛОК)
 -- =======================================================
 
 local Workspace = game:GetService("Workspace")
@@ -522,7 +522,7 @@ function Library:CreateWindow(data)
 end
 
 -- =======================================================
--- 10. СИСТЕМА ВКЛАДОК И ПОДВКЛАДОК (ИСПРАВЛЕНО ОТКРЫТИЕ С ПЕРВОГО РАЗА)
+-- 10. СИСТЕМА ВКЛАДОК И ПОДВКЛАДОК (СИНХРОНИЗИРОВАННЫЙ ПОВОРОТ СТРЕЛКИ)
 -- =======================================================
 function Library:CreateTab(window, tabData)
     tabData = tabData or {}
@@ -649,6 +649,7 @@ function Library:CreateTab(window, tabData)
         Image = ParseIcon("chevron-down"),
         ImageColor3 = Theme["SubText"],
         ImageTransparency = 1,
+        Rotation = 0, -- Исходная позиция (0 градусов = закрыто)
         ScaleType = Enum.ScaleType.Fit,
         ZIndex = 6
     })
@@ -744,7 +745,7 @@ function Library:CreateTab(window, tabData)
         SubTabsContainer = subTabsContainer.Instance,
         SubListLayout = subListLayout.Instance,
         Arrow = arrowIcon.Instance,
-        Expanded = true,
+        Expanded = false, -- Изначально контейнер свернет (0 height)
         HasSubTabs = false,
         ActiveSubTabObj = nil
     }
@@ -763,6 +764,12 @@ function Library:CreateTab(window, tabData)
             Tween(TabObject.SubLabel, TweenInfo.new(0.2), { TextColor3 = Theme["SubText"], TextTransparency = 0.4 })
         end
         TabObject.Container.Visible = false
+
+        if TabObject.HasSubTabs then
+            TabObject.Expanded = false
+            Tween(subTabsContainer.Instance, TweenInfo.new(0.25), { Size = UDim2.new(1, 0, 0, 0) })
+            Tween(arrowIcon.Instance, TweenInfo.new(0.25), { Rotation = 0 })
+        end
 
         for _, sub in ipairs(TabObject.SubTabs) do
             sub:Deselect()
@@ -792,6 +799,11 @@ function Library:CreateTab(window, tabData)
         end
 
         if TabObject.HasSubTabs then
+            TabObject.Expanded = true
+            local targetHeight = TabObject.SubListLayout.AbsoluteContentSize.Y + 8
+            Tween(subTabsContainer.Instance, TweenInfo.new(0.25), { Size = UDim2.new(1, 0, 0, targetHeight) })
+            Tween(arrowIcon.Instance, TweenInfo.new(0.25), { Rotation = 180 })
+
             if #TabObject.SubTabs > 0 then
                 if not TabObject.ActiveSubTabObj then
                     TabObject.SubTabs[1]:Select()
@@ -812,20 +824,20 @@ function Library:CreateTab(window, tabData)
         ActivateTab()
     end
 
-    -- ИСПРАВЛЕНИЕ: корректная логика разворачивания подвкладок при первом клике
+    -- Переключение раскрытия подвкладок и стрелки
     tabButton:Connect("MouseButton1Click", function()
         if TabObject.HasSubTabs then
-            if Library.ActiveTabObject ~= TabObject then
-                TabObject.Expanded = true
-            else
+            if Library.ActiveTabObject == TabObject then
                 TabObject.Expanded = not TabObject.Expanded
+                local targetHeight = TabObject.Expanded and (TabObject.SubListLayout.AbsoluteContentSize.Y + 8) or 0
+                Tween(subTabsContainer.Instance, TweenInfo.new(0.25), { Size = UDim2.new(1, 0, 0, targetHeight) })
+                Tween(arrowIcon.Instance, TweenInfo.new(0.25), { Rotation = TabObject.Expanded and 180 or 0 })
+            else
+                ActivateTab()
             end
-            
-            local targetHeight = TabObject.Expanded and (TabObject.SubListLayout.AbsoluteContentSize.Y + 8) or 0
-            Tween(subTabsContainer.Instance, TweenInfo.new(0.25), { Size = UDim2.new(1, 0, 0, targetHeight) })
-            Tween(arrowIcon.Instance, TweenInfo.new(0.25), { Rotation = TabObject.Expanded and 0 or 180 })
+        else
+            ActivateTab()
         end
-        ActivateTab()
     end)
 
     -- СОЗДАНИЕ ПОДВКЛАДОК
@@ -1010,9 +1022,6 @@ function Library:CreateTab(window, tabData)
                     subTabsContainer.Instance.Size = UDim2.new(1, 0, 0, subListLayout.AbsoluteContentSize.Y + 8)
                 end
             end)
-            if TabObject.Expanded then
-                subTabsContainer.Instance.Size = UDim2.new(1, 0, 0, subListLayout.AbsoluteContentSize.Y + 8)
-            end
         end)
 
         return subContainer.Instance, subCols
@@ -1103,7 +1112,7 @@ function Library:CreateSection(parentColumn, sectionData)
         BackgroundTransparency = 1,
         Image = ParseIcon("chevron-down"),
         ImageColor3 = Theme["Accent"],
-        Rotation = collapsed and 180 or 0,
+        Rotation = collapsed and 0 or 180,
         ScaleType = Enum.ScaleType.Fit,
         ZIndex = 6
     })
@@ -1159,17 +1168,18 @@ function Library:CreateSection(parentColumn, sectionData)
     local function UpdateContainerSize(animated)
         local contentHeight = elementsLayout.Instance.AbsoluteContentSize.Y + 16
         local targetHeight = collapsed and 0 or contentHeight
+        local targetRotation = collapsed and 0 or 180
 
         if animated then
             Tween(elementsContainer.Instance, TweenInfo.new(0.25, Enum.EasingStyle.Quad, Enum.EasingDirection.Out), {
                 Size = UDim2.new(1, 0, 0, targetHeight)
             })
             Tween(arrowIcon.Instance, TweenInfo.new(0.25, Enum.EasingStyle.Quad, Enum.EasingDirection.Out), {
-                Rotation = collapsed and 180 or 0
+                Rotation = targetRotation
             })
         else
             elementsContainer.Instance.Size = UDim2.new(1, 0, 0, targetHeight)
-            arrowIcon.Instance.Rotation = collapsed and 180 or 0
+            arrowIcon.Instance.Rotation = targetRotation
         end
     end
 
