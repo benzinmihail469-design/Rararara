@@ -1,5 +1,5 @@
 -- =======================================================
--- АВТОНОМНЫЙ СКРИПТ (СИНИЙ/ЧЕРНЫЙ СТИЛЬ + НАСЫЩЕННОЕ СОЗВЕЗДИЕ)
+-- АВТОНОМНЫЙ СКРИПТ (СИНИЙ/ЧЕРНЫЙ СТИЛЬ + ИСПРАВЛЕННАЯ СКОРОСТЬ СОЗВЕЗДИЯ)
 -- =======================================================
 
 local Workspace = game:GetService("Workspace")
@@ -101,7 +101,7 @@ local function BindAutoScroll(scrollingFrame, listLayout, extraPadding)
     task.spawn(updateCanvas)
 end
 
--- 7. Плавное перетаскивание окна (Lerp)
+-- 7. Перетаскивание окна
 local function MakeDraggable(guiInstance, dragHandle)
     dragHandle = dragHandle or guiInstance
     local dragging = false
@@ -147,7 +147,7 @@ local function MakeDraggable(guiInstance, dragHandle)
 end
 
 -- =======================================================
--- 8. СИСТЕМА ДИНАМИЧЕСКОГО СОЗВЕЗДИЯ (PARTICLE NETWORK)
+-- 8. СИСТЕМА СОЗВЕЗДИЯ (МЕДЛЕННОЕ ПЛАВНОЕ ДВИЖЕНИЕ)
 -- =======================================================
 local function CreateConstellationBackground(parentFrame, numNodes, maxDistance)
     numNodes = numNodes or 35
@@ -186,7 +186,8 @@ local function CreateConstellationBackground(parentFrame, numNodes, maxDistance)
         table.insert(nodes, {
             Gui = dot.Instance,
             Pos = Vector2.new(rng:NextNumber(160, 520), rng:NextNumber(10, 360)),
-            Vel = Vector2.new(rng:NextNumber(-22, 22), rng:NextNumber(-22, 22))
+            -- Скорость уменьшена с (-22, 22) до (-6, 6) для плавной анимации
+            Vel = Vector2.new(rng:NextNumber(-6, 6), rng:NextNumber(-6, 6))
         })
     end
 
@@ -233,7 +234,7 @@ local function CreateConstellationBackground(parentFrame, numNodes, maxDistance)
 
             if node.Pos.Y <= 5 then
                 node.Pos = Vector2.new(node.Pos.X, 5)
-                node.Vel = Vector2.new(node.Vel.X, -node.Vel.Y)
+                node.Vel = Vector2.new(node.Pos.X, -node.Vel.Y)
             elseif node.Pos.Y >= height - 5 then
                 node.Pos = Vector2.new(node.Pos.X, height - 5)
                 node.Vel = Vector2.new(node.Pos.X, -node.Vel.Y)
@@ -318,10 +319,8 @@ function Library:CreateWindow(data)
 
     MakeDraggable(mainFrame.Instance, mainFrame.Instance)
 
-    -- Инициализация созвездия
     CreateConstellationBackground(mainFrame.Instance, 35, 80)
 
-    -- Боковая панель
     local sidebarBackground = Instances:Create("Frame", {
         Parent = mainFrame.Instance,
         Name = "SidebarBackground",
@@ -338,7 +337,6 @@ function Library:CreateWindow(data)
         CornerRadius = UDim.new(0, 8)
     })
 
-    -- Вертикальный разделитель сайдбара и контента
     Instances:Create("Frame", {
         Parent = mainFrame.Instance,
         Name = "SidebarVerticalDivider",
@@ -349,7 +347,6 @@ function Library:CreateWindow(data)
         ZIndex = 5
     })
 
-    -- Контейнер логотипа
     local logoContainer = Instances:Create("Frame", {
         Parent = mainFrame.Instance,
         Name = "LogoContainer",
@@ -367,7 +364,6 @@ function Library:CreateWindow(data)
         CornerRadius = UDim.new(0, 8)
     })
 
-    -- Иконка логотипа
     local logoIcon = Instances:Create("ImageLabel", {
         Parent = logoContainer.Instance,
         Name = "Logo",
@@ -383,14 +379,12 @@ function Library:CreateWindow(data)
         BorderSizePixel = 0
     })
 
-    -- Предзагрузка изображения
     task.spawn(function()
         pcall(function()
             ContentProvider:PreloadAsync({logoIcon.Instance})
         end)
     end)
 
-    -- Горизонтальная разделительная линия под логотипом
     local headerDivider = Instances:Create("Frame", {
         Parent = mainFrame.Instance,
         Name = "HeaderDivider",
@@ -415,7 +409,6 @@ function Library:CreateWindow(data)
         })
     })
 
-    -- Список вкладок
     local leftTabs = Instances:Create("ScrollingFrame", {
         Parent = mainFrame.Instance,
         Name = "LeftTabs",
@@ -449,7 +442,6 @@ function Library:CreateWindow(data)
 
     BindAutoScroll(leftTabs.Instance, leftTabsLayout.Instance, 15)
 
-    -- Область контента
     local content = Instances:Create("Frame", {
         Parent = mainFrame.Instance,
         Name = "ContentArea",
@@ -460,7 +452,6 @@ function Library:CreateWindow(data)
         ClipsDescendants = true
     })
 
-    -- Кнопка закрытия
     local closeButton = Instances:Create("TextButton", {
         Parent = mainFrame.Instance,
         Name = "CloseButton",
@@ -651,7 +642,7 @@ function Library:CreateTab(window, tabData)
 end
 
 -- =======================================================
--- 11. ПЛАВНО СВОРАЧИВАЕМЫЕ СЕКЦИИ (НЕОНОВЫЙ СИНИЙ БЛИК)
+-- 11. СЕКЦИИ UI
 -- =======================================================
 function Library:CreateSection(parentColumn, sectionData)
     sectionData = sectionData or {}
@@ -733,7 +724,6 @@ function Library:CreateSection(parentColumn, sectionData)
         ZIndex = 6
     })
 
-    -- СИНИЙ НЕОНОВЫЙ ГРАДИЕНТНЫЙ БЛИК
     local glowLine = Instances:Create("Frame", {
         Parent = sectionFrame.Instance,
         Name = "GlowDivider",
@@ -925,5 +915,3 @@ SilentBypassSection:CreateToggle({ Name = "включить понос", Default
 
 local JopaSection = Library:CreateSection(Cols[1], { Name = "jopa" })
 JopaSection:CreateToggle({ Name = "включить жопа...", Default = false })
-
-print("GUI Updated: Logo resized to 58x58 strictly matching photo reference!")
