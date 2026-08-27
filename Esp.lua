@@ -1,5 +1,5 @@
 -- =======================================================
--- АВТОНОМНЫЙ СКРИПТ (ИСПРАВЛЕНЫ ОТСТУПЫ И НАЛОЖЕНИЕ КОНТУРА ПОДВКЛАДОК)
+-- АВТОНОМНЫЙ СКРИПТ (ИСПРАВЛЕНА РАБОТА ВКЛАДОК И ПОДВКЛАДОК)
 -- =======================================================
 
 local Workspace = game:GetService("Workspace")
@@ -522,7 +522,7 @@ function Library:CreateWindow(data)
 end
 
 -- =======================================================
--- 10. СИСТЕМА ВКЛАДОК И ПОДВКЛАДОК (ИСПРАВЛЕННЫЕ ОТСТУПЫ)
+-- 10. СИСТЕМА ВКЛАДОК И ПОДВКЛАДОК (ИСПРАВЛЕНО ОТКРЫТИЕ С ПЕРВОГО РАЗА)
 -- =======================================================
 function Library:CreateTab(window, tabData)
     tabData = tabData or {}
@@ -653,7 +653,6 @@ function Library:CreateTab(window, tabData)
         ZIndex = 6
     })
 
-    -- Контейнер для подвкладок с исправленными внутренними отступами
     local subTabsContainer = Instances:Create("Frame", {
         Parent = tabGroupFrame.Instance,
         Name = "SubTabsContainer",
@@ -667,15 +666,15 @@ function Library:CreateTab(window, tabData)
     local subListLayout = Instances:Create("UIListLayout", {
         Parent = subTabsContainer.Instance,
         SortOrder = Enum.SortOrder.LayoutOrder,
-        Padding = UDim.new(0, 5) -- Увеличен разрыв между подвкладками, чтобы контур не накладывался
+        Padding = UDim.new(0, 5)
     })
 
     Instances:Create("UIPadding", {
         Parent = subTabsContainer.Instance,
         PaddingLeft = UDim.new(0, 12),
-        PaddingRight = UDim.new(0, 8), -- Добавлен отступ справа
-        PaddingTop = UDim.new(0, 3),   -- Отступ сверху
-        PaddingBottom = UDim.new(0, 5) -- Отступ снизу
+        PaddingRight = UDim.new(0, 8),
+        PaddingTop = UDim.new(0, 3),
+        PaddingBottom = UDim.new(0, 5)
     })
 
     local defaultMainContainer = Instances:Create("ScrollingFrame", {
@@ -813,9 +812,15 @@ function Library:CreateTab(window, tabData)
         ActivateTab()
     end
 
+    -- ИСПРАВЛЕНИЕ: корректная логика разворачивания подвкладок при первом клике
     tabButton:Connect("MouseButton1Click", function()
         if TabObject.HasSubTabs then
-            TabObject.Expanded = not TabObject.Expanded
+            if Library.ActiveTabObject ~= TabObject then
+                TabObject.Expanded = true
+            else
+                TabObject.Expanded = not TabObject.Expanded
+            end
+            
             local targetHeight = TabObject.Expanded and (TabObject.SubListLayout.AbsoluteContentSize.Y + 8) or 0
             Tween(subTabsContainer.Instance, TweenInfo.new(0.25), { Size = UDim2.new(1, 0, 0, targetHeight) })
             Tween(arrowIcon.Instance, TweenInfo.new(0.25), { Rotation = TabObject.Expanded and 0 or 180 })
