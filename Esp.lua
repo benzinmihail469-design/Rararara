@@ -1651,7 +1651,7 @@ function Library:CreateSection(parentColumn, sectionData)
     end
 
     -- ====================================================================
-    -- СИСТЕМА ДРОПДАУНОВ (DROPDOWN) С ПЛАВНОЙ АНИМАЦИЕЙ И ГАЛОЧКОЙ
+    -- СИСТЕМА ДРОПДАУНОВ (INLINE / В ОДНУ СТРОКУ С НАЗВАНИЕМ)
     -- ====================================================================
     function SectionAPI:CreateDropdown(dropdownData)
         dropdownData = dropdownData or {}
@@ -1662,24 +1662,18 @@ function Library:CreateSection(parentColumn, sectionData)
         local flag = dropdownData.Flag or ("Dropdown_" .. tostring(#Library.Flags + 1))
         local expanded = false
 
-        -- Главный контейнер дропдауна
+        -- Главный контейнер строки
         local dropHost = Instances:Create("Frame", {
             Parent = elementsContainer.Instance,
             Name = "DropdownHost_" .. dropTitle,
-            Size = UDim2.new(1, 0, 0, 42),
+            Size = UDim2.new(1, 0, 0, 24),
             BackgroundTransparency = 1,
             BorderSizePixel = 0,
-            ClipsDescendants = true,
+            ClipsDescendants = false,
             ZIndex = 8
         })
 
-        local hostLayout = Instances:Create("UIListLayout", {
-            Parent = dropHost.Instance,
-            SortOrder = Enum.SortOrder.LayoutOrder,
-            Padding = UDim.new(0, 4)
-        })
-
-        -- Заголовок над дропдауном
+        -- Текст названия слева
         local titleLabel = Instances:Create("TextLabel", {
             Parent = dropHost.Instance,
             Name = "Title",
@@ -1687,17 +1681,20 @@ function Library:CreateSection(parentColumn, sectionData)
             FontFace = Font.new("rbxassetid://12187365364", Enum.FontWeight.Medium, Enum.FontStyle.Normal),
             TextColor3 = Theme["SubText"],
             TextSize = 11,
-            Size = UDim2.new(1, 0, 0, 14),
+            Size = UDim2.new(0.4, 0, 0, 24),
+            Position = UDim2.new(0, 0, 0, 0),
             BackgroundTransparency = 1,
             TextXAlignment = Enum.TextXAlignment.Left,
             ZIndex = 8
         })
 
-        -- Плашка выбранного значения (Кнопка открытия)
+        -- Плашка выбора справа
         local dropHeader = Instances:Create("TextButton", {
             Parent = dropHost.Instance,
             Name = "Header",
-            Size = UDim2.new(1, 0, 0, 24),
+            AnchorPoint = Vector2.new(1, 0),
+            Position = UDim2.new(1, 0, 0, 0),
+            Size = UDim2.new(0.55, 0, 0, 24),
             BackgroundColor3 = Theme["Element"],
             BackgroundTransparency = 0.2,
             Text = "",
@@ -1726,7 +1723,7 @@ function Library:CreateSection(parentColumn, sectionData)
             TextColor3 = Theme["Text"],
             TextSize = 11,
             Position = UDim2.new(0, 8, 0, 0),
-            Size = UDim2.new(1, -28, 1, 0),
+            Size = UDim2.new(1, -24, 1, 0),
             BackgroundTransparency = 1,
             TextXAlignment = Enum.TextXAlignment.Left,
             TextTruncate = Enum.TextTruncate.AtEnd,
@@ -1736,7 +1733,7 @@ function Library:CreateSection(parentColumn, sectionData)
         local arrowIcon = Instances:Create("ImageLabel", {
             Parent = dropHeader.Instance,
             Name = "Arrow",
-            Size = UDim2.new(0, 12, 0, 12),
+            Size = UDim2.new(0, 10, 0, 10),
             AnchorPoint = Vector2.new(1, 0.5),
             Position = UDim2.new(1, -6, 0.5, 0),
             BackgroundTransparency = 1,
@@ -1747,16 +1744,17 @@ function Library:CreateSection(parentColumn, sectionData)
             ZIndex = 10
         })
 
-        -- Выпадающий список вариантов
+        -- Выпадающее меню под плашкой
         local optionsList = Instances:Create("Frame", {
-            Parent = dropHost.Instance,
+            Parent = dropHeader.Instance,
             Name = "OptionsList",
+            Position = UDim2.new(0, 0, 1, 4),
             Size = UDim2.new(1, 0, 0, 0),
             BackgroundColor3 = Theme["Background 2"],
             BackgroundTransparency = 0.1,
             BorderSizePixel = 0,
             ClipsDescendants = true,
-            ZIndex = 11
+            ZIndex = 20
         })
 
         Instances:Create("UICorner", {
@@ -1788,11 +1786,11 @@ function Library:CreateSection(parentColumn, sectionData)
         local optionButtons = {}
         local DropdownAPI = {}
 
-        -- Анимация открытия / закрытия
+        -- Обновление высоты и раскрытие
         local function UpdateHeight()
             local listHeight = listLayout.Instance.AbsoluteContentSize.Y + 8
             local targetListHeight = expanded and listHeight or 0
-            local targetHostHeight = expanded and (18 + 24 + 4 + listHeight) or 42
+            local targetHostHeight = expanded and (24 + 4 + listHeight) or 24
             
             Tween(optionsList.Instance, TweenInfo.new(0.25, Enum.EasingStyle.Quad, Enum.EasingDirection.Out), {
                 Size = UDim2.new(1, 0, 0, targetListHeight)
@@ -1812,7 +1810,7 @@ function Library:CreateSection(parentColumn, sectionData)
             })
         end
 
-        -- Перерисовка элементов списка
+        -- Отрисовка списка опций с галочками
         local function RefreshOptions()
             for _, btn in pairs(optionButtons) do
                 btn:Destroy()
@@ -1830,7 +1828,7 @@ function Library:CreateSection(parentColumn, sectionData)
                     Text = "",
                     AutoButtonColor = false,
                     BorderSizePixel = 0,
-                    ZIndex = 12,
+                    ZIndex = 21,
                     Active = true
                 })
 
@@ -1847,14 +1845,13 @@ function Library:CreateSection(parentColumn, sectionData)
                     TextColor3 = isSelected and Theme["Text"] or Theme["SubText"],
                     TextSize = 11,
                     Position = UDim2.new(0, 6, 0, 0),
-                    Size = UDim2.new(1, -24, 1, 0),
+                    Size = UDim2.new(1, -22, 1, 0),
                     BackgroundTransparency = 1,
                     TextXAlignment = Enum.TextXAlignment.Left,
                     TextTruncate = Enum.TextTruncate.AtEnd,
-                    ZIndex = 13
+                    ZIndex = 22
                 })
 
-                -- Иконка галочки для выбранного пункта
                 local checkIcon = Instances:Create("ImageLabel", {
                     Parent = optBtn.Instance,
                     Name = "CheckMark",
@@ -1866,7 +1863,7 @@ function Library:CreateSection(parentColumn, sectionData)
                     ImageColor3 = Theme["Accent"],
                     ImageTransparency = isSelected and 0 or 1,
                     ScaleType = Enum.ScaleType.Fit,
-                    ZIndex = 13
+                    ZIndex = 22
                 })
 
                 optBtn:Connect("MouseEnter", function()
