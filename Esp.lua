@@ -1,5 +1,5 @@
 -- =======================================================
--- ПОЛНЫЙ СКРИПТ С ЧЕТКИМ ВИДИМЫМ КОНТУРОМ ПРОФИЛЯ
+-- ПОЛНЫЙ СКРИПТ С ЯРКИМ И ЧЁТКИМ КОНТУРОМ ПРОФИЛЯ
 -- =======================================================
 
 local Workspace = game:GetService("Workspace")
@@ -16,16 +16,17 @@ end
 
 local LocalPlayer = Players.LocalPlayer
 
--- 1. Цветовая тема
+-- 1. Цветовая тема (Dark & Neon Blue Style)
 local Theme = {
     ["Background"] = Color3.fromRGB(10, 10, 14),
     ["Background 2"] = Color3.fromRGB(14, 15, 20),
     ["Text"] = Color3.fromRGB(240, 240, 245),
     ["SubText"] = Color3.fromRGB(110, 115, 125),
-    ["Outline"] = Color3.fromRGB(45, 55, 75), -- Обновленный видимый цвет контура
+    ["Outline"] = Color3.fromRGB(24, 28, 38),
+    ["ProfileOutline"] = Color3.fromRGB(0, 140, 255), -- Чёткий синий контур профиля
     ["Accent"] = Color3.fromRGB(0, 140, 255),
     ["AccentGlow"] = Color3.fromRGB(0, 180, 255),
-    ["Element"] = Color3.fromRGB(18, 20, 28),
+    ["Element"] = Color3.fromRGB(18, 20, 26),
     ["GlowCenter"] = Color3.fromRGB(0, 140, 255),
     ["GlowEdge"] = Color3.fromRGB(14, 15, 20),
     ["Node"] = Color3.fromRGB(120, 200, 255),
@@ -151,7 +152,7 @@ local function MakeDraggable(guiInstance, dragHandle)
     end)
 end
 
--- 8. Система созвездия
+-- 8. Системный фон созвездий
 local function CreateConstellationBackground(parentFrame, numNodes, maxDistance)
     numNodes = numNodes or 30
     maxDistance = maxDistance or 80
@@ -289,7 +290,7 @@ local function CreateConstellationBackground(parentFrame, numNodes, maxDistance)
     end)
 end
 
--- 9. Создание окна UI
+-- 9. Создание главного окна
 local Library = {
     Windows = {},
     ActiveTabObject = nil
@@ -427,15 +428,15 @@ function Library:CreateWindow(data)
     })
 
     -- =======================================================
-    -- ПОДВАЛ ПРОФИЛЯ С ЯРКИМ И ЧЕТКИМ КОНТУРОМ
+    -- ИСПРАВЛЕННЫЙ ПОДВАЛ ПРОФИЛЯ С ЯРКИМ ВИДИМЫМ КОНТУРОМ
     -- =======================================================
     local profileFrame = Instances:Create("Frame", {
         Parent = mainFrame.Instance,
         Name = "ProfileFooter",
         Position = UDim2.new(0, 8, 1, -56),
-        Size = UDim2.new(0, 144, 0, 48),
-        BackgroundColor3 = Color3.fromRGB(18, 20, 28),
-        BackgroundTransparency = 0.3,
+        Size = UDim2.new(0, 144, 0, 44),
+        BackgroundColor3 = Theme["Element"],
+        BackgroundTransparency = 0.05,
         BorderSizePixel = 0,
         ZIndex = 15
     })
@@ -445,12 +446,12 @@ function Library:CreateWindow(data)
         CornerRadius = UDim.new(0, 8)
     })
 
-    -- Яркий UIStroke для гарантии видимости контура
+    -- Яркий четкий контур (UIStroke)
     Instances:Create("UIStroke", {
         Parent = profileFrame.Instance,
-        Color = Color3.fromRGB(45, 55, 75),
-        Thickness = 1,
-        Transparency = 0,
+        Color = Theme["ProfileOutline"], -- Голубой контрастный цвет
+        Thickness = 1.2,
+        Transparency = 0.35,
         ApplyStrokeMode = Enum.ApplyStrokeMode.Border
     })
 
@@ -458,15 +459,15 @@ function Library:CreateWindow(data)
         Parent = profileFrame.Instance,
         Name = "Avatar",
         BackgroundTransparency = 1,
-        Position = UDim2.new(0, 8, 0.5, -16),
-        Size = UDim2.new(0, 32, 0, 32),
+        Position = UDim2.new(0, 6, 0.5, -15),
+        Size = UDim2.new(0, 30, 0, 30),
         Image = "rbxassetid://0",
         ZIndex = 16
     })
 
     Instances:Create("UICorner", {
         Parent = avatarContainer.Instance,
-        CornerRadius = UDim.new(0, 8)
+        CornerRadius = UDim.new(0, 6)
     })
 
     task.spawn(function()
@@ -483,8 +484,8 @@ function Library:CreateWindow(data)
         FontFace = Font.new("rbxassetid://12187365364", Enum.FontWeight.Bold, Enum.FontStyle.Normal),
         TextColor3 = Theme["Text"],
         TextSize = 11,
-        Position = UDim2.new(0, 48, 0, 8),
-        Size = UDim2.new(1, -52, 0, 15),
+        Position = UDim2.new(0, 42, 0, 6),
+        Size = UDim2.new(1, -46, 0, 14),
         BackgroundTransparency = 1,
         TextXAlignment = Enum.TextXAlignment.Left,
         ZIndex = 16,
@@ -498,15 +499,15 @@ function Library:CreateWindow(data)
         FontFace = Font.new("rbxassetid://12187365364", Enum.FontWeight.Regular, Enum.FontStyle.Normal),
         TextColor3 = Theme["SubText"],
         TextSize = 10,
-        Position = UDim2.new(0, 48, 0, 24),
-        Size = UDim2.new(1, -52, 0, 14),
+        Position = UDim2.new(0, 42, 0, 22),
+        Size = UDim2.new(1, -46, 0, 14),
         BackgroundTransparency = 1,
         TextXAlignment = Enum.TextXAlignment.Left,
         ZIndex = 16,
         TextTruncate = Enum.TextTruncate.AtEnd
     })
-    -- =======================================================
 
+    -- Scroll для вкладок
     local leftTabs = Instances:Create("ScrollingFrame", {
         Parent = mainFrame.Instance,
         Name = "LeftTabs",
@@ -571,7 +572,7 @@ function Library:CreateWindow(data)
 
     Instances:Create("UIStroke", {
         Parent = closeButton.Instance,
-        Color = Color3.fromRGB(45, 55, 75),
+        Color = Theme["Outline"],
         Thickness = 1
     })
 
@@ -600,7 +601,7 @@ function Library:CreateWindow(data)
     return Window
 end
 
--- 10. Вкладки и Подвкладки
+-- 10. Система вкладок и подвкладок
 function Library:CreateTab(window, tabData)
     tabData = tabData or {}
     local tabName = tabData.Name or "Tab"
@@ -898,8 +899,13 @@ function Library:CreateTab(window, tabData)
         end
     end
 
-    function TabObject:Deselect() DeselectTab() end
-    function TabObject:Select() ActivateTab() end
+    function TabObject:Deselect()
+        DeselectTab()
+    end
+
+    function TabObject:Select()
+        ActivateTab()
+    end
 
     tabButton:Connect("MouseEnter", function()
         if Library.ActiveTabObject ~= TabObject then
@@ -1163,7 +1169,7 @@ function Library:CreateTab(window, tabData)
         end)
 
         subButton:Connect("MouseLeave", function()
-            if TabObject.ActiveSubTabObj ~= SubTabObject then
+            if TabObject.ActiveSubTabObj ~= SubTabObject me then
                 Tween(subButton.Instance, TweenInfo.new(0.15), { 
                     BackgroundColor3 = Theme["Text"],
                     BackgroundTransparency = 1 
@@ -1199,7 +1205,7 @@ function Library:CreateTab(window, tabData)
     return TabObject, defaultColumns
 end
 
--- 11. Секции UI
+-- 11. Секции интерфейса
 function Library:CreateSection(parentColumn, sectionData)
     sectionData = sectionData or {}
     local sectionName = sectionData.Name or "Section"
@@ -1226,7 +1232,7 @@ function Library:CreateSection(parentColumn, sectionData)
 
     Instances:Create("UIStroke", {
         Parent = sectionFrame.Instance,
-        Color = Color3.fromRGB(45, 55, 75),
+        Color = Theme["Outline"],
         Thickness = 1,
         ApplyStrokeMode = Enum.ApplyStrokeMode.Border
     })
@@ -1420,7 +1426,7 @@ function Library:CreateSection(parentColumn, sectionData)
 
         local checkStroke = Instances:Create("UIStroke", {
             Parent = checkBox.Instance,
-            Color = state and Theme["Accent"] or Color3.fromRGB(45, 55, 75),
+            Color = state and Theme["Accent"] or Theme["Outline"],
             Thickness = 1
         })
 
@@ -1457,7 +1463,7 @@ function Library:CreateSection(parentColumn, sectionData)
                 BackgroundColor3 = state and Theme["Accent"] or Theme["Element"]
             })
             Tween(checkStroke.Instance, TweenInfo.new(0.15), {
-                Color = state and Theme["Accent"] or Color3.fromRGB(45, 55, 75)
+                Color = state and Theme["Accent"] or Theme["Outline"]
             })
             Tween(checkMark.Instance, TweenInfo.new(0.15), {
                 ImageTransparency = state and 0 or 1
@@ -1474,7 +1480,7 @@ function Library:CreateSection(parentColumn, sectionData)
     return SectionAPI
 end
 
--- 12. Инициализация
+-- 12. Тестовая инициализация
 local MainWindow = Library:CreateWindow({
     Logo = "95894290284220"
 })
@@ -1483,11 +1489,7 @@ local CombatTab, CombatCols = Library:CreateTab(MainWindow, { Name = "Combat", S
 local AimbotSection = Library:CreateSection(CombatCols[1], { Name = "Aimbot", Icon = "zap" })
 AimbotSection:CreateToggle({ Name = "Enable Aimbot", Default = true })
 
-local VisualsTab = Library:CreateTab(MainWindow, { Name = "Visuals", Subtitle = "отображение объектов", Icon = "eye" })
-local PlayersSubContainer, PlayersCols = VisualsTab:CreateSubTab({ Name = "Players", Icon = "user" })
-local PlayersSection = Library:CreateSection(PlayersCols[1], { Name = "ESP Players", Icon = "eye" })
-PlayersSection:CreateToggle({ Name = "Box ESP", Default = true })
-
+Library:CreateTab(MainWindow, { Name = "Visuals", Subtitle = "отображение объектов", Icon = "eye" })
 Library:CreateTab(MainWindow, { Name = "Local", Subtitle = "игрок", Icon = "user" })
 Library:CreateTab(MainWindow, { Name = "Colors", Subtitle = "цвета интерфейса", Icon = "palette" })
 Library:CreateTab(MainWindow, { Name = "Config", Subtitle = "конфигурация", Icon = "folder" })
