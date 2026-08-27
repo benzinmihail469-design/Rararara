@@ -1702,7 +1702,7 @@ function Library:CreateSection(parentColumn, sectionData)
             BorderSizePixel = 0,
             ZIndex = 9,
             Active = true,
-            ClipsDescendants = false -- ИСПРАВЛЕНО: отключено обрезание дочерних элементов
+            ClipsDescendants = false
         })
 
         Instances:Create("UICorner", {
@@ -1778,7 +1778,7 @@ function Library:CreateSection(parentColumn, sectionData)
             Position = UDim2.new(0, 0, 1, 4),
             Size = UDim2.new(1, 0, 0, 0),
             BackgroundColor3 = Theme["Background 2"],
-            BackgroundTransparency = 0.05,
+            BackgroundTransparency = 1,
             BorderSizePixel = 0,
             ClipsDescendants = true,
             ZIndex = 20
@@ -1793,7 +1793,7 @@ function Library:CreateSection(parentColumn, sectionData)
             Parent = optionsList.Instance,
             Color = Theme["Outline"],
             Thickness = 1,
-            Transparency = 0.5
+            Transparency = 1
         })
 
         local listLayout = Instances:Create("UIListLayout", {
@@ -1813,41 +1813,48 @@ function Library:CreateSection(parentColumn, sectionData)
         local optionButtons = {}
         local DropdownAPI = {}
 
-        -- Плавная анимация раскрытия и скрытия полосы
+        -- Плавная анимация раскрытия и скрытия с эффектом разворачивания и затухания
         local function UpdateHeight()
             local listHeight = listLayout.Instance.AbsoluteContentSize.Y + 8
             local targetListHeight = expanded and listHeight or 0
             local targetHostHeight = expanded and (24 + 4 + listHeight) or 24
-            
-            Tween(optionsList.Instance, TweenInfo.new(0.25, Enum.EasingStyle.Quart, Enum.EasingDirection.Out), {
-                Size = UDim2.new(1, 0, 0, targetListHeight)
+            local easingStyle = expanded and Enum.EasingStyle.Quart or Enum.EasingStyle.Quad
+            local tweenTime = expanded and 0.28 or 0.2
+
+            Tween(optionsList.Instance, TweenInfo.new(tweenTime, easingStyle, Enum.EasingDirection.Out), {
+                Size = UDim2.new(1, 0, 0, targetListHeight),
+                BackgroundTransparency = expanded and 0.05 or 1
             })
-            
-            Tween(dropHost.Instance, TweenInfo.new(0.25, Enum.EasingStyle.Quart, Enum.EasingDirection.Out), {
+
+            Tween(optionsStroke, TweenInfo.new(tweenTime, easingStyle, Enum.EasingDirection.Out), {
+                Transparency = expanded and 0.5 or 1
+            })
+
+            Tween(dropHost.Instance, TweenInfo.new(tweenTime, easingStyle, Enum.EasingDirection.Out), {
                 Size = UDim2.new(1, 0, 0, targetHostHeight)
             })
-            
-            Tween(arrowIcon.Instance, TweenInfo.new(0.25, Enum.EasingStyle.Quart, Enum.EasingDirection.Out), {
+
+            Tween(arrowIcon.Instance, TweenInfo.new(tweenTime, Enum.EasingStyle.Back, Enum.EasingDirection.Out), {
                 Rotation = expanded and 180 or 0,
                 ImageColor3 = expanded and Theme["Accent"] or Theme["SubText"]
             })
-            
-            Tween(headerStroke, TweenInfo.new(0.25), {
+
+            Tween(headerStroke, TweenInfo.new(0.2), {
                 Color = expanded and Theme["Accent"] or Theme["Outline"]
             })
-            
+
             Tween(headerBottomLine.Instance, TweenInfo.new(0.2), {
                 BackgroundTransparency = expanded and 1 or 0
             })
         end
 
-        -- Отрисовка списка с синим градиентным оттенком и боковой полоской
+        -- Отрисовка списка с поддержкой анимации нажатия
         local function RefreshOptions()
             for _, btn in pairs(optionButtons) do
                 btn:Destroy()
             end
             table.clear(optionButtons)
-            
+
             for _, opt in ipairs(options) do
                 local isSelected = (opt == selected)
                 local optBtn = Instances:Create("TextButton", {
@@ -1868,7 +1875,6 @@ function Library:CreateSection(parentColumn, sectionData)
                     CornerRadius = UDim.new(0, 3)
                 })
 
-                -- Градиент синего оттенка (переход от светлого/синего к темному)
                 local optGradient = Instances:Create("UIGradient", {
                     Parent = optBtn.Instance,
                     Color = ColorSequence.new({
@@ -1883,7 +1889,6 @@ function Library:CreateSection(parentColumn, sectionData)
                     Rotation = 0
                 })
 
-                -- Вертикальная синяя полоска-индикатор слева у выбранного элемента (| rust)
                 local sideBar = Instances:Create("Frame", {
                     Parent = optBtn.Instance,
                     Name = "SideBarIndicator",
@@ -1930,13 +1935,13 @@ function Library:CreateSection(parentColumn, sectionData)
                     ZIndex = 22
                 })
 
-                -- Анимации наведения
+                -- Анимация наведения (Hover)
                 optBtn:Connect("MouseEnter", function()
                     if opt ~= selected then
-                        Tween(optBtn.Instance, TweenInfo.new(0.15), {
+                        Tween(optBtn.Instance, TweenInfo.new(0.15, Enum.EasingStyle.Quad, Enum.EasingDirection.Out), {
                             BackgroundTransparency = 0.92
                         })
-                        Tween(optLabel.Instance, TweenInfo.new(0.15), {
+                        Tween(optLabel.Instance, TweenInfo.new(0.15, Enum.EasingStyle.Quad, Enum.EasingDirection.Out), {
                             TextColor3 = Theme["Text"]
                         })
                     end
@@ -1944,16 +1949,42 @@ function Library:CreateSection(parentColumn, sectionData)
 
                 optBtn:Connect("MouseLeave", function()
                     if opt ~= selected then
-                        Tween(optBtn.Instance, TweenInfo.new(0.15), {
+                        Tween(optBtn.Instance, TweenInfo.new(0.15, Enum.EasingStyle.Quad, Enum.EasingDirection.Out), {
                             BackgroundTransparency = 1
                         })
-                        Tween(optLabel.Instance, TweenInfo.new(0.15), {
+                        Tween(optLabel.Instance, TweenInfo.new(0.15, Enum.EasingStyle.Quad, Enum.EasingDirection.Out), {
                             TextColor3 = Theme["SubText"]
                         })
                     end
                 end)
 
+                -- Анимация зажатия кнопки мышкой/пальцем (Press animation)
+                optBtn:Connect("MouseButton1Down", function()
+                    Tween(optBtn.Instance, TweenInfo.new(0.08, Enum.EasingStyle.Quad, Enum.EasingDirection.Out), {
+                        Size = UDim2.new(1, -4, 0, 20),
+                        BackgroundTransparency = 0.75
+                    })
+                    Tween(optLabel.Instance, TweenInfo.new(0.08, Enum.EasingStyle.Quad, Enum.EasingDirection.Out), {
+                        TextSize = 10.5
+                    })
+                end)
+
+                optBtn:Connect("MouseButton1Up", function()
+                    Tween(optBtn.Instance, TweenInfo.new(0.15, Enum.EasingStyle.Back, Enum.EasingDirection.Out), {
+                        Size = UDim2.new(1, 0, 0, 22)
+                    })
+                    Tween(optLabel.Instance, TweenInfo.new(0.15, Enum.EasingStyle.Back, Enum.EasingDirection.Out), {
+                        TextSize = 11
+                    })
+                end)
+
+                -- Клик по элементу
                 optBtn:Connect("MouseButton1Click", function()
+                    -- Импульс свечения при выборе
+                    Tween(optBtn.Instance, TweenInfo.new(0.08, Enum.EasingStyle.Quad, Enum.EasingDirection.Out), {
+                        BackgroundTransparency = 0.65
+                    })
+                    task.wait(0.05)
                     DropdownAPI:Set(opt)
                     expanded = false
                     UpdateHeight()
@@ -1961,7 +1992,7 @@ function Library:CreateSection(parentColumn, sectionData)
 
                 table.insert(optionButtons, optBtn.Instance)
             end
-            
+
             if expanded then
                 UpdateHeight()
             end
@@ -1984,6 +2015,19 @@ function Library:CreateSection(parentColumn, sectionData)
             end
             DropdownAPI:Set(selected)
         end
+
+        -- Анимация зажатия на сам Header дропдауна
+        dropHeader:Connect("MouseButton1Down", function()
+            Tween(dropHeader.Instance, TweenInfo.new(0.08, Enum.EasingStyle.Quad, Enum.EasingDirection.Out), {
+                Size = UDim2.new(0.53, 0, 0, 22)
+            })
+        end)
+
+        dropHeader:Connect("MouseButton1Up", function()
+            Tween(dropHeader.Instance, TweenInfo.new(0.15, Enum.EasingStyle.Back, Enum.EasingDirection.Out), {
+                Size = UDim2.new(0.55, 0, 0, 24)
+            })
+        end)
 
         dropHeader:Connect("MouseEnter", function()
             if not expanded then
