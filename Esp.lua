@@ -1,5 +1,5 @@
 -- =======================================================
--- АВТОНОМНЫЙ СКРИПТ (СИНИЙ/ЧЕРНЫЙ СТИЛЬ + РАЗДЕЛИТЕЛИ ВКЛАДОК + АНИМАЦИЯ ИНДИКАТОРА)
+-- АВТОНОМНЫЙ СКРИПТ (СИНИЙ/ЧЕРНЫЙ СТИЛЬ + КОНТУР И АНИМАЦИЯ ВКЛАДОК)
 -- =======================================================
 
 local Workspace = game:GetService("Workspace")
@@ -448,7 +448,7 @@ function Library:CreateWindow(data)
 
     local leftTabsLayout = Instances:Create("UIListLayout", {
         Parent = leftTabs.Instance,
-        Padding = UDim.new(0, 6),
+        Padding = UDim.new(0, 4),
         SortOrder = Enum.SortOrder.LayoutOrder
     })
 
@@ -522,7 +522,7 @@ function Library:CreateWindow(data)
 end
 
 -- =======================================================
--- 10. СИСТЕМА ВКЛАДОК, ПОДВКЛАДОК И РАЗДЕЛИТЕЛЕЙ
+-- 10. СИСТЕМА ВКЛАДОК И ПОДВКЛАДОК (С РАЗДЕПИТЕЛЬНЫМ КОНТУРОМ И АНИМАЦИЕЙ)
 -- =======================================================
 function Library:CreateTab(window, tabData)
     tabData = tabData or {}
@@ -543,7 +543,7 @@ function Library:CreateTab(window, tabData)
     Instances:Create("UIListLayout", {
         Parent = tabGroupFrame.Instance,
         SortOrder = Enum.SortOrder.LayoutOrder,
-        Padding = UDim.new(0, 4)
+        Padding = UDim.new(0, 2)
     })
 
     local hasSubText = tabSubtitle ~= ""
@@ -567,12 +567,21 @@ function Library:CreateTab(window, tabData)
         CornerRadius = UDim.new(0, 6)
     })
 
-    -- Синий активный индикатор
+    -- Контур (Stroke) для активной вкладки
+    local tabStroke = Instances:Create("UIStroke", {
+        Parent = tabButton.Instance,
+        Color = Theme["Accent"],
+        Thickness = 1,
+        Transparency = 1,
+        ApplyStrokeMode = Enum.ApplyStrokeMode.Border
+    })
+
+    -- Синий индикатор активной вкладки
     local activeIndicator = Instances:Create("Frame", {
         Parent = tabButton.Instance,
         Name = "ActiveIndicator",
         AnchorPoint = Vector2.new(0, 0.5),
-        Position = UDim2.new(0, 2, 0.5, 0),
+        Position = UDim2.new(0, 3, 0.5, 0),
         Size = UDim2.new(0, 3, 0, 0),
         BackgroundColor3 = Theme["Accent"],
         BackgroundTransparency = 1,
@@ -664,56 +673,7 @@ function Library:CreateTab(window, tabData)
 
     Instances:Create("UIPadding", {
         Parent = subTabsContainer.Instance,
-        PaddingLeft = UDim.new(0, 16)
-    })
-
-    -- ВЕРТИКАЛЬНАЯ НАПРАВЛЯЮЩАЯ ПОЛОСКА ДЛЯ ПОДВКЛАДОК (КАК НА СКТРИНЕ)
-    local subBranchLine = Instances:Create("Frame", {
-        Parent = subTabsContainer.Instance,
-        Name = "SubBranchLine",
-        Position = UDim2.new(0, 6, 0, 2),
-        Size = UDim2.new(0, 1, 1, -4),
-        BackgroundColor3 = Theme["Accent"],
-        BackgroundTransparency = 0.7,
-        BorderSizePixel = 0,
-        ZIndex = 5,
-        Visible = false
-    })
-
-    Instances:Create("UIGradient", {
-        Parent = subBranchLine.Instance,
-        Rotation = 90,
-        Color = ColorSequence.new({
-            ColorSequenceKeypoint.new(0, Theme["Accent"]),
-            ColorSequenceKeypoint.new(1, Theme["Outline"])
-        })
-    })
-
-    -- ГОРИЗОНТАЛЬНАЯ РАЗДЕПИТЕЛЬНАЯ ПОЛОСКА ОКОЛО ВКЛАДОК
-    local tabDivider = Instances:Create("Frame", {
-        Parent = tabGroupFrame.Instance,
-        Name = "TabDivider",
-        Size = UDim2.new(1, -8, 0, 1),
-        AnchorPoint = Vector2.new(0.5, 0),
-        Position = UDim2.new(0.5, 0, 0, 0),
-        BackgroundColor3 = Color3.fromRGB(255, 255, 255),
-        BorderSizePixel = 0,
-        LayoutOrder = 2,
-        ZIndex = 5
-    })
-
-    Instances:Create("UIGradient", {
-        Parent = tabDivider.Instance,
-        Color = ColorSequence.new({
-            ColorSequenceKeypoint.new(0, Theme["Outline"]),
-            ColorSequenceKeypoint.new(0.5, Theme["Accent"]),
-            ColorSequenceKeypoint.new(1, Theme["Outline"])
-        }),
-        Transparency = NumberSequence.new({
-            NumberSequenceKeypoint.new(0, 0.8),
-            NumberSequenceKeypoint.new(0.5, 0.4),
-            NumberSequenceKeypoint.new(1, 0.8)
-        })
+        PaddingLeft = UDim.new(0, 12)
     })
 
     local defaultMainContainer = Instances:Create("ScrollingFrame", {
@@ -773,6 +733,7 @@ function Library:CreateTab(window, tabData)
     local TabObject = {
         Button = tabButton.Instance,
         Indicator = activeIndicator.Instance,
+        Stroke = tabStroke.Instance,
         Icon = iconImage.Instance,
         Label = tabLabel.Instance,
         SubLabel = subLabel and subLabel.Instance or nil,
@@ -780,7 +741,6 @@ function Library:CreateTab(window, tabData)
         Columns = defaultColumns,
         SubTabs = {},
         SubTabsContainer = subTabsContainer.Instance,
-        SubBranchLine = subBranchLine.Instance,
         SubListLayout = subListLayout.Instance,
         Arrow = arrowIcon.Instance,
         Expanded = true,
@@ -791,6 +751,8 @@ function Library:CreateTab(window, tabData)
     local function DeselectTab()
         Tween(tabButton.Instance, TweenInfo.new(0.2), { BackgroundTransparency = 1 })
         
+        -- Скрытие контура и индикатора
+        Tween(tabStroke.Instance, TweenInfo.new(0.2), { Transparency = 1, Color = Theme["Outline"] })
         Tween(activeIndicator.Instance, TweenInfo.new(0.2, Enum.EasingStyle.Quad, Enum.EasingDirection.Out), { 
             BackgroundTransparency = 1,
             Size = UDim2.new(0, 3, 0, 0)
@@ -819,6 +781,8 @@ function Library:CreateTab(window, tabData)
 
         Tween(tabButton.Instance, TweenInfo.new(0.2), { BackgroundTransparency = 0.85, BackgroundColor3 = Theme["Accent"] })
         
+        -- Появление синего контура разделителя и индикатора
+        Tween(tabStroke.Instance, TweenInfo.new(0.25), { Transparency = 0.55, Color = Theme["Accent"] })
         Tween(activeIndicator.Instance, TweenInfo.new(0.28, Enum.EasingStyle.Back, Enum.EasingDirection.Out), { 
             BackgroundTransparency = 0,
             Size = UDim2.new(0, 3, 0, 18)
@@ -870,7 +834,6 @@ function Library:CreateTab(window, tabData)
             TabObject.HasSubTabs = true
             TabObject.Container.Visible = false
             arrowIcon.Instance.ImageTransparency = 0.3
-            subBranchLine.Instance.Visible = true
         end
 
         local subButton = Instances:Create("TextButton", {
@@ -888,11 +851,19 @@ function Library:CreateTab(window, tabData)
             CornerRadius = UDim.new(0, 5)
         })
 
+        local subStroke = Instances:Create("UIStroke", {
+            Parent = subButton.Instance,
+            Color = Theme["Accent"],
+            Thickness = 1,
+            Transparency = 1,
+            ApplyStrokeMode = Enum.ApplyStrokeMode.Border
+        })
+
         local subIndicator = Instances:Create("Frame", {
             Parent = subButton.Instance,
             Name = "SubIndicator",
             AnchorPoint = Vector2.new(0, 0.5),
-            Position = UDim2.new(0, 2, 0.5, 0),
+            Position = UDim2.new(0, 3, 0.5, 0),
             Size = UDim2.new(0, 2, 0, 0),
             BackgroundColor3 = Theme["Accent"],
             BackgroundTransparency = 1,
@@ -972,18 +943,18 @@ function Library:CreateTab(window, tabData)
             Button = subButton.Instance,
             Label = subLabelObj.Instance,
             Indicator = subIndicator.Instance,
+            Stroke = subStroke.Instance,
             Container = subContainer.Instance,
             Columns = subCols
         }
 
         function SubTabObject:Deselect()
             Tween(subButton.Instance, TweenInfo.new(0.15), { BackgroundTransparency = 1 })
-            
+            Tween(subStroke.Instance, TweenInfo.new(0.15), { Transparency = 1 })
             Tween(subIndicator.Instance, TweenInfo.new(0.15, Enum.EasingStyle.Quad, Enum.EasingDirection.Out), { 
                 BackgroundTransparency = 1,
                 Size = UDim2.new(0, 2, 0, 0)
             })
-            
             Tween(subLabelObj.Instance, TweenInfo.new(0.15), { TextColor3 = Theme["SubText"] })
             subContainer.Instance.Visible = false
         end
@@ -993,6 +964,7 @@ function Library:CreateTab(window, tabData)
                 if Library.ActiveTabObject then Library.ActiveTabObject:Deselect() end
                 Library.ActiveTabObject = TabObject
                 Tween(tabButton.Instance, TweenInfo.new(0.2), { BackgroundTransparency = 0.85, BackgroundColor3 = Theme["Accent"] })
+                Tween(tabStroke.Instance, TweenInfo.new(0.25), { Transparency = 0.55, Color = Theme["Accent"] })
                 
                 Tween(activeIndicator.Instance, TweenInfo.new(0.28, Enum.EasingStyle.Back, Enum.EasingDirection.Out), { 
                     BackgroundTransparency = 0,
@@ -1012,6 +984,7 @@ function Library:CreateTab(window, tabData)
 
             TabObject.ActiveSubTabObj = SubTabObject
             Tween(subButton.Instance, TweenInfo.new(0.15), { BackgroundTransparency = 0.9, BackgroundColor3 = Theme["Accent"] })
+            Tween(subStroke.Instance, TweenInfo.new(0.2), { Transparency = 0.6, Color = Theme["Accent"] })
             
             Tween(subIndicator.Instance, TweenInfo.new(0.25, Enum.EasingStyle.Back, Enum.EasingDirection.Out), { 
                 BackgroundTransparency = 0,
