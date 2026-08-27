@@ -1,5 +1,5 @@
 -- =======================================================
--- АВТОНОМНЫЙ СКРИПТ (СИНИЙ/ЧЕРНЫЙ СТИЛЬ + ПЛАВНАЯ АНИМАЦИЯ ИНДИКАТОРА ВКЛАДОК)
+-- АВТОНОМНЫЙ СКРИПТ (СИНИЙ/ЧЕРНЫЙ СТИЛЬ + ПЛАВНАЯ АНИМАЦИЯ ПОЯВЛЕНИЯ ИНДИКАТОРА)
 -- =======================================================
 
 local Workspace = game:GetService("Workspace")
@@ -304,7 +304,6 @@ function Library:CreateWindow(data)
     local Window = {
         LeftTabs = nil,
         Content = nil,
-        ActiveTabIndicator = nil,
         ActiveSubTab = nil
     }
 
@@ -461,23 +460,6 @@ function Library:CreateWindow(data)
         PaddingLeft = UDim.new(0, 6)
     })
 
-    -- ЕДИНЫЙ ПЛАВАЮЩИЙ ИНДИКАТОР ВЫБРАННОЙ ВКЛАДКИ
-    local tabIndicatorBar = Instances:Create("Frame", {
-        Parent = leftTabs.Instance,
-        Name = "ActiveTabIndicatorBar",
-        Position = UDim2.new(0, 2, 0, 0),
-        Size = UDim2.new(0, 3, 0, 18),
-        BackgroundColor3 = Theme["Accent"],
-        BackgroundTransparency = 1,
-        BorderSizePixel = 0,
-        ZIndex = 8
-    })
-
-    Instances:Create("UICorner", {
-        Parent = tabIndicatorBar.Instance,
-        CornerRadius = UDim.new(0, 2)
-    })
-
     BindAutoScroll(leftTabs.Instance, leftTabsLayout.Instance, 15)
 
     local content = Instances:Create("Frame", {
@@ -534,14 +516,13 @@ function Library:CreateWindow(data)
 
     Window.LeftTabs = leftTabs.Instance
     Window.Content = content.Instance
-    Window.ActiveTabIndicator = tabIndicatorBar.Instance
 
     table.insert(Library.Windows, Window)
     return Window
 end
 
 -- =======================================================
--- 10. СИСТЕМА ВКЛАДОК И ПОДВКЛАДОК (С ПЛАВНЫМ ПЕРЕМЕЩЕНИЕМ ИНДИКАТОРА)
+-- 10. СИСТЕМА ВКЛАДОК И ПОДВКЛАДОК (С АНИМАЦИЕЙ ПОЯВЛЕНИЯ ИНДИКАТОРА)
 -- =======================================================
 function Library:CreateTab(window, tabData)
     tabData = tabData or {}
@@ -549,7 +530,6 @@ function Library:CreateTab(window, tabData)
     local tabSubtitle = tabData.Subtitle or ""
     local tabIcon = tabData.Icon or "folder"
 
-    -- Основной контейнер группы вкладки
     local tabGroupFrame = Instances:Create("Frame", {
         Parent = window.LeftTabs,
         Name = "TabGroup_" .. tabName,
@@ -587,7 +567,24 @@ function Library:CreateTab(window, tabData)
         CornerRadius = UDim.new(0, 6)
     })
 
-    -- Иконка вкладки
+    -- Синий индикатор (изначально сжат до 0 по высоте для плавной анимации появления)
+    local activeIndicator = Instances:Create("Frame", {
+        Parent = tabButton.Instance,
+        Name = "ActiveIndicator",
+        AnchorPoint = Vector2.new(0, 0.5),
+        Position = UDim2.new(0, 2, 0.5, 0),
+        Size = UDim2.new(0, 3, 0, 0),
+        BackgroundColor3 = Theme["Accent"],
+        BackgroundTransparency = 1,
+        BorderSizePixel = 0,
+        ZIndex = 7
+    })
+
+    Instances:Create("UICorner", {
+        Parent = activeIndicator.Instance,
+        CornerRadius = UDim.new(0, 2)
+    })
+
     local iconImage = Instances:Create("ImageLabel", {
         Parent = tabButton.Instance,
         Name = "Icon",
@@ -602,7 +599,6 @@ function Library:CreateTab(window, tabData)
         ZIndex = 6
     })
 
-    -- Название вкладки
     local tabLabel = Instances:Create("TextLabel", {
         Parent = tabButton.Instance,
         Name = "Label",
@@ -617,7 +613,6 @@ function Library:CreateTab(window, tabData)
         ZIndex = 6
     })
 
-    -- Подзаголовок
     local subLabel
     if hasSubText then
         subLabel = Instances:Create("TextLabel", {
@@ -637,7 +632,6 @@ function Library:CreateTab(window, tabData)
         })
     end
 
-    -- Стрелочка для подвкладок
     local arrowIcon = Instances:Create("ImageLabel", {
         Parent = tabButton.Instance,
         Name = "Arrow",
@@ -652,7 +646,6 @@ function Library:CreateTab(window, tabData)
         ZIndex = 6
     })
 
-    -- Контейнер для выпадающих подвкладок
     local subTabsContainer = Instances:Create("Frame", {
         Parent = tabGroupFrame.Instance,
         Name = "SubTabsContainer",
@@ -674,24 +667,6 @@ function Library:CreateTab(window, tabData)
         PaddingLeft = UDim.new(0, 12)
     })
 
-    -- Единый индикатор для подвкладок в этой группе
-    local subTabIndicatorBar = Instances:Create("Frame", {
-        Parent = subTabsContainer.Instance,
-        Name = "SubTabIndicatorBar",
-        Position = UDim2.new(0, 2, 0, 0),
-        Size = UDim2.new(0, 2, 0, 14),
-        BackgroundColor3 = Theme["Accent"],
-        BackgroundTransparency = 1,
-        BorderSizePixel = 0,
-        ZIndex = 8
-    })
-
-    Instances:Create("UICorner", {
-        Parent = subTabIndicatorBar.Instance,
-        CornerRadius = UDim.new(0, 2)
-    })
-
-    -- Контейнер содержимого основной вкладки
     local defaultMainContainer = Instances:Create("ScrollingFrame", {
         Parent = window.Content,
         Name = "Container_" .. tabName,
@@ -748,6 +723,7 @@ function Library:CreateTab(window, tabData)
 
     local TabObject = {
         Button = tabButton.Instance,
+        Indicator = activeIndicator.Instance,
         Icon = iconImage.Instance,
         Label = tabLabel.Instance,
         SubLabel = subLabel and subLabel.Instance or nil,
@@ -756,7 +732,6 @@ function Library:CreateTab(window, tabData)
         SubTabs = {},
         SubTabsContainer = subTabsContainer.Instance,
         SubListLayout = subListLayout.Instance,
-        SubTabIndicator = subTabIndicatorBar.Instance,
         Arrow = arrowIcon.Instance,
         Expanded = true,
         HasSubTabs = false,
@@ -765,6 +740,13 @@ function Library:CreateTab(window, tabData)
 
     local function DeselectTab()
         Tween(tabButton.Instance, TweenInfo.new(0.2), { BackgroundTransparency = 1 })
+        
+        -- Плавное исчезновение индикатора (уменьшение высоты + прозрачность)
+        Tween(activeIndicator.Instance, TweenInfo.new(0.2, Enum.EasingStyle.Quad, Enum.EasingDirection.Out), { 
+            BackgroundTransparency = 1,
+            Size = UDim2.new(0, 3, 0, 0)
+        })
+        
         Tween(iconImage.Instance, TweenInfo.new(0.2), { ImageColor3 = Theme["SubText"], ImageTransparency = 0.3 })
         Tween(tabLabel.Instance, TweenInfo.new(0.2), { TextColor3 = Theme["SubText"] })
         if TabObject.SubLabel then
@@ -786,21 +768,14 @@ function Library:CreateTab(window, tabData)
 
         Library.ActiveTabObject = TabObject
 
-        -- АНИМАЦИЯ ПЛАВАЮЩЕЙ СИНЕЙ ПОЛОСКИ К ВЫБРАННОЙ ВКЛАДКЕ
-        local indicator = window.ActiveTabIndicator
-        local targetY = (tabButton.Instance.AbsolutePosition.Y - window.LeftTabs.AbsolutePosition.Y) + window.LeftTabs.CanvasPosition.Y + (buttonHeight / 2 - 9)
-
-        if indicator.BackgroundTransparency == 1 then
-            indicator.Position = UDim2.new(0, 2, 0, targetY)
-            Tween(indicator, TweenInfo.new(0.25), { BackgroundTransparency = 0 })
-        else
-            Tween(indicator, TweenInfo.new(0.3, Enum.EasingStyle.Quart, Enum.EasingDirection.Out), {
-                Position = UDim2.new(0, 2, 0, targetY),
-                BackgroundTransparency = 0
-            })
-        end
-
         Tween(tabButton.Instance, TweenInfo.new(0.2), { BackgroundTransparency = 0.85, BackgroundColor3 = Theme["Accent"] })
+        
+        -- Плавное появление индикатора (разворачивание высоты с эффектом Back/Out)
+        Tween(activeIndicator.Instance, TweenInfo.new(0.28, Enum.EasingStyle.Back, Enum.EasingDirection.Out), { 
+            BackgroundTransparency = 0,
+            Size = UDim2.new(0, 3, 0, 18)
+        })
+
         Tween(iconImage.Instance, TweenInfo.new(0.2), { ImageColor3 = Theme["Accent"], ImageTransparency = 0 })
         Tween(tabLabel.Instance, TweenInfo.new(0.2), { TextColor3 = Theme["Text"] })
         if TabObject.SubLabel then
@@ -862,6 +837,19 @@ function Library:CreateTab(window, tabData)
         Instances:Create("UICorner", {
             Parent = subButton.Instance,
             CornerRadius = UDim.new(0, 5)
+        })
+
+        -- Синий индикатор подвкладки (тоже сжимаем по умолчанию)
+        local subIndicator = Instances:Create("Frame", {
+            Parent = subButton.Instance,
+            Name = "SubIndicator",
+            AnchorPoint = Vector2.new(0, 0.5),
+            Position = UDim2.new(0, 2, 0.5, 0),
+            Size = UDim2.new(0, 2, 0, 0),
+            BackgroundColor3 = Theme["Accent"],
+            BackgroundTransparency = 1,
+            BorderSizePixel = 0,
+            ZIndex = 7
         })
 
         local subLabelObj = Instances:Create("TextLabel", {
@@ -935,12 +923,20 @@ function Library:CreateTab(window, tabData)
         local SubTabObject = {
             Button = subButton.Instance,
             Label = subLabelObj.Instance,
+            Indicator = subIndicator.Instance,
             Container = subContainer.Instance,
             Columns = subCols
         }
 
         function SubTabObject:Deselect()
             Tween(subButton.Instance, TweenInfo.new(0.15), { BackgroundTransparency = 1 })
+            
+            -- Плавное исчезновение индикатора подвкладки
+            Tween(subIndicator.Instance, TweenInfo.new(0.15, Enum.EasingStyle.Quad, Enum.EasingDirection.Out), { 
+                BackgroundTransparency = 1,
+                Size = UDim2.new(0, 2, 0, 0)
+            })
+            
             Tween(subLabelObj.Instance, TweenInfo.new(0.15), { TextColor3 = Theme["SubText"] })
             subContainer.Instance.Visible = false
         end
@@ -949,16 +945,13 @@ function Library:CreateTab(window, tabData)
             if Library.ActiveTabObject ~= TabObject then
                 if Library.ActiveTabObject then Library.ActiveTabObject:Deselect() end
                 Library.ActiveTabObject = TabObject
-
-                -- Перемещение основного индикатора на главную вкладку
-                local indicator = window.ActiveTabIndicator
-                local mainTargetY = (tabButton.Instance.AbsolutePosition.Y - window.LeftTabs.AbsolutePosition.Y) + window.LeftTabs.CanvasPosition.Y + (buttonHeight / 2 - 9)
-                Tween(indicator, TweenInfo.new(0.3, Enum.EasingStyle.Quart, Enum.EasingDirection.Out), {
-                    Position = UDim2.new(0, 2, 0, mainTargetY),
-                    BackgroundTransparency = 0
+                Tween(tabButton.Instance, TweenInfo.new(0.2), { BackgroundTransparency = 0.85, BackgroundColor3 = Theme["Accent"] })
+                
+                Tween(activeIndicator.Instance, TweenInfo.new(0.28, Enum.EasingStyle.Back, Enum.EasingDirection.Out), { 
+                    BackgroundTransparency = 0,
+                    Size = UDim2.new(0, 3, 0, 18)
                 })
 
-                Tween(tabButton.Instance, TweenInfo.new(0.2), { BackgroundTransparency = 0.85, BackgroundColor3 = Theme["Accent"] })
                 Tween(iconImage.Instance, TweenInfo.new(0.2), { ImageColor3 = Theme["Accent"], ImageTransparency = 0 })
                 Tween(tabLabel.Instance, TweenInfo.new(0.2), { TextColor3 = Theme["Text"] })
                 if TabObject.SubLabel then
@@ -971,22 +964,14 @@ function Library:CreateTab(window, tabData)
             end
 
             TabObject.ActiveSubTabObj = SubTabObject
-
-            -- АНИМАЦИЯ ПЛАВАЮЩЕГО ИНДИКАТОР ПОДВКЛАДОК
-            local subIndicator = TabObject.SubTabIndicator
-            local subTargetY = (subButton.Instance.AbsolutePosition.Y - subTabsContainer.Instance.AbsolutePosition.Y) + (26 / 2 - 7)
-
-            if subIndicator.BackgroundTransparency == 1 then
-                subIndicator.Position = UDim2.new(0, 2, 0, subTargetY)
-                Tween(subIndicator, TweenInfo.new(0.2), { BackgroundTransparency = 0 })
-            else
-                Tween(subIndicator, TweenInfo.new(0.25, Enum.EasingStyle.Quart, Enum.EasingDirection.Out), {
-                    Position = UDim2.new(0, 2, 0, subTargetY),
-                    BackgroundTransparency = 0
-                })
-            end
-
             Tween(subButton.Instance, TweenInfo.new(0.15), { BackgroundTransparency = 0.9, BackgroundColor3 = Theme["Accent"] })
+            
+            -- Плавное появление индикатора подвкладки
+            Tween(subIndicator.Instance, TweenInfo.new(0.25, Enum.EasingStyle.Back, Enum.EasingDirection.Out), { 
+                BackgroundTransparency = 0,
+                Size = UDim2.new(0, 2, 0, 12)
+            })
+
             Tween(subLabelObj.Instance, TweenInfo.new(0.15), { TextColor3 = Theme["Text"] })
             subContainer.Instance.Visible = true
         end
@@ -1012,17 +997,14 @@ function Library:CreateTab(window, tabData)
     end
 
     if not Library.ActiveTabObject then
-        task.spawn(function()
-            task.wait(0.05)
-            ActivateTab()
-        end)
+        ActivateTab()
     end
 
     return TabObject, defaultColumns
 end
 
 -- =======================================================
--- 11. СЕКЦИИ UI (ПОДДЕРЖКА ПАНЕЛЕЙ И ПЕРЕКЛЮЧАТЕЛЕЙ)
+-- 11. СЕКЦИИ UI
 -- =======================================================
 function Library:CreateSection(parentColumn, sectionData)
     sectionData = sectionData or {}
