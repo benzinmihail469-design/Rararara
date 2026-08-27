@@ -1651,7 +1651,7 @@ function Library:CreateSection(parentColumn, sectionData)
     end
 
     -- ====================================================================
-    -- СИСТЕМА ДРОПДАУНОВ С АНИМАЦИЕЙ, ГРАДИЕНТОМ И РАЗДЕЛИТЕЛЬНОЙ ПОЛОСОЙ
+    -- СИСТЕМА ДРОПДАУНОВ (ИСПРАВЛЕНА ПРОБЛЕМА С ЗАЛИПАНИЕМ КНОПОК)
     -- ====================================================================
     function SectionAPI:CreateDropdown(dropdownData)
         dropdownData = dropdownData or {}
@@ -1716,7 +1716,7 @@ function Library:CreateSection(parentColumn, sectionData)
             Thickness = 1
         })
 
-        -- Разделительная линия снизу плашки в закрытом состоянии
+        -- Разделительная линия снизу плашки
         local headerBottomLine = Instances:Create("Frame", {
             Parent = dropHeader.Instance,
             Name = "BottomBorder",
@@ -1771,7 +1771,7 @@ function Library:CreateSection(parentColumn, sectionData)
             ZIndex = 10
         })
 
-        -- Выпадающее меню (привязано к dropHost)
+        -- Выпадающее меню
         local optionsList = Instances:Create("Frame", {
             Parent = dropHost.Instance,
             Name = "OptionsList",
@@ -1797,7 +1797,7 @@ function Library:CreateSection(parentColumn, sectionData)
             Transparency = 1
         })
 
-        local listLayout = Instances:Create("UIListLayout", {
+        Instances:Create("UIListLayout", {
             Parent = optionsList.Instance,
             SortOrder = Enum.SortOrder.LayoutOrder,
             Padding = UDim.new(0, 2)
@@ -1814,13 +1814,11 @@ function Library:CreateSection(parentColumn, sectionData)
         local optionButtons = {}
         local DropdownAPI = {}
 
-        -- Динамический расчёт высоты без ожидания рендера UI
         local function GetContentHeight()
             if #options == 0 then return 0 end
             return (#options * 22) + ((#options - 1) * 2) + 8
         end
 
-        -- Плавная анимация раскрытия и скрытия
         local function UpdateHeight()
             local listHeight = GetContentHeight()
             local targetListHeight = expanded and listHeight or 0
@@ -1855,10 +1853,29 @@ function Library:CreateSection(parentColumn, sectionData)
             })
         end
 
-        -- Отрисовка списка элементов
+        -- Обновление визуального состояния элементов без их уничтожения
+        local function UpdateSelectionVisuals()
+            for optVal, btnData in pairs(optionButtons) do
+                local isSelected = (optVal == selected)
+                Tween(btnData.Instance, TweenInfo.new(0.15), {
+                    BackgroundTransparency = isSelected and 0.85 or 1
+                })
+                Tween(btnData.Label, TweenInfo.new(0.15), {
+                    TextColor3 = isSelected and Theme["Text"] or Theme["SubText"],
+                    Position = UDim2.new(0, isSelected and 12 or 8, 0, 0),
+                    Size = UDim2.new(1, isSelected and -30 or -16, 1, 0)
+                })
+                btnData.SideBar.Visible = isSelected
+                btnData.CheckMark.ImageTransparency = isSelected and 0 or 1
+            end
+        end
+
+        -- Отрисовка элементов при инициализации или смене списка
         local function RefreshOptions()
-            for _, btn in pairs(optionButtons) do
-                btn:Destroy()
+            for _, btnData in pairs(optionButtons) do
+                if btnData.Instance then
+                    btnData.Instance:Destroy()
+                end
             end
             table.clear(optionButtons)
 
@@ -1882,7 +1899,7 @@ function Library:CreateSection(parentColumn, sectionData)
                     CornerRadius = UDim.new(0, 3)
                 })
 
-                local optGradient = Instances:Create("UIGradient", {
+                Instances:Create("UIGradient", {
                     Parent = optBtn.Instance,
                     Color = ColorSequence.new({
                         ColorSequenceKeypoint.new(0, Theme["Accent"]),
@@ -1942,7 +1959,7 @@ function Library:CreateSection(parentColumn, sectionData)
                     ZIndex = 22
                 })
 
-                -- Анимация наведения
+                -- Наведение мышкой
                 optBtn:Connect("MouseEnter", function()
                     if opt ~= selected then
                         Tween(optBtn.Instance, TweenInfo.new(0.15, Enum.EasingStyle.Quad, Enum.EasingDirection.Out), {
@@ -1965,14 +1982,11 @@ function Library:CreateSection(parentColumn, sectionData)
                     end
                 end)
 
-                -- Анимация нажатия
+                -- Эффект клика
                 optBtn:Connect("MouseButton1Down", function()
                     Tween(optBtn.Instance, TweenInfo.new(0.08, Enum.EasingStyle.Quad, Enum.EasingDirection.Out), {
                         Size = UDim2.new(1, -4, 0, 20),
                         BackgroundTransparency = 0.75
-                    })
-                    Tween(optLabel.Instance, TweenInfo.new(0.08, Enum.EasingStyle.Quad, Enum.EasingDirection.Out), {
-                        TextSize = 10.5
                     })
                 end)
 
@@ -1980,17 +1994,18 @@ function Library:CreateSection(parentColumn, sectionData)
                     Tween(optBtn.Instance, TweenInfo.new(0.15, Enum.EasingStyle.Back, Enum.EasingDirection.Out), {
                         Size = UDim2.new(1, 0, 0, 22)
                     })
-                    Tween(optLabel.Instance, TweenInfo.new(0.15, Enum.EasingStyle.Back, Enum.EasingDirection.Out), {
-                        TextSize = 11
-                    })
                 end)
 
-                -- Клик по пункту (список остается открытым)
                 optBtn:Connect("MouseButton1Click", function()
                     DropdownAPI:Set(opt)
                 end)
 
-                table.insert(optionButtons, optBtn.Instance)
+                optionButtons[opt] = {
+                    Instance = optBtn.Instance,
+                    Label = optLabel.Instance,
+                    SideBar = sideBar.Instance,
+                    CheckMark = checkIcon.Instance
+                }
             end
 
             if expanded then
@@ -2002,7 +2017,7 @@ function Library:CreateSection(parentColumn, sectionData)
             selected = val
             valueLabel.Instance.Text = tostring(selected)
             Library.Flags[flag] = selected
-            RefreshOptions()
+            UpdateSelectionVisuals()
             pcall(callback, selected)
         end
 
@@ -2013,10 +2028,11 @@ function Library:CreateSection(parentColumn, sectionData)
             elseif not table.find(options, selected) then
                 selected = options[1] or ""
             end
+            RefreshOptions()
             DropdownAPI:Set(selected)
         end
 
-        -- Анимации и клик на Header
+        -- События открытия/закрытия хедера
         dropHeader:Connect("MouseButton1Down", function()
             Tween(dropHeader.Instance, TweenInfo.new(0.08, Enum.EasingStyle.Quad, Enum.EasingDirection.Out), {
                 Size = UDim2.new(0.53, 0, 0, 22)
