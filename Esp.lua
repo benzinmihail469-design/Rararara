@@ -1,5 +1,5 @@
 -- =======================================================
--- АВТОНОМНЫЙ СКРИПТ (СИНИЙ/ЧЕРНЫЙ СТИЛЬ + ИСПРАВЛЕННАЯ СКОРОСТЬ СОЗВЕЗДИЯ)
+-- АВТОНОМНЫЙ СКРИПТ (СИНИЙ/ЧЕРНЫЙ СТИЛЬ + ИСПРАВЛЕННАЯ ФИЗИКА ЧАСТИЦ)
 -- =======================================================
 
 local Workspace = game:GetService("Workspace")
@@ -147,7 +147,7 @@ local function MakeDraggable(guiInstance, dragHandle)
 end
 
 -- =======================================================
--- 8. СИСТЕМА СОЗВЕЗДИЯ (МЕДЛЕННОЕ ПЛАВНОЕ ДВИЖЕНИЕ)
+-- 8. СИСТЕМА СОЗВЕЗДИЯ (ФИКС УСКОРЕНИЯ)
 -- =======================================================
 local function CreateConstellationBackground(parentFrame, numNodes, maxDistance)
     numNodes = numNodes or 35
@@ -183,11 +183,15 @@ local function CreateConstellationBackground(parentFrame, numNodes, maxDistance)
             CornerRadius = UDim.new(1, 0)
         })
 
+        local angle = rng:NextNumber(0, math.pi * 2)
+        local baseSpeed = rng:NextNumber(4, 7)
+        local initialVel = Vector2.new(math.cos(angle) * baseSpeed, math.sin(angle) * baseSpeed)
+
         table.insert(nodes, {
             Gui = dot.Instance,
             Pos = Vector2.new(rng:NextNumber(160, 520), rng:NextNumber(10, 360)),
-            -- Скорость уменьшена с (-22, 22) до (-6, 6) для плавной анимации
-            Vel = Vector2.new(rng:NextNumber(-6, 6), rng:NextNumber(-6, 6))
+            Vel = initialVel,
+            BaseSpeed = baseSpeed
         })
     end
 
@@ -220,24 +224,32 @@ local function CreateConstellationBackground(parentFrame, numNodes, maxDistance)
         if width <= 0 or height <= 0 then return end
 
         local minX = 155
+        local clampedDt = math.min(dt, 0.05) -- Ограничение шага времени от просадок FPS
 
         for _, node in ipairs(nodes) do
-            node.Pos = node.Pos + node.Vel * dt
+            -- Защита от бесконечного разгона: держим скорость постоянной
+            if node.Vel.Magnitude == 0 then
+                node.Vel = Vector2.new(1, 1)
+            end
+            node.Vel = node.Vel.Unit * node.BaseSpeed
 
+            node.Pos = node.Pos + node.Vel * clampedDt
+
+            -- Направленный отскок с выталкиванием
             if node.Pos.X <= minX then
                 node.Pos = Vector2.new(minX, node.Pos.Y)
-                node.Vel = Vector2.new(-node.Vel.X, node.Vel.Y)
+                node.Vel = Vector2.new(math.abs(node.Vel.X), node.Vel.Y)
             elseif node.Pos.X >= width - 5 then
                 node.Pos = Vector2.new(width - 5, node.Pos.Y)
-                node.Vel = Vector2.new(-node.Vel.X, node.Vel.Y)
+                node.Vel = Vector2.new(-math.abs(node.Vel.X), node.Vel.Y)
             end
 
             if node.Pos.Y <= 5 then
                 node.Pos = Vector2.new(node.Pos.X, 5)
-                node.Vel = Vector2.new(node.Pos.X, -node.Vel.Y)
+                node.Vel = Vector2.new(node.Vel.X, math.abs(node.Vel.Y))
             elseif node.Pos.Y >= height - 5 then
                 node.Pos = Vector2.new(node.Pos.X, height - 5)
-                node.Vel = Vector2.new(node.Pos.X, -node.Vel.Y)
+                node.Vel = Vector2.new(node.Vel.X, -math.abs(node.Vel.Y))
             end
 
             node.Gui.Position = UDim2.new(0, node.Pos.X, 0, node.Pos.Y)
