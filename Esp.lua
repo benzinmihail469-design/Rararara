@@ -1,5 +1,5 @@
 -- =======================================================
--- ИСПРАВЛЕННЫЙ СКРИПТ С РАБОЧИМ ЭФФЕКТOМ НАВЕДЕНИЯ (HOVER)
+-- ПОЛНЫЙ СКРИПТ С ПОДДЕРЖКОЙ ИКОНОК ДЛЯ СЕКЦИЙ И СУБ-ВКЛАДОК
 -- =======================================================
 
 local Workspace = game:GetService("Workspace")
@@ -523,7 +523,7 @@ function Library:CreateWindow(data)
 end
 
 -- =======================================================
--- 10. СИСТЕМА ВКЛАДОК И ПОДВКЛАДОК (С ИСПРАВЛЕННЫМ HOVER)
+-- 10. СИСТЕМА ВКЛАДОК И ПОДВКЛАДОК
 -- =======================================================
 function Library:CreateTab(window, tabData)
     tabData = tabData or {}
@@ -830,9 +830,7 @@ function Library:CreateTab(window, tabData)
         ActivateTab()
     end
 
-    -- ==========================================
-    -- РАБОЧИЕ ЭФФЕКТЫ НАВЕДЕНИЯ (HOVER EFFECT)
-    -- ==========================================
+    -- Эффекты наведения (Hover) для основной вкладки
     tabButton:Connect("MouseEnter", function()
         if Library.ActiveTabObject ~= TabObject then
             Tween(tabButton.Instance, TweenInfo.new(0.2), { 
@@ -876,10 +874,12 @@ function Library:CreateTab(window, tabData)
         end
     end)
 
-    -- СОЗДАНИЕ ПОДВКЛАДОК
+    -- СОЗДАНИЕ ПОДВКЛАДОК (С ПОДДЕРЖКОЙ ИКОНОК)
     function TabObject:CreateSubTab(subData)
         subData = subData or {}
         local subName = subData.Name or "SubTab"
+        local subIcon = subData.Icon or ""
+        local hasSubIcon = subIcon ~= ""
 
         if not TabObject.HasSubTabs then
             TabObject.HasSubTabs = true
@@ -925,6 +925,28 @@ function Library:CreateTab(window, tabData)
             ZIndex = 14
         })
 
+        local subIconObj
+        local textOffset = 12
+        local textSizeX = -14
+
+        if hasSubIcon then
+            textOffset = 28
+            textSizeX = -30
+            subIconObj = Instances:Create("ImageLabel", {
+                Parent = subButton.Instance,
+                Name = "Icon",
+                Size = UDim2.new(0, 14, 0, 14),
+                AnchorPoint = Vector2.new(0, 0.5),
+                Position = UDim2.new(0, 10, 0.5, 0),
+                BackgroundTransparency = 1,
+                ScaleType = Enum.ScaleType.Fit,
+                Image = ParseIcon(subIcon),
+                ImageColor3 = Theme["SubText"],
+                ImageTransparency = 0.3,
+                ZIndex = 13
+            })
+        end
+
         local subLabelObj = Instances:Create("TextLabel", {
             Parent = subButton.Instance,
             Name = "Label",
@@ -932,8 +954,8 @@ function Library:CreateTab(window, tabData)
             FontFace = Font.new("rbxassetid://12187365364", Enum.FontWeight.Medium, Enum.FontStyle.Normal),
             TextColor3 = Theme["SubText"],
             TextSize = 11,
-            Position = UDim2.new(0, 12, 0, 0),
-            Size = UDim2.new(1, -14, 1, 0),
+            Position = UDim2.new(0, textOffset, 0, 0),
+            Size = UDim2.new(1, textSizeX, 1, 0),
             BackgroundTransparency = 1,
             TextXAlignment = Enum.TextXAlignment.Left,
             ZIndex = 13
@@ -1013,6 +1035,9 @@ function Library:CreateTab(window, tabData)
                 Size = UDim2.new(0, 2, 0, 0)
             })
             Tween(subLabelObj.Instance, TweenInfo.new(0.15), { TextColor3 = Theme["SubText"] })
+            if subIconObj then
+                Tween(subIconObj.Instance, TweenInfo.new(0.15), { ImageColor3 = Theme["SubText"], ImageTransparency = 0.3 })
+            end
             subContainer.Instance.Visible = false
         end
 
@@ -1049,10 +1074,12 @@ function Library:CreateTab(window, tabData)
             })
 
             Tween(subLabelObj.Instance, TweenInfo.new(0.15), { TextColor3 = Theme["Text"] })
+            if subIconObj then
+                Tween(subIconObj.Instance, TweenInfo.new(0.15), { ImageColor3 = Theme["Accent"], ImageTransparency = 0 })
+            end
             subContainer.Instance.Visible = true
         end
 
-        -- Наведение для подвкладки
         subButton:Connect("MouseEnter", function()
             if TabObject.ActiveSubTabObj ~= SubTabObject then
                 Tween(subButton.Instance, TweenInfo.new(0.15), { 
@@ -1060,6 +1087,9 @@ function Library:CreateTab(window, tabData)
                     BackgroundTransparency = 0.93 
                 })
                 Tween(subLabelObj.Instance, TweenInfo.new(0.15), { TextColor3 = Theme["Text"] })
+                if subIconObj then
+                    Tween(subIconObj.Instance, TweenInfo.new(0.15), { ImageColor3 = Theme["Text"], ImageTransparency = 0 })
+                end
             end
         end)
 
@@ -1070,6 +1100,9 @@ function Library:CreateTab(window, tabData)
                     BackgroundTransparency = 1 
                 })
                 Tween(subLabelObj.Instance, TweenInfo.new(0.15), { TextColor3 = Theme["SubText"] })
+                if subIconObj then
+                    Tween(subIconObj.Instance, TweenInfo.new(0.15), { ImageColor3 = Theme["SubText"], ImageTransparency = 0.3 })
+                end
             end
         end)
 
@@ -1098,12 +1131,14 @@ function Library:CreateTab(window, tabData)
 end
 
 -- =======================================================
--- 11. СЕКЦИИ UI
+-- 11. СЕКЦИИ UI (С ПОДДЕРЖКОЙ ИКОНОК)
 -- =======================================================
 function Library:CreateSection(parentColumn, sectionData)
     sectionData = sectionData or {}
     local sectionName = sectionData.Name or "Section"
+    local sectionIcon = sectionData.Icon or ""
     local collapsed = sectionData.Collapsed or false
+    local hasSectionIcon = sectionIcon ~= ""
 
     local sectionFrame = Instances:Create("Frame", {
         Parent = parentColumn,
@@ -1153,6 +1188,26 @@ function Library:CreateSection(parentColumn, sectionData)
         PaddingRight = UDim.new(0, 10)
     })
 
+    local titleOffset = 0
+    local titleSizeX = -20
+
+    if hasSectionIcon then
+        titleOffset = 18
+        titleSizeX = -38
+        Instances:Create("ImageLabel", {
+            Parent = headerButton.Instance,
+            Name = "Icon",
+            Size = UDim2.new(0, 14, 0, 14),
+            AnchorPoint = Vector2.new(0, 0.5),
+            Position = UDim2.new(0, 0, 0.5, 0),
+            BackgroundTransparency = 1,
+            ScaleType = Enum.ScaleType.Fit,
+            Image = ParseIcon(sectionIcon),
+            ImageColor3 = Theme["Accent"],
+            ZIndex = 6
+        })
+    end
+
     local titleLabel = Instances:Create("TextLabel", {
         Parent = headerButton.Instance,
         Name = "Title",
@@ -1160,8 +1215,8 @@ function Library:CreateSection(parentColumn, sectionData)
         FontFace = Font.new("rbxassetid://12187365364", Enum.FontWeight.Bold, Enum.FontStyle.Normal),
         TextColor3 = Theme["Text"],
         TextSize = 12,
-        Size = UDim2.new(1, -20, 1, 0),
-        Position = UDim2.new(0, 0, 0, 0),
+        Size = UDim2.new(1, titleSizeX, 1, 0),
+        Position = UDim2.new(0, titleOffset, 0, 0),
         BackgroundTransparency = 1,
         TextXAlignment = Enum.TextXAlignment.Left,
         ZIndex = 6
@@ -1367,27 +1422,27 @@ local CombatTab, CombatCols = Library:CreateTab(MainWindow, {
     Icon = "combat"
 })
 
-local AimbotSection = Library:CreateSection(CombatCols[1], { Name = "Aimbot" })
+local AimbotSection = Library:CreateSection(CombatCols[1], { Name = "Aimbot", Icon = "zap" })
 AimbotSection:CreateToggle({ Name = "Enable Aimbot", Default = true })
 AimbotSection:CreateToggle({ Name = "Prediction", Default = false })
 
-local JopaSection = Library:CreateSection(CombatCols[1], { Name = "Misc Combat" })
+local JopaSection = Library:CreateSection(CombatCols[1], { Name = "Misc Combat", Icon = "shield" })
 JopaSection:CreateToggle({ Name = "Auto Trigger", Default = false })
 
--- 2. Вкладка Visuals с подвкладками
+-- 2. Вкладка Visuals с подвкладками (и иконками у суб-вкладок)
 local VisualsTab = Library:CreateTab(MainWindow, {
     Name = "Visuals",
     Subtitle = "отображение объектов",
     Icon = "eye"
 })
 
-local PlayersSubContainer, PlayersCols = VisualsTab:CreateSubTab({ Name = "Players" })
-local PlayersSection = Library:CreateSection(PlayersCols[1], { Name = "ESP Players" })
+local PlayersSubContainer, PlayersCols = VisualsTab:CreateSubTab({ Name = "Players", Icon = "user" })
+local PlayersSection = Library:CreateSection(PlayersCols[1], { Name = "ESP Players", Icon = "eye" })
 PlayersSection:CreateToggle({ Name = "Box ESP", Default = true })
 PlayersSection:CreateToggle({ Name = "Tracers", Default = false })
 
-local WorldSubContainer, WorldCols = VisualsTab:CreateSubTab({ Name = "World" })
-local WorldSection = Library:CreateSection(WorldCols[1], { Name = "World Visuals" })
+local WorldSubContainer, WorldCols = VisualsTab:CreateSubTab({ Name = "World", Icon = "globe" })
+local WorldSection = Library:CreateSection(WorldCols[1], { Name = "World Visuals", Icon = "palette" })
 WorldSection:CreateToggle({ Name = "Fullbright", Default = false })
 
 -- 3. Вкладка Local
