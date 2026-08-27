@@ -296,7 +296,9 @@ end
 -- =======================================================
 local Library = {
     Windows = {},
-    ActiveTabObject = nil
+    ActiveTabObject = nil,
+    Flags = {},
+    SetFlags = {}
 }
 
 function Library:CreateWindow(data)
@@ -1483,6 +1485,266 @@ function Library:CreateSection(parentColumn, sectionData)
         return toggleButton.Instance
     end
 
+    -- ====================================================================
+    -- СИСТЕМА КНОПОК И СЛАЙДЕРОВ (ДОБАВЛЕНА В SECTIONAPI)
+    -- ====================================================================
+
+    -- Метод для создания Кнопки
+    function SectionAPI:Button(Data)
+        Data = Data or {}
+        local Button = {
+            Title = Data.Title or Data.Name or "Button",
+            Callback = Data.Callback or function() end
+        }
+
+        local ButtonFrame = Instances:Create("TextButton", {
+            Parent = elementsContainer.Instance,
+            Name = "Button_" .. Button.Title,
+            BackgroundColor3 = Theme["Element"],
+            Text = Button.Title,
+            TextColor3 = Theme["Text"],
+            TextSize = 14,
+            FontFace = Font.new("rbxassetid://12187365364", Enum.FontWeight.Medium, Enum.FontStyle.Normal),
+            AutoButtonColor = false,
+            Size = UDim2.new(1, 0, 0, 32),
+            BorderSizePixel = 0,
+            ZIndex = 7,
+            BackgroundTransparency = 0
+        })
+
+        Instances:Create("UICorner", {
+            Parent = ButtonFrame.Instance,
+            CornerRadius = UDim.new(0, 4)
+        })
+
+        local buttonStroke = Instances:Create("UIStroke", {
+            Parent = ButtonFrame.Instance,
+            Color = Theme["Outline"],
+            Thickness = 1
+        })
+
+        ButtonFrame:Connect("MouseEnter", function()
+            Tween(ButtonFrame.Instance, TweenInfo.new(0.15), { BackgroundTransparency = 0.2 })
+            Tween(buttonStroke, TweenInfo.new(0.15), { Color = Theme["Accent"], Transparency = 0.5 })
+        end)
+
+        ButtonFrame:Connect("MouseLeave", function()
+            Tween(ButtonFrame.Instance, TweenInfo.new(0.15), { BackgroundTransparency = 0 })
+            Tween(buttonStroke, TweenInfo.new(0.15), { Color = Theme["Outline"], Transparency = 0 })
+        end)
+
+        ButtonFrame:Connect("MouseButton1Down", function()
+            Tween(ButtonFrame.Instance, TweenInfo.new(0.1), { Size = UDim2.new(1, -4, 0, 30) })
+            task.wait(0.1)
+            Tween(ButtonFrame.Instance, TweenInfo.new(0.1), { Size = UDim2.new(1, 0, 0, 32) })
+            
+            -- Анимация нажатия
+            Tween(ButtonFrame.Instance, TweenInfo.new(0.1), { BackgroundTransparency = 0.4 })
+            task.wait(0.1)
+            Tween(ButtonFrame.Instance, TweenInfo.new(0.1), { BackgroundTransparency = 0 })
+            
+            pcall(Button.Callback)
+        end)
+
+        function Button:SetText(NewText)
+            ButtonFrame.Instance.Text = NewText
+            Button.Title = NewText
+        end
+
+        function Button:SetCallback(NewCallback)
+            Button.Callback = NewCallback
+        end
+
+        return Button
+    end
+
+    -- Метод для создания Слайдера
+    function SectionAPI:Slider(Data)
+        Data = Data or {}
+        local Slider = {
+            Title = Data.Title or Data.Name or "Slider",
+            Min = Data.Min or Data.min or 0,
+            Max = Data.Max or Data.max or 100,
+            Float = Data.Float or Data.float or 1,
+            Default = Data.Default or Data.default or Data.Min or 0,
+            Flag = Data.Flag or Data.flag or "Slider_" .. tostring(#Library.Flags + 1),
+            Unit = Data.Unit or Data.unit or "",
+            Callback = Data.Callback or Data.callback or function() end,
+            Value = 0
+        }
+
+        local SliderFrame = Instances:Create("Frame", {
+            Parent = elementsContainer.Instance,
+            Name = "Slider_" .. Slider.Title,
+            BackgroundTransparency = 1,
+            Size = UDim2.new(1, 0, 0, 40),
+            BorderSizePixel = 0,
+            ZIndex = 7
+        })
+
+        -- Заголовок
+        local TitleLabel = Instances:Create("TextLabel", {
+            Parent = SliderFrame.Instance,
+            Name = "Title",
+            Text = Slider.Title,
+            TextColor3 = Theme["Text"],
+            TextSize = 13,
+            FontFace = Font.new("rbxassetid://12187365364", Enum.FontWeight.Medium, Enum.FontStyle.Normal),
+            Size = UDim2.new(0.7, 0, 0, 16),
+            Position = UDim2.new(0, 0, 0, 0),
+            BackgroundTransparency = 1,
+            TextXAlignment = Enum.TextXAlignment.Left,
+            ZIndex = 8
+        })
+
+        -- Значение
+        local ValueLabel = Instances:Create("TextLabel", {
+            Parent = SliderFrame.Instance,
+            Name = "Value",
+            Text = tostring(Slider.Default) .. Slider.Unit,
+            TextColor3 = Theme["Accent"],
+            TextSize = 13,
+            FontFace = Font.new("rbxassetid://12187365364", Enum.FontWeight.Bold, Enum.FontStyle.Normal),
+            Size = UDim2.new(0.3, 0, 0, 16),
+            Position = UDim2.new(0.7, 0, 0, 0),
+            BackgroundTransparency = 1,
+            TextXAlignment = Enum.TextXAlignment.Right,
+            ZIndex = 8
+        })
+
+        -- Трек слайдера
+        local SliderTrack = Instances:Create("TextButton", {
+            Parent = SliderFrame.Instance,
+            Name = "Track",
+            Text = "",
+            AutoButtonColor = false,
+            Position = UDim2.new(0, 0, 0, 22),
+            Size = UDim2.new(1, 0, 0, 6),
+            BorderSizePixel = 0,
+            BackgroundColor3 = Theme["Element"],
+            ZIndex = 8,
+            Active = true
+        })
+
+        Instances:Create("UICorner", {
+            Parent = SliderTrack.Instance,
+            CornerRadius = UDim.new(1, 0)
+        })
+
+        -- Заполнение
+        local SliderFill = Instances:Create("Frame", {
+            Parent = SliderTrack.Instance,
+            Name = "Fill",
+            Size = UDim2.new(0, 0, 1, 0),
+            BorderSizePixel = 0,
+            BackgroundColor3 = Theme["Accent"],
+            ZIndex = 9
+        })
+
+        Instances:Create("UICorner", {
+            Parent = SliderFill.Instance,
+            CornerRadius = UDim.new(1, 0)
+        })
+
+        -- Обновление слайдера
+        local function UpdateSliderDisplay()
+            local percent = (Slider.Value - Slider.Min) / (Slider.Max - Slider.Min)
+            SliderFill:Tween(TweenInfo.new(0.08, Enum.EasingStyle.Quad, Enum.EasingDirection.Out), {
+                Size = UDim2.new(percent, 0, 1, 0)
+            })
+            ValueLabel.Instance.Text = tostring(Slider.Value) .. Slider.Unit
+        end
+
+        function Slider:Set(Value)
+            Value = math.clamp(Value, Slider.Min, Slider.Max)
+            -- Округление
+            if Slider.Float and Slider.Float > 0 then
+                Value = math.round(Value / Slider.Float) * Slider.Float
+            end
+            Slider.Value = Value
+            Library.Flags[Slider.Flag] = Value
+            
+            UpdateSliderDisplay()
+            pcall(Slider.Callback, Value)
+        end
+
+        -- Получение значения из позиции мыши
+        local function GetSliderValueFromInput(Input)
+            local trackSizeX = SliderTrack.Instance.AbsoluteSize.X
+            if trackSizeX <= 0 then return Slider.Value end
+            
+            local trackPosX = SliderTrack.Instance.AbsolutePosition.X
+            local mouseX = Input.Position.X
+            local normalized = math.clamp((mouseX - trackPosX) / trackSizeX, 0, 1)
+            return Slider.Min + (Slider.Max - Slider.Min) * normalized
+        end
+
+        -- Обработка начала взаимодействия
+        local sliding = false
+        local slidingConnection = nil
+
+        SliderTrack:Connect("InputBegan", function(Input)
+            if Input.UserInputType == Enum.UserInputType.MouseButton1 or 
+               Input.UserInputType == Enum.UserInputType.Touch then
+                sliding = true
+                local newValue = GetSliderValueFromInput(Input)
+                Slider:Set(newValue)
+
+                if not slidingConnection then
+                    slidingConnection = UserInputService.InputEnded:Connect(function(EndInput)
+                        if EndInput.UserInputType == Enum.UserInputType.MouseButton1 or 
+                           EndInput.UserInputType == Enum.UserInputType.Touch then
+                            sliding = false
+                            if slidingConnection then
+                                slidingConnection:Disconnect()
+                                slidingConnection = nil
+                            end
+                        end
+                    end)
+                end
+            end
+        end)
+
+        -- Обновление при движении
+        UserInputService.InputChanged:Connect(function(Input)
+            if sliding and (Input.UserInputType == Enum.UserInputType.MouseMovement or 
+                           Input.UserInputType == Enum.UserInputType.Touch) then
+                local newValue = GetSliderValueFromInput(Input)
+                Slider:Set(newValue)
+            end
+        end)
+
+        -- Установка начального значения
+        Slider:Set(Slider.Default)
+
+        -- Запись в Library.SetFlags для доступа извне
+        Library.SetFlags[Slider.Flag] = function(Value)
+            Slider:Set(Value)
+        end
+
+        -- Функции для управления слайдером
+        function Slider:GetValue()
+            return Slider.Value
+        end
+
+        function Slider:SetMin(Min)
+            Slider.Min = Min
+            Slider:Set(Slider.Value)
+        end
+
+        function Slider:SetMax(Max)
+            Slider.Max = Max
+            Slider:Set(Slider.Value)
+        end
+
+        function Slider:SetUnit(Unit)
+            Slider.Unit = Unit
+            UpdateSliderDisplay()
+        end
+
+        return Slider
+    end
+
     return SectionAPI
 end
 
@@ -1505,6 +1767,45 @@ local AimbotSection = Library:CreateSection(CombatCols[1], { Name = "Aimbot", Ic
 AimbotSection:CreateToggle({ Name = "Enable Aimbot", Default = true })
 AimbotSection:CreateToggle({ Name = "Prediction", Default = false })
 
+-- Добавляем кнопку и слайдер в Combat
+local CombatSection = Library:CreateSection(CombatCols[2], { Name = "Combat Controls", Icon = "shield" })
+CombatSection:Button({
+    Title = "Fling Players",
+    Callback = function()
+        print("Fling Players clicked!")
+    end
+})
+
+CombatSection:Slider({
+    Title = "WalkSpeed",
+    Min = 16,
+    Max = 200,
+    Default = 16,
+    Float = 1,
+    Unit = " stud",
+    Callback = function(Value)
+        local char = LocalPlayer.Character
+        if char and char:FindFirstChild("Humanoid") then
+            char.Humanoid.WalkSpeed = Value
+        end
+    end
+})
+
+CombatSection:Slider({
+    Title = "JumpPower",
+    Min = 50,
+    Max = 500,
+    Default = 50,
+    Float = 5,
+    Unit = " ",
+    Callback = function(Value)
+        local char = LocalPlayer.Character
+        if char and char:FindFirstChild("Humanoid") then
+            char.Humanoid.JumpPower = Value
+        end
+    end
+})
+
 -- 2. Вкладка Visuals с подвкладками
 local VisualsTab = Library:CreateTab(MainWindow, {
     Name = "Visuals",
@@ -1517,11 +1818,36 @@ local PlayersSection = Library:CreateSection(PlayersCols[1], { Name = "ESP Playe
 PlayersSection:CreateToggle({ Name = "Box ESP", Default = true })
 PlayersSection:CreateToggle({ Name = "Tracers", Default = false })
 
+-- Добавляем кнопки и слайдеры в Visuals
+local VisualsSection = Library:CreateSection(PlayersCols[2], { Name = "ESP Settings", Icon = "settings" })
+VisualsSection:Slider({
+    Title = "ESP Distance",
+    Min = 100,
+    Max = 1000,
+    Default = 500,
+    Float = 10,
+    Unit = " studs",
+    Callback = function(Value)
+        print("ESP Distance set to:", Value)
+    end
+})
+
+VisualsSection:Button({
+    Title = "Refresh ESP",
+    Callback = function()
+        print("ESP Refreshed!")
+    end
+})
+
 local WorldSubContainer, WorldCols = VisualsTab:CreateSubTab({ Name = "World", Icon = "globe" })
 local WorldSection = Library:CreateSection(WorldCols[1], { Name = "World Visuals", Icon = "palette" })
 WorldSection:CreateToggle({ Name = "Fullbright", Default = false })
+WorldSection:CreateToggle({ Name = "Chams", Default = false })
 
 -- 3. Остальные вкладки для примера
 Library:CreateTab(MainWindow, { Name = "Local", Subtitle = "игрок", Icon = "user" })
 Library:CreateTab(MainWindow, { Name = "Colors", Subtitle = "цвета интерфейса", Icon = "palette" })
 Library:CreateTab(MainWindow, { Name = "Config", Subtitle = "конфигурация", Icon = "folder" })
+
+-- Вывод информации о созданных флагах
+print("Created Flags:", table.concat(table.keys(Library.Flags or {}), ", "))
