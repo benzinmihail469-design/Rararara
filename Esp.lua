@@ -150,7 +150,7 @@ end
 -- 8. СИСТЕМА СОЗВЕЗДИЯ (ФИКС УСКОРЕНИЯ)
 -- =======================================================
 local function CreateConstellationBackground(parentFrame, numNodes, maxDistance)
-    numNodes = numNodes or 35
+    numNodes = numNodes or 30
     maxDistance = maxDistance or 80
 
     local bgContainer = Instances:Create("Frame", {
@@ -184,14 +184,14 @@ local function CreateConstellationBackground(parentFrame, numNodes, maxDistance)
         })
 
         local angle = rng:NextNumber(0, math.pi * 2)
-        local baseSpeed = rng:NextNumber(4, 7)
-        local initialVel = Vector2.new(math.cos(angle) * baseSpeed, math.sin(angle) * baseSpeed)
+        local dir = Vector2.new(math.cos(angle), math.sin(angle))
+        if dir.Magnitude == 0 then dir = Vector2.new(1, 0) else dir = dir.Unit end
 
         table.insert(nodes, {
             Gui = dot.Instance,
-            Pos = Vector2.new(rng:NextNumber(160, 520), rng:NextNumber(10, 360)),
-            Vel = initialVel,
-            BaseSpeed = baseSpeed
+            Pos = Vector2.new(rng:NextNumber(160, 500), rng:NextNumber(10, 350)),
+            Dir = dir,
+            Speed = rng:NextNumber(18, 25) -- Фиксированная постоянная скорость
         })
     end
 
@@ -224,32 +224,34 @@ local function CreateConstellationBackground(parentFrame, numNodes, maxDistance)
         if width <= 0 or height <= 0 then return end
 
         local minX = 155
-        local clampedDt = math.min(dt, 0.05) -- Ограничение шага времени от просадок FPS
+        local delta = math.clamp(dt, 0, 0.033)
 
         for _, node in ipairs(nodes) do
-            -- Защита от бесконечного разгона: держим скорость постоянной
-            if node.Vel.Magnitude == 0 then
-                node.Vel = Vector2.new(1, 1)
-            end
-            node.Vel = node.Vel.Unit * node.BaseSpeed
+            -- Движение строго по единичному вектору направления
+            node.Pos = node.Pos + (node.Dir * (node.Speed * delta))
 
-            node.Pos = node.Pos + node.Vel * clampedDt
+            -- Отражение направления без изменения скорости
+            local nx, ny = node.Dir.X, node.Dir.Y
 
-            -- Направленный отскок с выталкиванием
             if node.Pos.X <= minX then
                 node.Pos = Vector2.new(minX, node.Pos.Y)
-                node.Vel = Vector2.new(math.abs(node.Vel.X), node.Vel.Y)
+                nx = math.abs(nx)
             elseif node.Pos.X >= width - 5 then
                 node.Pos = Vector2.new(width - 5, node.Pos.Y)
-                node.Vel = Vector2.new(-math.abs(node.Vel.X), node.Vel.Y)
+                nx = -math.abs(nx)
             end
 
             if node.Pos.Y <= 5 then
                 node.Pos = Vector2.new(node.Pos.X, 5)
-                node.Vel = Vector2.new(node.Vel.X, math.abs(node.Vel.Y))
+                ny = math.abs(ny)
             elseif node.Pos.Y >= height - 5 then
                 node.Pos = Vector2.new(node.Pos.X, height - 5)
-                node.Vel = Vector2.new(node.Vel.X, -math.abs(node.Vel.Y))
+                ny = -math.abs(ny)
+            end
+
+            local newDir = Vector2.new(nx, ny)
+            if newDir.Magnitude > 0 then
+                node.Dir = newDir.Unit
             end
 
             node.Gui.Position = UDim2.new(0, node.Pos.X, 0, node.Pos.Y)
@@ -331,7 +333,7 @@ function Library:CreateWindow(data)
 
     MakeDraggable(mainFrame.Instance, mainFrame.Instance)
 
-    CreateConstellationBackground(mainFrame.Instance, 35, 80)
+    CreateConstellationBackground(mainFrame.Instance, 30, 80)
 
     local sidebarBackground = Instances:Create("Frame", {
         Parent = mainFrame.Instance,
