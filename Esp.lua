@@ -236,7 +236,7 @@ local function CreateConstellationBackground(parentFrame, numNodes, maxDistance)
                 node.Vel = Vector2.new(node.Vel.X, -node.Vel.Y)
             elseif node.Pos.Y >= height - 5 then
                 node.Pos = Vector2.new(node.Pos.X, height - 5)
-                node.Vel = Vector2.new(node.Vel.X, -node.Vel.Y)
+                node.Vel = Vector2.new(node.Pos.X, -node.Vel.Y)
             end
 
             node.Gui.Position = UDim2.new(0, node.Pos.X, 0, node.Pos.Y)
@@ -349,20 +349,25 @@ function Library:CreateWindow(data)
         ZIndex = 5
     })
 
-    -- Аккуратный контейнер логотипа (соразмерный как на 2 фото)
+    -- Контейнер логотипа
     local logoContainer = Instances:Create("Frame", {
         Parent = mainFrame.Instance,
         Name = "LogoContainer",
         AnchorPoint = Vector2.new(0.5, 0),
-        Position = UDim2.new(0, 75, 0, 15),
-        Size = UDim2.new(0, 46, 0, 46),
+        Position = UDim2.new(0, 75, 0, 16),
+        Size = UDim2.new(0, 58, 0, 58),
         BackgroundTransparency = 1,
         BorderSizePixel = 0,
         ZIndex = 5,
         ClipsDescendants = true
     })
 
-    -- Иконка логотипа по центру контейнера c сохранением пропорций (Fit)
+    Instances:Create("UICorner", {
+        Parent = logoContainer.Instance,
+        CornerRadius = UDim.new(0, 8)
+    })
+
+    -- Иконка логотипа
     local logoIcon = Instances:Create("ImageLabel", {
         Parent = logoContainer.Instance,
         Name = "Logo",
@@ -389,7 +394,7 @@ function Library:CreateWindow(data)
     local headerDivider = Instances:Create("Frame", {
         Parent = mainFrame.Instance,
         Name = "HeaderDivider",
-        Position = UDim2.new(0, 12, 0, 73),
+        Position = UDim2.new(0, 12, 0, 86),
         Size = UDim2.new(0, 126, 0, 1),
         BackgroundColor3 = Color3.fromRGB(255, 255, 255),
         BorderSizePixel = 0,
@@ -410,13 +415,13 @@ function Library:CreateWindow(data)
         })
     })
 
-    -- Список вкладок (смещен под уменьшенную шапку)
+    -- Список вкладок
     local leftTabs = Instances:Create("ScrollingFrame", {
         Parent = mainFrame.Instance,
         Name = "LeftTabs",
         BackgroundTransparency = 1,
-        Position = UDim2.new(0, 0, 0, 80),
-        Size = UDim2.new(0, 150, 1, -80),
+        Position = UDim2.new(0, 0, 0, 93),
+        Size = UDim2.new(0, 150, 1, -93),
         ZIndex = 4,
         BorderSizePixel = 0,
         ScrollBarThickness = 3,
@@ -921,4 +926,4 @@ SilentBypassSection:CreateToggle({ Name = "включить понос", Default
 local JopaSection = Library:CreateSection(Cols[1], { Name = "jopa" })
 JopaSection:CreateToggle({ Name = "включить жопа...", Default = false })
 
-print("GUI Updated: Logo icon correctly sized and proportioned!")
+print("GUI Updated: Logo resized to 58x58 strictly matching photo reference!")
