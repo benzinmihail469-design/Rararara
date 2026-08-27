@@ -1,5 +1,5 @@
 -- =======================================================
--- ПОЛНЫЙ СКРИПТ С ЯРКИМ И ЧЁТКИМ КОНТУРОМ ПРОФИЛЯ
+-- ПОЛНЫЙ СКРИПТ С ПОДВАЛОМ ПРОФИЛЯ В СТИЛЕ СТАНДАРТА
 -- =======================================================
 
 local Workspace = game:GetService("Workspace")
@@ -23,7 +23,6 @@ local Theme = {
     ["Text"] = Color3.fromRGB(240, 240, 245),
     ["SubText"] = Color3.fromRGB(110, 115, 125),
     ["Outline"] = Color3.fromRGB(24, 28, 38),
-    ["ProfileOutline"] = Color3.fromRGB(0, 140, 255), -- Чёткий синий контур профиля
     ["Accent"] = Color3.fromRGB(0, 140, 255),
     ["AccentGlow"] = Color3.fromRGB(0, 180, 255),
     ["Element"] = Color3.fromRGB(18, 20, 26),
@@ -152,7 +151,9 @@ local function MakeDraggable(guiInstance, dragHandle)
     end)
 end
 
--- 8. Системный фон созвездий
+-- =======================================================
+-- 8. СИСТЕМА СОЗВЕЗДИЯ
+-- =======================================================
 local function CreateConstellationBackground(parentFrame, numNodes, maxDistance)
     numNodes = numNodes or 30
     maxDistance = maxDistance or 80
@@ -290,7 +291,9 @@ local function CreateConstellationBackground(parentFrame, numNodes, maxDistance)
     end)
 end
 
--- 9. Создание главного окна
+-- =======================================================
+-- 9. СОЗДАНИЕ ОКНА (WINDOW)
+-- =======================================================
 local Library = {
     Windows = {},
     ActiveTabObject = nil
@@ -332,6 +335,7 @@ function Library:CreateWindow(data)
     })
 
     MakeDraggable(mainFrame.Instance, mainFrame.Instance)
+
     CreateConstellationBackground(mainFrame.Instance, 30, 80)
 
     local sidebarBackground = Instances:Create("Frame", {
@@ -428,15 +432,15 @@ function Library:CreateWindow(data)
     })
 
     -- =======================================================
-    -- ИСПРАВЛЕННЫЙ ПОДВАЛ ПРОФИЛЯ С ЯРКИМ ВИДИМЫМ КОНТУРОМ
+    -- ПОДВАЛ ПРОФИЛЯ В СТИЛЕ КАРТОЧКИ С КОНТУРОМ (КАК НА ФОТО)
     -- =======================================================
     local profileFrame = Instances:Create("Frame", {
         Parent = mainFrame.Instance,
         Name = "ProfileFooter",
         Position = UDim2.new(0, 8, 1, -56),
-        Size = UDim2.new(0, 144, 0, 44),
+        Size = UDim2.new(0, 144, 0, 48),
         BackgroundColor3 = Theme["Element"],
-        BackgroundTransparency = 0.05,
+        BackgroundTransparency = 0.2,
         BorderSizePixel = 0,
         ZIndex = 15
     })
@@ -446,12 +450,10 @@ function Library:CreateWindow(data)
         CornerRadius = UDim.new(0, 8)
     })
 
-    -- Яркий четкий контур (UIStroke)
     Instances:Create("UIStroke", {
         Parent = profileFrame.Instance,
-        Color = Theme["ProfileOutline"], -- Голубой контрастный цвет
-        Thickness = 1.2,
-        Transparency = 0.35,
+        Color = Theme["Outline"],
+        Thickness = 1,
         ApplyStrokeMode = Enum.ApplyStrokeMode.Border
     })
 
@@ -459,15 +461,15 @@ function Library:CreateWindow(data)
         Parent = profileFrame.Instance,
         Name = "Avatar",
         BackgroundTransparency = 1,
-        Position = UDim2.new(0, 6, 0.5, -15),
-        Size = UDim2.new(0, 30, 0, 30),
+        Position = UDim2.new(0, 8, 0.5, -16),
+        Size = UDim2.new(0, 32, 0, 32),
         Image = "rbxassetid://0",
         ZIndex = 16
     })
 
     Instances:Create("UICorner", {
         Parent = avatarContainer.Instance,
-        CornerRadius = UDim.new(0, 6)
+        CornerRadius = UDim.new(0, 8)
     })
 
     task.spawn(function()
@@ -484,8 +486,8 @@ function Library:CreateWindow(data)
         FontFace = Font.new("rbxassetid://12187365364", Enum.FontWeight.Bold, Enum.FontStyle.Normal),
         TextColor3 = Theme["Text"],
         TextSize = 11,
-        Position = UDim2.new(0, 42, 0, 6),
-        Size = UDim2.new(1, -46, 0, 14),
+        Position = UDim2.new(0, 48, 0, 8),
+        Size = UDim2.new(1, -52, 0, 15),
         BackgroundTransparency = 1,
         TextXAlignment = Enum.TextXAlignment.Left,
         ZIndex = 16,
@@ -499,15 +501,15 @@ function Library:CreateWindow(data)
         FontFace = Font.new("rbxassetid://12187365364", Enum.FontWeight.Regular, Enum.FontStyle.Normal),
         TextColor3 = Theme["SubText"],
         TextSize = 10,
-        Position = UDim2.new(0, 42, 0, 22),
-        Size = UDim2.new(1, -46, 0, 14),
+        Position = UDim2.new(0, 48, 0, 24),
+        Size = UDim2.new(1, -52, 0, 14),
         BackgroundTransparency = 1,
         TextXAlignment = Enum.TextXAlignment.Left,
         ZIndex = 16,
         TextTruncate = Enum.TextTruncate.AtEnd
     })
+    -- =======================================================
 
-    -- Scroll для вкладок
     local leftTabs = Instances:Create("ScrollingFrame", {
         Parent = mainFrame.Instance,
         Name = "LeftTabs",
@@ -601,7 +603,9 @@ function Library:CreateWindow(data)
     return Window
 end
 
--- 10. Система вкладок и подвкладок
+-- =======================================================
+-- 10. СИСТЕМА ВКЛАДОК И ПОДВКЛАДОК
+-- =======================================================
 function Library:CreateTab(window, tabData)
     tabData = tabData or {}
     local tabName = tabData.Name or "Tab"
@@ -1169,7 +1173,7 @@ function Library:CreateTab(window, tabData)
         end)
 
         subButton:Connect("MouseLeave", function()
-            if TabObject.ActiveSubTabObj ~= SubTabObject me then
+            if TabObject.ActiveSubTabObj ~= SubTabObject then
                 Tween(subButton.Instance, TweenInfo.new(0.15), { 
                     BackgroundColor3 = Theme["Text"],
                     BackgroundTransparency = 1 
@@ -1205,7 +1209,9 @@ function Library:CreateTab(window, tabData)
     return TabObject, defaultColumns
 end
 
--- 11. Секции интерфейса
+-- =======================================================
+-- 11. СЕКЦИИ UI (С ПОДДЕРЖКОЙ ИКОНОК)
+-- =======================================================
 function Library:CreateSection(parentColumn, sectionData)
     sectionData = sectionData or {}
     local sectionName = sectionData.Name or "Section"
@@ -1480,16 +1486,42 @@ function Library:CreateSection(parentColumn, sectionData)
     return SectionAPI
 end
 
--- 12. Тестовая инициализация
+-- =======================================================
+-- 12. ИНИЦИАЛИЗАЦИЯ И ТЕСТ
+-- =======================================================
+
 local MainWindow = Library:CreateWindow({
     Logo = "95894290284220"
 })
 
-local CombatTab, CombatCols = Library:CreateTab(MainWindow, { Name = "Combat", Subtitle = "боевые настройки", Icon = "combat" })
+-- 1. Вкладка Combat
+local CombatTab, CombatCols = Library:CreateTab(MainWindow, {
+    Name = "Combat",
+    Subtitle = "боевые настройки",
+    Icon = "combat"
+})
+
 local AimbotSection = Library:CreateSection(CombatCols[1], { Name = "Aimbot", Icon = "zap" })
 AimbotSection:CreateToggle({ Name = "Enable Aimbot", Default = true })
+AimbotSection:CreateToggle({ Name = "Prediction", Default = false })
 
-Library:CreateTab(MainWindow, { Name = "Visuals", Subtitle = "отображение объектов", Icon = "eye" })
+-- 2. Вкладка Visuals с подвкладками
+local VisualsTab = Library:CreateTab(MainWindow, {
+    Name = "Visuals",
+    Subtitle = "отображение объектов",
+    Icon = "eye"
+})
+
+local PlayersSubContainer, PlayersCols = VisualsTab:CreateSubTab({ Name = "Players", Icon = "user" })
+local PlayersSection = Library:CreateSection(PlayersCols[1], { Name = "ESP Players", Icon = "eye" })
+PlayersSection:CreateToggle({ Name = "Box ESP", Default = true })
+PlayersSection:CreateToggle({ Name = "Tracers", Default = false })
+
+local WorldSubContainer, WorldCols = VisualsTab:CreateSubTab({ Name = "World", Icon = "globe" })
+local WorldSection = Library:CreateSection(WorldCols[1], { Name = "World Visuals", Icon = "palette" })
+WorldSection:CreateToggle({ Name = "Fullbright", Default = false })
+
+-- 3. Остальные вкладки для примера
 Library:CreateTab(MainWindow, { Name = "Local", Subtitle = "игрок", Icon = "user" })
 Library:CreateTab(MainWindow, { Name = "Colors", Subtitle = "цвета интерфейса", Icon = "palette" })
 Library:CreateTab(MainWindow, { Name = "Config", Subtitle = "конфигурация", Icon = "folder" })
