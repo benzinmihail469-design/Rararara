@@ -1771,12 +1771,13 @@ function Library:CreateSection(parentColumn, sectionData)
             ZIndex = 10
         })
 
-        -- Выпадающее меню под плашкой
+        -- Выпадающее меню (привязано к dropHost)
         local optionsList = Instances:Create("Frame", {
-            Parent = dropHeader.Instance,
+            Parent = dropHost.Instance,
             Name = "OptionsList",
-            Position = UDim2.new(0, 0, 1, 4),
-            Size = UDim2.new(1, 0, 0, 0),
+            AnchorPoint = Vector2.new(1, 0),
+            Position = UDim2.new(1, 0, 0, 28),
+            Size = UDim2.new(0.55, 0, 0, 0),
             BackgroundColor3 = Theme["Background 2"],
             BackgroundTransparency = 1,
             BorderSizePixel = 0,
@@ -1813,16 +1814,22 @@ function Library:CreateSection(parentColumn, sectionData)
         local optionButtons = {}
         local DropdownAPI = {}
 
-        -- Плавная анимация раскрытия и скрытия с эффектом разворачивания и затухания
+        -- Динамический расчёт высоты без ожидания рендера UI
+        local function GetContentHeight()
+            if #options == 0 then return 0 end
+            return (#options * 22) + ((#options - 1) * 2) + 8
+        end
+
+        -- Плавная анимация раскрытия и скрытия
         local function UpdateHeight()
-            local listHeight = listLayout.Instance.AbsoluteContentSize.Y + 8
+            local listHeight = GetContentHeight()
             local targetListHeight = expanded and listHeight or 0
-            local targetHostHeight = expanded and (24 + 4 + listHeight) or 24
+            local targetHostHeight = expanded and (28 + listHeight) or 24
             local easingStyle = expanded and Enum.EasingStyle.Quart or Enum.EasingStyle.Quad
             local tweenTime = expanded and 0.28 or 0.2
 
             Tween(optionsList.Instance, TweenInfo.new(tweenTime, easingStyle, Enum.EasingDirection.Out), {
-                Size = UDim2.new(1, 0, 0, targetListHeight),
+                Size = UDim2.new(0.55, 0, 0, targetListHeight),
                 BackgroundTransparency = expanded and 0.05 or 1
             })
 
@@ -1848,7 +1855,7 @@ function Library:CreateSection(parentColumn, sectionData)
             })
         end
 
-        -- Отрисовка списка с поддержкой анимации нажатия
+        -- Отрисовка списка элементов
         local function RefreshOptions()
             for _, btn in pairs(optionButtons) do
                 btn:Destroy()
@@ -1935,7 +1942,7 @@ function Library:CreateSection(parentColumn, sectionData)
                     ZIndex = 22
                 })
 
-                -- Анимация наведения (Hover)
+                -- Анимация наведения
                 optBtn:Connect("MouseEnter", function()
                     if opt ~= selected then
                         Tween(optBtn.Instance, TweenInfo.new(0.15, Enum.EasingStyle.Quad, Enum.EasingDirection.Out), {
@@ -1958,7 +1965,7 @@ function Library:CreateSection(parentColumn, sectionData)
                     end
                 end)
 
-                -- Анимация зажатия кнопки мышкой/пальцем (Press animation)
+                -- Анимация нажатия
                 optBtn:Connect("MouseButton1Down", function()
                     Tween(optBtn.Instance, TweenInfo.new(0.08, Enum.EasingStyle.Quad, Enum.EasingDirection.Out), {
                         Size = UDim2.new(1, -4, 0, 20),
@@ -1978,13 +1985,8 @@ function Library:CreateSection(parentColumn, sectionData)
                     })
                 end)
 
-                -- Клик по элементу
+                -- Клик по пункту
                 optBtn:Connect("MouseButton1Click", function()
-                    -- Импульс свечения при выборе
-                    Tween(optBtn.Instance, TweenInfo.new(0.08, Enum.EasingStyle.Quad, Enum.EasingDirection.Out), {
-                        BackgroundTransparency = 0.65
-                    })
-                    task.wait(0.05)
                     DropdownAPI:Set(opt)
                     expanded = false
                     UpdateHeight()
@@ -2016,7 +2018,7 @@ function Library:CreateSection(parentColumn, sectionData)
             DropdownAPI:Set(selected)
         end
 
-        -- Анимация зажатия на сам Header дропдауна
+        -- Анимации и клик на Header
         dropHeader:Connect("MouseButton1Down", function()
             Tween(dropHeader.Instance, TweenInfo.new(0.08, Enum.EasingStyle.Quad, Enum.EasingDirection.Out), {
                 Size = UDim2.new(0.53, 0, 0, 22)
