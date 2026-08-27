@@ -1833,7 +1833,7 @@ function Library:CreateSection(parentColumn, sectionData)
                 BackgroundTransparency = expanded and 0.05 or 1
             })
 
-            Tween(optionsStroke, TweenInfo.new(tweenTime, easingStyle, Enum.EasingDirection.Out), {
+            Tween(optionsStroke.Instance, TweenInfo.new(tweenTime, easingStyle, Enum.EasingDirection.Out), {
                 Transparency = expanded and 0.5 or 1
             })
 
@@ -1846,7 +1846,7 @@ function Library:CreateSection(parentColumn, sectionData)
                 ImageColor3 = expanded and Theme["Accent"] or Theme["SubText"]
             })
 
-            Tween(headerStroke, TweenInfo.new(0.2), {
+            Tween(headerStroke.Instance, TweenInfo.new(0.2), {
                 Color = expanded and Theme["Accent"] or Theme["Outline"]
             })
 
@@ -2033,7 +2033,7 @@ function Library:CreateSection(parentColumn, sectionData)
 
         dropHeader:Connect("MouseEnter", function()
             if not expanded then
-                Tween(headerStroke, TweenInfo.new(0.15), {
+                Tween(headerStroke.Instance, TweenInfo.new(0.15), {
                     Color = Theme["Accent"]
                 })
             end
@@ -2041,7 +2041,7 @@ function Library:CreateSection(parentColumn, sectionData)
 
         dropHeader:Connect("MouseLeave", function()
             if not expanded then
-                Tween(headerStroke, TweenInfo.new(0.15), {
+                Tween(headerStroke.Instance, TweenInfo.new(0.15), {
                     Color = Theme["Outline"]
                 })
             end
