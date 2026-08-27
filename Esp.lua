@@ -1,5 +1,5 @@
 -- =======================================================
--- АВТОНОМНЫЙ СКРИПТ (С ЭФФЕКТОМ НАВЕДЕНИЯ НА ВКЛАДКИ)
+-- ИСПРАВЛЕННЫЙ СКРИПТ С РАБОЧИМ ЭФФЕКТOМ НАВЕДЕНИЯ (HOVER)
 -- =======================================================
 
 local Workspace = game:GetService("Workspace")
@@ -162,7 +162,7 @@ local function CreateConstellationBackground(parentFrame, numNodes, maxDistance)
         Size = UDim2.new(1, 0, 1, 0),
         BackgroundTransparency = 1,
         ClipsDescendants = true,
-        ZIndex = 2
+        ZIndex = 1
     })
 
     local nodes = {}
@@ -178,7 +178,7 @@ local function CreateConstellationBackground(parentFrame, numNodes, maxDistance)
             BackgroundColor3 = Theme["Node"],
             BackgroundTransparency = 0.15,
             BorderSizePixel = 0,
-            ZIndex = 3
+            ZIndex = 2
         })
 
         Instances:Create("UICorner", {
@@ -206,7 +206,7 @@ local function CreateConstellationBackground(parentFrame, numNodes, maxDistance)
                 AnchorPoint = Vector2.new(0.5, 0.5),
                 BackgroundColor3 = Theme["Line"],
                 BorderSizePixel = 0,
-                ZIndex = 2,
+                ZIndex = 1,
                 Visible = false
             })
             linesPool[index] = line.Instance
@@ -435,7 +435,7 @@ function Library:CreateWindow(data)
         BackgroundTransparency = 1,
         Position = UDim2.new(0, 0, 0, 92),
         Size = UDim2.new(0, 160, 1, -92),
-        ZIndex = 4,
+        ZIndex = 10,
         BorderSizePixel = 0,
         ScrollBarThickness = 2,
         ScrollBarImageColor3 = Theme["Accent"],
@@ -481,8 +481,9 @@ function Library:CreateWindow(data)
         BackgroundTransparency = 0.2,
         Position = UDim2.new(1, -10, 0, 10),
         Size = UDim2.new(0, 24, 0, 24),
-        ZIndex = 10,
-        BackgroundColor3 = Theme["Element"]
+        ZIndex = 15,
+        BackgroundColor3 = Theme["Element"],
+        Active = true
     })
 
     Instances:Create("UICorner", {
@@ -507,7 +508,7 @@ function Library:CreateWindow(data)
         Image = "rbxassetid://130510492706892",
         BackgroundTransparency = 1,
         Position = UDim2.new(0.5, 0, 0.5, 0),
-        ZIndex = 11
+        ZIndex = 16
     })
 
     closeButton:Connect("MouseButton1Down", function()
@@ -522,7 +523,7 @@ function Library:CreateWindow(data)
 end
 
 -- =======================================================
--- 10. СИСТЕМА ВКЛАДОК И ПОДВКЛАДОК (С ЭФФЕКТОМ НАВЕДЕНИЯ)
+-- 10. СИСТЕМА ВКЛАДОК И ПОДВКЛАДОК (С ИСПРАВЛЕННЫМ HOVER)
 -- =======================================================
 function Library:CreateTab(window, tabData)
     tabData = tabData or {}
@@ -537,7 +538,7 @@ function Library:CreateTab(window, tabData)
         AutomaticSize = Enum.AutomaticSize.Y,
         BackgroundTransparency = 1,
         BorderSizePixel = 0,
-        ZIndex = 5
+        ZIndex = 11
     })
 
     Instances:Create("UIListLayout", {
@@ -558,8 +559,10 @@ function Library:CreateTab(window, tabData)
         Text = "",
         AutoButtonColor = false,
         BorderSizePixel = 0,
-        ZIndex = 5,
-        LayoutOrder = 0
+        ZIndex = 12,
+        LayoutOrder = 0,
+        Active = true,
+        Selectable = true
     })
 
     Instances:Create("UICorner", {
@@ -584,7 +587,7 @@ function Library:CreateTab(window, tabData)
         BackgroundColor3 = Theme["Accent"],
         BackgroundTransparency = 1,
         BorderSizePixel = 0,
-        ZIndex = 7
+        ZIndex = 14
     })
 
     Instances:Create("UICorner", {
@@ -603,7 +606,7 @@ function Library:CreateTab(window, tabData)
         Image = ParseIcon(tabIcon),
         ImageColor3 = Theme["SubText"],
         ImageTransparency = 0.3,
-        ZIndex = 6
+        ZIndex = 13
     })
 
     local tabLabel = Instances:Create("TextLabel", {
@@ -617,7 +620,7 @@ function Library:CreateTab(window, tabData)
         Size = UDim2.new(1, -52, 0, hasSubText and 15 or buttonHeight),
         BackgroundTransparency = 1,
         TextXAlignment = Enum.TextXAlignment.Left,
-        ZIndex = 6
+        ZIndex = 13
     })
 
     local subLabel
@@ -635,7 +638,7 @@ function Library:CreateTab(window, tabData)
             BackgroundTransparency = 1,
             TextXAlignment = Enum.TextXAlignment.Left,
             ClipsDescendants = true,
-            ZIndex = 6
+            ZIndex = 13
         })
     end
 
@@ -651,7 +654,7 @@ function Library:CreateTab(window, tabData)
         ImageTransparency = 1,
         Rotation = 0,
         ScaleType = Enum.ScaleType.Fit,
-        ZIndex = 6
+        ZIndex = 13
     })
 
     local subTabsContainer = Instances:Create("Frame", {
@@ -661,7 +664,7 @@ function Library:CreateTab(window, tabData)
         BackgroundTransparency = 1,
         ClipsDescendants = true,
         LayoutOrder = 1,
-        ZIndex = 5
+        ZIndex = 11
     })
 
     local subListLayout = Instances:Create("UIListLayout", {
@@ -751,7 +754,10 @@ function Library:CreateTab(window, tabData)
     }
 
     local function DeselectTab()
-        Tween(tabButton.Instance, TweenInfo.new(0.2), { BackgroundTransparency = 1 })
+        Tween(tabButton.Instance, TweenInfo.new(0.2), { 
+            BackgroundColor3 = Theme["Text"],
+            BackgroundTransparency = 1 
+        })
         Tween(tabStroke.Instance, TweenInfo.new(0.2), { Transparency = 1, Color = Theme["Outline"] })
         Tween(activeIndicator.Instance, TweenInfo.new(0.2, Enum.EasingStyle.Quad, Enum.EasingDirection.Out), { 
             BackgroundTransparency = 1,
@@ -825,29 +831,32 @@ function Library:CreateTab(window, tabData)
     end
 
     -- ==========================================
-    -- ЭФФЕКТЫ НАВЕДЕНИЯ МЫШИ (HOVER EFFECTS)
+    -- РАБОЧИЕ ЭФФЕКТЫ НАВЕДЕНИЯ (HOVER EFFECT)
     -- ==========================================
     tabButton:Connect("MouseEnter", function()
         if Library.ActiveTabObject ~= TabObject then
-            Tween(tabButton.Instance, TweenInfo.new(0.18), { 
-                BackgroundColor3 = Theme["Text"], 
-                BackgroundTransparency = 0.93 
+            Tween(tabButton.Instance, TweenInfo.new(0.2), { 
+                BackgroundColor3 = Color3.fromRGB(255, 255, 255), 
+                BackgroundTransparency = 0.92 
             })
-            Tween(iconImage.Instance, TweenInfo.new(0.18), { ImageTransparency = 0.1, ImageColor3 = Theme["Text"] })
-            Tween(tabLabel.Instance, TweenInfo.new(0.18), { TextColor3 = Theme["Text"] })
+            Tween(iconImage.Instance, TweenInfo.new(0.2), { ImageTransparency = 0.0, ImageColor3 = Theme["Text"] })
+            Tween(tabLabel.Instance, TweenInfo.new(0.2), { TextColor3 = Theme["Text"] })
             if TabObject.SubLabel then
-                Tween(TabObject.SubLabel, TweenInfo.new(0.18), { TextColor3 = Theme["Text"], TextTransparency = 0.3 })
+                Tween(TabObject.SubLabel, TweenInfo.new(0.2), { TextColor3 = Theme["Text"], TextTransparency = 0.2 })
             end
         end
     end)
 
     tabButton:Connect("MouseLeave", function()
         if Library.ActiveTabObject ~= TabObject then
-            Tween(tabButton.Instance, TweenInfo.new(0.18), { BackgroundTransparency = 1 })
-            Tween(iconImage.Instance, TweenInfo.new(0.18), { ImageTransparency = 0.3, ImageColor3 = Theme["SubText"] })
-            Tween(tabLabel.Instance, TweenInfo.new(0.18), { TextColor3 = Theme["SubText"] })
+            Tween(tabButton.Instance, TweenInfo.new(0.2), { 
+                BackgroundColor3 = Theme["Text"],
+                BackgroundTransparency = 1 
+            })
+            Tween(iconImage.Instance, TweenInfo.new(0.2), { ImageTransparency = 0.3, ImageColor3 = Theme["SubText"] })
+            Tween(tabLabel.Instance, TweenInfo.new(0.2), { TextColor3 = Theme["SubText"] })
             if TabObject.SubLabel then
-                Tween(TabObject.SubLabel, TweenInfo.new(0.18), { TextColor3 = Theme["SubText"], TextTransparency = 0.4 })
+                Tween(TabObject.SubLabel, TweenInfo.new(0.2), { TextColor3 = Theme["SubText"], TextTransparency = 0.4 })
             end
         end
     end)
@@ -886,7 +895,9 @@ function Library:CreateTab(window, tabData)
             BackgroundTransparency = 1,
             Text = "",
             AutoButtonColor = false,
-            ZIndex = 6
+            ZIndex = 12,
+            Active = true,
+            Selectable = true
         })
 
         Instances:Create("UICorner", {
@@ -911,7 +922,7 @@ function Library:CreateTab(window, tabData)
             BackgroundColor3 = Theme["Accent"],
             BackgroundTransparency = 1,
             BorderSizePixel = 0,
-            ZIndex = 7
+            ZIndex = 14
         })
 
         local subLabelObj = Instances:Create("TextLabel", {
@@ -925,7 +936,7 @@ function Library:CreateTab(window, tabData)
             Size = UDim2.new(1, -14, 1, 0),
             BackgroundTransparency = 1,
             TextXAlignment = Enum.TextXAlignment.Left,
-            ZIndex = 6
+            ZIndex = 13
         })
 
         local subContainer = Instances:Create("ScrollingFrame", {
@@ -992,7 +1003,10 @@ function Library:CreateTab(window, tabData)
         }
 
         function SubTabObject:Deselect()
-            Tween(subButton.Instance, TweenInfo.new(0.15), { BackgroundTransparency = 1 })
+            Tween(subButton.Instance, TweenInfo.new(0.15), { 
+                BackgroundColor3 = Theme["Text"],
+                BackgroundTransparency = 1 
+            })
             Tween(subStroke.Instance, TweenInfo.new(0.15), { Transparency = 1 })
             Tween(subIndicator.Instance, TweenInfo.new(0.15, Enum.EasingStyle.Quad, Enum.EasingDirection.Out), { 
                 BackgroundTransparency = 1,
@@ -1042,8 +1056,8 @@ function Library:CreateTab(window, tabData)
         subButton:Connect("MouseEnter", function()
             if TabObject.ActiveSubTabObj ~= SubTabObject then
                 Tween(subButton.Instance, TweenInfo.new(0.15), { 
-                    BackgroundColor3 = Theme["Text"],
-                    BackgroundTransparency = 0.94 
+                    BackgroundColor3 = Color3.fromRGB(255, 255, 255),
+                    BackgroundTransparency = 0.93 
                 })
                 Tween(subLabelObj.Instance, TweenInfo.new(0.15), { TextColor3 = Theme["Text"] })
             end
@@ -1051,7 +1065,10 @@ function Library:CreateTab(window, tabData)
 
         subButton:Connect("MouseLeave", function()
             if TabObject.ActiveSubTabObj ~= SubTabObject then
-                Tween(subButton.Instance, TweenInfo.new(0.15), { BackgroundTransparency = 1 })
+                Tween(subButton.Instance, TweenInfo.new(0.15), { 
+                    BackgroundColor3 = Theme["Text"],
+                    BackgroundTransparency = 1 
+                })
                 Tween(subLabelObj.Instance, TweenInfo.new(0.15), { TextColor3 = Theme["SubText"] })
             end
         end)
@@ -1126,7 +1143,8 @@ function Library:CreateSection(parentColumn, sectionData)
         Text = "",
         AutoButtonColor = false,
         LayoutOrder = 0,
-        ZIndex = 6
+        ZIndex = 6,
+        Active = true
     })
 
     Instances:Create("UIPadding", {
@@ -1259,7 +1277,8 @@ function Library:CreateSection(parentColumn, sectionData)
             BackgroundTransparency = 1,
             Text = "",
             AutoButtonColor = false,
-            ZIndex = 7
+            ZIndex = 7,
+            Active = true
         })
 
         local checkBox = Instances:Create("Frame", {
@@ -1344,21 +1363,21 @@ local MainWindow = Library:CreateWindow({
 -- 1. Вкладка Combat
 local CombatTab, CombatCols = Library:CreateTab(MainWindow, {
     Name = "Combat",
-    Subtitle = "фак я че ебнутый",
+    Subtitle = "боевые настройки",
     Icon = "combat"
 })
 
 local AimbotSection = Library:CreateSection(CombatCols[1], { Name = "Aimbot" })
-AimbotSection:CreateToggle({ Name = "ezez", Default = true })
-AimbotSection:CreateToggle({ Name = "tipo predicti", Default = false })
+AimbotSection:CreateToggle({ Name = "Enable Aimbot", Default = true })
+AimbotSection:CreateToggle({ Name = "Prediction", Default = false })
 
-local JopaSection = Library:CreateSection(CombatCols[1], { Name = "jopa" })
-JopaSection:CreateToggle({ Name = "включить жопа...", Default = false })
+local JopaSection = Library:CreateSection(CombatCols[1], { Name = "Misc Combat" })
+JopaSection:CreateToggle({ Name = "Auto Trigger", Default = false })
 
--- 2. Вкладка Visuals с подвкладками (Players, World)
+-- 2. Вкладка Visuals с подвкладками
 local VisualsTab = Library:CreateTab(MainWindow, {
     Name = "Visuals",
-    Subtitle = "показ долбаебов",
+    Subtitle = "отображение объектов",
     Icon = "eye"
 })
 
@@ -1374,20 +1393,20 @@ WorldSection:CreateToggle({ Name = "Fullbright", Default = false })
 -- 3. Вкладка Local
 local LocalTab, LocalCols = Library:CreateTab(MainWindow, {
     Name = "Local",
-    Subtitle = "не ебу",
+    Subtitle = "игрок",
     Icon = "user"
 })
 
 -- 4. Вкладка Colors
 local ColorsTab, ColorsCols = Library:CreateTab(MainWindow, {
     Name = "Colors",
-    Subtitle = "color settings",
+    Subtitle = "цвета интерфейса",
     Icon = "palette"
 })
 
 -- 5. Вкладка Config
 local ConfigTab, ConfigCols = Library:CreateTab(MainWindow, {
     Name = "Config",
-    Subtitle = "menu settings",
+    Subtitle = "конфигурация",
     Icon = "folder"
 })
