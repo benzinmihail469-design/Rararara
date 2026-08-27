@@ -1,5 +1,5 @@
 -- =======================================================
--- ПОЛНЫЙ СКРИПТ С ПОДДЕРЖКОЙ ИКОНОК ДЛЯ СЕКЦИЙ И СУБ-ВКЛАДОК
+-- ПОЛНЫЙ СКРИПТ С ПОДВАЛОМ ПРОФИЛЯ В СТИЛЕ СТАНДАРТА
 -- =======================================================
 
 local Workspace = game:GetService("Workspace")
@@ -13,6 +13,8 @@ local ContentProvider = game:GetService("ContentProvider")
 local gethui = gethui or function()
     return CoreGui
 end
+
+local LocalPlayer = Players.LocalPlayer
 
 -- 1. Цветовая тема (Dark & Neon Blue Style)
 local Theme = {
@@ -429,12 +431,114 @@ function Library:CreateWindow(data)
         })
     })
 
+    -- =======================================================
+    -- НОВЫЙ ПОДВАЛ ПРОФИЛЯ (FOOTER) ВНИЗУ САЙДБАРА
+    -- =======================================================
+    local profileFooterDivider = Instances:Create("Frame", {
+        Parent = mainFrame.Instance,
+        Name = "ProfileFooterDivider",
+        Position = UDim2.new(0, 10, 1, -62),
+        Size = UDim2.new(0, 140, 0, 1),
+        BackgroundColor3 = Color3.fromRGB(255, 255, 255),
+        BorderSizePixel = 0,
+        ZIndex = 15
+    })
+
+    Instances:Create("UIGradient", {
+        Parent = profileFooterDivider.Instance,
+        Color = ColorSequence.new({
+            ColorSequenceKeypoint.new(0, Theme["Outline"]),
+            ColorSequenceKeypoint.new(0.5, Theme["Accent"]),
+            ColorSequenceKeypoint.new(1, Theme["Outline"])
+        }),
+        Transparency = NumberSequence.new({
+            NumberSequenceKeypoint.new(0, 0.6),
+            NumberSequenceKeypoint.new(0.5, 0.1),
+            NumberSequenceKeypoint.new(1, 0.6)
+        })
+    })
+
+    local profileFrame = Instances:Create("Frame", {
+        Parent = mainFrame.Instance,
+        Name = "ProfileFooter",
+        Position = UDim2.new(0, 8, 1, -55),
+        Size = UDim2.new(0, 144, 0, 48),
+        BackgroundColor3 = Theme["Element"],
+        BackgroundTransparency = 0.4,
+        BorderSizePixel = 0,
+        ZIndex = 15
+    })
+
+    Instances:Create("UICorner", {
+        Parent = profileFrame.Instance,
+        CornerRadius = UDim.new(0, 6)
+    })
+
+    Instances:Create("UIStroke", {
+        Parent = profileFrame.Instance,
+        Color = Theme["Outline"],
+        Thickness = 1
+    })
+
+    local avatarContainer = Instances:Create("ImageLabel", {
+        Parent = profileFrame.Instance,
+        Name = "Avatar",
+        BackgroundTransparency = 1,
+        Position = UDim2.new(0, 6, 0.5, -16),
+        Size = UDim2.new(0, 32, 0, 32),
+        Image = "rbxassetid://0",
+        ZIndex = 16
+    })
+
+    Instances:Create("UICorner", {
+        Parent = avatarContainer.Instance,
+        CornerRadius = UDim.new(0, 6)
+    })
+
+    task.spawn(function()
+        pcall(function()
+            local content = Players:GetUserThumbnailAsync(LocalPlayer.UserId, Enum.ThumbnailType.HeadShot, Enum.ThumbnailSize.Size420x420)
+            avatarContainer.Instance.Image = content
+        end)
+    end)
+
+    local nameLabel = Instances:Create("TextLabel", {
+        Parent = profileFrame.Instance,
+        Name = "DisplayName",
+        Text = LocalPlayer.DisplayName,
+        FontFace = Font.new("rbxassetid://12187365364", Enum.FontWeight.Bold, Enum.FontStyle.Normal),
+        TextColor3 = Theme["Text"],
+        TextSize = 11,
+        Position = UDim2.new(0, 43, 0, 7),
+        Size = UDim2.new(1, -47, 0, 15),
+        BackgroundTransparency = 1,
+        TextXAlignment = Enum.TextXAlignment.Left,
+        ZIndex = 16,
+        TextTruncate = Enum.TextTruncate.AtEnd
+    })
+
+    local tagLabel = Instances:Create("TextLabel", {
+        Parent = profileFrame.Instance,
+        Name = "Username",
+        Text = "@" .. LocalPlayer.Name,
+        FontFace = Font.new("rbxassetid://12187365364", Enum.FontWeight.Regular, Enum.FontStyle.Normal),
+        TextColor3 = Theme["SubText"],
+        TextSize = 10,
+        Position = UDim2.new(0, 43, 0, 22),
+        Size = UDim2.new(1, -47, 0, 14),
+        BackgroundTransparency = 1,
+        TextXAlignment = Enum.TextXAlignment.Left,
+        ZIndex = 16,
+        TextTruncate = Enum.TextTruncate.AtEnd
+    })
+    -- =======================================================
+
     local leftTabs = Instances:Create("ScrollingFrame", {
         Parent = mainFrame.Instance,
         Name = "LeftTabs",
         BackgroundTransparency = 1,
         Position = UDim2.new(0, 0, 0, 92),
-        Size = UDim2.new(0, 160, 1, -92),
+        Size = UDim2.new(0, 160, 1, -154), -- Скорректирован размер чтобы не перекрывать подвал
         ZIndex = 10,
         BorderSizePixel = 0,
         ScrollBarThickness = 2,
@@ -830,7 +934,6 @@ function Library:CreateTab(window, tabData)
         ActivateTab()
     end
 
-    -- Эффекты наведения (Hover) для основной вкладки
     tabButton:Connect("MouseEnter", function()
         if Library.ActiveTabObject ~= TabObject then
             Tween(tabButton.Instance, TweenInfo.new(0.2), { 
@@ -874,7 +977,6 @@ function Library:CreateTab(window, tabData)
         end
     end)
 
-    -- СОЗДАНИЕ ПОДВКЛАДОК (С ПОДДЕРЖКОЙ ИКОНОК)
     function TabObject:CreateSubTab(subData)
         subData = subData or {}
         local subName = subData.Name or "SubTab"
@@ -1426,10 +1528,7 @@ local AimbotSection = Library:CreateSection(CombatCols[1], { Name = "Aimbot", Ic
 AimbotSection:CreateToggle({ Name = "Enable Aimbot", Default = true })
 AimbotSection:CreateToggle({ Name = "Prediction", Default = false })
 
-local JopaSection = Library:CreateSection(CombatCols[1], { Name = "Misc Combat", Icon = "shield" })
-JopaSection:CreateToggle({ Name = "Auto Trigger", Default = false })
-
--- 2. Вкладка Visuals с подвкладками (и иконками у суб-вкладок)
+-- 2. Вкладка Visuals с подвкладками
 local VisualsTab = Library:CreateTab(MainWindow, {
     Name = "Visuals",
     Subtitle = "отображение объектов",
@@ -1445,23 +1544,7 @@ local WorldSubContainer, WorldCols = VisualsTab:CreateSubTab({ Name = "World", I
 local WorldSection = Library:CreateSection(WorldCols[1], { Name = "World Visuals", Icon = "palette" })
 WorldSection:CreateToggle({ Name = "Fullbright", Default = false })
 
--- 3. Вкладка Local
-local LocalTab, LocalCols = Library:CreateTab(MainWindow, {
-    Name = "Local",
-    Subtitle = "игрок",
-    Icon = "user"
-})
-
--- 4. Вкладка Colors
-local ColorsTab, ColorsCols = Library:CreateTab(MainWindow, {
-    Name = "Colors",
-    Subtitle = "цвета интерфейса",
-    Icon = "palette"
-})
-
--- 5. Вкладка Config
-local ConfigTab, ConfigCols = Library:CreateTab(MainWindow, {
-    Name = "Config",
-    Subtitle = "конфигурация",
-    Icon = "folder"
-})
+-- 3. Остальные вкладки для примера
+Library:CreateTab(MainWindow, { Name = "Local", Subtitle = "игрок", Icon = "user" })
+Library:CreateTab(MainWindow, { Name = "Colors", Subtitle = "цвета интерфейса", Icon = "palette" })
+Library:CreateTab(MainWindow, { Name = "Config", Subtitle = "конфигурация", Icon = "folder" })
