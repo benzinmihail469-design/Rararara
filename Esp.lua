@@ -1400,6 +1400,9 @@ function Library:CreateSection(parentColumn, sectionData)
 
     local SectionAPI = {}
 
+    -- ====================================================================
+    -- ОБНОВЛЕННЫЙ Toggle С ЭФФЕКТАМИ НАЖАТИЯ И АНИМАЦИЕЙ ГАЛОЧКИ
+    -- ====================================================================
     function SectionAPI:CreateToggle(toggleData)
         toggleData = toggleData or {}
         local toggleName = toggleData.Name or "Toggle"
@@ -1420,8 +1423,9 @@ function Library:CreateSection(parentColumn, sectionData)
         local checkBox = Instances:Create("Frame", {
             Parent = toggleButton.Instance,
             Name = "CheckBox",
+            AnchorPoint = Vector2.new(0, 0.5),
             Size = UDim2.new(0, 15, 0, 15),
-            Position = UDim2.new(0, 0, 0.5, -7.5),
+            Position = UDim2.new(0, 0, 0.5, 0),
             BackgroundColor3 = state and Theme["Accent"] or Theme["Element"],
             BorderSizePixel = 0,
             ZIndex = 8
@@ -1441,7 +1445,7 @@ function Library:CreateSection(parentColumn, sectionData)
         local checkMark = Instances:Create("ImageLabel", {
             Parent = checkBox.Instance,
             Name = "CheckMark",
-            Size = UDim2.new(0, 9, 0, 9),
+            Size = state and UDim2.new(0, 9, 0, 9) or UDim2.new(0, 0, 0, 0),
             AnchorPoint = Vector2.new(0.5, 0.5),
             Position = UDim2.new(0.5, 0, 0.5, 0),
             BackgroundTransparency = 1,
@@ -1465,31 +1469,63 @@ function Library:CreateSection(parentColumn, sectionData)
             ZIndex = 8
         })
 
-        toggleButton:Connect("MouseButton1Click", function()
-            state = not state
-            Tween(checkBox.Instance, TweenInfo.new(0.15), {
-                BackgroundColor3 = state and Theme["Accent"] or Theme["Element"]
+        -- Подсветка контура при наведении
+        toggleButton:Connect("MouseEnter", function()
+            checkStroke:Tween(TweenInfo.new(0.15, Enum.EasingStyle.Quad, Enum.EasingDirection.Out), {
+                Color = Theme["Accent"]
             })
-            Tween(checkStroke.Instance, TweenInfo.new(0.15), {
+        end)
+
+        toggleButton:Connect("MouseLeave", function()
+            checkStroke:Tween(TweenInfo.new(0.15, Enum.EasingStyle.Quad, Enum.EasingDirection.Out), {
                 Color = state and Theme["Accent"] or Theme["Outline"]
             })
-            Tween(checkMark.Instance, TweenInfo.new(0.15), {
+        end)
+
+        -- Анимация сжатия при зажатии пальцем / мышкой
+        toggleButton:Connect("MouseButton1Down", function()
+            checkBox:Tween(TweenInfo.new(0.08, Enum.EasingStyle.Quad, Enum.EasingDirection.Out), {
+                Size = UDim2.new(0, 12, 0, 12)
+            })
+        end)
+
+        toggleButton:Connect("MouseButton1Up", function()
+            checkBox:Tween(TweenInfo.new(0.15, Enum.EasingStyle.Back, Enum.EasingDirection.Out), {
+                Size = UDim2.new(0, 15, 0, 15)
+            })
+        end)
+
+        -- Включение / выключение с анимацией размера галочки и цвета
+        toggleButton:Connect("MouseButton1Click", function()
+            state = not state
+            
+            checkBox:Tween(TweenInfo.new(0.2, Enum.EasingStyle.Quad, Enum.EasingDirection.Out), {
+                BackgroundColor3 = state and Theme["Accent"] or Theme["Element"]
+            })
+            checkStroke:Tween(TweenInfo.new(0.2, Enum.EasingStyle.Quad, Enum.EasingDirection.Out), {
+                Color = state and Theme["Accent"] or Theme["Outline"]
+            })
+            
+            checkMark:Tween(TweenInfo.new(0.2, state and Enum.EasingStyle.Back or Enum.EasingStyle.Quad, Enum.EasingDirection.Out), {
+                Size = state and UDim2.new(0, 9, 0, 9) or UDim2.new(0, 0, 0, 0),
                 ImageTransparency = state and 0 or 1
             })
-            Tween(toggleLabel.Instance, TweenInfo.new(0.15), {
+
+            toggleLabel:Tween(TweenInfo.new(0.2, Enum.EasingStyle.Quad, Enum.EasingDirection.Out), {
                 TextColor3 = state and Theme["Text"] or Theme["SubText"]
             })
-            callback(state)
+
+            pcall(callback, state)
         end)
 
         return toggleButton.Instance
     end
 
     -- ====================================================================
-    -- СИСТЕМА КНОПОК И СЛАЙДЕРОВ (ДОБАВЛЕНА В SECTIONAPI)
+    -- СИСТЕМА КНОПОК И СЛАЙДЕРОВ
     -- ====================================================================
 
-    -- Метод для создания Кнопки с исправленной плавной анимацией
+    -- Метод для создания Кнопки
     function SectionAPI:Button(Data)
         Data = Data or {}
         local Button = {
@@ -1523,47 +1559,25 @@ function Library:CreateSection(parentColumn, sectionData)
             Thickness = 1
         })
 
-        -- Наведение мыши (Hover)
         ButtonFrame:Connect("MouseEnter", function()
-            ButtonFrame:Tween(TweenInfo.new(0.15, Enum.EasingStyle.Quad, Enum.EasingDirection.Out), {
-                BackgroundTransparency = 0.25
-            })
-            buttonStroke:Tween(TweenInfo.new(0.15, Enum.EasingStyle.Quad, Enum.EasingDirection.Out), {
-                Color = Theme["Accent"],
-                Transparency = 0.4
-            })
+            Tween(ButtonFrame.Instance, TweenInfo.new(0.15), { BackgroundTransparency = 0.2 })
+            Tween(buttonStroke, TweenInfo.new(0.15), { Color = Theme["Accent"], Transparency = 0.5 })
         end)
 
-        -- Увод мыши (Leave)
         ButtonFrame:Connect("MouseLeave", function()
-            ButtonFrame:Tween(TweenInfo.new(0.15, Enum.EasingStyle.Quad, Enum.EasingDirection.Out), {
-                BackgroundTransparency = 0,
-                Size = UDim2.new(1, 0, 0, 32)
-            })
-            buttonStroke:Tween(TweenInfo.new(0.15, Enum.EasingStyle.Quad, Enum.EasingDirection.Out), {
-                Color = Theme["Outline"],
-                Transparency = 0
-            })
+            Tween(ButtonFrame.Instance, TweenInfo.new(0.15), { BackgroundTransparency = 0 })
+            Tween(buttonStroke, TweenInfo.new(0.15), { Color = Theme["Outline"], Transparency = 0 })
         end)
 
-        -- Нажатие (Press Down)
         ButtonFrame:Connect("MouseButton1Down", function()
-            ButtonFrame:Tween(TweenInfo.new(0.08, Enum.EasingStyle.Quad, Enum.EasingDirection.Out), {
-                Size = UDim2.new(1, -4, 0, 28),
-                BackgroundTransparency = 0.45
-            })
-        end)
-
-        -- Отпускание кнопки (Release Up)
-        ButtonFrame:Connect("MouseButton1Up", function()
-            ButtonFrame:Tween(TweenInfo.new(0.2, Enum.EasingStyle.Back, Enum.EasingDirection.Out), {
-                Size = UDim2.new(1, 0, 0, 32),
-                BackgroundTransparency = 0.25
-            })
-        end)
-
-        -- Вызов функции при клике
-        ButtonFrame:Connect("MouseButton1Click", function()
+            Tween(ButtonFrame.Instance, TweenInfo.new(0.1), { Size = UDim2.new(1, -4, 0, 30) })
+            task.wait(0.1)
+            Tween(ButtonFrame.Instance, TweenInfo.new(0.1), { Size = UDim2.new(1, 0, 0, 32) })
+            
+            Tween(ButtonFrame.Instance, TweenInfo.new(0.1), { BackgroundTransparency = 0.4 })
+            task.wait(0.1)
+            Tween(ButtonFrame.Instance, TweenInfo.new(0.1), { BackgroundTransparency = 0 })
+            
             pcall(Button.Callback)
         end)
 
@@ -1603,7 +1617,6 @@ function Library:CreateSection(parentColumn, sectionData)
             ZIndex = 7
         })
 
-        -- Заголовок
         local TitleLabel = Instances:Create("TextLabel", {
             Parent = SliderFrame.Instance,
             Name = "Title",
@@ -1618,7 +1631,6 @@ function Library:CreateSection(parentColumn, sectionData)
             ZIndex = 8
         })
 
-        -- Значение
         local ValueLabel = Instances:Create("TextLabel", {
             Parent = SliderFrame.Instance,
             Name = "Value",
@@ -1633,7 +1645,6 @@ function Library:CreateSection(parentColumn, sectionData)
             ZIndex = 8
         })
 
-        -- Трек слайдера
         local SliderTrack = Instances:Create("TextButton", {
             Parent = SliderFrame.Instance,
             Name = "Track",
@@ -1652,7 +1663,6 @@ function Library:CreateSection(parentColumn, sectionData)
             CornerRadius = UDim.new(1, 0)
         })
 
-        -- Заполнение
         local SliderFill = Instances:Create("Frame", {
             Parent = SliderTrack.Instance,
             Name = "Fill",
@@ -1667,7 +1677,6 @@ function Library:CreateSection(parentColumn, sectionData)
             CornerRadius = UDim.new(1, 0)
         })
 
-        -- Обновление слайдера
         local function UpdateSliderDisplay()
             local percent = (Slider.Value - Slider.Min) / (Slider.Max - Slider.Min)
             SliderFill:Tween(TweenInfo.new(0.08, Enum.EasingStyle.Quad, Enum.EasingDirection.Out), {
@@ -1678,7 +1687,6 @@ function Library:CreateSection(parentColumn, sectionData)
 
         function Slider:Set(Value)
             Value = math.clamp(Value, Slider.Min, Slider.Max)
-            -- Округление
             if Slider.Float and Slider.Float > 0 then
                 Value = math.round(Value / Slider.Float) * Slider.Float
             end
@@ -1689,7 +1697,6 @@ function Library:CreateSection(parentColumn, sectionData)
             pcall(Slider.Callback, Value)
         end
 
-        -- Получение значения из позиции мыши
         local function GetSliderValueFromInput(Input)
             local trackSizeX = SliderTrack.Instance.AbsoluteSize.X
             if trackSizeX <= 0 then return Slider.Value end
@@ -1700,7 +1707,6 @@ function Library:CreateSection(parentColumn, sectionData)
             return Slider.Min + (Slider.Max - Slider.Min) * normalized
         end
 
-        -- Обработка начала взаимодействия
         local sliding = false
         local slidingConnection = nil
 
@@ -1726,7 +1732,6 @@ function Library:CreateSection(parentColumn, sectionData)
             end
         end)
 
-        -- Обновление при движении
         UserInputService.InputChanged:Connect(function(Input)
             if sliding and (Input.UserInputType == Enum.UserInputType.MouseMovement or 
                            Input.UserInputType == Enum.UserInputType.Touch) then
@@ -1735,15 +1740,12 @@ function Library:CreateSection(parentColumn, sectionData)
             end
         end)
 
-        -- Установка начального значения
         Slider:Set(Slider.Default)
 
-        -- Запись в Library.SetFlags для доступа извне
         Library.SetFlags[Slider.Flag] = function(Value)
             Slider:Set(Value)
         end
 
-        -- Функции для управления слайдером
         function Slider:GetValue()
             return Slider.Value
         end
@@ -1788,7 +1790,6 @@ local AimbotSection = Library:CreateSection(CombatCols[1], { Name = "Aimbot", Ic
 AimbotSection:CreateToggle({ Name = "Enable Aimbot", Default = true })
 AimbotSection:CreateToggle({ Name = "Prediction", Default = false })
 
--- Добавляем кнопку и слайдер в Combat
 local CombatSection = Library:CreateSection(CombatCols[2], { Name = "Combat Controls", Icon = "shield" })
 CombatSection:Button({
     Title = "Fling Players",
@@ -1839,7 +1840,6 @@ local PlayersSection = Library:CreateSection(PlayersCols[1], { Name = "ESP Playe
 PlayersSection:CreateToggle({ Name = "Box ESP", Default = true })
 PlayersSection:CreateToggle({ Name = "Tracers", Default = false })
 
--- Добавляем кнопки и слайдеры в Visuals
 local VisualsSection = Library:CreateSection(PlayersCols[2], { Name = "ESP Settings", Icon = "settings" })
 VisualsSection:Slider({
     Title = "ESP Distance",
@@ -1870,5 +1870,4 @@ Library:CreateTab(MainWindow, { Name = "Local", Subtitle = "игрок", Icon = 
 Library:CreateTab(MainWindow, { Name = "Colors", Subtitle = "цвета интерфейса", Icon = "palette" })
 Library:CreateTab(MainWindow, { Name = "Config", Subtitle = "конфигурация", Icon = "folder" })
 
--- Вывод информации о созданных флагах
 print("Created Flags:", table.concat(table.keys(Library.Flags or {}), ", "))
