@@ -1,5 +1,5 @@
 -- =======================================================
--- ПОЛНЫЙ СКРИПТ С ПОДВАЛОМ ПРОФИЛЯ В СТИЛЕ СТАНДАРТА
+-- ПОЛНЫЙ СКРИПТ С ЧЕТКИМ ВИДИМЫМ КОНТУРОМ ПРОФИЛЯ
 -- =======================================================
 
 local Workspace = game:GetService("Workspace")
@@ -16,16 +16,16 @@ end
 
 local LocalPlayer = Players.LocalPlayer
 
--- 1. Цветовая тема (Dark & Neon Blue Style)
+-- 1. Цветовая тема
 local Theme = {
     ["Background"] = Color3.fromRGB(10, 10, 14),
     ["Background 2"] = Color3.fromRGB(14, 15, 20),
     ["Text"] = Color3.fromRGB(240, 240, 245),
     ["SubText"] = Color3.fromRGB(110, 115, 125),
-    ["Outline"] = Color3.fromRGB(24, 28, 38),
+    ["Outline"] = Color3.fromRGB(45, 55, 75), -- Обновленный видимый цвет контура
     ["Accent"] = Color3.fromRGB(0, 140, 255),
     ["AccentGlow"] = Color3.fromRGB(0, 180, 255),
-    ["Element"] = Color3.fromRGB(18, 20, 26),
+    ["Element"] = Color3.fromRGB(18, 20, 28),
     ["GlowCenter"] = Color3.fromRGB(0, 140, 255),
     ["GlowEdge"] = Color3.fromRGB(14, 15, 20),
     ["Node"] = Color3.fromRGB(120, 200, 255),
@@ -151,9 +151,7 @@ local function MakeDraggable(guiInstance, dragHandle)
     end)
 end
 
--- =======================================================
--- 8. СИСТЕМА СОЗВЕЗДИЯ
--- =======================================================
+-- 8. Система созвездия
 local function CreateConstellationBackground(parentFrame, numNodes, maxDistance)
     numNodes = numNodes or 30
     maxDistance = maxDistance or 80
@@ -291,9 +289,7 @@ local function CreateConstellationBackground(parentFrame, numNodes, maxDistance)
     end)
 end
 
--- =======================================================
--- 9. СОЗДАНИЕ ОКНА (WINDOW)
--- =======================================================
+-- 9. Создание окна UI
 local Library = {
     Windows = {},
     ActiveTabObject = nil
@@ -335,7 +331,6 @@ function Library:CreateWindow(data)
     })
 
     MakeDraggable(mainFrame.Instance, mainFrame.Instance)
-
     CreateConstellationBackground(mainFrame.Instance, 30, 80)
 
     local sidebarBackground = Instances:Create("Frame", {
@@ -432,15 +427,15 @@ function Library:CreateWindow(data)
     })
 
     -- =======================================================
-    -- ПОДВАЛ ПРОФИЛЯ В СТИЛЕ КАРТОЧКИ С КОНТУРОМ (КАК НА ФОТО)
+    -- ПОДВАЛ ПРОФИЛЯ С ЯРКИМ И ЧЕТКИМ КОНТУРОМ
     -- =======================================================
     local profileFrame = Instances:Create("Frame", {
         Parent = mainFrame.Instance,
         Name = "ProfileFooter",
         Position = UDim2.new(0, 8, 1, -56),
         Size = UDim2.new(0, 144, 0, 48),
-        BackgroundColor3 = Theme["Element"],
-        BackgroundTransparency = 0.2,
+        BackgroundColor3 = Color3.fromRGB(18, 20, 28),
+        BackgroundTransparency = 0.3,
         BorderSizePixel = 0,
         ZIndex = 15
     })
@@ -450,10 +445,12 @@ function Library:CreateWindow(data)
         CornerRadius = UDim.new(0, 8)
     })
 
+    -- Яркий UIStroke для гарантии видимости контура
     Instances:Create("UIStroke", {
         Parent = profileFrame.Instance,
-        Color = Theme["Outline"],
+        Color = Color3.fromRGB(45, 55, 75),
         Thickness = 1,
+        Transparency = 0,
         ApplyStrokeMode = Enum.ApplyStrokeMode.Border
     })
 
@@ -574,7 +571,7 @@ function Library:CreateWindow(data)
 
     Instances:Create("UIStroke", {
         Parent = closeButton.Instance,
-        Color = Theme["Outline"],
+        Color = Color3.fromRGB(45, 55, 75),
         Thickness = 1
     })
 
@@ -603,9 +600,7 @@ function Library:CreateWindow(data)
     return Window
 end
 
--- =======================================================
--- 10. СИСТЕМА ВКЛАДОК И ПОДВКЛАДОК
--- =======================================================
+-- 10. Вкладки и Подвкладки
 function Library:CreateTab(window, tabData)
     tabData = tabData or {}
     local tabName = tabData.Name or "Tab"
@@ -903,13 +898,8 @@ function Library:CreateTab(window, tabData)
         end
     end
 
-    function TabObject:Deselect()
-        DeselectTab()
-    end
-
-    function TabObject:Select()
-        ActivateTab()
-    end
+    function TabObject:Deselect() DeselectTab() end
+    function TabObject:Select() ActivateTab() end
 
     tabButton:Connect("MouseEnter", function()
         if Library.ActiveTabObject ~= TabObject then
@@ -1209,9 +1199,7 @@ function Library:CreateTab(window, tabData)
     return TabObject, defaultColumns
 end
 
--- =======================================================
--- 11. СЕКЦИИ UI (С ПОДДЕРЖКОЙ ИКОНОК)
--- =======================================================
+-- 11. Секции UI
 function Library:CreateSection(parentColumn, sectionData)
     sectionData = sectionData or {}
     local sectionName = sectionData.Name or "Section"
@@ -1238,7 +1226,7 @@ function Library:CreateSection(parentColumn, sectionData)
 
     Instances:Create("UIStroke", {
         Parent = sectionFrame.Instance,
-        Color = Theme["Outline"],
+        Color = Color3.fromRGB(45, 55, 75),
         Thickness = 1,
         ApplyStrokeMode = Enum.ApplyStrokeMode.Border
     })
@@ -1432,7 +1420,7 @@ function Library:CreateSection(parentColumn, sectionData)
 
         local checkStroke = Instances:Create("UIStroke", {
             Parent = checkBox.Instance,
-            Color = state and Theme["Accent"] or Theme["Outline"],
+            Color = state and Theme["Accent"] or Color3.fromRGB(45, 55, 75),
             Thickness = 1
         })
 
@@ -1469,7 +1457,7 @@ function Library:CreateSection(parentColumn, sectionData)
                 BackgroundColor3 = state and Theme["Accent"] or Theme["Element"]
             })
             Tween(checkStroke.Instance, TweenInfo.new(0.15), {
-                Color = state and Theme["Accent"] or Theme["Outline"]
+                Color = state and Theme["Accent"] or Color3.fromRGB(45, 55, 75)
             })
             Tween(checkMark.Instance, TweenInfo.new(0.15), {
                 ImageTransparency = state and 0 or 1
@@ -1486,42 +1474,20 @@ function Library:CreateSection(parentColumn, sectionData)
     return SectionAPI
 end
 
--- =======================================================
--- 12. ИНИЦИАЛИЗАЦИЯ И ТЕСТ
--- =======================================================
-
+-- 12. Инициализация
 local MainWindow = Library:CreateWindow({
     Logo = "95894290284220"
 })
 
--- 1. Вкладка Combat
-local CombatTab, CombatCols = Library:CreateTab(MainWindow, {
-    Name = "Combat",
-    Subtitle = "боевые настройки",
-    Icon = "combat"
-})
-
+local CombatTab, CombatCols = Library:CreateTab(MainWindow, { Name = "Combat", Subtitle = "боевые настройки", Icon = "combat" })
 local AimbotSection = Library:CreateSection(CombatCols[1], { Name = "Aimbot", Icon = "zap" })
 AimbotSection:CreateToggle({ Name = "Enable Aimbot", Default = true })
-AimbotSection:CreateToggle({ Name = "Prediction", Default = false })
 
--- 2. Вкладка Visuals с подвкладками
-local VisualsTab = Library:CreateTab(MainWindow, {
-    Name = "Visuals",
-    Subtitle = "отображение объектов",
-    Icon = "eye"
-})
-
+local VisualsTab = Library:CreateTab(MainWindow, { Name = "Visuals", Subtitle = "отображение объектов", Icon = "eye" })
 local PlayersSubContainer, PlayersCols = VisualsTab:CreateSubTab({ Name = "Players", Icon = "user" })
 local PlayersSection = Library:CreateSection(PlayersCols[1], { Name = "ESP Players", Icon = "eye" })
 PlayersSection:CreateToggle({ Name = "Box ESP", Default = true })
-PlayersSection:CreateToggle({ Name = "Tracers", Default = false })
 
-local WorldSubContainer, WorldCols = VisualsTab:CreateSubTab({ Name = "World", Icon = "globe" })
-local WorldSection = Library:CreateSection(WorldCols[1], { Name = "World Visuals", Icon = "palette" })
-WorldSection:CreateToggle({ Name = "Fullbright", Default = false })
-
--- 3. Остальные вкладки для примера
 Library:CreateTab(MainWindow, { Name = "Local", Subtitle = "игрок", Icon = "user" })
 Library:CreateTab(MainWindow, { Name = "Colors", Subtitle = "цвета интерфейса", Icon = "palette" })
 Library:CreateTab(MainWindow, { Name = "Config", Subtitle = "конфигурация", Icon = "folder" })
