@@ -1651,7 +1651,7 @@ function Library:CreateSection(parentColumn, sectionData)
     end
 
     -- ====================================================================
-    -- СИСТЕМА ДРОПДАУНОВ (INLINE / В ОДНУ СТРОКУ С НАЗВАНИЕМ)
+    -- СИСТЕМА ДРОПДАУНОВ С СИНИМ АКЦЕНТОМ И РАЗДЕЛИТЕЛЕМ У АКТИВНОГО ЭЛЕМЕНТА
     -- ====================================================================
     function SectionAPI:CreateDropdown(dropdownData)
         dropdownData = dropdownData or {}
@@ -1744,14 +1744,14 @@ function Library:CreateSection(parentColumn, sectionData)
             ZIndex = 10
         })
 
-        -- Выпадающее меню под плашкой
+        -- Выпадающее меню под плашкой (темный черно-синий фон)
         local optionsList = Instances:Create("Frame", {
             Parent = dropHeader.Instance,
             Name = "OptionsList",
             Position = UDim2.new(0, 0, 1, 4),
             Size = UDim2.new(1, 0, 0, 0),
             BackgroundColor3 = Theme["Background 2"],
-            BackgroundTransparency = 0.1,
+            BackgroundTransparency = 0.05,
             BorderSizePixel = 0,
             ClipsDescendants = true,
             ZIndex = 20
@@ -1786,7 +1786,7 @@ function Library:CreateSection(parentColumn, sectionData)
         local optionButtons = {}
         local DropdownAPI = {}
 
-        -- Обновление высоты и раскрытие
+        -- Обновление высоты при разворачивании
         local function UpdateHeight()
             local listHeight = listLayout.Instance.AbsoluteContentSize.Y + 8
             local targetListHeight = expanded and listHeight or 0
@@ -1810,7 +1810,7 @@ function Library:CreateSection(parentColumn, sectionData)
             })
         end
 
-        -- Отрисовка списка опций с галочками
+        -- Отрисовка элементов списка
         local function RefreshOptions()
             for _, btn in pairs(optionButtons) do
                 btn:Destroy()
@@ -1823,8 +1823,8 @@ function Library:CreateSection(parentColumn, sectionData)
                     Parent = optionsList.Instance,
                     Name = "Option_" .. tostring(opt),
                     Size = UDim2.new(1, 0, 0, 20),
-                    BackgroundColor3 = isSelected and Theme["Element"] or Color3.fromRGB(255, 255, 255),
-                    BackgroundTransparency = isSelected and 0.3 or 1,
+                    BackgroundColor3 = isSelected and Theme["Element"] or Color3.fromRGB(15, 15, 20),
+                    BackgroundTransparency = isSelected and 0.4 or 1,
                     Text = "",
                     AutoButtonColor = false,
                     BorderSizePixel = 0,
@@ -1837,6 +1837,24 @@ function Library:CreateSection(parentColumn, sectionData)
                     CornerRadius = UDim.new(0, 3)
                 })
 
+                -- Вертикальная разделительная синяя полоска слева у выбранного элемента
+                local sideBar = Instances:Create("Frame", {
+                    Parent = optBtn.Instance,
+                    Name = "SideBarIndicator",
+                    Size = UDim2.new(0, 2, 0, 12),
+                    AnchorPoint = Vector2.new(0, 0.5),
+                    Position = UDim2.new(0, 3, 0.5, 0),
+                    BackgroundColor3 = Theme["Accent"],
+                    BorderSizePixel = 0,
+                    Visible = isSelected,
+                    ZIndex = 23
+                })
+
+                Instances:Create("UICorner", {
+                    Parent = sideBar.Instance,
+                    CornerRadius = UDim.new(0, 1)
+                })
+
                 local optLabel = Instances:Create("TextLabel", {
                     Parent = optBtn.Instance,
                     Name = "Label",
@@ -1844,8 +1862,8 @@ function Library:CreateSection(parentColumn, sectionData)
                     FontFace = Font.new("rbxassetid://12187365364", Enum.FontWeight.Regular, Enum.FontStyle.Normal),
                     TextColor3 = isSelected and Theme["Text"] or Theme["SubText"],
                     TextSize = 11,
-                    Position = UDim2.new(0, 6, 0, 0),
-                    Size = UDim2.new(1, -22, 1, 0),
+                    Position = UDim2.new(0, isSelected and 10 or 6, 0, 0),
+                    Size = UDim2.new(1, isSelected and -28 or -22, 1, 0),
                     BackgroundTransparency = 1,
                     TextXAlignment = Enum.TextXAlignment.Left,
                     TextTruncate = Enum.TextTruncate.AtEnd,
@@ -1869,8 +1887,8 @@ function Library:CreateSection(parentColumn, sectionData)
                 optBtn:Connect("MouseEnter", function()
                     if opt ~= selected then
                         Tween(optBtn.Instance, TweenInfo.new(0.15), {
-                            BackgroundTransparency = 0.9,
-                            BackgroundColor3 = Color3.fromRGB(255, 255, 255)
+                            BackgroundTransparency = 0.8,
+                            BackgroundColor3 = Theme["Element"]
                         })
                         Tween(optLabel.Instance, TweenInfo.new(0.15), {
                             TextColor3 = Theme["Text"]
