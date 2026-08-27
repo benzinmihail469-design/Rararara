@@ -1,5 +1,5 @@
 -- =======================================================
--- АВТОНОМНЫЙ СКРИПТ (СИНИЙ/ЧЕРНЫЙ СТИЛЬ + ИСПРАВЛЕННАЯ ФИЗИКА ЧАСТИЦ)
+-- АВТОНОМНЫЙ СКРИПТ (СИНИЙ/ЧЕРНЫЙ СТИЛЬ + ИСПРАВЛЕННАЯ ФИЗИКА + ЗАКРУГЛЕННАЯ ИКОНКА)
 -- =======================================================
 
 local Workspace = game:GetService("Workspace")
@@ -147,7 +147,7 @@ local function MakeDraggable(guiInstance, dragHandle)
 end
 
 -- =======================================================
--- 8. СИСТЕМА СОЗВЕЗДИЯ (ФИКС УСКОРЕНИЯ)
+-- 8. СИСТЕМА СОЗВЕЗДИЯ
 -- =======================================================
 local function CreateConstellationBackground(parentFrame, numNodes, maxDistance)
     numNodes = numNodes or 30
@@ -191,7 +191,7 @@ local function CreateConstellationBackground(parentFrame, numNodes, maxDistance)
             Gui = dot.Instance,
             Pos = Vector2.new(rng:NextNumber(160, 500), rng:NextNumber(10, 350)),
             Dir = dir,
-            Speed = rng:NextNumber(18, 25) -- Фиксированная постоянная скорость
+            Speed = rng:NextNumber(18, 25)
         })
     end
 
@@ -227,10 +227,8 @@ local function CreateConstellationBackground(parentFrame, numNodes, maxDistance)
         local delta = math.clamp(dt, 0, 0.033)
 
         for _, node in ipairs(nodes) do
-            -- Движение строго по единичному вектору направления
             node.Pos = node.Pos + (node.Dir * (node.Speed * delta))
 
-            -- Отражение направления без изменения скорости
             local nx, ny = node.Dir.X, node.Dir.Y
 
             if node.Pos.X <= minX then
@@ -375,7 +373,7 @@ function Library:CreateWindow(data)
 
     Instances:Create("UICorner", {
         Parent = logoContainer.Instance,
-        CornerRadius = UDim.new(0, 8)
+        CornerRadius = UDim.new(0, 12)
     })
 
     local logoIcon = Instances:Create("ImageLabel", {
@@ -391,6 +389,12 @@ function Library:CreateWindow(data)
         ImageTransparency = 0,
         ZIndex = 6,
         BorderSizePixel = 0
+    })
+
+    -- Закругление самой иконки
+    Instances:Create("UICorner", {
+        Parent = logoIcon.Instance,
+        CornerRadius = UDim.new(0, 12)
     })
 
     task.spawn(function()
