@@ -1,5 +1,5 @@
 -- =======================================================
--- АВТОНОМНЫЙ СКРИПТ (ИСПРАВЛЕНА АНИМАЦИЯ И ПОВОРОТ СТРЕЛОК)
+-- АВТОНОМНЫЙ СКРИПТ (С ЭФФЕКТОМ НАВЕДЕНИЯ НА ВКЛАДКИ)
 -- =======================================================
 
 local Workspace = game:GetService("Workspace")
@@ -522,7 +522,7 @@ function Library:CreateWindow(data)
 end
 
 -- =======================================================
--- 10. СИСТЕМА ВКЛАДОК И ПОДВКЛАДОК (СИНХРОНИЗИРОВАННЫЙ ПОВОРОТ СТРЕЛКИ)
+-- 10. СИСТЕМА ВКЛАДОК И ПОДВКЛАДОК (С ЭФФЕКТОМ НАВЕДЕНИЯ)
 -- =======================================================
 function Library:CreateTab(window, tabData)
     tabData = tabData or {}
@@ -553,7 +553,7 @@ function Library:CreateTab(window, tabData)
         Parent = tabGroupFrame.Instance,
         Name = "TabButton",
         Size = UDim2.new(1, 0, 0, buttonHeight),
-        BackgroundColor3 = Theme["Background 2"],
+        BackgroundColor3 = Theme["Text"],
         BackgroundTransparency = 1,
         Text = "",
         AutoButtonColor = false,
@@ -649,7 +649,7 @@ function Library:CreateTab(window, tabData)
         Image = ParseIcon("chevron-down"),
         ImageColor3 = Theme["SubText"],
         ImageTransparency = 1,
-        Rotation = 0, -- Исходная позиция (0 градусов = закрыто)
+        Rotation = 0,
         ScaleType = Enum.ScaleType.Fit,
         ZIndex = 6
     })
@@ -745,7 +745,7 @@ function Library:CreateTab(window, tabData)
         SubTabsContainer = subTabsContainer.Instance,
         SubListLayout = subListLayout.Instance,
         Arrow = arrowIcon.Instance,
-        Expanded = false, -- Изначально контейнер свернет (0 height)
+        Expanded = false,
         HasSubTabs = false,
         ActiveSubTabObj = nil
     }
@@ -824,7 +824,34 @@ function Library:CreateTab(window, tabData)
         ActivateTab()
     end
 
-    -- Переключение раскрытия подвкладок и стрелки
+    -- ==========================================
+    -- ЭФФЕКТЫ НАВЕДЕНИЯ МЫШИ (HOVER EFFECTS)
+    -- ==========================================
+    tabButton:Connect("MouseEnter", function()
+        if Library.ActiveTabObject ~= TabObject then
+            Tween(tabButton.Instance, TweenInfo.new(0.18), { 
+                BackgroundColor3 = Theme["Text"], 
+                BackgroundTransparency = 0.93 
+            })
+            Tween(iconImage.Instance, TweenInfo.new(0.18), { ImageTransparency = 0.1, ImageColor3 = Theme["Text"] })
+            Tween(tabLabel.Instance, TweenInfo.new(0.18), { TextColor3 = Theme["Text"] })
+            if TabObject.SubLabel then
+                Tween(TabObject.SubLabel, TweenInfo.new(0.18), { TextColor3 = Theme["Text"], TextTransparency = 0.3 })
+            end
+        end
+    end)
+
+    tabButton:Connect("MouseLeave", function()
+        if Library.ActiveTabObject ~= TabObject then
+            Tween(tabButton.Instance, TweenInfo.new(0.18), { BackgroundTransparency = 1 })
+            Tween(iconImage.Instance, TweenInfo.new(0.18), { ImageTransparency = 0.3, ImageColor3 = Theme["SubText"] })
+            Tween(tabLabel.Instance, TweenInfo.new(0.18), { TextColor3 = Theme["SubText"] })
+            if TabObject.SubLabel then
+                Tween(TabObject.SubLabel, TweenInfo.new(0.18), { TextColor3 = Theme["SubText"], TextTransparency = 0.4 })
+            end
+        end
+    end)
+
     tabButton:Connect("MouseButton1Click", function()
         if TabObject.HasSubTabs then
             if Library.ActiveTabObject == TabObject then
@@ -855,6 +882,7 @@ function Library:CreateTab(window, tabData)
             Parent = subTabsContainer.Instance,
             Name = "SubTab_" .. subName,
             Size = UDim2.new(1, 0, 0, 24),
+            BackgroundColor3 = Theme["Text"],
             BackgroundTransparency = 1,
             Text = "",
             AutoButtonColor = false,
@@ -1009,6 +1037,24 @@ function Library:CreateTab(window, tabData)
             Tween(subLabelObj.Instance, TweenInfo.new(0.15), { TextColor3 = Theme["Text"] })
             subContainer.Instance.Visible = true
         end
+
+        -- Наведение для подвкладки
+        subButton:Connect("MouseEnter", function()
+            if TabObject.ActiveSubTabObj ~= SubTabObject then
+                Tween(subButton.Instance, TweenInfo.new(0.15), { 
+                    BackgroundColor3 = Theme["Text"],
+                    BackgroundTransparency = 0.94 
+                })
+                Tween(subLabelObj.Instance, TweenInfo.new(0.15), { TextColor3 = Theme["Text"] })
+            end
+        end)
+
+        subButton:Connect("MouseLeave", function()
+            if TabObject.ActiveSubTabObj ~= SubTabObject then
+                Tween(subButton.Instance, TweenInfo.new(0.15), { BackgroundTransparency = 1 })
+                Tween(subLabelObj.Instance, TweenInfo.new(0.15), { TextColor3 = Theme["SubText"] })
+            end
+        end)
 
         subButton:Connect("MouseButton1Click", function()
             SubTabObject:Select()
