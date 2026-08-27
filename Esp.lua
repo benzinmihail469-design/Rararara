@@ -1985,11 +1985,9 @@ function Library:CreateSection(parentColumn, sectionData)
                     })
                 end)
 
-                -- Клик по пункту
+                -- Клик по пункту (список остается открытым)
                 optBtn:Connect("MouseButton1Click", function()
                     DropdownAPI:Set(opt)
-                    expanded = false
-                    UpdateHeight()
                 end)
 
                 table.insert(optionButtons, optBtn.Instance)
