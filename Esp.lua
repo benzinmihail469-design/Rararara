@@ -1489,7 +1489,7 @@ function Library:CreateSection(parentColumn, sectionData)
     -- СИСТЕМА КНОПОК И СЛАЙДЕРОВ (ДОБАВЛЕНА В SECTIONAPI)
     -- ====================================================================
 
-    -- Метод для создания Кнопки с плавной анимацией
+    -- Метод для создания Кнопки с исправленной плавной анимацией
     function SectionAPI:Button(Data)
         Data = Data or {}
         local Button = {
@@ -1525,10 +1525,10 @@ function Library:CreateSection(parentColumn, sectionData)
 
         -- Наведение мыши (Hover)
         ButtonFrame:Connect("MouseEnter", function()
-            Tween(ButtonFrame.Instance, TweenInfo.new(0.15, Enum.EasingStyle.Quad, Enum.EasingDirection.Out), {
+            ButtonFrame:Tween(TweenInfo.new(0.15, Enum.EasingStyle.Quad, Enum.EasingDirection.Out), {
                 BackgroundTransparency = 0.25
             })
-            Tween(buttonStroke, TweenInfo.new(0.15, Enum.EasingStyle.Quad, Enum.EasingDirection.Out), {
+            buttonStroke:Tween(TweenInfo.new(0.15, Enum.EasingStyle.Quad, Enum.EasingDirection.Out), {
                 Color = Theme["Accent"],
                 Transparency = 0.4
             })
@@ -1536,11 +1536,11 @@ function Library:CreateSection(parentColumn, sectionData)
 
         -- Увод мыши (Leave)
         ButtonFrame:Connect("MouseLeave", function()
-            Tween(ButtonFrame.Instance, TweenInfo.new(0.15, Enum.EasingStyle.Quad, Enum.EasingDirection.Out), {
+            ButtonFrame:Tween(TweenInfo.new(0.15, Enum.EasingStyle.Quad, Enum.EasingDirection.Out), {
                 BackgroundTransparency = 0,
                 Size = UDim2.new(1, 0, 0, 32)
             })
-            Tween(buttonStroke, TweenInfo.new(0.15, Enum.EasingStyle.Quad, Enum.EasingDirection.Out), {
+            buttonStroke:Tween(TweenInfo.new(0.15, Enum.EasingStyle.Quad, Enum.EasingDirection.Out), {
                 Color = Theme["Outline"],
                 Transparency = 0
             })
@@ -1548,15 +1548,15 @@ function Library:CreateSection(parentColumn, sectionData)
 
         -- Нажатие (Press Down)
         ButtonFrame:Connect("MouseButton1Down", function()
-            Tween(ButtonFrame.Instance, TweenInfo.new(0.08, Enum.EasingStyle.Quad, Enum.EasingDirection.Out), {
-                Size = UDim2.new(1, -6, 0, 28),
+            ButtonFrame:Tween(TweenInfo.new(0.08, Enum.EasingStyle.Quad, Enum.EasingDirection.Out), {
+                Size = UDim2.new(1, -4, 0, 28),
                 BackgroundTransparency = 0.45
             })
         end)
 
         -- Отпускание кнопки (Release Up)
         ButtonFrame:Connect("MouseButton1Up", function()
-            Tween(ButtonFrame.Instance, TweenInfo.new(0.2, Enum.EasingStyle.Back, Enum.EasingDirection.Out), {
+            ButtonFrame:Tween(TweenInfo.new(0.2, Enum.EasingStyle.Back, Enum.EasingDirection.Out), {
                 Size = UDim2.new(1, 0, 0, 32),
                 BackgroundTransparency = 0.25
             })
