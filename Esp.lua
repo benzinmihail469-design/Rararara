@@ -1,5 +1,5 @@
 -- =======================================================
--- АВТОНОМНЫЙ СКРИПТ (СИНИЙ/ЧЕРНЫЙ СТИЛЬ + ИСПРАВЛЕННАЯ ФИЗИКА + ЗАКРУГЛЕННАЯ ИКОНКА)
+-- АВТОНОМНЫЙ СКРИПТ (СИНИЙ/ЧЕРНЫЙ СТИЛЬ + РАСШИРЕННАЯ СИСТЕМА ВКЛАДОК И ПОДВКЛАДОК)
 -- =======================================================
 
 local Workspace = game:GetService("Workspace")
@@ -19,7 +19,7 @@ local Theme = {
     ["Background"] = Color3.fromRGB(10, 10, 14),
     ["Background 2"] = Color3.fromRGB(14, 15, 20),
     ["Text"] = Color3.fromRGB(240, 240, 245),
-    ["SubText"] = Color3.fromRGB(130, 135, 145),
+    ["SubText"] = Color3.fromRGB(110, 115, 125),
     ["Outline"] = Color3.fromRGB(24, 28, 38),
     ["Accent"] = Color3.fromRGB(0, 140, 255),
     ["AccentGlow"] = Color3.fromRGB(0, 180, 255),
@@ -37,12 +37,15 @@ local IconLibrary = {
     ["settings"] = "rbxassetid://10734950309",
     ["combat"] = "rbxassetid://10734975692",
     ["visuals"] = "rbxassetid://10723414641",
+    ["eye"] = "rbxassetid://10723414641",
     ["shield"] = "rbxassetid://10709782497",
     ["code"] = "rbxassetid://10709752254",
     ["check"] = "rbxassetid://10709790644",
     ["chevron-down"] = "rbxassetid://10709790948",
     ["folder"] = "rbxassetid://10723345749",
     ["star"] = "rbxassetid://10734934585",
+    ["palette"] = "rbxassetid://10734950020",
+    ["globe"] = "rbxassetid://10723343321",
     ["zap"] = "rbxassetid://10734983868"
 }
 
@@ -223,7 +226,7 @@ local function CreateConstellationBackground(parentFrame, numNodes, maxDistance)
 
         if width <= 0 or height <= 0 then return end
 
-        local minX = 155
+        local minX = 160
         local delta = math.clamp(dt, 0, 0.033)
 
         for _, node in ipairs(nodes) do
@@ -291,17 +294,17 @@ end
 -- =======================================================
 local Library = {
     Windows = {},
-    CurrentTab = nil
+    ActiveTabObject = nil
 }
 
 function Library:CreateWindow(data)
     data = data or {}
-    local logoId = data.Logo or "96633168859001"
+    local logoId = data.Logo or "95894290284220"
 
     local Window = {
-        CurrentTab = nil,
         LeftTabs = nil,
-        Content = nil
+        Content = nil,
+        ActiveSubTab = nil
     }
 
     local mainFrame = Instances:Create("Frame", {
@@ -310,7 +313,7 @@ function Library:CreateWindow(data)
         AnchorPoint = Vector2.new(0.5, 0.5),
         BackgroundTransparency = 0,
         Position = UDim2.new(0.5, 0, 0.5, 0),
-        Size = UDim2.new(0, 530, 0, 370),
+        Size = UDim2.new(0, 540, 0, 380),
         ZIndex = 1,
         BorderSizePixel = 0,
         BackgroundColor3 = Theme["Background"],
@@ -337,7 +340,7 @@ function Library:CreateWindow(data)
         Parent = mainFrame.Instance,
         Name = "SidebarBackground",
         Position = UDim2.new(0, 0, 0, 0),
-        Size = UDim2.new(0, 150, 1, 0),
+        Size = UDim2.new(0, 160, 1, 0),
         BackgroundColor3 = Theme["Background 2"],
         BackgroundTransparency = 0.1,
         BorderSizePixel = 0,
@@ -352,7 +355,7 @@ function Library:CreateWindow(data)
     Instances:Create("Frame", {
         Parent = mainFrame.Instance,
         Name = "SidebarVerticalDivider",
-        Position = UDim2.new(0, 150, 0, 0),
+        Position = UDim2.new(0, 160, 0, 0),
         Size = UDim2.new(0, 1, 1, 0),
         BackgroundColor3 = Theme["Outline"],
         BorderSizePixel = 0,
@@ -363,7 +366,7 @@ function Library:CreateWindow(data)
         Parent = mainFrame.Instance,
         Name = "LogoContainer",
         AnchorPoint = Vector2.new(0.5, 0),
-        Position = UDim2.new(0, 75, 0, 16),
+        Position = UDim2.new(0, 80, 0, 14),
         Size = UDim2.new(0, 58, 0, 58),
         BackgroundTransparency = 1,
         BorderSizePixel = 0,
@@ -391,7 +394,6 @@ function Library:CreateWindow(data)
         BorderSizePixel = 0
     })
 
-    -- Закругление самой иконки
     Instances:Create("UICorner", {
         Parent = logoIcon.Instance,
         CornerRadius = UDim.new(0, 12)
@@ -406,8 +408,8 @@ function Library:CreateWindow(data)
     local headerDivider = Instances:Create("Frame", {
         Parent = mainFrame.Instance,
         Name = "HeaderDivider",
-        Position = UDim2.new(0, 12, 0, 86),
-        Size = UDim2.new(0, 126, 0, 1),
+        Position = UDim2.new(0, 12, 0, 84),
+        Size = UDim2.new(0, 136, 0, 1),
         BackgroundColor3 = Color3.fromRGB(255, 255, 255),
         BorderSizePixel = 0,
         ZIndex = 5
@@ -431,11 +433,11 @@ function Library:CreateWindow(data)
         Parent = mainFrame.Instance,
         Name = "LeftTabs",
         BackgroundTransparency = 1,
-        Position = UDim2.new(0, 0, 0, 93),
-        Size = UDim2.new(0, 150, 1, -93),
+        Position = UDim2.new(0, 0, 0, 92),
+        Size = UDim2.new(0, 160, 1, -92),
         ZIndex = 4,
         BorderSizePixel = 0,
-        ScrollBarThickness = 3,
+        ScrollBarThickness = 2,
         ScrollBarImageColor3 = Theme["Accent"],
         ScrollingDirection = Enum.ScrollingDirection.Y,
         ScrollingEnabled = true,
@@ -464,8 +466,8 @@ function Library:CreateWindow(data)
         Parent = mainFrame.Instance,
         Name = "ContentArea",
         BackgroundTransparency = 1,
-        Position = UDim2.new(0, 156, 0, 42),
-        Size = UDim2.new(1, -161, 1, -46),
+        Position = UDim2.new(0, 166, 0, 40),
+        Size = UDim2.new(1, -171, 1, -44),
         ZIndex = 4,
         ClipsDescendants = true
     })
@@ -520,33 +522,78 @@ function Library:CreateWindow(data)
 end
 
 -- =======================================================
--- 10. ЛОГИКА ВКЛАДОК
+-- 10. СИСТЕМА ВКЛАДОК И ПОДВКЛАДОК (СТИЛЬ С ФОТО)
 -- =======================================================
 function Library:CreateTab(window, tabData)
     tabData = tabData or {}
     local tabName = tabData.Name or "Tab"
+    local tabSubtitle = tabData.Subtitle or ""
     local tabIcon = tabData.Icon or "folder"
 
-    local tabButton = Instances:Create("TextButton", {
+    -- Основной контейнер группы вкладки (для вертикального списка)
+    local tabGroupFrame = Instances:Create("Frame", {
         Parent = window.LeftTabs,
-        Name = "Tab_" .. tabName,
-        Size = UDim2.new(1, 0, 0, 32),
+        Name = "TabGroup_" .. tabName,
+        Size = UDim2.new(1, 0, 0, 38),
+        AutomaticSize = Enum.AutomaticSize.Y,
+        BackgroundTransparency = 1,
+        BorderSizePixel = 0,
+        ZIndex = 5
+    })
+
+    Instances:Create("UIListLayout", {
+        Parent = tabGroupFrame.Instance,
+        SortOrder = Enum.SortOrder.LayoutOrder,
+        Padding = UDim.new(0, 2)
+    })
+
+    -- Главная кнопка вкладки
+    local hasSubText = tabSubtitle ~= ""
+    local buttonHeight = hasSubText and 38 or 32
+
+    local tabButton = Instances:Create("TextButton", {
+        Parent = tabGroupFrame.Instance,
+        Name = "TabButton",
+        Size = UDim2.new(1, 0, 0, buttonHeight),
+        BackgroundColor3 = Theme["Background 2"],
         BackgroundTransparency = 1,
         Text = "",
         AutoButtonColor = false,
-        ZIndex = 5
+        BorderSizePixel = 0,
+        ZIndex = 5,
+        LayoutOrder = 0
     })
 
     Instances:Create("UICorner", {
         Parent = tabButton.Instance,
-        CornerRadius = UDim.new(0, 5)
+        CornerRadius = UDim.new(0, 6)
     })
 
+    -- Вертикальная плашка-индикатор слева (активная вкладка)
+    local activeIndicator = Instances:Create("Frame", {
+        Parent = tabButton.Instance,
+        Name = "ActiveIndicator",
+        AnchorPoint = Vector2.new(0, 0.5),
+        Position = UDim2.new(0, 2, 0.5, 0),
+        Size = UDim2.new(0, 3, 0, 18),
+        BackgroundColor3 = Theme["Accent"],
+        BackgroundTransparency = 1,
+        BorderSizePixel = 0,
+        ZIndex = 7
+    })
+
+    Instances:Create("UICorner", {
+        Parent = activeIndicator.Instance,
+        CornerRadius = UDim.new(0, 2)
+    })
+
+    -- Иконка вкладки
     local iconImage = Instances:Create("ImageLabel", {
         Parent = tabButton.Instance,
         Name = "Icon",
         Size = UDim2.new(0, 16, 0, 16),
-        Position = UDim2.new(0, 8, 0.5, -8),
+        AnchorPoint = Vector2.new(0, 0.5),
+        Position = UDim2.new(0, 12, 0.5, 0),
         BackgroundTransparency = 1,
         ScaleType = Enum.ScaleType.Fit,
         Image = ParseIcon(tabIcon),
@@ -555,21 +602,80 @@ function Library:CreateTab(window, tabData)
         ZIndex = 6
     })
 
+    -- Название вкладки
     local tabLabel = Instances:Create("TextLabel", {
         Parent = tabButton.Instance,
         Name = "Label",
         Text = tabName,
-        FontFace = Font.new("rbxassetid://12187365364", Enum.FontWeight.Medium, Enum.FontStyle.Normal),
+        FontFace = Font.new("rbxassetid://12187365364", Enum.FontWeight.Bold, Enum.FontStyle.Normal),
         TextColor3 = Theme["SubText"],
         TextSize = 12,
-        Position = UDim2.new(0, 30, 0, 0),
-        Size = UDim2.new(1, -34, 1, 0),
+        Position = UDim2.new(0, 36, 0, hasSubText and 4 or 0),
+        Size = UDim2.new(1, -52, 0, hasSubText and 15 or buttonHeight),
         BackgroundTransparency = 1,
         TextXAlignment = Enum.TextXAlignment.Left,
         ZIndex = 6
     })
 
-    local tabContainer = Instances:Create("ScrollingFrame", {
+    -- Подзаголовок (описание)
+    local subLabel
+    if hasSubText then
+        subLabel = Instances:Create("TextLabel", {
+            Parent = tabButton.Instance,
+            Name = "SubLabel",
+            Text = tabSubtitle,
+            FontFace = Font.new("rbxassetid://12187365364", Enum.FontWeight.Regular, Enum.FontStyle.Normal),
+            TextColor3 = Theme["SubText"],
+            TextTransparency = 0.4,
+            TextSize = 10,
+            Position = UDim2.new(0, 36, 0, 19),
+            Size = UDim2.new(1, -52, 0, 14),
+            BackgroundTransparency = 1,
+            TextXAlignment = Enum.TextXAlignment.Left,
+            ClipsDescendants = true,
+            ZIndex = 6
+        })
+    end
+
+    -- Стрелочка (если есть подвкладки)
+    local arrowIcon = Instances:Create("ImageLabel", {
+        Parent = tabButton.Instance,
+        Name = "Arrow",
+        Size = UDim2.new(0, 12, 0, 12),
+        AnchorPoint = Vector2.new(1, 0.5),
+        Position = UDim2.new(1, -6, 0.5, 0),
+        BackgroundTransparency = 1,
+        Image = ParseIcon("chevron-down"),
+        ImageColor3 = Theme["SubText"],
+        ImageTransparency = 1,
+        ScaleType = Enum.ScaleType.Fit,
+        ZIndex = 6
+    })
+
+    -- Контейнер для выпадающих подвкладок
+    local subTabsContainer = Instances:Create("Frame", {
+        Parent = tabGroupFrame.Instance,
+        Name = "SubTabsContainer",
+        Size = UDim2.new(1, 0, 0, 0),
+        BackgroundTransparency = 1,
+        ClipsDescendants = true,
+        LayoutOrder = 1,
+        ZIndex = 5
+    })
+
+    local subListLayout = Instances:Create("UIListLayout", {
+        Parent = subTabsContainer.Instance,
+        SortOrder = Enum.SortOrder.LayoutOrder,
+        Padding = UDim.new(0, 2)
+    })
+
+    Instances:Create("UIPadding", {
+        Parent = subTabsContainer.Instance,
+        PaddingLeft = UDim.new(0, 12)
+    })
+
+    -- Контейнер содержимого основной вкладки (если нет подвкладок)
+    local defaultMainContainer = Instances:Create("ScrollingFrame", {
         Parent = window.Content,
         Name = "Container_" .. tabName,
         Size = UDim2.new(1, 0, 1, 0),
@@ -586,81 +692,298 @@ function Library:CreateTab(window, tabData)
     })
 
     Instances:Create("UIListLayout", {
-        Parent = tabContainer.Instance,
+        Parent = defaultMainContainer.Instance,
         FillDirection = Enum.FillDirection.Horizontal,
         SortOrder = Enum.SortOrder.LayoutOrder,
         Padding = UDim.new(0, 10)
     })
 
     Instances:Create("UIPadding", {
-        Parent = tabContainer.Instance,
+        Parent = defaultMainContainer.Instance,
         PaddingTop = UDim.new(0, 4),
         PaddingBottom = UDim.new(0, 12),
         PaddingRight = UDim.new(0, 6),
         PaddingLeft = UDim.new(0, 4)
     })
 
-    local columns = {}
+    local defaultColumns = {}
     for i = 1, 2 do
-        local column = Instances:Create("Frame", {
-            Parent = tabContainer.Instance,
+        local col = Instances:Create("Frame", {
+            Parent = defaultMainContainer.Instance,
             Name = "Column_" .. i,
             Size = UDim2.new(0.5, -5, 0, 0),
             AutomaticSize = Enum.AutomaticSize.Y,
             BackgroundTransparency = 1,
             BorderSizePixel = 0
         })
-
         local colLayout = Instances:Create("UIListLayout", {
-            Parent = column.Instance,
+            Parent = col.Instance,
             Padding = UDim.new(0, 8),
             SortOrder = Enum.SortOrder.LayoutOrder
         })
-
         colLayout.Instance:GetPropertyChangedSignal("AbsoluteContentSize"):Connect(function()
-            local h1 = tabContainer.Instance:FindFirstChild("Column_1") and tabContainer.Instance.Column_1.UIListLayout.AbsoluteContentSize.Y or 0
-            local h2 = tabContainer.Instance:FindFirstChild("Column_2") and tabContainer.Instance.Column_2.UIListLayout.AbsoluteContentSize.Y or 0
-            local maxHeight = math.max(h1, h2)
-            tabContainer.Instance.CanvasSize = UDim2.new(0, 0, 0, maxHeight + 25)
+            local h1 = defaultMainContainer.Instance:FindFirstChild("Column_1") and defaultMainContainer.Instance.Column_1.UIListLayout.AbsoluteContentSize.Y or 0
+            local h2 = defaultMainContainer.Instance:FindFirstChild("Column_2") and defaultMainContainer.Instance.Column_2.UIListLayout.AbsoluteContentSize.Y or 0
+            defaultMainContainer.Instance.CanvasSize = UDim2.new(0, 0, 0, math.max(h1, h2) + 25)
         end)
-
-        columns[i] = column.Instance
+        defaultColumns[i] = col.Instance
     end
 
-    local tabObject = {
+    local TabObject = {
         Button = tabButton.Instance,
-        Container = tabContainer.Instance,
+        Indicator = activeIndicator.Instance,
         Icon = iconImage.Instance,
         Label = tabLabel.Instance,
-        Columns = columns
+        SubLabel = subLabel and subLabel.Instance or nil,
+        Container = defaultMainContainer.Instance,
+        Columns = defaultColumns,
+        SubTabs = {},
+        SubTabsContainer = subTabsContainer.Instance,
+        SubListLayout = subListLayout.Instance,
+        Arrow = arrowIcon.Instance,
+        Expanded = true,
+        HasSubTabs = false,
+        ActiveSubTabObj = nil
     }
 
-    local function Activate()
-        if window.CurrentTab == tabObject then return end
-        if window.CurrentTab then
-            window.CurrentTab.Container.Visible = false
-            Tween(window.CurrentTab.Button, TweenInfo.new(0.2), { BackgroundTransparency = 1 })
-            Tween(window.CurrentTab.Icon, TweenInfo.new(0.2), { ImageColor3 = Theme["SubText"] })
-            Tween(window.CurrentTab.Label, TweenInfo.new(0.2), { TextColor3 = Theme["SubText"] })
+    local function DeselectTab()
+        Tween(tabButton.Instance, TweenInfo.new(0.2), { BackgroundTransparency = 1 })
+        Tween(activeIndicator.Instance, TweenInfo.new(0.2), { BackgroundTransparency = 1 })
+        Tween(iconImage.Instance, TweenInfo.new(0.2), { ImageColor3 = Theme["SubText"], ImageTransparency = 0.3 })
+        Tween(tabLabel.Instance, TweenInfo.new(0.2), { TextColor3 = Theme["SubText"] })
+        if TabObject.SubLabel then
+            Tween(TabObject.SubLabel, TweenInfo.new(0.2), { TextColor3 = Theme["SubText"], TextTransparency = 0.4 })
         end
-        window.CurrentTab = tabObject
-        tabContainer.Instance.Visible = true
+        TabObject.Container.Visible = false
+
+        for _, sub in ipairs(TabObject.SubTabs) do
+            sub:Deselect()
+        end
+    end
+
+    local function ActivateTab()
+        if Library.ActiveTabObject == TabObject and not TabObject.HasSubTabs then return end
+
+        if Library.ActiveTabObject and Library.ActiveTabObject ~= TabObject then
+            Library.ActiveTabObject:Deselect()
+        end
+
+        Library.ActiveTabObject = TabObject
+
         Tween(tabButton.Instance, TweenInfo.new(0.2), { BackgroundTransparency = 0.85, BackgroundColor3 = Theme["Accent"] })
-        Tween(iconImage.Instance, TweenInfo.new(0.2), { ImageColor3 = Theme["Accent"] })
+        Tween(activeIndicator.Instance, TweenInfo.new(0.2), { BackgroundTransparency = 0 })
+        Tween(iconImage.Instance, TweenInfo.new(0.2), { ImageColor3 = Theme["Accent"], ImageTransparency = 0 })
         Tween(tabLabel.Instance, TweenInfo.new(0.2), { TextColor3 = Theme["Text"] })
+        if TabObject.SubLabel then
+            Tween(TabObject.SubLabel, TweenInfo.new(0.2), { TextColor3 = Theme["Text"], TextTransparency = 0.2 })
+        end
+
+        if TabObject.HasSubTabs then
+            if #TabObject.SubTabs > 0 then
+                if not TabObject.ActiveSubTabObj then
+                    TabObject.SubTabs[1]:Select()
+                else
+                    TabObject.ActiveSubTabObj:Select()
+                end
+            end
+        else
+            TabObject.Container.Visible = true
+        end
     end
 
-    tabButton:Connect("MouseButton1Click", Activate)
-
-    if not window.CurrentTab then
-        Activate()
+    function TabObject:Deselect()
+        DeselectTab()
     end
 
-    return tabContainer.Instance, columns
+    function TabObject:Select()
+        ActivateTab()
+    end
+
+    tabButton:Connect("MouseButton1Click", function()
+        if TabObject.HasSubTabs then
+            TabObject.Expanded = not TabObject.Expanded
+            local targetHeight = TabObject.Expanded and TabObject.SubListLayout.AbsoluteContentSize.Y or 0
+            Tween(subTabsContainer.Instance, TweenInfo.new(0.25), { Size = UDim2.new(1, 0, 0, targetHeight) })
+            Tween(arrowIcon.Instance, TweenInfo.new(0.25), { Rotation = TabObject.Expanded and 0 or 180 })
+        end
+        ActivateTab()
+    end)
+
+    -- МЕТОД ДЛЯ СОЗДАНИЯ ПОДВКЛАДОК (SUBTABS)
+    function TabObject:CreateSubTab(subData)
+        subData = subData or {}
+        local subName = subData.Name or "SubTab"
+
+        if not TabObject.HasSubTabs then
+            TabObject.HasSubTabs = true
+            TabObject.Container.Visible = false
+            arrowIcon.Instance.ImageTransparency = 0.3
+        end
+
+        local subButton = Instances:Create("TextButton", {
+            Parent = subTabsContainer.Instance,
+            Name = "SubTab_" .. subName,
+            Size = UDim2.new(1, 0, 0, 26),
+            BackgroundTransparency = 1,
+            Text = "",
+            AutoButtonColor = false,
+            ZIndex = 6
+        })
+
+        Instances:Create("UICorner", {
+            Parent = subButton.Instance,
+            CornerRadius = UDim.new(0, 5)
+        })
+
+        local subIndicator = Instances:Create("Frame", {
+            Parent = subButton.Instance,
+            Name = "SubIndicator",
+            AnchorPoint = Vector2.new(0, 0.5),
+            Position = UDim2.new(0, 2, 0.5, 0),
+            Size = UDim2.new(0, 2, 0, 12),
+            BackgroundColor3 = Theme["Accent"],
+            BackgroundTransparency = 1,
+            BorderSizePixel = 0,
+            ZIndex = 7
+        })
+
+        local subLabelObj = Instances:Create("TextLabel", {
+            Parent = subButton.Instance,
+            Name = "Label",
+            Text = subName,
+            FontFace = Font.new("rbxassetid://12187365364", Enum.FontWeight.Medium, Enum.FontStyle.Normal),
+            TextColor3 = Theme["SubText"],
+            TextSize = 11,
+            Position = UDim2.new(0, 14, 0, 0),
+            Size = UDim2.new(1, -18, 1, 0),
+            BackgroundTransparency = 1,
+            TextXAlignment = Enum.TextXAlignment.Left,
+            ZIndex = 6
+        })
+
+        local subContainer = Instances:Create("ScrollingFrame", {
+            Parent = window.Content,
+            Name = "Container_" .. tabName .. "_" .. subName,
+            Size = UDim2.new(1, 0, 1, 0),
+            BackgroundTransparency = 1,
+            BorderSizePixel = 0,
+            ScrollBarThickness = 3,
+            ScrollBarImageColor3 = Theme["Accent"],
+            Visible = false,
+            ZIndex = 4,
+            Active = true,
+            Selectable = true,
+            ScrollingDirection = Enum.ScrollingDirection.Y,
+            ScrollingEnabled = true
+        })
+
+        Instances:Create("UIListLayout", {
+            Parent = subContainer.Instance,
+            FillDirection = Enum.FillDirection.Horizontal,
+            SortOrder = Enum.SortOrder.LayoutOrder,
+            Padding = UDim.new(0, 10)
+        })
+
+        Instances:Create("UIPadding", {
+            Parent = subContainer.Instance,
+            PaddingTop = UDim.new(0, 4),
+            PaddingBottom = UDim.new(0, 12),
+            PaddingRight = UDim.new(0, 6),
+            PaddingLeft = UDim.new(0, 4)
+        })
+
+        local subCols = {}
+        for i = 1, 2 do
+            local col = Instances:Create("Frame", {
+                Parent = subContainer.Instance,
+                Name = "Column_" .. i,
+                Size = UDim2.new(0.5, -5, 0, 0),
+                AutomaticSize = Enum.AutomaticSize.Y,
+                BackgroundTransparency = 1,
+                BorderSizePixel = 0
+            })
+            local colLayout = Instances:Create("UIListLayout", {
+                Parent = col.Instance,
+                Padding = UDim.new(0, 8),
+                SortOrder = Enum.SortOrder.LayoutOrder
+            })
+            colLayout.Instance:GetPropertyChangedSignal("AbsoluteContentSize"):Connect(function()
+                local h1 = subContainer.Instance:FindFirstChild("Column_1") and subContainer.Instance.Column_1.UIListLayout.AbsoluteContentSize.Y or 0
+                local h2 = subContainer.Instance:FindFirstChild("Column_2") and subContainer.Instance.Column_2.UIListLayout.AbsoluteContentSize.Y or 0
+                subContainer.Instance.CanvasSize = UDim2.new(0, 0, 0, math.max(h1, h2) + 25)
+            end)
+            subCols[i] = col.Instance
+        end
+
+        local SubTabObject = {
+            Button = subButton.Instance,
+            Label = subLabelObj.Instance,
+            Indicator = subIndicator.Instance,
+            Container = subContainer.Instance,
+            Columns = subCols
+        }
+
+        function SubTabObject:Deselect()
+            Tween(subButton.Instance, TweenInfo.new(0.15), { BackgroundTransparency = 1 })
+            Tween(subIndicator.Instance, TweenInfo.new(0.15), { BackgroundTransparency = 1 })
+            Tween(subLabelObj.Instance, TweenInfo.new(0.15), { TextColor3 = Theme["SubText"] })
+            subContainer.Instance.Visible = false
+        end
+
+        function SubTabObject:Select()
+            if Library.ActiveTabObject ~= TabObject then
+                if Library.ActiveTabObject then Library.ActiveTabObject:Deselect() end
+                Library.ActiveTabObject = TabObject
+                Tween(tabButton.Instance, TweenInfo.new(0.2), { BackgroundTransparency = 0.85, BackgroundColor3 = Theme["Accent"] })
+                Tween(activeIndicator.Instance, TweenInfo.new(0.2), { BackgroundTransparency = 0 })
+                Tween(iconImage.Instance, TweenInfo.new(0.2), { ImageColor3 = Theme["Accent"], ImageTransparency = 0 })
+                Tween(tabLabel.Instance, TweenInfo.new(0.2), { TextColor3 = Theme["Text"] })
+                if TabObject.SubLabel then
+                    Tween(TabObject.SubLabel, TweenInfo.new(0.2), { TextColor3 = Theme["Text"], TextTransparency = 0.2 })
+                end
+            end
+
+            for _, s in ipairs(TabObject.SubTabs) do
+                if s ~= SubTabObject then s:Deselect() end
+            end
+
+            TabObject.ActiveSubTabObj = SubTabObject
+            Tween(subButton.Instance, TweenInfo.new(0.15), { BackgroundTransparency = 0.9, BackgroundColor3 = Theme["Accent"] })
+            Tween(subIndicator.Instance, TweenInfo.new(0.15), { BackgroundTransparency = 0 })
+            Tween(subLabelObj.Instance, TweenInfo.new(0.15), { TextColor3 = Theme["Text"] })
+            subContainer.Instance.Visible = true
+        end
+
+        subButton:Connect("MouseButton1Click", function()
+            SubTabObject:Select()
+        end)
+
+        table.insert(TabObject.SubTabs, SubTabObject)
+
+        -- Обновление высоты подвкладок
+        task.spawn(function()
+            subListLayout.Instance:GetPropertyChangedSignal("AbsoluteContentSize"):Connect(function()
+                if TabObject.Expanded then
+                    subTabsContainer.Instance.Size = UDim2.new(1, 0, 0, subListLayout.AbsoluteContentSize.Y)
+                end
+            end)
+            if TabObject.Expanded then
+                subTabsContainer.Instance.Size = UDim2.new(1, 0, 0, subListLayout.AbsoluteContentSize.Y)
+            end
+        end)
+
+        return subContainer.Instance, subCols
+    end
+
+    if not Library.ActiveTabObject then
+        ActivateTab()
+    end
+
+    return TabObject, defaultColumns
 end
 
 -- =======================================================
--- 11. СЕКЦИИ UI
+-- 11. СЕКЦИИ UI (ПОДДЕРЖКА ПАНЕЛЕЙ И ПЕРЕКЛЮЧАТЕЛЕЙ)
 -- =======================================================
 function Library:CreateSection(parentColumn, sectionData)
     sectionData = sectionData or {}
@@ -912,24 +1235,60 @@ function Library:CreateSection(parentColumn, sectionData)
 end
 
 -- =======================================================
--- 12. ИНИЦИАЛИЗАЦИЯ И ТЕСТ
+-- 12. ИНИЦИАЛИЗАЦИЯ И ТЕСТ (ТОЧНО КАК НА ФОТО)
 -- =======================================================
 
 local MainWindow = Library:CreateWindow({
     Logo = "95894290284220"
 })
 
-local MainTab, Cols = Library:CreateTab(MainWindow, {
-    Name = "Main",
+-- 1. Вкладка Combat
+local CombatTab, CombatCols = Library:CreateTab(MainWindow, {
+    Name = "Combat",
+    Subtitle = "фак я че ебнутый",
     Icon = "combat"
 })
 
-local AimbotSection = Library:CreateSection(Cols[1], { Name = "Aimbot" })
+local AimbotSection = Library:CreateSection(CombatCols[1], { Name = "Aimbot" })
 AimbotSection:CreateToggle({ Name = "ezez", Default = true })
 AimbotSection:CreateToggle({ Name = "tipo predicti", Default = false })
 
-local SilentBypassSection = Library:CreateSection(Cols[2], { Name = "silent аимбайпас" })
-SilentBypassSection:CreateToggle({ Name = "включить понос", Default = false })
-
-local JopaSection = Library:CreateSection(Cols[1], { Name = "jopa" })
+local JopaSection = Library:CreateSection(CombatCols[1], { Name = "jopa" })
 JopaSection:CreateToggle({ Name = "включить жопа...", Default = false })
+
+-- 2. Вкладка Visuals с подвкладками (Players, World)
+local VisualsTab = Library:CreateTab(MainWindow, {
+    Name = "Visuals",
+    Subtitle = "показ долбаебов",
+    Icon = "eye"
+})
+
+local PlayersSubContainer, PlayersCols = VisualsTab:CreateSubTab({ Name = "Players" })
+local PlayersSection = Library:CreateSection(PlayersCols[1], { Name = "ESP Players" })
+PlayersSection:CreateToggle({ Name = "Box ESP", Default = true })
+PlayersSection:CreateToggle({ Name = "Tracers", Default = false })
+
+local WorldSubContainer, WorldCols = VisualsTab:CreateSubTab({ Name = "World" })
+local WorldSection = Library:CreateSection(WorldCols[1], { Name = "World Visuals" })
+WorldSection:CreateToggle({ Name = "Fullbright", Default = false })
+
+-- 3. Вкладка Local
+local LocalTab, LocalCols = Library:CreateTab(MainWindow, {
+    Name = "Local",
+    Subtitle = "не ебу",
+    Icon = "user"
+})
+
+-- 4. Вкладка Colors
+local ColorsTab, ColorsCols = Library:CreateTab(MainWindow, {
+    Name = "Colors",
+    Subtitle = "color settings",
+    Icon = "palette"
+})
+
+-- 5. Вкладка Config
+local ConfigTab, ConfigCols = Library:CreateTab(MainWindow, {
+    Name = "Config",
+    Subtitle = "menu settings",
+    Icon = "folder"
+})
