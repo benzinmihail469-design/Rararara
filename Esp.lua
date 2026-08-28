@@ -1651,7 +1651,7 @@ function Library:CreateSection(parentColumn, sectionData)
     end
 
     -- ====================================================================
-    -- СИСТЕМА ДРОПДАУНОВ (ИСПРАВЛЕНА ПРОБЛЕМА С ЗАЛИПАНИЕМ КНОПОК)
+    -- СИСТЕМА ДРОПДАУНОВ (ИСПРАВЛЕНА ПРОБЛЕМА С ЗАЛИПАНИЕМ)
     -- ====================================================================
     function SectionAPI:CreateDropdown(dropdownData)
         dropdownData = dropdownData or {}
@@ -1824,7 +1824,7 @@ function Library:CreateSection(parentColumn, sectionData)
             local targetListHeight = expanded and listHeight or 0
             local targetHostHeight = expanded and (28 + listHeight) or 24
             local easingStyle = expanded and Enum.EasingStyle.Quart or Enum.EasingStyle.Quad
-            local tweenTime = expanded and 0.28 or 0.2
+            local tweenTime = expanded and 0.25 or 0.2
 
             Tween(optionsList.Instance, TweenInfo.new(tweenTime, easingStyle, Enum.EasingDirection.Out), {
                 Size = UDim2.new(0.55, 0, 0, targetListHeight),
@@ -1853,7 +1853,7 @@ function Library:CreateSection(parentColumn, sectionData)
             })
         end
 
-        -- Обновление визуального состояния элементов без их уничтожения
+        -- Обновление визуального состояния элементов
         local function UpdateSelectionVisuals()
             for optVal, btnData in pairs(optionButtons) do
                 local isSelected = (optVal == selected)
@@ -1982,22 +1982,11 @@ function Library:CreateSection(parentColumn, sectionData)
                     end
                 end)
 
-                -- Эффект клика
-                optBtn:Connect("MouseButton1Down", function()
-                    Tween(optBtn.Instance, TweenInfo.new(0.08, Enum.EasingStyle.Quad, Enum.EasingDirection.Out), {
-                        Size = UDim2.new(1, -4, 0, 20),
-                        BackgroundTransparency = 0.75
-                    })
-                end)
-
-                optBtn:Connect("MouseButton1Up", function()
-                    Tween(optBtn.Instance, TweenInfo.new(0.15, Enum.EasingStyle.Back, Enum.EasingDirection.Out), {
-                        Size = UDim2.new(1, 0, 0, 22)
-                    })
-                end)
-
+                -- Клик выбор варианта (автоматическое закрытие)
                 optBtn:Connect("MouseButton1Click", function()
                     DropdownAPI:Set(opt)
+                    expanded = false
+                    UpdateHeight()
                 end)
 
                 optionButtons[opt] = {
@@ -2033,18 +2022,6 @@ function Library:CreateSection(parentColumn, sectionData)
         end
 
         -- События открытия/закрытия хедера
-        dropHeader:Connect("MouseButton1Down", function()
-            Tween(dropHeader.Instance, TweenInfo.new(0.08, Enum.EasingStyle.Quad, Enum.EasingDirection.Out), {
-                Size = UDim2.new(0.53, 0, 0, 22)
-            })
-        end)
-
-        dropHeader:Connect("MouseButton1Up", function()
-            Tween(dropHeader.Instance, TweenInfo.new(0.15, Enum.EasingStyle.Back, Enum.EasingDirection.Out), {
-                Size = UDim2.new(0.55, 0, 0, 24)
-            })
-        end)
-
         dropHeader:Connect("MouseEnter", function()
             if not expanded then
                 Tween(headerStroke.Instance, TweenInfo.new(0.15), {
