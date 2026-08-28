@@ -1710,27 +1710,13 @@ function Library:CreateSection(parentColumn, sectionData)
                 CornerRadius = UDim.new(0, 6)
             })
 
-            -- Градиентный контур в стиле разделительных полос (голубое свечение по центру)
+            -- Статичный контур без вспыхивания/включения прозрачности при клике
             local panelStroke = Instances:Create("UIStroke", {
                 Parent = settingsPanel.Instance,
-                Color = Color3.fromRGB(255, 255, 255),
+                Color = Theme["Outline"],
                 Thickness = 1,
-                Transparency = 0.8,
+                Transparency = 0.5,
                 ApplyStrokeMode = Enum.ApplyStrokeMode.Border
-            })
-
-            Instances:Create("UIGradient", {
-                Parent = panelStroke.Instance,
-                Color = ColorSequence.new({
-                    ColorSequenceKeypoint.new(0, Theme["Outline"]),
-                    ColorSequenceKeypoint.new(0.5, Theme["Accent"]),
-                    ColorSequenceKeypoint.new(1, Theme["Outline"])
-                }),
-                Transparency = NumberSequence.new({
-                    NumberSequenceKeypoint.new(0, 0.4),
-                    NumberSequenceKeypoint.new(0.5, 0.0),
-                    NumberSequenceKeypoint.new(1, 0.4)
-                })
             })
 
             Instances:Create("UIPadding", {
@@ -1747,7 +1733,7 @@ function Library:CreateSection(parentColumn, sectionData)
                 Padding = UDim.new(0, 6)
             })
 
-            -- Создаем API для добавления элементов внутрь панели настроек
+            -- API элементов для подпанели настроек
             local SubAPI = {}
             
             function SubAPI:Slider(sData)
@@ -1768,37 +1754,35 @@ function Library:CreateSection(parentColumn, sectionData)
 
             pcall(settingsCallback, SubAPI)
 
-            -- Наведение на три точки
+            -- Ховер на три точки
             dotsBtn:Connect("MouseEnter", function()
-                dotsBtn:Tween(TweenInfo.new(0.15), {
+                dotsBtn:Tween(TweenInfo.new(0.15, Enum.EasingStyle.Quad, Enum.EasingDirection.Out), {
                     TextColor3 = Theme["Accent"]
                 })
             end)
 
             dotsBtn:Connect("MouseLeave", function()
                 if not optionsExpanded then
-                    dotsBtn:Tween(TweenInfo.new(0.15), {
+                    dotsBtn:Tween(TweenInfo.new(0.15, Enum.EasingStyle.Quad, Enum.EasingDirection.Out), {
                         TextColor3 = Theme["SubText"]
                     })
                 end
             end)
 
-            -- Открытие / закрытие панели настроек
+            -- Клик с поворотной плавной анимацией кнопки и без мигания контура
             dotsBtn:Connect("MouseButton1Click", function()
                 optionsExpanded = not optionsExpanded
                 local contentHeight = panelLayout.Instance.AbsoluteContentSize.Y + 12
                 local targetHeight = optionsExpanded and contentHeight or 0
                 
-                dotsBtn:Tween(TweenInfo.new(0.2), {
+                -- Плавное вращение (90 deg) и смена цвета трех точек
+                dotsBtn:Tween(TweenInfo.new(0.25, Enum.EasingStyle.Quart, Enum.EasingDirection.Out), {
+                    Rotation = optionsExpanded and 90 or 0,
                     TextColor3 = optionsExpanded and Theme["Accent"] or Theme["SubText"]
                 })
                 
-                -- Включение/выключение прозрачности градиентного контура при открытии
-                panelStroke:Tween(TweenInfo.new(0.2), {
-                    Transparency = optionsExpanded and 0 or 0.8
-                })
-                
-                settingsPanel:Tween(TweenInfo.new(0.25, Enum.EasingStyle.Quad, Enum.EasingDirection.Out), {
+                -- Раскрытие выпадающего контейнера
+                settingsPanel:Tween(TweenInfo.new(0.25, Enum.EasingStyle.Quart, Enum.EasingDirection.Out), {
                     Size = UDim2.new(1, 0, 0, targetHeight)
                 })
             end)
