@@ -1651,7 +1651,7 @@ function Library:CreateSection(parentColumn, sectionData)
     end
 
     -- ====================================================================
-    -- СИСТЕМА ДРОПДАУНОВ (ИСПРАВЛЕНА ПРОБЛЕМА С ЗАЛИПАНИЕМ)
+    -- СИСТЕМА ДРОПДАУНОВ (СПИСОК НЕ ЗАКРЫВАЕТСЯ ПОСЛЕ ВЫБОРА)
     -- ====================================================================
     function SectionAPI:CreateDropdown(dropdownData)
         dropdownData = dropdownData or {}
@@ -1982,11 +1982,9 @@ function Library:CreateSection(parentColumn, sectionData)
                     end
                 end)
 
-                -- Клик выбор варианта (автоматическое закрытие)
+                -- Клик выбор варианта (без автоматического закрытия)
                 optBtn:Connect("MouseButton1Click", function()
                     DropdownAPI:Set(opt)
-                    expanded = false
-                    UpdateHeight()
                 end)
 
                 optionButtons[opt] = {
