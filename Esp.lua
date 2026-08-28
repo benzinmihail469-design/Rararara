@@ -1651,7 +1651,7 @@ function Library:CreateSection(parentColumn, sectionData)
     end
 
     -- ====================================================================
-    -- СИСТЕМА ДРОПДАУНОВ (СПИСОК НЕ ЗАКРЫВАЕТСЯ ПОСЛЕ ВЫБОРА)
+    -- СИСТЕМА ДРОПДАУНОВ С ПЛАВНОЙ АНИМАЦИЕЙ ВЫБОРА
     -- ====================================================================
     function SectionAPI:CreateDropdown(dropdownData)
         dropdownData = dropdownData or {}
@@ -1853,24 +1853,51 @@ function Library:CreateSection(parentColumn, sectionData)
             })
         end
 
-        -- Обновление визуального состояния элементов
+        -- ПЛАВНОЕ ОБНОВЛЕНИЕ ВИЗУАЛА ПРИ ВЫБОРЕ ЭЛЕМЕНТА
         local function UpdateSelectionVisuals()
             for optVal, btnData in pairs(optionButtons) do
                 local isSelected = (optVal == selected)
-                Tween(btnData.Instance, TweenInfo.new(0.15), {
-                    BackgroundTransparency = isSelected and 0.85 or 1
+
+                -- 1. Плавный цвет и подсвечивание фона
+                Tween(btnData.Instance, TweenInfo.new(0.2, Enum.EasingStyle.Quad, Enum.EasingDirection.Out), {
+                    BackgroundTransparency = isSelected and 0.82 or 1
                 })
-                Tween(btnData.Label, TweenInfo.new(0.15), {
+
+                -- 2. Сдвиг текста и смены цвета с легкой пружиной (Quart)
+                Tween(btnData.Label, TweenInfo.new(0.25, Enum.EasingStyle.Quart, Enum.EasingDirection.Out), {
                     TextColor3 = isSelected and Theme["Text"] or Theme["SubText"],
-                    Position = UDim2.new(0, isSelected and 12 or 8, 0, 0),
-                    Size = UDim2.new(1, isSelected and -30 or -16, 1, 0)
+                    Position = UDim2.new(0, isSelected and 13 or 8, 0, 0),
+                    Size = UDim2.new(1, isSelected and -32 or -16, 1, 0)
                 })
-                btnData.SideBar.Visible = isSelected
-                btnData.CheckMark.ImageTransparency = isSelected and 0 or 1
+
+                -- 3. Вырастание синей полоски слева (Back Easing)
+                if isSelected then
+                    btnData.SideBar.Visible = true
+                    Tween(btnData.SideBar, TweenInfo.new(0.25, Enum.EasingStyle.Back, Enum.EasingDirection.Out), {
+                        Size = UDim2.new(0, 2, 0, 12),
+                        BackgroundTransparency = 0
+                    })
+                else
+                    local tweenHide = Tween(btnData.SideBar, TweenInfo.new(0.15, Enum.EasingStyle.Quad, Enum.EasingDirection.In), {
+                        Size = UDim2.new(0, 2, 0, 0),
+                        BackgroundTransparency = 1
+                    })
+                    tweenHide.Completed:Connect(function()
+                        if optVal ~= selected then
+                            btnData.SideBar.Visible = false
+                        end
+                    end)
+                end
+
+                -- 4. Всплытие и укрупнение иконки галочки (CheckMark)
+                Tween(btnData.CheckMark, TweenInfo.new(0.25, isSelected and Enum.EasingStyle.Back or Enum.EasingStyle.Quad, Enum.EasingDirection.Out), {
+                    ImageTransparency = isSelected and 0 or 1,
+                    Size = isSelected and UDim2.new(0, 10, 0, 10) or UDim2.new(0, 0, 0, 0)
+                })
             end
         end
 
-        -- Отрисовка элементов при инициализации или смене списка
+        -- Отрисовка элементов
         local function RefreshOptions()
             for _, btnData in pairs(optionButtons) do
                 if btnData.Instance then
@@ -1886,7 +1913,7 @@ function Library:CreateSection(parentColumn, sectionData)
                     Name = "Option_" .. tostring(opt),
                     Size = UDim2.new(1, 0, 0, 22),
                     BackgroundColor3 = Color3.fromRGB(255, 255, 255),
-                    BackgroundTransparency = isSelected and 0.85 or 1,
+                    BackgroundTransparency = isSelected and 0.82 or 1,
                     Text = "",
                     AutoButtonColor = false,
                     BorderSizePixel = 0,
@@ -1916,10 +1943,11 @@ function Library:CreateSection(parentColumn, sectionData)
                 local sideBar = Instances:Create("Frame", {
                     Parent = optBtn.Instance,
                     Name = "SideBarIndicator",
-                    Size = UDim2.new(0, 2, 0, 12),
+                    Size = isSelected and UDim2.new(0, 2, 0, 12) or UDim2.new(0, 2, 0, 0),
                     AnchorPoint = Vector2.new(0, 0.5),
                     Position = UDim2.new(0, 3, 0.5, 0),
                     BackgroundColor3 = Theme["Accent"],
+                    BackgroundTransparency = isSelected and 0 or 1,
                     BorderSizePixel = 0,
                     Visible = isSelected,
                     ZIndex = 23
@@ -1937,8 +1965,8 @@ function Library:CreateSection(parentColumn, sectionData)
                     FontFace = Font.new("rbxassetid://12187365364", Enum.FontWeight.Medium, Enum.FontStyle.Normal),
                     TextColor3 = isSelected and Theme["Text"] or Theme["SubText"],
                     TextSize = 11,
-                    Position = UDim2.new(0, isSelected and 12 or 8, 0, 0),
-                    Size = UDim2.new(1, isSelected and -30 or -16, 1, 0),
+                    Position = UDim2.new(0, isSelected and 13 or 8, 0, 0),
+                    Size = UDim2.new(1, isSelected and -32 or -16, 1, 0),
                     BackgroundTransparency = 1,
                     TextXAlignment = Enum.TextXAlignment.Left,
                     TextTruncate = Enum.TextTruncate.AtEnd,
@@ -1948,7 +1976,7 @@ function Library:CreateSection(parentColumn, sectionData)
                 local checkIcon = Instances:Create("ImageLabel", {
                     Parent = optBtn.Instance,
                     Name = "CheckMark",
-                    Size = UDim2.new(0, 10, 0, 10),
+                    Size = isSelected and UDim2.new(0, 10, 0, 10) or UDim2.new(0, 0, 0, 0),
                     AnchorPoint = Vector2.new(1, 0.5),
                     Position = UDim2.new(1, -6, 0.5, 0),
                     BackgroundTransparency = 1,
@@ -1982,8 +2010,11 @@ function Library:CreateSection(parentColumn, sectionData)
                     end
                 end)
 
-                -- Клик выбор варианта (без автоматического закрытия)
+                -- Клик с анимацией отклика
                 optBtn:Connect("MouseButton1Click", function()
+                    Tween(optBtn.Instance, TweenInfo.new(0.08, Enum.EasingStyle.Quad, Enum.EasingDirection.Out), {
+                        BackgroundTransparency = 0.7
+                    })
                     DropdownAPI:Set(opt)
                 end)
 
