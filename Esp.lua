@@ -1537,7 +1537,7 @@ function Library:CreateSection(parentColumn, sectionData)
     local SectionAPI = {}
 
     -- ====================================================================
-    -- ОБНОВЛЕННЫЙ Toggle С КНОПКОЙ «ТРИ ТОЧКИ» (•••)
+    -- ОБНОВЛЕННЫЙ Toggle С КНОПКОЙ «ТРИ ТОЧКИ» (ГРАДИЕНТНЫЙ КОНТУР НАСТРОЕК)
     -- ====================================================================
     function SectionAPI:CreateToggle(toggleData)
         toggleData = toggleData or {}
@@ -1710,11 +1710,27 @@ function Library:CreateSection(parentColumn, sectionData)
                 CornerRadius = UDim.new(0, 6)
             })
 
+            -- Градиентный контур в стиле разделительных полос (голубое свечение по центру)
             local panelStroke = Instances:Create("UIStroke", {
                 Parent = settingsPanel.Instance,
-                Color = Theme["Outline"],
+                Color = Color3.fromRGB(255, 255, 255),
                 Thickness = 1,
-                Transparency = 0.5
+                Transparency = 0.8,
+                ApplyStrokeMode = Enum.ApplyStrokeMode.Border
+            })
+
+            Instances:Create("UIGradient", {
+                Parent = panelStroke.Instance,
+                Color = ColorSequence.new({
+                    ColorSequenceKeypoint.new(0, Theme["Outline"]),
+                    ColorSequenceKeypoint.new(0.5, Theme["Accent"]),
+                    ColorSequenceKeypoint.new(1, Theme["Outline"])
+                }),
+                Transparency = NumberSequence.new({
+                    NumberSequenceKeypoint.new(0, 0.4),
+                    NumberSequenceKeypoint.new(0.5, 0.0),
+                    NumberSequenceKeypoint.new(1, 0.4)
+                })
             })
 
             Instances:Create("UIPadding", {
@@ -1754,12 +1770,16 @@ function Library:CreateSection(parentColumn, sectionData)
 
             -- Наведение на три точки
             dotsBtn:Connect("MouseEnter", function()
-                dotsBtn:Tween(TweenInfo.new(0.15), { TextColor3 = Theme["Accent"] })
+                dotsBtn:Tween(TweenInfo.new(0.15), {
+                    TextColor3 = Theme["Accent"]
+                })
             end)
 
             dotsBtn:Connect("MouseLeave", function()
                 if not optionsExpanded then
-                    dotsBtn:Tween(TweenInfo.new(0.15), { TextColor3 = Theme["SubText"] })
+                    dotsBtn:Tween(TweenInfo.new(0.15), {
+                        TextColor3 = Theme["SubText"]
+                    })
                 end
             end)
 
@@ -1773,8 +1793,9 @@ function Library:CreateSection(parentColumn, sectionData)
                     TextColor3 = optionsExpanded and Theme["Accent"] or Theme["SubText"]
                 })
                 
+                -- Включение/выключение прозрачности градиентного контура при открытии
                 panelStroke:Tween(TweenInfo.new(0.2), {
-                    Color = optionsExpanded and Theme["Accent"] or Theme["Outline"]
+                    Transparency = optionsExpanded and 0 or 0.8
                 })
                 
                 settingsPanel:Tween(TweenInfo.new(0.25, Enum.EasingStyle.Quad, Enum.EasingDirection.Out), {
