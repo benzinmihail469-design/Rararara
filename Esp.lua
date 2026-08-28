@@ -1651,7 +1651,7 @@ function Library:CreateSection(parentColumn, sectionData)
     end
 
     -- ====================================================================
-    -- СИСТЕМА ДРОПДАУНОВ С ПЛАВНОЙ АНИМАЦИЕЙ ВЫБОРА
+    -- СИСТЕМА ДРОПДАУНОВ С ПЛАВНОЙ АНИМАЦИЕЙ И ГРАДИЕНТНЫМ КОНТУРОМ
     -- ====================================================================
     function SectionAPI:CreateDropdown(dropdownData)
         dropdownData = dropdownData or {}
@@ -1863,14 +1863,19 @@ function Library:CreateSection(parentColumn, sectionData)
                     BackgroundTransparency = isSelected and 0.82 or 1
                 })
 
-                -- 2. Сдвиг текста и смены цвета с легкой пружиной (Quart)
+                -- 2. Анимация контура активного элемента (в стиль разделительных полос)
+                Tween(btnData.ActiveStroke, TweenInfo.new(0.25, Enum.EasingStyle.Quad, Enum.EasingDirection.Out), {
+                    Transparency = isSelected and 0 or 1
+                })
+
+                -- 3. Сдвиг текста и смены цвета с легкой пружиной (Quart)
                 Tween(btnData.Label, TweenInfo.new(0.25, Enum.EasingStyle.Quart, Enum.EasingDirection.Out), {
                     TextColor3 = isSelected and Theme["Text"] or Theme["SubText"],
                     Position = UDim2.new(0, isSelected and 13 or 8, 0, 0),
                     Size = UDim2.new(1, isSelected and -32 or -16, 1, 0)
                 })
 
-                -- 3. Вырастание синей полоски слева (Back Easing)
+                -- 4. Вырастание синей полоски слева (Back Easing)
                 if isSelected then
                     btnData.SideBar.Visible = true
                     Tween(btnData.SideBar, TweenInfo.new(0.25, Enum.EasingStyle.Back, Enum.EasingDirection.Out), {
@@ -1889,7 +1894,7 @@ function Library:CreateSection(parentColumn, sectionData)
                     end)
                 end
 
-                -- 4. Всплытие и укрупнение иконки галочки (CheckMark)
+                -- 5. Всплытие и укрупнение иконки галочки (CheckMark)
                 Tween(btnData.CheckMark, TweenInfo.new(0.25, isSelected and Enum.EasingStyle.Back or Enum.EasingStyle.Quad, Enum.EasingDirection.Out), {
                     ImageTransparency = isSelected and 0 or 1,
                     Size = isSelected and UDim2.new(0, 10, 0, 10) or UDim2.new(0, 0, 0, 0)
@@ -1924,6 +1929,29 @@ function Library:CreateSection(parentColumn, sectionData)
                 Instances:Create("UICorner", {
                     Parent = optBtn.Instance,
                     CornerRadius = UDim.new(0, 3)
+                })
+
+                -- Градиентный контур активной фигни (в стиль разделительных полос)
+                local activeStroke = Instances:Create("UIStroke", {
+                    Parent = optBtn.Instance,
+                    Color = Color3.fromRGB(255, 255, 255),
+                    Thickness = 1,
+                    Transparency = isSelected and 0 or 1,
+                    ApplyStrokeMode = Enum.ApplyStrokeMode.Border
+                })
+
+                Instances:Create("UIGradient", {
+                    Parent = activeStroke.Instance,
+                    Color = ColorSequence.new({
+                        ColorSequenceKeypoint.new(0, Theme["Outline"]),
+                        ColorSequenceKeypoint.new(0.5, Theme["Accent"]),
+                        ColorSequenceKeypoint.new(1, Theme["Outline"])
+                    }),
+                    Transparency = NumberSequence.new({
+                        NumberSequenceKeypoint.new(0, 0.4),
+                        NumberSequenceKeypoint.new(0.5, 0.0),
+                        NumberSequenceKeypoint.new(1, 0.4)
+                    })
                 })
 
                 Instances:Create("UIGradient", {
@@ -2020,6 +2048,7 @@ function Library:CreateSection(parentColumn, sectionData)
 
                 optionButtons[opt] = {
                     Instance = optBtn.Instance,
+                    ActiveStroke = activeStroke.Instance,
                     Label = optLabel.Instance,
                     SideBar = sideBar.Instance,
                     CheckMark = checkIcon.Instance
