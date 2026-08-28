@@ -606,7 +606,7 @@ function Library:CreateWindow(data)
 end
 
 -- =======================================================
--- 10. СИСТЕМА ВКЛАДОК И ПОДВКЛАДОК
+-- 10. ОБНОВЛЕННАЯ СИСТЕМА ВКЛАДОК И ПОДВКЛАДОК (В СТИЛЕ ВЫБРАННОГО ДРОПДАУНА)
 -- =======================================================
 function Library:CreateTab(window, tabData)
     tabData = tabData or {}
@@ -637,7 +637,7 @@ function Library:CreateTab(window, tabData)
         Parent = tabGroupFrame.Instance,
         Name = "TabButton",
         Size = UDim2.new(1, 0, 0, buttonHeight),
-        BackgroundColor3 = Theme["Text"],
+        BackgroundColor3 = Color3.fromRGB(255, 255, 255),
         BackgroundTransparency = 1,
         Text = "",
         AutoButtonColor = false,
@@ -653,12 +653,42 @@ function Library:CreateTab(window, tabData)
         CornerRadius = UDim.new(0, 6)
     })
 
+    -- Градиентный контур активной вкладки (в стиль разделительных полос)
     local tabStroke = Instances:Create("UIStroke", {
         Parent = tabButton.Instance,
-        Color = Theme["Accent"],
+        Color = Color3.fromRGB(255, 255, 255),
         Thickness = 1,
         Transparency = 1,
         ApplyStrokeMode = Enum.ApplyStrokeMode.Border
+    })
+
+    Instances:Create("UIGradient", {
+        Parent = tabStroke.Instance,
+        Color = ColorSequence.new({
+            ColorSequenceKeypoint.new(0, Theme["Outline"]),
+            ColorSequenceKeypoint.new(0.5, Theme["Accent"]),
+            ColorSequenceKeypoint.new(1, Theme["Outline"])
+        }),
+        Transparency = NumberSequence.new({
+            NumberSequenceKeypoint.new(0, 0.4),
+            NumberSequenceKeypoint.new(0.5, 0.0),
+            NumberSequenceKeypoint.new(1, 0.4)
+        })
+    })
+
+    -- Градиентный фон (переход синий к темному)
+    Instances:Create("UIGradient", {
+        Parent = tabButton.Instance,
+        Color = ColorSequence.new({
+            ColorSequenceKeypoint.new(0, Theme["Accent"]),
+            ColorSequenceKeypoint.new(0.35, Color3.fromRGB(15, 35, 65)),
+            ColorSequenceKeypoint.new(1, Theme["Background 2"])
+        }),
+        Transparency = NumberSequence.new({
+            NumberSequenceKeypoint.new(0, 0.25),
+            NumberSequenceKeypoint.new(1, 0.9)
+        }),
+        Rotation = 0
     })
 
     local activeIndicator = Instances:Create("Frame", {
@@ -837,27 +867,39 @@ function Library:CreateTab(window, tabData)
     }
 
     local function DeselectTab()
-        Tween(tabButton.Instance, TweenInfo.new(0.2), { 
-            BackgroundColor3 = Theme["Text"],
-            BackgroundTransparency = 1 
+        Tween(tabButton.Instance, TweenInfo.new(0.2, Enum.EasingStyle.Quad, Enum.EasingDirection.Out), {
+            BackgroundTransparency = 1
         })
-        Tween(tabStroke.Instance, TweenInfo.new(0.2), { Transparency = 1, Color = Theme["Outline"] })
-        Tween(activeIndicator.Instance, TweenInfo.new(0.2, Enum.EasingStyle.Quad, Enum.EasingDirection.Out), { 
+        Tween(tabStroke.Instance, TweenInfo.new(0.2, Enum.EasingStyle.Quad, Enum.EasingDirection.Out), {
+            Transparency = 1
+        })
+        Tween(activeIndicator.Instance, TweenInfo.new(0.2, Enum.EasingStyle.Quad, Enum.EasingDirection.Out), {
             BackgroundTransparency = 1,
             Size = UDim2.new(0, 3, 0, 0)
         })
-        
-        Tween(iconImage.Instance, TweenInfo.new(0.2), { ImageColor3 = Theme["SubText"], ImageTransparency = 0.3 })
-        Tween(tabLabel.Instance, TweenInfo.new(0.2), { TextColor3 = Theme["SubText"] })
+        Tween(iconImage.Instance, TweenInfo.new(0.2), {
+            ImageColor3 = Theme["SubText"],
+            ImageTransparency = 0.3
+        })
+        Tween(tabLabel.Instance, TweenInfo.new(0.2), {
+            TextColor3 = Theme["SubText"]
+        })
         if TabObject.SubLabel then
-            Tween(TabObject.SubLabel, TweenInfo.new(0.2), { TextColor3 = Theme["SubText"], TextTransparency = 0.4 })
+            Tween(TabObject.SubLabel, TweenInfo.new(0.2), {
+                TextColor3 = Theme["SubText"],
+                TextTransparency = 0.4
+            })
         end
         TabObject.Container.Visible = false
 
         if TabObject.HasSubTabs then
             TabObject.Expanded = false
-            Tween(subTabsContainer.Instance, TweenInfo.new(0.25), { Size = UDim2.new(1, 0, 0, 0) })
-            Tween(arrowIcon.Instance, TweenInfo.new(0.25), { Rotation = 0 })
+            Tween(subTabsContainer.Instance, TweenInfo.new(0.25), {
+                Size = UDim2.new(1, 0, 0, 0)
+            })
+            Tween(arrowIcon.Instance, TweenInfo.new(0.25), {
+                Rotation = 0
+            })
         end
 
         for _, sub in ipairs(TabObject.SubTabs) do
@@ -874,24 +916,39 @@ function Library:CreateTab(window, tabData)
 
         Library.ActiveTabObject = TabObject
 
-        Tween(tabButton.Instance, TweenInfo.new(0.2), { BackgroundTransparency = 0.85, BackgroundColor3 = Theme["Accent"] })
-        Tween(tabStroke.Instance, TweenInfo.new(0.25), { Transparency = 0.55, Color = Theme["Accent"] })
-        Tween(activeIndicator.Instance, TweenInfo.new(0.28, Enum.EasingStyle.Back, Enum.EasingDirection.Out), { 
+        Tween(tabButton.Instance, TweenInfo.new(0.25, Enum.EasingStyle.Quart, Enum.EasingDirection.Out), {
+            BackgroundTransparency = 0.82
+        })
+        Tween(tabStroke.Instance, TweenInfo.new(0.25, Enum.EasingStyle.Quart, Enum.EasingDirection.Out), {
+            Transparency = 0
+        })
+        Tween(activeIndicator.Instance, TweenInfo.new(0.28, Enum.EasingStyle.Back, Enum.EasingDirection.Out), {
             BackgroundTransparency = 0,
             Size = UDim2.new(0, 3, 0, 18)
         })
-
-        Tween(iconImage.Instance, TweenInfo.new(0.2), { ImageColor3 = Theme["Accent"], ImageTransparency = 0 })
-        Tween(tabLabel.Instance, TweenInfo.new(0.2), { TextColor3 = Theme["Text"] })
+        Tween(iconImage.Instance, TweenInfo.new(0.2), {
+            ImageColor3 = Theme["Text"],
+            ImageTransparency = 0
+        })
+        Tween(tabLabel.Instance, TweenInfo.new(0.2), {
+            TextColor3 = Theme["Text"]
+        })
         if TabObject.SubLabel then
-            Tween(TabObject.SubLabel, TweenInfo.new(0.2), { TextColor3 = Theme["Text"], TextTransparency = 0.2 })
+            Tween(TabObject.SubLabel, TweenInfo.new(0.2), {
+                TextColor3 = Theme["Text"],
+                TextTransparency = 0.2
+            })
         end
 
         if TabObject.HasSubTabs then
             TabObject.Expanded = true
             local targetHeight = TabObject.SubListLayout.AbsoluteContentSize.Y + 8
-            Tween(subTabsContainer.Instance, TweenInfo.new(0.25), { Size = UDim2.new(1, 0, 0, targetHeight) })
-            Tween(arrowIcon.Instance, TweenInfo.new(0.25), { Rotation = 180 })
+            Tween(subTabsContainer.Instance, TweenInfo.new(0.25), {
+                Size = UDim2.new(1, 0, 0, targetHeight)
+            })
+            Tween(arrowIcon.Instance, TweenInfo.new(0.25), {
+                Rotation = 180
+            })
 
             if #TabObject.SubTabs > 0 then
                 if not TabObject.ActiveSubTabObj then
@@ -915,28 +972,42 @@ function Library:CreateTab(window, tabData)
 
     tabButton:Connect("MouseEnter", function()
         if Library.ActiveTabObject ~= TabObject then
-            Tween(tabButton.Instance, TweenInfo.new(0.2), { 
-                BackgroundColor3 = Color3.fromRGB(255, 255, 255), 
-                BackgroundTransparency = 0.92 
+            Tween(tabButton.Instance, TweenInfo.new(0.15, Enum.EasingStyle.Quad, Enum.EasingDirection.Out), {
+                BackgroundTransparency = 0.92
             })
-            Tween(iconImage.Instance, TweenInfo.new(0.2), { ImageTransparency = 0.0, ImageColor3 = Theme["Text"] })
-            Tween(tabLabel.Instance, TweenInfo.new(0.2), { TextColor3 = Theme["Text"] })
+            Tween(iconImage.Instance, TweenInfo.new(0.15), {
+                ImageTransparency = 0.0,
+                ImageColor3 = Theme["Text"]
+            })
+            Tween(tabLabel.Instance, TweenInfo.new(0.15), {
+                TextColor3 = Theme["Text"]
+            })
             if TabObject.SubLabel then
-                Tween(TabObject.SubLabel, TweenInfo.new(0.2), { TextColor3 = Theme["Text"], TextTransparency = 0.2 })
+                Tween(TabObject.SubLabel, TweenInfo.new(0.15), {
+                    TextColor3 = Theme["Text"],
+                    TextTransparency = 0.2
+                })
             end
         end
     end)
 
     tabButton:Connect("MouseLeave", function()
         if Library.ActiveTabObject ~= TabObject then
-            Tween(tabButton.Instance, TweenInfo.new(0.2), { 
-                BackgroundColor3 = Theme["Text"],
-                BackgroundTransparency = 1 
+            Tween(tabButton.Instance, TweenInfo.new(0.15, Enum.EasingStyle.Quad, Enum.EasingDirection.Out), {
+                BackgroundTransparency = 1
             })
-            Tween(iconImage.Instance, TweenInfo.new(0.2), { ImageTransparency = 0.3, ImageColor3 = Theme["SubText"] })
-            Tween(tabLabel.Instance, TweenInfo.new(0.2), { TextColor3 = Theme["SubText"] })
+            Tween(iconImage.Instance, TweenInfo.new(0.15), {
+                ImageTransparency = 0.3,
+                ImageColor3 = Theme["SubText"]
+            })
+            Tween(tabLabel.Instance, TweenInfo.new(0.15), {
+                TextColor3 = Theme["SubText"]
+            })
             if TabObject.SubLabel then
-                Tween(TabObject.SubLabel, TweenInfo.new(0.2), { TextColor3 = Theme["SubText"], TextTransparency = 0.4 })
+                Tween(TabObject.SubLabel, TweenInfo.new(0.15), {
+                    TextColor3 = Theme["SubText"],
+                    TextTransparency = 0.4
+                })
             end
         end
     end)
@@ -946,8 +1017,12 @@ function Library:CreateTab(window, tabData)
             if Library.ActiveTabObject == TabObject then
                 TabObject.Expanded = not TabObject.Expanded
                 local targetHeight = TabObject.Expanded and (TabObject.SubListLayout.AbsoluteContentSize.Y + 8) or 0
-                Tween(subTabsContainer.Instance, TweenInfo.new(0.25), { Size = UDim2.new(1, 0, 0, targetHeight) })
-                Tween(arrowIcon.Instance, TweenInfo.new(0.25), { Rotation = TabObject.Expanded and 180 or 0 })
+                Tween(subTabsContainer.Instance, TweenInfo.new(0.25), {
+                    Size = UDim2.new(1, 0, 0, targetHeight)
+                })
+                Tween(arrowIcon.Instance, TweenInfo.new(0.25), {
+                    Rotation = TabObject.Expanded and 180 or 0
+                })
             else
                 ActivateTab()
             end
@@ -972,7 +1047,7 @@ function Library:CreateTab(window, tabData)
             Parent = subTabsContainer.Instance,
             Name = "SubTab_" .. subName,
             Size = UDim2.new(1, 0, 0, 24),
-            BackgroundColor3 = Theme["Text"],
+            BackgroundColor3 = Color3.fromRGB(255, 255, 255),
             BackgroundTransparency = 1,
             Text = "",
             AutoButtonColor = false,
@@ -986,12 +1061,42 @@ function Library:CreateTab(window, tabData)
             CornerRadius = UDim.new(0, 5)
         })
 
+        -- Градиентный контур для подвкладок (как в дропдауне)
         local subStroke = Instances:Create("UIStroke", {
             Parent = subButton.Instance,
-            Color = Theme["Accent"],
+            Color = Color3.fromRGB(255, 255, 255),
             Thickness = 1,
             Transparency = 1,
             ApplyStrokeMode = Enum.ApplyStrokeMode.Border
+        })
+
+        Instances:Create("UIGradient", {
+            Parent = subStroke.Instance,
+            Color = ColorSequence.new({
+                ColorSequenceKeypoint.new(0, Theme["Outline"]),
+                ColorSequenceKeypoint.new(0.5, Theme["Accent"]),
+                ColorSequenceKeypoint.new(1, Theme["Outline"])
+            }),
+            Transparency = NumberSequence.new({
+                NumberSequenceKeypoint.new(0, 0.4),
+                NumberSequenceKeypoint.new(0.5, 0.0),
+                NumberSequenceKeypoint.new(1, 0.4)
+            })
+        })
+
+        -- Градиентный фон (синий к темному)
+        Instances:Create("UIGradient", {
+            Parent = subButton.Instance,
+            Color = ColorSequence.new({
+                ColorSequenceKeypoint.new(0, Theme["Accent"]),
+                ColorSequenceKeypoint.new(0.35, Color3.fromRGB(15, 35, 65)),
+                ColorSequenceKeypoint.new(1, Theme["Background 2"])
+            }),
+            Transparency = NumberSequence.new({
+                NumberSequenceKeypoint.new(0, 0.25),
+                NumberSequenceKeypoint.new(1, 0.9)
+            }),
+            Rotation = 0
         })
 
         local subIndicator = Instances:Create("Frame", {
@@ -1106,18 +1211,24 @@ function Library:CreateTab(window, tabData)
         }
 
         function SubTabObject:Deselect()
-            Tween(subButton.Instance, TweenInfo.new(0.15), { 
-                BackgroundColor3 = Theme["Text"],
-                BackgroundTransparency = 1 
+            Tween(subButton.Instance, TweenInfo.new(0.15, Enum.EasingStyle.Quad, Enum.EasingDirection.Out), {
+                BackgroundTransparency = 1
             })
-            Tween(subStroke.Instance, TweenInfo.new(0.15), { Transparency = 1 })
-            Tween(subIndicator.Instance, TweenInfo.new(0.15, Enum.EasingStyle.Quad, Enum.EasingDirection.Out), { 
+            Tween(subStroke.Instance, TweenInfo.new(0.15, Enum.EasingStyle.Quad, Enum.EasingDirection.Out), {
+                Transparency = 1
+            })
+            Tween(subIndicator.Instance, TweenInfo.new(0.15, Enum.EasingStyle.Quad, Enum.EasingDirection.Out), {
                 BackgroundTransparency = 1,
                 Size = UDim2.new(0, 2, 0, 0)
             })
-            Tween(subLabelObj.Instance, TweenInfo.new(0.15), { TextColor3 = Theme["SubText"] })
+            Tween(subLabelObj.Instance, TweenInfo.new(0.15), {
+                TextColor3 = Theme["SubText"]
+            })
             if subIconObj then
-                Tween(subIconObj.Instance, TweenInfo.new(0.15), { ImageColor3 = Theme["SubText"], ImageTransparency = 0.3 })
+                Tween(subIconObj.Instance, TweenInfo.new(0.15), {
+                    ImageColor3 = Theme["SubText"],
+                    ImageTransparency = 0.3
+                })
             end
             subContainer.Instance.Visible = false
         end
@@ -1126,18 +1237,28 @@ function Library:CreateTab(window, tabData)
             if Library.ActiveTabObject ~= TabObject then
                 if Library.ActiveTabObject then Library.ActiveTabObject:Deselect() end
                 Library.ActiveTabObject = TabObject
-                Tween(tabButton.Instance, TweenInfo.new(0.2), { BackgroundTransparency = 0.85, BackgroundColor3 = Theme["Accent"] })
-                Tween(tabStroke.Instance, TweenInfo.new(0.25), { Transparency = 0.55, Color = Theme["Accent"] })
-                
-                Tween(activeIndicator.Instance, TweenInfo.new(0.28, Enum.EasingStyle.Back, Enum.EasingDirection.Out), { 
+                Tween(tabButton.Instance, TweenInfo.new(0.25, Enum.EasingStyle.Quart, Enum.EasingDirection.Out), {
+                    BackgroundTransparency = 0.82
+                })
+                Tween(tabStroke.Instance, TweenInfo.new(0.25, Enum.EasingStyle.Quart, Enum.EasingDirection.Out), {
+                    Transparency = 0
+                })
+                Tween(activeIndicator.Instance, TweenInfo.new(0.28, Enum.EasingStyle.Back, Enum.EasingDirection.Out), {
                     BackgroundTransparency = 0,
                     Size = UDim2.new(0, 3, 0, 18)
                 })
-
-                Tween(iconImage.Instance, TweenInfo.new(0.2), { ImageColor3 = Theme["Accent"], ImageTransparency = 0 })
-                Tween(tabLabel.Instance, TweenInfo.new(0.2), { TextColor3 = Theme["Text"] })
+                Tween(iconImage.Instance, TweenInfo.new(0.2), {
+                    ImageColor3 = Theme["Text"],
+                    ImageTransparency = 0
+                })
+                Tween(tabLabel.Instance, TweenInfo.new(0.2), {
+                    TextColor3 = Theme["Text"]
+                })
                 if TabObject.SubLabel then
-                    Tween(TabObject.SubLabel, TweenInfo.new(0.2), { TextColor3 = Theme["Text"], TextTransparency = 0.2 })
+                    Tween(TabObject.SubLabel, TweenInfo.new(0.2), {
+                        TextColor3 = Theme["Text"],
+                        TextTransparency = 0.2
+                    })
                 end
             end
 
@@ -1146,43 +1267,58 @@ function Library:CreateTab(window, tabData)
             end
 
             TabObject.ActiveSubTabObj = SubTabObject
-            Tween(subButton.Instance, TweenInfo.new(0.15), { BackgroundTransparency = 0.9, BackgroundColor3 = Theme["Accent"] })
-            Tween(subStroke.Instance, TweenInfo.new(0.2), { Transparency = 0.6, Color = Theme["Accent"] })
-            
-            Tween(subIndicator.Instance, TweenInfo.new(0.25, Enum.EasingStyle.Back, Enum.EasingDirection.Out), { 
+            Tween(subButton.Instance, TweenInfo.new(0.2, Enum.EasingStyle.Quart, Enum.EasingDirection.Out), {
+                BackgroundTransparency = 0.82
+            })
+            Tween(subStroke.Instance, TweenInfo.new(0.2, Enum.EasingStyle.Quart, Enum.EasingDirection.Out), {
+                Transparency = 0
+            })
+            Tween(subIndicator.Instance, TweenInfo.new(0.25, Enum.EasingStyle.Back, Enum.EasingDirection.Out), {
                 BackgroundTransparency = 0,
                 Size = UDim2.new(0, 2, 0, 12)
             })
-
-            Tween(subLabelObj.Instance, TweenInfo.new(0.15), { TextColor3 = Theme["Text"] })
+            Tween(subLabelObj.Instance, TweenInfo.new(0.15), {
+                TextColor3 = Theme["Text"]
+            })
             if subIconObj then
-                Tween(subIconObj.Instance, TweenInfo.new(0.15), { ImageColor3 = Theme["Accent"], ImageTransparency = 0 })
+                Tween(subIconObj.Instance, TweenInfo.new(0.15), {
+                    ImageColor3 = Theme["Text"],
+                    ImageTransparency = 0
+                })
             end
             subContainer.Instance.Visible = true
         end
 
         subButton:Connect("MouseEnter", function()
             if TabObject.ActiveSubTabObj ~= SubTabObject then
-                Tween(subButton.Instance, TweenInfo.new(0.15), { 
-                    BackgroundColor3 = Color3.fromRGB(255, 255, 255),
-                    BackgroundTransparency = 0.93 
+                Tween(subButton.Instance, TweenInfo.new(0.15, Enum.EasingStyle.Quad, Enum.EasingDirection.Out), {
+                    BackgroundTransparency = 0.93
                 })
-                Tween(subLabelObj.Instance, TweenInfo.new(0.15), { TextColor3 = Theme["Text"] })
+                Tween(subLabelObj.Instance, TweenInfo.new(0.15), {
+                    TextColor3 = Theme["Text"]
+                })
                 if subIconObj then
-                    Tween(subIconObj.Instance, TweenInfo.new(0.15), { ImageColor3 = Theme["Text"], ImageTransparency = 0 })
+                    Tween(subIconObj.Instance, TweenInfo.new(0.15), {
+                        ImageColor3 = Theme["Text"],
+                        ImageTransparency = 0
+                    })
                 end
             end
         end)
 
         subButton:Connect("MouseLeave", function()
             if TabObject.ActiveSubTabObj ~= SubTabObject then
-                Tween(subButton.Instance, TweenInfo.new(0.15), { 
-                    BackgroundColor3 = Theme["Text"],
-                    BackgroundTransparency = 1 
+                Tween(subButton.Instance, TweenInfo.new(0.15, Enum.EasingStyle.Quad, Enum.EasingDirection.Out), {
+                    BackgroundTransparency = 1
                 })
-                Tween(subLabelObj.Instance, TweenInfo.new(0.15), { TextColor3 = Theme["SubText"] })
+                Tween(subLabelObj.Instance, TweenInfo.new(0.15), {
+                    TextColor3 = Theme["SubText"]
+                })
                 if subIconObj then
-                    Tween(subIconObj.Instance, TweenInfo.new(0.15), { ImageColor3 = Theme["SubText"], ImageTransparency = 0.3 })
+                    Tween(subIconObj.Instance, TweenInfo.new(0.15), {
+                        ImageColor3 = Theme["SubText"],
+                        ImageTransparency = 0.3
+                    })
                 end
             end
         end)
