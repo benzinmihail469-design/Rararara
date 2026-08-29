@@ -1537,7 +1537,8 @@ function Library:CreateSection(parentColumn, sectionData)
     local SectionAPI = {}
 
     -- ====================================================================
-    -- ОБНОВЛЕННЫЙ Toggle С АНИМАЦИЕЙ НАЖАТИЯ И ВРАЩЕНИЕМ ТРЕХ ТОЧЕК
+    -- ИСПРАВЛЕННЫЙ Toggle С ОТДЕЛЬНЫМ КОНТЕЙНЕРОМ ДЛЯ ТРЕХ ТОЧЕК
+    -- (Устранено мигание контура чекбокса при взаимодействии с тремя точками)
     -- ====================================================================
     function SectionAPI:CreateToggle(toggleData)
         toggleData = toggleData or {}
@@ -1563,17 +1564,27 @@ function Library:CreateSection(parentColumn, sectionData)
             Padding = UDim.new(0, 6)
         })
 
-        -- Основная строка Toggle
-        local toggleButton = Instances:Create("TextButton", {
+        -- Общая шапка строки (разделяет Toggle и ThreeDots на независимые кнопки)
+        local toggleHeader = Instances:Create("Frame", {
             Parent = itemHost.Instance,
-            Name = "Toggle_" .. toggleName,
+            Name = "ToggleHeader",
             Size = UDim2.new(1, 0, 0, 22),
+            BackgroundTransparency = 1,
+            BorderSizePixel = 0,
+            LayoutOrder = 1,
+            ZIndex = 7
+        })
+
+        -- Основная кнопка Toggle (чекбокс + текст)
+        local toggleButton = Instances:Create("TextButton", {
+            Parent = toggleHeader.Instance,
+            Name = "Toggle_" .. toggleName,
+            Size = UDim2.new(1, settingsCallback and -26 or 0, 1, 0),
             BackgroundTransparency = 1,
             Text = "",
             AutoButtonColor = false,
             ZIndex = 7,
-            Active = true,
-            LayoutOrder = 1
+            Active = true
         })
 
         local checkBox = Instances:Create("Frame", {
@@ -1619,13 +1630,13 @@ function Library:CreateSection(parentColumn, sectionData)
             TextColor3 = state and Theme["Text"] or Theme["SubText"],
             TextSize = 12,
             Position = UDim2.new(0, 23, 0, 0),
-            Size = UDim2.new(1, settingsCallback and -50 or -23, 1, 0),
+            Size = UDim2.new(1, -23, 1, 0),
             BackgroundTransparency = 1,
             TextXAlignment = Enum.TextXAlignment.Left,
             ZIndex = 8
         })
 
-        -- Подсветка при наведении
+        -- Подсветка чекбокса только при наведении на сам переключатель
         toggleButton:Connect("MouseEnter", function()
             checkStroke:Tween(TweenInfo.new(0.15, Enum.EasingStyle.Quad, Enum.EasingDirection.Out), {
                 Color = Theme["Accent"]
@@ -1638,7 +1649,7 @@ function Library:CreateSection(parentColumn, sectionData)
             })
         end)
 
-        -- Эффект нажатия (микро-сжатие)
+        -- Эффект нажатия на сам чекбокс
         toggleButton:Connect("MouseButton1Down", function()
             checkBox:Tween(TweenInfo.new(0.08, Enum.EasingStyle.Quad, Enum.EasingDirection.Out), {
                 Size = UDim2.new(0, 12, 0, 12)
@@ -1651,7 +1662,7 @@ function Library:CreateSection(parentColumn, sectionData)
             })
         end)
 
-        -- Клик включения / выключения
+        -- Переключение состояния Toggle
         toggleButton:Connect("MouseButton1Click", function()
             state = not state
             
@@ -1677,9 +1688,10 @@ function Library:CreateSection(parentColumn, sectionData)
         -- Если передана функция Settings, добавляем три точки
         if settingsCallback then
             local optionsExpanded = false
-            
+
+            -- Кнопка "три точки" теперь находится в toggleHeader отдельным независимым элементом
             local dotsBtn = Instances:Create("TextButton", {
-                Parent = toggleButton.Instance,
+                Parent = toggleHeader.Instance,
                 Name = "ThreeDots",
                 AnchorPoint = Vector2.new(1, 0.5),
                 Position = UDim2.new(1, 0, 0.5, 0),
@@ -1711,7 +1723,6 @@ function Library:CreateSection(parentColumn, sectionData)
                 CornerRadius = UDim.new(0, 6)
             })
 
-            -- Градиентный контур в стиле разделительных полос (голубое свечение по центру)
             local panelStroke = Instances:Create("UIStroke", {
                 Parent = settingsPanel.Instance,
                 Color = Color3.fromRGB(255, 255, 255),
@@ -1748,7 +1759,6 @@ function Library:CreateSection(parentColumn, sectionData)
                 Padding = UDim.new(0, 6)
             })
 
-            -- Создаем API для добавления элементов внутрь панели настроек
             local SubAPI = {}
             
             function SubAPI:Slider(sData)
@@ -1769,7 +1779,7 @@ function Library:CreateSection(parentColumn, sectionData)
 
             pcall(settingsCallback, SubAPI)
 
-            -- Наведение на три точки
+            -- Эффекты наведения только на три точки
             dotsBtn:Connect("MouseEnter", function()
                 if not optionsExpanded then
                     dotsBtn:Tween(TweenInfo.new(0.15, Enum.EasingStyle.Quad, Enum.EasingDirection.Out), {
@@ -1786,7 +1796,7 @@ function Library:CreateSection(parentColumn, sectionData)
                 end
             end)
 
-            -- Анимация физического клика (сжатия кнопки при нажатии)
+            -- Анимация физического клика трех точек
             dotsBtn:Connect("MouseButton1Down", function()
                 dotsBtn:Tween(TweenInfo.new(0.1, Enum.EasingStyle.Quad, Enum.EasingDirection.Out), {
                     Size = UDim2.new(0, 18, 0, 14)
@@ -1799,24 +1809,21 @@ function Library:CreateSection(parentColumn, sectionData)
                 })
             end)
 
-            -- Плавное вращение и раскрытие панели при клике
+            -- Плавный поворот трех точек и открытие/закрытие панели настроек
             dotsBtn:Connect("MouseButton1Click", function()
                 optionsExpanded = not optionsExpanded
                 local contentHeight = panelLayout.Instance.AbsoluteContentSize.Y + 12
                 local targetHeight = optionsExpanded and contentHeight or 0
                 
-                -- Вращение трех точек на 90 градусов и смена цвета
                 dotsBtn:Tween(TweenInfo.new(0.3, Enum.EasingStyle.Quart, Enum.EasingDirection.Out), {
                     Rotation = optionsExpanded and 90 or 0,
                     TextColor3 = optionsExpanded and Theme["Accent"] or Theme["SubText"]
                 })
                 
-                -- Прозрачность контура
                 panelStroke:Tween(TweenInfo.new(0.25, Enum.EasingStyle.Quad, Enum.EasingDirection.Out), {
                     Transparency = optionsExpanded and 0 or 0.8
                 })
                 
-                -- Анимация плавного раскрытия подменю
                 settingsPanel:Tween(TweenInfo.new(0.3, Enum.EasingStyle.Quart, Enum.EasingDirection.Out), {
                     Size = UDim2.new(1, 0, 0, targetHeight)
                 })
@@ -2613,7 +2620,7 @@ local VisualsTab = Library:CreateTab(MainWindow, {
 local PlayersSubContainer, PlayersCols = VisualsTab:CreateSubTab({ Name = "Players", Icon = "user" })
 local PlayersSection = Library:CreateSection(PlayersCols[1], { Name = "ESP Players", Icon = "eye" })
 
--- Toggle с настройками (три точки) - теперь с анимацией вращения
+-- Toggle с настройками (три точки) - теперь с исправленным поведением
 PlayersSection:CreateToggle({
     Name = "Box ESP",
     Default = true,
