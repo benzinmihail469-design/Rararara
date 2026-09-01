@@ -1781,7 +1781,8 @@ function Library:CreateSection(parentColumn, sectionData)
 
             -- Эффекты наведения только на три точки
             dotsBtn:Connect("MouseEnter", function()
-                if not optionsExpanded then                    dotsBtn:Tween(TweenInfo.new(0.15, Enum.EasingStyle.Quad, Enum.EasingDirection.Out), {
+                if not optionsExpanded then
+                    dotsBtn:Tween(TweenInfo.new(0.15, Enum.EasingStyle.Quad, Enum.EasingDirection.Out), {
                         TextColor3 = Theme["Accent"]
                     })
                 end
@@ -1833,166 +1834,187 @@ function Library:CreateSection(parentColumn, sectionData)
     end
 
     -- ====================================================================
-    -- КНОПКА В СТИЛЕ РАЗДЕЛИТЕЛЬНОЙ ПОЛОСЫ (BLUE / BLACK)
+    -- ФУНКЦИЯ СОЗДАНИЯ КНОПКИ-ПЕРЕКЛЮЧАТЕЛЯ В СТИЛЕ РАЗДЕЛИТЕЛЬНОЙ ПОЛОСЫ
     -- ====================================================================
-    function SectionAPI:CreateDividerButton(buttonData)
-        buttonData = buttonData or {}
-        local buttonTitle = buttonData.Name or buttonData.Title or "Divider Button"
-        local callback = buttonData.Callback or function() end
-        local buttonIcon = buttonData.Icon or ""
-        local hasIcon = buttonIcon ~= ""
+    function SectionAPI:CreateLineToggle(toggleData)
+        toggleData = toggleData or {}
+        local toggleName = toggleData.Name or "Enable aimbot"
+        local state = toggleData.Default or false
+        local callback = toggleData.Callback or function() end
 
-        -- Главная кнопка-плашка
-        local buttonFrame = Instances:Create("TextButton", {
+        -- Главная кнопка-плашка с темным фоном
+        local toggleBar = Instances:Create("TextButton", {
             Parent = elementsContainer.Instance,
-            Name = "DividerButton_" .. buttonTitle,
-            Size = UDim2.new(1, 0, 0, 26),
-            BackgroundColor3 = Theme["Background 2"],
-            BackgroundTransparency = 0.25,
+            Name = "AimbotToggle_" .. toggleName,
+            Size = UDim2.new(1, 0, 0, 30),
+            BackgroundColor3 = Theme["Element"],
+            BackgroundTransparency = 0.15,
             Text = "",
             AutoButtonColor = false,
-            BorderSizePixel = 0,
-            ClipsDescendants = true,
-            ZIndex = 7,
+            ZIndex = 8,
             Active = true
         })
 
         Instances:Create("UICorner", {
-            Parent = buttonFrame.Instance,
-            CornerRadius = UDim.new(0, 4)
+            Parent = toggleBar.Instance,
+            CornerRadius = UDim.new(0, 6)
         })
 
-        -- Градиентный сине-черный фон
-        Instances:Create("UIGradient", {
-            Parent = buttonFrame.Instance,
-            Color = ColorSequence.new({
-                ColorSequenceKeypoint.new(0, Color3.fromRGB(10, 11, 16)),
-                ColorSequenceKeypoint.new(0.5, Color3.fromRGB(18, 32, 54)),
-                ColorSequenceKeypoint.new(1, Color3.fromRGB(10, 11, 16))
-            }),
-            Rotation = 0
-        })
-
-        -- Контур со свечением по центру (стиль полосы)
-        local buttonStroke = Instances:Create("UIStroke", {
-            Parent = buttonFrame.Instance,
+        -- Контур с сине-черным градиентом в стиле разделительных полос
+        local barStroke = Instances:Create("UIStroke", {
+            Parent = toggleBar.Instance,
             Color = Color3.fromRGB(255, 255, 255),
             Thickness = 1,
-            Transparency = 0.3,
+            Transparency = state and 0 or 0.4,
             ApplyStrokeMode = Enum.ApplyStrokeMode.Border
         })
 
-        Instances:Create("UIGradient", {
-            Parent = buttonStroke.Instance,
+        local strokeGradient = Instances:Create("UIGradient", {
+            Parent = barStroke.Instance,
             Color = ColorSequence.new({
                 ColorSequenceKeypoint.new(0, Theme["Outline"]),
                 ColorSequenceKeypoint.new(0.5, Theme["Accent"]),
                 ColorSequenceKeypoint.new(1, Theme["Outline"])
             }),
             Transparency = NumberSequence.new({
-                NumberSequenceKeypoint.new(0, 0.6),
-                NumberSequenceKeypoint.new(0.5, 0.0),
-                NumberSequenceKeypoint.new(1, 0.6)
+                NumberSequenceKeypoint.new(0, state and 0.2 or 0.6),
+                NumberSequenceKeypoint.new(0.5, state and 0.0 or 0.4),
+                NumberSequenceKeypoint.new(1, state and 0.2 or 0.6)
             })
         })
 
-        -- Верхняя неоновая разделительная линия
-        local topGlowLine = Instances:Create("Frame", {
-            Parent = buttonFrame.Instance,
-            Name = "TopGlow",
-            AnchorPoint = Vector2.new(0.5, 0),
-            Position = UDim2.new(0.5, 0, 0, 0),
-            Size = UDim2.new(1, -12, 0, 1),
+        -- Светящаяся разделительная полоса в нижней части кнопки
+        local bottomGlowLine = Instances:Create("Frame", {
+            Parent = toggleBar.Instance,
+            Name = "GlowLine",
+            AnchorPoint = Vector2.new(0.5, 1),
+            Position = UDim2.new(0.5, 0, 1, 0),
+            Size = UDim2.new(state and 1 or 0.5, 0, 0, 1.5),
             BackgroundColor3 = Color3.fromRGB(255, 255, 255),
             BorderSizePixel = 0,
-            ZIndex = 8
+            ZIndex = 9
         })
 
-        Instances:Create("UIGradient", {
-            Parent = topGlowLine.Instance,
+        local lineGradient = Instances:Create("UIGradient", {
+            Parent = bottomGlowLine.Instance,
             Color = ColorSequence.new({
                 ColorSequenceKeypoint.new(0, Theme["GlowEdge"]),
-                ColorSequenceKeypoint.new(0.5, Theme["GlowCenter"]),
+                ColorSequenceKeypoint.new(0.5, Theme["Accent"]),
                 ColorSequenceKeypoint.new(1, Theme["GlowEdge"])
             }),
             Transparency = NumberSequence.new({
-                NumberSequenceKeypoint.new(0, 1),
-                NumberSequenceKeypoint.new(0.5, 0.1),
-                NumberSequenceKeypoint.new(1, 1)
+                NumberSequenceKeypoint.new(0, 0.8),
+                NumberSequenceKeypoint.new(0.5, state and 0.0 or 0.5),
+                NumberSequenceKeypoint.new(1, 0.8)
             })
         })
 
-        -- Иконка (если передана)
-        if hasIcon then
-            Instances:Create("ImageLabel", {
-                Parent = buttonFrame.Instance,
-                Name = "Icon",
-                Size = UDim2.new(0, 14, 0, 14),
-                AnchorPoint = Vector2.new(0, 0.5),
-                Position = UDim2.new(0, 10, 0.5, 0),
-                BackgroundTransparency = 1,
-                Image = ParseIcon(buttonIcon),
-                ImageColor3 = Theme["Accent"],
-                ScaleType = Enum.ScaleType.Fit,
-                ZIndex = 8
+        -- Текст функции
+        local label = Instances:Create("TextLabel", {
+            Parent = toggleBar.Instance,
+            Name = "Label",
+            Text = toggleName,
+            FontFace = Font.new("rbxassetid://12187365364", Enum.FontWeight.Bold, Enum.FontStyle.Normal),
+            TextColor3 = state and Theme["Text"] or Theme["SubText"],
+            TextSize = 12,
+            Position = UDim2.new(0, 10, 0, 0),
+            Size = UDim2.new(1, -50, 1, 0),
+            BackgroundTransparency = 1,
+            TextXAlignment = Enum.TextXAlignment.Left,
+            ZIndex = 9
+        })
+
+        -- Активный индикатор-переключатель справа
+        local statusPill = Instances:Create("Frame", {
+            Parent = toggleBar.Instance,
+            Name = "StatusPill",
+            AnchorPoint = Vector2.new(1, 0.5),
+            Position = UDim2.new(1, -8, 0.5, 0),
+            Size = UDim2.new(0, 28, 0, 14),
+            BackgroundColor3 = state and Theme["Accent"] or Color3.fromRGB(14, 16, 22),
+            BorderSizePixel = 0,
+            ZIndex = 9
+        })
+
+        Instances:Create("UICorner", {
+            Parent = statusPill.Instance,
+            CornerRadius = UDim.new(1, 0)
+        })
+
+        local statusDot = Instances:Create("Frame", {
+            Parent = statusPill.Instance,
+            Name = "Dot",
+            AnchorPoint = Vector2.new(0, 0.5),
+            Position = state and UDim2.new(1, -12, 0.5, 0) or UDim2.new(0, 2, 0.5, 0),
+            Size = UDim2.new(0, 10, 0, 10),
+            BackgroundColor3 = Color3.fromRGB(255, 255, 255),
+            BorderSizePixel = 0,
+            ZIndex = 10
+        })
+
+        Instances:Create("UICorner", {
+            Parent = statusDot.Instance,
+            CornerRadius = UDim.new(1, 0)
+        })
+
+        -- Плавное переключение состояний и анимации
+        local function UpdateState()
+            Tween(barStroke.Instance, TweenInfo.new(0.25, Enum.EasingStyle.Quad, Enum.EasingDirection.Out), {
+                Transparency = state and 0 or 0.4
+            })
+
+            Tween(strokeGradient.Instance, TweenInfo.new(0.25, Enum.EasingStyle.Quad, Enum.EasingDirection.Out), {
+                Transparency = NumberSequence.new({
+                    NumberSequenceKeypoint.new(0, state and 0.2 or 0.6),
+                    NumberSequenceKeypoint.new(0.5, state and 0.0 or 0.4),
+                    NumberSequenceKeypoint.new(1, state and 0.2 or 0.6)
+                })
+            })
+
+            Tween(bottomGlowLine.Instance, TweenInfo.new(0.25, Enum.EasingStyle.Quart, Enum.EasingDirection.Out), {
+                Size = UDim2.new(state and 1 or 0.5, 0, 0, 1.5)
+            })
+
+            Tween(lineGradient.Instance, TweenInfo.new(0.25), {
+                Transparency = NumberSequence.new({
+                    NumberSequenceKeypoint.new(0, 0.8),
+                    NumberSequenceKeypoint.new(0.5, state and 0.0 or 0.5),
+                    NumberSequenceKeypoint.new(1, 0.8)
+                })
+            })
+
+            Tween(label.Instance, TweenInfo.new(0.2), {
+                TextColor3 = state and Theme["Text"] or Theme["SubText"]
+            })
+
+            Tween(statusPill.Instance, TweenInfo.new(0.25, Enum.EasingStyle.Quad, Enum.EasingDirection.Out), {
+                BackgroundColor3 = state and Theme["Accent"] or Color3.fromRGB(14, 16, 22)
+            })
+
+            Tween(statusDot.Instance, TweenInfo.new(0.25, Enum.EasingStyle.Back, Enum.EasingDirection.Out), {
+                Position = state and UDim2.new(1, -12, 0.5, 0) or UDim2.new(0, 2, 0.5, 0)
             })
         end
 
-        -- Текст кнопки
-        local titleLabel = Instances:Create("TextLabel", {
-            Parent = buttonFrame.Instance,
-            Name = "Title",
-            Text = buttonTitle,
-            FontFace = Font.new("rbxassetid://12187365364", Enum.FontWeight.Bold, Enum.FontStyle.Normal),
-            TextColor3 = Theme["Text"],
-            TextSize = 11,
-            Size = UDim2.new(1, hasIcon and -34 or -16, 1, 0),
-            Position = UDim2.new(0, hasIcon and 28 or 8, 0, 0),
-            BackgroundTransparency = 1,
-            TextXAlignment = Enum.TextXAlignment.Center,
-            ZIndex = 8
-        })
-
-        -- Анимации наведения
-        buttonFrame:Connect("MouseEnter", function()
-            Tween(buttonFrame.Instance, TweenInfo.new(0.2, Enum.EasingStyle.Quad, Enum.EasingDirection.Out), {
+        toggleBar:Connect("MouseEnter", function()
+            Tween(toggleBar.Instance, TweenInfo.new(0.15), {
                 BackgroundTransparency = 0.05
             })
-            Tween(buttonStroke.Instance, TweenInfo.new(0.2), {
-                Transparency = 0
-            })
-            Tween(titleLabel.Instance, TweenInfo.new(0.2), {
-                TextColor3 = Theme["AccentGlow"]
+        end)
+
+        toggleBar:Connect("MouseLeave", function()
+            Tween(toggleBar.Instance, TweenInfo.new(0.15), {
+                BackgroundTransparency = 0.15
             })
         end)
 
-        buttonFrame:Connect("MouseLeave", function()
-            Tween(buttonFrame.Instance, TweenInfo.new(0.2, Enum.EasingStyle.Quad, Enum.EasingDirection.Out), {
-                BackgroundTransparency = 0.25
-            })
-            Tween(buttonStroke.Instance, TweenInfo.new(0.2), {
-                Transparency = 0.3
-            })
-            Tween(titleLabel.Instance, TweenInfo.new(0.2), {
-                TextColor3 = Theme["Text"]
-            })
+        toggleBar:Connect("MouseButton1Click", function()
+            state = not state
+            UpdateState()
+            pcall(callback, state)
         end)
 
-        -- Анимация клика
-        buttonFrame:Connect("MouseButton1Down", function()
-            Tween(buttonFrame.Instance, TweenInfo.new(0.08, Enum.EasingStyle.Quad, Enum.EasingDirection.Out), {
-                Size = UDim2.new(1, -4, 0, 24)
-            })
-        end)
-
-        buttonFrame:Connect("MouseButton1Up", function()
-            Tween(buttonFrame.Instance, TweenInfo.new(0.15, Enum.EasingStyle.Back, Enum.EasingDirection.Out), {
-                Size = UDim2.new(1, 0, 0, 26)
-            })
-            pcall(callback)
-        end)
-
-        return buttonFrame.Instance
+        return toggleBar.Instance
     end
 
     -- ====================================================================
@@ -2721,7 +2743,16 @@ local CombatTab, CombatCols = Library:CreateTab(MainWindow, {
 })
 
 local AimbotSection = Library:CreateSection(CombatCols[1], { Name = "Aimbot", Icon = "zap" })
-AimbotSection:CreateToggle({ Name = "Enable Aimbot", Default = true })
+
+-- Использование новой кнопки-переключателя в стиле разделительной полосы
+AimbotSection:CreateLineToggle({
+    Name = "Enable aimbot",
+    Default = true,
+    Callback = function(State)
+        print("Aimbot status:", State)
+    end
+})
+
 AimbotSection:CreateToggle({ Name = "Prediction", Default = false })
 
 local CombatSection = Library:CreateSection(CombatCols[2], { Name = "Combat Controls", Icon = "shield" })
@@ -2729,15 +2760,6 @@ CombatSection:Button({
     Title = "Fling Players",
     Callback = function()
         print("Fling Players clicked!")
-    end
-})
-
--- Пример использования DividerButton
-CombatSection:CreateDividerButton({
-    Name = "Execute Script",
-    Icon = "zap",
-    Callback = function()
-        print("Разделительная кнопка нажата!")
     end
 })
 
@@ -2852,15 +2874,6 @@ VisualsSection:Button({
     Title = "Refresh ESP",
     Callback = function()
         print("ESP Refreshed!")
-    end
-})
-
--- Пример DividerButton в Visuals секции
-VisualsSection:CreateDividerButton({
-    Name = "Reset All Settings",
-    Icon = "settings",
-    Callback = function()
-        print("All settings reset!")
     end
 })
 
