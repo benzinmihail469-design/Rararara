@@ -2423,7 +2423,7 @@ function Library:CreateSection(parentColumn, sectionData)
     -- ====================================================================
 
     -- ====================================================================
-    -- ИСПРАВЛЕННАЯ ФУНКЦИЯ КНОПКИ (SectionAPI:Button)
+    -- ИСПРАВЛЕННАЯ ФУНКЦИЯ КНОПКИ (SectionAPI:Button) - улучшенная читаемость
     -- ====================================================================
     function SectionAPI:Button(Data)
         Data = Data or {}
@@ -2435,16 +2435,19 @@ function Library:CreateSection(parentColumn, sectionData)
         local ButtonFrame = Instances:Create("TextButton", {
             Parent = elementsContainer.Instance,
             Name = "Button_" .. Button.Title,
-            BackgroundColor3 = Color3.fromRGB(255, 255, 255),
-            BackgroundTransparency = 0.85,
+            BackgroundColor3 = Theme["Element"],
+            BackgroundTransparency = 0.2,
             Text = Button.Title,
-            TextColor3 = Theme["Text"], -- Яркий видимый цвет текста
-            TextSize = 12,
-            FontFace = Font.new("rbxassetid://12187365364", Enum.FontWeight.Medium, Enum.FontStyle.Normal),
+            TextColor3 = Color3.fromRGB(255, 255, 255),
+            TextTransparency = 0,
+            TextStrokeTransparency = 0.7,
+            TextStrokeColor3 = Color3.fromRGB(0, 0, 0),
+            TextSize = 13,
+            FontFace = Font.new("rbxassetid://12187365364", Enum.FontWeight.Bold, Enum.FontStyle.Normal),
             AutoButtonColor = false,
             Size = UDim2.new(1, 0, 0, 28),
             BorderSizePixel = 0,
-            ZIndex = 10, -- Повышен ZIndex, чтобы кнопка перекрывала SettingsPanel (ZIndex 8)
+            ZIndex = 10,
             Active = true
         })
 
@@ -2462,8 +2465,8 @@ function Library:CreateSection(parentColumn, sectionData)
                 ColorSequenceKeypoint.new(1, Theme["Background 2"])
             }),
             Transparency = NumberSequence.new({
-                NumberSequenceKeypoint.new(0, 0.25),
-                NumberSequenceKeypoint.new(1, 0.9)
+                NumberSequenceKeypoint.new(0, 0.4),
+                NumberSequenceKeypoint.new(1, 0.85)
             }),
             Rotation = 0
         })
@@ -2494,8 +2497,8 @@ function Library:CreateSection(parentColumn, sectionData)
         -- Эффекты наведения мышью
         ButtonFrame:Connect("MouseEnter", function()
             Tween(ButtonFrame.Instance, TweenInfo.new(0.15, Enum.EasingStyle.Quad, Enum.EasingDirection.Out), {
-                BackgroundTransparency = 0.65,
-                TextColor3 = Theme["Text"]
+                BackgroundTransparency = 0.1,
+                TextColor3 = Color3.fromRGB(255, 255, 255)
             })
             Tween(buttonStroke.Instance, TweenInfo.new(0.15, Enum.EasingStyle.Quad, Enum.EasingDirection.Out), {
                 Transparency = 0
@@ -2504,8 +2507,8 @@ function Library:CreateSection(parentColumn, sectionData)
 
         ButtonFrame:Connect("MouseLeave", function()
             Tween(ButtonFrame.Instance, TweenInfo.new(0.15, Enum.EasingStyle.Quad, Enum.EasingDirection.Out), {
-                BackgroundTransparency = 0.85,
-                TextColor3 = Theme["Text"]
+                BackgroundTransparency = 0.2,
+                TextColor3 = Color3.fromRGB(255, 255, 255)
             })
             Tween(buttonStroke.Instance, TweenInfo.new(0.15, Enum.EasingStyle.Quad, Enum.EasingDirection.Out), {
                 Transparency = 0.5
@@ -2515,14 +2518,14 @@ function Library:CreateSection(parentColumn, sectionData)
         -- Анимация нажатия
         ButtonFrame:Connect("MouseButton1Down", function()
             Tween(ButtonFrame.Instance, TweenInfo.new(0.08, Enum.EasingStyle.Quad, Enum.EasingDirection.Out), {
-                BackgroundTransparency = 0.4,
+                BackgroundTransparency = 0.0,
                 Size = UDim2.new(1, -2, 0, 26)
             })
         end)
 
         ButtonFrame:Connect("MouseButton1Up", function()
             Tween(ButtonFrame.Instance, TweenInfo.new(0.15, Enum.EasingStyle.Back, Enum.EasingDirection.Out), {
-                BackgroundTransparency = 0.65,
+                BackgroundTransparency = 0.1,
                 Size = UDim2.new(1, 0, 0, 28)
             })
         end)
