@@ -2490,7 +2490,9 @@ function Library:CreateSection(parentColumn, sectionData)
         return Button
     end
 
-    -- Метод для создания Слайдера
+    -- ====================================================================
+    -- МЕТОД ДЛЯ СОЗДАНИЯ СЛАЙДЕРА (Стиль: Разделительные полосы / Blue-Black)
+    -- ====================================================================
     function SectionAPI:Slider(Data)
         Data = Data or {}
         local Slider = {
@@ -2509,7 +2511,7 @@ function Library:CreateSection(parentColumn, sectionData)
             Parent = elementsContainer.Instance,
             Name = "Slider_" .. Slider.Title,
             BackgroundTransparency = 1,
-            Size = UDim2.new(1, 0, 0, 40),
+            Size = UDim2.new(1, 0, 0, 36),
             BorderSizePixel = 0,
             ZIndex = 7
         })
@@ -2518,8 +2520,8 @@ function Library:CreateSection(parentColumn, sectionData)
             Parent = SliderFrame.Instance,
             Name = "Title",
             Text = Slider.Title,
-            TextColor3 = Theme["Text"],
-            TextSize = 13,
+            TextColor3 = Theme["SubText"],
+            TextSize = 12,
             FontFace = Font.new("rbxassetid://12187365364", Enum.FontWeight.Medium, Enum.FontStyle.Normal),
             Size = UDim2.new(0.7, 0, 0, 16),
             Position = UDim2.new(0, 0, 0, 0),
@@ -2533,7 +2535,7 @@ function Library:CreateSection(parentColumn, sectionData)
             Name = "Value",
             Text = tostring(Slider.Default) .. Slider.Unit,
             TextColor3 = Theme["Accent"],
-            TextSize = 13,
+            TextSize = 12,
             FontFace = Font.new("rbxassetid://12187365364", Enum.FontWeight.Bold, Enum.FontStyle.Normal),
             Size = UDim2.new(0.3, 0, 0, 16),
             Position = UDim2.new(0.7, 0, 0, 0),
@@ -2542,15 +2544,17 @@ function Library:CreateSection(parentColumn, sectionData)
             ZIndex = 8
         })
 
+        -- Подложка трека в виде тонкой разделительной полосы
         local SliderTrack = Instances:Create("TextButton", {
             Parent = SliderFrame.Instance,
             Name = "Track",
             Text = "",
             AutoButtonColor = false,
             Position = UDim2.new(0, 0, 0, 22),
-            Size = UDim2.new(1, 0, 0, 6),
+            Size = UDim2.new(1, 0, 0, 4),
             BorderSizePixel = 0,
-            BackgroundColor3 = Theme["Element"],
+            BackgroundColor3 = Theme["Background 2"],
+            BackgroundTransparency = 0.2,
             ZIndex = 8,
             Active = true
         })
@@ -2560,18 +2564,74 @@ function Library:CreateSection(parentColumn, sectionData)
             CornerRadius = UDim.new(1, 0)
         })
 
+        -- Градиентная обводка в стиле разделительных полос (синий/темный)
+        local trackStroke = Instances:Create("UIStroke", {
+            Parent = SliderTrack.Instance,
+            Color = Color3.fromRGB(255, 255, 255),
+            Thickness = 1,
+            Transparency = 0.4,
+            ApplyStrokeMode = Enum.ApplyStrokeMode.Border
+        })
+
+        Instances:Create("UIGradient", {
+            Parent = trackStroke.Instance,
+            Color = ColorSequence.new({
+                ColorSequenceKeypoint.new(0, Theme["Outline"]),
+                ColorSequenceKeypoint.new(0.5, Theme["Accent"]),
+                ColorSequenceKeypoint.new(1, Theme["Outline"])
+            }),
+            Transparency = NumberSequence.new({
+                NumberSequenceKeypoint.new(0, 0.6),
+                NumberSequenceKeypoint.new(0.5, 0.1),
+                NumberSequenceKeypoint.new(1, 0.6)
+            })
+        })
+
+        -- Заполнение полосы (сине-черный неоновый градиент)
         local SliderFill = Instances:Create("Frame", {
             Parent = SliderTrack.Instance,
             Name = "Fill",
             Size = UDim2.new(0, 0, 1, 0),
             BorderSizePixel = 0,
-            BackgroundColor3 = Theme["Accent"],
+            BackgroundColor3 = Color3.fromRGB(255, 255, 255),
             ZIndex = 9
         })
 
         Instances:Create("UICorner", {
             Parent = SliderFill.Instance,
             CornerRadius = UDim.new(1, 0)
+        })
+
+        Instances:Create("UIGradient", {
+            Parent = SliderFill.Instance,
+            Color = ColorSequence.new({
+                ColorSequenceKeypoint.new(0, Color3.fromRGB(10, 20, 40)),
+                ColorSequenceKeypoint.new(0.5, Theme["Accent"]),
+                ColorSequenceKeypoint.new(1, Theme["AccentGlow"])
+            })
+        })
+
+        -- Неоновый ползунок-пины на краю заполнения
+        local SliderKnob = Instances:Create("Frame", {
+            Parent = SliderFill.Instance,
+            Name = "Knob",
+            AnchorPoint = Vector2.new(0.5, 0.5),
+            Position = UDim2.new(1, 0, 0.5, 0),
+            Size = UDim2.new(0, 8, 0, 8),
+            BackgroundColor3 = Theme["AccentGlow"],
+            BorderSizePixel = 0,
+            ZIndex = 10
+        })
+
+        Instances:Create("UICorner", {
+            Parent = SliderKnob.Instance,
+            CornerRadius = UDim.new(1, 0)
+        })
+
+        Instances:Create("UIStroke", {
+            Parent = SliderKnob.Instance,
+            Color = Theme["Outline"],
+            Thickness = 1
         })
 
         local function UpdateSliderDisplay()
@@ -2589,7 +2649,6 @@ function Library:CreateSection(parentColumn, sectionData)
             end
             Slider.Value = Value
             Library.Flags[Slider.Flag] = Value
-            
             UpdateSliderDisplay()
             pcall(Slider.Callback, Value)
         end
@@ -2597,7 +2656,6 @@ function Library:CreateSection(parentColumn, sectionData)
         local function GetSliderValueFromInput(Input)
             local trackSizeX = SliderTrack.Instance.AbsoluteSize.X
             if trackSizeX <= 0 then return Slider.Value end
-            
             local trackPosX = SliderTrack.Instance.AbsolutePosition.X
             local mouseX = Input.Position.X
             local normalized = math.clamp((mouseX - trackPosX) / trackSizeX, 0, 1)
@@ -2607,18 +2665,55 @@ function Library:CreateSection(parentColumn, sectionData)
         local sliding = false
         local slidingConnection = nil
 
+        -- Ховер и интерактивные анимации
+        SliderTrack:Connect("MouseEnter", function()
+            Tween(TitleLabel.Instance, TweenInfo.new(0.15), {
+                TextColor3 = Theme["Text"]
+            })
+            Tween(trackStroke.Instance, TweenInfo.new(0.15), {
+                Transparency = 0
+            })
+            Tween(SliderKnob.Instance, TweenInfo.new(0.15, Enum.EasingStyle.Back, Enum.EasingDirection.Out), {
+                Size = UDim2.new(0, 10, 0, 10)
+            })
+        end)
+
+        SliderTrack:Connect("MouseLeave", function()
+            if not sliding then
+                Tween(TitleLabel.Instance, TweenInfo.new(0.15), {
+                    TextColor3 = Theme["SubText"]
+                })
+                Tween(trackStroke.Instance, TweenInfo.new(0.15), {
+                    Transparency = 0.4
+                })
+                Tween(SliderKnob.Instance, TweenInfo.new(0.15), {
+                    Size = UDim2.new(0, 8, 0, 8)
+                })
+            end
+        end)
+
         SliderTrack:Connect("InputBegan", function(Input)
-            if Input.UserInputType == Enum.UserInputType.MouseButton1 or 
-               Input.UserInputType == Enum.UserInputType.Touch then
+            if Input.UserInputType == Enum.UserInputType.MouseButton1 or Input.UserInputType == Enum.UserInputType.Touch then
                 sliding = true
+                Tween(SliderKnob.Instance, TweenInfo.new(0.1, Enum.EasingStyle.Back, Enum.EasingDirection.Out), {
+                    Size = UDim2.new(0, 12, 0, 12)
+                })
                 local newValue = GetSliderValueFromInput(Input)
                 Slider:Set(newValue)
 
                 if not slidingConnection then
                     slidingConnection = UserInputService.InputEnded:Connect(function(EndInput)
-                        if EndInput.UserInputType == Enum.UserInputType.MouseButton1 or 
-                           EndInput.UserInputType == Enum.UserInputType.Touch then
+                        if EndInput.UserInputType == Enum.UserInputType.MouseButton1 or EndInput.UserInputType == Enum.UserInputType.Touch then
                             sliding = false
+                            Tween(TitleLabel.Instance, TweenInfo.new(0.15), {
+                                TextColor3 = Theme["SubText"]
+                            })
+                            Tween(trackStroke.Instance, TweenInfo.new(0.15), {
+                                Transparency = 0.4
+                            })
+                            Tween(SliderKnob.Instance, TweenInfo.new(0.15), {
+                                Size = UDim2.new(0, 8, 0, 8)
+                            })
                             if slidingConnection then
                                 slidingConnection:Disconnect()
                                 slidingConnection = nil
@@ -2630,8 +2725,7 @@ function Library:CreateSection(parentColumn, sectionData)
         end)
 
         UserInputService.InputChanged:Connect(function(Input)
-            if sliding and (Input.UserInputType == Enum.UserInputType.MouseMovement or 
-                           Input.UserInputType == Enum.UserInputType.Touch) then
+            if sliding and (Input.UserInputType == Enum.UserInputType.MouseMovement or Input.UserInputType == Enum.UserInputType.Touch) then
                 local newValue = GetSliderValueFromInput(Input)
                 Slider:Set(newValue)
             end
