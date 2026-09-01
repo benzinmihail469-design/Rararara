@@ -1537,8 +1537,7 @@ function Library:CreateSection(parentColumn, sectionData)
     local SectionAPI = {}
 
     -- ====================================================================
-    -- ОБНОВЛЕННАЯ ФУНКЦИЯ CreateToggle С НЕОНОВЫМ СТИЛЕМ
-    -- (Сине-черные градиенты и свечение разделительных полос)
+    -- ИСПРАВЛЕННАЯ ФУНКЦИЯ CreateToggle (С ПОДДЕРЖКОЙ ТЕЛЕФОНОВ И БЕЗ ОШИБОК TWEEN)
     -- ====================================================================
     function SectionAPI:CreateToggle(toggleData)
         toggleData = toggleData or {}
@@ -1546,6 +1545,7 @@ function Library:CreateSection(parentColumn, sectionData)
         local state = toggleData.Default or false
         local callback = toggleData.Callback or function() end
         local settingsCallback = toggleData.Settings or nil
+        local flag = toggleData.Flag or ("Toggle_" .. toggleName)
 
         -- Контейнер Toggle
         local itemHost = Instances:Create("Frame", {
@@ -1585,7 +1585,7 @@ function Library:CreateSection(parentColumn, sectionData)
             Active = true
         })
 
-        -- Чекбокс в сине-черной теме с эффектом разделительных полос
+        -- Чекбокс в сине-черной теме
         local checkBox = Instances:Create("Frame", {
             Parent = toggleButton.Instance,
             Name = "CheckBox",
@@ -1603,7 +1603,7 @@ function Library:CreateSection(parentColumn, sectionData)
             CornerRadius = UDim.new(0, 4)
         })
 
-        -- Градиентный контур (как у неоновых полос)
+        -- Градиентный контур
         local checkStroke = Instances:Create("UIStroke", {
             Parent = checkBox.Instance,
             Color = Color3.fromRGB(255, 255, 255),
@@ -1668,6 +1668,33 @@ function Library:CreateSection(parentColumn, sectionData)
             ZIndex = 8
         })
 
+        -- Функция обновления состояния
+        local function UpdateState(newState)
+            state = newState
+            Library.Flags[flag] = state
+
+            -- Прямое присвоение Transparency (без TweenService, так как NumberSequence не твинится)
+            bgGradient.Instance.Transparency = NumberSequence.new({
+                NumberSequenceKeypoint.new(0, state and 0.1 or 0.8),
+                NumberSequenceKeypoint.new(1, state and 0.3 or 0.95)
+            })
+
+            Tween(checkStroke.Instance, TweenInfo.new(0.2), {
+                Transparency = state and 0 or 0.5
+            })
+
+            Tween(checkMark.Instance, TweenInfo.new(0.2, state and Enum.EasingStyle.Back or Enum.EasingStyle.Quad, Enum.EasingDirection.Out), {
+                Size = state and UDim2.new(0, 10, 0, 10) or UDim2.new(0, 0, 0, 0),
+                ImageTransparency = state and 0 or 1
+            })
+
+            Tween(toggleLabel.Instance, TweenInfo.new(0.2), {
+                TextColor3 = state and Theme["Text"] or Theme["SubText"]
+            })
+
+            pcall(callback, state)
+        end
+
         -- Наведение мышкой
         toggleButton:Connect("MouseEnter", function()
             Tween(checkStroke.Instance, TweenInfo.new(0.15), {
@@ -1702,31 +1729,9 @@ function Library:CreateSection(parentColumn, sectionData)
             })
         end)
 
-        -- Переключение состояния
-        toggleButton:Connect("MouseButton1Click", function()
-            state = not state
-
-            Tween(bgGradient.Instance, TweenInfo.new(0.2, Enum.EasingStyle.Quad, Enum.EasingDirection.Out), {
-                Transparency = NumberSequence.new({
-                    NumberSequenceKeypoint.new(0, state and 0.1 or 0.8),
-                    NumberSequenceKeypoint.new(1, state and 0.3 or 0.95)
-                })
-            })
-
-            Tween(checkStroke.Instance, TweenInfo.new(0.2), {
-                Transparency = state and 0 or 0.5
-            })
-
-            Tween(checkMark.Instance, TweenInfo.new(0.2, state and Enum.EasingStyle.Back or Enum.EasingStyle.Quad, Enum.EasingDirection.Out), {
-                Size = state and UDim2.new(0, 10, 0, 10) or UDim2.new(0, 0, 0, 0),
-                ImageTransparency = state and 0 or 1
-            })
-
-            Tween(toggleLabel.Instance, TweenInfo.new(0.2), {
-                TextColor3 = state and Theme["Text"] or Theme["SubText"]
-            })
-
-            pcall(callback, state)
+        -- Переключение состояния по событию Activated (работает и ПК, и на Тачскрине)
+        toggleButton.Instance.Activated:Connect(function()
+            UpdateState(not state)
         end)
 
         -- Меню дополнительных настроек (три точки)
@@ -1837,7 +1842,7 @@ function Library:CreateSection(parentColumn, sectionData)
                 end
             end)
 
-            dotsBtn:Connect("MouseButton1Click", function()
+            dotsBtn.Instance.Activated:Connect(function()
                 optionsExpanded = not optionsExpanded
                 local contentHeight = panelLayout.Instance.AbsoluteContentSize.Y + 12
                 local targetHeight = optionsExpanded and contentHeight or 0
@@ -1855,6 +1860,11 @@ function Library:CreateSection(parentColumn, sectionData)
                     Size = UDim2.new(1, 0, 0, targetHeight)
                 })
             end)
+        end
+
+        Library.Flags[flag] = state
+        Library.SetFlags[flag] = function(val)
+            UpdateState(val)
         end
 
         return toggleButton.Instance
@@ -2647,7 +2657,7 @@ local VisualsTab = Library:CreateTab(MainWindow, {
 local PlayersSubContainer, PlayersCols = VisualsTab:CreateSubTab({ Name = "Players", Icon = "user" })
 local PlayersSection = Library:CreateSection(PlayersCols[1], { Name = "ESP Players", Icon = "eye" })
 
--- Toggle с настройками (три точки) - обновленный стиль
+-- Toggle с настройками (три точки) - исправленная версия
 PlayersSection:CreateToggle({
     Name = "Box ESP",
     Default = true,
