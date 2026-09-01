@@ -1537,7 +1537,8 @@ function Library:CreateSection(parentColumn, sectionData)
     local SectionAPI = {}
 
     -- ====================================================================
-    -- ИСПРАВЛЕННАЯ ФУНКЦИЯ CreateToggle (С ПОДДЕРЖКОЙ ТЕЛЕФОНОВ И БЕЗ ОШИБОК TWEEN)
+    -- ОБНОВЛЕННАЯ ФУНКЦИЯ CreateToggle С НОВЫМ ДИЗАЙНОМ КНОПКИ «ТРИ ТОЧКИ»
+    -- (Плашка с градиентным контуром и векторными точками)
     -- ====================================================================
     function SectionAPI:CreateToggle(toggleData)
         toggleData = toggleData or {}
@@ -1577,7 +1578,7 @@ function Library:CreateSection(parentColumn, sectionData)
         local toggleButton = Instances:Create("TextButton", {
             Parent = toggleHeader.Instance,
             Name = "Toggle_" .. toggleName,
-            Size = UDim2.new(1, settingsCallback and -26 or 0, 1, 0),
+            Size = UDim2.new(1, settingsCallback and -30 or 0, 1, 0),
             BackgroundTransparency = 1,
             Text = "",
             AutoButtonColor = false,
@@ -1603,7 +1604,7 @@ function Library:CreateSection(parentColumn, sectionData)
             CornerRadius = UDim.new(0, 4)
         })
 
-        -- Градиентный контур
+        -- Градиентный контур чекбокса
         local checkStroke = Instances:Create("UIStroke", {
             Parent = checkBox.Instance,
             Color = Color3.fromRGB(255, 255, 255),
@@ -1673,7 +1674,6 @@ function Library:CreateSection(parentColumn, sectionData)
             state = newState
             Library.Flags[flag] = state
 
-            -- Прямое присвоение Transparency (без TweenService, так как NumberSequence не твинится)
             bgGradient.Instance.Transparency = NumberSequence.new({
                 NumberSequenceKeypoint.new(0, state and 0.1 or 0.8),
                 NumberSequenceKeypoint.new(1, state and 0.3 or 0.95)
@@ -1729,29 +1729,92 @@ function Library:CreateSection(parentColumn, sectionData)
             })
         end)
 
-        -- Переключение состояния по событию Activated (работает и ПК, и на Тачскрине)
         toggleButton.Instance.Activated:Connect(function()
             UpdateState(not state)
         end)
 
-        -- Меню дополнительных настроек (три точки)
+        -- Меню дополнительных настроек (Кнопка в стиле сине-черных разделительных полос)
         if settingsCallback then
             local optionsExpanded = false
 
+            -- Кнопка-плашка с сине-черным контуром
             local dotsBtn = Instances:Create("TextButton", {
                 Parent = toggleHeader.Instance,
                 Name = "ThreeDots",
                 AnchorPoint = Vector2.new(1, 0.5),
                 Position = UDim2.new(1, 0, 0.5, 0),
-                Size = UDim2.new(0, 22, 0, 18),
-                BackgroundTransparency = 1,
-                Text = "•••",
-                TextColor3 = Theme["SubText"],
-                TextSize = 13,
-                FontFace = Font.new("rbxassetid://12187365364", Enum.FontWeight.Bold, Enum.FontStyle.Normal),
+                Size = UDim2.new(0, 24, 0, 20),
+                BackgroundColor3 = Theme["Element"],
+                BackgroundTransparency = 0.2,
+                Text = "",
                 AutoButtonColor = false,
-                ZIndex = 9
+                ZIndex = 9,
+                Active = true
             })
+
+            Instances:Create("UICorner", {
+                Parent = dotsBtn.Instance,
+                CornerRadius = UDim.new(0, 5)
+            })
+
+            -- Градиентный контур в стиле разделительных полос
+            local dotsStroke = Instances:Create("UIStroke", {
+                Parent = dotsBtn.Instance,
+                Color = Color3.fromRGB(255, 255, 255),
+                Thickness = 1,
+                Transparency = 0.5,
+                ApplyStrokeMode = Enum.ApplyStrokeMode.Border
+            })
+
+            Instances:Create("UIGradient", {
+                Parent = dotsStroke.Instance,
+                Color = ColorSequence.new({
+                    ColorSequenceKeypoint.new(0, Theme["Outline"]),
+                    ColorSequenceKeypoint.new(0.5, Theme["Accent"]),
+                    ColorSequenceKeypoint.new(1, Theme["Outline"])
+                }),
+                Transparency = NumberSequence.new({
+                    NumberSequenceKeypoint.new(0, 0.4),
+                    NumberSequenceKeypoint.new(0.5, 0.0),
+                    NumberSequenceKeypoint.new(1, 0.4)
+                })
+            })
+
+            -- Контейнер для 3 аккуратных визуальных точек
+            local dotsHolder = Instances:Create("Frame", {
+                Parent = dotsBtn.Instance,
+                Name = "DotsHolder",
+                AnchorPoint = Vector2.new(0.5, 0.5),
+                Position = UDim2.new(0.5, 0, 0.5, 0),
+                Size = UDim2.new(0, 14, 0, 4),
+                BackgroundTransparency = 1,
+                ZIndex = 10
+            })
+
+            Instances:Create("UIListLayout", {
+                Parent = dotsHolder.Instance,
+                FillDirection = Enum.FillDirection.Horizontal,
+                HorizontalAlignment = Enum.HorizontalAlignment.Center,
+                VerticalAlignment = Enum.VerticalAlignment.Center,
+                Padding = UDim.new(0, 2)
+            })
+
+            local dotElements = {}
+            for i = 1, 3 do
+                local dot = Instances:Create("Frame", {
+                    Parent = dotsHolder.Instance,
+                    Name = "Dot_" .. i,
+                    Size = UDim2.new(0, 3, 0, 3),
+                    BackgroundColor3 = Theme["SubText"],
+                    BorderSizePixel = 0,
+                    ZIndex = 10
+                })
+                Instances:Create("UICorner", {
+                    Parent = dot.Instance,
+                    CornerRadius = UDim.new(1, 0)
+                })
+                table.insert(dotElements, dot.Instance)
+            end
 
             local settingsPanel = Instances:Create("Frame", {
                 Parent = itemHost.Instance,
@@ -1826,30 +1889,51 @@ function Library:CreateSection(parentColumn, sectionData)
 
             pcall(settingsCallback, SubAPI)
 
+            -- Эффекты наведения
             dotsBtn:Connect("MouseEnter", function()
                 if not optionsExpanded then
-                    Tween(dotsBtn.Instance, TweenInfo.new(0.15), {
-                        TextColor3 = Theme["Accent"]
+                    Tween(dotsStroke.Instance, TweenInfo.new(0.15), {
+                        Transparency = 0
                     })
+                    for _, dot in ipairs(dotElements) do
+                        Tween(dot, TweenInfo.new(0.15), {
+                            BackgroundColor3 = Theme["Accent"]
+                        })
+                    end
                 end
             end)
 
             dotsBtn:Connect("MouseLeave", function()
                 if not optionsExpanded then
-                    Tween(dotsBtn.Instance, TweenInfo.new(0.15), {
-                        TextColor3 = Theme["SubText"]
+                    Tween(dotsStroke.Instance, TweenInfo.new(0.15), {
+                        Transparency = 0.5
                     })
+                    for _, dot in ipairs(dotElements) do
+                        Tween(dot, TweenInfo.new(0.15), {
+                            BackgroundColor3 = Theme["SubText"]
+                        })
+                    end
                 end
             end)
 
+            -- Клик и разворачивание
             dotsBtn.Instance.Activated:Connect(function()
                 optionsExpanded = not optionsExpanded
                 local contentHeight = panelLayout.Instance.AbsoluteContentSize.Y + 12
                 local targetHeight = optionsExpanded and contentHeight or 0
                 
                 dotsBtn:Tween(TweenInfo.new(0.3, Enum.EasingStyle.Quart, Enum.EasingDirection.Out), {
-                    Rotation = optionsExpanded and 90 or 0,
-                    TextColor3 = optionsExpanded and Theme["Accent"] or Theme["SubText"]
+                    Rotation = optionsExpanded and 90 or 0
+                })
+                
+                for _, dot in ipairs(dotElements) do
+                    Tween(dot, TweenInfo.new(0.2), {
+                        BackgroundColor3 = optionsExpanded and Theme["AccentGlow"] or Theme["SubText"]
+                    })
+                end
+                
+                dotsStroke:Tween(TweenInfo.new(0.25), {
+                    Transparency = optionsExpanded and 0 or 0.5
                 })
                 
                 panelStroke:Tween(TweenInfo.new(0.25), {
@@ -2657,7 +2741,7 @@ local VisualsTab = Library:CreateTab(MainWindow, {
 local PlayersSubContainer, PlayersCols = VisualsTab:CreateSubTab({ Name = "Players", Icon = "user" })
 local PlayersSection = Library:CreateSection(PlayersCols[1], { Name = "ESP Players", Icon = "eye" })
 
--- Toggle с настройками (три точки) - исправленная версия
+-- Toggle с настройками (три точки) - обновленный дизайн с плашкой
 PlayersSection:CreateToggle({
     Name = "Box ESP",
     Default = true,
