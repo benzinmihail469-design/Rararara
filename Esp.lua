@@ -2423,12 +2423,12 @@ function Library:CreateSection(parentColumn, sectionData)
     -- ====================================================================
 
     -- ====================================================================
-    -- ОБНОВЛЕННАЯ ФУНКЦИЯ КНОПКИ (В СТИЛЕ СИНЕ-ЧЕРНЫХ РАЗДЕЛИТЕЛЬНЫХ ПОЛОС)
+    -- ИСПРАВЛЕННАЯ ФУНКЦИЯ КНОПКИ (SectionAPI:Button)
     -- ====================================================================
     function SectionAPI:Button(Data)
         Data = Data or {}
         local Button = {
-            Title = Data.Title or Data.Name or "Button",
+            Title = Data.Title or Data.Name or Data.Text or "Button",
             Callback = Data.Callback or function() end
         }
 
@@ -2438,13 +2438,13 @@ function Library:CreateSection(parentColumn, sectionData)
             BackgroundColor3 = Color3.fromRGB(255, 255, 255),
             BackgroundTransparency = 0.85,
             Text = Button.Title,
-            TextColor3 = Theme["SubText"],
+            TextColor3 = Theme["Text"], -- Яркий видимый цвет текста
             TextSize = 12,
             FontFace = Font.new("rbxassetid://12187365364", Enum.FontWeight.Medium, Enum.FontStyle.Normal),
             AutoButtonColor = false,
             Size = UDim2.new(1, 0, 0, 28),
             BorderSizePixel = 0,
-            ZIndex = 7,
+            ZIndex = 10, -- Повышен ZIndex, чтобы кнопка перекрывала SettingsPanel (ZIndex 8)
             Active = true
         })
 
@@ -2468,7 +2468,7 @@ function Library:CreateSection(parentColumn, sectionData)
             Rotation = 0
         })
 
-        -- Градиентный контур в стиль разделительных полос
+        -- Градиентный контур
         local buttonStroke = Instances:Create("UIStroke", {
             Parent = ButtonFrame.Instance,
             Color = Color3.fromRGB(255, 255, 255),
@@ -2505,14 +2505,14 @@ function Library:CreateSection(parentColumn, sectionData)
         ButtonFrame:Connect("MouseLeave", function()
             Tween(ButtonFrame.Instance, TweenInfo.new(0.15, Enum.EasingStyle.Quad, Enum.EasingDirection.Out), {
                 BackgroundTransparency = 0.85,
-                TextColor3 = Theme["SubText"]
+                TextColor3 = Theme["Text"]
             })
             Tween(buttonStroke.Instance, TweenInfo.new(0.15, Enum.EasingStyle.Quad, Enum.EasingDirection.Out), {
                 Transparency = 0.5
             })
         end)
 
-        -- Анимация клика и сжатия кнопки
+        -- Анимация нажатия
         ButtonFrame:Connect("MouseButton1Down", function()
             Tween(ButtonFrame.Instance, TweenInfo.new(0.08, Enum.EasingStyle.Quad, Enum.EasingDirection.Out), {
                 BackgroundTransparency = 0.4,
@@ -2544,7 +2544,7 @@ function Library:CreateSection(parentColumn, sectionData)
     end
 
     -- ====================================================================
-    -- МЕТОД ДЛЯ СОЗДАНИЯ СЛАЙДЕРА (Стиль: Разделительные полосы / Blue-Black)
+    -- ИСПРАВЛЕННАЯ ФУНКЦИЯ СЛАЙДЕРА (SectionAPI:Slider)
     -- ====================================================================
     function SectionAPI:Slider(Data)
         Data = Data or {}
@@ -2566,21 +2566,21 @@ function Library:CreateSection(parentColumn, sectionData)
             BackgroundTransparency = 1,
             Size = UDim2.new(1, 0, 0, 36),
             BorderSizePixel = 0,
-            ZIndex = 7
+            ZIndex = 10 -- Поднят ZIndex для корректного отображения внутри панелей
         })
 
         local TitleLabel = Instances:Create("TextLabel", {
             Parent = SliderFrame.Instance,
             Name = "Title",
             Text = Slider.Title,
-            TextColor3 = Theme["SubText"],
+            TextColor3 = Theme["Text"],
             TextSize = 12,
             FontFace = Font.new("rbxassetid://12187365364", Enum.FontWeight.Medium, Enum.FontStyle.Normal),
             Size = UDim2.new(0.7, 0, 0, 16),
             Position = UDim2.new(0, 0, 0, 0),
             BackgroundTransparency = 1,
             TextXAlignment = Enum.TextXAlignment.Left,
-            ZIndex = 8
+            ZIndex = 11
         })
 
         local ValueLabel = Instances:Create("TextLabel", {
@@ -2594,10 +2594,9 @@ function Library:CreateSection(parentColumn, sectionData)
             Position = UDim2.new(0.7, 0, 0, 0),
             BackgroundTransparency = 1,
             TextXAlignment = Enum.TextXAlignment.Right,
-            ZIndex = 8
+            ZIndex = 11
         })
 
-        -- Подложка трека в виде тонкой разделительной полосы
         local SliderTrack = Instances:Create("TextButton", {
             Parent = SliderFrame.Instance,
             Name = "Track",
@@ -2608,7 +2607,7 @@ function Library:CreateSection(parentColumn, sectionData)
             BorderSizePixel = 0,
             BackgroundColor3 = Theme["Background 2"],
             BackgroundTransparency = 0.2,
-            ZIndex = 8,
+            ZIndex = 11,
             Active = true
         })
 
@@ -2617,7 +2616,6 @@ function Library:CreateSection(parentColumn, sectionData)
             CornerRadius = UDim.new(1, 0)
         })
 
-        -- Градиентная обводка в стиле разделительных полос (синий/темный)
         local trackStroke = Instances:Create("UIStroke", {
             Parent = SliderTrack.Instance,
             Color = Color3.fromRGB(255, 255, 255),
@@ -2640,14 +2638,13 @@ function Library:CreateSection(parentColumn, sectionData)
             })
         })
 
-        -- Заполнение полосы (сине-черный неоновый градиент)
         local SliderFill = Instances:Create("Frame", {
             Parent = SliderTrack.Instance,
             Name = "Fill",
             Size = UDim2.new(0, 0, 1, 0),
             BorderSizePixel = 0,
             BackgroundColor3 = Color3.fromRGB(255, 255, 255),
-            ZIndex = 9
+            ZIndex = 12
         })
 
         Instances:Create("UICorner", {
@@ -2664,7 +2661,6 @@ function Library:CreateSection(parentColumn, sectionData)
             })
         })
 
-        -- Неоновый ползунок-пины на краю заполнения
         local SliderKnob = Instances:Create("Frame", {
             Parent = SliderFill.Instance,
             Name = "Knob",
@@ -2673,7 +2669,7 @@ function Library:CreateSection(parentColumn, sectionData)
             Size = UDim2.new(0, 8, 0, 8),
             BackgroundColor3 = Theme["AccentGlow"],
             BorderSizePixel = 0,
-            ZIndex = 10
+            ZIndex = 13
         })
 
         Instances:Create("UICorner", {
@@ -2718,7 +2714,6 @@ function Library:CreateSection(parentColumn, sectionData)
         local sliding = false
         local slidingConnection = nil
 
-        -- Ховер и интерактивные анимации
         SliderTrack:Connect("MouseEnter", function()
             Tween(TitleLabel.Instance, TweenInfo.new(0.15), {
                 TextColor3 = Theme["Text"]
@@ -2734,7 +2729,7 @@ function Library:CreateSection(parentColumn, sectionData)
         SliderTrack:Connect("MouseLeave", function()
             if not sliding then
                 Tween(TitleLabel.Instance, TweenInfo.new(0.15), {
-                    TextColor3 = Theme["SubText"]
+                    TextColor3 = Theme["Text"]
                 })
                 Tween(trackStroke.Instance, TweenInfo.new(0.15), {
                     Transparency = 0.4
@@ -2759,7 +2754,7 @@ function Library:CreateSection(parentColumn, sectionData)
                         if EndInput.UserInputType == Enum.UserInputType.MouseButton1 or EndInput.UserInputType == Enum.UserInputType.Touch then
                             sliding = false
                             Tween(TitleLabel.Instance, TweenInfo.new(0.15), {
-                                TextColor3 = Theme["SubText"]
+                                TextColor3 = Theme["Text"]
                             })
                             Tween(trackStroke.Instance, TweenInfo.new(0.15), {
                                 Transparency = 0.4
