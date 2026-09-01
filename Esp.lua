@@ -879,8 +879,7 @@ function Library:CreateTab(window, tabData)
         })
         Tween(iconImage.Instance, TweenInfo.new(0.2), {
             ImageColor3 = Theme["SubText"],
-            ImageTransparency = 0.3
-        })
+            ImageTransparency = 0.3        })
         Tween(tabLabel.Instance, TweenInfo.new(0.2), {
             TextColor3 = Theme["SubText"]
         })
@@ -1537,8 +1536,7 @@ function Library:CreateSection(parentColumn, sectionData)
     local SectionAPI = {}
 
     -- ====================================================================
-    -- ОБНОВЛЕННАЯ ФУНКЦИЯ CreateToggle С НОВЫМ ДИЗАЙНОМ КНОПКИ «ТРИ ТОЧКИ»
-    -- (Плашка с градиентным контуром и векторными точками)
+    -- ОБНОВЛЕННАЯ ФУНКЦИЯ CreateToggle (С НОВОЙ АНИМАЦИЕЙ НАЖАТИЯ ВМЕСТО 90°)
     -- ====================================================================
     function SectionAPI:CreateToggle(toggleData)
         toggleData = toggleData or {}
@@ -1733,11 +1731,10 @@ function Library:CreateSection(parentColumn, sectionData)
             UpdateState(not state)
         end)
 
-        -- Меню дополнительных настроек (Кнопка в стиле сине-черных разделительных полос)
+        -- Меню дополнительных настроек
         if settingsCallback then
             local optionsExpanded = false
 
-            -- Кнопка-плашка с сине-черным контуром
             local dotsBtn = Instances:Create("TextButton", {
                 Parent = toggleHeader.Instance,
                 Name = "ThreeDots",
@@ -1757,7 +1754,6 @@ function Library:CreateSection(parentColumn, sectionData)
                 CornerRadius = UDim.new(0, 5)
             })
 
-            -- Градиентный контур в стиле разделительных полос
             local dotsStroke = Instances:Create("UIStroke", {
                 Parent = dotsBtn.Instance,
                 Color = Color3.fromRGB(255, 255, 255),
@@ -1780,24 +1776,24 @@ function Library:CreateSection(parentColumn, sectionData)
                 })
             })
 
-            -- Контейнер для 3 аккуратных визуальных точек
-            local dotsHolder = Instances:Create("Frame", {
-                Parent = dotsBtn.Instance,
-                Name = "DotsHolder",
-                AnchorPoint = Vector2.new(0.5, 0.5),
-                Position = UDim2.new(0.5, 0, 0.5, 0),
-                Size = UDim2.new(0, 14, 0, 4),
-                BackgroundTransparency = 1,
-                ZIndex = 10
-            })
-
-            Instances:Create("UIListLayout", {
-                Parent = dotsHolder.Instance,
+            local dotsHolderLayout = Instances:Create("UIListLayout", {
                 FillDirection = Enum.FillDirection.Horizontal,
                 HorizontalAlignment = Enum.HorizontalAlignment.Center,
                 VerticalAlignment = Enum.VerticalAlignment.Center,
                 Padding = UDim.new(0, 2)
             })
+
+            local dotsHolder = Instances:Create("Frame", {
+                Parent = dotsBtn.Instance,
+                Name = "DotsHolder",
+                AnchorPoint = Vector2.new(0.5, 0.5),
+                Position = UDim2.new(0.5, 0, 0.5, 0),
+                Size = UDim2.new(0, 16, 0, 4),
+                BackgroundTransparency = 1,
+                ZIndex = 10
+            })
+
+            dotsHolderLayout.Instance.Parent = dotsHolder.Instance
 
             local dotElements = {}
             for i = 1, 3 do
@@ -1916,30 +1912,38 @@ function Library:CreateSection(parentColumn, sectionData)
                 end
             end)
 
-            -- Клик и разворачивание
+            -- НОВАЯ АНИМАЦИЯ НАЖАТИЯ И АКТИВАЦИИ КНОПКИ ТРЁХ ТОЧЕК
             dotsBtn.Instance.Activated:Connect(function()
                 optionsExpanded = not optionsExpanded
                 local contentHeight = panelLayout.Instance.AbsoluteContentSize.Y + 12
                 local targetHeight = optionsExpanded and contentHeight or 0
-                
-                dotsBtn:Tween(TweenInfo.new(0.3, Enum.EasingStyle.Quart, Enum.EasingDirection.Out), {
-                    Rotation = optionsExpanded and 90 or 0
+
+                -- 1. Анимация отклика кнопки (легкое сжатие с возвратом)
+                dotsBtn:Tween(TweenInfo.new(0.08, Enum.EasingStyle.Quad, Enum.EasingDirection.Out), {
+                    Size = UDim2.new(0, 21, 0, 18)
                 })
-                
-                for _, dot in ipairs(dotElements) do
-                    Tween(dot, TweenInfo.new(0.2), {
+                task.delay(0.08, function()
+                    dotsBtn:Tween(TweenInfo.new(0.2, Enum.EasingStyle.Back, Enum.EasingDirection.Out), {
+                        Size = optionsExpanded and UDim2.new(0, 26, 0, 20) or UDim2.new(0, 24, 0, 20)
+                    })
+                end)
+
+                -- 2. Анимация точек (расширение, масштаб точек и сменяющийся подсвет)
+                dotsHolderLayout.Instance.Padding = optionsExpanded and UDim.new(0, 3) or UDim.new(0, 2)
+                for idx, dot in ipairs(dotElements) do
+                    Tween(dot, TweenInfo.new(0.25, Enum.EasingStyle.Back, Enum.EasingDirection.Out), {
+                        Size = optionsExpanded and UDim2.new(0, 4, 0, 4) or UDim2.new(0, 3, 0, 3),
                         BackgroundColor3 = optionsExpanded and Theme["AccentGlow"] or Theme["SubText"]
                     })
                 end
-                
+
+                -- 3. Анимация видимости контуров и разворачивание панели
                 dotsStroke:Tween(TweenInfo.new(0.25), {
                     Transparency = optionsExpanded and 0 or 0.5
                 })
-                
                 panelStroke:Tween(TweenInfo.new(0.25), {
                     Transparency = optionsExpanded and 0 or 0.8
                 })
-                
                 settingsPanel:Tween(TweenInfo.new(0.3, Enum.EasingStyle.Quart, Enum.EasingDirection.Out), {
                     Size = UDim2.new(1, 0, 0, targetHeight)
                 })
@@ -2741,7 +2745,7 @@ local VisualsTab = Library:CreateTab(MainWindow, {
 local PlayersSubContainer, PlayersCols = VisualsTab:CreateSubTab({ Name = "Players", Icon = "user" })
 local PlayersSection = Library:CreateSection(PlayersCols[1], { Name = "ESP Players", Icon = "eye" })
 
--- Toggle с настройками (три точки) - обновленный дизайн с плашкой
+-- Toggle с настройками (три точки) - обновленная анимация
 PlayersSection:CreateToggle({
     Name = "Box ESP",
     Default = true,
