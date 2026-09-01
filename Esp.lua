@@ -2422,7 +2422,9 @@ function Library:CreateSection(parentColumn, sectionData)
     -- СИСТЕМА КНОПОК И СЛАЙДЕРОВ
     -- ====================================================================
 
-    -- Метод для создания Кнопки
+    -- ====================================================================
+    -- ОБНОВЛЕННАЯ ФУНКЦИЯ КНОПКИ (В СТИЛЕ СИНЕ-ЧЕРНЫХ РАЗДЕЛИТЕЛЬНЫХ ПОЛОС)
+    -- ====================================================================
     function SectionAPI:Button(Data)
         Data = Data or {}
         local Button = {
@@ -2433,48 +2435,99 @@ function Library:CreateSection(parentColumn, sectionData)
         local ButtonFrame = Instances:Create("TextButton", {
             Parent = elementsContainer.Instance,
             Name = "Button_" .. Button.Title,
-            BackgroundColor3 = Theme["Element"],
+            BackgroundColor3 = Color3.fromRGB(255, 255, 255),
+            BackgroundTransparency = 0.85,
             Text = Button.Title,
-            TextColor3 = Theme["Text"],
-            TextSize = 14,
+            TextColor3 = Theme["SubText"],
+            TextSize = 12,
             FontFace = Font.new("rbxassetid://12187365364", Enum.FontWeight.Medium, Enum.FontStyle.Normal),
             AutoButtonColor = false,
-            Size = UDim2.new(1, 0, 0, 32),
+            Size = UDim2.new(1, 0, 0, 28),
             BorderSizePixel = 0,
             ZIndex = 7,
-            BackgroundTransparency = 0
+            Active = true
         })
 
         Instances:Create("UICorner", {
             Parent = ButtonFrame.Instance,
-            CornerRadius = UDim.new(0, 4)
+            CornerRadius = UDim.new(0, 5)
         })
 
+        -- Сине-черная градиентная заливка фона
+        Instances:Create("UIGradient", {
+            Parent = ButtonFrame.Instance,
+            Color = ColorSequence.new({
+                ColorSequenceKeypoint.new(0, Theme["Accent"]),
+                ColorSequenceKeypoint.new(0.4, Color3.fromRGB(15, 35, 65)),
+                ColorSequenceKeypoint.new(1, Theme["Background 2"])
+            }),
+            Transparency = NumberSequence.new({
+                NumberSequenceKeypoint.new(0, 0.25),
+                NumberSequenceKeypoint.new(1, 0.9)
+            }),
+            Rotation = 0
+        })
+
+        -- Градиентный контур в стиль разделительных полос
         local buttonStroke = Instances:Create("UIStroke", {
             Parent = ButtonFrame.Instance,
-            Color = Theme["Outline"],
-            Thickness = 1
+            Color = Color3.fromRGB(255, 255, 255),
+            Thickness = 1,
+            Transparency = 0.5,
+            ApplyStrokeMode = Enum.ApplyStrokeMode.Border
         })
 
+        Instances:Create("UIGradient", {
+            Parent = buttonStroke.Instance,
+            Color = ColorSequence.new({
+                ColorSequenceKeypoint.new(0, Theme["Outline"]),
+                ColorSequenceKeypoint.new(0.5, Theme["Accent"]),
+                ColorSequenceKeypoint.new(1, Theme["Outline"])
+            }),
+            Transparency = NumberSequence.new({
+                NumberSequenceKeypoint.new(0, 0.4),
+                NumberSequenceKeypoint.new(0.5, 0.0),
+                NumberSequenceKeypoint.new(1, 0.4)
+            })
+        })
+
+        -- Эффекты наведения мышью
         ButtonFrame:Connect("MouseEnter", function()
-            Tween(ButtonFrame.Instance, TweenInfo.new(0.15), { BackgroundTransparency = 0.2 })
-            Tween(buttonStroke, TweenInfo.new(0.15), { Color = Theme["Accent"], Transparency = 0.5 })
+            Tween(ButtonFrame.Instance, TweenInfo.new(0.15, Enum.EasingStyle.Quad, Enum.EasingDirection.Out), {
+                BackgroundTransparency = 0.65,
+                TextColor3 = Theme["Text"]
+            })
+            Tween(buttonStroke.Instance, TweenInfo.new(0.15, Enum.EasingStyle.Quad, Enum.EasingDirection.Out), {
+                Transparency = 0
+            })
         end)
 
         ButtonFrame:Connect("MouseLeave", function()
-            Tween(ButtonFrame.Instance, TweenInfo.new(0.15), { BackgroundTransparency = 0 })
-            Tween(buttonStroke, TweenInfo.new(0.15), { Color = Theme["Outline"], Transparency = 0 })
+            Tween(ButtonFrame.Instance, TweenInfo.new(0.15, Enum.EasingStyle.Quad, Enum.EasingDirection.Out), {
+                BackgroundTransparency = 0.85,
+                TextColor3 = Theme["SubText"]
+            })
+            Tween(buttonStroke.Instance, TweenInfo.new(0.15, Enum.EasingStyle.Quad, Enum.EasingDirection.Out), {
+                Transparency = 0.5
+            })
         end)
 
+        -- Анимация клика и сжатия кнопки
         ButtonFrame:Connect("MouseButton1Down", function()
-            Tween(ButtonFrame.Instance, TweenInfo.new(0.1), { Size = UDim2.new(1, -4, 0, 30) })
-            task.wait(0.1)
-            Tween(ButtonFrame.Instance, TweenInfo.new(0.1), { Size = UDim2.new(1, 0, 0, 32) })
-            
-            Tween(ButtonFrame.Instance, TweenInfo.new(0.1), { BackgroundTransparency = 0.4 })
-            task.wait(0.1)
-            Tween(ButtonFrame.Instance, TweenInfo.new(0.1), { BackgroundTransparency = 0 })
-            
+            Tween(ButtonFrame.Instance, TweenInfo.new(0.08, Enum.EasingStyle.Quad, Enum.EasingDirection.Out), {
+                BackgroundTransparency = 0.4,
+                Size = UDim2.new(1, -2, 0, 26)
+            })
+        end)
+
+        ButtonFrame:Connect("MouseButton1Up", function()
+            Tween(ButtonFrame.Instance, TweenInfo.new(0.15, Enum.EasingStyle.Back, Enum.EasingDirection.Out), {
+                BackgroundTransparency = 0.65,
+                Size = UDim2.new(1, 0, 0, 28)
+            })
+        end)
+
+        ButtonFrame.Instance.Activated:Connect(function()
             pcall(Button.Callback)
         end)
 
