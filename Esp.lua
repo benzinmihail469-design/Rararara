@@ -1781,8 +1781,7 @@ function Library:CreateSection(parentColumn, sectionData)
 
             -- Эффекты наведения только на три точки
             dotsBtn:Connect("MouseEnter", function()
-                if not optionsExpanded then
-                    dotsBtn:Tween(TweenInfo.new(0.15, Enum.EasingStyle.Quad, Enum.EasingDirection.Out), {
+                if not optionsExpanded then                    dotsBtn:Tween(TweenInfo.new(0.15, Enum.EasingStyle.Quad, Enum.EasingDirection.Out), {
                         TextColor3 = Theme["Accent"]
                     })
                 end
@@ -1831,6 +1830,169 @@ function Library:CreateSection(parentColumn, sectionData)
         end
 
         return toggleButton.Instance
+    end
+
+    -- ====================================================================
+    -- КНОПКА В СТИЛЕ РАЗДЕЛИТЕЛЬНОЙ ПОЛОСЫ (BLUE / BLACK)
+    -- ====================================================================
+    function SectionAPI:CreateDividerButton(buttonData)
+        buttonData = buttonData or {}
+        local buttonTitle = buttonData.Name or buttonData.Title or "Divider Button"
+        local callback = buttonData.Callback or function() end
+        local buttonIcon = buttonData.Icon or ""
+        local hasIcon = buttonIcon ~= ""
+
+        -- Главная кнопка-плашка
+        local buttonFrame = Instances:Create("TextButton", {
+            Parent = elementsContainer.Instance,
+            Name = "DividerButton_" .. buttonTitle,
+            Size = UDim2.new(1, 0, 0, 26),
+            BackgroundColor3 = Theme["Background 2"],
+            BackgroundTransparency = 0.25,
+            Text = "",
+            AutoButtonColor = false,
+            BorderSizePixel = 0,
+            ClipsDescendants = true,
+            ZIndex = 7,
+            Active = true
+        })
+
+        Instances:Create("UICorner", {
+            Parent = buttonFrame.Instance,
+            CornerRadius = UDim.new(0, 4)
+        })
+
+        -- Градиентный сине-черный фон
+        Instances:Create("UIGradient", {
+            Parent = buttonFrame.Instance,
+            Color = ColorSequence.new({
+                ColorSequenceKeypoint.new(0, Color3.fromRGB(10, 11, 16)),
+                ColorSequenceKeypoint.new(0.5, Color3.fromRGB(18, 32, 54)),
+                ColorSequenceKeypoint.new(1, Color3.fromRGB(10, 11, 16))
+            }),
+            Rotation = 0
+        })
+
+        -- Контур со свечением по центру (стиль полосы)
+        local buttonStroke = Instances:Create("UIStroke", {
+            Parent = buttonFrame.Instance,
+            Color = Color3.fromRGB(255, 255, 255),
+            Thickness = 1,
+            Transparency = 0.3,
+            ApplyStrokeMode = Enum.ApplyStrokeMode.Border
+        })
+
+        Instances:Create("UIGradient", {
+            Parent = buttonStroke.Instance,
+            Color = ColorSequence.new({
+                ColorSequenceKeypoint.new(0, Theme["Outline"]),
+                ColorSequenceKeypoint.new(0.5, Theme["Accent"]),
+                ColorSequenceKeypoint.new(1, Theme["Outline"])
+            }),
+            Transparency = NumberSequence.new({
+                NumberSequenceKeypoint.new(0, 0.6),
+                NumberSequenceKeypoint.new(0.5, 0.0),
+                NumberSequenceKeypoint.new(1, 0.6)
+            })
+        })
+
+        -- Верхняя неоновая разделительная линия
+        local topGlowLine = Instances:Create("Frame", {
+            Parent = buttonFrame.Instance,
+            Name = "TopGlow",
+            AnchorPoint = Vector2.new(0.5, 0),
+            Position = UDim2.new(0.5, 0, 0, 0),
+            Size = UDim2.new(1, -12, 0, 1),
+            BackgroundColor3 = Color3.fromRGB(255, 255, 255),
+            BorderSizePixel = 0,
+            ZIndex = 8
+        })
+
+        Instances:Create("UIGradient", {
+            Parent = topGlowLine.Instance,
+            Color = ColorSequence.new({
+                ColorSequenceKeypoint.new(0, Theme["GlowEdge"]),
+                ColorSequenceKeypoint.new(0.5, Theme["GlowCenter"]),
+                ColorSequenceKeypoint.new(1, Theme["GlowEdge"])
+            }),
+            Transparency = NumberSequence.new({
+                NumberSequenceKeypoint.new(0, 1),
+                NumberSequenceKeypoint.new(0.5, 0.1),
+                NumberSequenceKeypoint.new(1, 1)
+            })
+        })
+
+        -- Иконка (если передана)
+        if hasIcon then
+            Instances:Create("ImageLabel", {
+                Parent = buttonFrame.Instance,
+                Name = "Icon",
+                Size = UDim2.new(0, 14, 0, 14),
+                AnchorPoint = Vector2.new(0, 0.5),
+                Position = UDim2.new(0, 10, 0.5, 0),
+                BackgroundTransparency = 1,
+                Image = ParseIcon(buttonIcon),
+                ImageColor3 = Theme["Accent"],
+                ScaleType = Enum.ScaleType.Fit,
+                ZIndex = 8
+            })
+        end
+
+        -- Текст кнопки
+        local titleLabel = Instances:Create("TextLabel", {
+            Parent = buttonFrame.Instance,
+            Name = "Title",
+            Text = buttonTitle,
+            FontFace = Font.new("rbxassetid://12187365364", Enum.FontWeight.Bold, Enum.FontStyle.Normal),
+            TextColor3 = Theme["Text"],
+            TextSize = 11,
+            Size = UDim2.new(1, hasIcon and -34 or -16, 1, 0),
+            Position = UDim2.new(0, hasIcon and 28 or 8, 0, 0),
+            BackgroundTransparency = 1,
+            TextXAlignment = Enum.TextXAlignment.Center,
+            ZIndex = 8
+        })
+
+        -- Анимации наведения
+        buttonFrame:Connect("MouseEnter", function()
+            Tween(buttonFrame.Instance, TweenInfo.new(0.2, Enum.EasingStyle.Quad, Enum.EasingDirection.Out), {
+                BackgroundTransparency = 0.05
+            })
+            Tween(buttonStroke.Instance, TweenInfo.new(0.2), {
+                Transparency = 0
+            })
+            Tween(titleLabel.Instance, TweenInfo.new(0.2), {
+                TextColor3 = Theme["AccentGlow"]
+            })
+        end)
+
+        buttonFrame:Connect("MouseLeave", function()
+            Tween(buttonFrame.Instance, TweenInfo.new(0.2, Enum.EasingStyle.Quad, Enum.EasingDirection.Out), {
+                BackgroundTransparency = 0.25
+            })
+            Tween(buttonStroke.Instance, TweenInfo.new(0.2), {
+                Transparency = 0.3
+            })
+            Tween(titleLabel.Instance, TweenInfo.new(0.2), {
+                TextColor3 = Theme["Text"]
+            })
+        end)
+
+        -- Анимация клика
+        buttonFrame:Connect("MouseButton1Down", function()
+            Tween(buttonFrame.Instance, TweenInfo.new(0.08, Enum.EasingStyle.Quad, Enum.EasingDirection.Out), {
+                Size = UDim2.new(1, -4, 0, 24)
+            })
+        end)
+
+        buttonFrame:Connect("MouseButton1Up", function()
+            Tween(buttonFrame.Instance, TweenInfo.new(0.15, Enum.EasingStyle.Back, Enum.EasingDirection.Out), {
+                Size = UDim2.new(1, 0, 0, 26)
+            })
+            pcall(callback)
+        end)
+
+        return buttonFrame.Instance
     end
 
     -- ====================================================================
@@ -2570,6 +2732,15 @@ CombatSection:Button({
     end
 })
 
+-- Пример использования DividerButton
+CombatSection:CreateDividerButton({
+    Name = "Execute Script",
+    Icon = "zap",
+    Callback = function()
+        print("Разделительная кнопка нажата!")
+    end
+})
+
 CombatSection:Slider({
     Title = "WalkSpeed",
     Min = 16,
@@ -2681,6 +2852,15 @@ VisualsSection:Button({
     Title = "Refresh ESP",
     Callback = function()
         print("ESP Refreshed!")
+    end
+})
+
+-- Пример DividerButton в Visuals секции
+VisualsSection:CreateDividerButton({
+    Name = "Reset All Settings",
+    Icon = "settings",
+    Callback = function()
+        print("All settings reset!")
     end
 })
 
