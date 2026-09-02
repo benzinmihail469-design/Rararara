@@ -1731,7 +1731,9 @@ function Library:CreateSection(parentColumn, sectionData)
             UpdateState(not state)
         end)
 
-        -- Меню дополнительных настроек
+        -- ====================================================================
+        -- ОБНОВЛЕННЫЙ БЛОК ТРЁХ ТОЧЕК В ВЕРТИКАЛЬНОМ СТИЛЕ (СИНЕ-ЧЕРНАЯ ТЕМА)
+        -- ====================================================================
         if settingsCallback then
             local optionsExpanded = false
 
@@ -1740,7 +1742,7 @@ function Library:CreateSection(parentColumn, sectionData)
                 Name = "ThreeDots",
                 AnchorPoint = Vector2.new(1, 0.5),
                 Position = UDim2.new(1, 0, 0.5, 0),
-                Size = UDim2.new(0, 24, 0, 20),
+                Size = UDim2.new(0, 22, 0, 22),
                 BackgroundColor3 = Theme["Element"],
                 BackgroundTransparency = 0.2,
                 Text = "",
@@ -1776,24 +1778,24 @@ function Library:CreateSection(parentColumn, sectionData)
                 })
             })
 
-            local dotsHolderLayout = Instances:Create("UIListLayout", {
-                FillDirection = Enum.FillDirection.Horizontal,
-                HorizontalAlignment = Enum.HorizontalAlignment.Center,
-                VerticalAlignment = Enum.VerticalAlignment.Center,
-                Padding = UDim.new(0, 2)
-            })
-
+            -- Контейнер для вертикального выравнивания 3 точек (⋮)
             local dotsHolder = Instances:Create("Frame", {
                 Parent = dotsBtn.Instance,
                 Name = "DotsHolder",
                 AnchorPoint = Vector2.new(0.5, 0.5),
                 Position = UDim2.new(0.5, 0, 0.5, 0),
-                Size = UDim2.new(0, 16, 0, 4),
+                Size = UDim2.new(0, 4, 0, 14),
                 BackgroundTransparency = 1,
                 ZIndex = 10
             })
 
-            dotsHolderLayout.Instance.Parent = dotsHolder.Instance
+            local dotsHolderLayout = Instances:Create("UIListLayout", {
+                Parent = dotsHolder.Instance,
+                FillDirection = Enum.FillDirection.Vertical, -- Вертикальный поток
+                HorizontalAlignment = Enum.HorizontalAlignment.Center,
+                VerticalAlignment = Enum.VerticalAlignment.Center,
+                Padding = UDim.new(0, 2)
+            })
 
             local dotElements = {}
             for i = 1, 3 do
@@ -1912,32 +1914,31 @@ function Library:CreateSection(parentColumn, sectionData)
                 end
             end)
 
-            -- НОВАЯ АНИМАЦИЯ НАЖАТИЯ И АКТИВАЦИИ КНОПКИ ТРЁХ ТОЧЕК
+            -- Анимация клика и разворачивания панели настроек
             dotsBtn.Instance.Activated:Connect(function()
                 optionsExpanded = not optionsExpanded
                 local contentHeight = panelLayout.Instance.AbsoluteContentSize.Y + 12
                 local targetHeight = optionsExpanded and contentHeight or 0
 
-                -- 1. Анимация отклика кнопки (легкое сжатие с возвратом)
+                -- Нажатие с легким откликом
                 dotsBtn:Tween(TweenInfo.new(0.08, Enum.EasingStyle.Quad, Enum.EasingDirection.Out), {
-                    Size = UDim2.new(0, 21, 0, 18)
+                    Size = UDim2.new(0, 20, 0, 20)
                 })
                 task.delay(0.08, function()
                     dotsBtn:Tween(TweenInfo.new(0.2, Enum.EasingStyle.Back, Enum.EasingDirection.Out), {
-                        Size = optionsExpanded and UDim2.new(0, 26, 0, 20) or UDim2.new(0, 24, 0, 20)
+                        Size = UDim2.new(0, 22, 0, 22)
                     })
                 end)
 
-                -- 2. Анимация точек (расширение, масштаб точек и сменяющийся подсвет)
+                -- Изменение межточечного расстояния и синее свечение при активации
                 dotsHolderLayout.Instance.Padding = optionsExpanded and UDim.new(0, 3) or UDim.new(0, 2)
                 for idx, dot in ipairs(dotElements) do
                     Tween(dot, TweenInfo.new(0.25, Enum.EasingStyle.Back, Enum.EasingDirection.Out), {
-                        Size = optionsExpanded and UDim2.new(0, 4, 0, 4) or UDim2.new(0, 3, 0, 3),
+                        Size = optionsExpanded and UDim2.new(0, 3.5, 0, 3.5) or UDim2.new(0, 3, 0, 3),
                         BackgroundColor3 = optionsExpanded and Theme["AccentGlow"] or Theme["SubText"]
                     })
                 end
 
-                -- 3. Анимация видимости контуров и разворачивание панели
                 dotsStroke:Tween(TweenInfo.new(0.25), {
                     Transparency = optionsExpanded and 0 or 0.5
                 })
