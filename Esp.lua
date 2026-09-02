@@ -308,7 +308,7 @@ local Library = {
 
 function Library:CreateWindow(data)
     data = data or {}
-    local logoId = data.Logo or "91905309683896" -- Обновленная иконка
+    local logoId = data.Logo or "91905309683896"
 
     local Window = {
         LeftTabs = nil,
@@ -345,13 +345,14 @@ function Library:CreateWindow(data)
 
     CreateConstellationBackground(mainFrame.Instance, 30, 85)
 
+    -- Обновленный сайдбар с плавным градиентом в цвет иконки и бесшовным слиянием
     local sidebarBackground = Instances:Create("Frame", {
         Parent = mainFrame.Instance,
         Name = "SidebarBackground",
         Position = UDim2.new(0, 0, 0, 0),
         Size = UDim2.new(0, 160, 1, 0),
-        BackgroundColor3 = Theme["Background 2"],
-        BackgroundTransparency = 0.1,
+        BackgroundColor3 = Theme["Background"],
+        BackgroundTransparency = 0,
         BorderSizePixel = 0,
         ZIndex = 3
     })
@@ -359,6 +360,22 @@ function Library:CreateWindow(data)
     Instances:Create("UICorner", {
         Parent = sidebarBackground.Instance,
         CornerRadius = UDim.new(0, 8)
+    })
+
+    -- Градиент от оттенка иконки сверху к основному фону
+    Instances:Create("UIGradient", {
+        Parent = sidebarBackground.Instance,
+        Color = ColorSequence.new({
+            ColorSequenceKeypoint.new(0, Color3.fromRGB(12, 32, 60)), -- Темно-синий тональный оттенок иконки
+            ColorSequenceKeypoint.new(0.35, Theme["Background 2"]),
+            ColorSequenceKeypoint.new(1, Theme["Background"])
+        }),
+        Transparency = NumberSequence.new({
+            NumberSequenceKeypoint.new(0, 0.15),
+            NumberSequenceKeypoint.new(0.5, 0.35),
+            NumberSequenceKeypoint.new(1, 0.5)
+        }),
+        Rotation = 90
     })
 
     Instances:Create("Frame", {
@@ -438,9 +455,6 @@ function Library:CreateWindow(data)
         })
     })
 
-    -- =======================================================
-    -- ПОДВАЛ ПРОФИЛЯ В СТИЛЕ КАРТОЧКИ С КОНТУРОМ (КАК НА ФОТО)
-    -- =======================================================
     local profileFrame = Instances:Create("Frame", {
         Parent = mainFrame.Instance,
         Name = "ProfileFooter",
@@ -515,7 +529,6 @@ function Library:CreateWindow(data)
         ZIndex = 16,
         TextTruncate = Enum.TextTruncate.AtEnd
     })
-    -- =======================================================
 
     local leftTabs = Instances:Create("ScrollingFrame", {
         Parent = mainFrame.Instance,
