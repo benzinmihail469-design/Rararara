@@ -308,7 +308,7 @@ local Library = {
 
 function Library:CreateWindow(data)
     data = data or {}
-    local logoId = data.Logo or "95894290284220"
+    local logoId = data.Logo or "91905309683896"
 
     local Window = {
         LeftTabs = nil,
