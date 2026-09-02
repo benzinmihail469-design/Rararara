@@ -152,11 +152,11 @@ local function MakeDraggable(guiInstance, dragHandle)
 end
 
 -- =======================================================
--- 8. СИСТЕМА СОЗВЕЗДИЯ
+-- 8. ОБНОВЛЕННАЯ СИСТЕМА СОЗВЕЗДИЯ (ПЛАВНЫЙ ПОЛЕТ И ЗАТУХАНИЕ)
 -- =======================================================
 local function CreateConstellationBackground(parentFrame, numNodes, maxDistance)
     numNodes = numNodes or 30
-    maxDistance = maxDistance or 80
+    maxDistance = maxDistance or 85
 
     local bgContainer = Instances:Create("Frame", {
         Parent = parentFrame,
@@ -194,9 +194,9 @@ local function CreateConstellationBackground(parentFrame, numNodes, maxDistance)
 
         table.insert(nodes, {
             Gui = dot.Instance,
-            Pos = Vector2.new(rng:NextNumber(160, 500), rng:NextNumber(10, 350)),
+            Pos = Vector2.new(rng:NextNumber(165, 490), rng:NextNumber(15, 340)),
             Dir = dir,
-            Speed = rng:NextNumber(18, 25)
+            Speed = rng:NextNumber(14, 22) -- Плавный мягкий темп полёта
         })
     end
 
@@ -231,24 +231,25 @@ local function CreateConstellationBackground(parentFrame, numNodes, maxDistance)
         local minX = 160
         local delta = math.clamp(dt, 0, 0.033)
 
+        -- 1. Движение точек без застреваний и дерганий на границах
         for _, node in ipairs(nodes) do
             node.Pos = node.Pos + (node.Dir * (node.Speed * delta))
 
             local nx, ny = node.Dir.X, node.Dir.Y
 
             if node.Pos.X <= minX then
-                node.Pos = Vector2.new(minX, node.Pos.Y)
+                node.Pos = Vector2.new(minX + 0.1, node.Pos.Y)
                 nx = math.abs(nx)
             elseif node.Pos.X >= width - 5 then
-                node.Pos = Vector2.new(width - 5, node.Pos.Y)
+                node.Pos = Vector2.new(width - 5 - 0.1, node.Pos.Y)
                 nx = -math.abs(nx)
             end
 
             if node.Pos.Y <= 5 then
-                node.Pos = Vector2.new(node.Pos.X, 5)
+                node.Pos = Vector2.new(node.Pos.X, 5.1)
                 ny = math.abs(ny)
             elseif node.Pos.Y >= height - 5 then
-                node.Pos = Vector2.new(node.Pos.X, height - 5)
+                node.Pos = Vector2.new(node.Pos.X, height - 5 - 0.1)
                 ny = -math.abs(ny)
             end
 
@@ -260,6 +261,7 @@ local function CreateConstellationBackground(parentFrame, numNodes, maxDistance)
             node.Gui.Position = UDim2.new(0, node.Pos.X, 0, node.Pos.Y)
         end
 
+        -- 2. Отрисовка линий с новым алгоритмом плавного затухания при отдалении
         local lineIdx = 1
         for i = 1, #nodes do
             for j = i + 1, #nodes do
@@ -272,12 +274,15 @@ local function CreateConstellationBackground(parentFrame, numNodes, maxDistance)
                     local mid = (p1 + p2) / 2
                     local diff = p2 - p1
                     local angle = math.deg(math.atan2(diff.Y, diff.X))
-                    local alpha = dist / maxDistance
+
+                    -- Коэффициент затухания: от 0.25 (вблизи) до 1.0 (полная прозрачность при dist = maxDistance)
+                    local progress = dist / maxDistance
+                    local fadeTransparency = 0.25 + (progress ^ 1.6) * 0.75
 
                     line.Position = UDim2.new(0, mid.X, 0, mid.Y)
                     line.Size = UDim2.new(0, dist, 0, 1)
                     line.Rotation = angle
-                    line.BackgroundTransparency = math.clamp(alpha * 0.9, 0.3, 0.95)
+                    line.BackgroundTransparency = math.clamp(fadeTransparency, 0.25, 1)
                     line.Visible = true
 
                     lineIdx = lineIdx + 1
@@ -338,7 +343,7 @@ function Library:CreateWindow(data)
 
     MakeDraggable(mainFrame.Instance, mainFrame.Instance)
 
-    CreateConstellationBackground(mainFrame.Instance, 30, 80)
+    CreateConstellationBackground(mainFrame.Instance, 30, 85)
 
     local sidebarBackground = Instances:Create("Frame", {
         Parent = mainFrame.Instance,
