@@ -2423,7 +2423,7 @@ function Library:CreateSection(parentColumn, sectionData)
     -- ====================================================================
 
     -- ====================================================================
-    -- ИСПРАВЛЕННАЯ ФУНКЦИЯ КНОПКИ (SectionAPI:Button) - улучшенная читаемость
+    -- ИСПРАВЛЕННАЯ ФУНКЦИЯ КНОПКИ (SectionAPI:Button) С ГАРАНТИРОВАННОЙ ВИДИМОСТЬЮ ТЕКСТА
     -- ====================================================================
     function SectionAPI:Button(Data)
         Data = Data or {}
@@ -2437,13 +2437,7 @@ function Library:CreateSection(parentColumn, sectionData)
             Name = "Button_" .. Button.Title,
             BackgroundColor3 = Theme["Element"],
             BackgroundTransparency = 0.2,
-            Text = Button.Title,
-            TextColor3 = Color3.fromRGB(255, 255, 255),
-            TextTransparency = 0,
-            TextStrokeTransparency = 0.7,
-            TextStrokeColor3 = Color3.fromRGB(0, 0, 0),
-            TextSize = 13,
-            FontFace = Font.new("rbxassetid://12187365364", Enum.FontWeight.Bold, Enum.FontStyle.Normal),
+            Text = "",
             AutoButtonColor = false,
             Size = UDim2.new(1, 0, 0, 28),
             BorderSizePixel = 0,
@@ -2494,10 +2488,29 @@ function Library:CreateSection(parentColumn, sectionData)
             })
         })
 
+        -- Отдельная текстовая метка поверх фона для гарантии читаемости
+        local ButtonLabel = Instances:Create("TextLabel", {
+            Parent = ButtonFrame.Instance,
+            Name = "Label",
+            Text = Button.Title,
+            TextColor3 = Theme["Text"],
+            TextTransparency = 0,
+            TextSize = 12,
+            Font = Enum.Font.GothamBold,
+            Position = UDim2.new(0, 0, 0, 0),
+            Size = UDim2.new(1, 0, 1, 0),
+            BackgroundTransparency = 1,
+            TextXAlignment = Enum.TextXAlignment.Center,
+            TextYAlignment = Enum.TextYAlignment.Center,
+            ZIndex = 12
+        })
+
         -- Эффекты наведения мышью
         ButtonFrame:Connect("MouseEnter", function()
             Tween(ButtonFrame.Instance, TweenInfo.new(0.15, Enum.EasingStyle.Quad, Enum.EasingDirection.Out), {
-                BackgroundTransparency = 0.1,
+                BackgroundTransparency = 0.1
+            })
+            Tween(ButtonLabel.Instance, TweenInfo.new(0.15), {
                 TextColor3 = Color3.fromRGB(255, 255, 255)
             })
             Tween(buttonStroke.Instance, TweenInfo.new(0.15, Enum.EasingStyle.Quad, Enum.EasingDirection.Out), {
@@ -2507,8 +2520,10 @@ function Library:CreateSection(parentColumn, sectionData)
 
         ButtonFrame:Connect("MouseLeave", function()
             Tween(ButtonFrame.Instance, TweenInfo.new(0.15, Enum.EasingStyle.Quad, Enum.EasingDirection.Out), {
-                BackgroundTransparency = 0.2,
-                TextColor3 = Color3.fromRGB(255, 255, 255)
+                BackgroundTransparency = 0.2
+            })
+            Tween(ButtonLabel.Instance, TweenInfo.new(0.15), {
+                TextColor3 = Theme["Text"]
             })
             Tween(buttonStroke.Instance, TweenInfo.new(0.15, Enum.EasingStyle.Quad, Enum.EasingDirection.Out), {
                 Transparency = 0.5
@@ -2535,7 +2550,7 @@ function Library:CreateSection(parentColumn, sectionData)
         end)
 
         function Button:SetText(NewText)
-            ButtonFrame.Instance.Text = NewText
+            ButtonLabel.Instance.Text = NewText
             Button.Title = NewText
         end
 
@@ -2569,7 +2584,7 @@ function Library:CreateSection(parentColumn, sectionData)
             BackgroundTransparency = 1,
             Size = UDim2.new(1, 0, 0, 36),
             BorderSizePixel = 0,
-            ZIndex = 10 -- Поднят ZIndex для корректного отображения внутри панелей
+            ZIndex = 10
         })
 
         local TitleLabel = Instances:Create("TextLabel", {
