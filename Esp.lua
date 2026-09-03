@@ -308,7 +308,7 @@ local Library = {
 
 function Library:CreateWindow(data)
     data = data or {}
-    local logoId = data.Logo or "91905309683896"
+    local logoId = data.Logo or "134603867443812" -- Обновленная иконка
 
     local Window = {
         LeftTabs = nil,
@@ -2851,7 +2851,7 @@ end
 -- =======================================================
 
 local MainWindow = Library:CreateWindow({
-    Logo = "91905309683896" -- Обновленная иконка
+    Logo = "134603867443812" -- Обновленная иконка
 })
 
 -- 1. Вкладка Combat
