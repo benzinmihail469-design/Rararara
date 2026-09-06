@@ -196,7 +196,7 @@ local function CreateConstellationBackground(parentFrame, numNodes, maxDistance)
             Gui = dot.Instance,
             Pos = Vector2.new(rng:NextNumber(165, 490), rng:NextNumber(15, 340)),
             Dir = dir,
-            Speed = rng:NextNumber(14, 22) -- Плавный мягкий темп полёта
+            Speed = rng:NextNumber(14, 22)
         })
     end
 
@@ -231,7 +231,6 @@ local function CreateConstellationBackground(parentFrame, numNodes, maxDistance)
         local minX = 160
         local delta = math.clamp(dt, 0, 0.033)
 
-        -- 1. Движение точек без застреваний и дерганий на границах
         for _, node in ipairs(nodes) do
             node.Pos = node.Pos + (node.Dir * (node.Speed * delta))
 
@@ -261,7 +260,6 @@ local function CreateConstellationBackground(parentFrame, numNodes, maxDistance)
             node.Gui.Position = UDim2.new(0, node.Pos.X, 0, node.Pos.Y)
         end
 
-        -- 2. Отрисовка линий с новым алгоритмом плавного затухания при отдалении
         local lineIdx = 1
         for i = 1, #nodes do
             for j = i + 1, #nodes do
@@ -275,7 +273,6 @@ local function CreateConstellationBackground(parentFrame, numNodes, maxDistance)
                     local diff = p2 - p1
                     local angle = math.deg(math.atan2(diff.Y, diff.X))
 
-                    -- Коэффициент затухания: от 0.25 (вблизи) до 1.0 (полная прозрачность при dist = maxDistance)
                     local progress = dist / maxDistance
                     local fadeTransparency = 0.25 + (progress ^ 1.6) * 0.75
 
@@ -308,7 +305,7 @@ local Library = {
 
 function Library:CreateWindow(data)
     data = data or {}
-    local logoId = data.Logo or "134603867443812" -- Обновленная иконка
+    local logoId = data.Logo or "134603867443812"
 
     local Window = {
         LeftTabs = nil,
@@ -345,7 +342,6 @@ function Library:CreateWindow(data)
 
     CreateConstellationBackground(mainFrame.Instance, 30, 85)
 
-    -- Обновленный сайдбар с плавным градиентом в цвет иконки и бесшовным слиянием
     local sidebarBackground = Instances:Create("Frame", {
         Parent = mainFrame.Instance,
         Name = "SidebarBackground",
@@ -362,11 +358,10 @@ function Library:CreateWindow(data)
         CornerRadius = UDim.new(0, 8)
     })
 
-    -- Градиент от оттенка иконки сверху к основному фону
     Instances:Create("UIGradient", {
         Parent = sidebarBackground.Instance,
         Color = ColorSequence.new({
-            ColorSequenceKeypoint.new(0, Color3.fromRGB(12, 32, 60)), -- Темно-синий тональный оттенок иконки
+            ColorSequenceKeypoint.new(0, Color3.fromRGB(12, 32, 60)),
             ColorSequenceKeypoint.new(0.35, Theme["Background 2"]),
             ColorSequenceKeypoint.new(1, Theme["Background"])
         }),
@@ -624,7 +619,7 @@ function Library:CreateWindow(data)
 end
 
 -- =======================================================
--- 10. ОБНОВЛЕННАЯ СИСТЕМА ВКЛАДОК И ПОДВКЛАДОК (В СТИЛЕ ВЫБРАННОГО ДРОПДАУНА)
+-- 10. ОБНОВЛЕННАЯ СИСТЕМА ВКЛАДОК И ПОДВКЛАДОК
 -- =======================================================
 function Library:CreateTab(window, tabData)
     tabData = tabData or {}
@@ -671,7 +666,6 @@ function Library:CreateTab(window, tabData)
         CornerRadius = UDim.new(0, 6)
     })
 
-    -- Градиентный контур активной вкладки (в стиль разделительных полос)
     local tabStroke = Instances:Create("UIStroke", {
         Parent = tabButton.Instance,
         Color = Color3.fromRGB(255, 255, 255),
@@ -694,7 +688,6 @@ function Library:CreateTab(window, tabData)
         })
     })
 
-    -- Градиентный фон (переход синий к темному)
     Instances:Create("UIGradient", {
         Parent = tabButton.Instance,
         Color = ColorSequence.new({
@@ -1078,7 +1071,6 @@ function Library:CreateTab(window, tabData)
             CornerRadius = UDim.new(0, 5)
         })
 
-        -- Градиентный контур для подвкладок (как в дропдауне)
         local subStroke = Instances:Create("UIStroke", {
             Parent = subButton.Instance,
             Color = Color3.fromRGB(255, 255, 255),
@@ -1101,7 +1093,6 @@ function Library:CreateTab(window, tabData)
             })
         })
 
-        -- Градиентный фон (синий к темному)
         Instances:Create("UIGradient", {
             Parent = subButton.Instance,
             Color = ColorSequence.new({
@@ -1365,7 +1356,7 @@ function Library:CreateTab(window, tabData)
 end
 
 -- =======================================================
--- 11. СЕКЦИИ UI (С ПОДДЕРЖКОЙ ИКОНОК)
+-- 11. СЕКЦИИ UI
 -- =======================================================
 function Library:CreateSection(parentColumn, sectionData)
     sectionData = sectionData or {}
@@ -1554,7 +1545,7 @@ function Library:CreateSection(parentColumn, sectionData)
     local SectionAPI = {}
 
     -- ====================================================================
-    -- ОБНОВЛЕННАЯ ФУНКЦИЯ CreateToggle (С НОВОЙ АНИМАЦИЕЙ НАЖАТИЯ ВМЕСТО 90°)
+    -- ОБНОВЛЕННАЯ ФУНКЦИЯ CreateToggle
     -- ====================================================================
     function SectionAPI:CreateToggle(toggleData)
         toggleData = toggleData or {}
@@ -1564,7 +1555,6 @@ function Library:CreateSection(parentColumn, sectionData)
         local settingsCallback = toggleData.Settings or nil
         local flag = toggleData.Flag or ("Toggle_" .. toggleName)
 
-        -- Контейнер Toggle
         local itemHost = Instances:Create("Frame", {
             Parent = elementsContainer.Instance,
             Name = "ToggleHost_" .. toggleName,
@@ -1602,7 +1592,6 @@ function Library:CreateSection(parentColumn, sectionData)
             Active = true
         })
 
-        -- Чекбокс в сине-черной теме
         local checkBox = Instances:Create("Frame", {
             Parent = toggleButton.Instance,
             Name = "CheckBox",
@@ -1620,7 +1609,6 @@ function Library:CreateSection(parentColumn, sectionData)
             CornerRadius = UDim.new(0, 4)
         })
 
-        -- Градиентный контур чекбокса
         local checkStroke = Instances:Create("UIStroke", {
             Parent = checkBox.Instance,
             Color = Color3.fromRGB(255, 255, 255),
@@ -1643,7 +1631,6 @@ function Library:CreateSection(parentColumn, sectionData)
             })
         })
 
-        -- Сине-черный градиент заливки
         local bgGradient = Instances:Create("UIGradient", {
             Parent = checkBox.Instance,
             Color = ColorSequence.new({
@@ -1685,7 +1672,6 @@ function Library:CreateSection(parentColumn, sectionData)
             ZIndex = 8
         })
 
-        -- Функция обновления состояния
         local function UpdateState(newState)
             state = newState
             Library.Flags[flag] = state
@@ -1711,7 +1697,6 @@ function Library:CreateSection(parentColumn, sectionData)
             pcall(callback, state)
         end
 
-        -- Наведение мышкой
         toggleButton:Connect("MouseEnter", function()
             Tween(checkStroke.Instance, TweenInfo.new(0.15), {
                 Transparency = 0
@@ -1732,7 +1717,6 @@ function Library:CreateSection(parentColumn, sectionData)
             end
         end)
 
-        -- Анимация клика
         toggleButton:Connect("MouseButton1Down", function()
             Tween(checkBox.Instance, TweenInfo.new(0.08, Enum.EasingStyle.Quad, Enum.EasingDirection.Out), {
                 Size = UDim2.new(0, 13, 0, 13)
@@ -1749,7 +1733,6 @@ function Library:CreateSection(parentColumn, sectionData)
             UpdateState(not state)
         end)
 
-        -- Меню дополнительных настроек
         if settingsCallback then
             local optionsExpanded = false
 
@@ -1903,7 +1886,6 @@ function Library:CreateSection(parentColumn, sectionData)
 
             pcall(settingsCallback, SubAPI)
 
-            -- Эффекты наведения
             dotsBtn:Connect("MouseEnter", function()
                 if not optionsExpanded then
                     Tween(dotsStroke.Instance, TweenInfo.new(0.15), {
@@ -1930,13 +1912,11 @@ function Library:CreateSection(parentColumn, sectionData)
                 end
             end)
 
-            -- НОВАЯ АНИМАЦИЯ НАЖАТИЯ И АКТИВАЦИИ КНОПКИ ТРЁХ ТОЧЕК
             dotsBtn.Instance.Activated:Connect(function()
                 optionsExpanded = not optionsExpanded
                 local contentHeight = panelLayout.Instance.AbsoluteContentSize.Y + 12
                 local targetHeight = optionsExpanded and contentHeight or 0
 
-                -- 1. Анимация отклика кнопки (легкое сжатие с возвратом)
                 dotsBtn:Tween(TweenInfo.new(0.08, Enum.EasingStyle.Quad, Enum.EasingDirection.Out), {
                     Size = UDim2.new(0, 21, 0, 18)
                 })
@@ -1946,7 +1926,6 @@ function Library:CreateSection(parentColumn, sectionData)
                     })
                 end)
 
-                -- 2. Анимация точек (расширение, масштаб точек и сменяющийся подсвет)
                 dotsHolderLayout.Instance.Padding = optionsExpanded and UDim.new(0, 3) or UDim.new(0, 2)
                 for idx, dot in ipairs(dotElements) do
                     Tween(dot, TweenInfo.new(0.25, Enum.EasingStyle.Back, Enum.EasingDirection.Out), {
@@ -1955,7 +1934,6 @@ function Library:CreateSection(parentColumn, sectionData)
                     })
                 end
 
-                -- 3. Анимация видимости контуров и разворачивание панели
                 dotsStroke:Tween(TweenInfo.new(0.25), {
                     Transparency = optionsExpanded and 0 or 0.5
                 })
@@ -1977,7 +1955,7 @@ function Library:CreateSection(parentColumn, sectionData)
     end
 
     -- ====================================================================
-    -- СИСТЕМА ДРОПДАУНОВ С ПЛАВНОЙ АНИМАЦИЕЙ И ГРАДИЕНТНЫМ КОНТУРОМ
+    -- СИСТЕМА ДРОПДАУНОВ
     -- ====================================================================
     function SectionAPI:CreateDropdown(dropdownData)
         dropdownData = dropdownData or {}
@@ -1988,7 +1966,6 @@ function Library:CreateSection(parentColumn, sectionData)
         local flag = dropdownData.Flag or ("Dropdown_" .. tostring(#Library.Flags + 1))
         local expanded = false
 
-        -- Главный контейнер строки
         local dropHost = Instances:Create("Frame", {
             Parent = elementsContainer.Instance,
             Name = "DropdownHost_" .. dropTitle,
@@ -1999,7 +1976,6 @@ function Library:CreateSection(parentColumn, sectionData)
             ZIndex = 8
         })
 
-        -- Текст названия слева
         local titleLabel = Instances:Create("TextLabel", {
             Parent = dropHost.Instance,
             Name = "Title",
@@ -2014,7 +1990,6 @@ function Library:CreateSection(parentColumn, sectionData)
             ZIndex = 8
         })
 
-        -- Плашка выбора справа
         local dropHeader = Instances:Create("TextButton", {
             Parent = dropHost.Instance,
             Name = "Header",
@@ -2042,7 +2017,6 @@ function Library:CreateSection(parentColumn, sectionData)
             Thickness = 1
         })
 
-        -- Разделительная линия снизу плашки
         local headerBottomLine = Instances:Create("Frame", {
             Parent = dropHeader.Instance,
             Name = "BottomBorder",
@@ -2097,7 +2071,6 @@ function Library:CreateSection(parentColumn, sectionData)
             ZIndex = 10
         })
 
-        -- Выпадающее меню
         local optionsList = Instances:Create("Frame", {
             Parent = dropHost.Instance,
             Name = "OptionsList",
@@ -2179,29 +2152,24 @@ function Library:CreateSection(parentColumn, sectionData)
             })
         end
 
-        -- ПЛАВНОЕ ОБНОВЛЕНИЕ ВИЗУАЛА ПРИ ВЫБОРЕ ЭЛЕМЕНТА
         local function UpdateSelectionVisuals()
             for optVal, btnData in pairs(optionButtons) do
                 local isSelected = (optVal == selected)
 
-                -- 1. Плавный цвет и подсвечивание фона
                 Tween(btnData.Instance, TweenInfo.new(0.2, Enum.EasingStyle.Quad, Enum.EasingDirection.Out), {
                     BackgroundTransparency = isSelected and 0.82 or 1
                 })
 
-                -- 2. Анимация контура активного элемента (в стиль разделительных полос)
                 Tween(btnData.ActiveStroke, TweenInfo.new(0.25, Enum.EasingStyle.Quad, Enum.EasingDirection.Out), {
                     Transparency = isSelected and 0 or 1
                 })
 
-                -- 3. Сдвиг текста и смены цвета с легкой пружиной (Quart)
                 Tween(btnData.Label, TweenInfo.new(0.25, Enum.EasingStyle.Quart, Enum.EasingDirection.Out), {
                     TextColor3 = isSelected and Theme["Text"] or Theme["SubText"],
                     Position = UDim2.new(0, isSelected and 13 or 8, 0, 0),
                     Size = UDim2.new(1, isSelected and -32 or -16, 1, 0)
                 })
 
-                -- 4. Вырастание синей полоски слева (Back Easing)
                 if isSelected then
                     btnData.SideBar.Visible = true
                     Tween(btnData.SideBar, TweenInfo.new(0.25, Enum.EasingStyle.Back, Enum.EasingDirection.Out), {
@@ -2220,7 +2188,6 @@ function Library:CreateSection(parentColumn, sectionData)
                     end)
                 end
 
-                -- 5. Всплытие и укрупнение иконки галочки (CheckMark)
                 Tween(btnData.CheckMark, TweenInfo.new(0.25, isSelected and Enum.EasingStyle.Back or Enum.EasingStyle.Quad, Enum.EasingDirection.Out), {
                     ImageTransparency = isSelected and 0 or 1,
                     Size = isSelected and UDim2.new(0, 10, 0, 10) or UDim2.new(0, 0, 0, 0)
@@ -2228,7 +2195,6 @@ function Library:CreateSection(parentColumn, sectionData)
             end
         end
 
-        -- Отрисовка элементов
         local function RefreshOptions()
             for _, btnData in pairs(optionButtons) do
                 if btnData.Instance then
@@ -2257,7 +2223,6 @@ function Library:CreateSection(parentColumn, sectionData)
                     CornerRadius = UDim.new(0, 3)
                 })
 
-                -- Градиентный контур активной фигни (в стиль разделительных полос)
                 local activeStroke = Instances:Create("UIStroke", {
                     Parent = optBtn.Instance,
                     Color = Color3.fromRGB(255, 255, 255),
@@ -2341,7 +2306,6 @@ function Library:CreateSection(parentColumn, sectionData)
                     ZIndex = 22
                 })
 
-                -- Наведение мышкой
                 optBtn:Connect("MouseEnter", function()
                     if opt ~= selected then
                         Tween(optBtn.Instance, TweenInfo.new(0.15, Enum.EasingStyle.Quad, Enum.EasingDirection.Out), {
@@ -2364,7 +2328,6 @@ function Library:CreateSection(parentColumn, sectionData)
                     end
                 end)
 
-                -- Клик с анимацией отклика
                 optBtn:Connect("MouseButton1Click", function()
                     Tween(optBtn.Instance, TweenInfo.new(0.08, Enum.EasingStyle.Quad, Enum.EasingDirection.Out), {
                         BackgroundTransparency = 0.7
@@ -2405,7 +2368,6 @@ function Library:CreateSection(parentColumn, sectionData)
             DropdownAPI:Set(selected)
         end
 
-        -- События открытия/закрытия хедера
         dropHeader:Connect("MouseEnter", function()
             if not expanded then
                 Tween(headerStroke.Instance, TweenInfo.new(0.15), {
@@ -2437,11 +2399,7 @@ function Library:CreateSection(parentColumn, sectionData)
     end
 
     -- ====================================================================
-    -- СИСТЕМА КНОПОК И СЛАЙДЕРОВ
-    -- ====================================================================
-
-    -- ====================================================================
-    -- ИСПРАВЛЕННАЯ ФУНКЦИЯ КНОПКИ (SectionAPI:Button) С ГАРАНТИРОВАННОЙ ВИДИМОСТЬЮ ТЕКСТА
+    -- СИСТЕМА КНОПОК
     -- ====================================================================
     function SectionAPI:Button(Data)
         Data = Data or {}
@@ -2468,7 +2426,6 @@ function Library:CreateSection(parentColumn, sectionData)
             CornerRadius = UDim.new(0, 5)
         })
 
-        -- Сине-черная градиентная заливка фона
         Instances:Create("UIGradient", {
             Parent = ButtonFrame.Instance,
             Color = ColorSequence.new({
@@ -2483,7 +2440,6 @@ function Library:CreateSection(parentColumn, sectionData)
             Rotation = 0
         })
 
-        -- Градиентный контур
         local buttonStroke = Instances:Create("UIStroke", {
             Parent = ButtonFrame.Instance,
             Color = Color3.fromRGB(255, 255, 255),
@@ -2506,7 +2462,6 @@ function Library:CreateSection(parentColumn, sectionData)
             })
         })
 
-        -- Отдельная текстовая метка поверх фона для гарантии читаемости
         local ButtonLabel = Instances:Create("TextLabel", {
             Parent = ButtonFrame.Instance,
             Name = "Label",
@@ -2523,7 +2478,6 @@ function Library:CreateSection(parentColumn, sectionData)
             ZIndex = 12
         })
 
-        -- Эффекты наведения мышью
         ButtonFrame:Connect("MouseEnter", function()
             Tween(ButtonFrame.Instance, TweenInfo.new(0.15, Enum.EasingStyle.Quad, Enum.EasingDirection.Out), {
                 BackgroundTransparency = 0.1
@@ -2548,7 +2502,6 @@ function Library:CreateSection(parentColumn, sectionData)
             })
         end)
 
-        -- Анимация нажатия
         ButtonFrame:Connect("MouseButton1Down", function()
             Tween(ButtonFrame.Instance, TweenInfo.new(0.08, Enum.EasingStyle.Quad, Enum.EasingDirection.Out), {
                 BackgroundTransparency = 0.0,
@@ -2580,7 +2533,7 @@ function Library:CreateSection(parentColumn, sectionData)
     end
 
     -- ====================================================================
-    -- ИСПРАВЛЕННАЯ ФУНКЦИЯ СЛАЙДЕРА (SectionAPI:Slider)
+    -- СИСТЕМА СЛАЙДЕРОВ
     -- ====================================================================
     function SectionAPI:Slider(Data)
         Data = Data or {}
@@ -2844,259 +2797,206 @@ function Library:CreateSection(parentColumn, sectionData)
     end
 
     -- =======================================================
-    -- ФУНКЦИЯ СОЗДАНИЯ СКИН ЧЕНДЖЕРА ДЛЯ SECTION API
+    -- ФУНКЦИЯ СОЗДАНИЯ СЕКЦИИ С СИСТЕМОЙ ПОИСКА
     -- =======================================================
-    function SectionAPI:CreateSkinChanger(changerData)
-        changerData = changerData or {}
-        local title = changerData.Title or changerData.Name or "Skin Changer"
-        local weaponsList = changerData.Weapons or {"AK-47", "M4A1-S", "AWP", "Karambit", "Glock-18"}
-        local skinsData = changerData.Skins or {
-            ["AK-47"] = {"Default", "Asiimov", "Redline", "Vulcan", "Case Hardened"},
-            ["M4A1-S"] = {"Default", "Printstream", "Hyper Beast", "Cyrex"},
-            ["AWP"] = {"Default", "Dragon Lore", "Asiimov", "Gungnir"},
-            ["Karambit"] = {"Default", "Doppler", "Fade", "Marble Fade", "Case Hardened"},
-            ["Glock-18"] = {"Default", "Water Elemental", "Fade", "Vogue"}
-        }
-        local skinIcons = changerData.Icons or {}
-        local callback = changerData.Callback or function() end
-        local flag = changerData.Flag or ("SkinChanger_" .. title)
-        local currentWeapon = weaponsList[1] or "AK-47"
-        local currentSkin = (skinsData[currentWeapon] and skinsData[currentWeapon][1]) or "Default"
-        local currentWear = changerData.DefaultWear or 0.00
-        local currentSeed = changerData.DefaultSeed or 1
+    function SectionAPI:CreateSearchSection(searchData)
+        searchData = searchData or {}
+        local sectionTitle = searchData.Name or "Search Section"
+        local placeholder = searchData.Placeholder or "Поиск элементов..."
+        local searchIcon = searchData.Icon or "rbxassetid://10723415903"
+        local defaultHeight = searchData.Height or 220
 
-        -- Главный контейнер заготовки
-        local changerFrame = Instances:Create("Frame", {
+        local searchSectionFrame = Instances:Create("Frame", {
             Parent = elementsContainer.Instance,
-            Name = "SkinChanger_" .. title,
-            Size = UDim2.new(1, 0, 0, 0),
-            AutomaticSize = Enum.AutomaticSize.Y,
-            BackgroundColor3 = Theme["Element"],
-            BackgroundTransparency = 0.2,
+            Name = "SearchSection_" .. sectionTitle,
+            Size = UDim2.new(1, 0, 0, defaultHeight),
+            BackgroundColor3 = Theme["Background 2"],
+            BackgroundTransparency = 0.15,
             BorderSizePixel = 0,
-            ZIndex = 7
+            ZIndex = 5,
+            ClipsDescendants = true
         })
 
         Instances:Create("UICorner", {
-            Parent = changerFrame.Instance,
-            CornerRadius = UDim.new(0, 6)
+            Parent = searchSectionFrame.Instance,
+            CornerRadius = UDim.new(0, 8)
         })
 
-        local changerStroke = Instances:Create("UIStroke", {
-            Parent = changerFrame.Instance,
-            Color = Color3.fromRGB(255, 255, 255),
+        local sectionStroke = Instances:Create("UIStroke", {
+            Parent = searchSectionFrame.Instance,
+            Color = Theme["Outline"],
             Thickness = 1,
-            Transparency = 0.5,
             ApplyStrokeMode = Enum.ApplyStrokeMode.Border
         })
 
-        Instances:Create("UIGradient", {
-            Parent = changerStroke.Instance,
-            Color = ColorSequence.new({
-                ColorSequenceKeypoint.new(0, Theme["Outline"]),
-                ColorSequenceKeypoint.new(0.5, Theme["Accent"]),
-                ColorSequenceKeypoint.new(1, Theme["Outline"])
-            }),
-            Transparency = NumberSequence.new({
-                NumberSequenceKeypoint.new(0, 0.4),
-                NumberSequenceKeypoint.new(0.5, 0.0),
-                NumberSequenceKeypoint.new(1, 0.4)
-            })
+        Instances:Create("UIListLayout", {
+            Parent = searchSectionFrame.Instance,
+            SortOrder = Enum.SortOrder.LayoutOrder,
+            Padding = UDim.new(0, 8)
         })
 
         Instances:Create("UIPadding", {
-            Parent = changerFrame.Instance,
+            Parent = searchSectionFrame.Instance,
             PaddingTop = UDim.new(0, 8),
             PaddingBottom = UDim.new(0, 8),
             PaddingLeft = UDim.new(0, 8),
             PaddingRight = UDim.new(0, 8)
         })
 
-        Instances:Create("UIListLayout", {
-            Parent = changerFrame.Instance,
-            SortOrder = Enum.SortOrder.LayoutOrder,
-            Padding = UDim.new(0, 8)
-        })
-
-        -- Карточка предпросмотра (Preview Box)
-        local previewFrame = Instances:Create("Frame", {
-            Parent = changerFrame.Instance,
-            Name = "PreviewCard",
-            Size = UDim2.new(1, 0, 0, 85),
-            BackgroundColor3 = Theme["Background 2"],
+        local searchBarHost = Instances:Create("Frame", {
+            Parent = searchSectionFrame.Instance,
+            Name = "SearchBarHost",
+            Size = UDim2.new(1, 0, 0, 32),
+            BackgroundColor3 = Theme["Element"],
             BackgroundTransparency = 0.2,
             BorderSizePixel = 0,
-            ZIndex = 8,
-            LayoutOrder = 1
+            LayoutOrder = 1,
+            ZIndex = 6
         })
 
         Instances:Create("UICorner", {
-            Parent = previewFrame.Instance,
+            Parent = searchBarHost.Instance,
             CornerRadius = UDim.new(0, 6)
         })
 
-        local previewStroke = Instances:Create("UIStroke", {
-            Parent = previewFrame.Instance,
+        local searchBarStroke = Instances:Create("UIStroke", {
+            Parent = searchBarHost.Instance,
             Color = Theme["Outline"],
-            Thickness = 1
+            Thickness = 1,
+            ApplyStrokeMode = Enum.ApplyStrokeMode.Border
         })
 
-        -- Неоновое свечение позади оружия
-        local previewGlow = Instances:Create("Frame", {
-            Parent = previewFrame.Instance,
-            Name = "Glow",
-            AnchorPoint = Vector2.new(0.5, 0.5),
-            Position = UDim2.new(0.5, 0, 0.45, 0),
-            Size = UDim2.new(0.6, 0, 0.5, 0),
-            BackgroundColor3 = Theme["Accent"],
-            BackgroundTransparency = 0.88,
-            BorderSizePixel = 0,
-            ZIndex = 8
-        })
-
-        Instances:Create("UICorner", {
-            Parent = previewGlow.Instance,
-            CornerRadius = UDim.new(1, 0)
-        })
-
-        -- Иконка оружия/скина
-        local previewImage = Instances:Create("ImageLabel", {
-            Parent = previewFrame.Instance,
-            Name = "WeaponImage",
-            AnchorPoint = Vector2.new(0.5, 0.5),
-            Position = UDim2.new(0.5, 0, 0.42, 0),
-            Size = UDim2.new(0, 56, 0, 42),
+        local searchIconImg = Instances:Create("ImageLabel", {
+            Parent = searchBarHost.Instance,
+            Name = "SearchIcon",
+            Size = UDim2.new(0, 14, 0, 14),
+            AnchorPoint = Vector2.new(0, 0.5),
+            Position = UDim2.new(0, 10, 0.5, 0),
             BackgroundTransparency = 1,
             ScaleType = Enum.ScaleType.Fit,
-            Image = ParseIcon("palette"),
-            ImageColor3 = Theme["AccentGlow"],
-            ZIndex = 9
+            Image = ParseIcon(searchIcon),
+            ImageColor3 = Theme["SubText"],
+            ImageTransparency = 0.2,
+            ZIndex = 7
         })
 
-        -- Текстовое описание под иконкой
-        local infoLabel = Instances:Create("TextLabel", {
-            Parent = previewFrame.Instance,
-            Name = "InfoLabel",
-            Text = currentWeapon .. " | " .. currentSkin,
-            FontFace = Font.new("rbxassetid://12187365364", Enum.FontWeight.Bold, Enum.FontStyle.Normal),
+        local searchBox = Instances:Create("TextBox", {
+            Parent = searchBarHost.Instance,
+            Name = "SearchInput",
+            Size = UDim2.new(1, -52, 1, 0),
+            Position = UDim2.new(0, 30, 0, 0),
+            BackgroundTransparency = 1,
+            Text = "",
+            PlaceholderText = placeholder,
+            PlaceholderColor3 = Theme["SubText"],
             TextColor3 = Theme["Text"],
             TextSize = 11,
-            Position = UDim2.new(0, 8, 1, -20),
-            Size = UDim2.new(1, -16, 0, 14),
+            FontFace = Font.new("rbxassetid://12187365364", Enum.FontWeight.Medium, Enum.FontStyle.Normal),
+            TextXAlignment = Enum.TextXAlignment.Left,
+            ClearTextOnFocus = false,
+            ZIndex = 7
+        })
+
+        local clearBtn = Instances:Create("TextButton", {
+            Parent = searchBarHost.Instance,
+            Name = "ClearButton",
+            AnchorPoint = Vector2.new(1, 0.5),
+            Position = UDim2.new(1, -8, 0.5, 0),
+            Size = UDim2.new(0, 16, 0, 16),
             BackgroundTransparency = 1,
-            TextXAlignment = Enum.TextXAlignment.Center,
-            ZIndex = 9
+            Text = "✕",
+            TextColor3 = Theme["SubText"],
+            TextSize = 10,
+            Visible = false,
+            ZIndex = 7
         })
 
-        -- Функция обновления иконки и названий
-        local function UpdatePreview()
-            infoLabel.Instance.Text = currentWeapon .. " | " .. currentSkin
-            local iconKey = skinIcons[currentSkin] or skinIcons[currentWeapon .. "_" .. currentSkin]
-            if iconKey then
-                previewImage.Instance.Image = ParseIcon(iconKey)
-                previewImage.Instance.ImageColor3 = Color3.fromRGB(255, 255, 255)
-            else
-                previewImage.Instance.Image = ParseIcon("palette")
-                previewImage.Instance.ImageColor3 = Theme["AccentGlow"]
+        local resultsContainer = Instances:Create("ScrollingFrame", {
+            Parent = searchSectionFrame.Instance,
+            Name = "ResultsContainer",
+            Size = UDim2.new(1, 0, 1, -40),
+            BackgroundTransparency = 1,
+            BorderSizePixel = 0,
+            ScrollBarThickness = 3,
+            ScrollBarImageColor3 = Theme["Accent"],
+            LayoutOrder = 2,
+            ZIndex = 6,
+            ScrollingDirection = Enum.ScrollingDirection.Y,
+            ClipsDescendants = true
+        })
+
+        local resultsLayout = Instances:Create("UIListLayout", {
+            Parent = resultsContainer.Instance,
+            SortOrder = Enum.SortOrder.LayoutOrder,
+            Padding = UDim.new(0, 6)
+        })
+
+        Instances:Create("UIPadding", {
+            Parent = resultsContainer.Instance,
+            PaddingTop = UDim.new(0, 2),
+            PaddingBottom = UDim.new(0, 6),
+            PaddingLeft = UDim.new(0, 2),
+            PaddingRight = UDim.new(0, 4)
+        })
+
+        resultsLayout.Instance:GetPropertyChangedSignal("AbsoluteContentSize"):Connect(function()
+            resultsContainer.Instance.CanvasSize = UDim2.new(0, 0, 0, resultsLayout.AbsoluteContentSize.Y + 10)
+        end)
+
+        searchBox.Instance.Focused:Connect(function()
+            Tween(searchBarStroke.Instance, TweenInfo.new(0.2), {
+                Color = Theme["Accent"]
+            })
+            Tween(searchIconImg.Instance, TweenInfo.new(0.2), {
+                ImageColor3 = Theme["Accent"]
+            })
+        end)
+
+        searchBox.Instance.FocusLost:Connect(function()
+            Tween(searchBarStroke.Instance, TweenInfo.new(0.2), {
+                Color = Theme["Outline"]
+            })
+            Tween(searchIconImg.Instance, TweenInfo.new(0.2), {
+                ImageColor3 = Theme["SubText"]
+            })
+        end)
+
+        local function FilterItems(query)
+            local cleanQuery = string.lower(string.gsub(query, "^%s*(.-)%s*$", "%1"))
+            clearBtn.Instance.Visible = (cleanQuery ~= "")
+
+            for _, item in ipairs(resultsContainer.Instance:GetChildren()) do
+                if item:IsA("GuiObject") and not item:IsA("UIListLayout") and not item:IsA("UIPadding") then
+                    local label = item:FindFirstChild("Label", true) or item:FindFirstChild("Title", true)
+                    local itemText = label and label:IsA("TextLabel") and label.Text or item.Name
+                    if cleanQuery == "" or string.find(string.lower(itemText), cleanQuery, 1, true) then
+                        item.Visible = true
+                    else
+                        item.Visible = false
+                    end
+                end
             end
         end
 
-        -- Перенаправляем создание контроллеров внутрь Changer
-        local oldElements = elementsContainer
-        elementsContainer = changerFrame
+        searchBox.Instance:GetPropertyChangedSignal("Text"):Connect(function()
+            FilterItems(searchBox.Instance.Text)
+        end)
 
-        -- 1. Выбор оружия (Dropdown)
-        local weaponDrop = SectionAPI:CreateDropdown({
-            Title = "Weapon",
-            Options = weaponsList,
-            Default = currentWeapon,
-            Callback = function(val)
-                currentWeapon = val
-                UpdatePreview()
-            end
-        })
+        clearBtn.Instance.Activated:Connect(function()
+            searchBox.Instance.Text = ""
+            FilterItems("")
+        end)
 
-        -- 2. Выбор скина (Dropdown)
-        local skinDrop = SectionAPI:CreateDropdown({
-            Title = "Skin",
-            Options = skinsData[currentWeapon] or {"Default"},
-            Default = currentSkin,
-            Callback = function(val)
-                currentSkin = val
-                UpdatePreview()
-            end
-        })
-
-        -- Синхронизация скинов при смене оружия
-        local origWeaponSet = weaponDrop.Set
-        weaponDrop.Set = function(self, val)
-            origWeaponSet(self, val)
-            currentWeapon = val
-            local availableSkins = skinsData[currentWeapon] or {"Default"}
-            if not table.find(availableSkins, currentSkin) then
-                currentSkin = availableSkins[1] or "Default"
-            end
-            skinDrop:Refresh(availableSkins, currentSkin)
-            UpdatePreview()
-        end
-
-        -- 3. Слайдер износа (Wear / Float)
-        local wearSlider = SectionAPI:Slider({
-            Title = "Wear / Float",
-            Min = 0,
-            Max = 1,
-            Float = 0.01,
-            Default = currentWear,
-            Unit = "",
-            Callback = function(val)
-                currentWear = val
-            end
-        })
-
-        -- 4. Слайдер паттерна (Pattern / Seed)
-        local seedSlider = SectionAPI:Slider({
-            Title = "Pattern / Seed",
-            Min = 1,
-            Max = 1000,
-            Float = 1,
-            Default = currentSeed,
-            Unit = "",
-            Callback = function(val)
-                currentSeed = val
-            end
-        })
-
-        -- 5. Кнопка применить (Apply)
-        local applyBtn = SectionAPI:Button({
-            Title = "Apply Skin",
-            Callback = function()
-                local skinResult = {
-                    Weapon = currentWeapon,
-                    Skin = currentSkin,
-                    Wear = currentWear,
-                    Seed = currentSeed
-                }
-                Library.Flags[flag] = skinResult
-                pcall(callback, skinResult)
-            end
-        })
-
-        elementsContainer = oldElements
-        UpdatePreview()
-
-        local SkinChangerAPI = {
-            Frame = changerFrame.Instance,
-            GetState = function()
-                return {
-                    Weapon = currentWeapon,
-                    Skin = currentSkin,
-                    Wear = currentWear,
-                    Seed = currentSeed
-                }
-            end
+        local SearchAPI = {
+            Frame = searchSectionFrame.Instance,
+            Container = resultsContainer.Instance
         }
 
-        return SkinChangerAPI
+        function SearchAPI:GetContainer()
+            return resultsContainer.Instance
+        end
+
+        return SearchAPI
     end
 
     return SectionAPI
@@ -3107,7 +3007,7 @@ end
 -- =======================================================
 
 local MainWindow = Library:CreateWindow({
-    Logo = "134603867443812" -- Обновленная иконка
+    Logo = "134603867443812"
 })
 
 -- 1. Вкладка Combat
@@ -3159,7 +3059,6 @@ CombatSection:Slider({
     end
 })
 
--- Пример Dropdown в Combat секции
 CombatSection:CreateDropdown({
     Name = "Sound",
     Options = {"primordial", "neverlose", "sparkle", "mc bow", "skeet", "break", "rust", "applepay"},
@@ -3168,6 +3067,70 @@ CombatSection:CreateDropdown({
         print("Выбран звук:", SelectedOption)
     end
 })
+
+-- Пример использования SearchSection
+local SearchSection = CombatSection:CreateSearchSection({
+    Name = "PlayerSearch",
+    Placeholder = "Поиск игроков...",
+    Height = 200
+})
+
+local container = SearchSection:GetContainer()
+
+local function AddSearchItem(name, parent)
+    local item = Instances:Create("TextButton", {
+        Parent = parent,
+        Name = "Item_" .. name,
+        Size = UDim2.new(1, 0, 0, 24),
+        BackgroundColor3 = Theme["Element"],
+        BackgroundTransparency = 0.2,
+        Text = "",
+        AutoButtonColor = false,
+        ZIndex = 10
+    })
+
+    Instances:Create("UICorner", {
+        Parent = item.Instance,
+        CornerRadius = UDim.new(0, 4)
+    })
+
+    local itemLabel = Instances:Create("TextLabel", {
+        Parent = item.Instance,
+        Name = "Label",
+        Text = name,
+        TextColor3 = Theme["Text"],
+        TextSize = 11,
+        FontFace = Font.new("rbxassetid://12187365364", Enum.FontWeight.Medium, Enum.FontStyle.Normal),
+        Position = UDim2.new(0, 10, 0, 0),
+        Size = UDim2.new(1, -20, 1, 0),
+        BackgroundTransparency = 1,
+        TextXAlignment = Enum.TextXAlignment.Left,
+        ZIndex = 11
+    })
+
+    item:Connect("MouseEnter", function()
+        Tween(item.Instance, TweenInfo.new(0.15), {
+            BackgroundTransparency = 0.1
+        })
+    end)
+
+    item:Connect("MouseLeave", function()
+        Tween(item.Instance, TweenInfo.new(0.15), {
+            BackgroundTransparency = 0.2
+        })
+    end)
+
+    item.Instance.Activated:Connect(function()
+        print("Выбран игрок:", name)
+    end)
+
+    return item
+end
+
+local players = {"Player_1", "Player_2", "Player_3", "Player_4", "Player_5", "Player_6", "Player_7", "Player_8", "Player_9", "Player_10"}
+for _, name in ipairs(players) do
+    AddSearchItem(name, container)
+end
 
 -- 2. Вкладка Visuals с подвкладками
 local VisualsTab = Library:CreateTab(MainWindow, {
@@ -3179,7 +3142,6 @@ local VisualsTab = Library:CreateTab(MainWindow, {
 local PlayersSubContainer, PlayersCols = VisualsTab:CreateSubTab({ Name = "Players", Icon = "user" })
 local PlayersSection = Library:CreateSection(PlayersCols[1], { Name = "ESP Players", Icon = "eye" })
 
--- Toggle с настройками (три точки) - обновленная анимация
 PlayersSection:CreateToggle({
     Name = "Box ESP",
     Default = true,
@@ -3248,7 +3210,6 @@ local WorldSection = Library:CreateSection(WorldCols[1], { Name = "World Visuals
 WorldSection:CreateToggle({ Name = "Fullbright", Default = false })
 WorldSection:CreateToggle({ Name = "Chams", Default = false })
 
--- Пример Dropdown в World секции
 WorldSection:CreateDropdown({
     Name = "Weather",
     Options = {"Clear", "Rain", "Storm", "Snow", "Fog"},
@@ -3258,31 +3219,7 @@ WorldSection:CreateDropdown({
     end
 })
 
--- 3. Вкладка Skins (пример использования Skin Changer)
-local SkinsTab, SkinsCols = Library:CreateTab(MainWindow, {
-    Name = "Skins",
-    Subtitle = "скины оружия",
-    Icon = "palette"
-})
-
-local SkinsSection = Library:CreateSection(SkinsCols[1], { Name = "CS:GO Skins", Icon = "palette" })
-
--- Пример использования CreateSkinChanger
-SkinsSection:CreateSkinChanger({
-    Title = "CS:GO Skins",
-    Weapons = {"AK-47", "M4A1-S", "AWP", "Karambit"},
-    Skins = {
-        ["AK-47"] = {"Default", "Asiimov", "Redline", "Vulcan"},
-        ["M4A1-S"] = {"Default", "Printstream", "Hyper Beast"},
-        ["AWP"] = {"Default", "Dragon Lore", "Asiimov"},
-        ["Karambit"] = {"Default", "Doppler", "Fade", "Marble Fade"}
-    },
-    Callback = function(data)
-        print("Применён скин:", data.Weapon, data.Skin, "Wear:", data.Wear, "Seed:", data.Seed)
-    end
-})
-
--- 4. Остальные вкладки для примера
+-- 3. Остальные вкладки для примера
 Library:CreateTab(MainWindow, { Name = "Local", Subtitle = "игрок", Icon = "user" })
 Library:CreateTab(MainWindow, { Name = "Colors", Subtitle = "цвета интерфейса", Icon = "palette" })
 Library:CreateTab(MainWindow, { Name = "Config", Subtitle = "конфигурация", Icon = "folder" })
