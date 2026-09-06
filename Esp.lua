@@ -48,7 +48,8 @@ local IconLibrary = {
     ["star"] = "rbxassetid://10734934585",
     ["palette"] = "rbxassetid://10734950020",
     ["globe"] = "rbxassetid://10723343321",
-    ["zap"] = "rbxassetid://10734983868"
+    ["zap"] = "rbxassetid://10734983868",
+    ["search"] = "rbxassetid://10709752037" -- Новая иконка поиска
 }
 
 local function ParseIcon(icon)
@@ -1418,14 +1419,18 @@ function Library:CreateTab(window, tabData)
 end
 
 -- =======================================================
--- 11. СЕКЦИИ UI (С ПОДДЕРЖКОЙ ИКОНОК)
+-- 11. СЕКЦИИ UI (С ПОДДЕРЖКОЙ ИКОНОК И ПОИСКОМ)
 -- =======================================================
 function Library:CreateSection(parentColumn, sectionData)
     sectionData = sectionData or {}
     local sectionName = sectionData.Name or "Section"
     local sectionIcon = sectionData.Icon or ""
     local collapsed = sectionData.Collapsed or false
+    local isSearchable = sectionData.Searchable or sectionData.Search or false
     local hasSectionIcon = sectionIcon ~= ""
+
+    -- Таблица для отслеживания всех элементов только этой секции
+    local sectionItems = {}
 
     local sectionFrame = Instances:Create("Frame", {
         Parent = parentColumn,
@@ -1457,6 +1462,7 @@ function Library:CreateSection(parentColumn, sectionData)
         Padding = UDim.new(0, 0)
     })
 
+    -- Заголовок секции
     local headerButton = Instances:Create("TextButton", {
         Parent = sectionFrame.Instance,
         Name = "Header",
@@ -1523,6 +1529,7 @@ function Library:CreateSection(parentColumn, sectionData)
         ZIndex = 6
     })
 
+    -- Линия разделителя
     local glowLine = Instances:Create("Frame", {
         Parent = sectionFrame.Instance,
         Name = "GlowDivider",
@@ -1547,12 +1554,13 @@ function Library:CreateSection(parentColumn, sectionData)
         })
     })
 
+    -- Контейнер элементов секции
     local elementsContainer = Instances:Create("Frame", {
         Parent = sectionFrame.Instance,
         Name = "Container",
         Size = UDim2.new(1, 0, 0, 0),
         BackgroundTransparency = 1,
-        LayoutOrder = 2,
+        LayoutOrder = 3,
         ClipsDescendants = true,
         ZIndex = 6
     })
@@ -1587,6 +1595,104 @@ function Library:CreateSection(parentColumn, sectionData)
             elementsContainer.Instance.Size = UDim2.new(1, 0, 0, targetHeight)
             arrowIcon.Instance.Rotation = targetRotation
         end
+    end
+
+    -- БЛОК ПОИСКА (Создается только если Searchable = true)
+    if isSearchable then
+        local searchContainer = Instances:Create("Frame", {
+            Parent = sectionFrame.Instance,
+            Name = "SearchContainer",
+            Size = UDim2.new(1, 0, 0, 32),
+            BackgroundTransparency = 1,
+            LayoutOrder = 2,
+            ZIndex = 7
+        })
+
+        local searchBoxFrame = Instances:Create("Frame", {
+            Parent = searchContainer.Instance,
+            Name = "SearchBoxFrame",
+            AnchorPoint = Vector2.new(0.5, 0.5),
+            Position = UDim2.new(0.5, 0, 0.5, 0),
+            Size = UDim2.new(1, -20, 0, 24),
+            BackgroundColor3 = Theme["Element"],
+            BackgroundTransparency = 0.2,
+            BorderSizePixel = 0,
+            ZIndex = 8
+        })
+
+        Instances:Create("UICorner", {
+            Parent = searchBoxFrame.Instance,
+            CornerRadius = UDim.new(0, 5)
+        })
+
+        local searchStroke = Instances:Create("UIStroke", {
+            Parent = searchBoxFrame.Instance,
+            Color = Theme["Outline"],
+            Thickness = 1,
+            ApplyStrokeMode = Enum.ApplyStrokeMode.Border
+        })
+
+        local searchIcon = Instances:Create("ImageLabel", {
+            Parent = searchBoxFrame.Instance,
+            Name = "SearchIcon",
+            Size = UDim2.new(0, 12, 0, 12),
+            AnchorPoint = Vector2.new(0, 0.5),
+            Position = UDim2.new(0, 8, 0.5, 0),
+            BackgroundTransparency = 1,
+            Image = ParseIcon("search"),
+            ImageColor3 = Theme["SubText"],
+            ImageTransparency = 0.3,
+            ScaleType = Enum.ScaleType.Fit,
+            ZIndex = 9
+        })
+
+        local textBox = Instances:Create("TextBox", {
+            Parent = searchBoxFrame.Instance,
+            Name = "Input",
+            Size = UDim2.new(1, -28, 1, 0),
+            Position = UDim2.new(0, 24, 0, 0),
+            BackgroundTransparency = 1,
+            FontFace = Font.new("rbxassetid://12187365364", Enum.FontWeight.Medium, Enum.FontStyle.Normal),
+            Text = "",
+            PlaceholderText = "Поиск функций в секции...",
+            PlaceholderColor3 = Theme["SubText"],
+            TextColor3 = Theme["Text"],
+            TextSize = 11,
+            TextXAlignment = Enum.TextXAlignment.Left,
+            ClearTextOnFocus = false,
+            ZIndex = 9
+        })
+
+        -- Анимации поля ввода
+        textBox.Instance.Focused:Connect(function()
+            Tween(searchStroke.Instance, TweenInfo.new(0.2), {
+                Color = Theme["Accent"]
+            })
+            Tween(searchIcon.Instance, TweenInfo.new(0.2), {
+                ImageColor3 = Theme["Accent"],
+                ImageTransparency = 0
+            })
+        end)
+
+        textBox.Instance.FocusLost:Connect(function()
+            Tween(searchStroke.Instance, TweenInfo.new(0.2), {
+                Color = Theme["Outline"]
+            })
+            Tween(searchIcon.Instance, TweenInfo.new(0.2), {
+                ImageColor3 = Theme["SubText"],
+                ImageTransparency = 0.3
+            })
+        end)
+
+        -- Логика фильтрации элементов этой секции
+        textBox.Instance:GetPropertyChangedSignal("Text"):Connect(function()
+            local query = string.lower(textBox.Instance.Text)
+            for _, item in ipairs(sectionItems) do
+                local match = (query == "") or (string.find(string.lower(item.Title), query, 1, true) ~= nil)
+                item.Instance.Visible = match
+            end
+            UpdateContainerSize(true)
+        end)
     end
 
     elementsLayout.Instance:GetPropertyChangedSignal("AbsoluteContentSize"):Connect(function()
@@ -2010,6 +2116,8 @@ function Library:CreateSection(parentColumn, sectionData)
             UpdateState(val)
         end
 
+        -- Регистрация элемента для поиска
+        table.insert(sectionItems, { Instance = itemHost.Instance, Title = toggleName })
         return toggleButton.Instance
     end
 
@@ -2451,6 +2559,8 @@ function Library:CreateSection(parentColumn, sectionData)
             DropdownAPI:Set(val)
         end
 
+        -- Регистрация элемента для поиска
+        table.insert(sectionItems, { Instance = dropHost.Instance, Title = dropTitle })
         return DropdownAPI
     end
 
@@ -2582,6 +2692,8 @@ function Library:CreateSection(parentColumn, sectionData)
             Button.Callback = NewCallback
         end
 
+        -- Регистрация элемента для поиска
+        table.insert(sectionItems, { Instance = ButtonFrame.Instance, Title = Button.Title })
         return Button
     end
 
@@ -2843,6 +2955,8 @@ function Library:CreateSection(parentColumn, sectionData)
             UpdateSliderDisplay()
         end
 
+        -- Регистрация элемента для поиска
+        table.insert(sectionItems, { Instance = SliderFrame.Instance, Title = Slider.Title })
         return Slider
     end
 
@@ -2912,7 +3026,30 @@ local BigSectionDirect = CustomTab:CreateSection({
 
 BigSectionDirect:Button({ Name = "Сохранить конфиг" })
 
--- 4. Вкладка Combat (из оригинального кода)
+-- ВАРИАНТ 4: Секция с ПОИСКОМ (Searchable = true)
+local SearchTab, SearchCols = Library:CreateTab(MainWindow, {
+    Name = "Поиск",
+    Icon = "search",
+    Columns = 1
+})
+
+local SearchSection = Library:CreateSection(SearchCols[1], {
+    Name = "Панель Управления Функциями",
+    Icon = "code",
+    Searchable = true -- Включает систему поиска для этой секции
+})
+
+SearchSection:CreateToggle({ Name = "ESP Игроков", Default = false })
+SearchSection:CreateToggle({ Name = "Aimbot Лок", Default = false })
+SearchSection:Slider({ Name = "Скорость бега (Speed)", Min = 16, Max = 200, Default = 16, Unit = " studs" })
+SearchSection:Button({ Title = "Телепорт на Спавн", Callback = function() print("Teleported!") end })
+SearchSection:CreateDropdown({
+    Name = "Режим работы",
+    Options = {"Silent", "Legit", "Rage"},
+    Default = "Legit"
+})
+
+-- 5. Вкладка Combat (из оригинального кода)
 local CombatTab, CombatCols = Library:CreateTab(MainWindow, {
     Name = "Combat",
     Subtitle = "боевые настройки",
@@ -2976,7 +3113,7 @@ CombatSection:CreateDropdown({
     end
 })
 
--- 5. Вкладка Visuals с подвкладками
+-- 6. Вкладка Visuals с подвкладками
 local VisualsTab = Library:CreateTab(MainWindow, {
     Name = "Visuals",
     Subtitle = "отображение объектов",
@@ -3078,7 +3215,7 @@ WorldSection:CreateDropdown({
     end
 })
 
--- 6. Остальные вкладки
+-- 7. Остальные вкладки
 Library:CreateTab(MainWindow, {
     Name = "Local",
     Subtitle = "игрок",
