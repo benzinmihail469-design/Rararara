@@ -2857,18 +2857,79 @@ local MainWindow = Library:CreateWindow({
     Logo = "134603867443812"
 })
 
--- 1. Вкладка Combat
+-- ВАРИАНТ 1: Вкладка с 1 колонкой (во всю ширину)
+local SingleTab, SingleCols = Library:CreateTab(MainWindow, {
+    Name = "Главная",
+    Icon = "home",
+    Columns = 1 -- ОДНА большая колонка во всю ширину
+})
+
+-- Создаем секцию внутри этой единственной колонки SingleCols[1]
+local BigSection = Library:CreateSection(SingleCols[1], {
+    Name = "Большая Секция На Всю Вкладку",
+    Icon = "zap"
+})
+
+BigSection:CreateToggle({ Name = "Функция 1", Default = true })
+BigSection:Slider({ Name = "Скорость", Min = 1, Max = 100, Default = 50 })
+
+-- ВАРИАНТ 2: Комбинирование (Большая секция + 2 колонки на одной вкладке)
+local HybridTab = Library:CreateTab(MainWindow, {
+    Name = "Комбо",
+    Icon = "star"
+})
+
+-- 1. Большая секция сверху во всю ширину
+local TopBigSection = HybridTab:CreateSection({
+    Name = "Верхняя широкая панель"
+})
+TopBigSection:CreateToggle({ Name = "Главный переключатель" })
+
+-- 2. Динамически создаем 2 колонки снизу для компактных секций
+local LeftCol, RightCol = HybridTab:CreateColumns(2)
+
+local LeftSection = Library:CreateSection(LeftCol, {
+    Name = "Левая колонка"
+})
+LeftSection:CreateToggle({ Name = "Левый тоггл" })
+
+local RightSection = Library:CreateSection(RightCol, {
+    Name = "Правая колонка"
+})
+RightSection:CreateToggle({ Name = "Правый тоггл" })
+
+-- ВАРИАНТ 3: Создание большой секции напрямую через метод Tab:CreateSection()
+local CustomTab = Library:CreateTab(MainWindow, {
+    Name = "Настройки",
+    Icon = "settings"
+})
+
+-- Метод CreateSection прямо на вкладке создает большую секцию во всю ширину!
+local BigSectionDirect = CustomTab:CreateSection({
+    Name = "Огромная Секция На Весь Экран",
+    Icon = "shield"
+})
+
+BigSectionDirect:Button({ Name = "Сохранить конфиг" })
+
+-- 4. Вкладка Combat (из оригинального кода)
 local CombatTab, CombatCols = Library:CreateTab(MainWindow, {
     Name = "Combat",
     Subtitle = "боевые настройки",
     Icon = "combat"
 })
 
-local AimbotSection = Library:CreateSection(CombatCols[1], { Name = "Aimbot", Icon = "zap" })
+local AimbotSection = Library:CreateSection(CombatCols[1], {
+    Name = "Aimbot",
+    Icon = "zap"
+})
 AimbotSection:CreateToggle({ Name = "Enable Aimbot", Default = true })
 AimbotSection:CreateToggle({ Name = "Prediction", Default = false })
 
-local CombatSection = Library:CreateSection(CombatCols[2], { Name = "Combat Controls", Icon = "shield" })
+local CombatSection = Library:CreateSection(CombatCols[2], {
+    Name = "Combat Controls",
+    Icon = "shield"
+})
 CombatSection:Button({
     Title = "Fling Players",
     Callback = function()
@@ -2915,15 +2976,21 @@ CombatSection:CreateDropdown({
     end
 })
 
--- 2. Вкладка Visuals с подвкладками
+-- 5. Вкладка Visuals с подвкладками
 local VisualsTab = Library:CreateTab(MainWindow, {
     Name = "Visuals",
     Subtitle = "отображение объектов",
     Icon = "eye"
 })
 
-local PlayersSubContainer, PlayersCols = VisualsTab:CreateSubTab({ Name = "Players", Icon = "user" })
-local PlayersSection = Library:CreateSection(PlayersCols[1], { Name = "ESP Players", Icon = "eye" })
+local PlayersSubContainer, PlayersCols = VisualsTab:CreateSubTab({
+    Name = "Players",
+    Icon = "user"
+})
+local PlayersSection = Library:CreateSection(PlayersCols[1], {
+    Name = "ESP Players",
+    Icon = "eye"
+})
 
 PlayersSection:CreateToggle({
     Name = "Box ESP",
@@ -2968,7 +3035,10 @@ PlayersSection:CreateToggle({
     end
 })
 
-local VisualsSection = Library:CreateSection(PlayersCols[2], { Name = "ESP Settings", Icon = "settings" })
+local VisualsSection = Library:CreateSection(PlayersCols[2], {
+    Name = "ESP Settings",
+    Icon = "settings"
+})
 VisualsSection:Slider({
     Title = "ESP Distance",
     Min = 100,
@@ -2988,8 +3058,14 @@ VisualsSection:Button({
     end
 })
 
-local WorldSubContainer, WorldCols = VisualsTab:CreateSubTab({ Name = "World", Icon = "globe" })
-local WorldSection = Library:CreateSection(WorldCols[1], { Name = "World Visuals", Icon = "palette" })
+local WorldSubContainer, WorldCols = VisualsTab:CreateSubTab({
+    Name = "World",
+    Icon = "globe"
+})
+local WorldSection = Library:CreateSection(WorldCols[1], {
+    Name = "World Visuals",
+    Icon = "palette"
+})
 WorldSection:CreateToggle({ Name = "Fullbright", Default = false })
 WorldSection:CreateToggle({ Name = "Chams", Default = false })
 
@@ -3002,9 +3078,23 @@ WorldSection:CreateDropdown({
     end
 })
 
--- 3. Остальные вкладки для примера
-Library:CreateTab(MainWindow, { Name = "Local", Subtitle = "игрок", Icon = "user" })
-Library:CreateTab(MainWindow, { Name = "Colors", Subtitle = "цвета интерфейса", Icon = "palette" })
-Library:CreateTab(MainWindow, { Name = "Config", Subtitle = "конфигурация", Icon = "folder" })
+-- 6. Остальные вкладки
+Library:CreateTab(MainWindow, {
+    Name = "Local",
+    Subtitle = "игрок",
+    Icon = "user"
+})
+
+Library:CreateTab(MainWindow, {
+    Name = "Colors",
+    Subtitle = "цвета интерфейса",
+    Icon = "palette"
+})
+
+Library:CreateTab(MainWindow, {
+    Name = "Config",
+    Subtitle = "конфигурация",
+    Icon = "folder"
+})
 
 print("Created Flags:", table.concat(table.keys(Library.Flags or {}), ", "))
