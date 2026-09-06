@@ -2797,19 +2797,19 @@ function Library:CreateSection(parentColumn, sectionData)
     end
 
     -- =======================================================
-    -- ФУНКЦИЯ СОЗДАНИЯ СЕКЦИИ С СИСТЕМОЙ ПОИСКА
+    -- ФУНКЦИЯ СОЗДАНИЯ БОЛЬШОЙ СЕКЦИИ С СИСТЕМОЙ ПОИСКА (1 КОЛОНКА / FULL-WIDTH)
     -- =======================================================
-    function SectionAPI:CreateSearchSection(searchData)
+    function Library:CreateSearchSection(parentContainer, searchData)
         searchData = searchData or {}
-        local sectionTitle = searchData.Name or "Search Section"
+        local sectionTitle = searchData.Name or searchData.Title or "Search Section"
         local placeholder = searchData.Placeholder or "Поиск элементов..."
         local searchIcon = searchData.Icon or "rbxassetid://10723415903"
-        local defaultHeight = searchData.Height or 220
+        local sectionHeight = searchData.Height or 240
 
         local searchSectionFrame = Instances:Create("Frame", {
-            Parent = elementsContainer.Instance,
+            Parent = parentContainer,
             Name = "SearchSection_" .. sectionTitle,
-            Size = UDim2.new(1, 0, 0, defaultHeight),
+            Size = UDim2.new(1, 0, 0, sectionHeight),
             BackgroundColor3 = Theme["Background 2"],
             BackgroundTransparency = 0.15,
             BorderSizePixel = 0,
@@ -2841,6 +2841,28 @@ function Library:CreateSection(parentColumn, sectionData)
             PaddingBottom = UDim.new(0, 8),
             PaddingLeft = UDim.new(0, 8),
             PaddingRight = UDim.new(0, 8)
+        })
+
+        local headerFrame = Instances:Create("Frame", {
+            Parent = searchSectionFrame.Instance,
+            Name = "Header",
+            Size = UDim2.new(1, 0, 0, 20),
+            BackgroundTransparency = 1,
+            LayoutOrder = 0,
+            ZIndex = 6
+        })
+
+        local titleLabel = Instances:Create("TextLabel", {
+            Parent = headerFrame.Instance,
+            Name = "Title",
+            Text = sectionTitle,
+            FontFace = Font.new("rbxassetid://12187365364", Enum.FontWeight.Bold, Enum.FontStyle.Normal),
+            TextColor3 = Theme["Text"],
+            TextSize = 12,
+            Size = UDim2.new(1, 0, 1, 0),
+            BackgroundTransparency = 1,
+            TextXAlignment = Enum.TextXAlignment.Left,
+            ZIndex = 6
         })
 
         local searchBarHost = Instances:Create("Frame", {
@@ -2883,72 +2905,27 @@ function Library:CreateSection(parentColumn, sectionData)
         local searchBox = Instances:Create("TextBox", {
             Parent = searchBarHost.Instance,
             Name = "SearchInput",
-            Size = UDim2.new(1, -52, 1, 0),
+            Size = UDim2.new(1, -34, 1, 0),
             Position = UDim2.new(0, 30, 0, 0),
             BackgroundTransparency = 1,
             Text = "",
             PlaceholderText = placeholder,
-            PlaceholderColor3 = Theme["SubText"],
             TextColor3 = Theme["Text"],
+            PlaceholderColor3 = Theme["SubText"],
+            FontFace = Font.new("rbxassetid://12187365364", Enum.FontWeight.Regular, Enum.FontStyle.Normal),
             TextSize = 11,
-            FontFace = Font.new("rbxassetid://12187365364", Enum.FontWeight.Medium, Enum.FontStyle.Normal),
             TextXAlignment = Enum.TextXAlignment.Left,
             ClearTextOnFocus = false,
             ZIndex = 7
         })
-
-        local clearBtn = Instances:Create("TextButton", {
-            Parent = searchBarHost.Instance,
-            Name = "ClearButton",
-            AnchorPoint = Vector2.new(1, 0.5),
-            Position = UDim2.new(1, -8, 0.5, 0),
-            Size = UDim2.new(0, 16, 0, 16),
-            BackgroundTransparency = 1,
-            Text = "✕",
-            TextColor3 = Theme["SubText"],
-            TextSize = 10,
-            Visible = false,
-            ZIndex = 7
-        })
-
-        local resultsContainer = Instances:Create("ScrollingFrame", {
-            Parent = searchSectionFrame.Instance,
-            Name = "ResultsContainer",
-            Size = UDim2.new(1, 0, 1, -40),
-            BackgroundTransparency = 1,
-            BorderSizePixel = 0,
-            ScrollBarThickness = 3,
-            ScrollBarImageColor3 = Theme["Accent"],
-            LayoutOrder = 2,
-            ZIndex = 6,
-            ScrollingDirection = Enum.ScrollingDirection.Y,
-            ClipsDescendants = true
-        })
-
-        local resultsLayout = Instances:Create("UIListLayout", {
-            Parent = resultsContainer.Instance,
-            SortOrder = Enum.SortOrder.LayoutOrder,
-            Padding = UDim.new(0, 6)
-        })
-
-        Instances:Create("UIPadding", {
-            Parent = resultsContainer.Instance,
-            PaddingTop = UDim.new(0, 2),
-            PaddingBottom = UDim.new(0, 6),
-            PaddingLeft = UDim.new(0, 2),
-            PaddingRight = UDim.new(0, 4)
-        })
-
-        resultsLayout.Instance:GetPropertyChangedSignal("AbsoluteContentSize"):Connect(function()
-            resultsContainer.Instance.CanvasSize = UDim2.new(0, 0, 0, resultsLayout.AbsoluteContentSize.Y + 10)
-        end)
 
         searchBox.Instance.Focused:Connect(function()
             Tween(searchBarStroke.Instance, TweenInfo.new(0.2), {
                 Color = Theme["Accent"]
             })
             Tween(searchIconImg.Instance, TweenInfo.new(0.2), {
-                ImageColor3 = Theme["Accent"]
+                ImageColor3 = Theme["Accent"],
+                ImageTransparency = 0
             })
         end)
 
@@ -2957,22 +2934,77 @@ function Library:CreateSection(parentColumn, sectionData)
                 Color = Theme["Outline"]
             })
             Tween(searchIconImg.Instance, TweenInfo.new(0.2), {
-                ImageColor3 = Theme["SubText"]
+                ImageColor3 = Theme["SubText"],
+                ImageTransparency = 0.2
             })
         end)
 
-        local function FilterItems(query)
-            local cleanQuery = string.lower(string.gsub(query, "^%s*(.-)%s*$", "%1"))
-            clearBtn.Instance.Visible = (cleanQuery ~= "")
+        local glowLine = Instances:Create("Frame", {
+            Parent = searchSectionFrame.Instance,
+            Name = "GlowDivider",
+            Size = UDim2.new(1, 0, 0, 1),
+            BackgroundColor3 = Color3.fromRGB(255, 255, 255),
+            BorderSizePixel = 0,
+            LayoutOrder = 2,
+            ZIndex = 6
+        })
 
-            for _, item in ipairs(resultsContainer.Instance:GetChildren()) do
-                if item:IsA("GuiObject") and not item:IsA("UIListLayout") and not item:IsA("UIPadding") then
-                    local label = item:FindFirstChild("Label", true) or item:FindFirstChild("Title", true)
-                    local itemText = label and label:IsA("TextLabel") and label.Text or item.Name
-                    if cleanQuery == "" or string.find(string.lower(itemText), cleanQuery, 1, true) then
-                        item.Visible = true
+        Instances:Create("UIGradient", {
+            Parent = glowLine.Instance,
+            Color = ColorSequence.new({
+                ColorSequenceKeypoint.new(0, Theme["GlowEdge"]),
+                ColorSequenceKeypoint.new(0.5, Theme["GlowCenter"]),
+                ColorSequenceKeypoint.new(1, Theme["GlowEdge"])
+            }),
+            Transparency = NumberSequence.new({
+                NumberSequenceKeypoint.new(0, 0.8),
+                NumberSequenceKeypoint.new(0.5, 0.0),
+                NumberSequenceKeypoint.new(1, 0.8)
+            })
+        })
+
+        local itemsScroll = Instances:Create("ScrollingFrame", {
+            Parent = searchSectionFrame.Instance,
+            Name = "ItemsContainer",
+            Size = UDim2.new(1, 0, 1, -70),
+            BackgroundTransparency = 1,
+            BorderSizePixel = 0,
+            ScrollBarThickness = 2,
+            ScrollBarImageColor3 = Theme["Accent"],
+            LayoutOrder = 3,
+            ZIndex = 6,
+            CanvasSize = UDim2.new(0, 0, 0, 0),
+            AutomaticCanvasSize = Enum.AutomaticSize.Y
+        })
+
+        local itemsLayout = Instances:Create("UIListLayout", {
+            Parent = itemsScroll.Instance,
+            SortOrder = Enum.SortOrder.LayoutOrder,
+            Padding = UDim.new(0, 6)
+        })
+
+        Instances:Create("UIPadding", {
+            Parent = itemsScroll.Instance,
+            PaddingTop = UDim.new(0, 2),
+            PaddingBottom = UDim.new(0, 4),
+            PaddingRight = UDim.new(0, 4)
+        })
+
+        local function FilterItems(query)
+            local cleanQuery = string.lower(query or "")
+            for _, child in ipairs(itemsScroll.Instance:GetChildren()) do
+                if child:IsA("GuiObject") and child.Name ~= "UIListLayout" and child.Name ~= "UIPadding" then
+                    if cleanQuery == "" then
+                        child.Visible = true
                     else
-                        item.Visible = false
+                        local itemName = string.lower(child.Name)
+                        local label = child:FindFirstChild("Label", true)
+                        local itemText = label and string.lower(label.Text) or ""
+                        if string.find(itemName, cleanQuery) or string.find(itemText, cleanQuery) then
+                            child.Visible = true
+                        else
+                            child.Visible = false
+                        end
                     end
                 end
             end
@@ -2982,21 +3014,37 @@ function Library:CreateSection(parentColumn, sectionData)
             FilterItems(searchBox.Instance.Text)
         end)
 
-        clearBtn.Instance.Activated:Connect(function()
-            searchBox.Instance.Text = ""
-            FilterItems("")
-        end)
-
         local SearchAPI = {
             Frame = searchSectionFrame.Instance,
-            Container = resultsContainer.Instance
+            Container = itemsScroll.Instance
         }
 
-        function SearchAPI:GetContainer()
-            return resultsContainer.Instance
+        function SearchAPI:CreateToggle(toggleData)
+            local dummySection = { elementsContainer = itemsScroll }
+            return SectionAPI.CreateToggle(dummySection, toggleData)
+        end
+
+        function SearchAPI:Button(buttonData)
+            local dummySection = { elementsContainer = itemsScroll }
+            return SectionAPI.Button(dummySection, buttonData)
+        end
+
+        function SearchAPI:Slider(sliderData)
+            local dummySection = { elementsContainer = itemsScroll }
+            return SectionAPI.Slider(dummySection, sliderData)
+        end
+
+        function SearchAPI:CreateDropdown(dropdownData)
+            local dummySection = { elementsContainer = itemsScroll }
+            return SectionAPI.CreateDropdown(dummySection, dropdownData)
         end
 
         return SearchAPI
+    end
+
+    -- Добавляем метод в SectionAPI для вызова из секции
+    function SectionAPI:CreateSearchSection(searchData)
+        return Library:CreateSearchSection(elementsContainer.Instance, searchData)
     end
 
     return SectionAPI
@@ -3068,14 +3116,14 @@ CombatSection:CreateDropdown({
     end
 })
 
--- Пример использования SearchSection
+-- Пример использования SearchSection (полноразмерная секция с поиском)
 local SearchSection = CombatSection:CreateSearchSection({
     Name = "PlayerSearch",
     Placeholder = "Поиск игроков...",
-    Height = 200
+    Height = 240
 })
 
-local container = SearchSection:GetContainer()
+local container = SearchSection.Container
 
 local function AddSearchItem(name, parent)
     local item = Instances:Create("TextButton", {
