@@ -339,7 +339,6 @@ function Library:CreateWindow(data)
     })
 
     MakeDraggable(mainFrame.Instance, mainFrame.Instance)
-
     CreateConstellationBackground(mainFrame.Instance, 30, 85)
 
     local sidebarBackground = Instances:Create("Frame", {
@@ -619,13 +618,14 @@ function Library:CreateWindow(data)
 end
 
 -- =======================================================
--- 10. ОБНОВЛЕННАЯ СИСТЕМА ВКЛАДОК И ПОДВКЛАДОК
+-- 10. ОБНОВЛЕННАЯ СИСТЕМА ВКЛАДОК (С ПОДДЕРЖКОЙ 1 ИЛИ 2 КОЛОНОК И БОЛЬШИХ СЕКЦИЙ)
 -- =======================================================
 function Library:CreateTab(window, tabData)
     tabData = tabData or {}
     local tabName = tabData.Name or "Tab"
     local tabSubtitle = tabData.Subtitle or ""
     local tabIcon = tabData.Icon or "folder"
+    local initialColumnsCount = tabData.Columns or tabData.ColumnCount or 2
 
     local tabGroupFrame = Instances:Create("Frame", {
         Parent = window.LeftTabs,
@@ -821,9 +821,9 @@ function Library:CreateTab(window, tabData)
         ScrollingEnabled = true
     })
 
-    Instances:Create("UIListLayout", {
+    local mainContainerLayout = Instances:Create("UIListLayout", {
         Parent = defaultMainContainer.Instance,
-        FillDirection = Enum.FillDirection.Horizontal,
+        FillDirection = Enum.FillDirection.Vertical,
         SortOrder = Enum.SortOrder.LayoutOrder,
         Padding = UDim.new(0, 10)
     })
@@ -836,28 +836,10 @@ function Library:CreateTab(window, tabData)
         PaddingLeft = UDim.new(0, 4)
     })
 
-    local defaultColumns = {}
-    for i = 1, 2 do
-        local col = Instances:Create("Frame", {
-            Parent = defaultMainContainer.Instance,
-            Name = "Column_" .. i,
-            Size = UDim2.new(0.5, -5, 0, 0),
-            AutomaticSize = Enum.AutomaticSize.Y,
-            BackgroundTransparency = 1,
-            BorderSizePixel = 0
-        })
-        local colLayout = Instances:Create("UIListLayout", {
-            Parent = col.Instance,
-            Padding = UDim.new(0, 8),
-            SortOrder = Enum.SortOrder.LayoutOrder
-        })
-        colLayout.Instance:GetPropertyChangedSignal("AbsoluteContentSize"):Connect(function()
-            local h1 = defaultMainContainer.Instance:FindFirstChild("Column_1") and defaultMainContainer.Instance.Column_1.UIListLayout.AbsoluteContentSize.Y or 0
-            local h2 = defaultMainContainer.Instance:FindFirstChild("Column_2") and defaultMainContainer.Instance.Column_2.UIListLayout.AbsoluteContentSize.Y or 0
-            defaultMainContainer.Instance.CanvasSize = UDim2.new(0, 0, 0, math.max(h1, h2) + 25)
-        end)
-        defaultColumns[i] = col.Instance
+    local function UpdateTabCanvas()
+        defaultMainContainer.Instance.CanvasSize = UDim2.new(0, 0, 0, mainContainerLayout.Instance.AbsoluteContentSize.Y + 25)
     end
+    mainContainerLayout.Instance:GetPropertyChangedSignal("AbsoluteContentSize"):Connect(UpdateTabCanvas)
 
     local TabObject = {
         Button = tabButton.Instance,
@@ -867,7 +849,7 @@ function Library:CreateTab(window, tabData)
         Label = tabLabel.Instance,
         SubLabel = subLabel and subLabel.Instance or nil,
         Container = defaultMainContainer.Instance,
-        Columns = defaultColumns,
+        Columns = {},
         SubTabs = {},
         SubTabsContainer = subTabsContainer.Instance,
         SubListLayout = subListLayout.Instance,
@@ -876,6 +858,54 @@ function Library:CreateTab(window, tabData)
         HasSubTabs = false,
         ActiveSubTabObj = nil
     }
+
+    function TabObject:CreateColumns(count)
+        count = count or 2
+        local rowFrame = Instances:Create("Frame", {
+            Parent = defaultMainContainer.Instance,
+            Name = "ColumnRow_" .. count,
+            Size = UDim2.new(1, 0, 0, 0),
+            AutomaticSize = Enum.AutomaticSize.Y,
+            BackgroundTransparency = 1,
+            BorderSizePixel = 0
+        })
+
+        Instances:Create("UIListLayout", {
+            Parent = rowFrame.Instance,
+            FillDirection = Enum.FillDirection.Horizontal,
+            SortOrder = Enum.SortOrder.LayoutOrder,
+            Padding = UDim.new(0, 10)
+        })
+
+        local createdCols = {}
+        for i = 1, count do
+            local colWidthScale = 1 / count
+            local colOffset = (count > 1) and -(((count - 1) * 10) / count) or 0
+            local col = Instances:Create("Frame", {
+                Parent = rowFrame.Instance,
+                Name = "Column_" .. i,
+                Size = UDim2.new(colWidthScale, colOffset, 0, 0),
+                AutomaticSize = Enum.AutomaticSize.Y,
+                BackgroundTransparency = 1,
+                BorderSizePixel = 0
+            })
+            local colLayout = Instances:Create("UIListLayout", {
+                Parent = col.Instance,
+                Padding = UDim.new(0, 8),
+                SortOrder = Enum.SortOrder.LayoutOrder
+            })
+            colLayout.Instance:GetPropertyChangedSignal("AbsoluteContentSize"):Connect(UpdateTabCanvas)
+            table.insert(createdCols, col.Instance)
+        end
+        return unpack(createdCols)
+    end
+
+    function TabObject:CreateSection(sectionData)
+        return Library:CreateSection(defaultMainContainer.Instance, sectionData)
+    end
+
+    local defaultCols = { TabObject:CreateColumns(initialColumnsCount) }
+    TabObject.Columns = defaultCols
 
     local function DeselectTab()
         Tween(tabButton.Instance, TweenInfo.new(0.2, Enum.EasingStyle.Quad, Enum.EasingDirection.Out), {
@@ -890,7 +920,8 @@ function Library:CreateTab(window, tabData)
         })
         Tween(iconImage.Instance, TweenInfo.new(0.2), {
             ImageColor3 = Theme["SubText"],
-            ImageTransparency = 0.3        })
+            ImageTransparency = 0.3
+        })
         Tween(tabLabel.Instance, TweenInfo.new(0.2), {
             TextColor3 = Theme["SubText"]
         })
@@ -1046,6 +1077,7 @@ function Library:CreateTab(window, tabData)
         local subName = subData.Name or "SubTab"
         local subIcon = subData.Icon or ""
         local hasSubIcon = subIcon ~= ""
+        local initialColumnsCount = subData.Columns or subData.ColumnCount or 2
 
         if not TabObject.HasSubTabs then
             TabObject.HasSubTabs = true
@@ -1171,9 +1203,9 @@ function Library:CreateTab(window, tabData)
             ScrollingEnabled = true
         })
 
-        Instances:Create("UIListLayout", {
+        local subContainerLayout = Instances:Create("UIListLayout", {
             Parent = subContainer.Instance,
-            FillDirection = Enum.FillDirection.Horizontal,
+            FillDirection = Enum.FillDirection.Vertical,
             SortOrder = Enum.SortOrder.LayoutOrder,
             Padding = UDim.new(0, 10)
         })
@@ -1186,28 +1218,10 @@ function Library:CreateTab(window, tabData)
             PaddingLeft = UDim.new(0, 4)
         })
 
-        local subCols = {}
-        for i = 1, 2 do
-            local col = Instances:Create("Frame", {
-                Parent = subContainer.Instance,
-                Name = "Column_" .. i,
-                Size = UDim2.new(0.5, -5, 0, 0),
-                AutomaticSize = Enum.AutomaticSize.Y,
-                BackgroundTransparency = 1,
-                BorderSizePixel = 0
-            })
-            local colLayout = Instances:Create("UIListLayout", {
-                Parent = col.Instance,
-                Padding = UDim.new(0, 8),
-                SortOrder = Enum.SortOrder.LayoutOrder
-            })
-            colLayout.Instance:GetPropertyChangedSignal("AbsoluteContentSize"):Connect(function()
-                local h1 = subContainer.Instance:FindFirstChild("Column_1") and subContainer.Instance.Column_1.UIListLayout.AbsoluteContentSize.Y or 0
-                local h2 = subContainer.Instance:FindFirstChild("Column_2") and subContainer.Instance.Column_2.UIListLayout.AbsoluteContentSize.Y or 0
-                subContainer.Instance.CanvasSize = UDim2.new(0, 0, 0, math.max(h1, h2) + 25)
-            end)
-            subCols[i] = col.Instance
+        local function UpdateSubCanvas()
+            subContainer.Instance.CanvasSize = UDim2.new(0, 0, 0, subContainerLayout.Instance.AbsoluteContentSize.Y + 25)
         end
+        subContainerLayout.Instance:GetPropertyChangedSignal("AbsoluteContentSize"):Connect(UpdateSubCanvas)
 
         local SubTabObject = {
             Button = subButton.Instance,
@@ -1215,8 +1229,56 @@ function Library:CreateTab(window, tabData)
             Indicator = subIndicator.Instance,
             Stroke = subStroke.Instance,
             Container = subContainer.Instance,
-            Columns = subCols
+            Columns = {}
         }
+
+        function SubTabObject:CreateColumns(count)
+            count = count or 2
+            local rowFrame = Instances:Create("Frame", {
+                Parent = subContainer.Instance,
+                Name = "ColumnRow_" .. count,
+                Size = UDim2.new(1, 0, 0, 0),
+                AutomaticSize = Enum.AutomaticSize.Y,
+                BackgroundTransparency = 1,
+                BorderSizePixel = 0
+            })
+
+            Instances:Create("UIListLayout", {
+                Parent = rowFrame.Instance,
+                FillDirection = Enum.FillDirection.Horizontal,
+                SortOrder = Enum.SortOrder.LayoutOrder,
+                Padding = UDim.new(0, 10)
+            })
+
+            local createdCols = {}
+            for i = 1, count do
+                local colWidthScale = 1 / count
+                local colOffset = (count > 1) and -(((count - 1) * 10) / count) or 0
+                local col = Instances:Create("Frame", {
+                    Parent = rowFrame.Instance,
+                    Name = "Column_" .. i,
+                    Size = UDim2.new(colWidthScale, colOffset, 0, 0),
+                    AutomaticSize = Enum.AutomaticSize.Y,
+                    BackgroundTransparency = 1,
+                    BorderSizePixel = 0
+                })
+                local colLayout = Instances:Create("UIListLayout", {
+                    Parent = col.Instance,
+                    Padding = UDim.new(0, 8),
+                    SortOrder = Enum.SortOrder.LayoutOrder
+                })
+                colLayout.Instance:GetPropertyChangedSignal("AbsoluteContentSize"):Connect(UpdateSubCanvas)
+                table.insert(createdCols, col.Instance)
+            end
+            return unpack(createdCols)
+        end
+
+        function SubTabObject:CreateSection(sectionData)
+            return Library:CreateSection(subContainer.Instance, sectionData)
+        end
+
+        local defaultSubCols = { SubTabObject:CreateColumns(initialColumnsCount) }
+        SubTabObject.Columns = defaultSubCols
 
         function SubTabObject:Deselect()
             Tween(subButton.Instance, TweenInfo.new(0.15, Enum.EasingStyle.Quad, Enum.EasingDirection.Out), {
@@ -1345,18 +1407,18 @@ function Library:CreateTab(window, tabData)
             end)
         end)
 
-        return subContainer.Instance, subCols
+        return subContainer.Instance, defaultSubCols
     end
 
     if not Library.ActiveTabObject then
         ActivateTab()
     end
 
-    return TabObject, defaultColumns
+    return TabObject, defaultCols
 end
 
 -- =======================================================
--- 11. СЕКЦИИ UI
+-- 11. СЕКЦИИ UI (С ПОДДЕРЖКОЙ ИКОНОК)
 -- =======================================================
 function Library:CreateSection(parentColumn, sectionData)
     sectionData = sectionData or {}
@@ -1544,9 +1606,6 @@ function Library:CreateSection(parentColumn, sectionData)
 
     local SectionAPI = {}
 
-    -- ====================================================================
-    -- ОБНОВЛЕННАЯ ФУНКЦИЯ CreateToggle
-    -- ====================================================================
     function SectionAPI:CreateToggle(toggleData)
         toggleData = toggleData or {}
         local toggleName = toggleData.Name or "Toggle"
@@ -1954,9 +2013,6 @@ function Library:CreateSection(parentColumn, sectionData)
         return toggleButton.Instance
     end
 
-    -- ====================================================================
-    -- СИСТЕМА ДРОПДАУНОВ
-    -- ====================================================================
     function SectionAPI:CreateDropdown(dropdownData)
         dropdownData = dropdownData or {}
         local dropTitle = dropdownData.Name or dropdownData.Title or "Dropdown"
@@ -2398,9 +2454,6 @@ function Library:CreateSection(parentColumn, sectionData)
         return DropdownAPI
     end
 
-    -- ====================================================================
-    -- СИСТЕМА КНОПОК
-    -- ====================================================================
     function SectionAPI:Button(Data)
         Data = Data or {}
         local Button = {
@@ -2532,9 +2585,6 @@ function Library:CreateSection(parentColumn, sectionData)
         return Button
     end
 
-    -- ====================================================================
-    -- СИСТЕМА СЛАЙДЕРОВ
-    -- ====================================================================
     function SectionAPI:Slider(Data)
         Data = Data or {}
         local Slider = {
@@ -2796,257 +2846,6 @@ function Library:CreateSection(parentColumn, sectionData)
         return Slider
     end
 
-    -- =======================================================
-    -- ФУНКЦИЯ СОЗДАНИЯ БОЛЬШОЙ СЕКЦИИ С СИСТЕМОЙ ПОИСКА (1 КОЛОНКА / FULL-WIDTH)
-    -- =======================================================
-    function Library:CreateSearchSection(parentContainer, searchData)
-        searchData = searchData or {}
-        local sectionTitle = searchData.Name or searchData.Title or "Search Section"
-        local placeholder = searchData.Placeholder or "Поиск элементов..."
-        local searchIcon = searchData.Icon or "rbxassetid://10723415903"
-        local sectionHeight = searchData.Height or 240
-
-        local searchSectionFrame = Instances:Create("Frame", {
-            Parent = parentContainer,
-            Name = "SearchSection_" .. sectionTitle,
-            Size = UDim2.new(1, 0, 0, sectionHeight),
-            BackgroundColor3 = Theme["Background 2"],
-            BackgroundTransparency = 0.15,
-            BorderSizePixel = 0,
-            ZIndex = 5,
-            ClipsDescendants = true
-        })
-
-        Instances:Create("UICorner", {
-            Parent = searchSectionFrame.Instance,
-            CornerRadius = UDim.new(0, 8)
-        })
-
-        local sectionStroke = Instances:Create("UIStroke", {
-            Parent = searchSectionFrame.Instance,
-            Color = Theme["Outline"],
-            Thickness = 1,
-            ApplyStrokeMode = Enum.ApplyStrokeMode.Border
-        })
-
-        Instances:Create("UIListLayout", {
-            Parent = searchSectionFrame.Instance,
-            SortOrder = Enum.SortOrder.LayoutOrder,
-            Padding = UDim.new(0, 8)
-        })
-
-        Instances:Create("UIPadding", {
-            Parent = searchSectionFrame.Instance,
-            PaddingTop = UDim.new(0, 8),
-            PaddingBottom = UDim.new(0, 8),
-            PaddingLeft = UDim.new(0, 8),
-            PaddingRight = UDim.new(0, 8)
-        })
-
-        local headerFrame = Instances:Create("Frame", {
-            Parent = searchSectionFrame.Instance,
-            Name = "Header",
-            Size = UDim2.new(1, 0, 0, 20),
-            BackgroundTransparency = 1,
-            LayoutOrder = 0,
-            ZIndex = 6
-        })
-
-        local titleLabel = Instances:Create("TextLabel", {
-            Parent = headerFrame.Instance,
-            Name = "Title",
-            Text = sectionTitle,
-            FontFace = Font.new("rbxassetid://12187365364", Enum.FontWeight.Bold, Enum.FontStyle.Normal),
-            TextColor3 = Theme["Text"],
-            TextSize = 12,
-            Size = UDim2.new(1, 0, 1, 0),
-            BackgroundTransparency = 1,
-            TextXAlignment = Enum.TextXAlignment.Left,
-            ZIndex = 6
-        })
-
-        local searchBarHost = Instances:Create("Frame", {
-            Parent = searchSectionFrame.Instance,
-            Name = "SearchBarHost",
-            Size = UDim2.new(1, 0, 0, 32),
-            BackgroundColor3 = Theme["Element"],
-            BackgroundTransparency = 0.2,
-            BorderSizePixel = 0,
-            LayoutOrder = 1,
-            ZIndex = 6
-        })
-
-        Instances:Create("UICorner", {
-            Parent = searchBarHost.Instance,
-            CornerRadius = UDim.new(0, 6)
-        })
-
-        local searchBarStroke = Instances:Create("UIStroke", {
-            Parent = searchBarHost.Instance,
-            Color = Theme["Outline"],
-            Thickness = 1,
-            ApplyStrokeMode = Enum.ApplyStrokeMode.Border
-        })
-
-        local searchIconImg = Instances:Create("ImageLabel", {
-            Parent = searchBarHost.Instance,
-            Name = "SearchIcon",
-            Size = UDim2.new(0, 14, 0, 14),
-            AnchorPoint = Vector2.new(0, 0.5),
-            Position = UDim2.new(0, 10, 0.5, 0),
-            BackgroundTransparency = 1,
-            ScaleType = Enum.ScaleType.Fit,
-            Image = ParseIcon(searchIcon),
-            ImageColor3 = Theme["SubText"],
-            ImageTransparency = 0.2,
-            ZIndex = 7
-        })
-
-        local searchBox = Instances:Create("TextBox", {
-            Parent = searchBarHost.Instance,
-            Name = "SearchInput",
-            Size = UDim2.new(1, -34, 1, 0),
-            Position = UDim2.new(0, 30, 0, 0),
-            BackgroundTransparency = 1,
-            Text = "",
-            PlaceholderText = placeholder,
-            TextColor3 = Theme["Text"],
-            PlaceholderColor3 = Theme["SubText"],
-            FontFace = Font.new("rbxassetid://12187365364", Enum.FontWeight.Regular, Enum.FontStyle.Normal),
-            TextSize = 11,
-            TextXAlignment = Enum.TextXAlignment.Left,
-            ClearTextOnFocus = false,
-            ZIndex = 7
-        })
-
-        searchBox.Instance.Focused:Connect(function()
-            Tween(searchBarStroke.Instance, TweenInfo.new(0.2), {
-                Color = Theme["Accent"]
-            })
-            Tween(searchIconImg.Instance, TweenInfo.new(0.2), {
-                ImageColor3 = Theme["Accent"],
-                ImageTransparency = 0
-            })
-        end)
-
-        searchBox.Instance.FocusLost:Connect(function()
-            Tween(searchBarStroke.Instance, TweenInfo.new(0.2), {
-                Color = Theme["Outline"]
-            })
-            Tween(searchIconImg.Instance, TweenInfo.new(0.2), {
-                ImageColor3 = Theme["SubText"],
-                ImageTransparency = 0.2
-            })
-        end)
-
-        local glowLine = Instances:Create("Frame", {
-            Parent = searchSectionFrame.Instance,
-            Name = "GlowDivider",
-            Size = UDim2.new(1, 0, 0, 1),
-            BackgroundColor3 = Color3.fromRGB(255, 255, 255),
-            BorderSizePixel = 0,
-            LayoutOrder = 2,
-            ZIndex = 6
-        })
-
-        Instances:Create("UIGradient", {
-            Parent = glowLine.Instance,
-            Color = ColorSequence.new({
-                ColorSequenceKeypoint.new(0, Theme["GlowEdge"]),
-                ColorSequenceKeypoint.new(0.5, Theme["GlowCenter"]),
-                ColorSequenceKeypoint.new(1, Theme["GlowEdge"])
-            }),
-            Transparency = NumberSequence.new({
-                NumberSequenceKeypoint.new(0, 0.8),
-                NumberSequenceKeypoint.new(0.5, 0.0),
-                NumberSequenceKeypoint.new(1, 0.8)
-            })
-        })
-
-        local itemsScroll = Instances:Create("ScrollingFrame", {
-            Parent = searchSectionFrame.Instance,
-            Name = "ItemsContainer",
-            Size = UDim2.new(1, 0, 1, -70),
-            BackgroundTransparency = 1,
-            BorderSizePixel = 0,
-            ScrollBarThickness = 2,
-            ScrollBarImageColor3 = Theme["Accent"],
-            LayoutOrder = 3,
-            ZIndex = 6,
-            CanvasSize = UDim2.new(0, 0, 0, 0),
-            AutomaticCanvasSize = Enum.AutomaticSize.Y
-        })
-
-        local itemsLayout = Instances:Create("UIListLayout", {
-            Parent = itemsScroll.Instance,
-            SortOrder = Enum.SortOrder.LayoutOrder,
-            Padding = UDim.new(0, 6)
-        })
-
-        Instances:Create("UIPadding", {
-            Parent = itemsScroll.Instance,
-            PaddingTop = UDim.new(0, 2),
-            PaddingBottom = UDim.new(0, 4),
-            PaddingRight = UDim.new(0, 4)
-        })
-
-        local function FilterItems(query)
-            local cleanQuery = string.lower(query or "")
-            for _, child in ipairs(itemsScroll.Instance:GetChildren()) do
-                if child:IsA("GuiObject") and child.Name ~= "UIListLayout" and child.Name ~= "UIPadding" then
-                    if cleanQuery == "" then
-                        child.Visible = true
-                    else
-                        local itemName = string.lower(child.Name)
-                        local label = child:FindFirstChild("Label", true)
-                        local itemText = label and string.lower(label.Text) or ""
-                        if string.find(itemName, cleanQuery) or string.find(itemText, cleanQuery) then
-                            child.Visible = true
-                        else
-                            child.Visible = false
-                        end
-                    end
-                end
-            end
-        end
-
-        searchBox.Instance:GetPropertyChangedSignal("Text"):Connect(function()
-            FilterItems(searchBox.Instance.Text)
-        end)
-
-        local SearchAPI = {
-            Frame = searchSectionFrame.Instance,
-            Container = itemsScroll.Instance
-        }
-
-        function SearchAPI:CreateToggle(toggleData)
-            local dummySection = { elementsContainer = itemsScroll }
-            return SectionAPI.CreateToggle(dummySection, toggleData)
-        end
-
-        function SearchAPI:Button(buttonData)
-            local dummySection = { elementsContainer = itemsScroll }
-            return SectionAPI.Button(dummySection, buttonData)
-        end
-
-        function SearchAPI:Slider(sliderData)
-            local dummySection = { elementsContainer = itemsScroll }
-            return SectionAPI.Slider(dummySection, sliderData)
-        end
-
-        function SearchAPI:CreateDropdown(dropdownData)
-            local dummySection = { elementsContainer = itemsScroll }
-            return SectionAPI.CreateDropdown(dummySection, dropdownData)
-        end
-
-        return SearchAPI
-    end
-
-    -- Добавляем метод в SectionAPI для вызова из секции
-    function SectionAPI:CreateSearchSection(searchData)
-        return Library:CreateSearchSection(elementsContainer.Instance, searchData)
-    end
-
     return SectionAPI
 end
 
@@ -3115,70 +2914,6 @@ CombatSection:CreateDropdown({
         print("Выбран звук:", SelectedOption)
     end
 })
-
--- Пример использования SearchSection (полноразмерная секция с поиском)
-local SearchSection = CombatSection:CreateSearchSection({
-    Name = "PlayerSearch",
-    Placeholder = "Поиск игроков...",
-    Height = 240
-})
-
-local container = SearchSection.Container
-
-local function AddSearchItem(name, parent)
-    local item = Instances:Create("TextButton", {
-        Parent = parent,
-        Name = "Item_" .. name,
-        Size = UDim2.new(1, 0, 0, 24),
-        BackgroundColor3 = Theme["Element"],
-        BackgroundTransparency = 0.2,
-        Text = "",
-        AutoButtonColor = false,
-        ZIndex = 10
-    })
-
-    Instances:Create("UICorner", {
-        Parent = item.Instance,
-        CornerRadius = UDim.new(0, 4)
-    })
-
-    local itemLabel = Instances:Create("TextLabel", {
-        Parent = item.Instance,
-        Name = "Label",
-        Text = name,
-        TextColor3 = Theme["Text"],
-        TextSize = 11,
-        FontFace = Font.new("rbxassetid://12187365364", Enum.FontWeight.Medium, Enum.FontStyle.Normal),
-        Position = UDim2.new(0, 10, 0, 0),
-        Size = UDim2.new(1, -20, 1, 0),
-        BackgroundTransparency = 1,
-        TextXAlignment = Enum.TextXAlignment.Left,
-        ZIndex = 11
-    })
-
-    item:Connect("MouseEnter", function()
-        Tween(item.Instance, TweenInfo.new(0.15), {
-            BackgroundTransparency = 0.1
-        })
-    end)
-
-    item:Connect("MouseLeave", function()
-        Tween(item.Instance, TweenInfo.new(0.15), {
-            BackgroundTransparency = 0.2
-        })
-    end)
-
-    item.Instance.Activated:Connect(function()
-        print("Выбран игрок:", name)
-    end)
-
-    return item
-end
-
-local players = {"Player_1", "Player_2", "Player_3", "Player_4", "Player_5", "Player_6", "Player_7", "Player_8", "Player_9", "Player_10"}
-for _, name in ipairs(players) do
-    AddSearchItem(name, container)
-end
 
 -- 2. Вкладка Visuals с подвкладками
 local VisualsTab = Library:CreateTab(MainWindow, {
