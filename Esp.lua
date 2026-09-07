@@ -49,7 +49,7 @@ local IconLibrary = {
     ["palette"] = "rbxassetid://10734950020",
     ["globe"] = "rbxassetid://10723343321",
     ["zap"] = "rbxassetid://10734983868",
-    ["search"] = "rbxassetid://10709752037" -- Новая иконка поиска
+    ["search"] = "rbxassetid://10709752037"
 }
 
 local function ParseIcon(icon)
@@ -2961,12 +2961,14 @@ function Library:CreateSection(parentColumn, sectionData)
     end
 
     -- =======================================================
-    -- НОВАЯ ФУНКЦИЯ: Создание сетки карточек (CreateCardGrid)
+    -- ЧАСТЬ 1: СОЗДАНИЕ СЕТКИ КАРТОЧЕК (CreateCardGrid)
     -- =======================================================
     function SectionAPI:CreateCardGrid(gridData)
         gridData = gridData or {}
-        local cellSize = gridData.CellSize or Vector2.new(80, 92)
-        local cellPadding = gridData.Padding or Vector2.new(8, 8)
+        local cellHeight = gridData.CardHeight or 85
+        local padding = gridData.Padding or 8
+        local columns = gridData.Columns or 3
+        local multiSelect = gridData.MultiSelect or false
 
         local gridFrame = Instances:Create("Frame", {
             Parent = elementsContainer.Instance,
@@ -2978,48 +2980,66 @@ function Library:CreateSection(parentColumn, sectionData)
             ZIndex = 7
         })
 
+        local colWidthScale = 1 / columns
+        local colOffset = -(((columns - 1) * padding) / columns)
+
         local gridLayout = Instances:Create("UIGridLayout", {
             Parent = gridFrame.Instance,
-            CellSize = UDim2.new(0, cellSize.X, 0, cellSize.Y),
-            CellPadding = UDim2.new(0, cellPadding.X, 0, cellPadding.Y),
+            CellSize = UDim2.new(colWidthScale, colOffset, 0, cellHeight),
+            CellPadding = UDim2.new(0, padding, 0, padding),
             SortOrder = Enum.SortOrder.LayoutOrder,
-            HorizontalAlignment = Enum.HorizontalAlignment.Left
+            HorizontalAlignment = Enum.HorizontalAlignment.Center
         })
 
-        local GridAPI = {}
+        local GridAPI = {
+            Cards = {},
+            MultiSelect = multiSelect
+        }
+
+        function GridAPI:DeselectOthers(currentCard)
+            if not GridAPI.MultiSelect then
+                for _, card in ipairs(GridAPI.Cards) do
+                    if card ~= currentCard and card.State then
+                        card:SetState(false)
+                    end
+                end
+            end
+        end
 
         function GridAPI:CreateCard(cardData)
-            return SectionAPI:CreateCard(cardData, gridFrame.Instance)
+            local card = SectionAPI:CreateCard(cardData, gridFrame.Instance, GridAPI)
+            table.insert(GridAPI.Cards, card)
+            return card
         end
 
         return GridAPI
     end
 
     -- =======================================================
-    -- НОВАЯ ФУНКЦИЯ: Карточка предмета (CreateCard)
+    -- ЧАСТЬ 2: КАРТОЧКА И АНИМАЦИЯ ПЛАВНОГО ЗАПОЛНЕНИЯ КОНТУРА
     -- =======================================================
-    function SectionAPI:CreateCard(cardData, customParent)
+    function SectionAPI:CreateCard(cardData, customParent, gridParent)
         cardData = cardData or {}
-        local cardName = cardData.Name or cardData.Title or "Item"
+        local cardName = cardData.Name or cardData.Title or "Card"
         local cardIcon = cardData.Icon or ""
         local state = cardData.Default or false
         local callback = cardData.Callback or function() end
         local flag = cardData.Flag or ("Card_" .. cardName)
+        local hasIcon = cardIcon ~= ""
 
         local parentContainer = customParent or elementsContainer.Instance
 
-        -- Основной фрейм-кнопка карточки
         local cardButton = Instances:Create("TextButton", {
             Parent = parentContainer,
             Name = "Card_" .. cardName,
-            Size = UDim2.new(0, 80, 0, 92),
             BackgroundColor3 = Theme["Element"],
             BackgroundTransparency = 0.25,
             Text = "",
             AutoButtonColor = false,
             BorderSizePixel = 0,
             ZIndex = 8,
-            Active = true
+            Active = true,
+            Size = UDim2.new(1, 0, 1, 0)
         })
 
         Instances:Create("UICorner", {
@@ -3027,12 +3047,11 @@ function Library:CreateSection(parentColumn, sectionData)
             CornerRadius = UDim.new(0, 8)
         })
 
-        -- Плавный градиент фона
         local bgGradient = Instances:Create("UIGradient", {
             Parent = cardButton.Instance,
             Color = ColorSequence.new({
                 ColorSequenceKeypoint.new(0, Theme["Accent"]),
-                ColorSequenceKeypoint.new(0.3, Color3.fromRGB(15, 30, 55)),
+                ColorSequenceKeypoint.new(0.4, Color3.fromRGB(15, 30, 55)),
                 ColorSequenceKeypoint.new(1, Theme["Background 2"])
             }),
             Transparency = NumberSequence.new({
@@ -3042,7 +3061,6 @@ function Library:CreateSection(parentColumn, sectionData)
             Rotation = 45
         })
 
-        -- Контур карточки с неоновым градиентом
         local cardStroke = Instances:Create("UIStroke", {
             Parent = cardButton.Instance,
             Color = Color3.fromRGB(255, 255, 255),
@@ -3059,134 +3077,156 @@ function Library:CreateSection(parentColumn, sectionData)
                 ColorSequenceKeypoint.new(1, Theme["Outline"])
             }),
             Transparency = NumberSequence.new({
-                NumberSequenceKeypoint.new(0, 0.3),
-                NumberSequenceKeypoint.new(0.5, state and 0.0 or 0.4),
-                NumberSequenceKeypoint.new(1, 0.3)
+                NumberSequenceKeypoint.new(0, state and 0 or 0.6),
+                NumberSequenceKeypoint.new(0.5, state and 0 or 0.2),
+                NumberSequenceKeypoint.new(1, state and 0 or 0.6)
+            }),
+            Rotation = state and 180 or 0
+        })
+
+        local iconObj
+        if hasIcon then
+            iconObj = Instances:Create("ImageLabel", {
+                Parent = cardButton.Instance,
+                Name = "Icon",
+                Size = UDim2.new(0, 22, 0, 22),
+                AnchorPoint = Vector2.new(0.5, 0),
+                Position = UDim2.new(0.5, 0, 0, 12),
+                BackgroundTransparency = 1,
+                Image = ParseIcon(cardIcon),
+                ImageColor3 = state and Theme["AccentGlow"] or Theme["SubText"],
+                ImageTransparency = state and 0 or 0.3,
+                ScaleType = Enum.ScaleType.Fit,
+                ZIndex = 9
             })
-        })
+        end
 
-        -- Иконка предмета
-        local iconLabel = Instances:Create("ImageLabel", {
+        local titleLabel = Instances:Create("TextLabel", {
             Parent = cardButton.Instance,
-            Name = "ItemIcon",
-            AnchorPoint = Vector2.new(0.5, 0),
-            Position = UDim2.new(0.5, 0, 0, 10),
-            Size = UDim2.new(0, 42, 0, 42),
-            BackgroundTransparency = 1,
-            ScaleType = Enum.ScaleType.Fit,
-            Image = ParseIcon(cardIcon),
-            ImageColor3 = state and Theme["Text"] or Theme["SubText"],
-            ImageTransparency = state and 0 or 0.2,
-            ZIndex = 9
-        })
-
-        -- Название предмета снизу
-        local nameLabel = Instances:Create("TextLabel", {
-            Parent = cardButton.Instance,
-            Name = "ItemName",
-            AnchorPoint = Vector2.new(0.5, 1),
-            Position = UDim2.new(0.5, 0, 1, -6),
-            Size = UDim2.new(1, -8, 0, 24),
-            BackgroundTransparency = 1,
-            FontFace = Font.new("rbxassetid://12187365364", Enum.FontWeight.Medium, Enum.FontStyle.Normal),
+            Name = "Title",
             Text = cardName,
+            FontFace = Font.new("rbxassetid://12187365364", Enum.FontWeight.Bold, Enum.FontStyle.Normal),
             TextColor3 = state and Theme["Text"] or Theme["SubText"],
-            TextSize = 10,
-            TextWrapped = true,
-            TextTruncate = Enum.TextTruncate.AtEnd,
+            TextSize = 11,
+            Size = UDim2.new(1, -8, 0, 20),
+            AnchorPoint = Vector2.new(0.5, 1),
+            Position = UDim2.new(0.5, 0, 1, -8),
+            BackgroundTransparency = 1,
             TextXAlignment = Enum.TextXAlignment.Center,
+            TextTruncate = Enum.TextTruncate.AtEnd,
             ZIndex = 9
         })
 
-        -- Функция обновления визуального состояния
-        local function UpdateCardState(newState)
-            state = newState
-            Library.Flags[flag] = state
+        local CardAPI = {
+            State = state,
+            Button = cardButton.Instance
+        }
 
-            -- Анимация контура и свечения
-            Tween(cardStroke.Instance, TweenInfo.new(0.25, Enum.EasingStyle.Quart, Enum.EasingDirection.Out), {
-                Transparency = state and 0 or 0.7
-            })
+        function CardAPI:SetState(newState)
+            CardAPI.State = newState
+            Library.Flags[flag] = newState
 
-            strokeGradient.Instance.Transparency = NumberSequence.new({
-                NumberSequenceKeypoint.new(0, 0.3),
-                NumberSequenceKeypoint.new(0.5, state and 0.0 or 0.4),
-                NumberSequenceKeypoint.new(1, 0.3)
+            if newState and gridParent then
+                gridParent:DeselectOthers(CardAPI)
+            end
+
+            Tween(bgGradient.Instance, TweenInfo.new(0.3, Enum.EasingStyle.Quad, Enum.EasingDirection.Out), {
+                Rotation = newState and 135 or 45
             })
 
             bgGradient.Instance.Transparency = NumberSequence.new({
-                NumberSequenceKeypoint.new(0, state and 0.2 or 0.85),
-                NumberSequenceKeypoint.new(1, state and 0.4 or 0.95)
+                NumberSequenceKeypoint.new(0, newState and 0.2 or 0.85),
+                NumberSequenceKeypoint.new(1, newState and 0.4 or 0.95)
             })
 
-            -- Анимация текста и иконки
-            Tween(iconLabel.Instance, TweenInfo.new(0.2), {
-                ImageColor3 = state and Theme["Text"] or Theme["SubText"],
-                ImageTransparency = state and 0 or 0.2
+            Tween(strokeGradient.Instance, TweenInfo.new(0.35, Enum.EasingStyle.Quart, Enum.EasingDirection.Out), {
+                Rotation = newState and 180 or 0
             })
 
-            Tween(nameLabel.Instance, TweenInfo.new(0.2), {
-                TextColor3 = state and Theme["Text"] or Theme["SubText"]
+            strokeGradient.Instance.Transparency = NumberSequence.new({
+                NumberSequenceKeypoint.new(0, newState and 0 or 0.6),
+                NumberSequenceKeypoint.new(0.5, newState and 0 or 0.2),
+                NumberSequenceKeypoint.new(1, newState and 0 or 0.6)
             })
 
-            pcall(callback, state)
+            Tween(cardStroke.Instance, TweenInfo.new(0.3), {
+                Transparency = newState and 0 or 0.7,
+                Thickness = newState and 1.8 or 1
+            })
+
+            Tween(titleLabel.Instance, TweenInfo.new(0.25), {
+                TextColor3 = newState and Theme["Text"] or Theme["SubText"]
+            })
+
+            if iconObj then
+                Tween(iconObj.Instance, TweenInfo.new(0.25, Enum.EasingStyle.Back, Enum.EasingDirection.Out), {
+                    ImageColor3 = newState and Theme["AccentGlow"] or Theme["SubText"],
+                    ImageTransparency = newState and 0 or 0.3,
+                    Size = newState and UDim2.new(0, 24, 0, 24) or UDim2.new(0, 22, 0, 22)
+                })
+            end
+
+            pcall(callback, newState)
         end
 
-        -- Анимации наведения мышью
         cardButton:Connect("MouseEnter", function()
-            if not state then
-                Tween(cardStroke.Instance, TweenInfo.new(0.15), {
+            if not CardAPI.State then
+                Tween(cardStroke.Instance, TweenInfo.new(0.2), {
                     Transparency = 0.3
                 })
-                Tween(iconLabel.Instance, TweenInfo.new(0.15), {
-                    ImageTransparency = 0
-                })
-                Tween(nameLabel.Instance, TweenInfo.new(0.15), {
+                Tween(titleLabel.Instance, TweenInfo.new(0.2), {
                     TextColor3 = Theme["Text"]
                 })
+                if iconObj then
+                    Tween(iconObj.Instance, TweenInfo.new(0.2), {
+                        ImageTransparency = 0.1,
+                        ImageColor3 = Theme["Text"]
+                    })
+                end
             end
         end)
 
         cardButton:Connect("MouseLeave", function()
-            if not state then
-                Tween(cardStroke.Instance, TweenInfo.new(0.15), {
+            if not CardAPI.State then
+                Tween(cardStroke.Instance, TweenInfo.new(0.2), {
                     Transparency = 0.7
                 })
-                Tween(iconLabel.Instance, TweenInfo.new(0.15), {
-                    ImageTransparency = 0.2
-                })
-                Tween(nameLabel.Instance, TweenInfo.new(0.15), {
+                Tween(titleLabel.Instance, TweenInfo.new(0.2), {
                     TextColor3 = Theme["SubText"]
                 })
+                if iconObj then
+                    Tween(iconObj.Instance, TweenInfo.new(0.2), {
+                        ImageTransparency = 0.3,
+                        ImageColor3 = Theme["SubText"]
+                    })
+                end
             end
         end)
 
-        -- Анимация клика (уменьшение и плавный отскок)
         cardButton:Connect("MouseButton1Down", function()
             Tween(cardButton.Instance, TweenInfo.new(0.08, Enum.EasingStyle.Quad, Enum.EasingDirection.Out), {
-                Size = UDim2.new(0, 75, 0, 86)
+                Size = UDim2.new(1, -2, 1, -2)
             })
         end)
 
         cardButton:Connect("MouseButton1Up", function()
-            Tween(cardButton.Instance, TweenInfo.new(0.18, Enum.EasingStyle.Back, Enum.EasingDirection.Out), {
-                Size = UDim2.new(0, 80, 0, 92)
+            Tween(cardButton.Instance, TweenInfo.new(0.15, Enum.EasingStyle.Back, Enum.EasingDirection.Out), {
+                Size = UDim2.new(1, 0, 1, 0)
             })
         end)
 
         cardButton.Instance.Activated:Connect(function()
-            UpdateCardState(not state)
+            CardAPI:SetState(not CardAPI.State)
         end)
 
         Library.Flags[flag] = state
         Library.SetFlags[flag] = function(val)
-            UpdateCardState(val)
+            CardAPI:SetState(val)
         end
 
-        -- Регистрация карточки в поиске секции
         table.insert(sectionItems, { Instance = cardButton.Instance, Title = cardName })
 
-        return cardButton.Instance
+        return CardAPI
     end
 
     return SectionAPI
@@ -3204,10 +3244,9 @@ local MainWindow = Library:CreateWindow({
 local SingleTab, SingleCols = Library:CreateTab(MainWindow, {
     Name = "Главная",
     Icon = "home",
-    Columns = 1 -- ОДНА большая колонка во всю ширину
+    Columns = 1
 })
 
--- Создаем секцию внутри этой единственной колонки SingleCols[1]
 local BigSection = Library:CreateSection(SingleCols[1], {
     Name = "Большая Секция На Всю Вкладку",
     Icon = "zap"
@@ -3216,19 +3255,17 @@ local BigSection = Library:CreateSection(SingleCols[1], {
 BigSection:CreateToggle({ Name = "Функция 1", Default = true })
 BigSection:Slider({ Name = "Скорость", Min = 1, Max = 100, Default = 50 })
 
--- ВАРИАНТ 2: Комбинирование (Большая секция + 2 колонки на одной вкладке)
+-- ВАРИАНТ 2: Комбинирование (Большая секция + 2 колонки)
 local HybridTab = Library:CreateTab(MainWindow, {
     Name = "Комбо",
     Icon = "star"
 })
 
--- 1. Большая секция сверху во всю ширину
 local TopBigSection = HybridTab:CreateSection({
     Name = "Верхняя широкая панель"
 })
 TopBigSection:CreateToggle({ Name = "Главный переключатель" })
 
--- 2. Динамически создаем 2 колонки снизу для компактных секций
 local LeftCol, RightCol = HybridTab:CreateColumns(2)
 
 local LeftSection = Library:CreateSection(LeftCol, {
@@ -3241,21 +3278,7 @@ local RightSection = Library:CreateSection(RightCol, {
 })
 RightSection:CreateToggle({ Name = "Правый тоггл" })
 
--- ВАРИАНТ 3: Создание большой секции напрямую через метод Tab:CreateSection()
-local CustomTab = Library:CreateTab(MainWindow, {
-    Name = "Настройки",
-    Icon = "settings"
-})
-
--- Метод CreateSection прямо на вкладке создает большую секцию во всю ширину!
-local BigSectionDirect = CustomTab:CreateSection({
-    Name = "Огромная Секция На Весь Экран",
-    Icon = "shield"
-})
-
-BigSectionDirect:Button({ Name = "Сохранить конфиг" })
-
--- ВАРИАНТ 4: Секция с ПОИСКОМ (Searchable = true)
+-- ВАРИАНТ 3: Секция с ПОИСКОМ
 local SearchTab, SearchCols = Library:CreateTab(MainWindow, {
     Name = "Поиск",
     Icon = "search",
@@ -3265,7 +3288,7 @@ local SearchTab, SearchCols = Library:CreateTab(MainWindow, {
 local SearchSection = Library:CreateSection(SearchCols[1], {
     Name = "Панель Управления Функциями",
     Icon = "code",
-    Searchable = true -- Включает систему поиска для этой секции
+    Searchable = true
 })
 
 SearchSection:CreateToggle({ Name = "ESP Игроков", Default = false })
@@ -3278,81 +3301,76 @@ SearchSection:CreateDropdown({
     Default = "Legit"
 })
 
--- ВАРИАНТ 5: Секция с КАРТОЧКАМИ (Инвентарь предметов)
+-- ВАРИАНТ 4: Секция с КАРТОЧКАМИ (Single Select - только 1 активная)
 local CardTab, CardCols = Library:CreateTab(MainWindow, {
-    Name = "Инвентарь",
+    Name = "Карточки",
     Icon = "folder",
     Columns = 1
 })
 
 local CardSection = Library:CreateSection(CardCols[1], {
-    Name = "Инвентарь предметов",
-    Icon = "folder",
-    Searchable = true -- Поиск работает и с карточками!
+    Name = "Выбор режимов ESP",
+    Icon = "eye",
+    Searchable = true
 })
 
--- Создание сетки карточек
-local itemGrid = CardSection:CreateCardGrid({
-    CellSize = Vector2.new(82, 94),
-    Padding = Vector2.new(8, 8)
+-- Вариант A: Одиночный выбор (MultiSelect = false)
+local singleGrid = CardSection:CreateCardGrid({
+    Columns = 3,
+    CardHeight = 80,
+    MultiSelect = false
 })
 
--- Добавление карточек предметов
-itemGrid:CreateCard({
-    Name = "Меч Ночи",
-    Icon = "rbxassetid://10734975692",
-    Default = false,
-    Callback = function(active)
-        print("Меч Ночи выбран:", active)
-    end
-})
-
-itemGrid:CreateCard({
-    Name = "Щит Атуры",
-    Icon = "rbxassetid://10709782497",
+singleGrid:CreateCard({
+    Name = "Игроки",
+    Icon = "user",
     Default = true,
-    Callback = function(active)
-        print("Щит выбран:", active)
-    end
+    Callback = function(state) print("ESP Игроки:", state) end
 })
 
-itemGrid:CreateCard({
-    Name = "Зелье Лечения",
-    Icon = "rbxassetid://10734950020",
+singleGrid:CreateCard({
+    Name = "Предметы",
+    Icon = "zap",
     Default = false,
-    Callback = function(active)
-        print("Зелье Лечения выбран:", active)
-    end
+    Callback = function(state) print("ESP Предметы:", state) end
 })
 
-itemGrid:CreateCard({
-    Name = "Книга Магии",
-    Icon = "rbxassetid://10709752254",
+singleGrid:CreateCard({
+    Name = "Сундуки",
+    Icon = "folder",
     Default = false,
-    Callback = function(active)
-        print("Книга Магии выбрана:", active)
-    end
+    Callback = function(state) print("ESP Сундуки:", state) end
 })
 
-itemGrid:CreateCard({
-    Name = "Кристалл Энергии",
-    Icon = "rbxassetid://10734983868",
+-- Вариант B: Множественный выбор (MultiSelect = true)
+local multiGrid = CardSection:CreateCardGrid({
+    Columns = 3,
+    CardHeight = 80,
+    MultiSelect = true
+})
+
+multiGrid:CreateCard({
+    Name = "Боксы",
+    Icon = "shield",
+    Default = true,
+    Callback = function(state) print("Боксы включены:", state) end
+})
+
+multiGrid:CreateCard({
+    Name = "Трейсеры",
+    Icon = "zap",
     Default = false,
-    Callback = function(active)
-        print("Кристалл Энергии выбран:", active)
-    end
+    Callback = function(state) print("Трейсеры включены:", state) end
 })
 
-itemGrid:CreateCard({
-    Name = "Кольцо Силы",
-    Icon = "rbxassetid://10734934585",
+multiGrid:CreateCard({
+    Name = "Снайперы",
+    Icon = "eye",
     Default = false,
-    Callback = function(active)
-        print("Кольцо Силы выбрано:", active)
-    end
+    Callback = function(state) print("Снайперы включены:", state) end
 })
 
--- 5. Вкладка Combat (из оригинального кода)
+-- Вкладка Combat (из оригинального кода)
 local CombatTab, CombatCols = Library:CreateTab(MainWindow, {
     Name = "Combat",
     Subtitle = "боевые настройки",
@@ -3416,7 +3434,7 @@ CombatSection:CreateDropdown({
     end
 })
 
--- 6. Вкладка Visuals с подвкладками
+-- Вкладка Visuals с подвкладками
 local VisualsTab = Library:CreateTab(MainWindow, {
     Name = "Visuals",
     Subtitle = "отображение объектов",
@@ -3518,7 +3536,7 @@ WorldSection:CreateDropdown({
     end
 })
 
--- 7. Остальные вкладки
+-- Остальные вкладки
 Library:CreateTab(MainWindow, {
     Name = "Local",
     Subtitle = "игрок",
