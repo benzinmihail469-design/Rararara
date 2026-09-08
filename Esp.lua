@@ -619,14 +619,15 @@ function Library:CreateWindow(data)
 end
 
 -- =======================================================
--- 10. ОБНОВЛЕННАЯ СИСТЕМА ВКЛАДОК (С ПОДДЕРЖКОЙ 1 ИЛИ 2 КОЛОНОК И БОЛЬШИХ СЕКЦИЙ)
+-- 10. ОБНОВЛЕННАЯ СИСТЕМА ВКЛАДОК (С ПОДДЕРЖКОЙ 3 КОЛОНОК)
 -- =======================================================
 function Library:CreateTab(window, tabData)
     tabData = tabData or {}
     local tabName = tabData.Name or "Tab"
     local tabSubtitle = tabData.Subtitle or ""
     local tabIcon = tabData.Icon or "folder"
-    local initialColumnsCount = tabData.Columns or tabData.ColumnCount or 2
+    -- Установлено 3 колонки по умолчанию вместо 2
+    local initialColumnsCount = tabData.Columns or tabData.ColumnCount or 3
 
     local tabGroupFrame = Instances:Create("Frame", {
         Parent = window.LeftTabs,
@@ -861,7 +862,7 @@ function Library:CreateTab(window, tabData)
     }
 
     function TabObject:CreateColumns(count)
-        count = count or 2
+        count = count or 3 -- Изменено с 2 на 3
         local rowFrame = Instances:Create("Frame", {
             Parent = defaultMainContainer.Instance,
             Name = "ColumnRow_" .. count,
@@ -1078,7 +1079,8 @@ function Library:CreateTab(window, tabData)
         local subName = subData.Name or "SubTab"
         local subIcon = subData.Icon or ""
         local hasSubIcon = subIcon ~= ""
-        local initialColumnsCount = subData.Columns or subData.ColumnCount or 2
+        -- Установлено 3 колонки по умолчанию для подвкладок
+        local initialColumnsCount = subData.Columns or subData.ColumnCount or 3
 
         if not TabObject.HasSubTabs then
             TabObject.HasSubTabs = true
@@ -1234,7 +1236,7 @@ function Library:CreateTab(window, tabData)
         }
 
         function SubTabObject:CreateColumns(count)
-            count = count or 2
+            count = count or 3 -- Изменено с 2 на 3
             local rowFrame = Instances:Create("Frame", {
                 Parent = subContainer.Instance,
                 Name = "ColumnRow_" .. count,
