@@ -1708,186 +1708,7 @@ function Library:CreateSection(parentColumn, sectionData)
     local SectionAPI = {}
 
     -- =======================================================
-    -- ЧАСТЬ 1: СЕТКА ДЛЯ БОЛЬШИХ КАРТОЧЕК ПРЕДМЕТОВ / НОЖЕЙ
-    -- =======================================================
-    function SectionAPI:CreateItemCardsGrid(gridData)
-        gridData = gridData or {}
-        local cardHeight = gridData.CardHeight or gridData.Height or 110
-
-        local cardsFrame = Instances:Create("Frame", {
-            Parent = elementsContainer.Instance,
-            Name = "ItemCardsGrid",
-            Size = UDim2.new(1, 0, 0, 0),
-            AutomaticSize = Enum.AutomaticSize.Y,
-            BackgroundTransparency = 1,
-            BorderSizePixel = 0,
-            ZIndex = 7
-        })
-
-        local gridLayout = Instances:Create("UIGridLayout", {
-            Parent = cardsFrame.Instance,
-            CellSize = UDim2.new(0.315, 0, 0, cardHeight),
-            CellPadding = UDim2.new(0.02, 0, 0, 8),
-            SortOrder = Enum.SortOrder.LayoutOrder,
-            HorizontalAlignment = Enum.HorizontalAlignment.Center
-        })
-
-        gridLayout.Instance:GetPropertyChangedSignal("AbsoluteContentSize"):Connect(function()
-            UpdateContainerSize(false)
-        end)
-
-        local ItemGridAPI = {}
-
-        function ItemGridAPI:CreateCard(cardData)
-            return CreateItemCardInternal(cardsFrame.Instance, cardData, sectionItems)
-        end
-
-        return ItemGridAPI
-    end
-
-    -- =======================================================
-    -- ЧАСТЬ 2: ФУНКЦИЯ СОЗДАНИЯ БОЛЬШОЙ КАРТОЧКИ ПРЕДМЕТА
-    -- =======================================================
-    local function CreateItemCardInternal(parentGrid, cardData, itemsRef)
-        cardData = cardData or {}
-        local cardTitle = cardData.Title or cardData.Name or "Item"
-        local cardSubText = cardData.Subtitle or cardData.Rarity or "Godly"
-        local cardIcon = cardData.Icon or ""
-        local rarityColor = cardData.RarityColor or Theme["Accent"]
-        local callback = cardData.Callback or function() end
-
-        local cardButton = Instances:Create("TextButton", {
-            Parent = parentGrid,
-            Name = "Card_" .. cardTitle,
-            BackgroundColor3 = Theme["Element"],
-            BackgroundTransparency = 0.2,
-            Text = "",
-            AutoButtonColor = false,
-            BorderSizePixel = 0,
-            ZIndex = 8,
-            Active = true
-        })
-
-        Instances:Create("UICorner", {
-            Parent = cardButton.Instance,
-            CornerRadius = UDim.new(0, 8)
-        })
-
-        local cardStroke = Instances:Create("UIStroke", {
-            Parent = cardButton.Instance,
-            Color = Theme["Outline"],
-            Thickness = 1,
-            ApplyStrokeMode = Enum.ApplyStrokeMode.Border
-        })
-
-        Instances:Create("UIGradient", {
-            Parent = cardStroke.Instance,
-            Color = ColorSequence.new({
-                ColorSequenceKeypoint.new(0, Theme["Outline"]),
-                ColorSequenceKeypoint.new(0.5, rarityColor),
-                ColorSequenceKeypoint.new(1, Theme["Outline"])
-            }),
-            Rotation = 45
-        })
-
-        -- Увеличенное изображение предмета / ножа по центру
-        local iconImage = Instances:Create("ImageLabel", {
-            Parent = cardButton.Instance,
-            Name = "ItemIcon",
-            Size = UDim2.new(0, 48, 0, 48),
-            AnchorPoint = Vector2.new(0.5, 0),
-            Position = UDim2.new(0.5, 0, 0, 8),
-            BackgroundTransparency = 1,
-            Image = ParseIcon(cardIcon),
-            ImageColor3 = Color3.fromRGB(255, 255, 255),
-            ScaleType = Enum.ScaleType.Fit,
-            ZIndex = 9
-        })
-
-        -- Название предмета
-        local titleLabel = Instances:Create("TextLabel", {
-            Parent = cardButton.Instance,
-            Name = "Title",
-            Text = cardTitle,
-            FontFace = Font.new("rbxassetid://12187365364", Enum.FontWeight.Bold, Enum.FontStyle.Normal),
-            TextColor3 = Theme["Text"],
-            TextSize = 11,
-            Position = UDim2.new(0, 4, 0, 62),
-            Size = UDim2.new(1, -8, 0, 16),
-            BackgroundTransparency = 1,
-            TextXAlignment = Enum.TextXAlignment.Center,
-            TextTruncate = Enum.TextTruncate.AtEnd,
-            ZIndex = 9
-        })
-
-        -- Подпись редкого предмета / категория
-        local subLabel = Instances:Create("TextLabel", {
-            Parent = cardButton.Instance,
-            Name = "SubText",
-            Text = cardSubText,
-            FontFace = Font.new("rbxassetid://12187365364", Enum.FontWeight.Medium, Enum.FontStyle.Normal),
-            TextColor3 = rarityColor,
-            TextSize = 9,
-            Position = UDim2.new(0, 4, 0, 80),
-            Size = UDim2.new(1, -8, 0, 14),
-            BackgroundTransparency = 1,
-            TextXAlignment = Enum.TextXAlignment.Center,
-            TextTruncate = Enum.TextTruncate.AtEnd,
-            ZIndex = 9
-        })
-
-        -- Плавные анимации
-        cardButton:Connect("MouseEnter", function()
-            Tween(cardStroke.Instance, TweenInfo.new(0.2, Enum.EasingStyle.Quad, Enum.EasingDirection.Out), {
-                Color = rarityColor
-            })
-            Tween(cardButton.Instance, TweenInfo.new(0.2, Enum.EasingStyle.Quad, Enum.EasingDirection.Out), {
-                BackgroundTransparency = 0.05
-            })
-            Tween(iconImage.Instance, TweenInfo.new(0.25, Enum.EasingStyle.Back, Enum.EasingDirection.Out), {
-                Size = UDim2.new(0, 54, 0, 54),
-                Position = UDim2.new(0.5, 0, 0, 5)
-            })
-        end)
-
-        cardButton:Connect("MouseLeave", function()
-            Tween(cardStroke.Instance, TweenInfo.new(0.2, Enum.EasingStyle.Quad, Enum.EasingDirection.Out), {
-                Color = Theme["Outline"]
-            })
-            Tween(cardButton.Instance, TweenInfo.new(0.2, Enum.EasingStyle.Quad, Enum.EasingDirection.Out), {
-                BackgroundTransparency = 0.2
-            })
-            Tween(iconImage.Instance, TweenInfo.new(0.2, Enum.EasingStyle.Quad, Enum.EasingDirection.Out), {
-                Size = UDim2.new(0, 48, 0, 48),
-                Position = UDim2.new(0.5, 0, 0, 8)
-            })
-        end)
-
-        cardButton:Connect("MouseButton1Down", function()
-            Tween(iconImage.Instance, TweenInfo.new(0.08, Enum.EasingStyle.Quad, Enum.EasingDirection.Out), {
-                Size = UDim2.new(0, 42, 0, 42),
-                Position = UDim2.new(0.5, 0, 0, 11)
-            })
-        end)
-
-        cardButton:Connect("MouseButton1Up", function()
-            Tween(iconImage.Instance, TweenInfo.new(0.15, Enum.EasingStyle.Back, Enum.EasingDirection.Out), {
-                Size = UDim2.new(0, 54, 0, 54),
-                Position = UDim2.new(0.5, 0, 0, 5)
-            })
-        end)
-
-        cardButton.Instance.Activated:Connect(function()
-            pcall(callback)
-        end)
-
-        table.insert(itemsRef, { Instance = cardButton.Instance, Title = cardTitle })
-
-        return cardButton.Instance
-    end
-
-    -- =======================================================
-    -- ОБЫЧНАЯ СЕТКА КАРТОЧЕК (CreateCardsGrid)
+    -- НОВАЯ ФУНКЦИЯ: СЕТКА КАРТОЧЕК В 3 КОЛОНКИ
     -- =======================================================
     function SectionAPI:CreateCardsGrid(gridData)
         gridData = gridData or {}
@@ -1903,10 +1724,11 @@ function Library:CreateSection(parentColumn, sectionData)
             ZIndex = 7
         })
 
+        -- Автоматический расчет 3 ровных колонок
         local gridLayout = Instances:Create("UIGridLayout", {
             Parent = cardsFrame.Instance,
-            CellSize = UDim2.new(0.315, 0, 0, cardHeight),
-            CellPadding = UDim2.new(0.02, 0, 0, 6),
+            CellSize = UDim2.new(0.315, 0, 0, cardHeight), -- ~31.5% ширины на карточку
+            CellPadding = UDim2.new(0.02, 0, 0, 6), -- ровные отступы
             SortOrder = Enum.SortOrder.LayoutOrder
         })
 
@@ -2030,6 +1852,7 @@ function Library:CreateSection(parentColumn, sectionData)
                 pcall(callback)
             end)
 
+            -- Регистрация для поиска
             table.insert(sectionItems, { Instance = cardButton.Instance, Title = cardTitle })
 
             return cardButton.Instance
@@ -3292,145 +3115,84 @@ end
 -- 12. ИНИЦИАЛИЗАЦИЯ И ТЕСТ
 -- =======================================================
 
-local MainWindow = Library:CreateWindow({
-    Logo = "134603867443812"
+-- =======================================================
+-- ИНТЕГРИРОВАННЫЙ БЛОК КАРТОЧЕК (ЧАСТЬ 1-4)
+-- =======================================================
+
+-- 1. Создание главного окна
+local Window = Library:CreateWindow({
+    Logo = "star"
 })
 
--- Вкладка с карточками в 3 колонки через CreateCardsGrid
-local CardsTab, CardsCols = Library:CreateTab(MainWindow, {
+-- 2. Создание вкладки "Карточки"
+local CardsTab = Library:CreateTab(Window, {
     Name = "Карточки",
-    Icon = "folder",
+    Subtitle = "Каталог модулей",
+    Icon = "star",
     Columns = 1
 })
 
-local CardsSection = Library:CreateSection(CardsCols[1], {
-    Name = "Каталог Функций",
-    Icon = "grid",
-    Searchable = true
+-- 3. Создание секции с поиском внутри вкладки
+local CardsSection = CardsTab:CreateSection({
+    Name = "Быстрый доступ",
+    Icon = "zap",
+    Searchable = true,
+    Collapsed = false
 })
 
+-- 4. Инициализация сетки карточек в 3 колонки (высота карточки 70px)
 local CardsGrid = CardsSection:CreateCardsGrid({
-    CardHeight = 60
+    CardHeight = 70
 })
 
-CardsGrid:CreateCard({
-    Title = "ESP Player",
-    Description = "Подсветка игроков через стены",
-    Icon = "eye",
-    Callback = function() print("ESP Toggled") end
-})
-
+-- 5. Наполнение сетки индивидуальными карточками
 CardsGrid:CreateCard({
     Title = "Aimbot",
-    Description = "Автоматическое прицеливание",
-    Icon = "zap",
-    Callback = function() print("Aimbot Toggled") end
+    Description = "Автоматическая наводка на ближайших врагов.",
+    Icon = "combat",
+    Callback = function() print("Активирован Aimbot") end
 })
 
 CardsGrid:CreateCard({
-    Title = "Speedhack",
-    Description = "Увеличение скорости ходьбы",
-    Icon = "star",
-    Callback = function() print("Speed Toggled") end
-})
-
-CardsGrid:CreateCard({
-    Title = "Fly",
-    Description = "Режим полета",
-    Icon = "globe",
-    Callback = function() print("Fly Toggled") end
-})
-
-CardsGrid:CreateCard({
-    Title = "Noclip",
-    Description = "Проход сквозь стены",
-    Icon = "shield",
-    Callback = function() print("Noclip Toggled") end
+    Title = "ESP Wallhack",
+    Description = "Отображение контуров игроков сквозь стены.",
+    Icon = "eye",
+    Callback = function() print("Активирован ESP") end
 })
 
 CardsGrid:CreateCard({
     Title = "GodMode",
-    Description = "Режим бессмертия",
-    Icon = "code",
-    Callback = function() print("GodMode Toggled") end
+    Description = "Полная невосприимчивость к урону.",
+    Icon = "shield",
+    Callback = function() print("Активирован GodMode") end
 })
 
--- =======================================================
--- НОВАЯ ВКЛАДКА: ИНВЕНТАРЬ С НОЖАМИ / ПРЕДМЕТАМИ (CreateItemCardsGrid)
--- =======================================================
-local InventoryTab, InventoryCols = Library:CreateTab(MainWindow, {
-    Name = "Инвентарь",
-    Icon = "combat",
-    Columns = 1
-})
-
-local KnifeSection = Library:CreateSection(InventoryCols[1], {
-    Name = "Ножи и Предметы",
+CardsGrid:CreateCard({
+    Title = "SpeedBoost",
+    Description = "Увеличение скорости перемещения персонажа.",
     Icon = "zap",
-    Searchable = true
+    Callback = function() print("Активирован SpeedBoost") end
 })
 
--- Создаем сетку больших карточек
-local KnifeGrid = KnifeSection:CreateItemCardsGrid({
-    CardHeight = 105
+CardsGrid:CreateCard({
+    Title = "Auto Farm",
+    Description = "Автоматический сбор ресурсов и фарм.",
+    Icon = "code",
+    Callback = function() print("Запущен Auto Farm") end
 })
 
--- Карточка 1: Нож Chroma
-KnifeGrid:CreateCard({
-    Title = "Chroma Fang",
-    Subtitle = "Godly",
-    Icon = "rbxassetid://10709752037",
-    RarityColor = Color3.fromRGB(0, 220, 255),
-    Callback = function() print("Выбран Chroma Fang") end
+CardsGrid:CreateCard({
+    Title = "Reset UI",
+    Description = "Сброс настроек графического интерфейса.",
+    Icon = "settings",
+    Callback = function() print("Настройки сброшены") end
 })
 
--- Карточка 2: Нож Dark Scythe
-KnifeGrid:CreateCard({
-    Title = "Dark Scythe",
-    Subtitle = "Ancient",
-    Icon = "rbxassetid://10723414641",
-    RarityColor = Color3.fromRGB(255, 40, 80),
-    Callback = function() print("Выбран Dark Scythe") end
-})
+-- =======================================================
+-- ОСТАЛЬНЫЕ ВКЛАДКИ (Combat, Visuals, Local, Colors, Config)
+-- =======================================================
 
--- Карточка 3: Предмет Harvester
-KnifeGrid:CreateCard({
-    Title = "Harvester",
-    Subtitle = "Unique",
-    Icon = "rbxassetid://10709782497",
-    RarityColor = Color3.fromRGB(180, 0, 255),
-    Callback = function() print("Выбран Harvester") end
-})
-
--- Карточка 4: Нож Batwing
-KnifeGrid:CreateCard({
-    Title = "Batwing",
-    Subtitle = "Godly",
-    Icon = "rbxassetid://10734934585",
-    RarityColor = Color3.fromRGB(255, 215, 0),
-    Callback = function() print("Выбран Batwing") end
-})
-
--- Карточка 5: Нож Laser
-KnifeGrid:CreateCard({
-    Title = "Laser",
-    Subtitle = "Chroma",
-    Icon = "rbxassetid://10734983868",
-    RarityColor = Color3.fromRGB(0, 255, 100),
-    Callback = function() print("Выбран Laser") end
-})
-
--- Карточка 6: Предмет Elderwood Scythe
-KnifeGrid:CreateCard({
-    Title = "Elderwood Scythe",
-    Subtitle = "Vintage",
-    Icon = "rbxassetid://10723345749",
-    RarityColor = Color3.fromRGB(150, 75, 0),
-    Callback = function() print("Выбран Elderwood Scythe") end
-})
-
--- Вкладка Combat
-local CombatTab, CombatCols = Library:CreateTab(MainWindow, {
+local CombatTab, CombatCols = Library:CreateTab(Window, {
     Name = "Combat",
     Subtitle = "боевые настройки",
     Icon = "combat"
@@ -3493,8 +3255,8 @@ CombatSection:CreateDropdown({
     end
 })
 
--- Вкладка Visuals
-local VisualsTab = Library:CreateTab(MainWindow, {
+-- Вкладка Visuals с подвкладками
+local VisualsTab = Library:CreateTab(Window, {
     Name = "Visuals",
     Subtitle = "отображение объектов",
     Icon = "eye"
@@ -3596,19 +3358,19 @@ WorldSection:CreateDropdown({
 })
 
 -- Остальные вкладки
-Library:CreateTab(MainWindow, {
+Library:CreateTab(Window, {
     Name = "Local",
     Subtitle = "игрок",
     Icon = "user"
 })
 
-Library:CreateTab(MainWindow, {
+Library:CreateTab(Window, {
     Name = "Colors",
     Subtitle = "цвета интерфейса",
     Icon = "palette"
 })
 
-Library:CreateTab(MainWindow, {
+Library:CreateTab(Window, {
     Name = "Config",
     Subtitle = "конфигурация",
     Icon = "folder"
