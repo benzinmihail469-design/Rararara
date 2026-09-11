@@ -67,6 +67,23 @@ local function ParseIcon(icon)
     return strIcon
 end
 
+-- 2.1 Таблица цветов редкостей
+local RarityColors = {
+    ["common"]    = Color3.fromRGB(180, 180, 180),
+    ["uncommon"]  = Color3.fromRGB(80, 200, 120),
+    ["rare"]      = Color3.fromRGB(50, 130, 240),
+    ["epic"]      = Color3.fromRGB(170, 70, 240),
+    ["legendary"] = Color3.fromRGB(255, 170, 0),
+    ["godly"]     = Color3.fromRGB(255, 60, 100),
+    ["ancient"]   = Color3.fromRGB(0, 230, 255)
+}
+
+local function GetRarityColor(rarity)
+    if not rarity then return Theme["SubText"] end
+    local lower = string.lower(tostring(rarity))
+    return RarityColors[lower] or Theme["Accent"]
+end
+
 -- 3. ScreenGui
 local Holder = Instance.new("ScreenGui")
 Holder.Parent = gethui()
@@ -619,14 +636,13 @@ function Library:CreateWindow(data)
 end
 
 -- =======================================================
--- 10. ОБНОВЛЕННАЯ СИСТЕМА ВКЛАДОК (ВОССТАНОВЛЕНА ШИРИНА)
+-- 10. ОБНОВЛЕННАЯ СИСТЕМА ВКЛАДОК
 -- =======================================================
 function Library:CreateTab(window, tabData)
     tabData = tabData or {}
     local tabName = tabData.Name or "Tab"
     local tabSubtitle = tabData.Subtitle or ""
     local tabIcon = tabData.Icon or "folder"
-    -- ВОССТАНОВЛЕНО: По умолчанию 2 колонки для секций
     local initialColumnsCount = tabData.Columns or tabData.ColumnCount or 2
 
     local tabGroupFrame = Instances:Create("Frame", {
@@ -862,7 +878,7 @@ function Library:CreateTab(window, tabData)
     }
 
     function TabObject:CreateColumns(count)
-        count = count or 2 -- ВОССТАНОВЛЕНО: 2 колонки по умолчанию
+        count = count or 2
         local rowFrame = Instances:Create("Frame", {
             Parent = defaultMainContainer.Instance,
             Name = "ColumnRow_" .. count,
@@ -910,39 +926,20 @@ function Library:CreateTab(window, tabData)
     TabObject.Columns = defaultCols
 
     local function DeselectTab()
-        Tween(tabButton.Instance, TweenInfo.new(0.2, Enum.EasingStyle.Quad, Enum.EasingDirection.Out), {
-            BackgroundTransparency = 1
-        })
-        Tween(tabStroke.Instance, TweenInfo.new(0.2, Enum.EasingStyle.Quad, Enum.EasingDirection.Out), {
-            Transparency = 1
-        })
-        Tween(activeIndicator.Instance, TweenInfo.new(0.2, Enum.EasingStyle.Quad, Enum.EasingDirection.Out), {
-            BackgroundTransparency = 1,
-            Size = UDim2.new(0, 3, 0, 0)
-        })
-        Tween(iconImage.Instance, TweenInfo.new(0.2), {
-            ImageColor3 = Theme["SubText"],
-            ImageTransparency = 0.3
-        })
-        Tween(tabLabel.Instance, TweenInfo.new(0.2), {
-            TextColor3 = Theme["SubText"]
-        })
+        Tween(tabButton.Instance, TweenInfo.new(0.2, Enum.EasingStyle.Quad, Enum.EasingDirection.Out), { BackgroundTransparency = 1 })
+        Tween(tabStroke.Instance, TweenInfo.new(0.2, Enum.EasingStyle.Quad, Enum.EasingDirection.Out), { Transparency = 1 })
+        Tween(activeIndicator.Instance, TweenInfo.new(0.2, Enum.EasingStyle.Quad, Enum.EasingDirection.Out), { BackgroundTransparency = 1, Size = UDim2.new(0, 3, 0, 0) })
+        Tween(iconImage.Instance, TweenInfo.new(0.2), { ImageColor3 = Theme["SubText"], ImageTransparency = 0.3 })
+        Tween(tabLabel.Instance, TweenInfo.new(0.2), { TextColor3 = Theme["SubText"] })
         if TabObject.SubLabel then
-            Tween(TabObject.SubLabel, TweenInfo.new(0.2), {
-                TextColor3 = Theme["SubText"],
-                TextTransparency = 0.4
-            })
+            Tween(TabObject.SubLabel, TweenInfo.new(0.2), { TextColor3 = Theme["SubText"], TextTransparency = 0.4 })
         end
         TabObject.Container.Visible = false
 
         if TabObject.HasSubTabs then
             TabObject.Expanded = false
-            Tween(subTabsContainer.Instance, TweenInfo.new(0.25), {
-                Size = UDim2.new(1, 0, 0, 0)
-            })
-            Tween(arrowIcon.Instance, TweenInfo.new(0.25), {
-                Rotation = 0
-            })
+            Tween(subTabsContainer.Instance, TweenInfo.new(0.25), { Size = UDim2.new(1, 0, 0, 0) })
+            Tween(arrowIcon.Instance, TweenInfo.new(0.25), { Rotation = 0 })
         end
 
         for _, sub in ipairs(TabObject.SubTabs) do
@@ -952,47 +949,24 @@ function Library:CreateTab(window, tabData)
 
     local function ActivateTab()
         if Library.ActiveTabObject == TabObject and not TabObject.HasSubTabs then return end
-
         if Library.ActiveTabObject and Library.ActiveTabObject ~= TabObject then
             Library.ActiveTabObject:Deselect()
         end
-
         Library.ActiveTabObject = TabObject
-
-        Tween(tabButton.Instance, TweenInfo.new(0.25, Enum.EasingStyle.Quart, Enum.EasingDirection.Out), {
-            BackgroundTransparency = 0.82
-        })
-        Tween(tabStroke.Instance, TweenInfo.new(0.25, Enum.EasingStyle.Quart, Enum.EasingDirection.Out), {
-            Transparency = 0
-        })
-        Tween(activeIndicator.Instance, TweenInfo.new(0.28, Enum.EasingStyle.Back, Enum.EasingDirection.Out), {
-            BackgroundTransparency = 0,
-            Size = UDim2.new(0, 3, 0, 18)
-        })
-        Tween(iconImage.Instance, TweenInfo.new(0.2), {
-            ImageColor3 = Theme["Text"],
-            ImageTransparency = 0
-        })
-        Tween(tabLabel.Instance, TweenInfo.new(0.2), {
-            TextColor3 = Theme["Text"]
-        })
+        Tween(tabButton.Instance, TweenInfo.new(0.25, Enum.EasingStyle.Quart, Enum.EasingDirection.Out), { BackgroundTransparency = 0.82 })
+        Tween(tabStroke.Instance, TweenInfo.new(0.25, Enum.EasingStyle.Quart, Enum.EasingDirection.Out), { Transparency = 0 })
+        Tween(activeIndicator.Instance, TweenInfo.new(0.28, Enum.EasingStyle.Back, Enum.EasingDirection.Out), { BackgroundTransparency = 0, Size = UDim2.new(0, 3, 0, 18) })
+        Tween(iconImage.Instance, TweenInfo.new(0.2), { ImageColor3 = Theme["Text"], ImageTransparency = 0 })
+        Tween(tabLabel.Instance, TweenInfo.new(0.2), { TextColor3 = Theme["Text"] })
         if TabObject.SubLabel then
-            Tween(TabObject.SubLabel, TweenInfo.new(0.2), {
-                TextColor3 = Theme["Text"],
-                TextTransparency = 0.2
-            })
+            Tween(TabObject.SubLabel, TweenInfo.new(0.2), { TextColor3 = Theme["Text"], TextTransparency = 0.2 })
         end
 
         if TabObject.HasSubTabs then
             TabObject.Expanded = true
             local targetHeight = TabObject.SubListLayout.AbsoluteContentSize.Y + 8
-            Tween(subTabsContainer.Instance, TweenInfo.new(0.25), {
-                Size = UDim2.new(1, 0, 0, targetHeight)
-            })
-            Tween(arrowIcon.Instance, TweenInfo.new(0.25), {
-                Rotation = 180
-            })
-
+            Tween(subTabsContainer.Instance, TweenInfo.new(0.25), { Size = UDim2.new(1, 0, 0, targetHeight) })
+            Tween(arrowIcon.Instance, TweenInfo.new(0.25), { Rotation = 180 })
             if #TabObject.SubTabs > 0 then
                 if not TabObject.ActiveSubTabObj then
                     TabObject.SubTabs[1]:Select()
@@ -1005,52 +979,27 @@ function Library:CreateTab(window, tabData)
         end
     end
 
-    function TabObject:Deselect()
-        DeselectTab()
-    end
-
-    function TabObject:Select()
-        ActivateTab()
-    end
+    function TabObject:Deselect() DeselectTab() end
+    function TabObject:Select() ActivateTab() end
 
     tabButton:Connect("MouseEnter", function()
         if Library.ActiveTabObject ~= TabObject then
-            Tween(tabButton.Instance, TweenInfo.new(0.15, Enum.EasingStyle.Quad, Enum.EasingDirection.Out), {
-                BackgroundTransparency = 0.92
-            })
-            Tween(iconImage.Instance, TweenInfo.new(0.15), {
-                ImageTransparency = 0.0,
-                ImageColor3 = Theme["Text"]
-            })
-            Tween(tabLabel.Instance, TweenInfo.new(0.15), {
-                TextColor3 = Theme["Text"]
-            })
+            Tween(tabButton.Instance, TweenInfo.new(0.15, Enum.EasingStyle.Quad, Enum.EasingDirection.Out), { BackgroundTransparency = 0.92 })
+            Tween(iconImage.Instance, TweenInfo.new(0.15), { ImageTransparency = 0.0, ImageColor3 = Theme["Text"] })
+            Tween(tabLabel.Instance, TweenInfo.new(0.15), { TextColor3 = Theme["Text"] })
             if TabObject.SubLabel then
-                Tween(TabObject.SubLabel, TweenInfo.new(0.15), {
-                    TextColor3 = Theme["Text"],
-                    TextTransparency = 0.2
-                })
+                Tween(TabObject.SubLabel, TweenInfo.new(0.15), { TextColor3 = Theme["Text"], TextTransparency = 0.2 })
             end
         end
     end)
 
     tabButton:Connect("MouseLeave", function()
         if Library.ActiveTabObject ~= TabObject then
-            Tween(tabButton.Instance, TweenInfo.new(0.15, Enum.EasingStyle.Quad, Enum.EasingDirection.Out), {
-                BackgroundTransparency = 1
-            })
-            Tween(iconImage.Instance, TweenInfo.new(0.15), {
-                ImageTransparency = 0.3,
-                ImageColor3 = Theme["SubText"]
-            })
-            Tween(tabLabel.Instance, TweenInfo.new(0.15), {
-                TextColor3 = Theme["SubText"]
-            })
+            Tween(tabButton.Instance, TweenInfo.new(0.15, Enum.EasingStyle.Quad, Enum.EasingDirection.Out), { BackgroundTransparency = 1 })
+            Tween(iconImage.Instance, TweenInfo.new(0.15), { ImageTransparency = 0.3, ImageColor3 = Theme["SubText"] })
+            Tween(tabLabel.Instance, TweenInfo.new(0.15), { TextColor3 = Theme["SubText"] })
             if TabObject.SubLabel then
-                Tween(TabObject.SubLabel, TweenInfo.new(0.15), {
-                    TextColor3 = Theme["SubText"],
-                    TextTransparency = 0.4
-                })
+                Tween(TabObject.SubLabel, TweenInfo.new(0.15), { TextColor3 = Theme["SubText"], TextTransparency = 0.4 })
             end
         end
     end)
@@ -1060,12 +1009,8 @@ function Library:CreateTab(window, tabData)
             if Library.ActiveTabObject == TabObject then
                 TabObject.Expanded = not TabObject.Expanded
                 local targetHeight = TabObject.Expanded and (TabObject.SubListLayout.AbsoluteContentSize.Y + 8) or 0
-                Tween(subTabsContainer.Instance, TweenInfo.new(0.25), {
-                    Size = UDim2.new(1, 0, 0, targetHeight)
-                })
-                Tween(arrowIcon.Instance, TweenInfo.new(0.25), {
-                    Rotation = TabObject.Expanded and 180 or 0
-                })
+                Tween(subTabsContainer.Instance, TweenInfo.new(0.25), { Size = UDim2.new(1, 0, 0, targetHeight) })
+                Tween(arrowIcon.Instance, TweenInfo.new(0.25), { Rotation = TabObject.Expanded and 180 or 0 })
             else
                 ActivateTab()
             end
@@ -1100,10 +1045,7 @@ function Library:CreateTab(window, tabData)
             Selectable = true
         })
 
-        Instances:Create("UICorner", {
-            Parent = subButton.Instance,
-            CornerRadius = UDim.new(0, 5)
-        })
+        Instances:Create("UICorner", { Parent = subButton.Instance, CornerRadius = UDim.new(0, 5) })
 
         local subStroke = Instances:Create("UIStroke", {
             Parent = subButton.Instance,
@@ -1283,24 +1225,12 @@ function Library:CreateTab(window, tabData)
         SubTabObject.Columns = defaultSubCols
 
         function SubTabObject:Deselect()
-            Tween(subButton.Instance, TweenInfo.new(0.15, Enum.EasingStyle.Quad, Enum.EasingDirection.Out), {
-                BackgroundTransparency = 1
-            })
-            Tween(subStroke.Instance, TweenInfo.new(0.15, Enum.EasingStyle.Quad, Enum.EasingDirection.Out), {
-                Transparency = 1
-            })
-            Tween(subIndicator.Instance, TweenInfo.new(0.15, Enum.EasingStyle.Quad, Enum.EasingDirection.Out), {
-                BackgroundTransparency = 1,
-                Size = UDim2.new(0, 2, 0, 0)
-            })
-            Tween(subLabelObj.Instance, TweenInfo.new(0.15), {
-                TextColor3 = Theme["SubText"]
-            })
+            Tween(subButton.Instance, TweenInfo.new(0.15, Enum.EasingStyle.Quad, Enum.EasingDirection.Out), { BackgroundTransparency = 1 })
+            Tween(subStroke.Instance, TweenInfo.new(0.15, Enum.EasingStyle.Quad, Enum.EasingDirection.Out), { Transparency = 1 })
+            Tween(subIndicator.Instance, TweenInfo.new(0.15, Enum.EasingStyle.Quad, Enum.EasingDirection.Out), { BackgroundTransparency = 1, Size = UDim2.new(0, 2, 0, 0) })
+            Tween(subLabelObj.Instance, TweenInfo.new(0.15), { TextColor3 = Theme["SubText"] })
             if subIconObj then
-                Tween(subIconObj.Instance, TweenInfo.new(0.15), {
-                    ImageColor3 = Theme["SubText"],
-                    ImageTransparency = 0.3
-                })
+                Tween(subIconObj.Instance, TweenInfo.new(0.15), { ImageColor3 = Theme["SubText"], ImageTransparency = 0.3 })
             end
             subContainer.Instance.Visible = false
         end
@@ -1309,88 +1239,45 @@ function Library:CreateTab(window, tabData)
             if Library.ActiveTabObject ~= TabObject then
                 if Library.ActiveTabObject then Library.ActiveTabObject:Deselect() end
                 Library.ActiveTabObject = TabObject
-                Tween(tabButton.Instance, TweenInfo.new(0.25, Enum.EasingStyle.Quart, Enum.EasingDirection.Out), {
-                    BackgroundTransparency = 0.82
-                })
-                Tween(tabStroke.Instance, TweenInfo.new(0.25, Enum.EasingStyle.Quart, Enum.EasingDirection.Out), {
-                    Transparency = 0
-                })
-                Tween(activeIndicator.Instance, TweenInfo.new(0.28, Enum.EasingStyle.Back, Enum.EasingDirection.Out), {
-                    BackgroundTransparency = 0,
-                    Size = UDim2.new(0, 3, 0, 18)
-                })
-                Tween(iconImage.Instance, TweenInfo.new(0.2), {
-                    ImageColor3 = Theme["Text"],
-                    ImageTransparency = 0
-                })
-                Tween(tabLabel.Instance, TweenInfo.new(0.2), {
-                    TextColor3 = Theme["Text"]
-                })
+                Tween(tabButton.Instance, TweenInfo.new(0.25, Enum.EasingStyle.Quart, Enum.EasingDirection.Out), { BackgroundTransparency = 0.82 })
+                Tween(tabStroke.Instance, TweenInfo.new(0.25, Enum.EasingStyle.Quart, Enum.EasingDirection.Out), { Transparency = 0 })
+                Tween(activeIndicator.Instance, TweenInfo.new(0.28, Enum.EasingStyle.Back, Enum.EasingDirection.Out), { BackgroundTransparency = 0, Size = UDim2.new(0, 3, 0, 18) })
+                Tween(iconImage.Instance, TweenInfo.new(0.2), { ImageColor3 = Theme["Text"], ImageTransparency = 0 })
+                Tween(tabLabel.Instance, TweenInfo.new(0.2), { TextColor3 = Theme["Text"] })
                 if TabObject.SubLabel then
-                    Tween(TabObject.SubLabel, TweenInfo.new(0.2), {
-                        TextColor3 = Theme["Text"],
-                        TextTransparency = 0.2
-                    })
+                    Tween(TabObject.SubLabel, TweenInfo.new(0.2), { TextColor3 = Theme["Text"], TextTransparency = 0.2 })
                 end
             end
-
             for _, s in ipairs(TabObject.SubTabs) do
                 if s ~= SubTabObject then s:Deselect() end
             end
-
             TabObject.ActiveSubTabObj = SubTabObject
-            Tween(subButton.Instance, TweenInfo.new(0.2, Enum.EasingStyle.Quart, Enum.EasingDirection.Out), {
-                BackgroundTransparency = 0.82
-            })
-            Tween(subStroke.Instance, TweenInfo.new(0.2, Enum.EasingStyle.Quart, Enum.EasingDirection.Out), {
-                Transparency = 0
-            })
-            Tween(subIndicator.Instance, TweenInfo.new(0.25, Enum.EasingStyle.Back, Enum.EasingDirection.Out), {
-                BackgroundTransparency = 0,
-                Size = UDim2.new(0, 2, 0, 12)
-            })
-            Tween(subLabelObj.Instance, TweenInfo.new(0.15), {
-                TextColor3 = Theme["Text"]
-            })
+            Tween(subButton.Instance, TweenInfo.new(0.2, Enum.EasingStyle.Quart, Enum.EasingDirection.Out), { BackgroundTransparency = 0.82 })
+            Tween(subStroke.Instance, TweenInfo.new(0.2, Enum.EasingStyle.Quart, Enum.EasingDirection.Out), { Transparency = 0 })
+            Tween(subIndicator.Instance, TweenInfo.new(0.25, Enum.EasingStyle.Back, Enum.EasingDirection.Out), { BackgroundTransparency = 0, Size = UDim2.new(0, 2, 0, 12) })
+            Tween(subLabelObj.Instance, TweenInfo.new(0.15), { TextColor3 = Theme["Text"] })
             if subIconObj then
-                Tween(subIconObj.Instance, TweenInfo.new(0.15), {
-                    ImageColor3 = Theme["Text"],
-                    ImageTransparency = 0
-                })
+                Tween(subIconObj.Instance, TweenInfo.new(0.15), { ImageColor3 = Theme["Text"], ImageTransparency = 0 })
             end
             subContainer.Instance.Visible = true
         end
 
         subButton:Connect("MouseEnter", function()
             if TabObject.ActiveSubTabObj ~= SubTabObject then
-                Tween(subButton.Instance, TweenInfo.new(0.15, Enum.EasingStyle.Quad, Enum.EasingDirection.Out), {
-                    BackgroundTransparency = 0.93
-                })
-                Tween(subLabelObj.Instance, TweenInfo.new(0.15), {
-                    TextColor3 = Theme["Text"]
-                })
+                Tween(subButton.Instance, TweenInfo.new(0.15, Enum.EasingStyle.Quad, Enum.EasingDirection.Out), { BackgroundTransparency = 0.93 })
+                Tween(subLabelObj.Instance, TweenInfo.new(0.15), { TextColor3 = Theme["Text"] })
                 if subIconObj then
-                    Tween(subIconObj.Instance, TweenInfo.new(0.15), {
-                        ImageColor3 = Theme["Text"],
-                        ImageTransparency = 0
-                    })
+                    Tween(subIconObj.Instance, TweenInfo.new(0.15), { ImageColor3 = Theme["Text"], ImageTransparency = 0 })
                 end
             end
         end)
 
         subButton:Connect("MouseLeave", function()
             if TabObject.ActiveSubTabObj ~= SubTabObject then
-                Tween(subButton.Instance, TweenInfo.new(0.15, Enum.EasingStyle.Quad, Enum.EasingDirection.Out), {
-                    BackgroundTransparency = 1
-                })
-                Tween(subLabelObj.Instance, TweenInfo.new(0.15), {
-                    TextColor3 = Theme["SubText"]
-                })
+                Tween(subButton.Instance, TweenInfo.new(0.15, Enum.EasingStyle.Quad, Enum.EasingDirection.Out), { BackgroundTransparency = 1 })
+                Tween(subLabelObj.Instance, TweenInfo.new(0.15), { TextColor3 = Theme["SubText"] })
                 if subIconObj then
-                    Tween(subIconObj.Instance, TweenInfo.new(0.15), {
-                        ImageColor3 = Theme["SubText"],
-                        ImageTransparency = 0.3
-                    })
+                    Tween(subIconObj.Instance, TweenInfo.new(0.15), { ImageColor3 = Theme["SubText"], ImageTransparency = 0.3 })
                 end
             end
         end)
@@ -1420,7 +1307,7 @@ function Library:CreateTab(window, tabData)
 end
 
 -- =======================================================
--- 11. СЕКЦИИ UI И СЕТКА КАРТОЧЕК В 3 КОЛОНКИ
+-- 11. СЕКЦИИ UI И ОБНОВЛЕННАЯ СЕТКА КАРТОЧЕК ПРЕДМЕТОВ
 -- =======================================================
 function Library:CreateSection(parentColumn, sectionData)
     sectionData = sectionData or {}
@@ -1444,17 +1331,8 @@ function Library:CreateSection(parentColumn, sectionData)
         ClipsDescendants = true
     })
 
-    Instances:Create("UICorner", {
-        Parent = sectionFrame.Instance,
-        CornerRadius = UDim.new(0, 6)
-    })
-
-    Instances:Create("UIStroke", {
-        Parent = sectionFrame.Instance,
-        Color = Theme["Outline"],
-        Thickness = 1,
-        ApplyStrokeMode = Enum.ApplyStrokeMode.Border
-    })
+    Instances:Create("UICorner", { Parent = sectionFrame.Instance, CornerRadius = UDim.new(0, 6) })
+    Instances:Create("UIStroke", { Parent = sectionFrame.Instance, Color = Theme["Outline"], Thickness = 1, ApplyStrokeMode = Enum.ApplyStrokeMode.Border })
 
     Instances:Create("UIListLayout", {
         Parent = sectionFrame.Instance,
@@ -1580,21 +1458,15 @@ function Library:CreateSection(parentColumn, sectionData)
         local contentHeight = elementsLayout.Instance.AbsoluteContentSize.Y + 16
         local targetHeight = collapsed and 0 or contentHeight
         local targetRotation = collapsed and 0 or 180
-
         if animated then
-            Tween(elementsContainer.Instance, TweenInfo.new(0.25, Enum.EasingStyle.Quad, Enum.EasingDirection.Out), {
-                Size = UDim2.new(1, 0, 0, targetHeight)
-            })
-            Tween(arrowIcon.Instance, TweenInfo.new(0.25, Enum.EasingStyle.Quad, Enum.EasingDirection.Out), {
-                Rotation = targetRotation
-            })
+            Tween(elementsContainer.Instance, TweenInfo.new(0.25, Enum.EasingStyle.Quad, Enum.EasingDirection.Out), { Size = UDim2.new(1, 0, 0, targetHeight) })
+            Tween(arrowIcon.Instance, TweenInfo.new(0.25, Enum.EasingStyle.Quad, Enum.EasingDirection.Out), { Rotation = targetRotation })
         else
             elementsContainer.Instance.Size = UDim2.new(1, 0, 0, targetHeight)
             arrowIcon.Instance.Rotation = targetRotation
         end
     end
 
-    -- БЛОК ПОИСКА
     if isSearchable then
         local searchContainer = Instances:Create("Frame", {
             Parent = sectionFrame.Instance,
@@ -1617,10 +1489,7 @@ function Library:CreateSection(parentColumn, sectionData)
             ZIndex = 8
         })
 
-        Instances:Create("UICorner", {
-            Parent = searchBoxFrame.Instance,
-            CornerRadius = UDim.new(0, 5)
-        })
+        Instances:Create("UICorner", { Parent = searchBoxFrame.Instance, CornerRadius = UDim.new(0, 5) })
 
         local searchStroke = Instances:Create("UIStroke", {
             Parent = searchBoxFrame.Instance,
@@ -1661,23 +1530,13 @@ function Library:CreateSection(parentColumn, sectionData)
         })
 
         textBox.Instance.Focused:Connect(function()
-            Tween(searchStroke.Instance, TweenInfo.new(0.2), {
-                Color = Theme["Accent"]
-            })
-            Tween(searchIcon.Instance, TweenInfo.new(0.2), {
-                ImageColor3 = Theme["Accent"],
-                ImageTransparency = 0
-            })
+            Tween(searchStroke.Instance, TweenInfo.new(0.2), { Color = Theme["Accent"] })
+            Tween(searchIcon.Instance, TweenInfo.new(0.2), { ImageColor3 = Theme["Accent"], ImageTransparency = 0 })
         end)
 
         textBox.Instance.FocusLost:Connect(function()
-            Tween(searchStroke.Instance, TweenInfo.new(0.2), {
-                Color = Theme["Outline"]
-            })
-            Tween(searchIcon.Instance, TweenInfo.new(0.2), {
-                ImageColor3 = Theme["SubText"],
-                ImageTransparency = 0.3
-            })
+            Tween(searchStroke.Instance, TweenInfo.new(0.2), { Color = Theme["Outline"] })
+            Tween(searchIcon.Instance, TweenInfo.new(0.2), { ImageColor3 = Theme["SubText"], ImageTransparency = 0.3 })
         end)
 
         textBox.Instance:GetPropertyChangedSignal("Text"):Connect(function()
@@ -1708,12 +1567,12 @@ function Library:CreateSection(parentColumn, sectionData)
     local SectionAPI = {}
 
     -- =======================================================
-    -- НОВАЯ ФУНКЦИЯ: СЕТКА КАРТОЧЕК В 3 КОЛОНКИ
+    -- ОБНОВЛЕННАЯ СЕТКА КАРТОЧЕК ПРЕДМЕТОВ (с редкостями и галочкой)
     -- =======================================================
     function SectionAPI:CreateCardsGrid(gridData)
         gridData = gridData or {}
-        local cardHeight = gridData.CardHeight or gridData.Height or 65
-        
+        local cardHeight = gridData.CardHeight or gridData.Height or 125
+
         local cardsFrame = Instances:Create("Frame", {
             Parent = elementsContainer.Instance,
             Name = "CardsGrid",
@@ -1724,11 +1583,10 @@ function Library:CreateSection(parentColumn, sectionData)
             ZIndex = 7
         })
 
-        -- Автоматический расчет 3 ровных колонок
         local gridLayout = Instances:Create("UIGridLayout", {
             Parent = cardsFrame.Instance,
-            CellSize = UDim2.new(0.315, 0, 0, cardHeight), -- ~31.5% ширины на карточку
-            CellPadding = UDim2.new(0.02, 0, 0, 6), -- ровные отступы
+            CellSize = UDim2.new(0.315, 0, 0, cardHeight),
+            CellPadding = UDim2.new(0.02, 0, 0, 8),
             SortOrder = Enum.SortOrder.LayoutOrder
         })
 
@@ -1740,10 +1598,12 @@ function Library:CreateSection(parentColumn, sectionData)
 
         function GridAPI:CreateCard(cardData)
             cardData = cardData or {}
-            local cardTitle = cardData.Title or cardData.Name or "Card"
-            local cardDesc = cardData.Description or cardData.Desc or ""
-            local cardIcon = cardData.Icon or ""
+            local cardTitle = cardData.Title or cardData.Name or "Item"
+            local cardRarity = cardData.Rarity or "Common"
+            local cardIcon = cardData.Icon or cardData.Image or ""
+            local isSelected = cardData.Selected or cardData.Equipped or false
             local callback = cardData.Callback or function() end
+            local rarityColor = GetRarityColor(cardRarity)
 
             local cardButton = Instances:Create("TextButton", {
                 Parent = cardsFrame.Instance,
@@ -1754,108 +1614,163 @@ function Library:CreateSection(parentColumn, sectionData)
                 AutoButtonColor = false,
                 BorderSizePixel = 0,
                 ZIndex = 8,
-                Active = true
+                Active = true,
+                ClipsDescendants = true
             })
 
-            Instances:Create("UICorner", {
-                Parent = cardButton.Instance,
-                CornerRadius = UDim.new(0, 6)
-            })
+            Instances:Create("UICorner", { Parent = cardButton.Instance, CornerRadius = UDim.new(0, 6) })
 
             local cardStroke = Instances:Create("UIStroke", {
                 Parent = cardButton.Instance,
-                Color = Theme["Outline"],
-                Thickness = 1
+                Color = isSelected and rarityColor or Theme["Outline"],
+                Thickness = isSelected and 1.5 or 1
             })
 
-            Instances:Create("UIGradient", {
-                Parent = cardStroke.Instance,
+            local bgGradient = Instances:Create("UIGradient", {
+                Parent = cardButton.Instance,
                 Color = ColorSequence.new({
-                    ColorSequenceKeypoint.new(0, Theme["Outline"]),
-                    ColorSequenceKeypoint.new(0.5, Theme["Accent"]),
-                    ColorSequenceKeypoint.new(1, Theme["Outline"])
+                    ColorSequenceKeypoint.new(0, rarityColor),
+                    ColorSequenceKeypoint.new(0.4, Theme["Background 2"]),
+                    ColorSequenceKeypoint.new(1, Theme["Background"])
                 }),
                 Transparency = NumberSequence.new({
-                    NumberSequenceKeypoint.new(0, 0.4),
-                    NumberSequenceKeypoint.new(0.5, 0.0),
-                    NumberSequenceKeypoint.new(1, 0.4)
-                })
+                    NumberSequenceKeypoint.new(0, 0.82),
+                    NumberSequenceKeypoint.new(1, 0.98)
+                }),
+                Rotation = 90
             })
 
-            local hasIcon = cardIcon ~= ""
-            if hasIcon then
-                Instances:Create("ImageLabel", {
-                    Parent = cardButton.Instance,
-                    Name = "Icon",
-                    Size = UDim2.new(0, 16, 0, 16),
-                    Position = UDim2.new(0, 6, 0, 6),
-                    BackgroundTransparency = 1,
-                    Image = ParseIcon(cardIcon),
-                    ImageColor3 = Theme["Accent"],
-                    ScaleType = Enum.ScaleType.Fit,
-                    ZIndex = 9
-                })
-            end
-
-            Instances:Create("TextLabel", {
+            -- Галочка выбора (правый верхний угол)
+            local checkBadge = Instances:Create("Frame", {
                 Parent = cardButton.Instance,
-                Name = "Title",
-                Text = cardTitle,
-                FontFace = Font.new("rbxassetid://12187365364", Enum.FontWeight.Bold, Enum.FontStyle.Normal),
-                TextColor3 = Theme["Text"],
-                TextSize = 11,
-                Position = UDim2.new(0, hasIcon and 26 or 6, 0, 4),
-                Size = UDim2.new(1, hasIcon and -30 or -10, 0, 16),
+                Name = "CheckBadge",
+                Size = UDim2.new(0, 16, 0, 16),
+                AnchorPoint = Vector2.new(1, 0),
+                Position = UDim2.new(1, -5, 0, 5),
+                BackgroundColor3 = rarityColor,
+                BackgroundTransparency = isSelected and 0 or 1,
+                BorderSizePixel = 0,
+                ZIndex = 11
+            })
+
+            Instances:Create("UICorner", { Parent = checkBadge.Instance, CornerRadius = UDim.new(0, 4) })
+
+            local checkIcon = Instances:Create("ImageLabel", {
+                Parent = checkBadge.Instance,
+                Name = "CheckIcon",
+                Size = UDim2.new(0, 10, 0, 10),
+                AnchorPoint = Vector2.new(0.5, 0.5),
+                Position = UDim2.new(0.5, 0, 0.5, 0),
                 BackgroundTransparency = 1,
-                TextXAlignment = Enum.TextXAlignment.Left,
-                TextTruncate = Enum.TextTruncate.AtEnd,
+                Image = ParseIcon("check"),
+                ImageColor3 = Color3.fromRGB(255, 255, 255),
+                ImageTransparency = isSelected and 0 or 1,
+                ZIndex = 12
+            })
+
+            -- Иконка предмета
+            local itemImage = Instances:Create("ImageLabel", {
+                Parent = cardButton.Instance,
+                Name = "ItemImage",
+                Size = UDim2.new(0, 52, 0, 52),
+                AnchorPoint = Vector2.new(0.5, 0),
+                Position = UDim2.new(0.5, 0, 0, 12),
+                BackgroundTransparency = 1,
+                Image = ParseIcon(cardIcon),
+                ScaleType = Enum.ScaleType.Fit,
                 ZIndex = 9
             })
 
-            if cardDesc ~= "" then
-                Instances:Create("TextLabel", {
-                    Parent = cardButton.Instance,
-                    Name = "Desc",
-                    Text = cardDesc,
-                    FontFace = Font.new("rbxassetid://12187365364", Enum.FontWeight.Regular, Enum.FontStyle.Normal),
-                    TextColor3 = Theme["SubText"],
-                    TextSize = 9,
-                    Position = UDim2.new(0, 6, 0, 22),
-                    Size = UDim2.new(1, -12, 1, -24),
-                    BackgroundTransparency = 1,
-                    TextXAlignment = Enum.TextXAlignment.Left,
-                    TextYAlignment = Enum.TextYAlignment.Top,
-                    TextWrapped = true,
-                    ZIndex = 9
+            -- Метка редкости
+            local rarityLabel = Instances:Create("TextLabel", {
+                Parent = cardButton.Instance,
+                Name = "RarityLabel",
+                Text = string.upper(tostring(cardRarity)),
+                FontFace = Font.new("rbxassetid://12187365364", Enum.FontWeight.Bold, Enum.FontStyle.Normal),
+                TextColor3 = rarityColor,
+                TextSize = 8,
+                Position = UDim2.new(0, 4, 1, -28),
+                Size = UDim2.new(1, -8, 0, 12),
+                BackgroundTransparency = 1,
+                TextXAlignment = Enum.TextXAlignment.Center,
+                TextTruncate = Enum.TextTruncate.AtEnd,
+                ZIndex = 10
+            })
+
+            -- Название предмета
+            local titleLabel = Instances:Create("TextLabel", {
+                Parent = cardButton.Instance,
+                Name = "TitleLabel",
+                Text = cardTitle,
+                FontFace = Font.new("rbxassetid://12187365364", Enum.FontWeight.Bold, Enum.FontStyle.Normal),
+                TextColor3 = Theme["Text"],
+                TextSize = 10,
+                Position = UDim2.new(0, 4, 1, -16),
+                Size = UDim2.new(1, -8, 0, 14),
+                BackgroundTransparency = 1,
+                TextXAlignment = Enum.TextXAlignment.Center,
+                TextTruncate = Enum.TextTruncate.AtEnd,
+                ZIndex = 10
+            })
+
+            local CardObject = { Instance = cardButton.Instance }
+
+            function CardObject:SetSelected(state)
+                isSelected = state
+                Tween(cardStroke.Instance, TweenInfo.new(0.2), {
+                    Color = isSelected and rarityColor or Theme["Outline"],
+                    Thickness = isSelected and 1.5 or 1
+                })
+                Tween(checkBadge.Instance, TweenInfo.new(0.2, Enum.EasingStyle.Back, Enum.EasingDirection.Out), {
+                    BackgroundTransparency = isSelected and 0 or 1
+                })
+                Tween(checkIcon.Instance, TweenInfo.new(0.2), {
+                    ImageTransparency = isSelected and 0 or 1
                 })
             end
 
+            -- Плавные анимации
             cardButton:Connect("MouseEnter", function()
-                Tween(cardStroke.Instance, TweenInfo.new(0.15), {
-                    Color = Theme["Accent"]
+                Tween(cardButton.Instance, TweenInfo.new(0.15, Enum.EasingStyle.Quad, Enum.EasingDirection.Out), { BackgroundTransparency = 0.05 })
+                Tween(itemImage.Instance, TweenInfo.new(0.2, Enum.EasingStyle.Quad, Enum.EasingDirection.Out), {
+                    Size = UDim2.new(0, 56, 0, 56),
+                    Position = UDim2.new(0.5, 0, 0, 10)
                 })
-                Tween(cardButton.Instance, TweenInfo.new(0.15), {
-                    BackgroundTransparency = 0.05
-                })
+                if not isSelected then
+                    Tween(cardStroke.Instance, TweenInfo.new(0.15), { Color = rarityColor })
+                end
             end)
 
             cardButton:Connect("MouseLeave", function()
-                Tween(cardStroke.Instance, TweenInfo.new(0.15), {
-                    Color = Theme["Outline"]
+                Tween(cardButton.Instance, TweenInfo.new(0.15, Enum.EasingStyle.Quad, Enum.EasingDirection.Out), { BackgroundTransparency = 0.2 })
+                Tween(itemImage.Instance, TweenInfo.new(0.2, Enum.EasingStyle.Quad, Enum.EasingDirection.Out), {
+                    Size = UDim2.new(0, 52, 0, 52),
+                    Position = UDim2.new(0.5, 0, 0, 12)
                 })
-                Tween(cardButton.Instance, TweenInfo.new(0.15), {
-                    BackgroundTransparency = 0.2
+                if not isSelected then
+                    Tween(cardStroke.Instance, TweenInfo.new(0.15), { Color = Theme["Outline"] })
+                end
+            end)
+
+            cardButton:Connect("MouseButton1Down", function()
+                Tween(cardButton.Instance, TweenInfo.new(0.08, Enum.EasingStyle.Quad, Enum.EasingDirection.Out), {
+                    Size = UDim2.new(0.3, 0, 0, cardHeight - 4)
+                })
+            end)
+
+            cardButton:Connect("MouseButton1Up", function()
+                Tween(cardButton.Instance, TweenInfo.new(0.15, Enum.EasingStyle.Back, Enum.EasingDirection.Out), {
+                    Size = UDim2.new(0.315, 0, 0, cardHeight)
                 })
             end)
 
             cardButton.Instance.Activated:Connect(function()
-                pcall(callback)
+                pcall(callback, CardObject)
             end)
 
-            -- Регистрация для поиска
             table.insert(sectionItems, { Instance = cardButton.Instance, Title = cardTitle })
 
-            return cardButton.Instance
+            return CardObject
         end
 
         return GridAPI
@@ -1882,11 +1797,7 @@ function Library:CreateSection(parentColumn, sectionData)
             ZIndex = 7
         })
 
-        Instances:Create("UIListLayout", {
-            Parent = itemHost.Instance,
-            SortOrder = Enum.SortOrder.LayoutOrder,
-            Padding = UDim.new(0, 6)
-        })
+        Instances:Create("UIListLayout", { Parent = itemHost.Instance, SortOrder = Enum.SortOrder.LayoutOrder, Padding = UDim.new(0, 6) })
 
         local toggleHeader = Instances:Create("Frame", {
             Parent = itemHost.Instance,
@@ -1921,10 +1832,7 @@ function Library:CreateSection(parentColumn, sectionData)
             ZIndex = 8
         })
 
-        Instances:Create("UICorner", {
-            Parent = checkBox.Instance,
-            CornerRadius = UDim.new(0, 4)
-        })
+        Instances:Create("UICorner", { Parent = checkBox.Instance, CornerRadius = UDim.new(0, 4) })
 
         local checkStroke = Instances:Create("UIStroke", {
             Parent = checkBox.Instance,
@@ -1992,58 +1900,37 @@ function Library:CreateSection(parentColumn, sectionData)
         local function UpdateState(newState)
             state = newState
             Library.Flags[flag] = state
-
             bgGradient.Instance.Transparency = NumberSequence.new({
                 NumberSequenceKeypoint.new(0, state and 0.1 or 0.8),
                 NumberSequenceKeypoint.new(1, state and 0.3 or 0.95)
             })
-
-            Tween(checkStroke.Instance, TweenInfo.new(0.2), {
-                Transparency = state and 0 or 0.5
-            })
-
+            Tween(checkStroke.Instance, TweenInfo.new(0.2), { Transparency = state and 0 or 0.5 })
             Tween(checkMark.Instance, TweenInfo.new(0.2, state and Enum.EasingStyle.Back or Enum.EasingStyle.Quad, Enum.EasingDirection.Out), {
                 Size = state and UDim2.new(0, 10, 0, 10) or UDim2.new(0, 0, 0, 0),
                 ImageTransparency = state and 0 or 1
             })
-
-            Tween(toggleLabel.Instance, TweenInfo.new(0.2), {
-                TextColor3 = state and Theme["Text"] or Theme["SubText"]
-            })
-
+            Tween(toggleLabel.Instance, TweenInfo.new(0.2), { TextColor3 = state and Theme["Text"] or Theme["SubText"] })
             pcall(callback, state)
         end
 
         toggleButton:Connect("MouseEnter", function()
-            Tween(checkStroke.Instance, TweenInfo.new(0.15), {
-                Transparency = 0
-            })
-            Tween(toggleLabel.Instance, TweenInfo.new(0.15), {
-                TextColor3 = Theme["Text"]
-            })
+            Tween(checkStroke.Instance, TweenInfo.new(0.15), { Transparency = 0 })
+            Tween(toggleLabel.Instance, TweenInfo.new(0.15), { TextColor3 = Theme["Text"] })
         end)
 
         toggleButton:Connect("MouseLeave", function()
-            Tween(checkStroke.Instance, TweenInfo.new(0.15), {
-                Transparency = state and 0 or 0.5
-            })
+            Tween(checkStroke.Instance, TweenInfo.new(0.15), { Transparency = state and 0 or 0.5 })
             if not state then
-                Tween(toggleLabel.Instance, TweenInfo.new(0.15), {
-                    TextColor3 = Theme["SubText"]
-                })
+                Tween(toggleLabel.Instance, TweenInfo.new(0.15), { TextColor3 = Theme["SubText"] })
             end
         end)
 
         toggleButton:Connect("MouseButton1Down", function()
-            Tween(checkBox.Instance, TweenInfo.new(0.08, Enum.EasingStyle.Quad, Enum.EasingDirection.Out), {
-                Size = UDim2.new(0, 13, 0, 13)
-            })
+            Tween(checkBox.Instance, TweenInfo.new(0.08, Enum.EasingStyle.Quad, Enum.EasingDirection.Out), { Size = UDim2.new(0, 13, 0, 13) })
         end)
 
         toggleButton:Connect("MouseButton1Up", function()
-            Tween(checkBox.Instance, TweenInfo.new(0.15, Enum.EasingStyle.Back, Enum.EasingDirection.Out), {
-                Size = UDim2.new(0, 16, 0, 16)
-            })
+            Tween(checkBox.Instance, TweenInfo.new(0.15, Enum.EasingStyle.Back, Enum.EasingDirection.Out), { Size = UDim2.new(0, 16, 0, 16) })
         end)
 
         toggleButton.Instance.Activated:Connect(function()
@@ -2052,7 +1939,6 @@ function Library:CreateSection(parentColumn, sectionData)
 
         if settingsCallback then
             local optionsExpanded = false
-
             local dotsBtn = Instances:Create("TextButton", {
                 Parent = toggleHeader.Instance,
                 Name = "ThreeDots",
@@ -2066,12 +1952,7 @@ function Library:CreateSection(parentColumn, sectionData)
                 ZIndex = 9,
                 Active = true
             })
-
-            Instances:Create("UICorner", {
-                Parent = dotsBtn.Instance,
-                CornerRadius = UDim.new(0, 5)
-            })
-
+            Instances:Create("UICorner", { Parent = dotsBtn.Instance, CornerRadius = UDim.new(0, 5) })
             local dotsStroke = Instances:Create("UIStroke", {
                 Parent = dotsBtn.Instance,
                 Color = Color3.fromRGB(255, 255, 255),
@@ -2079,7 +1960,6 @@ function Library:CreateSection(parentColumn, sectionData)
                 Transparency = 0.5,
                 ApplyStrokeMode = Enum.ApplyStrokeMode.Border
             })
-
             Instances:Create("UIGradient", {
                 Parent = dotsStroke.Instance,
                 Color = ColorSequence.new({
@@ -2093,14 +1973,12 @@ function Library:CreateSection(parentColumn, sectionData)
                     NumberSequenceKeypoint.new(1, 0.4)
                 })
             })
-
             local dotsHolderLayout = Instances:Create("UIListLayout", {
                 FillDirection = Enum.FillDirection.Horizontal,
                 HorizontalAlignment = Enum.HorizontalAlignment.Center,
                 VerticalAlignment = Enum.VerticalAlignment.Center,
                 Padding = UDim.new(0, 2)
             })
-
             local dotsHolder = Instances:Create("Frame", {
                 Parent = dotsBtn.Instance,
                 Name = "DotsHolder",
@@ -2110,9 +1988,7 @@ function Library:CreateSection(parentColumn, sectionData)
                 BackgroundTransparency = 1,
                 ZIndex = 10
             })
-
             dotsHolderLayout.Instance.Parent = dotsHolder.Instance
-
             local dotElements = {}
             for i = 1, 3 do
                 local dot = Instances:Create("Frame", {
@@ -2123,13 +1999,9 @@ function Library:CreateSection(parentColumn, sectionData)
                     BorderSizePixel = 0,
                     ZIndex = 10
                 })
-                Instances:Create("UICorner", {
-                    Parent = dot.Instance,
-                    CornerRadius = UDim.new(1, 0)
-                })
+                Instances:Create("UICorner", { Parent = dot.Instance, CornerRadius = UDim.new(1, 0) })
                 table.insert(dotElements, dot.Instance)
             end
-
             local settingsPanel = Instances:Create("Frame", {
                 Parent = itemHost.Instance,
                 Name = "SettingsPanel",
@@ -2141,12 +2013,7 @@ function Library:CreateSection(parentColumn, sectionData)
                 LayoutOrder = 2,
                 ZIndex = 8
             })
-
-            Instances:Create("UICorner", {
-                Parent = settingsPanel.Instance,
-                CornerRadius = UDim.new(0, 6)
-            })
-
+            Instances:Create("UICorner", { Parent = settingsPanel.Instance, CornerRadius = UDim.new(0, 6) })
             local panelStroke = Instances:Create("UIStroke", {
                 Parent = settingsPanel.Instance,
                 Color = Color3.fromRGB(255, 255, 255),
@@ -2154,7 +2021,6 @@ function Library:CreateSection(parentColumn, sectionData)
                 Transparency = 0.8,
                 ApplyStrokeMode = Enum.ApplyStrokeMode.Border
             })
-
             Instances:Create("UIGradient", {
                 Parent = panelStroke.Instance,
                 Color = ColorSequence.new({
@@ -2168,7 +2034,6 @@ function Library:CreateSection(parentColumn, sectionData)
                     NumberSequenceKeypoint.new(1, 0.4)
                 })
             })
-
             Instances:Create("UIPadding", {
                 Parent = settingsPanel.Instance,
                 PaddingTop = UDim.new(0, 6),
@@ -2176,15 +2041,12 @@ function Library:CreateSection(parentColumn, sectionData)
                 PaddingLeft = UDim.new(0, 8),
                 PaddingRight = UDim.new(0, 8)
             })
-
             local panelLayout = Instances:Create("UIListLayout", {
                 Parent = settingsPanel.Instance,
                 SortOrder = Enum.SortOrder.LayoutOrder,
                 Padding = UDim.new(0, 6)
             })
-
             local SubAPI = {}
-            
             function SubAPI:Slider(sData)
                 local oldElements = elementsContainer
                 elementsContainer = settingsPanel
@@ -2192,7 +2054,6 @@ function Library:CreateSection(parentColumn, sectionData)
                 elementsContainer = oldElements
                 return res
             end
-
             function SubAPI:Button(bData)
                 local oldElements = elementsContainer
                 elementsContainer = settingsPanel
@@ -2200,49 +2061,33 @@ function Library:CreateSection(parentColumn, sectionData)
                 elementsContainer = oldElements
                 return res
             end
-
             pcall(settingsCallback, SubAPI)
-
             dotsBtn:Connect("MouseEnter", function()
                 if not optionsExpanded then
-                    Tween(dotsStroke.Instance, TweenInfo.new(0.15), {
-                        Transparency = 0
-                    })
+                    Tween(dotsStroke.Instance, TweenInfo.new(0.15), { Transparency = 0 })
                     for _, dot in ipairs(dotElements) do
-                        Tween(dot, TweenInfo.new(0.15), {
-                            BackgroundColor3 = Theme["Accent"]
-                        })
+                        Tween(dot, TweenInfo.new(0.15), { BackgroundColor3 = Theme["Accent"] })
                     end
                 end
             end)
-
             dotsBtn:Connect("MouseLeave", function()
                 if not optionsExpanded then
-                    Tween(dotsStroke.Instance, TweenInfo.new(0.15), {
-                        Transparency = 0.5
-                    })
+                    Tween(dotsStroke.Instance, TweenInfo.new(0.15), { Transparency = 0.5 })
                     for _, dot in ipairs(dotElements) do
-                        Tween(dot, TweenInfo.new(0.15), {
-                            BackgroundColor3 = Theme["SubText"]
-                        })
+                        Tween(dot, TweenInfo.new(0.15), { BackgroundColor3 = Theme["SubText"] })
                     end
                 end
             end)
-
             dotsBtn.Instance.Activated:Connect(function()
                 optionsExpanded = not optionsExpanded
                 local contentHeight = panelLayout.Instance.AbsoluteContentSize.Y + 12
                 local targetHeight = optionsExpanded and contentHeight or 0
-
-                dotsBtn:Tween(TweenInfo.new(0.08, Enum.EasingStyle.Quad, Enum.EasingDirection.Out), {
-                    Size = UDim2.new(0, 21, 0, 18)
-                })
+                dotsBtn:Tween(TweenInfo.new(0.08, Enum.EasingStyle.Quad, Enum.EasingDirection.Out), { Size = UDim2.new(0, 21, 0, 18) })
                 task.delay(0.08, function()
                     dotsBtn:Tween(TweenInfo.new(0.2, Enum.EasingStyle.Back, Enum.EasingDirection.Out), {
                         Size = optionsExpanded and UDim2.new(0, 26, 0, 20) or UDim2.new(0, 24, 0, 20)
                     })
                 end)
-
                 dotsHolderLayout.Instance.Padding = optionsExpanded and UDim.new(0, 3) or UDim.new(0, 2)
                 for idx, dot in ipairs(dotElements) do
                     Tween(dot, TweenInfo.new(0.25, Enum.EasingStyle.Back, Enum.EasingDirection.Out), {
@@ -2250,16 +2095,9 @@ function Library:CreateSection(parentColumn, sectionData)
                         BackgroundColor3 = optionsExpanded and Theme["AccentGlow"] or Theme["SubText"]
                     })
                 end
-
-                dotsStroke:Tween(TweenInfo.new(0.25), {
-                    Transparency = optionsExpanded and 0 or 0.5
-                })
-                panelStroke:Tween(TweenInfo.new(0.25), {
-                    Transparency = optionsExpanded and 0 or 0.8
-                })
-                settingsPanel:Tween(TweenInfo.new(0.3, Enum.EasingStyle.Quart, Enum.EasingDirection.Out), {
-                    Size = UDim2.new(1, 0, 0, targetHeight)
-                })
+                dotsStroke:Tween(TweenInfo.new(0.25), { Transparency = optionsExpanded and 0 or 0.5 })
+                panelStroke:Tween(TweenInfo.new(0.25), { Transparency = optionsExpanded and 0 or 0.8 })
+                settingsPanel:Tween(TweenInfo.new(0.3, Enum.EasingStyle.Quart, Enum.EasingDirection.Out), { Size = UDim2.new(1, 0, 0, targetHeight) })
             end)
         end
 
@@ -2321,16 +2159,9 @@ function Library:CreateSection(parentColumn, sectionData)
             ClipsDescendants = false
         })
 
-        Instances:Create("UICorner", {
-            Parent = dropHeader.Instance,
-            CornerRadius = UDim.new(0, 4)
-        })
+        Instances:Create("UICorner", { Parent = dropHeader.Instance, CornerRadius = UDim.new(0, 4) })
 
-        local headerStroke = Instances:Create("UIStroke", {
-            Parent = dropHeader.Instance,
-            Color = Theme["Outline"],
-            Thickness = 1
-        })
+        local headerStroke = Instances:Create("UIStroke", { Parent = dropHeader.Instance, Color = Theme["Outline"], Thickness = 1 })
 
         local headerBottomLine = Instances:Create("Frame", {
             Parent = dropHeader.Instance,
@@ -2399,10 +2230,7 @@ function Library:CreateSection(parentColumn, sectionData)
             ZIndex = 20
         })
 
-        Instances:Create("UICorner", {
-            Parent = optionsList.Instance,
-            CornerRadius = UDim.new(0, 4)
-        })
+        Instances:Create("UICorner", { Parent = optionsList.Instance, CornerRadius = UDim.new(0, 4) })
 
         local optionsStroke = Instances:Create("UIStroke", {
             Parent = optionsList.Instance,
@@ -2439,70 +2267,41 @@ function Library:CreateSection(parentColumn, sectionData)
             local targetHostHeight = expanded and (28 + listHeight) or 24
             local easingStyle = expanded and Enum.EasingStyle.Quart or Enum.EasingStyle.Quad
             local tweenTime = expanded and 0.25 or 0.2
-
             Tween(optionsList.Instance, TweenInfo.new(tweenTime, easingStyle, Enum.EasingDirection.Out), {
                 Size = UDim2.new(0.55, 0, 0, targetListHeight),
                 BackgroundTransparency = expanded and 0.05 or 1
             })
-
-            Tween(optionsStroke.Instance, TweenInfo.new(tweenTime, easingStyle, Enum.EasingDirection.Out), {
-                Transparency = expanded and 0.5 or 1
-            })
-
-            Tween(dropHost.Instance, TweenInfo.new(tweenTime, easingStyle, Enum.EasingDirection.Out), {
-                Size = UDim2.new(1, 0, 0, targetHostHeight)
-            })
-
+            Tween(optionsStroke.Instance, TweenInfo.new(tweenTime, easingStyle, Enum.EasingDirection.Out), { Transparency = expanded and 0.5 or 1 })
+            Tween(dropHost.Instance, TweenInfo.new(tweenTime, easingStyle, Enum.EasingDirection.Out), { Size = UDim2.new(1, 0, 0, targetHostHeight) })
             Tween(arrowIcon.Instance, TweenInfo.new(tweenTime, Enum.EasingStyle.Back, Enum.EasingDirection.Out), {
                 Rotation = expanded and 180 or 0,
                 ImageColor3 = expanded and Theme["Accent"] or Theme["SubText"]
             })
-
-            Tween(headerStroke.Instance, TweenInfo.new(0.2), {
-                Color = expanded and Theme["Accent"] or Theme["Outline"]
-            })
-
-            Tween(headerBottomLine.Instance, TweenInfo.new(0.2), {
-                BackgroundTransparency = expanded and 1 or 0
-            })
+            Tween(headerStroke.Instance, TweenInfo.new(0.2), { Color = expanded and Theme["Accent"] or Theme["Outline"] })
+            Tween(headerBottomLine.Instance, TweenInfo.new(0.2), { BackgroundTransparency = expanded and 1 or 0 })
         end
 
         local function UpdateSelectionVisuals()
             for optVal, btnData in pairs(optionButtons) do
                 local isSelected = (optVal == selected)
-
-                Tween(btnData.Instance, TweenInfo.new(0.2, Enum.EasingStyle.Quad, Enum.EasingDirection.Out), {
-                    BackgroundTransparency = isSelected and 0.82 or 1
-                })
-
-                Tween(btnData.ActiveStroke, TweenInfo.new(0.25, Enum.EasingStyle.Quad, Enum.EasingDirection.Out), {
-                    Transparency = isSelected and 0 or 1
-                })
-
+                Tween(btnData.Instance, TweenInfo.new(0.2, Enum.EasingStyle.Quad, Enum.EasingDirection.Out), { BackgroundTransparency = isSelected and 0.82 or 1 })
+                Tween(btnData.ActiveStroke, TweenInfo.new(0.25, Enum.EasingStyle.Quad, Enum.EasingDirection.Out), { Transparency = isSelected and 0 or 1 })
                 Tween(btnData.Label, TweenInfo.new(0.25, Enum.EasingStyle.Quart, Enum.EasingDirection.Out), {
                     TextColor3 = isSelected and Theme["Text"] or Theme["SubText"],
                     Position = UDim2.new(0, isSelected and 13 or 8, 0, 0),
                     Size = UDim2.new(1, isSelected and -32 or -16, 1, 0)
                 })
-
                 if isSelected then
                     btnData.SideBar.Visible = true
-                    Tween(btnData.SideBar, TweenInfo.new(0.25, Enum.EasingStyle.Back, Enum.EasingDirection.Out), {
-                        Size = UDim2.new(0, 2, 0, 12),
-                        BackgroundTransparency = 0
-                    })
+                    Tween(btnData.SideBar, TweenInfo.new(0.25, Enum.EasingStyle.Back, Enum.EasingDirection.Out), { Size = UDim2.new(0, 2, 0, 12), BackgroundTransparency = 0 })
                 else
-                    local tweenHide = Tween(btnData.SideBar, TweenInfo.new(0.15, Enum.EasingStyle.Quad, Enum.EasingDirection.In), {
-                        Size = UDim2.new(0, 2, 0, 0),
-                        BackgroundTransparency = 1
-                    })
+                    local tweenHide = Tween(btnData.SideBar, TweenInfo.new(0.15, Enum.EasingStyle.Quad, Enum.EasingDirection.In), { Size = UDim2.new(0, 2, 0, 0), BackgroundTransparency = 1 })
                     tweenHide.Completed:Connect(function()
                         if optVal ~= selected then
                             btnData.SideBar.Visible = false
                         end
                     end)
                 end
-
                 Tween(btnData.CheckMark, TweenInfo.new(0.25, isSelected and Enum.EasingStyle.Back or Enum.EasingStyle.Quad, Enum.EasingDirection.Out), {
                     ImageTransparency = isSelected and 0 or 1,
                     Size = isSelected and UDim2.new(0, 10, 0, 10) or UDim2.new(0, 0, 0, 0)
@@ -2512,12 +2311,9 @@ function Library:CreateSection(parentColumn, sectionData)
 
         local function RefreshOptions()
             for _, btnData in pairs(optionButtons) do
-                if btnData.Instance then
-                    btnData.Instance:Destroy()
-                end
+                if btnData.Instance then btnData.Instance:Destroy() end
             end
             table.clear(optionButtons)
-
             for _, opt in ipairs(options) do
                 local isSelected = (opt == selected)
                 local optBtn = Instances:Create("TextButton", {
@@ -2532,12 +2328,7 @@ function Library:CreateSection(parentColumn, sectionData)
                     ZIndex = 21,
                     Active = true
                 })
-
-                Instances:Create("UICorner", {
-                    Parent = optBtn.Instance,
-                    CornerRadius = UDim.new(0, 3)
-                })
-
+                Instances:Create("UICorner", { Parent = optBtn.Instance, CornerRadius = UDim.new(0, 3) })
                 local activeStroke = Instances:Create("UIStroke", {
                     Parent = optBtn.Instance,
                     Color = Color3.fromRGB(255, 255, 255),
@@ -2545,7 +2336,6 @@ function Library:CreateSection(parentColumn, sectionData)
                     Transparency = isSelected and 0 or 1,
                     ApplyStrokeMode = Enum.ApplyStrokeMode.Border
                 })
-
                 Instances:Create("UIGradient", {
                     Parent = activeStroke.Instance,
                     Color = ColorSequence.new({
@@ -2559,7 +2349,6 @@ function Library:CreateSection(parentColumn, sectionData)
                         NumberSequenceKeypoint.new(1, 0.4)
                     })
                 })
-
                 Instances:Create("UIGradient", {
                     Parent = optBtn.Instance,
                     Color = ColorSequence.new({
@@ -2573,7 +2362,6 @@ function Library:CreateSection(parentColumn, sectionData)
                     }),
                     Rotation = 0
                 })
-
                 local sideBar = Instances:Create("Frame", {
                     Parent = optBtn.Instance,
                     Name = "SideBarIndicator",
@@ -2586,12 +2374,7 @@ function Library:CreateSection(parentColumn, sectionData)
                     Visible = isSelected,
                     ZIndex = 23
                 })
-
-                Instances:Create("UICorner", {
-                    Parent = sideBar.Instance,
-                    CornerRadius = UDim.new(0, 1)
-                })
-
+                Instances:Create("UICorner", { Parent = sideBar.Instance, CornerRadius = UDim.new(0, 1) })
                 local optLabel = Instances:Create("TextLabel", {
                     Parent = optBtn.Instance,
                     Name = "Label",
@@ -2606,7 +2389,6 @@ function Library:CreateSection(parentColumn, sectionData)
                     TextTruncate = Enum.TextTruncate.AtEnd,
                     ZIndex = 22
                 })
-
                 local checkIcon = Instances:Create("ImageLabel", {
                     Parent = optBtn.Instance,
                     Name = "CheckMark",
@@ -2620,36 +2402,22 @@ function Library:CreateSection(parentColumn, sectionData)
                     ScaleType = Enum.ScaleType.Fit,
                     ZIndex = 22
                 })
-
                 optBtn:Connect("MouseEnter", function()
                     if opt ~= selected then
-                        Tween(optBtn.Instance, TweenInfo.new(0.15, Enum.EasingStyle.Quad, Enum.EasingDirection.Out), {
-                            BackgroundTransparency = 0.92
-                        })
-                        Tween(optLabel.Instance, TweenInfo.new(0.15, Enum.EasingStyle.Quad, Enum.EasingDirection.Out), {
-                            TextColor3 = Theme["Text"]
-                        })
+                        Tween(optBtn.Instance, TweenInfo.new(0.15, Enum.EasingStyle.Quad, Enum.EasingDirection.Out), { BackgroundTransparency = 0.92 })
+                        Tween(optLabel.Instance, TweenInfo.new(0.15, Enum.EasingStyle.Quad, Enum.EasingDirection.Out), { TextColor3 = Theme["Text"] })
                     end
                 end)
-
                 optBtn:Connect("MouseLeave", function()
                     if opt ~= selected then
-                        Tween(optBtn.Instance, TweenInfo.new(0.15, Enum.EasingStyle.Quad, Enum.EasingDirection.Out), {
-                            BackgroundTransparency = 1
-                        })
-                        Tween(optLabel.Instance, TweenInfo.new(0.15, Enum.EasingStyle.Quad, Enum.EasingDirection.Out), {
-                            TextColor3 = Theme["SubText"]
-                        })
+                        Tween(optBtn.Instance, TweenInfo.new(0.15, Enum.EasingStyle.Quad, Enum.EasingDirection.Out), { BackgroundTransparency = 1 })
+                        Tween(optLabel.Instance, TweenInfo.new(0.15, Enum.EasingStyle.Quad, Enum.EasingDirection.Out), { TextColor3 = Theme["SubText"] })
                     end
                 end)
-
                 optBtn:Connect("MouseButton1Click", function()
-                    Tween(optBtn.Instance, TweenInfo.new(0.08, Enum.EasingStyle.Quad, Enum.EasingDirection.Out), {
-                        BackgroundTransparency = 0.7
-                    })
+                    Tween(optBtn.Instance, TweenInfo.new(0.08, Enum.EasingStyle.Quad, Enum.EasingDirection.Out), { BackgroundTransparency = 0.7 })
                     DropdownAPI:Set(opt)
                 end)
-
                 optionButtons[opt] = {
                     Instance = optBtn.Instance,
                     ActiveStroke = activeStroke.Instance,
@@ -2658,10 +2426,7 @@ function Library:CreateSection(parentColumn, sectionData)
                     CheckMark = checkIcon.Instance
                 }
             end
-
-            if expanded then
-                UpdateHeight()
-            end
+            if expanded then UpdateHeight() end
         end
 
         function DropdownAPI:Set(val)
@@ -2684,21 +2449,11 @@ function Library:CreateSection(parentColumn, sectionData)
         end
 
         dropHeader:Connect("MouseEnter", function()
-            if not expanded then
-                Tween(headerStroke.Instance, TweenInfo.new(0.15), {
-                    Color = Theme["Accent"]
-                })
-            end
+            if not expanded then Tween(headerStroke.Instance, TweenInfo.new(0.15), { Color = Theme["Accent"] }) end
         end)
-
         dropHeader:Connect("MouseLeave", function()
-            if not expanded then
-                Tween(headerStroke.Instance, TweenInfo.new(0.15), {
-                    Color = Theme["Outline"]
-                })
-            end
+            if not expanded then Tween(headerStroke.Instance, TweenInfo.new(0.15), { Color = Theme["Outline"] }) end
         end)
-
         dropHeader:Connect("MouseButton1Click", function()
             expanded = not expanded
             UpdateHeight()
@@ -2720,7 +2475,6 @@ function Library:CreateSection(parentColumn, sectionData)
             Title = Data.Title or Data.Name or Data.Text or "Button",
             Callback = Data.Callback or function() end
         }
-
         local ButtonFrame = Instances:Create("TextButton", {
             Parent = elementsContainer.Instance,
             Name = "Button_" .. Button.Title,
@@ -2733,12 +2487,7 @@ function Library:CreateSection(parentColumn, sectionData)
             ZIndex = 10,
             Active = true
         })
-
-        Instances:Create("UICorner", {
-            Parent = ButtonFrame.Instance,
-            CornerRadius = UDim.new(0, 5)
-        })
-
+        Instances:Create("UICorner", { Parent = ButtonFrame.Instance, CornerRadius = UDim.new(0, 5) })
         Instances:Create("UIGradient", {
             Parent = ButtonFrame.Instance,
             Color = ColorSequence.new({
@@ -2752,7 +2501,6 @@ function Library:CreateSection(parentColumn, sectionData)
             }),
             Rotation = 0
         })
-
         local buttonStroke = Instances:Create("UIStroke", {
             Parent = ButtonFrame.Instance,
             Color = Color3.fromRGB(255, 255, 255),
@@ -2760,7 +2508,6 @@ function Library:CreateSection(parentColumn, sectionData)
             Transparency = 0.5,
             ApplyStrokeMode = Enum.ApplyStrokeMode.Border
         })
-
         Instances:Create("UIGradient", {
             Parent = buttonStroke.Instance,
             Color = ColorSequence.new({
@@ -2774,7 +2521,6 @@ function Library:CreateSection(parentColumn, sectionData)
                 NumberSequenceKeypoint.new(1, 0.4)
             })
         })
-
         local ButtonLabel = Instances:Create("TextLabel", {
             Parent = ButtonFrame.Instance,
             Name = "Label",
@@ -2790,58 +2536,32 @@ function Library:CreateSection(parentColumn, sectionData)
             TextYAlignment = Enum.TextYAlignment.Center,
             ZIndex = 12
         })
-
         ButtonFrame:Connect("MouseEnter", function()
-            Tween(ButtonFrame.Instance, TweenInfo.new(0.15, Enum.EasingStyle.Quad, Enum.EasingDirection.Out), {
-                BackgroundTransparency = 0.1
-            })
-            Tween(ButtonLabel.Instance, TweenInfo.new(0.15), {
-                TextColor3 = Color3.fromRGB(255, 255, 255)
-            })
-            Tween(buttonStroke.Instance, TweenInfo.new(0.15, Enum.EasingStyle.Quad, Enum.EasingDirection.Out), {
-                Transparency = 0
-            })
+            Tween(ButtonFrame.Instance, TweenInfo.new(0.15, Enum.EasingStyle.Quad, Enum.EasingDirection.Out), { BackgroundTransparency = 0.1 })
+            Tween(ButtonLabel.Instance, TweenInfo.new(0.15), { TextColor3 = Color3.fromRGB(255, 255, 255) })
+            Tween(buttonStroke.Instance, TweenInfo.new(0.15, Enum.EasingStyle.Quad, Enum.EasingDirection.Out), { Transparency = 0 })
         end)
-
         ButtonFrame:Connect("MouseLeave", function()
-            Tween(ButtonFrame.Instance, TweenInfo.new(0.15, Enum.EasingStyle.Quad, Enum.EasingDirection.Out), {
-                BackgroundTransparency = 0.2
-            })
-            Tween(ButtonLabel.Instance, TweenInfo.new(0.15), {
-                TextColor3 = Theme["Text"]
-            })
-            Tween(buttonStroke.Instance, TweenInfo.new(0.15, Enum.EasingStyle.Quad, Enum.EasingDirection.Out), {
-                Transparency = 0.5
-            })
+            Tween(ButtonFrame.Instance, TweenInfo.new(0.15, Enum.EasingStyle.Quad, Enum.EasingDirection.Out), { BackgroundTransparency = 0.2 })
+            Tween(ButtonLabel.Instance, TweenInfo.new(0.15), { TextColor3 = Theme["Text"] })
+            Tween(buttonStroke.Instance, TweenInfo.new(0.15, Enum.EasingStyle.Quad, Enum.EasingDirection.Out), { Transparency = 0.5 })
         end)
-
         ButtonFrame:Connect("MouseButton1Down", function()
-            Tween(ButtonFrame.Instance, TweenInfo.new(0.08, Enum.EasingStyle.Quad, Enum.EasingDirection.Out), {
-                BackgroundTransparency = 0.0,
-                Size = UDim2.new(1, -2, 0, 26)
-            })
+            Tween(ButtonFrame.Instance, TweenInfo.new(0.08, Enum.EasingStyle.Quad, Enum.EasingDirection.Out), { BackgroundTransparency = 0.0, Size = UDim2.new(1, -2, 0, 26) })
         end)
-
         ButtonFrame:Connect("MouseButton1Up", function()
-            Tween(ButtonFrame.Instance, TweenInfo.new(0.15, Enum.EasingStyle.Back, Enum.EasingDirection.Out), {
-                BackgroundTransparency = 0.1,
-                Size = UDim2.new(1, 0, 0, 28)
-            })
+            Tween(ButtonFrame.Instance, TweenInfo.new(0.15, Enum.EasingStyle.Back, Enum.EasingDirection.Out), { BackgroundTransparency = 0.1, Size = UDim2.new(1, 0, 0, 28) })
         end)
-
         ButtonFrame.Instance.Activated:Connect(function()
             pcall(Button.Callback)
         end)
-
         function Button:SetText(NewText)
             ButtonLabel.Instance.Text = NewText
             Button.Title = NewText
         end
-
         function Button:SetCallback(NewCallback)
             Button.Callback = NewCallback
         end
-
         table.insert(sectionItems, { Instance = ButtonFrame.Instance, Title = Button.Title })
         return Button
     end
@@ -2859,7 +2579,6 @@ function Library:CreateSection(parentColumn, sectionData)
             Callback = Data.Callback or Data.callback or function() end,
             Value = 0
         }
-
         local SliderFrame = Instances:Create("Frame", {
             Parent = elementsContainer.Instance,
             Name = "Slider_" .. Slider.Title,
@@ -2868,7 +2587,6 @@ function Library:CreateSection(parentColumn, sectionData)
             BorderSizePixel = 0,
             ZIndex = 10
         })
-
         local TitleLabel = Instances:Create("TextLabel", {
             Parent = SliderFrame.Instance,
             Name = "Title",
@@ -2882,7 +2600,6 @@ function Library:CreateSection(parentColumn, sectionData)
             TextXAlignment = Enum.TextXAlignment.Left,
             ZIndex = 11
         })
-
         local ValueLabel = Instances:Create("TextLabel", {
             Parent = SliderFrame.Instance,
             Name = "Value",
@@ -2896,7 +2613,6 @@ function Library:CreateSection(parentColumn, sectionData)
             TextXAlignment = Enum.TextXAlignment.Right,
             ZIndex = 11
         })
-
         local SliderTrack = Instances:Create("TextButton", {
             Parent = SliderFrame.Instance,
             Name = "Track",
@@ -2910,12 +2626,7 @@ function Library:CreateSection(parentColumn, sectionData)
             ZIndex = 11,
             Active = true
         })
-
-        Instances:Create("UICorner", {
-            Parent = SliderTrack.Instance,
-            CornerRadius = UDim.new(1, 0)
-        })
-
+        Instances:Create("UICorner", { Parent = SliderTrack.Instance, CornerRadius = UDim.new(1, 0) })
         local trackStroke = Instances:Create("UIStroke", {
             Parent = SliderTrack.Instance,
             Color = Color3.fromRGB(255, 255, 255),
@@ -2923,7 +2634,6 @@ function Library:CreateSection(parentColumn, sectionData)
             Transparency = 0.4,
             ApplyStrokeMode = Enum.ApplyStrokeMode.Border
         })
-
         Instances:Create("UIGradient", {
             Parent = trackStroke.Instance,
             Color = ColorSequence.new({
@@ -2937,7 +2647,6 @@ function Library:CreateSection(parentColumn, sectionData)
                 NumberSequenceKeypoint.new(1, 0.6)
             })
         })
-
         local SliderFill = Instances:Create("Frame", {
             Parent = SliderTrack.Instance,
             Name = "Fill",
@@ -2946,12 +2655,7 @@ function Library:CreateSection(parentColumn, sectionData)
             BackgroundColor3 = Color3.fromRGB(255, 255, 255),
             ZIndex = 12
         })
-
-        Instances:Create("UICorner", {
-            Parent = SliderFill.Instance,
-            CornerRadius = UDim.new(1, 0)
-        })
-
+        Instances:Create("UICorner", { Parent = SliderFill.Instance, CornerRadius = UDim.new(1, 0) })
         Instances:Create("UIGradient", {
             Parent = SliderFill.Instance,
             Color = ColorSequence.new({
@@ -2960,7 +2664,6 @@ function Library:CreateSection(parentColumn, sectionData)
                 ColorSequenceKeypoint.new(1, Theme["AccentGlow"])
             })
         })
-
         local SliderKnob = Instances:Create("Frame", {
             Parent = SliderFill.Instance,
             Name = "Knob",
@@ -2971,26 +2674,13 @@ function Library:CreateSection(parentColumn, sectionData)
             BorderSizePixel = 0,
             ZIndex = 13
         })
-
-        Instances:Create("UICorner", {
-            Parent = SliderKnob.Instance,
-            CornerRadius = UDim.new(1, 0)
-        })
-
-        Instances:Create("UIStroke", {
-            Parent = SliderKnob.Instance,
-            Color = Theme["Outline"],
-            Thickness = 1
-        })
-
+        Instances:Create("UICorner", { Parent = SliderKnob.Instance, CornerRadius = UDim.new(1, 0) })
+        Instances:Create("UIStroke", { Parent = SliderKnob.Instance, Color = Theme["Outline"], Thickness = 1 })
         local function UpdateSliderDisplay()
             local percent = (Slider.Value - Slider.Min) / (Slider.Max - Slider.Min)
-            SliderFill:Tween(TweenInfo.new(0.08, Enum.EasingStyle.Quad, Enum.EasingDirection.Out), {
-                Size = UDim2.new(percent, 0, 1, 0)
-            })
+            SliderFill:Tween(TweenInfo.new(0.08, Enum.EasingStyle.Quad, Enum.EasingDirection.Out), { Size = UDim2.new(percent, 0, 1, 0) })
             ValueLabel.Instance.Text = tostring(Slider.Value) .. Slider.Unit
         end
-
         function Slider:Set(Value)
             Value = math.clamp(Value, Slider.Min, Slider.Max)
             if Slider.Float and Slider.Float > 0 then
@@ -3001,7 +2691,6 @@ function Library:CreateSection(parentColumn, sectionData)
             UpdateSliderDisplay()
             pcall(Slider.Callback, Value)
         end
-
         local function GetSliderValueFromInput(Input)
             local trackSizeX = SliderTrack.Instance.AbsoluteSize.X
             if trackSizeX <= 0 then return Slider.Value end
@@ -3010,100 +2699,44 @@ function Library:CreateSection(parentColumn, sectionData)
             local normalized = math.clamp((mouseX - trackPosX) / trackSizeX, 0, 1)
             return Slider.Min + (Slider.Max - Slider.Min) * normalized
         end
-
         local sliding = false
-        local slidingConnection = nil
-
         SliderTrack:Connect("MouseEnter", function()
-            Tween(TitleLabel.Instance, TweenInfo.new(0.15), {
-                TextColor3 = Theme["Text"]
-            })
-            Tween(trackStroke.Instance, TweenInfo.new(0.15), {
-                Transparency = 0
-            })
-            Tween(SliderKnob.Instance, TweenInfo.new(0.15, Enum.EasingStyle.Back, Enum.EasingDirection.Out), {
-                Size = UDim2.new(0, 10, 0, 10)
-            })
+            Tween(TitleLabel.Instance, TweenInfo.new(0.15), { TextColor3 = Theme["Text"] })
+            Tween(trackStroke.Instance, TweenInfo.new(0.15), { Transparency = 0 })
+            Tween(SliderKnob.Instance, TweenInfo.new(0.15, Enum.EasingStyle.Back, Enum.EasingDirection.Out), { Size = UDim2.new(0, 10, 0, 10) })
         end)
-
         SliderTrack:Connect("MouseLeave", function()
             if not sliding then
-                Tween(TitleLabel.Instance, TweenInfo.new(0.15), {
-                    TextColor3 = Theme["Text"]
-                })
-                Tween(trackStroke.Instance, TweenInfo.new(0.15), {
-                    Transparency = 0.4
-                })
-                Tween(SliderKnob.Instance, TweenInfo.new(0.15), {
-                    Size = UDim2.new(0, 8, 0, 8)
-                })
+                Tween(trackStroke.Instance, TweenInfo.new(0.15), { Transparency = 0.4 })
+                Tween(SliderKnob.Instance, TweenInfo.new(0.15), { Size = UDim2.new(0, 8, 0, 8) })
             end
         end)
-
-        SliderTrack:Connect("InputBegan", function(Input)
+        SliderTrack.Instance.InputBegan:Connect(function(Input)
             if Input.UserInputType == Enum.UserInputType.MouseButton1 or Input.UserInputType == Enum.UserInputType.Touch then
                 sliding = true
-                Tween(SliderKnob.Instance, TweenInfo.new(0.1, Enum.EasingStyle.Back, Enum.EasingDirection.Out), {
-                    Size = UDim2.new(0, 12, 0, 12)
-                })
-                local newValue = GetSliderValueFromInput(Input)
-                Slider:Set(newValue)
-
-                if not slidingConnection then
-                    slidingConnection = UserInputService.InputEnded:Connect(function(EndInput)
-                        if EndInput.UserInputType == Enum.UserInputType.MouseButton1 or EndInput.UserInputType == Enum.UserInputType.Touch then
-                            sliding = false
-                            Tween(TitleLabel.Instance, TweenInfo.new(0.15), {
-                                TextColor3 = Theme["Text"]
-                            })
-                            Tween(trackStroke.Instance, TweenInfo.new(0.15), {
-                                Transparency = 0.4
-                            })
-                            Tween(SliderKnob.Instance, TweenInfo.new(0.15), {
-                                Size = UDim2.new(0, 8, 0, 8)
-                            })
-                            if slidingConnection then
-                                slidingConnection:Disconnect()
-                                slidingConnection = nil
-                            end
-                        end
-                    end)
-                end
+                Slider:Set(GetSliderValueFromInput(Input))
             end
         end)
-
+        UserInputService.InputEnded:Connect(function(Input)
+            if Input.UserInputType == Enum.UserInputType.MouseButton1 or Input.UserInputType == Enum.UserInputType.Touch then
+                sliding = false
+                Tween(trackStroke.Instance, TweenInfo.new(0.15), { Transparency = 0.4 })
+                Tween(SliderKnob.Instance, TweenInfo.new(0.15), { Size = UDim2.new(0, 8, 0, 8) })
+            end
+        end)
         UserInputService.InputChanged:Connect(function(Input)
             if sliding and (Input.UserInputType == Enum.UserInputType.MouseMovement or Input.UserInputType == Enum.UserInputType.Touch) then
-                local newValue = GetSliderValueFromInput(Input)
-                Slider:Set(newValue)
+                Slider:Set(GetSliderValueFromInput(Input))
             end
         end)
-
         Slider:Set(Slider.Default)
-
         Library.SetFlags[Slider.Flag] = function(Value)
             Slider:Set(Value)
         end
-
-        function Slider:GetValue()
-            return Slider.Value
-        end
-
-        function Slider:SetMin(Min)
-            Slider.Min = Min
-            Slider:Set(Slider.Value)
-        end
-
-        function Slider:SetMax(Max)
-            Slider.Max = Max
-            Slider:Set(Slider.Value)
-        end
-
-        function Slider:SetUnit(Unit)
-            Slider.Unit = Unit
-            UpdateSliderDisplay()
-        end
-
+        function Slider:GetValue() return Slider.Value end
+        function Slider:SetMin(Min) Slider.Min = Min Slider:Set(Slider.Value) end
+        function Slider:SetMax(Max) Slider.Max = Max Slider:Set(Slider.Value) end
+        function Slider:SetUnit(Unit) Slider.Unit = Unit UpdateSliderDisplay() end
         table.insert(sectionItems, { Instance = SliderFrame.Instance, Title = Slider.Title })
         return Slider
     end
@@ -3115,84 +2748,65 @@ end
 -- 12. ИНИЦИАЛИЗАЦИЯ И ТЕСТ
 -- =======================================================
 
--- =======================================================
--- ИНТЕГРИРОВАННЫЙ БЛОК КАРТОЧЕК (ЧАСТЬ 1-4)
--- =======================================================
-
--- 1. Создание главного окна
-local Window = Library:CreateWindow({
-    Logo = "star"
+local MainWindow = Library:CreateWindow({
+    Logo = "134603867443812"
 })
 
--- 2. Создание вкладки "Карточки"
-local CardsTab = Library:CreateTab(Window, {
+-- =======================================================
+-- ВКЛАДКА СКИНОВ С НОВОЙ СЕТКОЙ КАРТОЧЕК ПРЕДМЕТОВ
+-- =======================================================
+local CardsTab, CardsCols = Library:CreateTab(MainWindow, {
     Name = "Карточки",
-    Subtitle = "Каталог модулей",
     Icon = "star",
     Columns = 1
 })
 
--- 3. Создание секции с поиском внутри вкладки
-local CardsSection = CardsTab:CreateSection({
-    Name = "Быстрый доступ",
-    Icon = "zap",
-    Searchable = true,
-    Collapsed = false
+local SkinsSection = Library:CreateSection(CardsCols[1], {
+    Name = "Скины Ножей",
+    Icon = "palette",
+    Searchable = true
 })
 
--- 4. Инициализация сетки карточек в 3 колонки (высота карточки 70px)
-local CardsGrid = CardsSection:CreateCardsGrid({
-    CardHeight = 70
+local CardsGrid = SkinsSection:CreateCardsGrid({
+    CardHeight = 125
 })
 
--- 5. Наполнение сетки индивидуальными карточками
-CardsGrid:CreateCard({
-    Title = "Aimbot",
-    Description = "Автоматическая наводка на ближайших врагов.",
-    Icon = "combat",
-    Callback = function() print("Активирован Aimbot") end
-})
+-- Список предметов
+local SkinsList = {
+    { Title = "Chroma Lightbringer", Rarity = "godly",     Icon = "rbxassetid://10723345749", Selected = true },
+    { Title = "Darkbringer",         Rarity = "godly",     Icon = "10723345749",              Selected = false },
+    { Title = "Icebreaker",          Rarity = "ancient",   Icon = "10723345749",              Selected = false },
+    { Title = "Gemstone",            Rarity = "epic",      Icon = "10723345749",              Selected = false },
+    { Title = "Prismatic",           Rarity = "legendary", Icon = "10723345749",              Selected = false },
+    { Title = "Nightblade",          Rarity = "rare",      Icon = "10723345749",              Selected = false },
+    { Title = "Viper",               Rarity = "uncommon",  Icon = "10723345749",              Selected = false },
+    { Title = "Default Knife",       Rarity = "common",    Icon = "10723345749",              Selected = false }
+}
 
-CardsGrid:CreateCard({
-    Title = "ESP Wallhack",
-    Description = "Отображение контуров игроков сквозь стены.",
-    Icon = "eye",
-    Callback = function() print("Активирован ESP") end
-})
+local createdCards = {}
 
-CardsGrid:CreateCard({
-    Title = "GodMode",
-    Description = "Полная невосприимчивость к урону.",
-    Icon = "shield",
-    Callback = function() print("Активирован GodMode") end
-})
+for _, item in ipairs(SkinsList) do
+    local cardObj
+    cardObj = CardsGrid:CreateCard({
+        Title = item.Title,
+        Rarity = item.Rarity,
+        Icon = item.Icon,
+        Selected = item.Selected,
+        Callback = function()
+            -- Снимаем выделение со всех карточек
+            for _, c in ipairs(createdCards) do
+                c:SetSelected(false)
+            end
+            -- Выделяем кликнутую карточку
+            cardObj:SetSelected(true)
+            print("Выбран предмет:", item.Title)
+        end
+    })
+    table.insert(createdCards, cardObj)
+end
 
-CardsGrid:CreateCard({
-    Title = "SpeedBoost",
-    Description = "Увеличение скорости перемещения персонажа.",
-    Icon = "zap",
-    Callback = function() print("Активирован SpeedBoost") end
-})
-
-CardsGrid:CreateCard({
-    Title = "Auto Farm",
-    Description = "Автоматический сбор ресурсов и фарм.",
-    Icon = "code",
-    Callback = function() print("Запущен Auto Farm") end
-})
-
-CardsGrid:CreateCard({
-    Title = "Reset UI",
-    Description = "Сброс настроек графического интерфейса.",
-    Icon = "settings",
-    Callback = function() print("Настройки сброшены") end
-})
-
--- =======================================================
--- ОСТАЛЬНЫЕ ВКЛАДКИ (Combat, Visuals, Local, Colors, Config)
--- =======================================================
-
-local CombatTab, CombatCols = Library:CreateTab(Window, {
+-- Вкладка Combat
+local CombatTab, CombatCols = Library:CreateTab(MainWindow, {
     Name = "Combat",
     Subtitle = "боевые настройки",
     Icon = "combat"
@@ -3256,7 +2870,7 @@ CombatSection:CreateDropdown({
 })
 
 -- Вкладка Visuals с подвкладками
-local VisualsTab = Library:CreateTab(Window, {
+local VisualsTab = Library:CreateTab(MainWindow, {
     Name = "Visuals",
     Subtitle = "отображение объектов",
     Icon = "eye"
@@ -3358,19 +2972,19 @@ WorldSection:CreateDropdown({
 })
 
 -- Остальные вкладки
-Library:CreateTab(Window, {
+Library:CreateTab(MainWindow, {
     Name = "Local",
     Subtitle = "игрок",
     Icon = "user"
 })
 
-Library:CreateTab(Window, {
+Library:CreateTab(MainWindow, {
     Name = "Colors",
     Subtitle = "цвета интерфейса",
     Icon = "palette"
 })
 
-Library:CreateTab(Window, {
+Library:CreateTab(MainWindow, {
     Name = "Config",
     Subtitle = "конфигурация",
     Icon = "folder"
