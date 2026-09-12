@@ -67,14 +67,14 @@ local function ParseIcon(icon)
     return strIcon
 end
 
--- 2.1 Таблица цветов редкостей
+-- 2.1 Таблица цветов редкостей (чистые цвета для обводок, текстов и бейджей)
 local RarityColors = {
-    ["common"]    = Color3.fromRGB(180, 180, 180),
-    ["uncommon"]  = Color3.fromRGB(80, 200, 120),
-    ["rare"]      = Color3.fromRGB(50, 130, 240),
-    ["epic"]      = Color3.fromRGB(170, 70, 240),
+    ["common"]    = Color3.fromRGB(180, 185, 195),
+    ["uncommon"]  = Color3.fromRGB(75, 210, 125),
+    ["rare"]      = Color3.fromRGB(50, 140, 255),
+    ["epic"]      = Color3.fromRGB(170, 75, 255),
     ["legendary"] = Color3.fromRGB(255, 170, 0),
-    ["godly"]     = Color3.fromRGB(255, 60, 100),
+    ["godly"]     = Color3.fromRGB(255, 50, 95),
     ["ancient"]   = Color3.fromRGB(0, 230, 255)
 }
 
@@ -1567,11 +1567,11 @@ function Library:CreateSection(parentColumn, sectionData)
     local SectionAPI = {}
 
     -- =======================================================
-    -- ОБНОВЛЕННАЯ СЕТКА КАРТОЧЕК ПРЕДМЕТОВ (с редкостями и галочкой)
+    -- ОБНОВЛЕННАЯ СЕТКА КАРТОЧЕК ПРЕДМЕТОВ (Чистый стиль, без цветного фона)
     -- =======================================================
     function SectionAPI:CreateCardsGrid(gridData)
         gridData = gridData or {}
-        local cardHeight = gridData.CardHeight or gridData.Height or 125
+        local cardHeight = gridData.CardHeight or gridData.Height or 115
 
         local cardsFrame = Instances:Create("Frame", {
             Parent = elementsContainer.Instance,
@@ -1605,11 +1605,12 @@ function Library:CreateSection(parentColumn, sectionData)
             local callback = cardData.Callback or function() end
             local rarityColor = GetRarityColor(cardRarity)
 
+            -- Основной контейнер карточки (тёмный и нейтральный)
             local cardButton = Instances:Create("TextButton", {
                 Parent = cardsFrame.Instance,
                 Name = "Card_" .. cardTitle,
                 BackgroundColor3 = Theme["Element"],
-                BackgroundTransparency = 0.2,
+                BackgroundTransparency = 0.15,
                 Text = "",
                 AutoButtonColor = false,
                 BorderSizePixel = 0,
@@ -1620,27 +1621,15 @@ function Library:CreateSection(parentColumn, sectionData)
 
             Instances:Create("UICorner", { Parent = cardButton.Instance, CornerRadius = UDim.new(0, 6) })
 
+            -- Тонкая обводка 1px (цвет редкости только при выборе или наведении)
             local cardStroke = Instances:Create("UIStroke", {
                 Parent = cardButton.Instance,
                 Color = isSelected and rarityColor or Theme["Outline"],
-                Thickness = isSelected and 1.5 or 1
+                Thickness = 1,
+                ApplyStrokeMode = Enum.ApplyStrokeMode.Border
             })
 
-            local bgGradient = Instances:Create("UIGradient", {
-                Parent = cardButton.Instance,
-                Color = ColorSequence.new({
-                    ColorSequenceKeypoint.new(0, rarityColor),
-                    ColorSequenceKeypoint.new(0.4, Theme["Background 2"]),
-                    ColorSequenceKeypoint.new(1, Theme["Background"])
-                }),
-                Transparency = NumberSequence.new({
-                    NumberSequenceKeypoint.new(0, 0.82),
-                    NumberSequenceKeypoint.new(1, 0.98)
-                }),
-                Rotation = 90
-            })
-
-            -- Галочка выбора (правый верхний угол)
+            -- Галочка выбора в правом верхнем углу
             local checkBadge = Instances:Create("Frame", {
                 Parent = cardButton.Instance,
                 Name = "CheckBadge",
@@ -1668,20 +1657,21 @@ function Library:CreateSection(parentColumn, sectionData)
                 ZIndex = 12
             })
 
-            -- Иконка предмета
+            -- Иконка предмета (по центру сверху, 52x52, БЕЗ контура, фона и рамок)
             local itemImage = Instances:Create("ImageLabel", {
                 Parent = cardButton.Instance,
                 Name = "ItemImage",
                 Size = UDim2.new(0, 52, 0, 52),
                 AnchorPoint = Vector2.new(0.5, 0),
-                Position = UDim2.new(0.5, 0, 0, 12),
+                Position = UDim2.new(0.5, 0, 0, 10),
                 BackgroundTransparency = 1,
                 Image = ParseIcon(cardIcon),
                 ScaleType = Enum.ScaleType.Fit,
+                BorderSizePixel = 0,
                 ZIndex = 9
             })
 
-            -- Метка редкости
+            -- Текст редкости предмета (над названием, цветом редкости)
             local rarityLabel = Instances:Create("TextLabel", {
                 Parent = cardButton.Instance,
                 Name = "RarityLabel",
@@ -1689,15 +1679,15 @@ function Library:CreateSection(parentColumn, sectionData)
                 FontFace = Font.new("rbxassetid://12187365364", Enum.FontWeight.Bold, Enum.FontStyle.Normal),
                 TextColor3 = rarityColor,
                 TextSize = 8,
-                Position = UDim2.new(0, 4, 1, -28),
-                Size = UDim2.new(1, -8, 0, 12),
+                Position = UDim2.new(0, 4, 1, -27),
+                Size = UDim2.new(1, -8, 0, 10),
                 BackgroundTransparency = 1,
                 TextXAlignment = Enum.TextXAlignment.Center,
                 TextTruncate = Enum.TextTruncate.AtEnd,
                 ZIndex = 10
             })
 
-            -- Название предмета
+            -- Название предмета (снизу по центру)
             local titleLabel = Instances:Create("TextLabel", {
                 Parent = cardButton.Instance,
                 Name = "TitleLabel",
@@ -1715,26 +1705,26 @@ function Library:CreateSection(parentColumn, sectionData)
 
             local CardObject = { Instance = cardButton.Instance }
 
+            -- Метод переключения состояния выбора
             function CardObject:SetSelected(state)
                 isSelected = state
-                Tween(cardStroke.Instance, TweenInfo.new(0.2), {
-                    Color = isSelected and rarityColor or Theme["Outline"],
-                    Thickness = isSelected and 1.5 or 1
+                Tween(cardStroke.Instance, TweenInfo.new(0.2, Enum.EasingStyle.Quad, Enum.EasingDirection.Out), {
+                    Color = isSelected and rarityColor or Theme["Outline"]
                 })
-                Tween(checkBadge.Instance, TweenInfo.new(0.2, Enum.EasingStyle.Back, Enum.EasingDirection.Out), {
+                Tween(checkBadge.Instance, TweenInfo.new(0.2, Enum.EasingStyle.Quad, Enum.EasingDirection.Out), {
                     BackgroundTransparency = isSelected and 0 or 1
                 })
-                Tween(checkIcon.Instance, TweenInfo.new(0.2), {
+                Tween(checkIcon.Instance, TweenInfo.new(0.2, Enum.EasingStyle.Quad, Enum.EasingDirection.Out), {
                     ImageTransparency = isSelected and 0 or 1
                 })
             end
 
-            -- Плавные анимации
+            -- Плавные анимации наведения
             cardButton:Connect("MouseEnter", function()
-                Tween(cardButton.Instance, TweenInfo.new(0.15, Enum.EasingStyle.Quad, Enum.EasingDirection.Out), { BackgroundTransparency = 0.05 })
+                Tween(cardButton.Instance, TweenInfo.new(0.15, Enum.EasingStyle.Quad, Enum.EasingDirection.Out), { BackgroundColor3 = Theme["Background 2"] })
                 Tween(itemImage.Instance, TweenInfo.new(0.2, Enum.EasingStyle.Quad, Enum.EasingDirection.Out), {
                     Size = UDim2.new(0, 56, 0, 56),
-                    Position = UDim2.new(0.5, 0, 0, 10)
+                    Position = UDim2.new(0.5, 0, 0, 8)
                 })
                 if not isSelected then
                     Tween(cardStroke.Instance, TweenInfo.new(0.15), { Color = rarityColor })
@@ -1742,26 +1732,14 @@ function Library:CreateSection(parentColumn, sectionData)
             end)
 
             cardButton:Connect("MouseLeave", function()
-                Tween(cardButton.Instance, TweenInfo.new(0.15, Enum.EasingStyle.Quad, Enum.EasingDirection.Out), { BackgroundTransparency = 0.2 })
+                Tween(cardButton.Instance, TweenInfo.new(0.15, Enum.EasingStyle.Quad, Enum.EasingDirection.Out), { BackgroundColor3 = Theme["Element"] })
                 Tween(itemImage.Instance, TweenInfo.new(0.2, Enum.EasingStyle.Quad, Enum.EasingDirection.Out), {
                     Size = UDim2.new(0, 52, 0, 52),
-                    Position = UDim2.new(0.5, 0, 0, 12)
+                    Position = UDim2.new(0.5, 0, 0, 10)
                 })
                 if not isSelected then
                     Tween(cardStroke.Instance, TweenInfo.new(0.15), { Color = Theme["Outline"] })
                 end
-            end)
-
-            cardButton:Connect("MouseButton1Down", function()
-                Tween(cardButton.Instance, TweenInfo.new(0.08, Enum.EasingStyle.Quad, Enum.EasingDirection.Out), {
-                    Size = UDim2.new(0.3, 0, 0, cardHeight - 4)
-                })
-            end)
-
-            cardButton:Connect("MouseButton1Up", function()
-                Tween(cardButton.Instance, TweenInfo.new(0.15, Enum.EasingStyle.Back, Enum.EasingDirection.Out), {
-                    Size = UDim2.new(0.315, 0, 0, cardHeight)
-                })
             end)
 
             cardButton.Instance.Activated:Connect(function()
@@ -2753,7 +2731,7 @@ local MainWindow = Library:CreateWindow({
 })
 
 -- =======================================================
--- ВКЛАДКА СКИНОВ С НОВОЙ СЕТКОЙ КАРТОЧЕК ПРЕДМЕТОВ
+-- ВКЛАДКА СКИНОВ С НОВОЙ СЕТКОЙ КАРТОЧЕК ПРЕДМЕТОВ (ЧИСТЫЙ СТИЛЬ)
 -- =======================================================
 local CardsTab, CardsCols = Library:CreateTab(MainWindow, {
     Name = "Карточки",
@@ -2768,10 +2746,10 @@ local SkinsSection = Library:CreateSection(CardsCols[1], {
 })
 
 local CardsGrid = SkinsSection:CreateCardsGrid({
-    CardHeight = 125
+    CardHeight = 115
 })
 
--- Список предметов
+-- Массив предметов
 local SkinsList = {
     { Title = "Chroma Lightbringer", Rarity = "godly",     Icon = "rbxassetid://10723345749", Selected = true },
     { Title = "Darkbringer",         Rarity = "godly",     Icon = "10723345749",              Selected = false },
@@ -2793,11 +2771,9 @@ for _, item in ipairs(SkinsList) do
         Icon = item.Icon,
         Selected = item.Selected,
         Callback = function()
-            -- Снимаем выделение со всех карточек
             for _, c in ipairs(createdCards) do
                 c:SetSelected(false)
             end
-            -- Выделяем кликнутую карточку
             cardObj:SetSelected(true)
             print("Выбран предмет:", item.Title)
         end
