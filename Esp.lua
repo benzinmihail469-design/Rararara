@@ -848,8 +848,7 @@ function Library:CreateTab(window, tabData)
 
         local createdCols = {}
         for i = 1, count do
-            local colWidthScale = 1 / count
-            local colOffset = (count > 1) and -(((count - 1) * 10) / count) or 0
+            local colWidthScale = 1 / count            local colOffset = (count > 1) and -(((count - 1) * 10) / count) or 0
             local col = Instances:Create("Frame", {
                 Parent = rowFrame.Instance,
                 Name = "Column_" .. i,
@@ -1523,11 +1522,11 @@ function Library:CreateSection(parentColumn, sectionData)
     local SectionAPI = {}
 
     -- =======================================================
-    -- ОБНОВЛЁННАЯ СЕТКА КАРТОЧЕК (МИНИМАЛИЗМ, БЕЛЫЙ КОНТУР)
+    -- ОБНОВЛЁННАЯ СЕТКА КАРТОЧЕК (НЕОНОВО-СИНИЙ И ЧЕРНЫЙ СТИЛЬ)
     -- =======================================================
     function SectionAPI:CreateCardsGrid(gridData)
         gridData = gridData or {}
-        local cardHeight = gridData.CardHeight or gridData.Height or 120
+        local cardHeight = gridData.CardHeight or gridData.Height or 125
 
         local cardsFrame = Instances:Create("Frame", {
             Parent = elementsContainer.Instance,
@@ -1552,9 +1551,6 @@ function Library:CreateSection(parentColumn, sectionData)
 
         local GridAPI = {}
 
-        -- =======================================================
-        -- ЧАСТЬ 1 + 2: Обновлённая функция GridAPI:CreateCard
-        -- =======================================================
         function GridAPI:CreateCard(cardData)
             cardData = cardData or {}
             local cardTitle = cardData.Title or cardData.Name or "Item"
@@ -1573,7 +1569,7 @@ function Library:CreateSection(parentColumn, sectionData)
                 ZIndex = 8
             })
 
-            -- Кнопка карточки в тёмном стиле
+            -- Основная кнопка карточки
             local cardButton = Instances:Create("TextButton", {
                 Parent = cardHolder.Instance,
                 Name = "CardButton",
@@ -1581,79 +1577,88 @@ function Library:CreateSection(parentColumn, sectionData)
                 Position = UDim2.new(0.5, 0, 0.5, 0),
                 Size = UDim2.new(1, 0, 1, 0),
                 BackgroundColor3 = Theme["Element"],
-                BackgroundTransparency = 0,
+                BackgroundTransparency = 0.1,
                 Text = "",
                 AutoButtonColor = false,
                 BorderSizePixel = 0,
                 ZIndex = 8,
                 Active = true,
-                ClipsDescendants = false
+                ClipsDescendants = true
             })
 
             Instances:Create("UICorner", { Parent = cardButton.Instance, CornerRadius = UDim.new(0, 8) })
 
-            -- Неоновый контур в стиле интерфейса (Единый UIStroke)
+            -- Темно-синий фон с градиентом
+            Instances:Create("UIGradient", {
+                Parent = cardButton.Instance,
+                Color = ColorSequence.new({
+                    ColorSequenceKeypoint.new(0, Theme["Background 2"]),
+                    ColorSequenceKeypoint.new(0.5, Color3.fromRGB(10, 16, 28)),
+                    ColorSequenceKeypoint.new(1, Theme["Background"])
+                }),
+                Rotation = 45
+            })
+
+            -- Контур карточки в неоново-синем стиле
             local cardStroke = Instances:Create("UIStroke", {
                 Parent = cardButton.Instance,
                 Name = "CardStroke",
                 ApplyStrokeMode = Enum.ApplyStrokeMode.Border,
                 LineJoinMode = Enum.LineJoinMode.Round,
                 Thickness = isSelected and 1.5 or 1,
-                Color = isSelected and rarityColor or Theme["Outline"],
-                Transparency = 0
+                Color = Color3.fromRGB(255, 255, 255),
+                Transparency = isSelected and 0 or 0.4
             })
 
-            -- Неоновый градиент контура
+            -- Градиент заполнения неонового контура (в стиле разделительных полос)
             local strokeGradient = Instances:Create("UIGradient", {
                 Parent = cardStroke.Instance,
                 Name = "StrokeGradient",
                 Color = ColorSequence.new({
-                    ColorSequenceKeypoint.new(0, isSelected and rarityColor or Theme["Accent"]),
-                    ColorSequenceKeypoint.new(0.5, isSelected and rarityColor or Theme["AccentGlow"]),
+                    ColorSequenceKeypoint.new(0, Theme["Outline"]),
+                    ColorSequenceKeypoint.new(0.5, Theme["AccentGlow"]),
                     ColorSequenceKeypoint.new(1, Theme["Outline"])
                 }),
                 Transparency = NumberSequence.new({
-                    NumberSequenceKeypoint.new(0, isSelected and 0 or 0.15),
-                    NumberSequenceKeypoint.new(0.5, isSelected and 0 or 0.05),
+                    NumberSequenceKeypoint.new(0, isSelected and 0.2 or 0.6),
+                    NumberSequenceKeypoint.new(0.5, isSelected and 0.0 or 0.3),
                     NumberSequenceKeypoint.new(1, isSelected and 0.2 or 0.6)
                 }),
-                Rotation = 45
+                Rotation = isSelected and 180 or 0
             })
 
-            -- Галочка выбора (Неоновый значок)
+            -- Сине-черный плашка-индикатор выбора (Badge с галочкой)
             local checkBadge = Instances:Create("Frame", {
                 Parent = cardButton.Instance,
                 Name = "CheckBadge",
-                Size = isSelected and UDim2.new(0, 18, 0, 18) or UDim2.new(0, 0, 0, 0),
+                Size = UDim2.new(0, 20, 0, 20),
                 AnchorPoint = Vector2.new(1, 0),
                 Position = UDim2.new(1, -5, 0, 5),
-                BackgroundColor3 = rarityColor or Theme["Accent"],
+                BackgroundColor3 = Theme["Background 2"],
                 BackgroundTransparency = isSelected and 0 or 1,
                 BorderSizePixel = 0,
                 ZIndex = 12
             })
 
-            Instances:Create("UICorner", { Parent = checkBadge.Instance, CornerRadius = UDim.new(0, 5) })
+            Instances:Create("UICorner", { Parent = checkBadge.Instance, CornerRadius = UDim.new(0, 6) })
 
-            -- Контур-свечение для галочки
             local badgeStroke = Instances:Create("UIStroke", {
                 Parent = checkBadge.Instance,
-                Name = "BadgeStroke",
-                ApplyStrokeMode = Enum.ApplyStrokeMode.Border,
-                Color = Theme["AccentGlow"],
+                Color = Theme["Accent"],
                 Thickness = 1,
-                Transparency = isSelected and 0.2 or 1
+                Transparency = isSelected and 0 or 1,
+                ApplyStrokeMode = Enum.ApplyStrokeMode.Border
             })
 
             local checkIcon = Instances:Create("ImageLabel", {
                 Parent = checkBadge.Instance,
                 Name = "CheckIcon",
-                Size = UDim2.new(0, 11, 0, 11),
+                Size = isSelected and UDim2.new(0, 11, 0, 11) or UDim2.new(0, 0, 0, 0),
                 AnchorPoint = Vector2.new(0.5, 0.5),
                 Position = UDim2.new(0.5, 0, 0.5, 0),
                 BackgroundTransparency = 1,
                 Image = ParseIcon("check"),
-                ImageColor3 = Color3.fromRGB(255, 255, 255),
+                ImageColor3 = Theme["AccentGlow"],
                 ImageTransparency = isSelected and 0 or 1,
                 ZIndex = 13
             })
@@ -1663,8 +1668,8 @@ function Library:CreateSection(parentColumn, sectionData)
                 Parent = cardButton.Instance,
                 Name = "ItemImage",
                 Size = UDim2.new(0, 48, 0, 48),
-                AnchorPoint = Vector2.new(0.5, 0.5),
-                Position = UDim2.new(0.5, 0, 0.38, 0),
+                AnchorPoint = Vector2.new(0.5, 0),
+                Position = UDim2.new(0.5, 0, 0.08, 0),
                 BackgroundTransparency = 1,
                 Image = ParseIcon(cardIcon),
                 ScaleType = Enum.ScaleType.Fit,
@@ -1672,115 +1677,110 @@ function Library:CreateSection(parentColumn, sectionData)
                 ZIndex = 9
             })
 
-            -- Подложка под текст для лучшей читаемости
-            local textPanel = Instances:Create("Frame", {
+            -- Удобное и чистое название предмета
+            local nameLabel = Instances:Create("TextLabel", {
                 Parent = cardButton.Instance,
-                Name = "TextPanel",
+                Name = "NameLabel",
+                Text = cardTitle,
+                FontFace = Font.new("rbxassetid://12187365364", Enum.FontWeight.Bold, Enum.FontStyle.Normal),
+                TextColor3 = Theme["Text"],
+                TextSize = 11,
+                Position = UDim2.new(0, 4, 0, 60),
+                Size = UDim2.new(1, -8, 0, 15),
+                BackgroundTransparency = 1,
+                TextXAlignment = Enum.TextXAlignment.Center,
+                TextTruncate = Enum.TextTruncate.AtEnd,
+                ZIndex = 10
+            })
+
+            -- Компактная плашка редкости (Цвет применяется ТОЛЬКО к этой плашке и тексту)
+            local rarityTag = Instances:Create("Frame", {
+                Parent = cardButton.Instance,
+                Name = "RarityTag",
                 AnchorPoint = Vector2.new(0.5, 1),
-                Position = UDim2.new(0.5, 0, 1, -5),
-                Size = UDim2.new(1, -10, 0, 30),
-                BackgroundColor3 = Theme["Background"],
-                BackgroundTransparency = 0.3,
+                Position = UDim2.new(0.5, 0, 1, -6),
+                Size = UDim2.new(1, -16, 0, 15),
+                BackgroundColor3 = rarityColor,
+                BackgroundTransparency = 0.85,
                 BorderSizePixel = 0,
                 ZIndex = 10
             })
 
-            Instances:Create("UICorner", { Parent = textPanel.Instance, CornerRadius = UDim.new(0, 5) })
+            Instances:Create("UICorner", { Parent = rarityTag.Instance, CornerRadius = UDim.new(0, 4) })
 
-            -- Название предмета (Жирный шрифт, белый цвет)
-            local titleLabel = Instances:Create("TextLabel", {
-                Parent = textPanel.Instance,
-                Name = "TitleLabel",
-                Text = cardTitle,
-                FontFace = Font.new("rbxassetid://12187365364", Enum.FontWeight.Bold, Enum.FontStyle.Normal),
-                TextColor3 = Theme["Text"],
-                TextSize = 10,
-                Position = UDim2.new(0, 2, 0, 2),
-                Size = UDim2.new(1, -4, 0, 13),
-                BackgroundTransparency = 1,
-                TextXAlignment = Enum.TextXAlignment.Center,
-                TextTruncate = Enum.TextTruncate.AtEnd,
-                ZIndex = 11
-            })
-
-            -- Редкость предмета (Заглавными буквами, цветом редкости)
             local rarityLabel = Instances:Create("TextLabel", {
-                Parent = textPanel.Instance,
+                Parent = rarityTag.Instance,
                 Name = "RarityLabel",
                 Text = string.upper(tostring(cardRarity)),
                 FontFace = Font.new("rbxassetid://12187365364", Enum.FontWeight.Bold, Enum.FontStyle.Normal),
                 TextColor3 = rarityColor,
                 TextSize = 8,
-                Position = UDim2.new(0, 2, 0, 15),
-                Size = UDim2.new(1, -4, 0, 11),
+                Size = UDim2.new(1, 0, 1, 0),
+                Position = UDim2.new(0, 0, 0, 0),
                 BackgroundTransparency = 1,
                 TextXAlignment = Enum.TextXAlignment.Center,
-                TextTruncate = Enum.TextTruncate.AtEnd,
+                TextYAlignment = Enum.TextYAlignment.Center,
                 ZIndex = 11
             })
 
             local CardObject = { Instance = cardHolder.Instance, Button = cardButton.Instance }
 
-            -- =======================================================
-            -- ЧАСТЬ 2: Анимации и события карточки
-            -- =======================================================
-
-            -- Обновление неонового состояния карточки
+            -- Обновление визуального состояния карточки
             local function UpdateCardVisuals(isHovered)
-                local strokeInfo = TweenInfo.new(0.2, Enum.EasingStyle.Quad, Enum.EasingDirection.Out)
+                local info = TweenInfo.new(0.2, Enum.EasingStyle.Quad, Enum.EasingDirection.Out)
+                
                 if isSelected then
-                    Tween(cardStroke.Instance, strokeInfo, { Color = rarityColor, Thickness = 1.5 })
-                    strokeGradient.Instance.Color = ColorSequence.new({
-                        ColorSequenceKeypoint.new(0, rarityColor),
-                        ColorSequenceKeypoint.new(0.5, Theme["AccentGlow"]),
-                        ColorSequenceKeypoint.new(1, rarityColor)
-                    })
+                    Tween(cardStroke.Instance, info, { Thickness = 1.5, Transparency = 0 })
                     strokeGradient.Instance.Transparency = NumberSequence.new({
-                        NumberSequenceKeypoint.new(0, 0),
-                        NumberSequenceKeypoint.new(0.5, 0),
+                        NumberSequenceKeypoint.new(0, 0.1),
+                        NumberSequenceKeypoint.new(0.5, 0.0),
                         NumberSequenceKeypoint.new(1, 0.1)
                     })
+                    Tween(cardButton.Instance, info, { BackgroundColor3 = Color3.fromRGB(16, 22, 34) })
                 elseif isHovered then
-                    Tween(cardStroke.Instance, strokeInfo, { Color = Theme["Accent"], Thickness = 1.2 })
-                    strokeGradient.Instance.Color = ColorSequence.new({
-                        ColorSequenceKeypoint.new(0, Theme["Accent"]),
-                        ColorSequenceKeypoint.new(0.5, Theme["AccentGlow"]),
-                        ColorSequenceKeypoint.new(1, Theme["Outline"])
-                    })
+                    Tween(cardStroke.Instance, info, { Thickness = 1.2, Transparency = 0.2 })
                     strokeGradient.Instance.Transparency = NumberSequence.new({
-                        NumberSequenceKeypoint.new(0, 0.05),
-                        NumberSequenceKeypoint.new(0.5, 0.0),
+                        NumberSequenceKeypoint.new(0, 0.3),
+                        NumberSequenceKeypoint.new(0.5, 0.1),
                         NumberSequenceKeypoint.new(1, 0.3)
                     })
+                    Tween(cardButton.Instance, info, { BackgroundColor3 = Color3.fromRGB(18, 24, 36) })
                 else
-                    Tween(cardStroke.Instance, strokeInfo, { Color = Theme["Outline"], Thickness = 1 })
-                    strokeGradient.Instance.Color = ColorSequence.new({
-                        ColorSequenceKeypoint.new(0, Theme["Accent"]),
-                        ColorSequenceKeypoint.new(0.5, Theme["AccentGlow"]),
-                        ColorSequenceKeypoint.new(1, Theme["Outline"])
-                    })
+                    Tween(cardStroke.Instance, info, { Thickness = 1, Transparency = 0.4 })
                     strokeGradient.Instance.Transparency = NumberSequence.new({
-                        NumberSequenceKeypoint.new(0, 0.2),
-                        NumberSequenceKeypoint.new(0.5, 0.1),
+                        NumberSequenceKeypoint.new(0, 0.6),
+                        NumberSequenceKeypoint.new(0.5, 0.3),
                         NumberSequenceKeypoint.new(1, 0.6)
                     })
+                    Tween(cardButton.Instance, info, { BackgroundColor3 = Theme["Element"] })
                 end
             end
 
-            -- Метод внешнего выбора карточки
+            -- Метод выбора карточки
             function CardObject:SetSelected(state)
                 isSelected = state
-                local badgeInfo = TweenInfo.new(0.22, Enum.EasingStyle.Back, Enum.EasingDirection.Out)
+                local badgeInfo = TweenInfo.new(0.25, Enum.EasingStyle.Back, Enum.EasingDirection.Out)
+                
                 Tween(checkBadge.Instance, badgeInfo, {
-                    Size = isSelected and UDim2.new(0, 18, 0, 18) or UDim2.new(0, 0, 0, 0),
                     BackgroundTransparency = isSelected and 0 or 1
                 })
-                Tween(badgeStroke.Instance, badgeInfo, { Transparency = isSelected and 0.2 or 1 })
-                Tween(checkIcon.Instance, badgeInfo, { ImageTransparency = isSelected and 0 or 1 })
+                Tween(badgeStroke.Instance, badgeInfo, {
+                    Transparency = isSelected and 0 or 1
+                })
+                Tween(checkIcon.Instance, badgeInfo, {
+                    ImageTransparency = isSelected and 0 or 1,
+                    Size = isSelected and UDim2.new(0, 11, 0, 11) or UDim2.new(0, 0, 0, 0)
+                })
+
+                -- Анимация разворота неонового градиента при клике
+                Tween(strokeGradient.Instance, TweenInfo.new(0.35, Enum.EasingStyle.Quad, Enum.EasingDirection.Out), {
+                    Rotation = isSelected and 180 or 0
+                })
+                
                 UpdateCardVisuals(false)
             end
 
-            -- Интерактивные анимации кнопки
+            -- Обработка событий мыши
             cardButton:Connect("MouseButton1Down", function()
                 Tween(cardButton.Instance, TweenInfo.new(0.08, Enum.EasingStyle.Quad, Enum.EasingDirection.Out), {
                     Size = UDim2.new(0.95, 0, 0.95, 0)
@@ -1796,10 +1796,7 @@ function Library:CreateSection(parentColumn, sectionData)
             cardButton:Connect("MouseButton1Up", RestoreSize)
 
             cardButton:Connect("MouseEnter", function()
-                Tween(cardButton.Instance, TweenInfo.new(0.15, Enum.EasingStyle.Quad, Enum.EasingDirection.Out), {
-                    BackgroundColor3 = Color3.fromRGB(18, 22, 30)
-                })
-                Tween(itemImage.Instance, TweenInfo.new(0.18, Enum.EasingStyle.Back, Enum.EasingDirection.Out), {
+                Tween(itemImage.Instance, TweenInfo.new(0.2, Enum.EasingStyle.Back, Enum.EasingDirection.Out), {
                     Size = UDim2.new(0, 52, 0, 52)
                 })
                 UpdateCardVisuals(true)
@@ -1807,10 +1804,7 @@ function Library:CreateSection(parentColumn, sectionData)
 
             cardButton:Connect("MouseLeave", function()
                 RestoreSize()
-                Tween(cardButton.Instance, TweenInfo.new(0.15, Enum.EasingStyle.Quad, Enum.EasingDirection.Out), {
-                    BackgroundColor3 = Theme["Element"]
-                })
-                Tween(itemImage.Instance, TweenInfo.new(0.15, Enum.EasingStyle.Quad, Enum.EasingDirection.Out), {
+                Tween(itemImage.Instance, TweenInfo.new(0.18, Enum.EasingStyle.Quad, Enum.EasingDirection.Out), {
                     Size = UDim2.new(0, 48, 0, 48)
                 })
                 UpdateCardVisuals(false)
