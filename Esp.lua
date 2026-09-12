@@ -1258,7 +1258,7 @@ function Library:CreateTab(window, tabData)
 end
 
 -- =======================================================
--- 11. СЕКЦИИ UI И ОБНОВЛЁННАЯ СЕТКА КАРТОЧЕК (MM2 STYLE)
+-- 11. СЕКЦИИ UI И ОБНОВЛЁННАЯ СЕТКА КАРТОЧЕК (MM2 STYLE, БЕЗ CARDGLOW)
 -- =======================================================
 function Library:CreateSection(parentColumn, sectionData)
     sectionData = sectionData or {}
@@ -1523,7 +1523,7 @@ function Library:CreateSection(parentColumn, sectionData)
     local SectionAPI = {}
 
     -- =======================================================
-    -- ОБНОВЛЁННАЯ СЕТКА КАРТОЧЕК (БЕЗ СТАТИЧНОЙ ОБВОДКИ, ТОЛЬКО АНИМИРОВАННЫЙ КОНТУР + GLOW)
+    -- ОБНОВЛЁННАЯ СЕТКА КАРТОЧЕК (БЕЗ CARDGLOW, ТОЛЬКО 4 БЕГУЩИЕ ГРАНИ)
     -- =======================================================
     function SectionAPI:CreateCardsGrid(gridData)
         gridData = gridData or {}
@@ -1587,16 +1587,7 @@ function Library:CreateSection(parentColumn, sectionData)
 
             Instances:Create("UICorner", { Parent = cardButton.Instance, CornerRadius = UDim.new(0, 6) })
 
-            -- Внешнее неоновое свечение только для выбранной карточки
-            local cardGlow = Instances:Create("UIStroke", {
-                Parent = cardButton.Instance,
-                Color = rarityColor,
-                Thickness = 2,
-                Transparency = isSelected and 0.35 or 1,
-                ApplyStrokeMode = Enum.ApplyStrokeMode.Border
-            })
-
-            -- Единственный анимированный бегущий контур (4 Frame)
+            -- Единственный анимированный контур (4 Frame) — без cardGlow
             local borderContainer = Instances:Create("Frame", {
                 Parent = cardButton.Instance,
                 Name = "BorderAnimContainer",
@@ -1665,12 +1656,6 @@ function Library:CreateSection(parentColumn, sectionData)
                 local info = TweenInfo.new(duration, Enum.EasingStyle.Quad, Enum.EasingDirection.Out)
 
                 if isHovered or isSelected then
-                    if isSelected then
-                        Tween(cardGlow.Instance, TweenInfo.new(0.2), { Transparency = 0.35 })
-                    else
-                        Tween(cardGlow.Instance, TweenInfo.new(0.2), { Transparency = 1 })
-                    end
-
                     Tween(topBorder.Instance, info, { Size = UDim2.new(1, 0, 0, 1.5) })
                     task.delay(duration * 0.6, function()
                         if borderToken ~= currentToken then return end
@@ -1685,8 +1670,6 @@ function Library:CreateSection(parentColumn, sectionData)
                         Tween(leftBorder.Instance, info, { Size = UDim2.new(0, 1.5, 1, 0) })
                     end)
                 else
-                    Tween(cardGlow.Instance, TweenInfo.new(0.2), { Transparency = 1 })
-
                     Tween(leftBorder.Instance, info, { Size = UDim2.new(0, 1.5, 0, 0) })
                     Tween(bottomBorder.Instance, info, { Size = UDim2.new(0, 0, 0, 1.5) })
                     Tween(rightBorder.Instance, info, { Size = UDim2.new(0, 1.5, 0, 0) })
@@ -1722,7 +1705,7 @@ function Library:CreateSection(parentColumn, sectionData)
                 ZIndex = 12
             })
 
-            -- Иконка предмета по центру без фона и рамок
+            -- Иконка предмета по центру
             local itemImage = Instances:Create("ImageLabel", {
                 Parent = cardButton.Instance,
                 Name = "ItemImage",
@@ -1779,7 +1762,6 @@ function Library:CreateSection(parentColumn, sectionData)
                 RunContourAnimation(false)
             end
 
-            -- Эффект нажатия (сжатие карточки)
             cardButton:Connect("MouseButton1Down", function()
                 Tween(cardButton.Instance, TweenInfo.new(0.1, Enum.EasingStyle.Quad, Enum.EasingDirection.Out), {
                     Size = UDim2.new(0.93, 0, 0.93, 0)
@@ -1798,7 +1780,6 @@ function Library:CreateSection(parentColumn, sectionData)
                 Tween(cardButton.Instance, TweenInfo.new(0.2, Enum.EasingStyle.Quad, Enum.EasingDirection.Out), {
                     BackgroundColor3 = Color3.fromRGB(16, 18, 26)
                 })
-                -- Плавное увеличение и легкий подъем иконки предмета
                 Tween(itemImage.Instance, TweenInfo.new(0.25, Enum.EasingStyle.Back, Enum.EasingDirection.Out), {
                     Size = UDim2.new(0, 56, 0, 56),
                     Position = UDim2.new(0.5, 0, 0, 5)
@@ -1811,7 +1792,6 @@ function Library:CreateSection(parentColumn, sectionData)
                 Tween(cardButton.Instance, TweenInfo.new(0.2, Enum.EasingStyle.Quad, Enum.EasingDirection.Out), {
                     BackgroundColor3 = Color3.fromRGB(12, 14, 20)
                 })
-                -- Возврат иконки в исходное состояние
                 Tween(itemImage.Instance, TweenInfo.new(0.2, Enum.EasingStyle.Quad, Enum.EasingDirection.Out), {
                     Size = UDim2.new(0, 48, 0, 48),
                     Position = UDim2.new(0.5, 0, 0, 10)
