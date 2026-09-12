@@ -1258,7 +1258,7 @@ function Library:CreateTab(window, tabData)
 end
 
 -- =======================================================
--- 11. СЕКЦИИ UI И ОБНОВЛЁННАЯ СЕТКА КАРТОЧЕК (MM2 STYLE, БЕЗ CARDGLOW)
+-- 11. СЕКЦИИ UI И ОБНОВЛЁННАЯ СЕТКА КАРТОЧЕК (MM2 STYLE)
 -- =======================================================
 function Library:CreateSection(parentColumn, sectionData)
     sectionData = sectionData or {}
@@ -1523,7 +1523,7 @@ function Library:CreateSection(parentColumn, sectionData)
     local SectionAPI = {}
 
     -- =======================================================
-    -- ОБНОВЛЁННАЯ СЕТКА КАРТОЧЕК (БЕЗ CARDGLOW, ТОЛЬКО 4 БЕГУЩИЕ ГРАНИ)
+    -- ОБНОВЛЁННАЯ СЕТКА КАРТОЧЕК (УГЛОВЫЕ УЗЛЫ + ГРАДИЕНТЫ + ПУЛЬСАЦИЯ)
     -- =======================================================
     function SectionAPI:CreateCardsGrid(gridData)
         gridData = gridData or {}
@@ -1587,7 +1587,7 @@ function Library:CreateSection(parentColumn, sectionData)
 
             Instances:Create("UICorner", { Parent = cardButton.Instance, CornerRadius = UDim.new(0, 6) })
 
-            -- Единственный анимированный контур (4 Frame) — без cardGlow
+            -- Контейнер анимированного неонового контура
             local borderContainer = Instances:Create("Frame", {
                 Parent = cardButton.Instance,
                 Name = "BorderAnimContainer",
@@ -1597,6 +1597,7 @@ function Library:CreateSection(parentColumn, sectionData)
                 ZIndex = 14
             })
 
+            -- 4 стороны контура
             local topBorder = Instances:Create("Frame", {
                 Parent = borderContainer.Instance,
                 Name = "TopBorder",
@@ -1640,8 +1641,72 @@ function Library:CreateSection(parentColumn, sectionData)
                 ZIndex = 14
             })
 
-            local borderToken = 0
+            -- Функция добавления мягкого градиента для эффекта переливания
+            local function ApplyBorderGradients(baseColor)
+                local borders = {topBorder.Instance, rightBorder.Instance, bottomBorder.Instance, leftBorder.Instance}
+                for _, border in ipairs(borders) do
+                    local existing = border:FindFirstChildOfClass("UIGradient")
+                    if existing then existing:Destroy() end
+                    Instances:Create("UIGradient", {
+                        Parent = border,
+                        Color = ColorSequence.new({
+                            ColorSequenceKeypoint.new(0, baseColor),
+                            ColorSequenceKeypoint.new(0.5, Theme["AccentGlow"]),
+                            ColorSequenceKeypoint.new(1, baseColor)
+                        })
+                    })
+                end
+            end
+            ApplyBorderGradients(isSelected and rarityColor or Theme["Accent"])
 
+            -- Угловые неоновые узлы (Nodes)
+            local function CreateCornerNode(name, anchor, pos)
+                local node = Instances:Create("Frame", {
+                    Parent = borderContainer.Instance,
+                    Name = name,
+                    AnchorPoint = anchor,
+                    Position = pos,
+                    Size = UDim2.new(0, 4, 0, 4),
+                    BackgroundColor3 = isSelected and rarityColor or Theme["Accent"],
+                    BackgroundTransparency = isSelected and 0 or 1,
+                    BorderSizePixel = 0,
+                    ZIndex = 15
+                })
+                Instances:Create("UICorner", { Parent = node.Instance, CornerRadius = UDim.new(1, 0) })
+                return node
+            end
+
+            local nodeTL = CreateCornerNode("NodeTL", Vector2.new(0, 0), UDim2.new(0, 0, 0, 0))
+            local nodeTR = CreateCornerNode("NodeTR", Vector2.new(1, 0), UDim2.new(1, 0, 0, 0))
+            local nodeBR = CreateCornerNode("NodeBR", Vector2.new(1, 1), UDim2.new(1, 0, 1, 0))
+            local nodeBL = CreateCornerNode("NodeBL", Vector2.new(0, 1), UDim2.new(0, 0, 1, 0))
+
+            local borderToken = 0
+            local pulseTweens = {}
+
+            local function StopPulse()
+                for _, tw in ipairs(pulseTweens) do
+                    tw:Cancel()
+                end
+                table.clear(pulseTweens)
+                topBorder.Instance.BackgroundTransparency = 0
+                rightBorder.Instance.BackgroundTransparency = 0
+                bottomBorder.Instance.BackgroundTransparency = 0
+                leftBorder.Instance.BackgroundTransparency = 0
+            end
+
+            local function StartPulse()
+                StopPulse()
+                local pulseInfo = TweenInfo.new(0.9, Enum.EasingStyle.Sine, Enum.EasingDirection.InOut, -1, true)
+                local targets = {topBorder.Instance, rightBorder.Instance, bottomBorder.Instance, leftBorder.Instance}
+                for _, inst in ipairs(targets) do
+                    local tw = TweenService:Create(inst, pulseInfo, { BackgroundTransparency = 0.45 })
+                    tw:Play()
+                    table.insert(pulseTweens, tw)
+                end
+            end
+
+            -- Анимация контура: "волна" по часовой стрелке с зажиганием узлов
             local function RunContourAnimation(isHovered)
                 borderToken = borderToken + 1
                 local currentToken = borderToken
@@ -1652,28 +1717,59 @@ function Library:CreateSection(parentColumn, sectionData)
                 bottomBorder.Instance.BackgroundColor3 = targetColor
                 leftBorder.Instance.BackgroundColor3 = targetColor
 
-                local duration = 0.1
-                local info = TweenInfo.new(duration, Enum.EasingStyle.Quad, Enum.EasingDirection.Out)
+                local nodes = {nodeTL.Instance, nodeTR.Instance, nodeBR.Instance, nodeBL.Instance}
+                for _, n in ipairs(nodes) do
+                    n.BackgroundColor3 = targetColor
+                end
+                ApplyBorderGradients(targetColor)
+
+                local duration = 0.16
+                local info = TweenInfo.new(duration, Enum.EasingStyle.Quart, Enum.EasingDirection.Out)
 
                 if isHovered or isSelected then
+                    StopPulse()
+
+                    -- Верхняя грань и первый узел
+                    Tween(nodeTL.Instance, info, { BackgroundTransparency = 0 })
                     Tween(topBorder.Instance, info, { Size = UDim2.new(1, 0, 0, 1.5) })
-                    task.delay(duration * 0.6, function()
+
+                    -- Правая грань
+                    task.delay(duration * 0.65, function()
                         if borderToken ~= currentToken then return end
+                        Tween(nodeTR.Instance, info, { BackgroundTransparency = 0 })
                         Tween(rightBorder.Instance, info, { Size = UDim2.new(0, 1.5, 1, 0) })
                     end)
-                    task.delay(duration * 1.2, function()
+
+                    -- Нижняя грань
+                    task.delay(duration * 1.3, function()
                         if borderToken ~= currentToken then return end
+                        Tween(nodeBR.Instance, info, { BackgroundTransparency = 0 })
                         Tween(bottomBorder.Instance, info, { Size = UDim2.new(1, 0, 0, 1.5) })
                     end)
-                    task.delay(duration * 1.8, function()
+
+                    -- Левая грань
+                    task.delay(duration * 1.95, function()
                         if borderToken ~= currentToken then return end
+                        Tween(nodeBL.Instance, info, { BackgroundTransparency = 0 })
                         Tween(leftBorder.Instance, info, { Size = UDim2.new(0, 1.5, 1, 0) })
+                        if isSelected then
+                            task.delay(0.1, function()
+                                if borderToken == currentToken and isSelected then
+                                    StartPulse()
+                                end
+                            end)
+                        end
                     end)
                 else
+                    StopPulse()
                     Tween(leftBorder.Instance, info, { Size = UDim2.new(0, 1.5, 0, 0) })
+                    Tween(nodeBL.Instance, info, { BackgroundTransparency = 1 })
                     Tween(bottomBorder.Instance, info, { Size = UDim2.new(0, 0, 0, 1.5) })
+                    Tween(nodeBR.Instance, info, { BackgroundTransparency = 1 })
                     Tween(rightBorder.Instance, info, { Size = UDim2.new(0, 1.5, 0, 0) })
+                    Tween(nodeTR.Instance, info, { BackgroundTransparency = 1 })
                     Tween(topBorder.Instance, info, { Size = UDim2.new(1, 0, 0, 0) })
+                    Tween(nodeTL.Instance, info, { BackgroundTransparency = 1 })
                 end
             end
 
