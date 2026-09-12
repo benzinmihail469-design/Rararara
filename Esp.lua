@@ -16,20 +16,20 @@ end
 
 local LocalPlayer = Players.LocalPlayer
 
--- 1. Цветовая тема (Dark & Neon Blue Style)
+-- 1. Цветовая тема (Black & Neon Blue Style)
 local Theme = {
-    ["Background"] = Color3.fromRGB(10, 10, 14),
-    ["Background 2"] = Color3.fromRGB(14, 15, 20),
+    ["Background"] = Color3.fromRGB(6, 8, 12),
+    ["Background 2"] = Color3.fromRGB(10, 12, 18),
     ["Text"] = Color3.fromRGB(240, 240, 245),
-    ["SubText"] = Color3.fromRGB(110, 115, 125),
-    ["Outline"] = Color3.fromRGB(24, 28, 38),
+    ["SubText"] = Color3.fromRGB(110, 120, 140),
+    ["Outline"] = Color3.fromRGB(20, 32, 54),
     ["Accent"] = Color3.fromRGB(0, 140, 255),
     ["AccentGlow"] = Color3.fromRGB(0, 180, 255),
-    ["Element"] = Color3.fromRGB(18, 20, 26),
+    ["Element"] = Color3.fromRGB(14, 16, 22),
     ["GlowCenter"] = Color3.fromRGB(0, 140, 255),
-    ["GlowEdge"] = Color3.fromRGB(14, 15, 20),
-    ["Node"] = Color3.fromRGB(120, 200, 255),
-    ["Line"] = Color3.fromRGB(0, 160, 255)
+    ["GlowEdge"] = Color3.fromRGB(10, 12, 18),
+    ["Node"] = Color3.fromRGB(100, 180, 255),
+    ["Line"] = Color3.fromRGB(0, 140, 255)
 }
 
 -- 2. Иконки
@@ -170,7 +170,7 @@ local function MakeDraggable(guiInstance, dragHandle)
 end
 
 -- =======================================================
--- 8. ОБНОВЛЕННАЯ СИСТЕМА СОЗВЕЗДИЯ
+-- 8. СИСТЕМА СОЗВЕЗДИЯ
 -- =======================================================
 local function CreateConstellationBackground(parentFrame, numNodes, maxDistance)
     numNodes = numNodes or 30
@@ -201,10 +201,7 @@ local function CreateConstellationBackground(parentFrame, numNodes, maxDistance)
             ZIndex = 2
         })
 
-        Instances:Create("UICorner", {
-            Parent = dot.Instance,
-            CornerRadius = UDim.new(1, 0)
-        })
+        Instances:Create("UICorner", { Parent = dot.Instance, CornerRadius = UDim.new(1, 0) })
 
         local angle = rng:NextNumber(0, math.pi * 2)
         local dir = Vector2.new(math.cos(angle), math.sin(angle))
@@ -363,17 +360,18 @@ function Library:CreateWindow(data)
     })
 
     Instances:Create("UICorner", { Parent = sidebarBackground.Instance, CornerRadius = UDim.new(0, 8) })
+
     Instances:Create("UIGradient", {
         Parent = sidebarBackground.Instance,
         Color = ColorSequence.new({
-            ColorSequenceKeypoint.new(0, Color3.fromRGB(12, 32, 60)),
-            ColorSequenceKeypoint.new(0.35, Theme["Background 2"]),
+            ColorSequenceKeypoint.new(0, Color3.fromRGB(10, 18, 32)),
+            ColorSequenceKeypoint.new(0.45, Theme["Background 2"]),
             ColorSequenceKeypoint.new(1, Theme["Background"])
         }),
         Transparency = NumberSequence.new({
-            NumberSequenceKeypoint.new(0, 0.15),
-            NumberSequenceKeypoint.new(0.5, 0.35),
-            NumberSequenceKeypoint.new(1, 0.5)
+            NumberSequenceKeypoint.new(0, 0.0),
+            NumberSequenceKeypoint.new(0.5, 0.2),
+            NumberSequenceKeypoint.new(1, 0.4)
         }),
         Rotation = 90
     })
@@ -455,7 +453,7 @@ function Library:CreateWindow(data)
         Position = UDim2.new(0, 8, 1, -56),
         Size = UDim2.new(0, 144, 0, 48),
         BackgroundColor3 = Theme["Element"],
-        BackgroundTransparency = 0.2,
+        BackgroundTransparency = 0.1,
         BorderSizePixel = 0,
         ZIndex = 15
     })
@@ -566,7 +564,7 @@ function Library:CreateWindow(data)
         Text = "",
         AutoButtonColor = false,
         AnchorPoint = Vector2.new(1, 0),
-        BackgroundTransparency = 0.2,
+        BackgroundTransparency = 0.1,
         Position = UDim2.new(1, -10, 0, 10),
         Size = UDim2.new(0, 24, 0, 24),
         ZIndex = 15,
@@ -670,7 +668,7 @@ function Library:CreateTab(window, tabData)
         Parent = tabButton.Instance,
         Color = ColorSequence.new({
             ColorSequenceKeypoint.new(0, Theme["Accent"]),
-            ColorSequenceKeypoint.new(0.35, Color3.fromRGB(15, 35, 65)),
+            ColorSequenceKeypoint.new(0.35, Color3.fromRGB(10, 20, 40)),
             ColorSequenceKeypoint.new(1, Theme["Background 2"])
         }),
         Transparency = NumberSequence.new({
@@ -1026,7 +1024,7 @@ function Library:CreateTab(window, tabData)
             Parent = subButton.Instance,
             Color = ColorSequence.new({
                 ColorSequenceKeypoint.new(0, Theme["Accent"]),
-                ColorSequenceKeypoint.new(0.35, Color3.fromRGB(15, 35, 65)),
+                ColorSequenceKeypoint.new(0.35, Color3.fromRGB(10, 20, 40)),
                 ColorSequenceKeypoint.new(1, Theme["Background 2"])
             }),
             Transparency = NumberSequence.new({
@@ -1260,7 +1258,7 @@ function Library:CreateTab(window, tabData)
 end
 
 -- =======================================================
--- 11. СЕКЦИИ UI И ОБНОВЛЕННАЯ СЕТКА КАРТОЧЕК (MM2 STYLE, БЕЗ ДВОЙНОГО КОНТУРА)
+-- 11. СЕКЦИИ UI И ОБНОВЛЁННАЯ СЕТКА КАРТОЧЕК (MM2 STYLE)
 -- =======================================================
 function Library:CreateSection(parentColumn, sectionData)
     sectionData = sectionData or {}
@@ -1278,7 +1276,7 @@ function Library:CreateSection(parentColumn, sectionData)
         Size = UDim2.new(1, 0, 0, 0),
         AutomaticSize = Enum.AutomaticSize.Y,
         BackgroundColor3 = Theme["Background 2"],
-        BackgroundTransparency = 0.15,
+        BackgroundTransparency = 0.05,
         BorderSizePixel = 0,
         ZIndex = 5,
         ClipsDescendants = true
@@ -1442,7 +1440,7 @@ function Library:CreateSection(parentColumn, sectionData)
             Position = UDim2.new(0.5, 0, 0.5, 0),
             Size = UDim2.new(1, -20, 0, 24),
             BackgroundColor3 = Theme["Element"],
-            BackgroundTransparency = 0.2,
+            BackgroundTransparency = 0,
             BorderSizePixel = 0,
             ZIndex = 8
         })
@@ -1525,7 +1523,7 @@ function Library:CreateSection(parentColumn, sectionData)
     local SectionAPI = {}
 
     -- =======================================================
-    -- ОБНОВЛЕННАЯ СЕТКА КАРТОЧЕК ПРЕДМЕТОВ (БЕЗ ДВОЙНОГО КОНТУРА + GLOW + PRESS EFFECT)
+    -- ОБНОВЛЁННАЯ СЕТКА КАРТОЧЕК (БЕЗ СТАТИЧНОЙ ОБВОДКИ, ТОЛЬКО АНИМИРОВАННЫЙ КОНТУР + GLOW)
     -- =======================================================
     function SectionAPI:CreateCardsGrid(gridData)
         gridData = gridData or {}
@@ -1563,7 +1561,6 @@ function Library:CreateSection(parentColumn, sectionData)
             local callback = cardData.Callback or function() end
             local rarityColor = GetRarityColor(cardRarity)
 
-            -- Оберточный фрейм для безопасной анимации масштабирования (Scale)
             local cardHolder = Instances:Create("Frame", {
                 Parent = cardsFrame.Instance,
                 Name = "CardHolder_" .. cardTitle,
@@ -1572,15 +1569,14 @@ function Library:CreateSection(parentColumn, sectionData)
                 ZIndex = 8
             })
 
-            -- Основная кнопка карточки
             local cardButton = Instances:Create("TextButton", {
                 Parent = cardHolder.Instance,
                 Name = "CardButton",
                 AnchorPoint = Vector2.new(0.5, 0.5),
                 Position = UDim2.new(0.5, 0, 0.5, 0),
                 Size = UDim2.new(1, 0, 1, 0),
-                BackgroundColor3 = Theme["Element"],
-                BackgroundTransparency = 0.15,
+                BackgroundColor3 = Color3.fromRGB(12, 14, 20),
+                BackgroundTransparency = 0,
                 Text = "",
                 AutoButtonColor = false,
                 BorderSizePixel = 0,
@@ -1591,16 +1587,7 @@ function Library:CreateSection(parentColumn, sectionData)
 
             Instances:Create("UICorner", { Parent = cardButton.Instance, CornerRadius = UDim.new(0, 6) })
 
-            -- 1. ЕДИНСТВЕННАЯ БАЗОВАЯ ОБВОДКА (Отключается при анимации бегущего контура)
-            local cardStroke = Instances:Create("UIStroke", {
-                Parent = cardButton.Instance,
-                Color = Theme["Outline"],
-                Thickness = 1,
-                Transparency = isSelected and 1 or 0,
-                ApplyStrokeMode = Enum.ApplyStrokeMode.Border
-            })
-
-            -- Внешнее неоновое свечение для выбранной карточки (Glow)
+            -- Внешнее неоновое свечение только для выбранной карточки
             local cardGlow = Instances:Create("UIStroke", {
                 Parent = cardButton.Instance,
                 Color = rarityColor,
@@ -1609,7 +1596,7 @@ function Library:CreateSection(parentColumn, sectionData)
                 ApplyStrokeMode = Enum.ApplyStrokeMode.Border
             })
 
-            -- Контейнер бегущего контура (4 Frame)
+            -- Единственный анимированный бегущий контур (4 Frame)
             local borderContainer = Instances:Create("Frame", {
                 Parent = cardButton.Instance,
                 Name = "BorderAnimContainer",
@@ -1624,7 +1611,7 @@ function Library:CreateSection(parentColumn, sectionData)
                 Name = "TopBorder",
                 Position = UDim2.new(0, 0, 0, 0),
                 Size = UDim2.new(isSelected and 1 or 0, 0, 0, 1.5),
-                BackgroundColor3 = rarityColor,
+                BackgroundColor3 = isSelected and rarityColor or Theme["Accent"],
                 BorderSizePixel = 0,
                 ZIndex = 14
             })
@@ -1635,7 +1622,7 @@ function Library:CreateSection(parentColumn, sectionData)
                 AnchorPoint = Vector2.new(1, 0),
                 Position = UDim2.new(1, 0, 0, 0),
                 Size = UDim2.new(0, 1.5, isSelected and 1 or 0, 0),
-                BackgroundColor3 = rarityColor,
+                BackgroundColor3 = isSelected and rarityColor or Theme["Accent"],
                 BorderSizePixel = 0,
                 ZIndex = 14
             })
@@ -1646,7 +1633,7 @@ function Library:CreateSection(parentColumn, sectionData)
                 AnchorPoint = Vector2.new(1, 1),
                 Position = UDim2.new(1, 0, 1, 0),
                 Size = UDim2.new(isSelected and 1 or 0, 0, 0, 1.5),
-                BackgroundColor3 = rarityColor,
+                BackgroundColor3 = isSelected and rarityColor or Theme["Accent"],
                 BorderSizePixel = 0,
                 ZIndex = 14
             })
@@ -1657,56 +1644,53 @@ function Library:CreateSection(parentColumn, sectionData)
                 AnchorPoint = Vector2.new(0, 1),
                 Position = UDim2.new(0, 0, 1, 0),
                 Size = UDim2.new(0, 1.5, isSelected and 1 or 0, 0),
-                BackgroundColor3 = rarityColor,
+                BackgroundColor3 = isSelected and rarityColor or Theme["Accent"],
                 BorderSizePixel = 0,
                 ZIndex = 14
             })
 
             local borderToken = 0
 
-            local function RunContourAnimation(active)
+            local function RunContourAnimation(isHovered)
                 borderToken = borderToken + 1
                 local currentToken = borderToken
-                local activeColor = isSelected and rarityColor or Theme["Accent"]
+                local targetColor = isSelected and rarityColor or Theme["Accent"]
 
-                topBorder.Instance.BackgroundColor3 = activeColor
-                rightBorder.Instance.BackgroundColor3 = activeColor
-                bottomBorder.Instance.BackgroundColor3 = activeColor
-                leftBorder.Instance.BackgroundColor3 = activeColor
+                topBorder.Instance.BackgroundColor3 = targetColor
+                rightBorder.Instance.BackgroundColor3 = targetColor
+                bottomBorder.Instance.BackgroundColor3 = targetColor
+                leftBorder.Instance.BackgroundColor3 = targetColor
 
-                local duration = 0.12
+                local duration = 0.1
                 local info = TweenInfo.new(duration, Enum.EasingStyle.Quad, Enum.EasingDirection.Out)
 
-                if active or isSelected then
-                    -- Скрываем статичную обводку, чтобы исключить наложение рамок
-                    Tween(cardStroke.Instance, TweenInfo.new(0.12), { Transparency = 1 })
-
+                if isHovered or isSelected then
                     if isSelected then
                         Tween(cardGlow.Instance, TweenInfo.new(0.2), { Transparency = 0.35 })
+                    else
+                        Tween(cardGlow.Instance, TweenInfo.new(0.2), { Transparency = 1 })
                     end
 
                     Tween(topBorder.Instance, info, { Size = UDim2.new(1, 0, 0, 1.5) })
-                    task.delay(duration * 0.7, function()
+                    task.delay(duration * 0.6, function()
                         if borderToken ~= currentToken then return end
                         Tween(rightBorder.Instance, info, { Size = UDim2.new(0, 1.5, 1, 0) })
                     end)
-                    task.delay(duration * 1.4, function()
+                    task.delay(duration * 1.2, function()
                         if borderToken ~= currentToken then return end
                         Tween(bottomBorder.Instance, info, { Size = UDim2.new(1, 0, 0, 1.5) })
                     end)
-                    task.delay(duration * 2.1, function()
+                    task.delay(duration * 1.8, function()
                         if borderToken ~= currentToken then return end
                         Tween(leftBorder.Instance, info, { Size = UDim2.new(0, 1.5, 1, 0) })
                     end)
                 else
-                    -- Возвращаем статичную обводку при уходе курсора
-                    Tween(cardStroke.Instance, TweenInfo.new(0.2), { Transparency = 0 })
                     Tween(cardGlow.Instance, TweenInfo.new(0.2), { Transparency = 1 })
 
                     Tween(leftBorder.Instance, info, { Size = UDim2.new(0, 1.5, 0, 0) })
                     Tween(bottomBorder.Instance, info, { Size = UDim2.new(0, 0, 0, 1.5) })
                     Tween(rightBorder.Instance, info, { Size = UDim2.new(0, 1.5, 0, 0) })
-                    Tween(topBorder.Instance, info, { Size = UDim2.new(0, 0, 0, 1.5) })
+                    Tween(topBorder.Instance, info, { Size = UDim2.new(1, 0, 0, 0) })
                 end
             end
 
@@ -1738,7 +1722,7 @@ function Library:CreateSection(parentColumn, sectionData)
                 ZIndex = 12
             })
 
-            -- Иконка предмета по центру
+            -- Иконка предмета по центру без фона и рамок
             local itemImage = Instances:Create("ImageLabel", {
                 Parent = cardButton.Instance,
                 Name = "ItemImage",
@@ -1752,7 +1736,6 @@ function Library:CreateSection(parentColumn, sectionData)
                 ZIndex = 9
             })
 
-            -- Надпись редкости предмета
             local rarityLabel = Instances:Create("TextLabel", {
                 Parent = cardButton.Instance,
                 Name = "RarityLabel",
@@ -1768,7 +1751,6 @@ function Library:CreateSection(parentColumn, sectionData)
                 ZIndex = 10
             })
 
-            -- Белое название предмета
             local titleLabel = Instances:Create("TextLabel", {
                 Parent = cardButton.Instance,
                 Name = "TitleLabel",
@@ -1786,7 +1768,6 @@ function Library:CreateSection(parentColumn, sectionData)
 
             local CardObject = { Instance = cardHolder.Instance, Button = cardButton.Instance }
 
-            -- Выделение карточки
             function CardObject:SetSelected(state)
                 isSelected = state
                 Tween(checkBadge.Instance, TweenInfo.new(0.2, Enum.EasingStyle.Back, Enum.EasingDirection.Out), {
@@ -1795,10 +1776,10 @@ function Library:CreateSection(parentColumn, sectionData)
                 Tween(checkIcon.Instance, TweenInfo.new(0.2, Enum.EasingStyle.Quad, Enum.EasingDirection.Out), {
                     ImageTransparency = isSelected and 0 or 1
                 })
-                RunContourAnimation(isSelected)
+                RunContourAnimation(false)
             end
 
-            -- Эффект сжатия карточки при клике (MouseButton1Down)
+            -- Эффект нажатия (сжатие карточки)
             cardButton:Connect("MouseButton1Down", function()
                 Tween(cardButton.Instance, TweenInfo.new(0.1, Enum.EasingStyle.Quad, Enum.EasingDirection.Out), {
                     Size = UDim2.new(0.93, 0, 0.93, 0)
@@ -1813,12 +1794,11 @@ function Library:CreateSection(parentColumn, sectionData)
 
             cardButton:Connect("MouseButton1Up", RestoreSize)
 
-            -- События наведения мыши
             cardButton:Connect("MouseEnter", function()
                 Tween(cardButton.Instance, TweenInfo.new(0.2, Enum.EasingStyle.Quad, Enum.EasingDirection.Out), {
-                    BackgroundColor3 = Theme["Background 2"]
+                    BackgroundColor3 = Color3.fromRGB(16, 18, 26)
                 })
-                -- Плавное увеличение и подъем картинки предмета
+                -- Плавное увеличение и легкий подъем иконки предмета
                 Tween(itemImage.Instance, TweenInfo.new(0.25, Enum.EasingStyle.Back, Enum.EasingDirection.Out), {
                     Size = UDim2.new(0, 56, 0, 56),
                     Position = UDim2.new(0.5, 0, 0, 5)
@@ -1829,9 +1809,9 @@ function Library:CreateSection(parentColumn, sectionData)
             cardButton:Connect("MouseLeave", function()
                 RestoreSize()
                 Tween(cardButton.Instance, TweenInfo.new(0.2, Enum.EasingStyle.Quad, Enum.EasingDirection.Out), {
-                    BackgroundColor3 = Theme["Element"]
+                    BackgroundColor3 = Color3.fromRGB(12, 14, 20)
                 })
-                -- Возврат картинки предмета в исходный размер
+                -- Возврат иконки в исходное состояние
                 Tween(itemImage.Instance, TweenInfo.new(0.2, Enum.EasingStyle.Quad, Enum.EasingDirection.Out), {
                     Size = UDim2.new(0, 48, 0, 48),
                     Position = UDim2.new(0.5, 0, 0, 10)
@@ -1844,7 +1824,7 @@ function Library:CreateSection(parentColumn, sectionData)
             end)
 
             if isSelected then
-                RunContourAnimation(true)
+                RunContourAnimation(false)
             end
 
             table.insert(sectionItems, { Instance = cardHolder.Instance, Title = cardTitle })
@@ -2427,7 +2407,7 @@ function Library:CreateSection(parentColumn, sectionData)
                     Parent = optBtn.Instance,
                     Color = ColorSequence.new({
                         ColorSequenceKeypoint.new(0, Theme["Accent"]),
-                        ColorSequenceKeypoint.new(0.35, Color3.fromRGB(15, 35, 65)),
+                        ColorSequenceKeypoint.new(0.35, Color3.fromRGB(10, 20, 40)),
                         ColorSequenceKeypoint.new(1, Theme["Background 2"])
                     }),
                     Transparency = NumberSequence.new({
@@ -2566,7 +2546,7 @@ function Library:CreateSection(parentColumn, sectionData)
             Parent = ButtonFrame.Instance,
             Color = ColorSequence.new({
                 ColorSequenceKeypoint.new(0, Theme["Accent"]),
-                ColorSequenceKeypoint.new(0.4, Color3.fromRGB(15, 35, 65)),
+                ColorSequenceKeypoint.new(0.4, Color3.fromRGB(10, 20, 40)),
                 ColorSequenceKeypoint.new(1, Theme["Background 2"])
             }),
             Transparency = NumberSequence.new({
@@ -2843,30 +2823,30 @@ local InventorySection = Library:CreateSection(InventoryCols[1], {
 })
 
 local InventoryGrid = InventorySection:CreateCardsGrid({
-    CardHeight = 125
+    CardHeight = 120
 })
 
 local currentSelectedItem = nil
 
--- Данные тестовых предметов с Asset ID иконками
 local mm2Items = {
-    { Name = "Nik's Scythe",        Rarity = "Ancient",   Icon = "rbxassetid://10734975692", Selected = true },
-    { Name = "Icebreaker",          Rarity = "Godly",     Icon = "rbxassetid://10723414641", Selected = false },
-    { Name = "Chroma Lightbringer", Rarity = "Godly",     Icon = "rbxassetid://10734983868", Selected = false },
-    { Name = "Batwing",             Rarity = "Legendary", Icon = "rbxassetid://10709752254", Selected = false },
-    { Name = "Amerikatan",          Rarity = "Epic",      Icon = "rbxassetid://10723345749", Selected = false },
-    { Name = "Seer",                Rarity = "Rare",      Icon = "rbxassetid://10723414641", Selected = false }
+    { Name = "Nik's Scythe",        Rarity = "Ancient",   Icon = "rbxassetid://245228224", Selected = true },
+    { Name = "Corrupt",             Rarity = "Ancient",   Icon = "rbxassetid://245228224", Selected = false },
+    { Name = "Icebreaker",          Rarity = "Godly",     Icon = "rbxassetid://245228224", Selected = false },
+    { Name = "Candylef",            Rarity = "Godly",     Icon = "rbxassetid://245228224", Selected = false },
+    { Name = "Chroma Lightbringer", Rarity = "Godly",     Icon = "rbxassetid://245228224", Selected = false },
+    { Name = "Harvester",           Rarity = "Ancient",   Icon = "rbxassetid://245228224", Selected = false }
 }
 
--- Генерация предметов в сетке
+local cardObjects = {}
+
 for _, item in ipairs(mm2Items) do
-    local cardObj
-    cardObj = InventoryGrid:CreateCard({
-        Name = item.Name,
+    local card
+    card = InventoryGrid:CreateCard({
+        Title = item.Name,
         Rarity = item.Rarity,
         Icon = item.Icon,
         Selected = item.Selected,
-        Callback = function(card)
+        Callback = function()
             if currentSelectedItem and currentSelectedItem ~= card then
                 currentSelectedItem:SetSelected(false)
             end
@@ -2875,8 +2855,9 @@ for _, item in ipairs(mm2Items) do
         end
     })
     if item.Selected then
-        currentSelectedItem = cardObj
+        currentSelectedItem = card
     end
+    table.insert(cardObjects, card)
 end
 
 -- =======================================================
