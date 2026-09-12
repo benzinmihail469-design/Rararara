@@ -67,7 +67,7 @@ local function ParseIcon(icon)
     return strIcon
 end
 
--- 2.1 Таблица цветов редкостей для MM2 (Неоновый стиль)
+-- 2.1 Цвета редкостей MM2 (Неоновый стиль)
 local RarityColors = {
     ["common"]    = Color3.fromRGB(170, 175, 185),
     ["uncommon"]  = Color3.fromRGB(80, 225, 120),
@@ -1260,7 +1260,7 @@ function Library:CreateTab(window, tabData)
 end
 
 -- =======================================================
--- 11. СЕКЦИИ UI И ОБНОВЛЕННАЯ СЕТКА КАРТОЧЕК (MM2 STYLE)
+-- 11. СЕКЦИИ UI И ОБНОВЛЕННАЯ СЕТКА КАРТОЧЕК (MM2 STYLE, БЕЗ ДВОЙНОГО КОНТУРА)
 -- =======================================================
 function Library:CreateSection(parentColumn, sectionData)
     sectionData = sectionData or {}
@@ -1525,7 +1525,7 @@ function Library:CreateSection(parentColumn, sectionData)
     local SectionAPI = {}
 
     -- =======================================================
-    -- ОБНОВЛЕННАЯ СЕТКА КАРТОЧЕК ПРЕДМЕТОВ (MM2 Style с бегущим контуром)
+    -- ОБНОВЛЕННАЯ СЕТКА КАРТОЧЕК ПРЕДМЕТОВ (БЕЗ ДВОЙНОГО КОНТУРА + GLOW + PRESS EFFECT)
     -- =======================================================
     function SectionAPI:CreateCardsGrid(gridData)
         gridData = gridData or {}
@@ -1563,10 +1563,22 @@ function Library:CreateSection(parentColumn, sectionData)
             local callback = cardData.Callback or function() end
             local rarityColor = GetRarityColor(cardRarity)
 
-            -- Основной тёмный контейнер карточки
-            local cardButton = Instances:Create("TextButton", {
+            -- Оберточный фрейм для безопасной анимации масштабирования (Scale)
+            local cardHolder = Instances:Create("Frame", {
                 Parent = cardsFrame.Instance,
-                Name = "Card_" .. cardTitle,
+                Name = "CardHolder_" .. cardTitle,
+                BackgroundTransparency = 1,
+                BorderSizePixel = 0,
+                ZIndex = 8
+            })
+
+            -- Основная кнопка карточки
+            local cardButton = Instances:Create("TextButton", {
+                Parent = cardHolder.Instance,
+                Name = "CardButton",
+                AnchorPoint = Vector2.new(0.5, 0.5),
+                Position = UDim2.new(0.5, 0, 0.5, 0),
+                Size = UDim2.new(1, 0, 1, 0),
                 BackgroundColor3 = Theme["Element"],
                 BackgroundTransparency = 0.15,
                 Text = "",
@@ -1579,31 +1591,39 @@ function Library:CreateSection(parentColumn, sectionData)
 
             Instances:Create("UICorner", { Parent = cardButton.Instance, CornerRadius = UDim.new(0, 6) })
 
-            -- Статичная базовая обводка
+            -- 1. ЕДИНСТВЕННАЯ БАЗОВАЯ ОБВОДКА (Отключается при анимации бегущего контура)
             local cardStroke = Instances:Create("UIStroke", {
                 Parent = cardButton.Instance,
-                Color = isSelected and rarityColor or Theme["Outline"],
+                Color = Theme["Outline"],
                 Thickness = 1,
+                Transparency = isSelected and 1 or 0,
                 ApplyStrokeMode = Enum.ApplyStrokeMode.Border
             })
 
-            -- ==========================================
-            -- АНИМАЦИЯ БЕГУЩЕГО КОНТУРА (4 Frame)
-            -- ==========================================
+            -- Внешнее неоновое свечение для выбранной карточки (Glow)
+            local cardGlow = Instances:Create("UIStroke", {
+                Parent = cardButton.Instance,
+                Color = rarityColor,
+                Thickness = 2,
+                Transparency = isSelected and 0.35 or 1,
+                ApplyStrokeMode = Enum.ApplyStrokeMode.Border
+            })
+
+            -- Контейнер бегущего контура (4 Frame)
             local borderContainer = Instances:Create("Frame", {
                 Parent = cardButton.Instance,
                 Name = "BorderAnimContainer",
                 Size = UDim2.new(1, 0, 1, 0),
                 BackgroundTransparency = 1,
                 BorderSizePixel = 0,
-                ZIndex = 13
+                ZIndex = 14
             })
 
             local topBorder = Instances:Create("Frame", {
                 Parent = borderContainer.Instance,
                 Name = "TopBorder",
                 Position = UDim2.new(0, 0, 0, 0),
-                Size = UDim2.new(0, 0, 0, 1.5),
+                Size = UDim2.new(isSelected and 1 or 0, 0, 0, 1.5),
                 BackgroundColor3 = rarityColor,
                 BorderSizePixel = 0,
                 ZIndex = 14
@@ -1614,7 +1634,7 @@ function Library:CreateSection(parentColumn, sectionData)
                 Name = "RightBorder",
                 AnchorPoint = Vector2.new(1, 0),
                 Position = UDim2.new(1, 0, 0, 0),
-                Size = UDim2.new(0, 1.5, 0, 0),
+                Size = UDim2.new(0, 1.5, isSelected and 1 or 0, 0),
                 BackgroundColor3 = rarityColor,
                 BorderSizePixel = 0,
                 ZIndex = 14
@@ -1625,7 +1645,7 @@ function Library:CreateSection(parentColumn, sectionData)
                 Name = "BottomBorder",
                 AnchorPoint = Vector2.new(1, 1),
                 Position = UDim2.new(1, 0, 1, 0),
-                Size = UDim2.new(0, 0, 0, 1.5),
+                Size = UDim2.new(isSelected and 1 or 0, 0, 0, 1.5),
                 BackgroundColor3 = rarityColor,
                 BorderSizePixel = 0,
                 ZIndex = 14
@@ -1636,7 +1656,7 @@ function Library:CreateSection(parentColumn, sectionData)
                 Name = "LeftBorder",
                 AnchorPoint = Vector2.new(0, 1),
                 Position = UDim2.new(0, 0, 1, 0),
-                Size = UDim2.new(0, 1.5, 0, 0),
+                Size = UDim2.new(0, 1.5, isSelected and 1 or 0, 0),
                 BackgroundColor3 = rarityColor,
                 BorderSizePixel = 0,
                 ZIndex = 14
@@ -1654,24 +1674,35 @@ function Library:CreateSection(parentColumn, sectionData)
                 bottomBorder.Instance.BackgroundColor3 = activeColor
                 leftBorder.Instance.BackgroundColor3 = activeColor
 
-                local duration = 0.06
+                local duration = 0.12
                 local info = TweenInfo.new(duration, Enum.EasingStyle.Quad, Enum.EasingDirection.Out)
 
                 if active or isSelected then
+                    -- Скрываем статичную обводку, чтобы исключить наложение рамок
+                    Tween(cardStroke.Instance, TweenInfo.new(0.12), { Transparency = 1 })
+
+                    if isSelected then
+                        Tween(cardGlow.Instance, TweenInfo.new(0.2), { Transparency = 0.35 })
+                    end
+
                     Tween(topBorder.Instance, info, { Size = UDim2.new(1, 0, 0, 1.5) })
-                    task.delay(duration * 0.6, function()
+                    task.delay(duration * 0.7, function()
                         if borderToken ~= currentToken then return end
                         Tween(rightBorder.Instance, info, { Size = UDim2.new(0, 1.5, 1, 0) })
                     end)
-                    task.delay(duration * 1.2, function()
+                    task.delay(duration * 1.4, function()
                         if borderToken ~= currentToken then return end
                         Tween(bottomBorder.Instance, info, { Size = UDim2.new(1, 0, 0, 1.5) })
                     end)
-                    task.delay(duration * 1.8, function()
+                    task.delay(duration * 2.1, function()
                         if borderToken ~= currentToken then return end
                         Tween(leftBorder.Instance, info, { Size = UDim2.new(0, 1.5, 1, 0) })
                     end)
                 else
+                    -- Возвращаем статичную обводку при уходе курсора
+                    Tween(cardStroke.Instance, TweenInfo.new(0.2), { Transparency = 0 })
+                    Tween(cardGlow.Instance, TweenInfo.new(0.2), { Transparency = 1 })
+
                     Tween(leftBorder.Instance, info, { Size = UDim2.new(0, 1.5, 0, 0) })
                     Tween(bottomBorder.Instance, info, { Size = UDim2.new(0, 0, 0, 1.5) })
                     Tween(rightBorder.Instance, info, { Size = UDim2.new(0, 1.5, 0, 0) })
@@ -1679,9 +1710,7 @@ function Library:CreateSection(parentColumn, sectionData)
                 end
             end
 
-            -- ==========================================
-            -- ГАЛОЧКА ВЫБОРА (Check Badge)
-            -- ==========================================
+            -- Галочка выбора в правом верхнем углу
             local checkBadge = Instances:Create("Frame", {
                 Parent = cardButton.Instance,
                 Name = "CheckBadge",
@@ -1709,15 +1738,13 @@ function Library:CreateSection(parentColumn, sectionData)
                 ZIndex = 12
             })
 
-            -- ==========================================
-            -- ИКОНКА ПРЕДМЕТА (MM2 Icon)
-            -- ==========================================
+            -- Иконка предмета по центру
             local itemImage = Instances:Create("ImageLabel", {
                 Parent = cardButton.Instance,
                 Name = "ItemImage",
-                Size = UDim2.new(0, 52, 0, 52),
+                Size = UDim2.new(0, 48, 0, 48),
                 AnchorPoint = Vector2.new(0.5, 0),
-                Position = UDim2.new(0.5, 0, 0, 8),
+                Position = UDim2.new(0.5, 0, 0, 10),
                 BackgroundTransparency = 1,
                 Image = ParseIcon(cardIcon),
                 ScaleType = Enum.ScaleType.Fit,
@@ -1725,7 +1752,7 @@ function Library:CreateSection(parentColumn, sectionData)
                 ZIndex = 9
             })
 
-            -- Текст редкости
+            -- Надпись редкости предмета
             local rarityLabel = Instances:Create("TextLabel", {
                 Parent = cardButton.Instance,
                 Name = "RarityLabel",
@@ -1741,7 +1768,7 @@ function Library:CreateSection(parentColumn, sectionData)
                 ZIndex = 10
             })
 
-            -- Название предмета
+            -- Белое название предмета
             local titleLabel = Instances:Create("TextLabel", {
                 Parent = cardButton.Instance,
                 Name = "TitleLabel",
@@ -1757,14 +1784,11 @@ function Library:CreateSection(parentColumn, sectionData)
                 ZIndex = 10
             })
 
-            local CardObject = { Instance = cardButton.Instance }
+            local CardObject = { Instance = cardHolder.Instance, Button = cardButton.Instance }
 
             -- Выделение карточки
             function CardObject:SetSelected(state)
                 isSelected = state
-                Tween(cardStroke.Instance, TweenInfo.new(0.2, Enum.EasingStyle.Quad, Enum.EasingDirection.Out), {
-                    Color = isSelected and rarityColor or Theme["Outline"]
-                })
                 Tween(checkBadge.Instance, TweenInfo.new(0.2, Enum.EasingStyle.Back, Enum.EasingDirection.Out), {
                     BackgroundTransparency = isSelected and 0 or 1
                 })
@@ -1774,28 +1798,44 @@ function Library:CreateSection(parentColumn, sectionData)
                 RunContourAnimation(isSelected)
             end
 
-            -- События наведения
-            cardButton:Connect("MouseEnter", function()
-                Tween(cardButton.Instance, TweenInfo.new(0.2, Enum.EasingStyle.Quad, Enum.EasingDirection.Out), { BackgroundColor3 = Theme["Background 2"] })
-                Tween(itemImage.Instance, TweenInfo.new(0.22, Enum.EasingStyle.Back, Enum.EasingDirection.Out), {
-                    Size = UDim2.new(0, 60, 0, 60),
-                    Position = UDim2.new(0.5, 0, 0, 4)
+            -- Эффект сжатия карточки при клике (MouseButton1Down)
+            cardButton:Connect("MouseButton1Down", function()
+                Tween(cardButton.Instance, TweenInfo.new(0.1, Enum.EasingStyle.Quad, Enum.EasingDirection.Out), {
+                    Size = UDim2.new(0.93, 0, 0.93, 0)
                 })
-                if not isSelected then
-                    Tween(cardStroke.Instance, TweenInfo.new(0.15), { Color = Theme["Accent"] })
-                end
+            end)
+
+            local function RestoreSize()
+                Tween(cardButton.Instance, TweenInfo.new(0.25, Enum.EasingStyle.Back, Enum.EasingDirection.Out), {
+                    Size = UDim2.new(1, 0, 1, 0)
+                })
+            end
+
+            cardButton:Connect("MouseButton1Up", RestoreSize)
+
+            -- События наведения мыши
+            cardButton:Connect("MouseEnter", function()
+                Tween(cardButton.Instance, TweenInfo.new(0.2, Enum.EasingStyle.Quad, Enum.EasingDirection.Out), {
+                    BackgroundColor3 = Theme["Background 2"]
+                })
+                -- Плавное увеличение и подъем картинки предмета
+                Tween(itemImage.Instance, TweenInfo.new(0.25, Enum.EasingStyle.Back, Enum.EasingDirection.Out), {
+                    Size = UDim2.new(0, 56, 0, 56),
+                    Position = UDim2.new(0.5, 0, 0, 5)
+                })
                 RunContourAnimation(true)
             end)
 
             cardButton:Connect("MouseLeave", function()
-                Tween(cardButton.Instance, TweenInfo.new(0.2, Enum.EasingStyle.Quad, Enum.EasingDirection.Out), { BackgroundColor3 = Theme["Element"] })
-                Tween(itemImage.Instance, TweenInfo.new(0.2, Enum.EasingStyle.Quad, Enum.EasingDirection.Out), {
-                    Size = UDim2.new(0, 52, 0, 52),
-                    Position = UDim2.new(0.5, 0, 0, 8)
+                RestoreSize()
+                Tween(cardButton.Instance, TweenInfo.new(0.2, Enum.EasingStyle.Quad, Enum.EasingDirection.Out), {
+                    BackgroundColor3 = Theme["Element"]
                 })
-                if not isSelected then
-                    Tween(cardStroke.Instance, TweenInfo.new(0.15), { Color = Theme["Outline"] })
-                end
+                -- Возврат картинки предмета в исходный размер
+                Tween(itemImage.Instance, TweenInfo.new(0.2, Enum.EasingStyle.Quad, Enum.EasingDirection.Out), {
+                    Size = UDim2.new(0, 48, 0, 48),
+                    Position = UDim2.new(0.5, 0, 0, 10)
+                })
                 RunContourAnimation(false)
             end)
 
@@ -1807,7 +1847,7 @@ function Library:CreateSection(parentColumn, sectionData)
                 RunContourAnimation(true)
             end
 
-            table.insert(sectionItems, { Instance = cardButton.Instance, Title = cardTitle })
+            table.insert(sectionItems, { Instance = cardHolder.Instance, Title = cardTitle })
             return CardObject
         end
 
@@ -2787,59 +2827,56 @@ local MainWindow = Library:CreateWindow({
 })
 
 -- =======================================================
--- ВКЛАДКА "ИНВЕНТАРЬ" С РЕАЛЬНЫМИ ПРЕДМЕТАМИ MM2
+-- ВКЛАДКА "ИНВЕНТАРЬ" С ПРЕДМЕТАМИ MM2
 -- =======================================================
-local CardsTab, CardsCols = Library:CreateTab(MainWindow, {
+local InventoryTab, InventoryCols = Library:CreateTab(MainWindow, {
     Name = "Инвентарь",
-    Icon = "star",
+    Subtitle = "Предметы MM2",
+    Icon = "shield",
     Columns = 1
 })
 
-local InventorySection = Library:CreateSection(CardsCols[1], {
-    Name = "Оружие MM2",
+local InventorySection = Library:CreateSection(InventoryCols[1], {
+    Name = "Инвентарь Оружия",
     Icon = "combat",
     Searchable = true
 })
 
-local CardsGrid = InventorySection:CreateCardsGrid({
-    CardHeight = 118
+local InventoryGrid = InventorySection:CreateCardsGrid({
+    CardHeight = 125
 })
 
--- Список предметов MM2 с реальными ID
-local MM2Items = {
-    { Title = "Corrupt",      Rarity = "ancient",   Icon = "7234608351" },
-    { Title = "Candleflame",  Rarity = "godly",     Icon = "7933184650" },
-    { Title = "Icebreaker",   Rarity = "ancient",   Icon = "6083311899" },
-    { Title = "Darksword",    Rarity = "godly",     Icon = "14127271926" },
-    { Title = "Ocean",        Rarity = "godly",     Icon = "14966601633" },
-    { Title = "Gemstone",     Rarity = "godly",     Icon = "4455855018" },
-    { Title = "Nightblade",   Rarity = "godly",     Icon = "3196558488" },
-    { Title = "Bioblade",     Rarity = "godly",     Icon = "4602283084" }
+local currentSelectedItem = nil
+
+-- Данные тестовых предметов с Asset ID иконками
+local mm2Items = {
+    { Name = "Nik's Scythe",        Rarity = "Ancient",   Icon = "rbxassetid://10734975692", Selected = true },
+    { Name = "Icebreaker",          Rarity = "Godly",     Icon = "rbxassetid://10723414641", Selected = false },
+    { Name = "Chroma Lightbringer", Rarity = "Godly",     Icon = "rbxassetid://10734983868", Selected = false },
+    { Name = "Batwing",             Rarity = "Legendary", Icon = "rbxassetid://10709752254", Selected = false },
+    { Name = "Amerikatan",          Rarity = "Epic",      Icon = "rbxassetid://10723345749", Selected = false },
+    { Name = "Seer",                Rarity = "Rare",      Icon = "rbxassetid://10723414641", Selected = false }
 }
 
-local CreatedCards = {}
-local CurrentlySelectedCard = nil
-
-for idx, item in ipairs(MM2Items) do
+-- Генерация предметов в сетке
+for _, item in ipairs(mm2Items) do
     local cardObj
-    cardObj = CardsGrid:CreateCard({
-        Title = item.Title,
+    cardObj = InventoryGrid:CreateCard({
+        Name = item.Name,
         Rarity = item.Rarity,
         Icon = item.Icon,
-        Selected = (idx == 1),
-        Callback = function(self)
-            if CurrentlySelectedCard and CurrentlySelectedCard ~= self then
-                CurrentlySelectedCard:SetSelected(false)
+        Selected = item.Selected,
+        Callback = function(card)
+            if currentSelectedItem and currentSelectedItem ~= card then
+                currentSelectedItem:SetSelected(false)
             end
-            CurrentlySelectedCard = self
-            self:SetSelected(true)
-            print("Выбран предмет:", item.Title, "[" .. item.Rarity .. "]")
+            currentSelectedItem = card
+            card:SetSelected(true)
         end
     })
-    if idx == 1 then
-        CurrentlySelectedCard = cardObj
+    if item.Selected then
+        currentSelectedItem = cardObj
     end
-    table.insert(CreatedCards, cardObj)
 end
 
 -- =======================================================
