@@ -18,14 +18,14 @@ local LocalPlayer = Players.LocalPlayer
 
 -- 1. Цветовая тема (Pure Black & Neon Blue Style)
 local Theme = {
-    ["Background"] = Color3.fromRGB(0, 0, 0),      -- Полностью черный главный фрейм
-    ["Background 2"] = Color3.fromRGB(6, 6, 8),    -- Черный цвет для секций и подложек
+    ["Background"] = Color3.fromRGB(0, 0, 0),
+    ["Background 2"] = Color3.fromRGB(6, 6, 8),
     ["Text"] = Color3.fromRGB(240, 240, 245),
     ["SubText"] = Color3.fromRGB(110, 120, 140),
     ["Outline"] = Color3.fromRGB(25, 30, 45),
     ["Accent"] = Color3.fromRGB(0, 140, 255),
     ["AccentGlow"] = Color3.fromRGB(0, 180, 255),
-    ["Element"] = Color3.fromRGB(10, 10, 12),      -- Черные элементы UI
+    ["Element"] = Color3.fromRGB(10, 10, 12),
     ["GlowCenter"] = Color3.fromRGB(0, 140, 255),
     ["GlowEdge"] = Color3.fromRGB(0, 0, 0),
     ["Node"] = Color3.fromRGB(100, 180, 255),
@@ -1583,7 +1583,7 @@ function Library:CreateSection(parentColumn, sectionData)
                 BorderSizePixel = 0,
                 ZIndex = 8,
                 Active = true,
-                ClipsDescendants = true
+                ClipsDescendants = false
             })
 
             Instances:Create("UICorner", { Parent = cardButton.Instance, CornerRadius = UDim.new(0, 8) })
@@ -1598,7 +1598,6 @@ function Library:CreateSection(parentColumn, sectionData)
                 Rotation = 45
             })
 
-            -- Единственный внешний контур карточки
             local cardStroke = Instances:Create("UIStroke", {
                 Parent = cardButton.Instance,
                 Name = "CardStroke",
@@ -1669,20 +1668,23 @@ function Library:CreateSection(parentColumn, sectionData)
                 ZIndex = 14
             })
 
+            -- Иконка увеличенного размера (58x58) со скруглением углов
             local itemImage = Instances:Create("ImageLabel", {
                 Parent = cardButton.Instance,
                 Name = "ItemImage",
-                Size = UDim2.new(0, 46, 0, 46),
+                Size = UDim2.new(0, 58, 0, 58),
                 AnchorPoint = Vector2.new(0.5, 0),
-                Position = UDim2.new(0.5, 0, 0.08, 0),
+                Position = UDim2.new(0.5, 0, 0.05, 0),
                 BackgroundTransparency = 1,
                 Image = ParseIcon(cardIcon),
                 ScaleType = Enum.ScaleType.Fit,
                 BorderSizePixel = 0,
+                ClipsDescendants = true,
                 ZIndex = 9
             })
 
-            -- ИСПРАВЛЕНИЕ НАХЛЕСТА: Раздел названия карточки ужат внутрь (-16 px), чтобы не пересекаться с внешним контуром
+            Instances:Create("UICorner", { Parent = itemImage.Instance, CornerRadius = UDim.new(0, 10) })
+
             local titleHeaderFrame = Instances:Create("Frame", {
                 Parent = cardButton.Instance,
                 Name = "TitleHeaderFrame",
@@ -1777,7 +1779,7 @@ function Library:CreateSection(parentColumn, sectionData)
 
             cardButton:Connect("MouseEnter", function()
                 local fastInfo = TweenInfo.new(0.2, Enum.EasingStyle.Quad, Enum.EasingDirection.Out)
-                Tween(itemImage.Instance, TweenInfo.new(0.25, Enum.EasingStyle.Back, Enum.EasingDirection.Out), { Size = UDim2.new(0, 50, 0, 50) })
+                Tween(itemImage.Instance, TweenInfo.new(0.25, Enum.EasingStyle.Back, Enum.EasingDirection.Out), { Size = UDim2.new(0, 64, 0, 64) })
                 if not CardObject.IsSelected then
                     Tween(cardStroke.Instance, fastInfo, { Transparency = 0.2 })
                     Tween(cardButton.Instance, fastInfo, { BackgroundColor3 = Color3.fromRGB(16, 20, 28) })
@@ -1786,7 +1788,7 @@ function Library:CreateSection(parentColumn, sectionData)
 
             cardButton:Connect("MouseLeave", function()
                 local fastInfo = TweenInfo.new(0.2, Enum.EasingStyle.Quad, Enum.EasingDirection.Out)
-                Tween(itemImage.Instance, fastInfo, { Size = UDim2.new(0, 46, 0, 46) })
+                Tween(itemImage.Instance, fastInfo, { Size = UDim2.new(0, 58, 0, 58) })
                 if not CardObject.IsSelected then
                     Tween(cardStroke.Instance, fastInfo, { Transparency = 0.65 })
                     Tween(cardButton.Instance, fastInfo, { BackgroundColor3 = Theme["Element"] })
