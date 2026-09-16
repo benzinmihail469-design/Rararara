@@ -1269,6 +1269,8 @@ function Library:CreateSection(parentColumn, sectionData)
     local hasSectionIcon = sectionIcon ~= ""
 
     local sectionItems = {}
+    local totalCards = 0
+    local selectedCards = 0
 
     local sectionFrame = Instances:Create("Frame", {
         Parent = parentColumn,
@@ -1334,19 +1336,63 @@ function Library:CreateSection(parentColumn, sectionData)
         })
     end
 
-    local titleLabel = Instances:Create("TextLabel", {
+    -- Контейнер для названия и счётчика (1/160)
+    local headerTitleFrame = Instances:Create("Frame", {
         Parent = headerButton.Instance,
+        Name = "TitleFrame",
+        Size = UDim2.new(1, titleSizeX, 1, 0),
+        Position = UDim2.new(0, titleOffset, 0, 0),
+        BackgroundTransparency = 1,
+        ZIndex = 6
+    })
+
+    Instances:Create("UIListLayout", {
+        Parent = headerTitleFrame.Instance,
+        FillDirection = Enum.FillDirection.Horizontal,
+        HorizontalAlignment = Enum.HorizontalAlignment.Left,
+        VerticalAlignment = Enum.VerticalAlignment.Center,
+        SortOrder = Enum.SortOrder.LayoutOrder,
+        Padding = UDim.new(0, 6)
+    })
+
+    local titleLabel = Instances:Create("TextLabel", {
+        Parent = headerTitleFrame.Instance,
         Name = "Title",
         Text = sectionName,
         FontFace = Font.new("rbxassetid://12187365364", Enum.FontWeight.Bold, Enum.FontStyle.Normal),
         TextColor3 = Theme["Text"],
         TextSize = 12,
-        Size = UDim2.new(1, titleSizeX, 1, 0),
-        Position = UDim2.new(0, titleOffset, 0, 0),
+        AutomaticSize = Enum.AutomaticSize.X,
+        Size = UDim2.new(0, 0, 1, 0),
         BackgroundTransparency = 1,
         TextXAlignment = Enum.TextXAlignment.Left,
+        LayoutOrder = 1,
         ZIndex = 6
     })
+
+    -- Счётчик карточек в шапке (например: 1/160)
+    local counterLabel = Instances:Create("TextLabel", {
+        Parent = headerTitleFrame.Instance,
+        Name = "Counter",
+        Text = "",
+        FontFace = Font.new("rbxassetid://12187365364", Enum.FontWeight.Medium, Enum.FontStyle.Normal),
+        TextColor3 = Theme["SubText"],
+        TextSize = 11,
+        AutomaticSize = Enum.AutomaticSize.X,
+        Size = UDim2.new(0, 0, 1, 0),
+        BackgroundTransparency = 1,
+        TextXAlignment = Enum.TextXAlignment.Left,
+        LayoutOrder = 2,
+        ZIndex = 6
+    })
+
+    local function UpdateCounterText()
+        if totalCards > 0 then
+            counterLabel.Instance.Text = string.format("%d/%d", selectedCards, totalCards)
+        else
+            counterLabel.Instance.Text = ""
+        end
+    end
 
     local arrowIcon = Instances:Create("ImageLabel", {
         Parent = headerButton.Instance,
@@ -1454,12 +1500,13 @@ function Library:CreateSection(parentColumn, sectionData)
             ApplyStrokeMode = Enum.ApplyStrokeMode.Border
         })
 
+        -- Иконка лупы, закреплённая СПРАВА
         local searchIcon = Instances:Create("ImageLabel", {
             Parent = searchBoxFrame.Instance,
             Name = "SearchIcon",
             Size = UDim2.new(0, 13, 0, 13),
-            AnchorPoint = Vector2.new(0, 0.5),
-            Position = UDim2.new(0, 8, 0.5, 0),
+            AnchorPoint = Vector2.new(1, 0.5),
+            Position = UDim2.new(1, -8, 0.5, 0),
             BackgroundTransparency = 1,
             Image = ParseIcon("search"),
             ImageColor3 = Theme["SubText"],
@@ -1468,15 +1515,16 @@ function Library:CreateSection(parentColumn, sectionData)
             ZIndex = 9
         })
 
+        -- Поле ввода текста слева
         local textBox = Instances:Create("TextBox", {
             Parent = searchBoxFrame.Instance,
             Name = "Input",
             Size = UDim2.new(1, -28, 1, 0),
-            Position = UDim2.new(0, 24, 0, 0),
+            Position = UDim2.new(0, 8, 0, 0),
             BackgroundTransparency = 1,
             FontFace = Font.new("rbxassetid://12187365364", Enum.FontWeight.Medium, Enum.FontStyle.Normal),
             Text = "",
-            PlaceholderText = "Поиск функций в секции...",
+            PlaceholderText = "Поиск функций...",
             PlaceholderColor3 = Theme["SubText"],
             TextColor3 = Theme["Text"],
             TextSize = 11,
@@ -1522,8 +1570,18 @@ function Library:CreateSection(parentColumn, sectionData)
 
     local SectionAPI = {}
 
+    function SectionAPI:SetCounter(selected, total)
+        if typeof(selected) == "string" then
+            counterLabel.Instance.Text = selected
+        else
+            selectedCards = selected or selectedCards
+            totalCards = total or totalCards
+            UpdateCounterText()
+        end
+    end
+
     -- =======================================================
-    -- ИСПРАВЛЕННАЯ СЕТКА КАРТОЧЕК (БЕЗ НАХЛЕСТОВ КОНТУРОВ)
+    -- СЕТКА КАРТОЧЕК С ПОДСЧЁТОМ ЭЛЕМЕНТОВ
     -- =======================================================
     function SectionAPI:CreateCardsGrid(gridData)
         gridData = gridData or {}
@@ -1561,6 +1619,12 @@ function Library:CreateSection(parentColumn, sectionData)
             local cardIcon = cardData.Icon or cardData.Image or ""
             local isSelected = cardData.Selected or cardData.Equipped or false
             local callback = cardData.Callback or function() end
+
+            totalCards = totalCards + 1
+            if isSelected then
+                selectedCards = selectedCards + 1
+            end
+            UpdateCounterText()
 
             local cardHolder = Instances:Create("Frame", {
                 Parent = cardsFrame.Instance,
@@ -1668,7 +1732,6 @@ function Library:CreateSection(parentColumn, sectionData)
                 ZIndex = 14
             })
 
-            -- Иконка увеличенного размера (68x68), выровненная ровно по центру верхней зоны
             local itemImage = Instances:Create("ImageLabel", {
                 Parent = cardButton.Instance,
                 Name = "ItemImage",
@@ -1738,6 +1801,7 @@ function Library:CreateSection(parentColumn, sectionData)
                         currentSelectedCard:SetSelected(false)
                     end
                     currentSelectedCard = CardObject
+                    selectedCards = selectedCards + 1
 
                     Tween(cardStroke.Instance, slowInfo, { Thickness = 1.5, Transparency = 0 })
                     strokeGradient.Instance.Transparency = NumberSequence.new({
@@ -1755,6 +1819,8 @@ function Library:CreateSection(parentColumn, sectionData)
                     Tween(titleStroke.Instance, slowInfo, { Color = Theme["Accent"], Transparency = 0.2 })
                     Tween(nameLabel.Instance, slowInfo, { TextColor3 = Theme["AccentGlow"] })
                 else
+                    selectedCards = math.max(0, selectedCards - 1)
+
                     Tween(cardStroke.Instance, slowInfo, { Thickness = 1, Transparency = 0.65 })
                     strokeGradient.Instance.Transparency = NumberSequence.new({
                         NumberSequenceKeypoint.new(0, 0.8),
@@ -1775,6 +1841,7 @@ function Library:CreateSection(parentColumn, sectionData)
                         currentSelectedCard = nil
                     end
                 end
+                UpdateCounterText()
             end
 
             cardButton:Connect("MouseEnter", function()
