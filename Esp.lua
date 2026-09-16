@@ -2815,7 +2815,7 @@ local InventoryGrid = InventorySection:CreateCardsGrid({
 local currentSelectedItem = nil
 
 local mm2Items = {
-    { Name = "Nik's Scythe",        Icon = "rbxassetid://245228224", Selected = true },
+    { Name = "Nik's Scythe",        Icon = "rbxassetid://90455475806111", Selected = true },
     { Name = "Corrupt",             Icon = "rbxassetid://245228224", Selected = false },
     { Name = "Icebreaker",          Icon = "rbxassetid://245228224", Selected = false },
     { Name = "Candylef",            Icon = "rbxassetid://245228224", Selected = false },
