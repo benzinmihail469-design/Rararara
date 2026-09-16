@@ -1668,13 +1668,13 @@ function Library:CreateSection(parentColumn, sectionData)
                 ZIndex = 14
             })
 
-            -- Иконка увеличенного размера (58x58) со скруглением углов
+            -- Иконка увеличенного размера (68x68), выровненная ровно по центру верхней зоны
             local itemImage = Instances:Create("ImageLabel", {
                 Parent = cardButton.Instance,
                 Name = "ItemImage",
-                Size = UDim2.new(0, 58, 0, 58),
-                AnchorPoint = Vector2.new(0.5, 0),
-                Position = UDim2.new(0.5, 0, 0.05, 0),
+                Size = UDim2.new(0, 68, 0, 68),
+                AnchorPoint = Vector2.new(0.5, 0.5),
+                Position = UDim2.new(0.5, 0, 0.42, 0),
                 BackgroundTransparency = 1,
                 Image = ParseIcon(cardIcon),
                 ScaleType = Enum.ScaleType.Fit,
@@ -1779,7 +1779,7 @@ function Library:CreateSection(parentColumn, sectionData)
 
             cardButton:Connect("MouseEnter", function()
                 local fastInfo = TweenInfo.new(0.2, Enum.EasingStyle.Quad, Enum.EasingDirection.Out)
-                Tween(itemImage.Instance, TweenInfo.new(0.25, Enum.EasingStyle.Back, Enum.EasingDirection.Out), { Size = UDim2.new(0, 64, 0, 64) })
+                Tween(itemImage.Instance, TweenInfo.new(0.25, Enum.EasingStyle.Back, Enum.EasingDirection.Out), { Size = UDim2.new(0, 76, 0, 76) })
                 if not CardObject.IsSelected then
                     Tween(cardStroke.Instance, fastInfo, { Transparency = 0.2 })
                     Tween(cardButton.Instance, fastInfo, { BackgroundColor3 = Color3.fromRGB(16, 20, 28) })
@@ -1788,7 +1788,7 @@ function Library:CreateSection(parentColumn, sectionData)
 
             cardButton:Connect("MouseLeave", function()
                 local fastInfo = TweenInfo.new(0.2, Enum.EasingStyle.Quad, Enum.EasingDirection.Out)
-                Tween(itemImage.Instance, fastInfo, { Size = UDim2.new(0, 58, 0, 58) })
+                Tween(itemImage.Instance, fastInfo, { Size = UDim2.new(0, 68, 0, 68) })
                 if not CardObject.IsSelected then
                     Tween(cardStroke.Instance, fastInfo, { Transparency = 0.65 })
                     Tween(cardButton.Instance, fastInfo, { BackgroundColor3 = Theme["Element"] })
