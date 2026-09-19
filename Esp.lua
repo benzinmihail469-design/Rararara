@@ -1457,7 +1457,7 @@ function Library:CreateSection(parentColumn, sectionData)
         end
     end
 
-    -- Система поиска с встроенной иконкой лупы
+    -- Система поиска с кнопкой очистки (без лупы)
     if isSearchable then
         local searchContainer = Instances:Create("Frame", {
             Parent = sectionFrame.Instance,
@@ -1489,22 +1489,7 @@ function Library:CreateSection(parentColumn, sectionData)
             ApplyStrokeMode = Enum.ApplyStrokeMode.Border
         })
 
-        -- Иконка лупы ВНУТРИ поисковой строки (слева, по центру вертикали)
-        local searchIcon = Instances:Create("ImageLabel", {
-            Parent = searchBoxFrame.Instance,
-            Name = "SearchIcon",
-            Size = UDim2.new(0, 14, 0, 14),
-            AnchorPoint = Vector2.new(0, 0.5),
-            Position = UDim2.new(0, 10, 0.5, 0),
-            BackgroundTransparency = 1,
-            Image = ParseIcon("search"),
-            ImageColor3 = Theme["SubText"],
-            ImageTransparency = 0.2,
-            ScaleType = Enum.ScaleType.Fit,
-            ZIndex = 9
-        })
-
-        -- Поле ввода текста (занимает всю строку, отступы задаются через UIPadding)
+        -- Поле ввода (без иконки лупы, отступ слева 10)
         local textBox = Instances:Create("TextBox", {
             Parent = searchBoxFrame.Instance,
             Name = "Input",
@@ -1522,25 +1507,65 @@ function Library:CreateSection(parentColumn, sectionData)
             ZIndex = 9
         })
 
-        -- Отступ текста слева, чтобы он не перекрывал лупу
         Instances:Create("UIPadding", {
             Parent = textBox.Instance,
-            PaddingLeft = UDim.new(0, 32),
-            PaddingRight = UDim.new(0, 10)
+            PaddingLeft = UDim.new(0, 10),
+            PaddingRight = UDim.new(0, 26)
         })
+
+        -- Кнопка-крестик на правом краю
+        local clearButton = Instances:Create("TextButton", {
+            Parent = searchBoxFrame.Instance,
+            Name = "ClearButton",
+            Size = UDim2.new(0, 16, 0, 16),
+            AnchorPoint = Vector2.new(1, 0.5),
+            Position = UDim2.new(1, -5, 0.5, 0),
+            BackgroundTransparency = 1,
+            Text = "",
+            AutoButtonColor = false,
+            Visible = false,
+            ZIndex = 10,
+            Active = true
+        })
+
+        local clearIcon = Instances:Create("ImageLabel", {
+            Parent = clearButton.Instance,
+            Name = "ClearIcon",
+            Size = UDim2.new(0, 10, 0, 10),
+            AnchorPoint = Vector2.new(0.5, 0.5),
+            Position = UDim2.new(0.5, 0, 0.5, 0),
+            BackgroundTransparency = 1,
+            Image = "rbxassetid://130510492706892",
+            ImageColor3 = Theme["SubText"],
+            ImageTransparency = 0.3,
+            ScaleType = Enum.ScaleType.Fit,
+            ZIndex = 11
+        })
+
+        clearButton:Connect("MouseEnter", function()
+            Tween(clearIcon.Instance, TweenInfo.new(0.15), { ImageColor3 = Theme["Accent"], ImageTransparency = 0 })
+        end)
+
+        clearButton:Connect("MouseLeave", function()
+            Tween(clearIcon.Instance, TweenInfo.new(0.15), { ImageColor3 = Theme["SubText"], ImageTransparency = 0.3 })
+        end)
+
+        clearButton:Connect("MouseButton1Click", function()
+            textBox.Instance.Text = ""
+        end)
 
         textBox.Instance.Focused:Connect(function()
             Tween(searchStroke.Instance, TweenInfo.new(0.2), { Color = Theme["Accent"] })
-            Tween(searchIcon.Instance, TweenInfo.new(0.2), { ImageColor3 = Theme["Accent"], ImageTransparency = 0 })
         end)
 
         textBox.Instance.FocusLost:Connect(function()
             Tween(searchStroke.Instance, TweenInfo.new(0.2), { Color = Theme["Outline"] })
-            Tween(searchIcon.Instance, TweenInfo.new(0.2), { ImageColor3 = Theme["SubText"], ImageTransparency = 0.2 })
         end)
 
         textBox.Instance:GetPropertyChangedSignal("Text"):Connect(function()
-            local query = string.lower(textBox.Instance.Text)
+            local text = textBox.Instance.Text
+            clearButton.Instance.Visible = (text ~= "")
+            local query = string.lower(text)
             for _, item in ipairs(sectionItems) do
                 local match = (query == "") or (string.find(string.lower(item.Title), query, 1, true) ~= nil)
                 item.Instance.Visible = match
