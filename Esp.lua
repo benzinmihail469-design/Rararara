@@ -32,7 +32,7 @@ local Theme = {
     ["Line"] = Color3.fromRGB(0, 140, 255)
 }
 
--- 2. Библиотека иконок (ID лупы 128876267681952)
+-- 2. Библиотека иконок (ID лупы исправлен на валидный 10709798085)
 local IconLibrary = {
     ["home"] = "rbxassetid://10723407068",
     ["user"] = "rbxassetid://10709789810",
@@ -49,7 +49,7 @@ local IconLibrary = {
     ["palette"] = "rbxassetid://10734950020",
     ["globe"] = "rbxassetid://10723343321",
     ["zap"] = "rbxassetid://10734983868",
-    ["search"] = "rbxassetid://128876267681952"
+    ["search"] = "rbxassetid://10709798085"
 }
 
 local function ParseIcon(icon)
@@ -1489,7 +1489,6 @@ function Library:CreateSection(parentColumn, sectionData)
             ApplyStrokeMode = Enum.ApplyStrokeMode.Border
         })
 
-        -- Иконка лупы (постоянный синий неоновый цвет)
         local searchIcon = Instances:Create("ImageLabel", {
             Parent = searchBoxFrame.Instance,
             Name = "SearchIcon",
