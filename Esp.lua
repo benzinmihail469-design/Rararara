@@ -1258,7 +1258,7 @@ function Library:CreateTab(window, tabData)
 end
 
 -- =======================================================
--- 11. СЕКЦИИ UI И ОБНОВЛЁННАЯ СЕТКА КАРТОЧЕК (МИНИМАЛИЗМ, БЕЛЫЙ КОНТУР)
+-- 11. СЕКЦИИ UI И ОБНОВЛЁННАЯ СЕТКА КАРТОЧЕК
 -- =======================================================
 function Library:CreateSection(parentColumn, sectionData)
     sectionData = sectionData or {}
@@ -1317,11 +1317,11 @@ function Library:CreateSection(parentColumn, sectionData)
     })
 
     local titleOffset = 0
-    local titleSizeX = -20
+    local titleSizeX = -65 -- Место под счётчик и стрелку справа
 
     if hasSectionIcon then
         titleOffset = 18
-        titleSizeX = -38
+        titleSizeX = -83
         Instances:Create("ImageLabel", {
             Parent = headerButton.Instance,
             Name = "Icon",
@@ -1336,7 +1336,6 @@ function Library:CreateSection(parentColumn, sectionData)
         })
     end
 
-    -- Контейнер для названия и счётчика (1/160)
     local headerTitleFrame = Instances:Create("Frame", {
         Parent = headerButton.Instance,
         Name = "TitleFrame",
@@ -1346,15 +1345,6 @@ function Library:CreateSection(parentColumn, sectionData)
         ZIndex = 6
     })
 
-    Instances:Create("UIListLayout", {
-        Parent = headerTitleFrame.Instance,
-        FillDirection = Enum.FillDirection.Horizontal,
-        HorizontalAlignment = Enum.HorizontalAlignment.Left,
-        VerticalAlignment = Enum.VerticalAlignment.Center,
-        SortOrder = Enum.SortOrder.LayoutOrder,
-        Padding = UDim.new(0, 6)
-    })
-
     local titleLabel = Instances:Create("TextLabel", {
         Parent = headerTitleFrame.Instance,
         Name = "Title",
@@ -1362,38 +1352,14 @@ function Library:CreateSection(parentColumn, sectionData)
         FontFace = Font.new("rbxassetid://12187365364", Enum.FontWeight.Bold, Enum.FontStyle.Normal),
         TextColor3 = Theme["Text"],
         TextSize = 12,
-        AutomaticSize = Enum.AutomaticSize.X,
-        Size = UDim2.new(0, 0, 1, 0),
+        Size = UDim2.new(1, 0, 1, 0),
         BackgroundTransparency = 1,
         TextXAlignment = Enum.TextXAlignment.Left,
-        LayoutOrder = 1,
+        TextTruncate = Enum.TextTruncate.AtEnd,
         ZIndex = 6
     })
 
-    -- Счётчик карточек в шапке (например: 1/160)
-    local counterLabel = Instances:Create("TextLabel", {
-        Parent = headerTitleFrame.Instance,
-        Name = "Counter",
-        Text = "",
-        FontFace = Font.new("rbxassetid://12187365364", Enum.FontWeight.Medium, Enum.FontStyle.Normal),
-        TextColor3 = Theme["SubText"],
-        TextSize = 11,
-        AutomaticSize = Enum.AutomaticSize.X,
-        Size = UDim2.new(0, 0, 1, 0),
-        BackgroundTransparency = 1,
-        TextXAlignment = Enum.TextXAlignment.Left,
-        LayoutOrder = 2,
-        ZIndex = 6
-    })
-
-    local function UpdateCounterText()
-        if totalCards > 0 then
-            counterLabel.Instance.Text = string.format("%d/%d", selectedCards, totalCards)
-        else
-            counterLabel.Instance.Text = ""
-        end
-    end
-
+    -- Стрелка свёрнутости (самый правый край)
     local arrowIcon = Instances:Create("ImageLabel", {
         Parent = headerButton.Instance,
         Name = "Arrow",
@@ -1407,6 +1373,30 @@ function Library:CreateSection(parentColumn, sectionData)
         ScaleType = Enum.ScaleType.Fit,
         ZIndex = 6
     })
+
+    -- Счётчик 0/6 в ПРАВОМ краю секции (левее стрелочки)
+    local counterLabel = Instances:Create("TextLabel", {
+        Parent = headerButton.Instance,
+        Name = "Counter",
+        Text = "",
+        FontFace = Font.new("rbxassetid://12187365364", Enum.FontWeight.Medium, Enum.FontStyle.Normal),
+        TextColor3 = Theme["SubText"],
+        TextSize = 11,
+        AnchorPoint = Vector2.new(1, 0.5),
+        Position = UDim2.new(1, -18, 0.5, 0),
+        Size = UDim2.new(0, 40, 1, 0),
+        BackgroundTransparency = 1,
+        TextXAlignment = Enum.TextXAlignment.Right,
+        ZIndex = 6
+    })
+
+    local function UpdateCounterText()
+        if totalCards > 0 then
+            counterLabel.Instance.Text = string.format("%d/%d", selectedCards, totalCards)
+        else
+            counterLabel.Instance.Text = ""
+        end
+    end
 
     local glowLine = Instances:Create("Frame", {
         Parent = sectionFrame.Instance,
@@ -1469,6 +1459,7 @@ function Library:CreateSection(parentColumn, sectionData)
         end
     end
 
+    -- Система поиска с иконкой ЛУПЫ СЛЕВА
     if isSearchable then
         local searchContainer = Instances:Create("Frame", {
             Parent = sectionFrame.Instance,
@@ -1500,13 +1491,13 @@ function Library:CreateSection(parentColumn, sectionData)
             ApplyStrokeMode = Enum.ApplyStrokeMode.Border
         })
 
-        -- Иконка лупы, закреплённая СПРАВА
+        -- Иконка лупы в левом краю поиска
         local searchIcon = Instances:Create("ImageLabel", {
             Parent = searchBoxFrame.Instance,
             Name = "SearchIcon",
             Size = UDim2.new(0, 13, 0, 13),
-            AnchorPoint = Vector2.new(1, 0.5),
-            Position = UDim2.new(1, -8, 0.5, 0),
+            AnchorPoint = Vector2.new(0, 0.5),
+            Position = UDim2.new(0, 8, 0.5, 0),
             BackgroundTransparency = 1,
             Image = ParseIcon("search"),
             ImageColor3 = Theme["SubText"],
@@ -1515,12 +1506,12 @@ function Library:CreateSection(parentColumn, sectionData)
             ZIndex = 9
         })
 
-        -- Поле ввода текста слева
+        -- Текстовое поле ввода со сдвигом вправо
         local textBox = Instances:Create("TextBox", {
             Parent = searchBoxFrame.Instance,
             Name = "Input",
-            Size = UDim2.new(1, -28, 1, 0),
-            Position = UDim2.new(0, 8, 0, 0),
+            Size = UDim2.new(1, -34, 1, 0),
+            Position = UDim2.new(0, 26, 0, 0),
             BackgroundTransparency = 1,
             FontFace = Font.new("rbxassetid://12187365364", Enum.FontWeight.Medium, Enum.FontStyle.Normal),
             Text = "",
@@ -1581,7 +1572,7 @@ function Library:CreateSection(parentColumn, sectionData)
     end
 
     -- =======================================================
-    -- СЕТКА КАРТОЧЕК С ПОДСЧЁТОМ ЭЛЕМЕНТОВ
+    -- СЕТКА КАРТОЧЕК С ТОЧНЫМ ПОДСЧЁТОМ ЭЛЕМЕНТОВ
     -- =======================================================
     function SectionAPI:CreateCardsGrid(gridData)
         gridData = gridData or {}
@@ -1620,10 +1611,8 @@ function Library:CreateSection(parentColumn, sectionData)
             local isSelected = cardData.Selected or cardData.Equipped or false
             local callback = cardData.Callback or function() end
 
+            -- Увеличиваем общий счётчик
             totalCards = totalCards + 1
-            if isSelected then
-                selectedCards = selectedCards + 1
-            end
             UpdateCounterText()
 
             local cardHolder = Instances:Create("Frame", {
@@ -1667,9 +1656,9 @@ function Library:CreateSection(parentColumn, sectionData)
                 Name = "CardStroke",
                 ApplyStrokeMode = Enum.ApplyStrokeMode.Border,
                 LineJoinMode = Enum.LineJoinMode.Round,
-                Thickness = isSelected and 1.5 or 1,
+                Thickness = 1,
                 Color = Color3.fromRGB(255, 255, 255),
-                Transparency = isSelected and 0 or 0.65
+                Transparency = 0.65
             })
 
             local strokeGradient = Instances:Create("UIGradient", {
@@ -1681,11 +1670,11 @@ function Library:CreateSection(parentColumn, sectionData)
                     ColorSequenceKeypoint.new(1, Theme["Outline"])
                 }),
                 Transparency = NumberSequence.new({
-                    NumberSequenceKeypoint.new(0, isSelected and 0.15 or 0.8),
-                    NumberSequenceKeypoint.new(0.5, isSelected and 0.0 or 0.5),
-                    NumberSequenceKeypoint.new(1, isSelected and 0.15 or 0.8)
+                    NumberSequenceKeypoint.new(0, 0.8),
+                    NumberSequenceKeypoint.new(0.5, 0.5),
+                    NumberSequenceKeypoint.new(1, 0.8)
                 }),
-                Rotation = isSelected and 180 or 0
+                Rotation = 0
             })
 
             local checkBadge = Instances:Create("Frame", {
@@ -1695,7 +1684,7 @@ function Library:CreateSection(parentColumn, sectionData)
                 AnchorPoint = Vector2.new(1, 0),
                 Position = UDim2.new(1, -6, 0, 6),
                 BackgroundColor3 = Theme["Background 2"],
-                BackgroundTransparency = isSelected and 0 or 1,
+                BackgroundTransparency = 1,
                 BorderSizePixel = 0,
                 ZIndex = 12
             })
@@ -1706,7 +1695,7 @@ function Library:CreateSection(parentColumn, sectionData)
                 Parent = checkBadge.Instance,
                 Color = Color3.fromRGB(255, 255, 255),
                 Thickness = 1,
-                Transparency = isSelected and 0 or 1,
+                Transparency = 1,
                 ApplyStrokeMode = Enum.ApplyStrokeMode.Border
             })
 
@@ -1722,13 +1711,13 @@ function Library:CreateSection(parentColumn, sectionData)
             local checkIcon = Instances:Create("ImageLabel", {
                 Parent = checkBadge.Instance,
                 Name = "CheckIcon",
-                Size = isSelected and UDim2.new(0, 11, 0, 11) or UDim2.new(0, 0, 0, 0),
+                Size = UDim2.new(0, 0, 0, 0),
                 AnchorPoint = Vector2.new(0.5, 0.5),
                 Position = UDim2.new(0.5, 0, 0.5, 0),
                 BackgroundTransparency = 1,
                 Image = ParseIcon("check"),
                 ImageColor3 = Theme["AccentGlow"],
-                ImageTransparency = isSelected and 0 or 1,
+                ImageTransparency = 1,
                 ZIndex = 14
             })
 
@@ -1787,10 +1776,10 @@ function Library:CreateSection(parentColumn, sectionData)
                 ZIndex = 12
             })
 
-            local CardObject = { Instance = cardHolder.Instance, Button = cardButton.Instance, IsSelected = isSelected }
+            local CardObject = { Instance = cardHolder.Instance, Button = cardButton.Instance, IsSelected = false }
 
             function CardObject:SetSelected(state)
-                if self.IsSelected == state and currentSelectedCard == CardObject then return end
+                if self.IsSelected == state then return end
                 self.IsSelected = state
 
                 local slowInfo = TweenInfo.new(0.35, Enum.EasingStyle.Quart, Enum.EasingDirection.Out)
