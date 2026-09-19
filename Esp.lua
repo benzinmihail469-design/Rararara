@@ -49,7 +49,7 @@ local IconLibrary = {
     ["palette"] = "rbxassetid://10734950020",
     ["globe"] = "rbxassetid://10723343321",
     ["zap"] = "rbxassetid://10734983868",
-    ["search"] = "rbxassetid://10709752037"
+    ["search"] = "rbxassetid://128876267681952"
 }
 
 local function ParseIcon(icon)
