@@ -1260,85 +1260,6 @@ end
 -- =======================================================
 -- 11. СЕКЦИИ UI И ОБНОВЛЁННАЯ СЕТКА КАРТОЧЕК
 -- =======================================================
-
--- =======================================================
--- ФУНКЦИЯ СОЗДАНИЯ ПОИСКОВОЙ СТРОКИ С СИНЕЙ НЕОНОВОЙ ЛУПОЙ
--- =======================================================
-local function CreateSearchBar(parentSection, placeholderText, onSearchCallback)
-    -- Контейнер поисковой строки
-    local SearchBar = Instance.new("Frame")
-    SearchBar.Name = "SearchBar"
-    SearchBar.Size = UDim2.new(1, -20, 0, 36)
-    SearchBar.Position = UDim2.new(0, 10, 0, 5)
-    SearchBar.BackgroundColor3 = Theme["Element"] -- Адаптировано под тему
-    SearchBar.BorderSizePixel = 0
-    SearchBar.ZIndex = 8
-    SearchBar.Parent = parentSection
-
-    local UICorner = Instance.new("UICorner")
-    UICorner.CornerRadius = UDim.new(0, 6)
-    UICorner.Parent = SearchBar
-
-    local UIStroke = Instance.new("UIStroke")
-    UIStroke.Color = Theme["Outline"] -- Адаптировано под тему
-    UIStroke.Thickness = 1
-    UIStroke.Parent = SearchBar
-
-    -- Синяя иконка лупы
-    local SearchIcon = Instance.new("ImageLabel")
-    SearchIcon.Name = "SearchIcon"
-    SearchIcon.Size = UDim2.new(0, 18, 0, 18)
-    SearchIcon.Position = UDim2.new(0, 10, 0.5, 0)
-    SearchIcon.AnchorPoint = Vector2.new(0, 0.5)
-    SearchIcon.BackgroundTransparency = 1
-    SearchIcon.Image = ParseIcon("search") -- Используем библиотеку иконок
-    SearchIcon.ImageColor3 = Theme["AccentGlow"] -- Синий неоновый цвет
-    SearchIcon.ZIndex = 9
-    SearchIcon.Parent = SearchBar
-
-    -- Поле ввода
-    local TextBox = Instance.new("TextBox")
-    TextBox.Name = "Input"
-    TextBox.Size = UDim2.new(1, 0, 1, 0)
-    TextBox.BackgroundTransparency = 1
-    TextBox.Text = ""
-    TextBox.PlaceholderText = placeholderText or "Поиск функций..."
-    TextBox.PlaceholderColor3 = Theme["SubText"] -- Адаптировано под тему
-    TextBox.TextColor3 = Theme["Text"] -- Адаптировано под тему
-    TextBox.FontFace = Font.new("rbxassetid://12187365364", Enum.FontWeight.Medium, Enum.FontStyle.Normal) -- Совместимо с темой
-    TextBox.TextSize = 13
-    TextBox.TextXAlignment = Enum.TextXAlignment.Left
-    TextBox.ClearTextOnFocus = false
-    TextBox.ZIndex = 9
-    TextBox.Parent = SearchBar
-
-    -- Отступ текста от лупы
-    local UIPadding = Instance.new("UIPadding")
-    UIPadding.PaddingLeft = UDim.new(0, 36)
-    UIPadding.PaddingRight = UDim.new(0, 10)
-    UIPadding.Parent = TextBox
-
-    -- Фильтрация при вводе
-    if onSearchCallback then
-        TextBox:GetPropertyChangedSignal("Text"):Connect(function()
-            onSearchCallback(TextBox.Text)
-        end)
-    end
-
-    -- Эффект фокуса на лучах
-    TextBox.Focused:Connect(function()
-        Tween(UIStroke, TweenInfo.new(0.2), { Color = Theme["Accent"] })
-        Tween(SearchIcon, TweenInfo.new(0.2), { ImageColor3 = Theme["AccentGlow"], ImageTransparency = 0 })
-    end)
-
-    TextBox.FocusLost:Connect(function()
-        Tween(UIStroke, TweenInfo.new(0.2), { Color = Theme["Outline"] })
-        Tween(SearchIcon, TweenInfo.new(0.2), { ImageColor3 = Theme["Accent"], ImageTransparency = 0.1 })
-    end)
-
-    return SearchBar
-end
-
 function Library:CreateSection(parentColumn, sectionData)
     sectionData = sectionData or {}
     local sectionName = sectionData.Name or "Section"
@@ -1536,19 +1457,90 @@ function Library:CreateSection(parentColumn, sectionData)
         end
     end
 
-    -- Система поиска с использованием CreateSearchBar
+    -- Система поиска с встроенной иконкой лупы
     if isSearchable then
         local searchContainer = Instances:Create("Frame", {
             Parent = sectionFrame.Instance,
             Name = "SearchContainer",
-            Size = UDim2.new(1, 0, 0, 46),
+            Size = UDim2.new(1, 0, 0, 32),
             BackgroundTransparency = 1,
             LayoutOrder = 2,
             ZIndex = 7
         })
 
-        CreateSearchBar(searchContainer.Instance, "Поиск функций...", function(text)
-            local query = string.lower(text)
+        local searchBoxFrame = Instances:Create("Frame", {
+            Parent = searchContainer.Instance,
+            Name = "SearchBoxFrame",
+            AnchorPoint = Vector2.new(0.5, 0.5),
+            Position = UDim2.new(0.5, 0, 0.5, 0),
+            Size = UDim2.new(1, -20, 0, 24),
+            BackgroundColor3 = Theme["Element"],
+            BackgroundTransparency = 0,
+            BorderSizePixel = 0,
+            ZIndex = 8
+        })
+
+        Instances:Create("UICorner", { Parent = searchBoxFrame.Instance, CornerRadius = UDim.new(0, 5) })
+
+        local searchStroke = Instances:Create("UIStroke", {
+            Parent = searchBoxFrame.Instance,
+            Color = Theme["Outline"],
+            Thickness = 1,
+            ApplyStrokeMode = Enum.ApplyStrokeMode.Border
+        })
+
+        -- Иконка лупы ВНУТРИ поисковой строки (слева, по центру вертикали)
+        local searchIcon = Instances:Create("ImageLabel", {
+            Parent = searchBoxFrame.Instance,
+            Name = "SearchIcon",
+            Size = UDim2.new(0, 14, 0, 14),
+            AnchorPoint = Vector2.new(0, 0.5),
+            Position = UDim2.new(0, 10, 0.5, 0),
+            BackgroundTransparency = 1,
+            Image = ParseIcon("search"),
+            ImageColor3 = Theme["SubText"],
+            ImageTransparency = 0.2,
+            ScaleType = Enum.ScaleType.Fit,
+            ZIndex = 9
+        })
+
+        -- Поле ввода текста (занимает всю строку, отступы задаются через UIPadding)
+        local textBox = Instances:Create("TextBox", {
+            Parent = searchBoxFrame.Instance,
+            Name = "Input",
+            Size = UDim2.new(1, 0, 1, 0),
+            Position = UDim2.new(0, 0, 0, 0),
+            BackgroundTransparency = 1,
+            FontFace = Font.new("rbxassetid://12187365364", Enum.FontWeight.Medium, Enum.FontStyle.Normal),
+            Text = "",
+            PlaceholderText = "Поиск функций...",
+            PlaceholderColor3 = Theme["SubText"],
+            TextColor3 = Theme["Text"],
+            TextSize = 11,
+            TextXAlignment = Enum.TextXAlignment.Left,
+            ClearTextOnFocus = false,
+            ZIndex = 9
+        })
+
+        -- Отступ текста слева, чтобы он не перекрывал лупу
+        Instances:Create("UIPadding", {
+            Parent = textBox.Instance,
+            PaddingLeft = UDim.new(0, 32),
+            PaddingRight = UDim.new(0, 10)
+        })
+
+        textBox.Instance.Focused:Connect(function()
+            Tween(searchStroke.Instance, TweenInfo.new(0.2), { Color = Theme["Accent"] })
+            Tween(searchIcon.Instance, TweenInfo.new(0.2), { ImageColor3 = Theme["Accent"], ImageTransparency = 0 })
+        end)
+
+        textBox.Instance.FocusLost:Connect(function()
+            Tween(searchStroke.Instance, TweenInfo.new(0.2), { Color = Theme["Outline"] })
+            Tween(searchIcon.Instance, TweenInfo.new(0.2), { ImageColor3 = Theme["SubText"], ImageTransparency = 0.2 })
+        end)
+
+        textBox.Instance:GetPropertyChangedSignal("Text"):Connect(function()
+            local query = string.lower(textBox.Instance.Text)
             for _, item in ipairs(sectionItems) do
                 local match = (query == "") or (string.find(string.lower(item.Title), query, 1, true) ~= nil)
                 item.Instance.Visible = match
