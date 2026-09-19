@@ -32,7 +32,7 @@ local Theme = {
     ["Line"] = Color3.fromRGB(0, 140, 255)
 }
 
--- 2. Иконки
+-- 2. Библиотека иконок (ID лупы 128876267681952)
 local IconLibrary = {
     ["home"] = "rbxassetid://10723407068",
     ["user"] = "rbxassetid://10709789810",
@@ -1317,7 +1317,7 @@ function Library:CreateSection(parentColumn, sectionData)
     })
 
     local titleOffset = 0
-    local titleSizeX = -65 -- Место под счётчик и стрелку справа
+    local titleSizeX = -65
 
     if hasSectionIcon then
         titleOffset = 18
@@ -1359,7 +1359,6 @@ function Library:CreateSection(parentColumn, sectionData)
         ZIndex = 6
     })
 
-    -- Стрелка свёрнутости (самый правый край)
     local arrowIcon = Instances:Create("ImageLabel", {
         Parent = headerButton.Instance,
         Name = "Arrow",
@@ -1374,7 +1373,6 @@ function Library:CreateSection(parentColumn, sectionData)
         ZIndex = 6
     })
 
-    -- Счётчик 0/6 в ПРАВОМ краю секции (левее стрелочки)
     local counterLabel = Instances:Create("TextLabel", {
         Parent = headerButton.Instance,
         Name = "Counter",
@@ -1459,7 +1457,7 @@ function Library:CreateSection(parentColumn, sectionData)
         end
     end
 
-    -- Система поиска с иконкой ЛУПЫ СЛЕВА
+    -- Система поиска с постоянной синей лупой
     if isSearchable then
         local searchContainer = Instances:Create("Frame", {
             Parent = sectionFrame.Instance,
@@ -1491,7 +1489,7 @@ function Library:CreateSection(parentColumn, sectionData)
             ApplyStrokeMode = Enum.ApplyStrokeMode.Border
         })
 
-        -- Иконка лупы в левом краю поиска
+        -- Иконка лупы (постоянный синий неоновый цвет)
         local searchIcon = Instances:Create("ImageLabel", {
             Parent = searchBoxFrame.Instance,
             Name = "SearchIcon",
@@ -1500,13 +1498,12 @@ function Library:CreateSection(parentColumn, sectionData)
             Position = UDim2.new(0, 8, 0.5, 0),
             BackgroundTransparency = 1,
             Image = ParseIcon("search"),
-            ImageColor3 = Theme["SubText"],
-            ImageTransparency = 0.3,
+            ImageColor3 = Theme["AccentGlow"],
+            ImageTransparency = 0,
             ScaleType = Enum.ScaleType.Fit,
             ZIndex = 9
         })
 
-        -- Текстовое поле ввода со сдвигом вправо
         local textBox = Instances:Create("TextBox", {
             Parent = searchBoxFrame.Instance,
             Name = "Input",
@@ -1526,12 +1523,12 @@ function Library:CreateSection(parentColumn, sectionData)
 
         textBox.Instance.Focused:Connect(function()
             Tween(searchStroke.Instance, TweenInfo.new(0.2), { Color = Theme["Accent"] })
-            Tween(searchIcon.Instance, TweenInfo.new(0.2), { ImageColor3 = Theme["Accent"], ImageTransparency = 0 })
+            Tween(searchIcon.Instance, TweenInfo.new(0.2), { ImageColor3 = Theme["AccentGlow"], ImageTransparency = 0 })
         end)
 
         textBox.Instance.FocusLost:Connect(function()
             Tween(searchStroke.Instance, TweenInfo.new(0.2), { Color = Theme["Outline"] })
-            Tween(searchIcon.Instance, TweenInfo.new(0.2), { ImageColor3 = Theme["SubText"], ImageTransparency = 0.3 })
+            Tween(searchIcon.Instance, TweenInfo.new(0.2), { ImageColor3 = Theme["Accent"], ImageTransparency = 0.1 })
         end)
 
         textBox.Instance:GetPropertyChangedSignal("Text"):Connect(function()
@@ -1611,7 +1608,6 @@ function Library:CreateSection(parentColumn, sectionData)
             local isSelected = cardData.Selected or cardData.Equipped or false
             local callback = cardData.Callback or function() end
 
-            -- Увеличиваем общий счётчик
             totalCards = totalCards + 1
             UpdateCounterText()
 
