@@ -1457,7 +1457,7 @@ function Library:CreateSection(parentColumn, sectionData)
         end
     end
 
-    -- Система поиска с постоянной синей лупой
+    -- Система поиска с встроенной иконкой лупы
     if isSearchable then
         local searchContainer = Instances:Create("Frame", {
             Parent = sectionFrame.Instance,
@@ -1489,25 +1489,27 @@ function Library:CreateSection(parentColumn, sectionData)
             ApplyStrokeMode = Enum.ApplyStrokeMode.Border
         })
 
+        -- Иконка лупы ВНУТРИ поисковой строки (слева, по центру вертикали)
         local searchIcon = Instances:Create("ImageLabel", {
             Parent = searchBoxFrame.Instance,
             Name = "SearchIcon",
-            Size = UDim2.new(0, 13, 0, 13),
+            Size = UDim2.new(0, 14, 0, 14),
             AnchorPoint = Vector2.new(0, 0.5),
-            Position = UDim2.new(0, 8, 0.5, 0),
+            Position = UDim2.new(0, 10, 0.5, 0),
             BackgroundTransparency = 1,
             Image = ParseIcon("search"),
-            ImageColor3 = Theme["AccentGlow"],
-            ImageTransparency = 0,
+            ImageColor3 = Theme["SubText"],
+            ImageTransparency = 0.2,
             ScaleType = Enum.ScaleType.Fit,
             ZIndex = 9
         })
 
+        -- Поле ввода текста (занимает всю строку, отступы задаются через UIPadding)
         local textBox = Instances:Create("TextBox", {
             Parent = searchBoxFrame.Instance,
             Name = "Input",
-            Size = UDim2.new(1, -34, 1, 0),
-            Position = UDim2.new(0, 26, 0, 0),
+            Size = UDim2.new(1, 0, 1, 0),
+            Position = UDim2.new(0, 0, 0, 0),
             BackgroundTransparency = 1,
             FontFace = Font.new("rbxassetid://12187365364", Enum.FontWeight.Medium, Enum.FontStyle.Normal),
             Text = "",
@@ -1520,14 +1522,21 @@ function Library:CreateSection(parentColumn, sectionData)
             ZIndex = 9
         })
 
+        -- Отступ текста слева, чтобы он не перекрывал лупу
+        Instances:Create("UIPadding", {
+            Parent = textBox.Instance,
+            PaddingLeft = UDim.new(0, 32),
+            PaddingRight = UDim.new(0, 10)
+        })
+
         textBox.Instance.Focused:Connect(function()
             Tween(searchStroke.Instance, TweenInfo.new(0.2), { Color = Theme["Accent"] })
-            Tween(searchIcon.Instance, TweenInfo.new(0.2), { ImageColor3 = Theme["AccentGlow"], ImageTransparency = 0 })
+            Tween(searchIcon.Instance, TweenInfo.new(0.2), { ImageColor3 = Theme["Accent"], ImageTransparency = 0 })
         end)
 
         textBox.Instance.FocusLost:Connect(function()
             Tween(searchStroke.Instance, TweenInfo.new(0.2), { Color = Theme["Outline"] })
-            Tween(searchIcon.Instance, TweenInfo.new(0.2), { ImageColor3 = Theme["Accent"], ImageTransparency = 0.1 })
+            Tween(searchIcon.Instance, TweenInfo.new(0.2), { ImageColor3 = Theme["SubText"], ImageTransparency = 0.2 })
         end)
 
         textBox.Instance:GetPropertyChangedSignal("Text"):Connect(function()
