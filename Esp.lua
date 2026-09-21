@@ -32,7 +32,7 @@ local Theme = {
     ["Line"] = Color3.fromRGB(0, 140, 255)
 }
 
--- 2. Библиотека иконок (ID лупы исправлен на валидный 10709798085)
+-- 2. Библиотека иконок
 local IconLibrary = {
     ["home"] = "rbxassetid://10723407068",
     ["user"] = "rbxassetid://10709789810",
@@ -170,7 +170,7 @@ local function MakeDraggable(guiInstance, dragHandle)
 end
 
 -- =======================================================
--- 8. СИСТЕМА СОЗВЕЗДИЯ
+-- 8. СИСТЕМА СОЗВЕЗДИЯ (С УЛУЧШЕННОЙ ФИЗИКОЙ И ПЛАВНОСТЬЮ)
 -- =======================================================
 local function CreateConstellationBackground(parentFrame, numNodes, maxDistance)
     numNodes = numNodes or 30
@@ -204,14 +204,16 @@ local function CreateConstellationBackground(parentFrame, numNodes, maxDistance)
         Instances:Create("UICorner", { Parent = dot.Instance, CornerRadius = UDim.new(1, 0) })
 
         local angle = rng:NextNumber(0, math.pi * 2)
-        local dir = Vector2.new(math.cos(angle), math.sin(angle))
-        if dir.Magnitude == 0 then dir = Vector2.new(1, 0) else dir = dir.Unit end
+        local speed = rng:NextNumber(10, 18)
+        local initialVel = Vector2.new(math.cos(angle), math.sin(angle)) * speed
 
         table.insert(nodes, {
             Gui = dot.Instance,
-            Pos = Vector2.new(rng:NextNumber(165, 490), rng:NextNumber(15, 340)),
-            Dir = dir,
-            Speed = rng:NextNumber(14, 22)
+            Pos = Vector2.new(rng:NextNumber(165, 500), rng:NextNumber(15, 340)),
+            Vel = initialVel,
+            TargetVel = initialVel,
+            Phase = rng:NextNumber(0, math.pi * 2),
+            FloatSpeed = rng:NextNumber(1.1, 2.0)
         })
     end
 
@@ -247,31 +249,37 @@ local function CreateConstellationBackground(parentFrame, numNodes, maxDistance)
         local delta = math.clamp(dt, 0, 0.033)
 
         for _, node in ipairs(nodes) do
-            node.Pos = node.Pos + (node.Dir * (node.Speed * delta))
+            -- Мягкое волнение (эффект парения)
+            node.Phase = node.Phase + (delta * node.FloatSpeed)
+            local floatOffset = Vector2.new(
+                math.sin(node.Phase) * 3,
+                math.cos(node.Phase * 0.8) * 3
+            )
 
-            local nx, ny = node.Dir.X, node.Dir.Y
+            -- Инерция и плавный переход скоростей
+            node.Vel = node.Vel:Lerp(node.TargetVel, delta * 4)
+            node.Pos = node.Pos + ((node.Vel + floatOffset) * delta)
 
-            if node.Pos.X <= minX then
-                node.Pos = Vector2.new(minX + 0.1, node.Pos.Y)
-                nx = math.abs(nx)
+            local vx, vy = node.TargetVel.X, node.TargetVel.Y
+
+            -- Плавная обработка отскоков от границ
+            if node.Pos.X <= minX + 4 then
+                node.Pos = Vector2.new(minX + 4, node.Pos.Y)
+                vx = math.abs(vx)
             elseif node.Pos.X >= width - 5 then
-                node.Pos = Vector2.new(width - 5 - 0.1, node.Pos.Y)
-                nx = -math.abs(nx)
+                node.Pos = Vector2.new(width - 5, node.Pos.Y)
+                vx = -math.abs(vx)
             end
 
             if node.Pos.Y <= 5 then
-                node.Pos = Vector2.new(node.Pos.X, 5.1)
-                ny = math.abs(ny)
+                node.Pos = Vector2.new(node.Pos.X, 5)
+                vy = math.abs(vy)
             elseif node.Pos.Y >= height - 5 then
-                node.Pos = Vector2.new(node.Pos.X, height - 5 - 0.1)
-                ny = -math.abs(ny)
+                node.Pos = Vector2.new(node.Pos.X, height - 5)
+                vy = -math.abs(vy)
             end
 
-            local newDir = Vector2.new(nx, ny)
-            if newDir.Magnitude > 0 then
-                node.Dir = newDir.Unit
-            end
-
+            node.TargetVel = Vector2.new(vx, vy)
             node.Gui.Position = UDim2.new(0, node.Pos.X, 0, node.Pos.Y)
         end
 
@@ -1457,7 +1465,7 @@ function Library:CreateSection(parentColumn, sectionData)
         end
     end
 
-    -- Система поиска с кнопкой очистки (без лупы)
+    -- Система поиска с увеличенным отступом ввода
     if isSearchable then
         local searchContainer = Instances:Create("Frame", {
             Parent = sectionFrame.Instance,
@@ -1489,7 +1497,7 @@ function Library:CreateSection(parentColumn, sectionData)
             ApplyStrokeMode = Enum.ApplyStrokeMode.Border
         })
 
-        -- Поле ввода (без иконки лупы, отступ слева 10)
+        -- Поле ввода с правильным отступом слева (16px)
         local textBox = Instances:Create("TextBox", {
             Parent = searchBoxFrame.Instance,
             Name = "Input",
@@ -1509,7 +1517,7 @@ function Library:CreateSection(parentColumn, sectionData)
 
         Instances:Create("UIPadding", {
             Parent = textBox.Instance,
-            PaddingLeft = UDim.new(0, 10),
+            PaddingLeft = UDim.new(0, 16),
             PaddingRight = UDim.new(0, 26)
         })
 
