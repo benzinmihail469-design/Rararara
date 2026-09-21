@@ -1465,7 +1465,7 @@ function Library:CreateSection(parentColumn, sectionData)
         end
     end
 
-    -- Система поиска с увеличенным отступом ввода
+    -- Система поиска с отступом ввода от иконки
     if isSearchable then
         local searchContainer = Instances:Create("Frame", {
             Parent = sectionFrame.Instance,
@@ -1497,7 +1497,20 @@ function Library:CreateSection(parentColumn, sectionData)
             ApplyStrokeMode = Enum.ApplyStrokeMode.Border
         })
 
-        -- Поле ввода с правильным отступом слева (16px)
+        local searchIcon = Instances:Create("ImageLabel", {
+            Parent = searchBoxFrame.Instance,
+            Name = "SearchIcon",
+            Size = UDim2.new(0, 12, 0, 12),
+            AnchorPoint = Vector2.new(0, 0.5),
+            Position = UDim2.new(0, 8, 0.5, 0),
+            BackgroundTransparency = 1,
+            Image = ParseIcon("search"),
+            ImageColor3 = Theme["SubText"],
+            ImageTransparency = 0.3,
+            ScaleType = Enum.ScaleType.Fit,
+            ZIndex = 9
+        })
+
         local textBox = Instances:Create("TextBox", {
             Parent = searchBoxFrame.Instance,
             Name = "Input",
@@ -1517,11 +1530,10 @@ function Library:CreateSection(parentColumn, sectionData)
 
         Instances:Create("UIPadding", {
             Parent = textBox.Instance,
-            PaddingLeft = UDim.new(0, 16),
+            PaddingLeft = UDim.new(0, 28),
             PaddingRight = UDim.new(0, 26)
         })
 
-        -- Кнопка-крестик на правом краю
         local clearButton = Instances:Create("TextButton", {
             Parent = searchBoxFrame.Instance,
             Name = "ClearButton",
@@ -1564,10 +1576,12 @@ function Library:CreateSection(parentColumn, sectionData)
 
         textBox.Instance.Focused:Connect(function()
             Tween(searchStroke.Instance, TweenInfo.new(0.2), { Color = Theme["Accent"] })
+            Tween(searchIcon.Instance, TweenInfo.new(0.2), { ImageColor3 = Theme["Accent"], ImageTransparency = 0 })
         end)
 
         textBox.Instance.FocusLost:Connect(function()
             Tween(searchStroke.Instance, TweenInfo.new(0.2), { Color = Theme["Outline"] })
+            Tween(searchIcon.Instance, TweenInfo.new(0.2), { ImageColor3 = Theme["SubText"], ImageTransparency = 0.3 })
         end)
 
         textBox.Instance:GetPropertyChangedSignal("Text"):Connect(function()
