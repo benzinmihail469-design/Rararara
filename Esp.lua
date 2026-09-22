@@ -1495,23 +1495,23 @@ function Library:CreateSection(parentColumn, sectionData)
         })
 
         ---------------------------------------------------------
-        -- КАСТОМНАЯ ЛУПА (Контейнер + Кругляшок + Палочка)
+        -- КАСТОМНАЯ ЛУПА (Контейнер + Кругляшок + Палочка) с исправленной геометрией
         ---------------------------------------------------------
         local glassHolder = Instances:Create("Frame", {
             Parent = searchBoxFrame.Instance,
             Name = "CustomMagnifier",
-            Size = UDim2.new(0, 14, 0, 14),
+            Size = UDim2.new(0, 16, 0, 16),
             AnchorPoint = Vector2.new(0, 0.5),
-            Position = UDim2.new(0, 8, 0.5, 0),
+            Position = UDim2.new(0, 10, 0.5, 0),
             BackgroundTransparency = 1,
             ZIndex = 9
         })
 
-        -- 1. Круг лупы
+        -- 1.1 Круг лупы
         local glassCircle = Instances:Create("Frame", {
             Parent = glassHolder.Instance,
             Name = "Circle",
-            Size = UDim2.new(0, 8, 0, 8),
+            Size = UDim2.new(0, 9, 0, 9),
             Position = UDim2.new(0, 0, 0, 0),
             BackgroundTransparency = 1,
             BorderSizePixel = 0,
@@ -1528,13 +1528,13 @@ function Library:CreateSection(parentColumn, sectionData)
             ApplyStrokeMode = Enum.ApplyStrokeMode.Border
         })
 
-        -- 2. Ручка/палочка лупы
+        -- 1.2 Ручка лупы (ровная состыковка под 45 градусов)
         local glassHandle = Instances:Create("Frame", {
             Parent = glassHolder.Instance,
             Name = "Handle",
-            Size = UDim2.new(0, 5, 0, 1.5),
+            Size = UDim2.new(0, 5, 0, 2),
             AnchorPoint = Vector2.new(0, 0.5),
-            Position = UDim2.new(0, 6, 0, 7.5),
+            Position = UDim2.new(0, 7.5, 0, 7.5),
             Rotation = 45,
             BackgroundColor3 = Theme["SubText"],
             BackgroundTransparency = 0.3,
@@ -1564,7 +1564,7 @@ function Library:CreateSection(parentColumn, sectionData)
 
         Instances:Create("UIPadding", {
             Parent = textBox.Instance,
-            PaddingLeft = UDim.new(0, 28),
+            PaddingLeft = UDim.new(0, 34), -- Отступ слева 34px для зазора от лупы
             PaddingRight = UDim.new(0, 26)
         })
 
