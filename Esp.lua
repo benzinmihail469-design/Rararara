@@ -1463,7 +1463,7 @@ function Library:CreateSection(parentColumn, sectionData)
     end
 
     -- =======================================================
-    -- СИСТЕМА ПОИСКА С ВЕКТОРНОЙ ИКОНКОЙ ЛУПЫ (ImageLabel)
+    -- СИСТЕМА ПОИСКА С ИКОНКОЙ ЛУПЫ
     -- =======================================================
     if isSearchable then
         local searchContainer = Instances:Create("Frame", {
@@ -1497,7 +1497,7 @@ function Library:CreateSection(parentColumn, sectionData)
         })
 
         ---------------------------------------------------------
-        -- 1. ИКОНКА ЛУПЫ (Векторный ImageLabel)
+        -- 1. ИКОНКА ЛУПЫ
         ---------------------------------------------------------
         local searchIcon = Instances:Create("ImageLabel", {
             Parent = searchBoxFrame.Instance,
@@ -1506,7 +1506,7 @@ function Library:CreateSection(parentColumn, sectionData)
             AnchorPoint = Vector2.new(0, 0.5),
             Position = UDim2.new(0, 10, 0.5, 0),
             BackgroundTransparency = 1,
-            Image = "rbxassetid://10747373176", -- Векторный Asset ID лупы Lucide
+            Image = ParseIcon("search"),
             ImageColor3 = Theme["SubText"],
             ImageTransparency = 0.3,
             ScaleType = Enum.ScaleType.Fit,
@@ -1514,13 +1514,13 @@ function Library:CreateSection(parentColumn, sectionData)
         })
 
         ---------------------------------------------------------
-        -- 2. ПОЛЕ ВВОДА ТЕКСТА
+        -- 2. ПОЛЕ ВВОДА ТЕКСТА (Смещение от иконки)
         ---------------------------------------------------------
         local textBox = Instances:Create("TextBox", {
             Parent = searchBoxFrame.Instance,
             Name = "Input",
-            Size = UDim2.new(1, 0, 1, 0),
-            Position = UDim2.new(0, 0, 0, 0),
+            Size = UDim2.new(1, -30, 1, 0),
+            Position = UDim2.new(0, 30, 0, 0),
             BackgroundTransparency = 1,
             FontFace = Font.new("rbxassetid://12187365364", Enum.FontWeight.Medium, Enum.FontStyle.Normal),
             Text = "",
@@ -1533,11 +1533,10 @@ function Library:CreateSection(parentColumn, sectionData)
             ZIndex = 9
         })
 
-        -- Отступ 32px слева, чтобы текст не заходил на лупу
         Instances:Create("UIPadding", {
             Parent = textBox.Instance,
-            PaddingLeft = UDim.new(0, 32),
-            PaddingRight = UDim.new(0, 28)
+            PaddingLeft = UDim.new(0, 2),
+            PaddingRight = UDim.new(0, 26)
         })
 
         local clearButton = Instances:Create("TextButton", {
@@ -1603,7 +1602,9 @@ function Library:CreateSection(parentColumn, sectionData)
             end
             UpdateContainerSize(true)
         end)
-    end    elementsLayout.Instance:GetPropertyChangedSignal("AbsoluteContentSize"):Connect(function()
+    end
+
+    elementsLayout.Instance:GetPropertyChangedSignal("AbsoluteContentSize"):Connect(function()
         if not collapsed then
             UpdateContainerSize(false)
         end
