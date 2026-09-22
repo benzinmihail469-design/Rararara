@@ -1462,7 +1462,9 @@ function Library:CreateSection(parentColumn, sectionData)
         end
     end
 
-    -- Система поиска с кастомной процедурной лупой (без иконок и эмодзи)
+    -- =======================================================
+    -- СИСТЕМА ПОИСКА С ВЕКТОРНОЙ ИКОНКОЙ ЛУПЫ (ImageLabel)
+    -- =======================================================
     if isSearchable then
         local searchContainer = Instances:Create("Frame", {
             Parent = sectionFrame.Instance,
@@ -1478,14 +1480,14 @@ function Library:CreateSection(parentColumn, sectionData)
             Name = "SearchBoxFrame",
             AnchorPoint = Vector2.new(0.5, 0.5),
             Position = UDim2.new(0.5, 0, 0.5, 0),
-            Size = UDim2.new(1, -20, 0, 24),
+            Size = UDim2.new(1, -20, 0, 26),
             BackgroundColor3 = Theme["Element"],
             BackgroundTransparency = 0,
             BorderSizePixel = 0,
             ZIndex = 8
         })
 
-        Instances:Create("UICorner", { Parent = searchBoxFrame.Instance, CornerRadius = UDim.new(0, 5) })
+        Instances:Create("UICorner", { Parent = searchBoxFrame.Instance, CornerRadius = UDim.new(0, 6) })
 
         local searchStroke = Instances:Create("UIStroke", {
             Parent = searchBoxFrame.Instance,
@@ -1495,56 +1497,25 @@ function Library:CreateSection(parentColumn, sectionData)
         })
 
         ---------------------------------------------------------
-        -- КАСТОМНАЯ ЛУПА (Контейнер + Кругляшок + Палочка) с исправленной геометрией
+        -- 1. ИКОНКА ЛУПЫ (Векторный ImageLabel)
         ---------------------------------------------------------
-        local glassHolder = Instances:Create("Frame", {
+        local searchIcon = Instances:Create("ImageLabel", {
             Parent = searchBoxFrame.Instance,
-            Name = "CustomMagnifier",
-            Size = UDim2.new(0, 16, 0, 16),
+            Name = "SearchIcon",
+            Size = UDim2.new(0, 14, 0, 14),
             AnchorPoint = Vector2.new(0, 0.5),
             Position = UDim2.new(0, 10, 0.5, 0),
             BackgroundTransparency = 1,
+            Image = "rbxassetid://10747373176", -- Векторный Asset ID лупы Lucide
+            ImageColor3 = Theme["SubText"],
+            ImageTransparency = 0.3,
+            ScaleType = Enum.ScaleType.Fit,
             ZIndex = 9
         })
 
-        -- 1.1 Круг лупы
-        local glassCircle = Instances:Create("Frame", {
-            Parent = glassHolder.Instance,
-            Name = "Circle",
-            Size = UDim2.new(0, 9, 0, 9),
-            Position = UDim2.new(0, 0, 0, 0),
-            BackgroundTransparency = 1,
-            BorderSizePixel = 0,
-            ZIndex = 9
-        })
-
-        Instances:Create("UICorner", { Parent = glassCircle.Instance, CornerRadius = UDim.new(1, 0) })
-
-        local circleStroke = Instances:Create("UIStroke", {
-            Parent = glassCircle.Instance,
-            Color = Theme["SubText"],
-            Thickness = 1.5,
-            Transparency = 0.3,
-            ApplyStrokeMode = Enum.ApplyStrokeMode.Border
-        })
-
-        -- 1.2 Ручка лупы (ровная состыковка под 45 градусов)
-        local glassHandle = Instances:Create("Frame", {
-            Parent = glassHolder.Instance,
-            Name = "Handle",
-            Size = UDim2.new(0, 5, 0, 2),
-            AnchorPoint = Vector2.new(0, 0.5),
-            Position = UDim2.new(0, 7.5, 0, 7.5),
-            Rotation = 45,
-            BackgroundColor3 = Theme["SubText"],
-            BackgroundTransparency = 0.3,
-            BorderSizePixel = 0,
-            ZIndex = 9
-        })
-
-        Instances:Create("UICorner", { Parent = glassHandle.Instance, CornerRadius = UDim.new(1, 0) })
         ---------------------------------------------------------
-
+        -- 2. ПОЛЕ ВВОДА ТЕКСТА
+        ---------------------------------------------------------
         local textBox = Instances:Create("TextBox", {
             Parent = searchBoxFrame.Instance,
             Name = "Input",
@@ -1562,10 +1533,11 @@ function Library:CreateSection(parentColumn, sectionData)
             ZIndex = 9
         })
 
+        -- Отступ 32px слева, чтобы текст не заходил на лупу
         Instances:Create("UIPadding", {
             Parent = textBox.Instance,
-            PaddingLeft = UDim.new(0, 34), -- Отступ слева 34px для зазора от лупы
-            PaddingRight = UDim.new(0, 26)
+            PaddingLeft = UDim.new(0, 32),
+            PaddingRight = UDim.new(0, 28)
         })
 
         local clearButton = Instances:Create("TextButton", {
@@ -1573,7 +1545,7 @@ function Library:CreateSection(parentColumn, sectionData)
             Name = "ClearButton",
             Size = UDim2.new(0, 16, 0, 16),
             AnchorPoint = Vector2.new(1, 0.5),
-            Position = UDim2.new(1, -5, 0.5, 0),
+            Position = UDim2.new(1, -6, 0.5, 0),
             BackgroundTransparency = 1,
             Text = "",
             AutoButtonColor = false,
@@ -1596,6 +1568,9 @@ function Library:CreateSection(parentColumn, sectionData)
             ZIndex = 11
         })
 
+        ---------------------------------------------------------
+        -- 3. СОБЫТИЯ И АНИМАЦИЯ ПОДСВЕТКИ
+        ---------------------------------------------------------
         clearButton:Connect("MouseEnter", function()
             Tween(clearIcon.Instance, TweenInfo.new(0.15), { ImageColor3 = Theme["Accent"], ImageTransparency = 0 })
         end)
@@ -1608,17 +1583,14 @@ function Library:CreateSection(parentColumn, sectionData)
             textBox.Instance.Text = ""
         end)
 
-        -- Анимации свечения лупы при клике/фокусе
         textBox.Instance.Focused:Connect(function()
             Tween(searchStroke.Instance, TweenInfo.new(0.2), { Color = Theme["Accent"] })
-            Tween(circleStroke.Instance, TweenInfo.new(0.2), { Color = Theme["Accent"], Transparency = 0 })
-            Tween(glassHandle.Instance, TweenInfo.new(0.2), { BackgroundColor3 = Theme["Accent"], BackgroundTransparency = 0 })
+            Tween(searchIcon.Instance, TweenInfo.new(0.2), { ImageColor3 = Theme["Accent"], ImageTransparency = 0 })
         end)
 
         textBox.Instance.FocusLost:Connect(function()
             Tween(searchStroke.Instance, TweenInfo.new(0.2), { Color = Theme["Outline"] })
-            Tween(circleStroke.Instance, TweenInfo.new(0.2), { Color = Theme["SubText"], Transparency = 0.3 })
-            Tween(glassHandle.Instance, TweenInfo.new(0.2), { BackgroundColor3 = Theme["SubText"], BackgroundTransparency = 0.3 })
+            Tween(searchIcon.Instance, TweenInfo.new(0.2), { ImageColor3 = Theme["SubText"], ImageTransparency = 0.3 })
         end)
 
         textBox.Instance:GetPropertyChangedSignal("Text"):Connect(function()
@@ -1631,9 +1603,7 @@ function Library:CreateSection(parentColumn, sectionData)
             end
             UpdateContainerSize(true)
         end)
-    end
-
-    elementsLayout.Instance:GetPropertyChangedSignal("AbsoluteContentSize"):Connect(function()
+    end    elementsLayout.Instance:GetPropertyChangedSignal("AbsoluteContentSize"):Connect(function()
         if not collapsed then
             UpdateContainerSize(false)
         end
