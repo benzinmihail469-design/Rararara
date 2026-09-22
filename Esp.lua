@@ -170,103 +170,6 @@ local function MakeDraggable(guiInstance, dragHandle)
 end
 
 -- =======================================================
--- 7.1 КАСТОМНАЯ ПОИСКОВАЯ СТРОКА С ЛУПОЙ ИЗ FRAME
--- =======================================================
-local function CreateCustomSearchBox(parent, placeholderText)
-    placeholderText = placeholderText or "Поиск..."
-
-    -- 1. Главный контейнер поисковой строки
-    local searchBoxFrame = Instance.new("Frame")
-    searchBoxFrame.Name = "CustomSearchBox"
-    searchBoxFrame.Size = UDim2.new(1, 0, 0, 28)
-    searchBoxFrame.BackgroundColor3 = Color3.fromRGB(10, 10, 12)
-    searchBoxFrame.BorderSizePixel = 0
-    searchBoxFrame.Parent = parent
-
-    local boxCorner = Instance.new("UICorner")
-    boxCorner.CornerRadius = UDim.new(0, 6)
-    boxCorner.Parent = searchBoxFrame
-
-    local boxStroke = Instance.new("UIStroke")
-    boxStroke.Color = Color3.fromRGB(25, 30, 45)
-    boxStroke.Thickness = 1
-    boxStroke.ApplyStrokeMode = Enum.ApplyStrokeMode.Border
-    boxStroke.Parent = searchBoxFrame
-
-    -- 2. Контейнер для иконки лупы
-    local iconContainer = Instance.new("Frame")
-    iconContainer.Name = "IconContainer"
-    iconContainer.Size = UDim2.new(0, 16, 0, 16)
-    iconContainer.AnchorPoint = Vector2.new(0, 0.5)
-    iconContainer.Position = UDim2.new(0, 8, 0.5, 0)
-    iconContainer.BackgroundTransparency = 1
-    iconContainer.Parent = searchBoxFrame
-
-    -- 2a. Кругляшок лупы
-    local glassCircle = Instance.new("Frame")
-    glassCircle.Name = "Circle"
-    glassCircle.Size = UDim2.new(0, 8, 0, 8)
-    glassCircle.Position = UDim2.new(0, 0, 0, 0)
-    glassCircle.BackgroundTransparency = 1
-    glassCircle.Parent = iconContainer
-
-    local circleCorner = Instance.new("UICorner")
-    circleCorner.CornerRadius = UDim.new(1, 0)
-    circleCorner.Parent = glassCircle
-
-    local circleStroke = Instance.new("UIStroke")
-    circleStroke.Color = Color3.fromRGB(110, 120, 140)
-    circleStroke.Thickness = 1.5
-    circleStroke.Parent = glassCircle
-
-    -- 2b. Палочка (ручка) лупы
-    local glassHandle = Instance.new("Frame")
-    glassHandle.Name = "Handle"
-    glassHandle.Size = UDim2.new(0, 5, 0, 1.5)
-    glassHandle.AnchorPoint = Vector2.new(0, 0.5)
-    glassHandle.Position = UDim2.new(0, 7, 0, 7)
-    glassHandle.Rotation = 45
-    glassHandle.BackgroundColor3 = Color3.fromRGB(110, 120, 140)
-    glassHandle.BorderSizePixel = 0
-    glassHandle.Parent = iconContainer
-
-    local handleCorner = Instance.new("UICorner")
-    handleCorner.CornerRadius = UDim.new(1, 0)
-    handleCorner.Parent = glassHandle
-
-    -- 3. Поле ввода текста (отступ слева 28px)
-    local textBox = Instance.new("TextBox")
-    textBox.Name = "Input"
-    textBox.Size = UDim2.new(1, -34, 1, 0)
-    textBox.Position = UDim2.new(0, 28, 0, 0)
-    textBox.BackgroundTransparency = 1
-    textBox.FontFace = Font.new("rbxassetid://12187365364", Enum.FontWeight.Medium, Enum.FontStyle.Normal)
-    textBox.Text = ""
-    textBox.PlaceholderText = placeholderText
-    textBox.PlaceholderColor3 = Color3.fromRGB(110, 120, 140)
-    textBox.TextColor3 = Color3.fromRGB(240, 240, 245)
-    textBox.TextSize = 11
-    textBox.TextXAlignment = Enum.TextXAlignment.Left
-    textBox.ClearTextOnFocus = false
-    textBox.Parent = searchBoxFrame
-
-    -- Анимация подсвечивания при клике в поле ввода
-    textBox.Focused:Connect(function()
-        boxStroke.Color = Color3.fromRGB(0, 140, 255)
-        circleStroke.Color = Color3.fromRGB(0, 140, 255)
-        glassHandle.BackgroundColor3 = Color3.fromRGB(0, 140, 255)
-    end)
-
-    textBox.FocusLost:Connect(function()
-        boxStroke.Color = Color3.fromRGB(25, 30, 45)
-        circleStroke.Color = Color3.fromRGB(110, 120, 140)
-        glassHandle.BackgroundColor3 = Color3.fromRGB(110, 120, 140)
-    end)
-
-    return searchBoxFrame, textBox
-end
-
--- =======================================================
 -- 8. СИСТЕМА СОЗВЕЗДИЯ (С УЛУЧШЕННОЙ ФИЗИКОЙ И ПЛАВНОСТЬЮ)
 -- =======================================================
 local function CreateConstellationBackground(parentFrame, numNodes, maxDistance)
@@ -1559,7 +1462,7 @@ function Library:CreateSection(parentColumn, sectionData)
         end
     end
 
-    -- Система поиска с кастомной лупой из Frame
+    -- Система поиска с кастомной процедурной лупой (без иконок и эмодзи)
     if isSearchable then
         local searchContainer = Instances:Create("Frame", {
             Parent = sectionFrame.Instance,
@@ -1570,13 +1473,103 @@ function Library:CreateSection(parentColumn, sectionData)
             ZIndex = 7
         })
 
-        local searchBoxFrame, textBox = CreateCustomSearchBox(searchContainer.Instance, "Поиск функций...")
-        searchBoxFrame.Size = UDim2.new(1, -20, 0, 24)
-        searchBoxFrame.AnchorPoint = Vector2.new(0.5, 0.5)
-        searchBoxFrame.Position = UDim2.new(0.5, 0, 0.5, 0)
+        local searchBoxFrame = Instances:Create("Frame", {
+            Parent = searchContainer.Instance,
+            Name = "SearchBoxFrame",
+            AnchorPoint = Vector2.new(0.5, 0.5),
+            Position = UDim2.new(0.5, 0, 0.5, 0),
+            Size = UDim2.new(1, -20, 0, 24),
+            BackgroundColor3 = Theme["Element"],
+            BackgroundTransparency = 0,
+            BorderSizePixel = 0,
+            ZIndex = 8
+        })
+
+        Instances:Create("UICorner", { Parent = searchBoxFrame.Instance, CornerRadius = UDim.new(0, 5) })
+
+        local searchStroke = Instances:Create("UIStroke", {
+            Parent = searchBoxFrame.Instance,
+            Color = Theme["Outline"],
+            Thickness = 1,
+            ApplyStrokeMode = Enum.ApplyStrokeMode.Border
+        })
+
+        ---------------------------------------------------------
+        -- КАСТОМНАЯ ЛУПА (Контейнер + Кругляшок + Палочка)
+        ---------------------------------------------------------
+        local glassHolder = Instances:Create("Frame", {
+            Parent = searchBoxFrame.Instance,
+            Name = "CustomMagnifier",
+            Size = UDim2.new(0, 14, 0, 14),
+            AnchorPoint = Vector2.new(0, 0.5),
+            Position = UDim2.new(0, 8, 0.5, 0),
+            BackgroundTransparency = 1,
+            ZIndex = 9
+        })
+
+        -- 1. Круг лупы
+        local glassCircle = Instances:Create("Frame", {
+            Parent = glassHolder.Instance,
+            Name = "Circle",
+            Size = UDim2.new(0, 8, 0, 8),
+            Position = UDim2.new(0, 0, 0, 0),
+            BackgroundTransparency = 1,
+            BorderSizePixel = 0,
+            ZIndex = 9
+        })
+
+        Instances:Create("UICorner", { Parent = glassCircle.Instance, CornerRadius = UDim.new(1, 0) })
+
+        local circleStroke = Instances:Create("UIStroke", {
+            Parent = glassCircle.Instance,
+            Color = Theme["SubText"],
+            Thickness = 1.5,
+            Transparency = 0.3,
+            ApplyStrokeMode = Enum.ApplyStrokeMode.Border
+        })
+
+        -- 2. Ручка/палочка лупы
+        local glassHandle = Instances:Create("Frame", {
+            Parent = glassHolder.Instance,
+            Name = "Handle",
+            Size = UDim2.new(0, 5, 0, 1.5),
+            AnchorPoint = Vector2.new(0, 0.5),
+            Position = UDim2.new(0, 6, 0, 7.5),
+            Rotation = 45,
+            BackgroundColor3 = Theme["SubText"],
+            BackgroundTransparency = 0.3,
+            BorderSizePixel = 0,
+            ZIndex = 9
+        })
+
+        Instances:Create("UICorner", { Parent = glassHandle.Instance, CornerRadius = UDim.new(1, 0) })
+        ---------------------------------------------------------
+
+        local textBox = Instances:Create("TextBox", {
+            Parent = searchBoxFrame.Instance,
+            Name = "Input",
+            Size = UDim2.new(1, 0, 1, 0),
+            Position = UDim2.new(0, 0, 0, 0),
+            BackgroundTransparency = 1,
+            FontFace = Font.new("rbxassetid://12187365364", Enum.FontWeight.Medium, Enum.FontStyle.Normal),
+            Text = "",
+            PlaceholderText = "Поиск функций...",
+            PlaceholderColor3 = Theme["SubText"],
+            TextColor3 = Theme["Text"],
+            TextSize = 11,
+            TextXAlignment = Enum.TextXAlignment.Left,
+            ClearTextOnFocus = false,
+            ZIndex = 9
+        })
+
+        Instances:Create("UIPadding", {
+            Parent = textBox.Instance,
+            PaddingLeft = UDim.new(0, 28),
+            PaddingRight = UDim.new(0, 26)
+        })
 
         local clearButton = Instances:Create("TextButton", {
-            Parent = searchBoxFrame,
+            Parent = searchBoxFrame.Instance,
             Name = "ClearButton",
             Size = UDim2.new(0, 16, 0, 16),
             AnchorPoint = Vector2.new(1, 0.5),
@@ -1612,11 +1605,24 @@ function Library:CreateSection(parentColumn, sectionData)
         end)
 
         clearButton:Connect("MouseButton1Click", function()
-            textBox.Text = ""
+            textBox.Instance.Text = ""
         end)
 
-        textBox:GetPropertyChangedSignal("Text"):Connect(function()
-            local text = textBox.Text
+        -- Анимации свечения лупы при клике/фокусе
+        textBox.Instance.Focused:Connect(function()
+            Tween(searchStroke.Instance, TweenInfo.new(0.2), { Color = Theme["Accent"] })
+            Tween(circleStroke.Instance, TweenInfo.new(0.2), { Color = Theme["Accent"], Transparency = 0 })
+            Tween(glassHandle.Instance, TweenInfo.new(0.2), { BackgroundColor3 = Theme["Accent"], BackgroundTransparency = 0 })
+        end)
+
+        textBox.Instance.FocusLost:Connect(function()
+            Tween(searchStroke.Instance, TweenInfo.new(0.2), { Color = Theme["Outline"] })
+            Tween(circleStroke.Instance, TweenInfo.new(0.2), { Color = Theme["SubText"], Transparency = 0.3 })
+            Tween(glassHandle.Instance, TweenInfo.new(0.2), { BackgroundColor3 = Theme["SubText"], BackgroundTransparency = 0.3 })
+        end)
+
+        textBox.Instance:GetPropertyChangedSignal("Text"):Connect(function()
+            local text = textBox.Instance.Text
             clearButton.Instance.Visible = (text ~= "")
             local query = string.lower(text)
             for _, item in ipairs(sectionItems) do
