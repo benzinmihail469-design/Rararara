@@ -49,7 +49,7 @@ local IconLibrary = {
     ["palette"] = "rbxassetid://10734950020",
     ["globe"] = "rbxassetid://10723343321",
     ["zap"] = "rbxassetid://10734983868",
-    ["search"] = "rbxassetid://6031154871" -- Обновлённый проверенный ID лупы
+    ["search"] = "rbxassetid://10709752002"
 }
 
 local function ParseIcon(icon)
@@ -1263,7 +1263,7 @@ function Library:CreateTab(window, tabData)
 end
 
 -- =======================================================
--- 11. СЕКЦИИ UI И ОБНОВЛЁННАЯ СЕТКА КАРТОЧЕК
+-- 11. СЕКЦИИ UI С ОБНОВЛЁННОЙ СИСТЕМОЙ ПОИСКА И ЛУПЫ
 -- =======================================================
 function Library:CreateSection(parentColumn, sectionData)
     sectionData = sectionData or {}
@@ -1463,7 +1463,7 @@ function Library:CreateSection(parentColumn, sectionData)
     end
 
     -- =======================================================
-    -- СИСТЕМА ПОИСКА С ИКОНКОЙ ЛУПЫ
+    -- СИСТЕМА ПОИСКА С УЛУЧШЕННОЙ ЛУПОЙ
     -- =======================================================
     if isSearchable then
         local searchContainer = Instances:Create("Frame", {
@@ -1497,30 +1497,30 @@ function Library:CreateSection(parentColumn, sectionData)
         })
 
         ---------------------------------------------------------
-        -- 1. ИКОНКА ЛУПЫ
+        -- 1. ИКОНКА ЛУПЫ (ЧЁТКАЯ И ВИДИМАЯ)
         ---------------------------------------------------------
         local searchIcon = Instances:Create("ImageLabel", {
             Parent = searchBoxFrame.Instance,
             Name = "SearchIcon",
             Size = UDim2.new(0, 14, 0, 14),
             AnchorPoint = Vector2.new(0, 0.5),
-            Position = UDim2.new(0, 10, 0.5, 0),
+            Position = UDim2.new(0, 8, 0.5, 0),
             BackgroundTransparency = 1,
-            Image = ParseIcon("search"),
-            ImageColor3 = Theme["SubText"],
-            ImageTransparency = 0.3,
+            Image = "rbxassetid://10709752002", -- Высококачественная иконка лупы
+            ImageColor3 = Theme["SubText"], -- Изначально серая
+            ImageTransparency = 0, -- Полная видимость без размытия/прозрачности
             ScaleType = Enum.ScaleType.Fit,
-            ZIndex = 9
+            ZIndex = 10
         })
 
         ---------------------------------------------------------
-        -- 2. ПОЛЕ ВВОДА ТЕКСТА (Смещение от иконки)
+        -- 2. ПОЛЕ ВВОДА ТЕКСТА
         ---------------------------------------------------------
         local textBox = Instances:Create("TextBox", {
             Parent = searchBoxFrame.Instance,
             Name = "Input",
             Size = UDim2.new(1, -30, 1, 0),
-            Position = UDim2.new(0, 30, 0, 0),
+            Position = UDim2.new(0, 28, 0, 0),
             BackgroundTransparency = 1,
             FontFace = Font.new("rbxassetid://12187365364", Enum.FontWeight.Medium, Enum.FontStyle.Normal),
             Text = "",
@@ -1536,7 +1536,7 @@ function Library:CreateSection(parentColumn, sectionData)
         Instances:Create("UIPadding", {
             Parent = textBox.Instance,
             PaddingLeft = UDim.new(0, 2),
-            PaddingRight = UDim.new(0, 26)
+            PaddingRight = UDim.new(0, 24)
         })
 
         local clearButton = Instances:Create("TextButton", {
@@ -1568,8 +1568,21 @@ function Library:CreateSection(parentColumn, sectionData)
         })
 
         ---------------------------------------------------------
-        -- 3. СОБЫТИЯ И АНИМАЦИЯ ПОДСВЕТКИ
+        -- 3. ОБРАБОТКА ЦВЕТА И ФОКУСА
         ---------------------------------------------------------
+        local function UpdateSearchIconState(isFocused)
+            local hasText = #textBox.Instance.Text > 0
+            if isFocused or hasText then
+                -- Становится синей при вводе текста или фокусировке
+                Tween(searchIcon.Instance, TweenInfo.new(0.2), { ImageColor3 = Theme["Accent"] })
+                Tween(searchStroke.Instance, TweenInfo.new(0.2), { Color = Theme["Accent"] })
+            else
+                -- Возвращается к серому цвету в покое
+                Tween(searchIcon.Instance, TweenInfo.new(0.2), { ImageColor3 = Theme["SubText"] })
+                Tween(searchStroke.Instance, TweenInfo.new(0.2), { Color = Theme["Outline"] })
+            end
+        end
+
         clearButton:Connect("MouseEnter", function()
             Tween(clearIcon.Instance, TweenInfo.new(0.15), { ImageColor3 = Theme["Accent"], ImageTransparency = 0 })
         end)
@@ -1583,18 +1596,17 @@ function Library:CreateSection(parentColumn, sectionData)
         end)
 
         textBox.Instance.Focused:Connect(function()
-            Tween(searchStroke.Instance, TweenInfo.new(0.2), { Color = Theme["Accent"] })
-            Tween(searchIcon.Instance, TweenInfo.new(0.2), { ImageColor3 = Theme["Accent"], ImageTransparency = 0 })
+            UpdateSearchIconState(true)
         end)
 
         textBox.Instance.FocusLost:Connect(function()
-            Tween(searchStroke.Instance, TweenInfo.new(0.2), { Color = Theme["Outline"] })
-            Tween(searchIcon.Instance, TweenInfo.new(0.2), { ImageColor3 = Theme["SubText"], ImageTransparency = 0.3 })
+            UpdateSearchIconState(false)
         end)
 
         textBox.Instance:GetPropertyChangedSignal("Text"):Connect(function()
             local text = textBox.Instance.Text
             clearButton.Instance.Visible = (text ~= "")
+            UpdateSearchIconState(textBox.Instance:IsFocused())
             local query = string.lower(text)
             for _, item in ipairs(sectionItems) do
                 local match = (query == "") or (string.find(string.lower(item.Title), query, 1, true) ~= nil)
