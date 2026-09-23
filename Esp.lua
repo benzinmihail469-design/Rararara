@@ -170,6 +170,67 @@ local function MakeDraggable(guiInstance, dragHandle)
 end
 
 -- =======================================================
+-- 7.1 ВЕКТОРНАЯ ЛУПА (Standalone Function)
+-- =======================================================
+local function CreateVectorSearchIcon(parent, position, size, color)
+    size = size or 14
+    color = color or Theme["Accent"]
+
+    local container = Instance.new("Frame")
+    container.Name = "SearchIcon"
+    container.Size = UDim2.new(0, size, 0, size)
+    container.Position = position or UDim2.new(0, 8, 0.5, 0)
+    container.AnchorPoint = Vector2.new(0, 0.5)
+    container.BackgroundTransparency = 1
+    container.ZIndex = 10
+    container.Parent = parent
+
+    -- Линза лупы (круг с контуром)
+    local lens = Instance.new("Frame")
+    lens.Name = "Lens"
+    lens.Size = UDim2.new(0, math.floor(size * 0.62), 0, math.floor(size * 0.62))
+    lens.Position = UDim2.new(0, 0, 0, 0)
+    lens.BackgroundTransparency = 1
+    lens.ZIndex = 11
+    lens.Parent = container
+
+    local lensCorner = Instance.new("UICorner")
+    lensCorner.CornerRadius = UDim.new(1, 0)
+    lensCorner.Parent = lens
+
+    local lensStroke = Instance.new("UIStroke")
+    lensStroke.Color = color
+    lensStroke.Thickness = 1.8
+    lensStroke.ApplyStrokeMode = Enum.ApplyStrokeMode.Border
+    lensStroke.Parent = lens
+
+    -- Ручка лупы
+    local handle = Instance.new("Frame")
+    handle.Name = "Handle"
+    handle.Size = UDim2.new(0, 2, 0, math.floor(size * 0.42))
+    handle.AnchorPoint = Vector2.new(0.5, 0)
+    handle.Position = UDim2.new(0, math.floor(size * 0.58), 0, math.floor(size * 0.58))
+    handle.Rotation = -45
+    handle.BackgroundColor3 = color
+    handle.BorderSizePixel = 0
+    handle.ZIndex = 11
+    handle.Parent = container
+
+    local handleCorner = Instance.new("UICorner")
+    handleCorner.CornerRadius = UDim.new(1, 0)
+    handleCorner.Parent = handle
+
+    -- Возвращаем объекты для анимации цвета
+    return {
+        Container = container,
+        SetColor = function(newColor)
+            lensStroke.Color = newColor
+            handle.BackgroundColor3 = newColor
+        end
+    }
+end
+
+-- =======================================================
 -- 8. СИСТЕМА СОЗВЕЗДИЯ (С УЛУЧШЕННОЙ ФИЗИКОЙ И ПЛАВНОСТЬЮ)
 -- =======================================================
 local function CreateConstellationBackground(parentFrame, numNodes, maxDistance)
@@ -1263,7 +1324,7 @@ function Library:CreateTab(window, tabData)
 end
 
 -- =======================================================
--- 11. СЕКЦИИ UI С ОБНОВЛЁННОЙ СИСТЕМОЙ ПОИСКА И ЛУПЫ
+-- 11. СЕКЦИИ UI С ВЕКТОРНОЙ ЛУПОЙ
 -- =======================================================
 function Library:CreateSection(parentColumn, sectionData)
     sectionData = sectionData or {}
@@ -1463,7 +1524,7 @@ function Library:CreateSection(parentColumn, sectionData)
     end
 
     -- =======================================================
-    -- СИСТЕМА ПОИСКА С УЛУЧШЕННОЙ ЛУПОЙ
+    -- СИСТЕМА ПОИСКА С ВЕКТОРНОЙ ИКОНКОЙ ЛУПЫ
     -- =======================================================
     if isSearchable then
         local searchContainer = Instances:Create("Frame", {
@@ -1497,21 +1558,14 @@ function Library:CreateSection(parentColumn, sectionData)
         })
 
         ---------------------------------------------------------
-        -- 1. ИКОНКА ЛУПЫ (ЧЁТКАЯ И ВИДИМАЯ)
+        -- 1. СОЗДАНИЕ ВЕКТОРНОЙ ЛУПЫ (100% ВИДИМОСТЬ)
         ---------------------------------------------------------
-        local searchIcon = Instances:Create("ImageLabel", {
-            Parent = searchBoxFrame.Instance,
-            Name = "SearchIcon",
-            Size = UDim2.new(0, 14, 0, 14),
-            AnchorPoint = Vector2.new(0, 0.5),
-            Position = UDim2.new(0, 8, 0.5, 0),
-            BackgroundTransparency = 1,
-            Image = "rbxassetid://10709752002", -- Высококачественная иконка лупы
-            ImageColor3 = Theme["SubText"], -- Изначально серая
-            ImageTransparency = 0, -- Полная видимость без размытия/прозрачности
-            ScaleType = Enum.ScaleType.Fit,
-            ZIndex = 10
-        })
+        local searchIcon = CreateVectorSearchIcon(
+            searchBoxFrame.Instance,
+            UDim2.new(0, 8, 0.5, 0),
+            14,
+            Theme["SubText"]
+        )
 
         ---------------------------------------------------------
         -- 2. ПОЛЕ ВВОДА ТЕКСТА
@@ -1573,12 +1627,10 @@ function Library:CreateSection(parentColumn, sectionData)
         local function UpdateSearchIconState(isFocused)
             local hasText = #textBox.Instance.Text > 0
             if isFocused or hasText then
-                -- Становится синей при вводе текста или фокусировке
-                Tween(searchIcon.Instance, TweenInfo.new(0.2), { ImageColor3 = Theme["Accent"] })
+                searchIcon.SetColor(Theme["Accent"])
                 Tween(searchStroke.Instance, TweenInfo.new(0.2), { Color = Theme["Accent"] })
             else
-                -- Возвращается к серому цвету в покое
-                Tween(searchIcon.Instance, TweenInfo.new(0.2), { ImageColor3 = Theme["SubText"] })
+                searchIcon.SetColor(Theme["SubText"])
                 Tween(searchStroke.Instance, TweenInfo.new(0.2), { Color = Theme["Outline"] })
             end
         end
