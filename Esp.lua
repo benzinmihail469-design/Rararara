@@ -170,7 +170,7 @@ local function MakeDraggable(guiInstance, dragHandle)
 end
 
 -- =======================================================
--- 7.1 ВЕКТОРНАЯ ЛУПА (Standalone Function)
+-- 7.1 ВЕКТОРНАЯ ЛУПА (Исправленная функция)
 -- =======================================================
 local function CreateVectorSearchIcon(parent, position, size, color)
     size = size or 14
@@ -185,11 +185,12 @@ local function CreateVectorSearchIcon(parent, position, size, color)
     container.ZIndex = 10
     container.Parent = parent
 
-    -- Линза лупы (круг с контуром)
+    -- Линза лупы (круг)
+    local lensSize = math.round(size * 0.65)
     local lens = Instance.new("Frame")
     lens.Name = "Lens"
-    lens.Size = UDim2.new(0, math.floor(size * 0.62), 0, math.floor(size * 0.62))
-    lens.Position = UDim2.new(0, 0, 0, 0)
+    lens.Size = UDim2.new(0, lensSize, 0, lensSize)
+    lens.Position = UDim2.new(0, 1, 0, 1)
     lens.BackgroundTransparency = 1
     lens.ZIndex = 11
     lens.Parent = container
@@ -200,16 +201,18 @@ local function CreateVectorSearchIcon(parent, position, size, color)
 
     local lensStroke = Instance.new("UIStroke")
     lensStroke.Color = color
-    lensStroke.Thickness = 1.8
+    lensStroke.Thickness = 1.6
     lensStroke.ApplyStrokeMode = Enum.ApplyStrokeMode.Border
     lensStroke.Parent = lens
 
     -- Ручка лупы
+    local handleLength = math.round(size * 0.45)
     local handle = Instance.new("Frame")
     handle.Name = "Handle"
-    handle.Size = UDim2.new(0, 2, 0, math.floor(size * 0.42))
+    handle.Size = UDim2.new(0, 2, 0, handleLength)
     handle.AnchorPoint = Vector2.new(0.5, 0)
-    handle.Position = UDim2.new(0, math.floor(size * 0.58), 0, math.floor(size * 0.58))
+    -- Точное примыкание верхнего края ручки к контуру линзы
+    handle.Position = UDim2.new(0, 1 + math.round(lensSize * 0.70), 0, 1 + math.round(lensSize * 0.70))
     handle.Rotation = -45
     handle.BackgroundColor3 = color
     handle.BorderSizePixel = 0
