@@ -49,7 +49,7 @@ local IconLibrary = {
     ["palette"] = "rbxassetid://10734950020",
     ["globe"] = "rbxassetid://10723343321",
     ["zap"] = "rbxassetid://10734983868",
-    ["search"] = "rbxassetid://10709752002"
+    ["search"] = "rbxassetid://103651057689299"
 }
 
 local function ParseIcon(icon)
@@ -167,70 +167,6 @@ local function MakeDraggable(guiInstance, dragHandle)
             guiInstance.Position = guiInstance.Position:Lerp(targetPos, 0.25)
         end
     end)
-end
-
--- =======================================================
--- 7.1 ВЕКТОРНАЯ ЛУПА (Исправленная функция)
--- =======================================================
-local function CreateVectorSearchIcon(parent, position, size, color)
-    size = size or 14
-    color = color or Theme["Accent"]
-
-    local container = Instance.new("Frame")
-    container.Name = "SearchIcon"
-    container.Size = UDim2.new(0, size, 0, size)
-    container.Position = position or UDim2.new(0, 8, 0.5, 0)
-    container.AnchorPoint = Vector2.new(0, 0.5)
-    container.BackgroundTransparency = 1
-    container.ZIndex = 10
-    container.Parent = parent
-
-    -- Линза лупы (круг)
-    local lensSize = math.round(size * 0.65)
-    local lens = Instance.new("Frame")
-    lens.Name = "Lens"
-    lens.Size = UDim2.new(0, lensSize, 0, lensSize)
-    lens.Position = UDim2.new(0, 1, 0, 1)
-    lens.BackgroundTransparency = 1
-    lens.ZIndex = 11
-    lens.Parent = container
-
-    local lensCorner = Instance.new("UICorner")
-    lensCorner.CornerRadius = UDim.new(1, 0)
-    lensCorner.Parent = lens
-
-    local lensStroke = Instance.new("UIStroke")
-    lensStroke.Color = color
-    lensStroke.Thickness = 1.6
-    lensStroke.ApplyStrokeMode = Enum.ApplyStrokeMode.Border
-    lensStroke.Parent = lens
-
-    -- Ручка лупы
-    local handleLength = math.round(size * 0.45)
-    local handle = Instance.new("Frame")
-    handle.Name = "Handle"
-    handle.Size = UDim2.new(0, 2, 0, handleLength)
-    handle.AnchorPoint = Vector2.new(0.5, 0)
-    -- Точное примыкание верхнего края ручки к контуру линзы
-    handle.Position = UDim2.new(0, 1 + math.round(lensSize * 0.70), 0, 1 + math.round(lensSize * 0.70))
-    handle.Rotation = -45
-    handle.BackgroundColor3 = color
-    handle.BorderSizePixel = 0
-    handle.ZIndex = 11
-    handle.Parent = container
-
-    local handleCorner = Instance.new("UICorner")
-    handleCorner.CornerRadius = UDim.new(1, 0)
-    handleCorner.Parent = handle
-
-    -- Возвращаем объекты для анимации цвета
-    return {
-        Container = container,
-        SetColor = function(newColor)
-            lensStroke.Color = newColor
-            handle.BackgroundColor3 = newColor
-        end
-    }
 end
 
 -- =======================================================
@@ -1327,7 +1263,7 @@ function Library:CreateTab(window, tabData)
 end
 
 -- =======================================================
--- 11. СЕКЦИИ UI С ВЕКТОРНОЙ ЛУПОЙ
+-- 11. СЕКЦИИ UI С ИКОНКОЙ ЛУПЫ
 -- =======================================================
 function Library:CreateSection(parentColumn, sectionData)
     sectionData = sectionData or {}
@@ -1527,7 +1463,7 @@ function Library:CreateSection(parentColumn, sectionData)
     end
 
     -- =======================================================
-    -- СИСТЕМА ПОИСКА С ВЕКТОРНОЙ ИКОНКОЙ ЛУПЫ
+    -- СИСТЕМА ПОИСКА С ИКОНКОЙ ЛУПЫ
     -- =======================================================
     if isSearchable then
         local searchContainer = Instances:Create("Frame", {
@@ -1561,14 +1497,21 @@ function Library:CreateSection(parentColumn, sectionData)
         })
 
         ---------------------------------------------------------
-        -- 1. СОЗДАНИЕ ВЕКТОРНОЙ ЛУПЫ (100% ВИДИМОСТЬ)
+        -- 1. ИКОНКА ЛУПЫ ПО ASSET ID
         ---------------------------------------------------------
-        local searchIcon = CreateVectorSearchIcon(
-            searchBoxFrame.Instance,
-            UDim2.new(0, 8, 0.5, 0),
-            14,
-            Theme["SubText"]
-        )
+        local searchIcon = Instances:Create("ImageLabel", {
+            Parent = searchBoxFrame.Instance,
+            Name = "SearchIcon",
+            Size = UDim2.new(0, 14, 0, 14),
+            Position = UDim2.new(0, 8, 0.5, 0),
+            AnchorPoint = Vector2.new(0, 0.5),
+            BackgroundTransparency = 1,
+            Image = "rbxassetid://103651057689299",
+            ImageColor3 = Theme["SubText"],
+            ImageTransparency = 0.3,
+            ScaleType = Enum.ScaleType.Fit,
+            ZIndex = 9
+        })
 
         ---------------------------------------------------------
         -- 2. ПОЛЕ ВВОДА ТЕКСТА
@@ -1630,10 +1573,10 @@ function Library:CreateSection(parentColumn, sectionData)
         local function UpdateSearchIconState(isFocused)
             local hasText = #textBox.Instance.Text > 0
             if isFocused or hasText then
-                searchIcon.SetColor(Theme["Accent"])
+                Tween(searchIcon.Instance, TweenInfo.new(0.2), { ImageColor3 = Theme["Accent"], ImageTransparency = 0 })
                 Tween(searchStroke.Instance, TweenInfo.new(0.2), { Color = Theme["Accent"] })
             else
-                searchIcon.SetColor(Theme["SubText"])
+                Tween(searchIcon.Instance, TweenInfo.new(0.2), { ImageColor3 = Theme["SubText"], ImageTransparency = 0.3 })
                 Tween(searchStroke.Instance, TweenInfo.new(0.2), { Color = Theme["Outline"] })
             end
         end
