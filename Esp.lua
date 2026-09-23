@@ -1496,9 +1496,6 @@ function Library:CreateSection(parentColumn, sectionData)
             ApplyStrokeMode = Enum.ApplyStrokeMode.Border
         })
 
-        ---------------------------------------------------------
-        -- 1. ИКОНКА ЛУПЫ ПО ASSET ID
-        ---------------------------------------------------------
         local searchIcon = Instances:Create("ImageLabel", {
             Parent = searchBoxFrame.Instance,
             Name = "SearchIcon",
@@ -1513,9 +1510,6 @@ function Library:CreateSection(parentColumn, sectionData)
             ZIndex = 9
         })
 
-        ---------------------------------------------------------
-        -- 2. ПОЛЕ ВВОДА ТЕКСТА
-        ---------------------------------------------------------
         local textBox = Instances:Create("TextBox", {
             Parent = searchBoxFrame.Instance,
             Name = "Input",
@@ -1567,9 +1561,6 @@ function Library:CreateSection(parentColumn, sectionData)
             ZIndex = 11
         })
 
-        ---------------------------------------------------------
-        -- 3. ОБРАБОТКА ЦВЕТА И ФОКУСА
-        ---------------------------------------------------------
         local function UpdateSearchIconState(isFocused)
             local hasText = #textBox.Instance.Text > 0
             if isFocused or hasText then
@@ -2906,6 +2897,366 @@ function Library:CreateSection(parentColumn, sectionData)
         return Slider
     end
 
+    -- =======================================================
+    -- 1. ФУНКЦИЯ COLOR PICKER (ПЛАВНЫЙ ВЫБОР ЦВЕТА)
+    -- =======================================================
+    function SectionAPI:CreateColor(colorData)
+        colorData = colorData or {}
+        local colorTitle = colorData.Name or colorData.Title or "Color Picker"
+        local currentColor = colorData.Default or Color3.fromRGB(0, 140, 255)
+        local callback = colorData.Callback or function() end
+        local flag = colorData.Flag or ("Color_" .. colorTitle)
+        local expanded = false
+
+        local r, g, b = math.floor(currentColor.R * 255), math.floor(currentColor.G * 255), math.floor(currentColor.B * 255)
+
+        local colorHost = Instances:Create("Frame", {
+            Parent = elementsContainer.Instance,
+            Name = "ColorHost_" .. colorTitle,
+            Size = UDim2.new(1, 0, 0, 28),
+            BackgroundTransparency = 1,
+            BorderSizePixel = 0,
+            ZIndex = 8
+        })
+
+        local titleLabel = Instances:Create("TextLabel", {
+            Parent = colorHost.Instance,
+            Name = "Title",
+            Text = colorTitle,
+            FontFace = Font.new("rbxassetid://12187365364", Enum.FontWeight.Medium, Enum.FontStyle.Normal),
+            TextColor3 = Theme["Text"],
+            TextSize = 12,
+            Size = UDim2.new(0.6, 0, 0, 28),
+            Position = UDim2.new(0, 0, 0, 0),
+            BackgroundTransparency = 1,
+            TextXAlignment = Enum.TextXAlignment.Left,
+            ZIndex = 8
+        })
+
+        -- Кнопка с превью цвета
+        local previewButton = Instances:Create("TextButton", {
+            Parent = colorHost.Instance,
+            Name = "PreviewButton",
+            AnchorPoint = Vector2.new(1, 0),
+            Position = UDim2.new(1, 0, 0, 3),
+            Size = UDim2.new(0, 36, 0, 22),
+            BackgroundColor3 = currentColor,
+            Text = "",
+            AutoButtonColor = false,
+            ZIndex = 9,
+            Active = true
+        })
+
+        Instances:Create("UICorner", { Parent = previewButton.Instance, CornerRadius = UDim.new(0, 5) })
+        local previewStroke = Instances:Create("UIStroke", {
+            Parent = previewButton.Instance,
+            Color = Theme["Outline"],
+            Thickness = 1,
+            ApplyStrokeMode = Enum.ApplyStrokeMode.Border
+        })
+
+        -- Выпадающее окошко настроек цвета (Медленная плавная анимация)
+        local colorPanel = Instances:Create("Frame", {
+            Parent = colorHost.Instance,
+            Name = "ColorPanel",
+            Position = UDim2.new(0, 0, 0, 32),
+            Size = UDim2.new(1, 0, 0, 0),
+            BackgroundColor3 = Color3.fromRGB(12, 14, 20),
+            BackgroundTransparency = 0.05,
+            BorderSizePixel = 0,
+            ClipsDescendants = true,
+            ZIndex = 15
+        })
+
+        Instances:Create("UICorner", { Parent = colorPanel.Instance, CornerRadius = UDim.new(0, 6) })
+        local panelStroke = Instances:Create("UIStroke", {
+            Parent = colorPanel.Instance,
+            Color = Theme["Outline"],
+            Thickness = 1,
+            Transparency = 1
+        })
+
+        Instances:Create("UIPadding", {
+            Parent = colorPanel.Instance,
+            PaddingTop = UDim.new(0, 8),
+            PaddingBottom = UDim.new(0, 8),
+            PaddingLeft = UDim.new(0, 10),
+            PaddingRight = UDim.new(0, 10)
+        })
+
+        local panelLayout = Instances:Create("UIListLayout", {
+            Parent = colorPanel.Instance,
+            SortOrder = Enum.SortOrder.LayoutOrder,
+            Padding = UDim.new(0, 6)
+        })
+
+        -- Отображение HEX
+        local hexLabel = Instances:Create("TextLabel", {
+            Parent = colorPanel.Instance,
+            Name = "HexLabel",
+            Text = string.format("HEX: #%02X%02X%02X", r, g, b),
+            FontFace = Font.new("rbxassetid://12187365364", Enum.FontWeight.Bold, Enum.FontStyle.Normal),
+            TextColor3 = Theme["AccentGlow"],
+            TextSize = 11,
+            Size = UDim2.new(1, 0, 0, 16),
+            BackgroundTransparency = 1,
+            TextXAlignment = Enum.TextXAlignment.Center,
+            ZIndex = 16
+        })
+
+        local function UpdateColor(newColor)
+            currentColor = newColor
+            r, g, b = math.floor(currentColor.R * 255), math.floor(currentColor.G * 255), math.floor(currentColor.B * 255)
+            Tween(previewButton.Instance, TweenInfo.new(0.25), { BackgroundColor3 = currentColor })
+            hexLabel.Instance.Text = string.format("HEX: #%02X%02X%02X", r, g, b)
+            Library.Flags[flag] = currentColor
+            pcall(callback, currentColor)
+        end
+
+        -- Вспомогательная функция слайдеров каналов
+        local function CreateChannelSlider(channelName, startVal, colorAccent, onChanChange)
+            local sliderFrame = Instances:Create("Frame", {
+                Parent = colorPanel.Instance,
+                Name = "Channel_" .. channelName,
+                Size = UDim2.new(1, 0, 0, 18),
+                BackgroundTransparency = 1,
+                ZIndex = 16
+            })
+
+            local chanText = Instances:Create("TextLabel", {
+                Parent = sliderFrame.Instance,
+                Text = channelName,
+                FontFace = Font.new("rbxassetid://12187365364", Enum.FontWeight.Bold, Enum.FontStyle.Normal),
+                TextColor3 = colorAccent,
+                TextSize = 11,
+                Size = UDim2.new(0, 16, 1, 0),
+                BackgroundTransparency = 1,
+                ZIndex = 16
+            })
+
+            local track = Instances:Create("Frame", {
+                Parent = sliderFrame.Instance,
+                Position = UDim2.new(0, 22, 0.5, -3),
+                Size = UDim2.new(1, -22, 0, 6),
+                BackgroundColor3 = Theme["Element"],
+                BorderSizePixel = 0,
+                ZIndex = 16
+            })
+            Instances:Create("UICorner", { Parent = track.Instance, CornerRadius = UDim.new(1, 0) })
+
+            local fill = Instances:Create("Frame", {
+                Parent = track.Instance,
+                Size = UDim2.new(startVal / 255, 0, 1, 0),
+                BackgroundColor3 = colorAccent,
+                BorderSizePixel = 0,
+                ZIndex = 17
+            })
+            Instances:Create("UICorner", { Parent = fill.Instance, CornerRadius = UDim.new(1, 0) })
+
+            local dragging = false
+            local function ApplyInput(input)
+                local pos = math.clamp((input.Position.X - track.Instance.AbsolutePosition.X) / track.Instance.AbsoluteSize.X, 0, 1)
+                local val = math.floor(pos * 255)
+                Tween(fill.Instance, TweenInfo.new(0.1, Enum.EasingStyle.Quad, Enum.EasingDirection.Out), { Size = UDim2.new(pos, 0, 1, 0) })
+                onChanChange(val)
+            end
+
+            track:Connect("InputBegan", function(input)
+                if input.UserInputType == Enum.UserInputType.MouseButton1 or input.UserInputType == Enum.UserInputType.Touch then
+                    dragging = true
+                    ApplyInput(input)
+                end
+            end)
+
+            UserInputService.InputChanged:Connect(function(input)
+                if dragging and (input.UserInputType == Enum.UserInputType.MouseMovement or input.UserInputType == Enum.UserInputType.Touch) then
+                    ApplyInput(input)
+                end
+            end)
+
+            UserInputService.InputEnded:Connect(function(input)
+                if input.UserInputType == Enum.UserInputType.MouseButton1 or input.UserInputType == Enum.UserInputType.Touch then
+                    dragging = false
+                end
+            end)
+        end
+
+        CreateChannelSlider("R", r, Color3.fromRGB(255, 70, 70), function(v) r = v UpdateColor(Color3.fromRGB(r, g, b)) end)
+        CreateChannelSlider("G", g, Color3.fromRGB(70, 255, 120), function(v) g = v UpdateColor(Color3.fromRGB(r, g, b)) end)
+        CreateChannelSlider("B", b, Color3.fromRGB(0, 180, 255), function(v) b = v UpdateColor(Color3.fromRGB(r, g, b)) end)
+
+        -- ЧУТЬ МЕДЛЕННАЯ ПЛАВНАЯ АНИМАЦИЯ ОТКРЫТИЯ/ЗАКРЫТИЯ (0.4 секунды)
+        previewButton.Instance.Activated:Connect(function()
+            expanded = not expanded
+            local targetPanelHeight = expanded and (panelLayout.Instance.AbsoluteContentSize.Y + 16) or 0
+            local targetHostHeight = expanded and (34 + targetPanelHeight) or 28
+
+            local slowInfo = TweenInfo.new(0.4, Enum.EasingStyle.Quart, Enum.EasingDirection.Out)
+
+            Tween(colorPanel.Instance, slowInfo, { Size = UDim2.new(1, 0, 0, targetPanelHeight) })
+            Tween(panelStroke.Instance, slowInfo, { Transparency = expanded and 0 or 1 })
+            Tween(colorHost.Instance, slowInfo, { Size = UDim2.new(1, 0, 0, targetHostHeight) })
+            Tween(previewStroke.Instance, slowInfo, { Color = expanded and Theme["AccentGlow"] or Theme["Outline"] })
+        end)
+
+        Library.Flags[flag] = currentColor
+        table.insert(sectionItems, { Instance = colorHost.Instance, Title = colorTitle })
+        return colorHost.Instance
+    end
+
+    -- =======================================================
+    -- 2. ФУНКЦИЯ PLAYER CARD (3D ПРЕВЬЮ И АНИМАЦИЯ ИГРОКА)
+    -- =======================================================
+    function SectionAPI:CreatePlayerCard(cardData)
+        cardData = cardData or {}
+        local player = cardData.Player or LocalPlayer
+        local cardTitle = cardData.Title or "Карточка Игрока"
+
+        local cardFrame = Instances:Create("Frame", {
+            Parent = elementsContainer.Instance,
+            Name = "PlayerCard_" .. player.Name,
+            Size = UDim2.new(1, 0, 0, 210),
+            BackgroundColor3 = Theme["Background 2"],
+            BackgroundTransparency = 0,
+            BorderSizePixel = 0,
+            ZIndex = 8,
+            ClipsDescendants = true
+        })
+
+        Instances:Create("UICorner", { Parent = cardFrame.Instance, CornerRadius = UDim.new(0, 8) })
+        local cardStroke = Instances:Create("UIStroke", {
+            Parent = cardFrame.Instance,
+            Color = Theme["Outline"],
+            Thickness = 1,
+            ApplyStrokeMode = Enum.ApplyStrokeMode.Border
+        })
+
+        -- Неоновый градиент рамки
+        Instances:Create("UIGradient", {
+            Parent = cardStroke.Instance,
+            Color = ColorSequence.new({
+                ColorSequenceKeypoint.new(0, Theme["Outline"]),
+                ColorSequenceKeypoint.new(0.5, Theme["Accent"]),
+                ColorSequenceKeypoint.new(1, Theme["Outline"])
+            })
+        })
+
+        -- Шапка карточки (Никнейм)
+        local headerFrame = Instances:Create("Frame", {
+            Parent = cardFrame.Instance,
+            Name = "Header",
+            Size = UDim2.new(1, 0, 0, 32),
+            BackgroundColor3 = Theme["Element"],
+            BorderSizePixel = 0,
+            ZIndex = 9
+        })
+
+        local nameLabel = Instances:Create("TextLabel", {
+            Parent = headerFrame.Instance,
+            Text = player.DisplayName .. " (@" .. player.Name .. ")",
+            FontFace = Font.new("rbxassetid://12187365364", Enum.FontWeight.Bold, Enum.FontStyle.Normal),
+            TextColor3 = Theme["Text"],
+            TextSize = 11,
+            Position = UDim2.new(0, 10, 0, 0),
+            Size = UDim2.new(1, -20, 1, 0),
+            BackgroundTransparency = 1,
+            TextXAlignment = Enum.TextXAlignment.Left,
+            ZIndex = 10,
+            TextTruncate = Enum.TextTruncate.AtEnd
+        })
+
+        -- ViewportFrame для 3D Персонажа
+        local viewport = Instances:Create("ViewportFrame", {
+            Parent = cardFrame.Instance,
+            Name = "CharacterViewport",
+            Position = UDim2.new(0, 10, 0, 38),
+            Size = UDim2.new(1, -20, 0, 132),
+            BackgroundTransparency = 1,
+            BorderSizePixel = 0,
+            ZIndex = 9
+        })
+
+        -- Нижняя плашка со статусом анимации
+        local animStatusFrame = Instances:Create("Frame", {
+            Parent = cardFrame.Instance,
+            Name = "AnimStatus",
+            Position = UDim2.new(0, 10, 1, -32),
+            Size = UDim2.new(1, -20, 0, 24),
+            BackgroundColor3 = Theme["Element"],
+            BorderSizePixel = 0,
+            ZIndex = 9
+        })
+        Instances:Create("UICorner", { Parent = animStatusFrame.Instance, CornerRadius = UDim.new(0, 5) })
+
+        local animStatusLabel = Instances:Create("TextLabel", {
+            Parent = animStatusFrame.Instance,
+            Text = "Анимация: Ходьба (Walking)",
+            FontFace = Font.new("rbxassetid://12187365364", Enum.FontWeight.Medium, Enum.FontStyle.Normal),
+            TextColor3 = Theme["SubText"],
+            TextSize = 10,
+            Size = UDim2.new(1, 0, 1, 0),
+            BackgroundTransparency = 1,
+            TextXAlignment = Enum.TextXAlignment.Center,
+            ZIndex = 10
+        })
+
+        -- Спавн и настройка 3D Персонажа
+        task.spawn(function()
+            pcall(function()
+                local char = player.Character or player.CharacterAdded:Wait()
+                char.Archivable = true
+                local charClone = char:Clone()
+                char.Archivable = false
+
+                local worldModel = Instance.new("WorldModel")
+                worldModel.Parent = viewport.Instance
+                charClone.Parent = worldModel
+
+                local root = charClone:FindFirstChild("HumanoidRootPart") or charClone:FindFirstChild("Torso") or charClone.PrimaryPart
+                if root then
+                    root.CFrame = CFrame.new(0, 0, 0)
+                end
+
+                local camera = Instance.new("Camera")
+                camera.FieldOfView = 32
+                viewport.Instance.CurrentCamera = camera
+                camera.Parent = viewport.Instance
+
+                -- Запуск анимации ходьбы
+                local humanoid = charClone:FindFirstChildOfClass("Humanoid")
+                if humanoid then
+                    local animator = humanoid:FindFirstChildOfClass("Animator") or Instance.new("Animator", humanoid)
+                    local isR15 = humanoid.RigType == Enum.HumanoidRigType.R15
+                    local walkAnim = Instance.new("Animation")
+                    walkAnim.AnimationId = isR15 and "rbxassetid://507777826" or "rbxassetid://180436148"
+                    
+                    local track = animator:LoadAnimation(walkAnim)
+                    track.Looped = true
+                    track:Play()
+                end
+
+                -- Медленное плавно вращение 3D сцены
+                local angle = 0
+                local rotSpeed = 22 -- скорость вращения
+                local renderConn
+                renderConn = RunService.RenderStepped:Connect(function(dt)
+                    if not cardFrame.Instance:IsDescendantOf(game) then
+                        renderConn:Disconnect()
+                        return
+                    end
+                    angle = (angle + dt * rotSpeed) % 360
+                    if root then
+                        local centerPos = root.Position + Vector3.new(0, 0.2, 0)
+                        camera.CFrame = CFrame.new(centerPos) * CFrame.Angles(0, math.rad(angle), 0) * CFrame.new(0, 0.8, 7.2)
+                    end
+                end)
+            end)
+        end)
+
+        table.insert(sectionItems, { Instance = cardFrame.Instance, Title = cardTitle })
+        return cardFrame.Instance
+    end
+
     return SectionAPI
 end
 
@@ -3097,6 +3448,22 @@ PlayersSection:CreateToggle({
     end
 })
 
+-- =======================================================
+-- ДЕМОНСТРАЦИЯ НОВЫХ ФУНКЦИЙ: COLOR PICKER и PLAYER CARD
+-- =======================================================
+PlayersSection:CreateColor({
+    Name = "Цвет подсветки (Chams)",
+    Default = Color3.fromRGB(0, 140, 255),
+    Callback = function(selectedColor)
+        print("Выбран цвет:", selectedColor)
+    end
+})
+
+PlayersSection:CreatePlayerCard({
+    Title = "Информация об игроке",
+    Player = LocalPlayer
+})
+
 local VisualsSection = Library:CreateSection(PlayersCols[2], {
     Name = "ESP Settings",
     Icon = "settings"
@@ -3137,6 +3504,15 @@ WorldSection:CreateDropdown({
     Default = "Clear",
     Callback = function(SelectedOption)
         print("Weather changed to:", SelectedOption)
+    end
+})
+
+-- Демонстрация Color Picker внутри Суб-Вкладки (World)
+WorldSection:CreateColor({
+    Name = "Цвет Прицела",
+    Default = Color3.fromRGB(255, 45, 90),
+    Callback = function(col)
+        print("Новый цвет прицела:", col)
     end
 })
 
