@@ -3261,6 +3261,550 @@ function Library:CreateSection(parentColumn, sectionData)
 end
 
 -- =======================================================
+-- 11.1 НОВЫЕ ФУНКЦИИ ДЛЯ LIBRARY (ИНТЕГРАЦИЯ)
+-- =======================================================
+
+-- =======================================================
+-- ФУНКЦИЯ 1: КАРТОЧКА ИГРОКА (3D В полный рост, Вращение, Динамика ходьбы)
+-- =======================================================
+function Library:CreatePlayerCard(parent, targetPlayer)
+    targetPlayer = targetPlayer or LocalPlayer
+
+    -- Главный контейнер карточки
+    local cardFrame = Instances:Create("Frame", {
+        Parent = parent,
+        Name = "PlayerCard_" .. targetPlayer.Name,
+        Size = UDim2.new(1, 0, 0, 220),
+        BackgroundColor3 = Theme["Background 2"],
+        BackgroundTransparency = 0,
+        BorderSizePixel = 0,
+        ZIndex = 6,
+        ClipsDescendants = true
+    })
+
+    Instances:Create("UICorner", { Parent = cardFrame.Instance, CornerRadius = UDim.new(0, 8) })
+    Instances:Create("UIStroke", { Parent = cardFrame.Instance, Color = Theme["Outline"], Thickness = 1, ApplyStrokeMode = Enum.ApplyStrokeMode.Border })
+
+    -- Градиент фоновой подложки
+    Instances:Create("UIGradient", {
+        Parent = cardFrame.Instance,
+        Color = ColorSequence.new({
+            ColorSequenceKeypoint.new(0, Color3.fromRGB(10, 14, 22)),
+            ColorSequenceKeypoint.new(0.6, Theme["Background 2"]),
+            ColorSequenceKeypoint.new(1, Theme["Background"])
+        }),
+        Rotation = 45
+    })
+
+    -- Контейнер 3D ViewportFrame (для полноростового скина)
+    local viewportHolder = Instances:Create("Frame", {
+        Parent = cardFrame.Instance,
+        Name = "ViewportHolder",
+        Position = UDim2.new(0, 10, 0, 10),
+        Size = UDim2.new(0, 140, 1, -20),
+        BackgroundColor3 = Theme["Element"],
+        BackgroundTransparency = 0.2,
+        BorderSizePixel = 0,
+        ZIndex = 7,
+        ClipsDescendants = true
+    })
+
+    Instances:Create("UICorner", { Parent = viewportHolder.Instance, CornerRadius = UDim.new(0, 6) })
+
+    local viewportStroke = Instances:Create("UIStroke", {
+        Parent = viewportHolder.Instance,
+        Color = Theme["Outline"],
+        Thickness = 1
+    })
+
+    local viewport = Instances:Create("ViewportFrame", {
+        Parent = viewportHolder.Instance,
+        Name = "PlayerViewport",
+        Size = UDim2.new(1, 0, 1, 0),
+        BackgroundTransparency = 1,
+        LightColor = Color3.fromRGB(255, 255, 255),
+        LightDirection = Vector3.new(-1, -2, -1),
+        ZIndex = 8
+    })
+
+    -- Камера для ViewportFrame
+    local camera = Instance.new("Camera")
+    camera.FieldOfView = 38
+    viewport.Instance.CurrentCamera = camera
+    camera.Parent = viewport.Instance
+
+    local worldModel = Instance.new("WorldModel")
+    worldModel.Parent = viewport.Instance
+
+    local dummyModel = nil
+    local animator = nil
+    local walkTrack = nil
+    local currentRotationY = 0
+    local isDragging = false
+    local lastMouseX = 0
+
+    -- Загрузка и настройка персонажа
+    local function LoadCharacterModel()
+        worldModel:ClearAllChildren()
+        pcall(function()
+            dummyModel = Players:CreateHumanoidModelFromUserId(targetPlayer.UserId)
+            dummyModel.Parent = worldModel
+            dummyModel:SetPrimaryPartCFrame(CFrame.new(0, 0, 0))
+
+            local humanoid = dummyModel:FindFirstChildOfClass("Humanoid")
+            if humanoid then
+                humanoid.DisplayDistanceType = Enum.HumanoidDisplayDistanceType.None
+                animator = humanoid:FindFirstChildOfClass("Animator") or Instance.new("Animator", humanoid)
+
+                -- Анимация ходьбы Roblox по умолчанию
+                local walkAnim = Instance.new("Animation")
+                walkAnim.AnimationId = "rbxassetid://180436334" -- Стандартная гиф-анимация ходьбы
+                walkTrack = animator:LoadAnimation(walkAnim)
+                walkTrack.Priority = Enum.AnimationPriority.Movement
+            end
+
+            -- Выравнивание камеры по центру персонажа (Полный рост)
+            local root = dummyModel:FindFirstChild("HumanoidRootPart") or dummyModel.PrimaryPart
+            if root then
+                camera.CFrame = CFrame.new(root.Position + Vector3.new(0, 0.2, -6.2), root.Position + Vector3.new(0, -0.2, 0))
+            end
+        end)
+    end
+
+    task.spawn(LoadCharacterModel)
+
+    -- Вращение мышкой/пальцем
+    viewportHolder.Instance.InputBegan:Connect(function(input)
+        if input.UserInputType == Enum.UserInputType.MouseButton1 or input.UserInputType == Enum.UserInputType.Touch then
+            isDragging = true
+            lastMouseX = input.Position.X
+            Tween(viewportStroke.Instance, TweenInfo.new(0.2), { Color = Theme["Accent"] })
+        end
+    end)
+
+    UserInputService.InputChanged:Connect(function(input)
+        if isDragging and (input.UserInputType == Enum.UserInputType.MouseMovement or input.UserInputType == Enum.UserInputType.Touch) then
+            local deltaX = input.Position.X - lastMouseX
+            lastMouseX = input.Position.X
+            currentRotationY = currentRotationY + (deltaX * 0.015)
+
+            if dummyModel and dummyModel.PrimaryPart then
+                dummyModel:SetPrimaryPartCFrame(CFrame.new(0, 0, 0) * CFrame.Angles(0, currentRotationY, 0))
+            end
+        end
+    end)
+
+    UserInputService.InputEnded:Connect(function(input)
+        if input.UserInputType == Enum.UserInputType.MouseButton1 or input.UserInputType == Enum.UserInputType.Touch then
+            isDragging = false
+            Tween(viewportStroke.Instance, TweenInfo.new(0.2), { Color = Theme["Outline"] })
+        end
+    end)
+
+    -- Отслеживание ходьбы игрока (Анимация запускается ТОЛЬКО при движении)
+    local renderConn
+    renderConn = RunService.RenderStepped:Connect(function()
+        if not cardFrame.Instance:IsDescendantOf(game) then
+            renderConn:Disconnect()
+            return
+        end
+
+        local realChar = targetPlayer.Character
+        if realChar then
+            local realHumanoid = realChar:FindFirstChildOfClass("Humanoid")
+            if realHumanoid and walkTrack then
+                -- Если персонаж реально двигается
+                local isMoving = realHumanoid.MoveDirection.Magnitude > 0.05
+                if isMoving and not walkTrack.IsPlaying then
+                    walkTrack:Play(0.2)
+                elseif not isMoving and walkTrack.IsPlaying then
+                    walkTrack:Stop(0.2)
+                end
+            end
+        end
+    end)
+
+    -- Правый блок информации с ником и деталями
+    local infoContainer = Instances:Create("Frame", {
+        Parent = cardFrame.Instance,
+        Name = "InfoContainer",
+        Position = UDim2.new(0, 160, 0, 10),
+        Size = UDim2.new(1, -170, 1, -20),
+        BackgroundTransparency = 1,
+        ZIndex = 7
+    })
+
+    Instances:Create("UIListLayout", {
+        Parent = infoContainer.Instance,
+        SortOrder = Enum.SortOrder.LayoutOrder,
+        Padding = UDim.new(0, 6)
+    })
+
+    -- Имя игрока (DisplayName)
+    local displayNameLabel = Instances:Create("TextLabel", {
+        Parent = infoContainer.Instance,
+        Name = "DisplayName",
+        Text = targetPlayer.DisplayName,
+        FontFace = Font.new("rbxassetid://12187365364", Enum.FontWeight.Bold, Enum.FontStyle.Normal),
+        TextColor3 = Theme["Text"],
+        TextSize = 14,
+        Size = UDim2.new(1, 0, 0, 18),
+        BackgroundTransparency = 1,
+        TextXAlignment = Enum.TextXAlignment.Left,
+        TextTruncate = Enum.TextTruncate.AtEnd,
+        ZIndex = 8
+    })
+
+    -- Юзернейм (@Username)
+    local usernameBadge = Instances:Create("Frame", {
+        Parent = infoContainer.Instance,
+        Name = "UsernameBadge",
+        Size = UDim2.new(1, 0, 0, 20),
+        BackgroundColor3 = Theme["Element"],
+        BackgroundTransparency = 0.3,
+        BorderSizePixel = 0,
+        ZIndex = 8
+    })
+
+    Instances:Create("UICorner", { Parent = usernameBadge.Instance, CornerRadius = UDim.new(0, 4) })
+    Instances:Create("UIStroke", { Parent = usernameBadge.Instance, Color = Theme["Outline"], Thickness = 1 })
+
+    local usernameLabel = Instances:Create("TextLabel", {
+        Parent = usernameBadge.Instance,
+        Name = "Username",
+        Text = "@" .. targetPlayer.Name,
+        FontFace = Font.new("rbxassetid://12187365364", Enum.FontWeight.Medium, Enum.FontStyle.Normal),
+        TextColor3 = Theme["AccentGlow"],
+        TextSize = 11,
+        Position = UDim2.new(0, 6, 0, 0),
+        Size = UDim2.new(1, -12, 1, 0),
+        BackgroundTransparency = 1,
+        TextXAlignment = Enum.TextXAlignment.Left,
+        TextTruncate = Enum.TextTruncate.AtEnd,
+        ZIndex = 9
+    })
+
+    -- Информационный статус (User ID / Команда)
+    local function CreateInfoRow(title, value)
+        local row = Instances:Create("Frame", {
+            Parent = infoContainer.Instance,
+            Size = UDim2.new(1, 0, 0, 18),
+            BackgroundTransparency = 1,
+            ZIndex = 8
+        })
+
+        Instances:Create("TextLabel", {
+            Parent = row.Instance,
+            Text = title,
+            FontFace = Font.new("rbxassetid://12187365364", Enum.FontWeight.Regular, Enum.FontStyle.Normal),
+            TextColor3 = Theme["SubText"],
+            TextSize = 10,
+            Size = UDim2.new(0.4, 0, 1, 0),
+            BackgroundTransparency = 1,
+            TextXAlignment = Enum.TextXAlignment.Left,
+            ZIndex = 9
+        })
+
+        Instances:Create("TextLabel", {
+            Parent = row.Instance,
+            Text = value,
+            FontFace = Font.new("rbxassetid://12187365364", Enum.FontWeight.Bold, Enum.FontStyle.Normal),
+            TextColor3 = Theme["Text"],
+            TextSize = 10,
+            Position = UDim2.new(0.4, 0, 0, 0),
+            Size = UDim2.new(0.6, 0, 1, 0),
+            BackgroundTransparency = 1,
+            TextXAlignment = Enum.TextXAlignment.Right,
+            ZIndex = 9
+        })
+    end
+
+    CreateInfoRow("User ID:", tostring(targetPlayer.UserId))
+    CreateInfoRow("Account Age:", tostring(targetPlayer.AccountAge) .. " d")
+
+    return cardFrame.Instance
+end
+
+-- =======================================================
+-- ФУНКЦИЯ 2: ПОЛНОЦЕННЫЙ COLOR PICKER (Огромная база Roblox цветов + Копирование)
+-- =======================================================
+function Library:CreateColorPicker(parent, config)
+    config = config or {}
+    local colorTitle = config.Name or config.Title or "Color Selector"
+    local defaultColor = config.Default or Color3.fromRGB(0, 140, 255)
+    local callback = config.Callback or function() end
+    local currentColor = defaultColor
+    local expanded = false
+
+    -- Огромная палитра стандартных и топовых цветов Roblox
+    local RobloxColors = {
+        { Name = "Really Red", Color = Color3.fromRGB(255, 0, 0) },
+        { Name = "Neon Orange", Color = Color3.fromRGB(255, 120, 0) },
+        { Name = "Deep Orange", Color = Color3.fromRGB(255, 170, 0) },
+        { Name = "Bright Yellow", Color = Color3.fromRGB(255, 235, 0) },
+        { Name = "Lime Green", Color = Color3.fromRGB(50, 240, 50) },
+        { Name = "Mint Green", Color = Color3.fromRGB(0, 255, 170) },
+        { Name = "Cyan", Color = Color3.fromRGB(0, 240, 255) },
+        { Name = "Electric Blue", Color = Color3.fromRGB(0, 140, 255) },
+        { Name = "Royal Blue", Color = Color3.fromRGB(15, 60, 225) },
+        { Name = "Deep Indigo", Color = Color3.fromRGB(75, 0, 220) },
+        { Name = "Hot Pink", Color = Color3.fromRGB(255, 0, 150) },
+        { Name = "Pastel Violet", Color = Color3.fromRGB(200, 100, 255) },
+        { Name = "Godly Gold", Color = Color3.fromRGB(255, 200, 50) },
+        { Name = "Ghost White", Color = Color3.fromRGB(245, 245, 255) },
+        { Name = "Dark Slate", Color = Color3.fromRGB(35, 40, 50) },
+        { Name = "Pitch Black", Color = Color3.fromRGB(10, 10, 12) }
+    }
+
+    local pickerHost = Instances:Create("Frame", {
+        Parent = parent,
+        Name = "ColorPickerHost_" .. colorTitle,
+        Size = UDim2.new(1, 0, 0, 28),
+        BackgroundTransparency = 1,
+        BorderSizePixel = 0,
+        ZIndex = 8,
+        ClipsDescendants = false
+    })
+
+    -- Заголовок
+    local titleLabel = Instances:Create("TextLabel", {
+        Parent = pickerHost.Instance,
+        Name = "Title",
+        Text = colorTitle,
+        FontFace = Font.new("rbxassetid://12187365364", Enum.FontWeight.Medium, Enum.FontStyle.Normal),
+        TextColor3 = Theme["SubText"],
+        TextSize = 11,
+        Size = UDim2.new(0.5, 0, 0, 28),
+        BackgroundTransparency = 1,
+        TextXAlignment = Enum.TextXAlignment.Left,
+        ZIndex = 9
+    })
+
+    -- Кнопка с превью текущего цвета
+    local colorPreviewBtn = Instances:Create("TextButton", {
+        Parent = pickerHost.Instance,
+        Name = "PreviewButton",
+        AnchorPoint = Vector2.new(1, 0),
+        Position = UDim2.new(1, 0, 0, 2),
+        Size = UDim2.new(0, 60, 0, 24),
+        BackgroundColor3 = Theme["Element"],
+        BackgroundTransparency = 0.2,
+        Text = "",
+        AutoButtonColor = false,
+        ZIndex = 9,
+        Active = true
+    })
+
+    Instances:Create("UICorner", { Parent = colorPreviewBtn.Instance, CornerRadius = UDim.new(0, 5) })
+
+    local previewStroke = Instances:Create("UIStroke", {
+        Parent = colorPreviewBtn.Instance,
+        Color = Theme["Outline"],
+        Thickness = 1
+    })
+
+    local colorIndicator = Instances:Create("Frame", {
+        Parent = colorPreviewBtn.Instance,
+        Name = "Indicator",
+        AnchorPoint = Vector2.new(0.5, 0.5),
+        Position = UDim2.new(0.5, 0, 0.5, 0),
+        Size = UDim2.new(1, -6, 1, -6),
+        BackgroundColor3 = currentColor,
+        BorderSizePixel = 0,
+        ZIndex = 10
+    })
+
+    Instances:Create("UICorner", { Parent = colorIndicator.Instance, CornerRadius = UDim.new(0, 3) })
+
+    -- Выпадающая карточка выбора цвета
+    local dropdownCard = Instances:Create("Frame", {
+        Parent = pickerHost.Instance,
+        Name = "ColorCard",
+        AnchorPoint = Vector2.new(1, 0),
+        Position = UDim2.new(1, 0, 0, 32),
+        Size = UDim2.new(1, 0, 0, 0),
+        BackgroundColor3 = Theme["Background 2"],
+        BackgroundTransparency = 0.05,
+        BorderSizePixel = 0,
+        ClipsDescendants = true,
+        ZIndex = 20
+    })
+
+    Instances:Create("UICorner", { Parent = dropdownCard.Instance, CornerRadius = UDim.new(0, 6) })
+
+    local cardStroke = Instances:Create("UIStroke", {
+        Parent = dropdownCard.Instance,
+        Color = Theme["Outline"],
+        Thickness = 1,
+        Transparency = 1
+    })
+
+    Instances:Create("UIPadding", {
+        Parent = dropdownCard.Instance,
+        PaddingTop = UDim.new(0, 8),
+        PaddingBottom = UDim.new(0, 8),
+        PaddingLeft = UDim.new(0, 8),
+        PaddingRight = UDim.new(0, 8)
+    })
+
+    local cardLayout = Instances:Create("UIListLayout", {
+        Parent = dropdownCard.Instance,
+        SortOrder = Enum.SortOrder.LayoutOrder,
+        Padding = UDim.new(0, 8)
+    })
+
+    -- Сетка палитры цветов (Roblox Preset Grid)
+    local gridFrame = Instances:Create("Frame", {
+        Parent = dropdownCard.Instance,
+        Name = "PresetGrid",
+        Size = UDim2.new(1, 0, 0, 80),
+        BackgroundTransparency = 1,
+        LayoutOrder = 1,
+        ZIndex = 21
+    })
+
+    Instances:Create("UIGridLayout", {
+        Parent = gridFrame.Instance,
+        CellSize = UDim2.new(0, 22, 0, 22),
+        CellPadding = UDim2.new(0, 6, 0, 6),
+        SortOrder = Enum.SortOrder.LayoutOrder
+    })
+
+    -- Перевод Color3 в HEX строку
+    local function ColorToHex(col)
+        return string.format("#%02X%02X%02X", math.floor(col.R * 255), math.floor(col.G * 255), math.floor(col.B * 255))
+    end
+
+    -- Перевод Color3 в RGB строку
+    local function ColorToRGB(col)
+        return string.format("%d, %d, %d", math.floor(col.R * 255), math.floor(col.G * 255), math.floor(col.B * 255))
+    end
+
+    -- Блок управления: Информация + Копирование
+    local copyBar = Instances:Create("Frame", {
+        Parent = dropdownCard.Instance,
+        Name = "CopyBar",
+        Size = UDim2.new(1, 0, 0, 24),
+        BackgroundTransparency = 1,
+        LayoutOrder = 2,
+        ZIndex = 21
+    })
+
+    local hexLabel = Instances:Create("TextLabel", {
+        Parent = copyBar.Instance,
+        Name = "HexDisplay",
+        Text = ColorToHex(currentColor),
+        FontFace = Font.new("rbxassetid://12187365364", Enum.FontWeight.Bold, Enum.FontStyle.Normal),
+        TextColor3 = Theme["Text"],
+        TextSize = 10,
+        Position = UDim2.new(0, 0, 0, 0),
+        Size = UDim2.new(0.5, 0, 1, 0),
+        BackgroundTransparency = 1,
+        TextXAlignment = Enum.TextXAlignment.Left,
+        ZIndex = 22
+    })
+
+    local copyHexBtn = Instances:Create("TextButton", {
+        Parent = copyBar.Instance,
+        Name = "CopyBtn",
+        AnchorPoint = Vector2.new(1, 0.5),
+        Position = UDim2.new(1, 0, 0.5, 0),
+        Size = UDim2.new(0, 65, 0, 20),
+        BackgroundColor3 = Theme["Element"],
+        BackgroundTransparency = 0.1,
+        Text = "Copy HEX",
+        FontFace = Font.new("rbxassetid://12187365364", Enum.FontWeight.Medium, Enum.FontStyle.Normal),
+        TextColor3 = Theme["SubText"],
+        TextSize = 9,
+        AutoButtonColor = false,
+        ZIndex = 22,
+        Active = true
+    })
+
+    Instances:Create("UICorner", { Parent = copyHexBtn.Instance, CornerRadius = UDim.new(0, 4) })
+
+    local copyBtnStroke = Instances:Create("UIStroke", {
+        Parent = copyHexBtn.Instance,
+        Color = Theme["Outline"],
+        Thickness = 1
+    })
+
+    -- Функция смены цвета
+    local function SetColor(newColor)
+        currentColor = newColor
+        Tween(colorIndicator.Instance, TweenInfo.new(0.2), { BackgroundColor3 = currentColor })
+        hexLabel.Instance.Text = ColorToHex(currentColor)
+        pcall(callback, currentColor)
+    end
+
+    -- Заполнение сетки цветами
+    for _, item in ipairs(RobloxColors) do
+        local btn = Instances:Create("TextButton", {
+            Parent = gridFrame.Instance,
+            Name = "Color_" .. item.Name,
+            BackgroundColor3 = item.Color,
+            Text = "",
+            AutoButtonColor = false,
+            BorderSizePixel = 0,
+            ZIndex = 22,
+            Active = true
+        })
+
+        Instances:Create("UICorner", { Parent = btn.Instance, CornerRadius = UDim.new(0, 4) })
+
+        local bStroke = Instances:Create("UIStroke", {
+            Parent = btn.Instance,
+            Color = Theme["Outline"],
+            Thickness = 1,
+            Transparency = 0.4
+        })
+
+        btn:Connect("MouseEnter", function()
+            Tween(bStroke.Instance, TweenInfo.new(0.15), { Color = Theme["Accent"], Thickness = 1.5, Transparency = 0 })
+        end)
+
+        btn:Connect("MouseLeave", function()
+            Tween(bStroke.Instance, TweenInfo.new(0.15), { Color = Theme["Outline"], Thickness = 1, Transparency = 0.4 })
+        end)
+
+        btn.Instance.Activated:Connect(function()
+            SetColor(item.Color)
+        end)
+    end
+
+    -- Копирование в буфер обмена
+    copyHexBtn.Instance.Activated:Connect(function()
+        pcall(function()
+            if setclipboard then
+                setclipboard(ColorToHex(currentColor))
+            end
+        end)
+        copyHexBtn.Instance.Text = "Copied!"
+        Tween(copyBtnStroke.Instance, TweenInfo.new(0.15), { Color = Theme["Accent"] })
+        Tween(copyHexBtn.Instance, TweenInfo.new(0.15), { TextColor3 = Theme["AccentGlow"] })
+        task.delay(1, function()
+            copyHexBtn.Instance.Text = "Copy HEX"
+            Tween(copyBtnStroke.Instance, TweenInfo.new(0.15), { Color = Theme["Outline"] })
+            Tween(copyHexBtn.Instance, TweenInfo.new(0.15), { TextColor3 = Theme["SubText"] })
+        end)
+    end)
+
+    -- Анимация открытия/закрытия
+    colorPreviewBtn.Instance.Activated:Connect(function()
+        expanded = not expanded
+        local targetHeight = expanded and 128 or 0
+        local targetHostHeight = expanded and 164 or 28
+
+        Tween(dropdownCard.Instance, TweenInfo.new(0.25, Enum.EasingStyle.Quart, Enum.EasingDirection.Out), { Size = UDim2.new(1, 0, 0, targetHeight) })
+        Tween(cardStroke.Instance, TweenInfo.new(0.25), { Transparency = expanded and 0 or 1 })
+        Tween(pickerHost.Instance, TweenInfo.new(0.25, Enum.EasingStyle.Quart, Enum.EasingDirection.Out), { Size = UDim2.new(1, 0, 0, targetHostHeight) })
+        Tween(previewStroke.Instance, TweenInfo.new(0.2), { Color = expanded and Theme["Accent"] or Theme["Outline"] })
+    end)
+
+    return pickerHost.Instance
+end
+
+-- =======================================================
 -- 12. ИНИЦИАЛИЗАЦИЯ И ПРИМЕР С ПРЕДМЕТАМИ MM2
 -- =======================================================
 
@@ -3463,6 +4007,50 @@ PlayersSection:CreatePlayerCard({
     Title = "Информация об игроке",
     Player = LocalPlayer
 })
+
+-- =======================================================
+-- НОВЫЕ ФУНКЦИИ LIBRARY: ДЕМОНСТРАЦИЯ
+-- =======================================================
+
+-- Демонстрация нового глобального ColorPicker
+local ColorPickerSection = Library:CreateSection(PlayersCols[2], {
+    Name = "Color Picker Pro",
+    Icon = "palette"
+})
+
+-- Пример: используем новый Library:CreateColorPicker
+-- Для этого нам нужно передать родительский контейнер. Это может быть
+-- elementsContainer внутри секции, но он недоступен извне.
+-- Поэтому мы создаём свой контейнер для демонстрации:
+
+local demoContainer = Instances:Create("Frame", {
+    Parent = PlayersCols[2],
+    Name = "DemoContainer",
+    Size = UDim2.new(1, 0, 0, 0),
+    AutomaticSize = Enum.AutomaticSize.Y,
+    BackgroundTransparency = 1,
+    BorderSizePixel = 0,
+    ZIndex = 7
+})
+
+Instances:Create("UIListLayout", {
+    Parent = demoContainer.Instance,
+    SortOrder = Enum.SortOrder.LayoutOrder,
+    Padding = UDim.new(0, 8)
+})
+
+-- Новый продвинутый Color Picker
+Library:CreateColorPicker(demoContainer.Instance, {
+    Name = "Продвинутый выбор цвета",
+    Default = Color3.fromRGB(0, 140, 255),
+    Callback = function(color)
+        print("Новый цвет из продвинутого пикера:", color)
+    end
+})
+
+-- Новая интерактивная карточка игрока (глобальная)
+local playerCardDemo = Library:CreatePlayerCard(demoContainer.Instance, LocalPlayer)
+playerCardDemo.Size = UDim2.new(1, 0, 0, 220)
 
 local VisualsSection = Library:CreateSection(PlayersCols[2], {
     Name = "ESP Settings",
