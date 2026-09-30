@@ -2895,9 +2895,7 @@ function Library:CreateSection(parentColumn, sectionData)
     end
 
     -- =======================================================
-    -- ФУНКЦИЯ: SectionAPI:CreateColorPicker
-    -- Обновлённая версия: контур превью удалён, кнопки с градиентным контуром,
-    -- замедленная плавная анимация нажатия.
+    -- ОБНОВЛЕННАЯ ФУНКЦИЯ CreateColorPicker (ЗАМЕНЕНА)
     -- =======================================================
     function SectionAPI:CreateColorPicker(colorData)
         colorData = colorData or {}
@@ -2947,11 +2945,7 @@ function Library:CreateSection(parentColumn, sectionData)
         })
         Instances:Create("UICorner", { Parent = pickerHeader.Instance, CornerRadius = UDim.new(0, 5) })
 
-        local headerStroke = Instances:Create("UIStroke", {
-            Parent = pickerHeader.Instance,
-            Color = Theme["Outline"],
-            Thickness = 1
-        })
+        local headerStroke = Instances:Create("UIStroke", { Parent = pickerHeader.Instance, Color = Theme["Outline"], Thickness = 1 })
 
         -- КВАДРАТ ПРЕДПРОСМОТРА ЦВЕТА (КОНТУР И UIStroke УБРАНЫ)
         local colorPreview = Instances:Create("Frame", {
@@ -3132,7 +3126,6 @@ function Library:CreateSection(parentColumn, sectionData)
             btn:Connect("MouseButton1Up", function()
                 Tween(btn.Instance, slowInfoUp, { Size = UDim2.new(0, 24, 0, 20) })
             end)
-
             btn.Instance.Activated:Connect(function()
                 currentColor = pColor
                 colorPreview.Instance.BackgroundColor3 = currentColor
@@ -3149,15 +3142,9 @@ function Library:CreateSection(parentColumn, sectionData)
                 Size = UDim2.new(0, 170, 0, targetPaletteHeight),
                 BackgroundTransparency = expanded and 0.05 or 1
             })
-            Tween(paletteStroke.Instance, TweenInfo.new(0.3), {
-                Transparency = expanded and 0.5 or 1
-            })
-            Tween(pickerHost.Instance, TweenInfo.new(0.3, Enum.EasingStyle.Quart, Enum.EasingDirection.Out), {
-                Size = UDim2.new(1, 0, 0, targetHostHeight)
-            })
-            Tween(headerStroke.Instance, TweenInfo.new(0.2), {
-                Color = expanded and Theme["Accent"] or Theme["Outline"]
-            })
+            Tween(paletteStroke.Instance, TweenInfo.new(0.3), { Transparency = expanded and 0.5 or 1 })
+            Tween(pickerHost.Instance, TweenInfo.new(0.3, Enum.EasingStyle.Quart, Enum.EasingDirection.Out), { Size = UDim2.new(1, 0, 0, targetHostHeight) })
+            Tween(headerStroke.Instance, TweenInfo.new(0.2), { Color = expanded and Theme["Accent"] or Theme["Outline"] })
         end)
 
         Library.Flags[flag] = currentColor
@@ -3607,7 +3594,8 @@ function Library:CreateSection(parentColumn, sectionData)
                 else
                     Tween(itemStroke.Instance, TweenInfo.new(0.2), { Color = Theme["Outline"] })
                     Tween(itemBtn.Instance, TweenInfo.new(0.2), { BackgroundColor3 = Theme["Element"] })
-                end            end
+                end
+            end
 
             itemBtn.Instance.Activated:Connect(function()
                 if not multiSelect then
