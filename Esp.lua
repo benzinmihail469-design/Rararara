@@ -2895,533 +2895,273 @@ function Library:CreateSection(parentColumn, sectionData)
     end
 
     -- =======================================================
-    -- ОБНОВЛЕННАЯ ФУНКЦИЯ: CreateColorPicker
+    -- ФУНКЦИЯ: SectionAPI:CreateColorPicker
+    -- Обновлённая версия: контур превью удалён, кнопки с градиентным контуром,
+    -- замедленная плавная анимация нажатия.
     -- =======================================================
-    function SectionAPI:CreateColorPicker(pickerData)
-        pickerData = pickerData or {}
-        local pickerName = pickerData.Name or pickerData.Title or "Color Picker"
-        local defaultColor = pickerData.Default or pickerData.Color or Color3.fromRGB(0, 140, 255)
-        local callback = pickerData.Callback or function() end
-        local flag = pickerData.Flag or ("ColorPicker_" .. pickerName)
-        local defaultH, defaultS, defaultV = Color3.toHSV(defaultColor)
-        local h, s, v = defaultH, defaultS, defaultV
+    function SectionAPI:CreateColorPicker(colorData)
+        colorData = colorData or {}
+        local colorTitle = colorData.Name or colorData.Title or "Color Picker"
+        local currentColor = colorData.Default or Color3.fromRGB(0, 140, 255)
+        local callback = colorData.Callback or function() end
+        local flag = colorData.Flag or ("ColorPicker_" .. colorTitle)
         local expanded = false
 
-        -- =======================================================
-        -- ЧАСТЬ 1: ОСНОВНОЙ ХОСТ И ШАПКА КЛИКАБЕЛЬНОГО ЭЛЕМЕНТА
-        -- =======================================================
         local pickerHost = Instances:Create("Frame", {
             Parent = elementsContainer.Instance,
-            Name = "ColorPickerHost_" .. pickerName,
-            Size = UDim2.new(1, 0, 0, 24),
-            AutomaticSize = Enum.AutomaticSize.Y,
-            BackgroundTransparency = 1,
-            BorderSizePixel = 0,
-            ZIndex = 7
-        })
-
-        Instances:Create("UIListLayout", {
-            Parent = pickerHost.Instance,
-            SortOrder = Enum.SortOrder.LayoutOrder,
-            Padding = UDim.new(0, 6)
-        })
-
-        local pickerHeader = Instances:Create("Frame", {
-            Parent = pickerHost.Instance,
-            Name = "Header",
+            Name = "ColorPickerHost_" .. colorTitle,
             Size = UDim2.new(1, 0, 0, 24),
             BackgroundTransparency = 1,
             BorderSizePixel = 0,
-            LayoutOrder = 1,
-            ZIndex = 7
+            ClipsDescendants = false,
+            ZIndex = 8
         })
 
         local titleLabel = Instances:Create("TextLabel", {
-            Parent = pickerHeader.Instance,
+            Parent = pickerHost.Instance,
             Name = "Title",
-            Text = pickerName,
+            Text = colorTitle,
             FontFace = Font.new("rbxassetid://12187365364", Enum.FontWeight.Medium, Enum.FontStyle.Normal),
-            TextColor3 = Theme["Text"],
-            TextSize = 12,
-            Size = UDim2.new(1, -40, 1, 0),
+            TextColor3 = Theme["SubText"],
+            TextSize = 11,
+            Size = UDim2.new(0.5, 0, 0, 24),
             Position = UDim2.new(0, 0, 0, 0),
             BackgroundTransparency = 1,
             TextXAlignment = Enum.TextXAlignment.Left,
             ZIndex = 8
         })
 
-        local previewBtn = Instances:Create("TextButton", {
-            Parent = pickerHeader.Instance,
-            Name = "PreviewButton",
-            AnchorPoint = Vector2.new(1, 0.5),
-            Position = UDim2.new(1, 0, 0.5, 0),
-            Size = UDim2.new(0, 32, 0, 18),
-            BackgroundColor3 = defaultColor,
-            BackgroundTransparency = 0,
+        local pickerHeader = Instances:Create("TextButton", {
+            Parent = pickerHost.Instance,
+            Name = "Header",
+            AnchorPoint = Vector2.new(1, 0),
+            Position = UDim2.new(1, 0, 0, 0),
+            Size = UDim2.new(0, 36, 0, 20),
+            BackgroundColor3 = Theme["Element"],
+            BackgroundTransparency = 0.2,
             Text = "",
             AutoButtonColor = false,
-            ZIndex = 8,
+            BorderSizePixel = 0,
+            ZIndex = 9,
             Active = true
         })
+        Instances:Create("UICorner", { Parent = pickerHeader.Instance, CornerRadius = UDim.new(0, 5) })
 
-        Instances:Create("UICorner", { Parent = previewBtn.Instance, CornerRadius = UDim.new(0, 4) })
-
-        local previewStroke = Instances:Create("UIStroke", {
-            Parent = previewBtn.Instance,
-            Color = Color3.fromRGB(255, 255, 255),
-            Thickness = 1,
-            Transparency = 0.5,
-            ApplyStrokeMode = Enum.ApplyStrokeMode.Border
+        local headerStroke = Instances:Create("UIStroke", {
+            Parent = pickerHeader.Instance,
+            Color = Theme["Outline"],
+            Thickness = 1
         })
 
-        Instances:Create("UIGradient", {
-            Parent = previewStroke.Instance,
-            Color = ColorSequence.new({
-                ColorSequenceKeypoint.new(0, Theme["Outline"]),
-                ColorSequenceKeypoint.new(0.5, Theme["Accent"]),
-                ColorSequenceKeypoint.new(1, Theme["Outline"])
-            }),
-            Transparency = NumberSequence.new({
-                NumberSequenceKeypoint.new(0, 0.4),
-                NumberSequenceKeypoint.new(0.5, 0.0),
-                NumberSequenceKeypoint.new(1, 0.4)
-            })
+        -- КВАДРАТ ПРЕДПРОСМОТРА ЦВЕТА (КОНТУР И UIStroke УБРАНЫ)
+        local colorPreview = Instances:Create("Frame", {
+            Parent = pickerHeader.Instance,
+            Name = "ColorPreview",
+            AnchorPoint = Vector2.new(0.5, 0.5),
+            Position = UDim2.new(0.5, 0, 0.5, 0),
+            Size = UDim2.new(1, -6, 1, -6),
+            BackgroundColor3 = currentColor,
+            BorderSizePixel = 0, -- Без контура
+            ZIndex = 10
         })
+        Instances:Create("UICorner", { Parent = colorPreview.Instance, CornerRadius = UDim.new(0, 3) })
 
-        -- =======================================================
-        -- ЧАСТЬ 2: КОНТЕЙНЕР ПАЛИТРЫ (EXPANDABLE)
-        -- =======================================================
-        local paletteFrame = Instances:Create("Frame", {
+        -- Выпадающая палитра
+        local paletteContainer = Instances:Create("Frame", {
             Parent = pickerHost.Instance,
-            Name = "PaletteFrame",
-            Size = UDim2.new(1, 0, 0, 0),
-            BackgroundColor3 = Theme["Element"],
-            BackgroundTransparency = 0.1,
+            Name = "PaletteContainer",
+            AnchorPoint = Vector2.new(1, 0),
+            Position = UDim2.new(1, 0, 0, 26),
+            Size = UDim2.new(0, 170, 0, 0),
+            BackgroundColor3 = Theme["Background 2"],
+            BackgroundTransparency = 1,
             BorderSizePixel = 0,
             ClipsDescendants = true,
-            LayoutOrder = 2,
-            ZIndex = 8
+            ZIndex = 20
         })
-
-        Instances:Create("UICorner", { Parent = paletteFrame.Instance, CornerRadius = UDim.new(0, 6) })
+        Instances:Create("UICorner", { Parent = paletteContainer.Instance, CornerRadius = UDim.new(0, 6) })
 
         local paletteStroke = Instances:Create("UIStroke", {
-            Parent = paletteFrame.Instance,
+            Parent = paletteContainer.Instance,
             Color = Theme["Outline"],
             Thickness = 1,
-            Transparency = 0.6,
-            ApplyStrokeMode = Enum.ApplyStrokeMode.Border
+            Transparency = 1
         })
 
         Instances:Create("UIPadding", {
-            Parent = paletteFrame.Instance,
+            Parent = paletteContainer.Instance,
             PaddingTop = UDim.new(0, 8),
             PaddingBottom = UDim.new(0, 8),
             PaddingLeft = UDim.new(0, 8),
             PaddingRight = UDim.new(0, 8)
         })
 
-        local paletteLayout = Instances:Create("UIListLayout", {
-            Parent = paletteFrame.Instance,
-            SortOrder = Enum.SortOrder.LayoutOrder,
-            Padding = UDim.new(0, 8)
-        })
-
-        -- =======================================================
-        -- ЧАСТЬ 3: SAT/VAL КАНВАС (НАСЫЩЕННОСТЬ И ЯРКОСТЬ)
-        -- =======================================================
-        local satValBox = Instances:Create("ImageLabel", {
-            Parent = paletteFrame.Instance,
-            Name = "SatValBox",
-            Size = UDim2.new(1, 0, 0, 110),
-            BackgroundColor3 = Color3.fromHSV(h, 1, 1),
-            Image = "rbxassetid://4155801252",
-            ScaleType = Enum.ScaleType.Stretch,
+        -- Canvas палитры (S/V Map)
+        local colorCanvas = Instances:Create("TextButton", {
+            Parent = paletteContainer.Instance,
+            Name = "ColorCanvas",
+            Size = UDim2.new(1, 0, 0, 100),
+            BackgroundColor3 = Color3.fromHSV(0, 1, 1),
+            AutoButtonColor = false,
+            Text = "",
             BorderSizePixel = 0,
-            LayoutOrder = 1,
-            ZIndex = 9,
-            Active = true
+            ZIndex = 21
         })
+        Instances:Create("UICorner", { Parent = colorCanvas.Instance, CornerRadius = UDim.new(0, 4) })
 
-        Instances:Create("UICorner", { Parent = satValBox.Instance, CornerRadius = UDim.new(0, 4) })
-
-        local satValCursor = Instances:Create("Frame", {
-            Parent = satValBox.Instance,
-            Name = "Cursor",
-            AnchorPoint = Vector2.new(0.5, 0.5),
-            Size = UDim2.new(0, 10, 0, 10),
-            Position = UDim2.new(s, 0, 1 - v, 0),
-            BackgroundColor3 = Color3.fromRGB(255, 255, 255),
-            BackgroundTransparency = 0.2,
-            BorderSizePixel = 0,
-            ZIndex = 10
-        })
-
-        Instances:Create("UICorner", { Parent = satValCursor.Instance, CornerRadius = UDim.new(1, 0) })
-        Instances:Create("UIStroke", {
-            Parent = satValCursor.Instance,
-            Color = Color3.fromRGB(0, 0, 0),
-            Thickness = 1.5,
-            ApplyStrokeMode = Enum.ApplyStrokeMode.Border
-        })
-
-        -- =======================================================
-        -- ЧАСТЬ 4: HUE ПОЛЗУНОК (ОТТЕНОК)
-        -- =======================================================
-        local hueBox = Instances:Create("Frame", {
-            Parent = paletteFrame.Instance,
-            Name = "HueBox",
-            Size = UDim2.new(1, 0, 0, 14),
+        -- Градиенты палитры
+        local whiteGrad = Instances:Create("Frame", {
+            Parent = colorCanvas.Instance,
+            Size = UDim2.new(1, 0, 1, 0),
             BackgroundColor3 = Color3.fromRGB(255, 255, 255),
             BorderSizePixel = 0,
-            LayoutOrder = 2,
-            ZIndex = 9,
-            Active = true
+            ZIndex = 22
         })
-
-        Instances:Create("UICorner", { Parent = hueBox.Instance, CornerRadius = UDim.new(0, 4) })
-
+        Instances:Create("UICorner", { Parent = whiteGrad.Instance, CornerRadius = UDim.new(0, 4) })
         Instances:Create("UIGradient", {
-            Parent = hueBox.Instance,
-            Color = ColorSequence.new({
-                ColorSequenceKeypoint.new(0.00, Color3.fromRGB(255, 0, 0)),
-                ColorSequenceKeypoint.new(0.17, Color3.fromRGB(255, 255, 0)),
-                ColorSequenceKeypoint.new(0.33, Color3.fromRGB(0, 255, 0)),
-                ColorSequenceKeypoint.new(0.50, Color3.fromRGB(0, 255, 255)),
-                ColorSequenceKeypoint.new(0.67, Color3.fromRGB(0, 0, 255)),
-                ColorSequenceKeypoint.new(0.83, Color3.fromRGB(255, 0, 255)),
-                ColorSequenceKeypoint.new(1.00, Color3.fromRGB(255, 0, 0))
-            })
+            Parent = whiteGrad.Instance,
+            Transparency = NumberSequence.new({
+                NumberSequenceKeypoint.new(0, 0),
+                NumberSequenceKeypoint.new(1, 1)
+            }),
+            Rotation = 0
         })
 
-        local hueCursor = Instances:Create("Frame", {
-            Parent = hueBox.Instance,
-            Name = "Cursor",
+        local blackGrad = Instances:Create("Frame", {
+            Parent = colorCanvas.Instance,
+            Size = UDim2.new(1, 0, 1, 0),
+            BackgroundColor3 = Color3.fromRGB(0, 0, 0),
+            BorderSizePixel = 0,
+            ZIndex = 23
+        })
+        Instances:Create("UICorner", { Parent = blackGrad.Instance, CornerRadius = UDim.new(0, 4) })
+        Instances:Create("UIGradient", {
+            Parent = blackGrad.Instance,
+            Transparency = NumberSequence.new({
+                NumberSequenceKeypoint.new(0, 1),
+                NumberSequenceKeypoint.new(1, 0)
+            }),
+            Rotation = 90
+        })
+
+        -- Маркер выбора
+        local cursor = Instances:Create("Frame", {
+            Parent = colorCanvas.Instance,
+            Size = UDim2.new(0, 8, 0, 8),
             AnchorPoint = Vector2.new(0.5, 0.5),
-            Size = UDim2.new(0, 6, 1, 2),
-            Position = UDim2.new(h, 0, 0.5, 0),
             BackgroundColor3 = Color3.fromRGB(255, 255, 255),
             BorderSizePixel = 0,
-            ZIndex = 10
+            ZIndex = 25
         })
+        Instances:Create("UICorner", { Parent = cursor.Instance, CornerRadius = UDim.new(1, 0) })
+        Instances:Create("UIStroke", { Parent = cursor.Instance, Color = Color3.fromRGB(0, 0, 0), Thickness = 1 })
 
-        Instances:Create("UICorner", { Parent = hueCursor.Instance, CornerRadius = UDim.new(0, 2) })
-        Instances:Create("UIStroke", {
-            Parent = hueCursor.Instance,
-            Color = Color3.fromRGB(10, 10, 12),
-            Thickness = 1,
-            ApplyStrokeMode = Enum.ApplyStrokeMode.Border
-        })
-
-        -- =======================================================
-        -- ЧАСТЬ 5: НИЖНИЙ БЛОК (HEX, ВЕРТИКАЛЬНЫЕ РАЗДЕЛИТЕЛИ, COPY & RAND)
-        -- =======================================================
-        local bottomRow = Instances:Create("Frame", {
-            Parent = paletteFrame.Instance,
-            Name = "BottomRow",
-            Size = UDim2.new(1, 0, 0, 22),
+        -- Панель пресетов/кнопок внутри палитры
+        local presetGrid = Instances:Create("Frame", {
+            Parent = paletteContainer.Instance,
+            Name = "PresetGrid",
+            Position = UDim2.new(0, 0, 0, 110),
+            Size = UDim2.new(1, 0, 0, 24),
             BackgroundTransparency = 1,
-            BorderSizePixel = 0,
-            LayoutOrder = 3,
-            ZIndex = 9
+            ZIndex = 21
         })
-
         Instances:Create("UIListLayout", {
-            Parent = bottomRow.Instance,
+            Parent = presetGrid.Instance,
             FillDirection = Enum.FillDirection.Horizontal,
-            HorizontalAlignment = Enum.HorizontalAlignment.Center,
-            VerticalAlignment = Enum.VerticalAlignment.Center,
-            SortOrder = Enum.SortOrder.LayoutOrder,
-            Padding = UDim.new(0, 6)
+            HorizontalAlignment = Enum.HorizontalAlignment.SpaceBetween,
+            SortOrder = Enum.SortOrder.LayoutOrder
         })
 
-        -- Функция создания вертикальных неоновыx разделителей
-        local function CreateDivider(layoutOrder)
-            local divider = Instances:Create("Frame", {
-                Parent = bottomRow.Instance,
-                Name = "VerticalDivider",
-                Size = UDim2.new(0, 1, 1, -2),
-                BackgroundColor3 = Color3.fromRGB(255, 255, 255),
-                BorderSizePixel = 0,
-                LayoutOrder = layoutOrder,
-                ZIndex = 10
-            })
+        local presetColors = {
+            Color3.fromRGB(255, 60, 60),
+            Color3.fromRGB(60, 255, 120),
+            Color3.fromRGB(0, 140, 255),
+            Color3.fromRGB(180, 70, 255),
+            Color3.fromRGB(255, 180, 0)
+        }
 
+        -- Плавные настройки замедленной анимации для кнопок
+        local slowInfoDown = TweenInfo.new(0.2, Enum.EasingStyle.Quad, Enum.EasingDirection.Out)
+        local slowInfoUp = TweenInfo.new(0.35, Enum.EasingStyle.Quart, Enum.EasingDirection.Out)
+
+        for i, pColor in ipairs(presetColors) do
+            local btn = Instances:Create("TextButton", {
+                Parent = presetGrid.Instance,
+                Name = "Preset_" .. i,
+                Size = UDim2.new(0, 24, 0, 20),
+                BackgroundColor3 = pColor,
+                AutoButtonColor = false,
+                Text = "",
+                BorderSizePixel = 0,
+                ZIndex = 22,
+                Active = true
+            })
+            Instances:Create("UICorner", { Parent = btn.Instance, CornerRadius = UDim.new(0, 4) })
+
+            -- КОНТУР В СТИЛЕ РАЗДЕЛИТЕЛЬНЫХ ПОЛОС (Theme["Outline"] + Theme["Accent"])
+            local btnStroke = Instances:Create("UIStroke", {
+                Parent = btn.Instance,
+                Color = Color3.fromRGB(255, 255, 255),
+                Thickness = 1,
+                ApplyStrokeMode = Enum.ApplyStrokeMode.Border
+            })
             Instances:Create("UIGradient", {
-                Parent = divider.Instance,
+                Parent = btnStroke.Instance,
                 Color = ColorSequence.new({
                     ColorSequenceKeypoint.new(0, Theme["Outline"]),
                     ColorSequenceKeypoint.new(0.5, Theme["Accent"]),
                     ColorSequenceKeypoint.new(1, Theme["Outline"])
                 }),
                 Transparency = NumberSequence.new({
-                    NumberSequenceKeypoint.new(0, 0.6),
-                    NumberSequenceKeypoint.new(0.5, 0.1),
-                    NumberSequenceKeypoint.new(1, 0.6)
-                }),
-                Rotation = 90
+                    NumberSequenceKeypoint.new(0, 0.3),
+                    NumberSequenceKeypoint.new(0.5, 0.0),
+                    NumberSequenceKeypoint.new(1, 0.3)
+                })
             })
 
-            return divider.Instance
-        end
-
-        -- 5.1 Поле ввода HEX
-        local hexFrame = Instances:Create("Frame", {
-            Parent = bottomRow.Instance,
-            Name = "HexFrame",
-            Size = UDim2.new(1, -70, 1, 0),
-            BackgroundColor3 = Theme["Background 2"],
-            BackgroundTransparency = 0,
-            BorderSizePixel = 0,
-            LayoutOrder = 1,
-            ZIndex = 10
-        })
-
-        Instances:Create("UICorner", { Parent = hexFrame.Instance, CornerRadius = UDim.new(0, 4) })
-        Instances:Create("UIStroke", { Parent = hexFrame.Instance, Color = Theme["Outline"], Thickness = 1, ApplyStrokeMode = Enum.ApplyStrokeMode.Border })
-
-        local hexInput = Instances:Create("TextBox", {
-            Parent = hexFrame.Instance,
-            Name = "HexInput",
-            Size = UDim2.new(1, 0, 1, 0),
-            BackgroundTransparency = 1,
-            FontFace = Font.new("rbxassetid://12187365364", Enum.FontWeight.Bold, Enum.FontStyle.Normal),
-            Text = "#" .. defaultColor:ToHex():upper(),
-            TextColor3 = Theme["Text"],
-            TextSize = 11,
-            TextXAlignment = Enum.TextXAlignment.Center,
-            ClearTextOnFocus = false,
-            ZIndex = 11
-        })
-
-        -- 5.2 Разделитель между HEX и Copy
-        CreateDivider(2)
-
-        -- 5.3 Кнопка Copy
-        local copyBtn = Instances:Create("TextButton", {
-            Parent = bottomRow.Instance,
-            Name = "CopyButton",
-            Size = UDim2.new(0, 26, 1, 0),
-            BackgroundColor3 = Theme["Background 2"],
-            BackgroundTransparency = 0,
-            Text = "",
-            AutoButtonColor = false,
-            BorderSizePixel = 0,
-            LayoutOrder = 3,
-            ZIndex = 10,
-            Active = true
-        })
-
-        Instances:Create("UICorner", { Parent = copyBtn.Instance, CornerRadius = UDim.new(0, 4) })
-
-        local copyStroke = Instances:Create("UIStroke", {
-            Parent = copyBtn.Instance,
-            Color = Theme["Outline"],
-            Thickness = 1,
-            ApplyStrokeMode = Enum.ApplyStrokeMode.Border
-        })
-
-        local copyIcon = Instances:Create("ImageLabel", {
-            Parent = copyBtn.Instance,
-            Name = "Icon",
-            Size = UDim2.new(0, 12, 0, 12),
-            AnchorPoint = Vector2.new(0.5, 0.5),
-            Position = UDim2.new(0.5, 0, 0.5, 0),
-            BackgroundTransparency = 1,
-            Image = ParseIcon("check"),
-            ImageColor3 = Theme["SubText"],
-            ScaleType = Enum.ScaleType.Fit,
-            ZIndex = 11
-        })
-
-        -- 5.4 Разделитель между Copy и Rand
-        CreateDivider(4)
-
-        -- 5.5 Кнопка Rand
-        local randBtn = Instances:Create("TextButton", {
-            Parent = bottomRow.Instance,
-            Name = "RandButton",
-            Size = UDim2.new(0, 26, 1, 0),
-            BackgroundColor3 = Theme["Background 2"],
-            BackgroundTransparency = 0,
-            Text = "",
-            AutoButtonColor = false,
-            BorderSizePixel = 0,
-            LayoutOrder = 5,
-            ZIndex = 10,
-            Active = true
-        })
-
-        Instances:Create("UICorner", { Parent = randBtn.Instance, CornerRadius = UDim.new(0, 4) })
-
-        local randStroke = Instances:Create("UIStroke", {
-            Parent = randBtn.Instance,
-            Color = Theme["Outline"],
-            Thickness = 1,
-            ApplyStrokeMode = Enum.ApplyStrokeMode.Border
-        })
-
-        local randIcon = Instances:Create("ImageLabel", {
-            Parent = randBtn.Instance,
-            Name = "Icon",
-            Size = UDim2.new(0, 12, 0, 12),
-            AnchorPoint = Vector2.new(0.5, 0.5),
-            Position = UDim2.new(0.5, 0, 0.5, 0),
-            BackgroundTransparency = 1,
-            Image = ParseIcon("zap"),
-            ImageColor3 = Theme["SubText"],
-            ScaleType = Enum.ScaleType.Fit,
-            ZIndex = 11
-        })
-
-        -- =======================================================
-        -- ЧАСТЬ 6: ЛОГИКА ОБНОВЛЕНИЯ И ИНТЕРАКТИВА (ОБРАБОТЧИКИ)
-        -- =======================================================
-        local function UpdateColor(newH, newS, newV, skipHex)
-            h, s, v = newH, newS, newV
-            local color = Color3.fromHSV(h, s, v)
-            previewBtn.Instance.BackgroundColor3 = color
-            satValBox.Instance.BackgroundColor3 = Color3.fromHSV(h, 1, 1)
-            satValCursor.Instance.Position = UDim2.new(s, 0, 1 - v, 0)
-            hueCursor.Instance.Position = UDim2.new(h, 0, 0.5, 0)
-            if not skipHex then
-                hexInput.Instance.Text = "#" .. color:ToHex():upper()
-            end
-            Library.Flags[flag] = color
-            pcall(callback, color)
-        end
-
-        -- Перетаскивание Sat/Val
-        local draggingSatVal = false
-        local function ProcessSatVal(input)
-            local boxAbsPos = satValBox.Instance.AbsolutePosition
-            local boxAbsSize = satValBox.Instance.AbsoluteSize
-            local relX = math.clamp(input.Position.X - boxAbsPos.X, 0, boxAbsSize.X)
-            local relY = math.clamp(input.Position.Y - boxAbsPos.Y, 0, boxAbsSize.Y)
-            local newS = relX / boxAbsSize.X
-            local newV = 1 - (relY / boxAbsSize.Y)
-            UpdateColor(h, newS, newV)
-        end
-
-        satValBox:Connect("InputBegan", function(input)
-            if input.UserInputType == Enum.UserInputType.MouseButton1 or input.UserInputType == Enum.UserInputType.Touch then
-                draggingSatVal = true
-                ProcessSatVal(input)
-            end
-        end)
-
-        -- Перетаскивание Hue
-        local draggingHue = false
-        local function ProcessHue(input)
-            local boxAbsPos = hueBox.Instance.AbsolutePosition
-            local boxAbsSize = hueBox.Instance.AbsoluteSize
-            local relX = math.clamp(input.Position.X - boxAbsPos.X, 0, boxAbsSize.X)
-            local newH = math.clamp(relX / boxAbsSize.X, 0, 1)
-            UpdateColor(newH, s, v)
-        end
-
-        hueBox:Connect("InputBegan", function(input)
-            if input.UserInputType == Enum.UserInputType.MouseButton1 or input.UserInputType == Enum.UserInputType.Touch then
-                draggingHue = true
-                ProcessHue(input)
-            end
-        end)
-
-        -- Глобальная обработка ввода
-        UserInputService.InputChanged:Connect(function(input)
-            if input.UserInputType == Enum.UserInputType.MouseMovement or input.UserInputType == Enum.UserInputType.Touch then
-                if draggingSatVal then
-                    ProcessSatVal(input)
-                elseif draggingHue then
-                    ProcessHue(input)
-                end
-            end
-        end)
-
-        UserInputService.InputEnded:Connect(function(input)
-            if input.UserInputType == Enum.UserInputType.MouseButton1 or input.UserInputType == Enum.UserInputType.Touch then
-                draggingSatVal = false
-                draggingHue = false
-            end
-        end)
-
-        -- Ввод значения HEX
-        hexInput.Instance.FocusLost:Connect(function()
-            local text = hexInput.Instance.Text:gsub("#", "")
-            if #text == 6 then
-                local success, parsedColor = pcall(function()
-                    return Color3.fromHex(text)
-                end)
-                if success and parsedColor then
-                    local newH, newS, newV = Color3.toHSV(parsedColor)
-                    UpdateColor(newH, newS, newV, true)
-                    return
-                end
-            end
-            hexInput.Instance.Text = "#" .. Color3.fromHSV(h, s, v):ToHex():upper()
-        end)
-
-        -- Анимация и действие Copy
-        copyBtn:Connect("MouseEnter", function()
-            Tween(copyStroke.Instance, TweenInfo.new(0.15), { Color = Theme["Accent"] })
-            Tween(copyIcon.Instance, TweenInfo.new(0.15), { ImageColor3 = Theme["Text"] })
-        end)
-        copyBtn:Connect("MouseLeave", function()
-            Tween(copyStroke.Instance, TweenInfo.new(0.15), { Color = Theme["Outline"] })
-            Tween(copyIcon.Instance, TweenInfo.new(0.15), { ImageColor3 = Theme["SubText"] })
-        end)
-        copyBtn.Instance.Activated:Connect(function()
-            if setclipboard then
-                setclipboard("#" .. Color3.fromHSV(h, s, v):ToHex():upper())
-            end
-            Tween(copyStroke.Instance, TweenInfo.new(0.1), { Color = Theme["AccentGlow"] })
-            Tween(copyIcon.Instance, TweenInfo.new(0.1), { ImageColor3 = Theme["AccentGlow"] })
-            task.delay(0.2, function()
-                Tween(copyStroke.Instance, TweenInfo.new(0.2), { Color = Theme["Outline"] })
-                Tween(copyIcon.Instance, TweenInfo.new(0.2), { ImageColor3 = Theme["SubText"] })
+            -- ПЛАВНАЯ И МЕДЛЕННАЯ АНИМАЦИЯ НАЖАТИЯ
+            btn:Connect("MouseEnter", function()
+                Tween(btnStroke.Instance, slowInfoDown, { Thickness = 1.5 })
             end)
-        end)
-
-        -- Анимация и действие Rand
-        randBtn:Connect("MouseEnter", function()
-            Tween(randStroke.Instance, TweenInfo.new(0.15), { Color = Theme["Accent"] })
-            Tween(randIcon.Instance, TweenInfo.new(0.15), { ImageColor3 = Theme["Text"] })
-        end)
-        randBtn:Connect("MouseLeave", function()
-            Tween(randStroke.Instance, TweenInfo.new(0.15), { Color = Theme["Outline"] })
-            Tween(randIcon.Instance, TweenInfo.new(0.15), { ImageColor3 = Theme["SubText"] })
-        end)
-        randBtn.Instance.Activated:Connect(function()
-            local rng = Random.new()
-            UpdateColor(rng:NextNumber(0, 1), rng:NextNumber(0.4, 1), rng:NextNumber(0.5, 1))
-            Tween(randStroke.Instance, TweenInfo.new(0.1), { Color = Theme["AccentGlow"] })
-            Tween(randIcon.Instance, TweenInfo.new(0.1), { ImageColor3 = Theme["AccentGlow"] })
-            task.delay(0.2, function()
-                Tween(randStroke.Instance, TweenInfo.new(0.2), { Color = Theme["Outline"] })
-                Tween(randIcon.Instance, TweenInfo.new(0.2), { ImageColor3 = Theme["SubText"] })
+            btn:Connect("MouseLeave", function()
+                Tween(btnStroke.Instance, slowInfoDown, { Thickness = 1 })
             end)
-        end)
+            btn:Connect("MouseButton1Down", function()
+                Tween(btn.Instance, slowInfoDown, { Size = UDim2.new(0, 20, 0, 16) })
+            end)
+            btn:Connect("MouseButton1Up", function()
+                Tween(btn.Instance, slowInfoUp, { Size = UDim2.new(0, 24, 0, 20) })
+            end)
 
-        -- Переключение состояния палитры
-        local function TogglePicker()
+            btn.Instance.Activated:Connect(function()
+                currentColor = pColor
+                colorPreview.Instance.BackgroundColor3 = currentColor
+                pcall(callback, currentColor)
+            end)
+        end
+
+        -- Переключение открытия палитры
+        pickerHeader.Instance.Activated:Connect(function()
             expanded = not expanded
-            local targetHeight = expanded and (paletteLayout.Instance.AbsoluteContentSize.Y + 16) or 0
-            Tween(paletteFrame.Instance, TweenInfo.new(0.3, Enum.EasingStyle.Quart, Enum.EasingDirection.Out), { Size = UDim2.new(1, 0, 0, targetHeight) })
-            Tween(previewStroke.Instance, TweenInfo.new(0.2), { Color = expanded and Theme["Accent"] or Theme["Outline"] })
-        end
+            local targetPaletteHeight = expanded and 144 or 0
+            local targetHostHeight = expanded and 174 or 24
+            Tween(paletteContainer.Instance, TweenInfo.new(0.3, Enum.EasingStyle.Quart, Enum.EasingDirection.Out), {
+                Size = UDim2.new(0, 170, 0, targetPaletteHeight),
+                BackgroundTransparency = expanded and 0.05 or 1
+            })
+            Tween(paletteStroke.Instance, TweenInfo.new(0.3), {
+                Transparency = expanded and 0.5 or 1
+            })
+            Tween(pickerHost.Instance, TweenInfo.new(0.3, Enum.EasingStyle.Quart, Enum.EasingDirection.Out), {
+                Size = UDim2.new(1, 0, 0, targetHostHeight)
+            })
+            Tween(headerStroke.Instance, TweenInfo.new(0.2), {
+                Color = expanded and Theme["Accent"] or Theme["Outline"]
+            })
+        end)
 
-        previewBtn.Instance.Activated:Connect(TogglePicker)
-
-        -- Инициализация флагов
-        Library.Flags[flag] = defaultColor
-        Library.SetFlags[flag] = function(newColor)
-            if typeof(newColor) == "Color3" then
-                local newH, newS, newV = Color3.toHSV(newColor)
-                UpdateColor(newH, newS, newV)
-            end
-        end
-
-        table.insert(sectionItems, { Instance = pickerHost.Instance, Title = pickerName })
+        Library.Flags[flag] = currentColor
+        table.insert(sectionItems, { Instance = pickerHost.Instance, Title = colorTitle })
         return pickerHost.Instance
     end
 
@@ -3867,8 +3607,7 @@ function Library:CreateSection(parentColumn, sectionData)
                 else
                     Tween(itemStroke.Instance, TweenInfo.new(0.2), { Color = Theme["Outline"] })
                     Tween(itemBtn.Instance, TweenInfo.new(0.2), { BackgroundColor3 = Theme["Element"] })
-                end
-            end
+                end            end
 
             itemBtn.Instance.Activated:Connect(function()
                 if not multiSelect then
