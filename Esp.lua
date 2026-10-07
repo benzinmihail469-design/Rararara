@@ -82,7 +82,6 @@ local Library do
             Assets = "lds13/Assets",
         },
 
-        -- Ignore below
         Pages = { },
         Sections = { },
 
@@ -187,9 +186,6 @@ local Library do
         ["RightAlt"]          = "RightAlt"
     }
 
-    -- ============================================================
-    -- ТЕМА SALAD (Часть 1)
-    -- ============================================================
     local Themes = {
         ["Preset"] = {
             ["Background"] = FromRGB(14, 15, 18),
@@ -204,7 +200,6 @@ local Library do
 
     Library.Theme = TableClone(Themes["Preset"])
 
-    -- Folders
     local Folders = {
         Directory = "lds13",
         Configs = "lds13/Configs",
@@ -638,7 +633,6 @@ local Library do
         end
     end
 
-    -- Custom font
     local CustomFont = { } do
         function CustomFont:New(Name, Weight, Style, Data)
             if not isfile(Data.Id) then 
@@ -824,9 +818,6 @@ local Library do
 		return `<font color="rgb({MathFloor(Color.R * 255)}, {MathFloor(Color.G * 255)}, {MathFloor(Color.B * 255)})">{Text}</font>`
 	end
 
-    -- ============================================================
-    -- CONFIG SYSTEM (Часть 6)
-    -- ============================================================
     Library.GetConfig = function(self)
         local Config = { } 
 
@@ -958,7 +949,7 @@ local Library do
     end
 
     -- ============================================================
-    -- TOOLTIP SYSTEM (Часть 7)
+    -- TOOLTIP
     -- ============================================================
     local TooltipFrame = nil
     Library.AddTooltip = function(self, GuiInstance, Text)
@@ -1016,7 +1007,7 @@ local Library do
     end
 
     -- ============================================================
-    -- WATERMARK (Часть 6)
+    -- WATERMARK
     -- ============================================================
     Library.Watermark = function(self, Data)
         Data = Data or {}
@@ -1071,7 +1062,7 @@ local Library do
 
     do
         -- ============================================================
-        -- COLORPICKER (уже есть, оставляю как есть)
+        -- COLORPICKER
         -- ============================================================
         Library.CreateColorpicker = function(self, Data)
             local Colorpicker = {
@@ -1525,7 +1516,7 @@ local Library do
         end
 
         -- ============================================================
-        -- KEYBIND (уже есть)
+        -- KEYBIND
         -- ============================================================
         Library.CreateKeybind = function(self, Data)
             local Keybind = {
@@ -1945,7 +1936,7 @@ local Library do
         end
 
         -- ============================================================
-        -- NOTIFICATION (уже есть)
+        -- NOTIFICATION
         -- ============================================================
         Library.Notification = function(self, Name, Icon, Duration)
             Icon = Icon or "90449909165261"
@@ -2069,9 +2060,9 @@ local Library do
                 end)
             end)
         end
-        
+
         -- ============================================================
-        -- WINDOW (Часть 1 SALAD Style)
+        -- WINDOW (обновлённый, с TabsContainer / SubTabsContainer / PagesHolder)
         -- ============================================================
         Library.Window = function(self, Data)
             Data = Data or { }
@@ -2080,9 +2071,10 @@ local Library do
                 Name = Data.Name or Data.name or "SALAD",
                 TimeRemaining = Data.TimeRemaining or 0,
                 SubTitle = Data.SubTitle or Data.subtitle or "IN CASE OF EMERGENCY",
-                
+
                 Pages = { },
                 Items = { },
+                CurrentPage = nil,
                 IsOpen = false
             }
 
@@ -2094,10 +2086,10 @@ local Library do
                         Scale = 0.7
                     })
                 end                    
-                
+
                 Items["MainFrame"] = Instances:Create("Frame", {
                     Parent = Library.Holder.Instance,
-                    Name = "\0",
+                    Name = "MainFrame",
                     AnchorPoint = Vector2New(0.5, 0.5),
                     Position = UDim2New(0.5, 0, 0.5, 0),
                     BorderColor3 = FromRGB(0, 0, 0),
@@ -2110,7 +2102,7 @@ local Library do
                 Items["MainFrame"]:MakeResizeable(Vector2New(650, 450), Vector2New(9999, 9999))
 
                 Items["Shadow"] = Instances:Create("ImageLabel", {
-                    Name = "\0",
+                    Name = "Shadow",
                     Parent = Items["MainFrame"].Instance,
                     ImageColor3 = Color3.fromRGB(0, 0, 0),
                     ScaleType = Enum.ScaleType.Slice,
@@ -2142,7 +2134,7 @@ local Library do
                 -- TOP
                 Items["Top"] = Instances:Create("Frame", {
                     Parent = Items["MainFrame"].Instance,
-                    Name = "\0",
+                    Name = "Top",
                     BorderColor3 = FromRGB(0, 0, 0),
                     Size = UDim2New(1, 0, 0, 48),
                     BorderSizePixel = 0,
@@ -2152,7 +2144,7 @@ local Library do
 
                 Items["TopDivider"] = Instances:Create("Frame", {
                     Parent = Items["Top"].Instance,
-                    Name = "\0",
+                    Name = "TopDivider",
                     AnchorPoint = Vector2New(0, 1),
                     Position = UDim2New(0, 0, 1, 0),
                     Size = UDim2New(1, 0, 0, 1),
@@ -2162,7 +2154,7 @@ local Library do
 
                 Items["Title"] = Instances:Create("TextLabel", {
                     Parent = Items["Top"].Instance,
-                    Name = "\0",
+                    Name = "Title",
                     FontFace = Library.Font,
                     TextColor3 = Library.Theme.Text,
                     Text = Window.Name,
@@ -2175,26 +2167,45 @@ local Library do
                     TextXAlignment = Enum.TextXAlignment.Left
                 })  Items["Title"]:AddToTheme({TextColor3 = "Text"})
 
-                Items["Pages"] = Instances:Create("Frame", {
+                -- Контейнер главных вкладок (слева, сразу за логотипом)
+                Items["TabsContainer"] = Instances:Create("Frame", {
                     Parent = Items["Top"].Instance,
-                    Name = "\0",
-                    AnchorPoint = Vector2New(0.5, 0.5),
-                    Position = UDim2New(0.5, 0, 0.5, 0),
-                    Size = UDim2New(0, 0, 1, 0),
+                    Name = "TabsContainer",
+                    Position = UDim2New(0, 85, 0, 0),
+                    Size = UDim2New(1, -95, 1, 0),
                     BackgroundTransparency = 1,
-                    BorderSizePixel = 0,
-                    AutomaticSize = Enum.AutomaticSize.X
-                })
-                
-                Instances:Create("UIListLayout", {
-                    Parent = Items["Pages"].Instance,
-                    Name = "\0",
-                    VerticalAlignment = Enum.VerticalAlignment.Center,
-                    FillDirection = Enum.FillDirection.Horizontal,
-                    Padding = UDimNew(0, 12),
-                    SortOrder = Enum.SortOrder.LayoutOrder
+                    BorderSizePixel = 0
                 })
 
+                Items["TabsHolder"] = Instances:Create("Frame", {
+                    Parent = Items["TabsContainer"].Instance,
+                    Name = "TabsHolder",
+                    Size = UDim2New(1, 0, 1, 0),
+                    BackgroundTransparency = 1,
+                    BorderSizePixel = 0
+                })
+
+                Instances:Create("UIListLayout", {
+                    Parent = Items["TabsHolder"].Instance,
+                    Padding = UDimNew(0, 16),
+                    FillDirection = Enum.FillDirection.Horizontal,
+                    SortOrder = Enum.SortOrder.LayoutOrder,
+                    VerticalAlignment = Enum.VerticalAlignment.Center
+                })
+
+                -- Плавный бегунок-индикатор под активной главной вкладкой
+                Items["TabIndicator"] = Instances:Create("Frame", {
+                    Parent = Items["TabsContainer"].Instance,
+                    Name = "TabIndicator",
+                    Position = UDim2New(0, 0, 1, -2),
+                    Size = UDim2New(0, 0, 0, 2),
+                    BorderSizePixel = 0,
+                    BackgroundColor3 = FromRGB(240, 240, 245),
+                    Visible = false,
+                    ZIndex = 5
+                })
+
+                -- Right controls (Search, Settings, Close)
                 Items["TopRightControls"] = Instances:Create("Frame", {
                     Parent = Items["Top"].Instance,
                     Name = "\0",
@@ -2363,30 +2374,41 @@ local Library do
                 -- CONTENT
                 Items["Content"] = Instances:Create("Frame", {
                     Parent = Items["MainFrame"].Instance,
-                    Name = "\0",
+                    Name = "Content",
                     ClipsDescendants = true,
                     BackgroundTransparency = 1,
-                    Position = UDim2New(0, 12, 0, 56),
-                    Size = UDim2New(1, -24, 1, -100),
+                    Position = UDim2New(0, 0, 0, 48),
+                    Size = UDim2New(1, 0, 1, -48),
                     BorderSizePixel = 0
                 })
-                
-                Items["Page"] = Instances:Create("Frame", {
+
+                -- Контейнер суб-вкладок
+                Items["SubTabsContainer"] = Instances:Create("Frame", {
                     Parent = Items["Content"].Instance,
-                    Name = "\0",
+                    Name = "SubTabsContainer",
+                    Position = UDim2New(0, 16, 0, 8),
+                    Size = UDim2New(1, -32, 0, 26),
                     BackgroundTransparency = 1,
-                    Size = UDim2New(1, 0, 1, 0),
-                    BorderSizePixel = 0
+                    BorderSizePixel = 0,
+                    Visible = false
                 })
-                
+
                 Instances:Create("UIListLayout", {
-                    Parent = Items["Page"].Instance,
-                    Name = "\0",
+                    Parent = Items["SubTabsContainer"].Instance,
+                    Padding = UDimNew(0, 8),
                     FillDirection = Enum.FillDirection.Horizontal,
-                    HorizontalFlex = Enum.UIFlexAlignment.Fill,
-                    Padding = UDimNew(0, 10),
                     SortOrder = Enum.SortOrder.LayoutOrder,
-                    VerticalFlex = Enum.UIFlexAlignment.Fill
+                    VerticalAlignment = Enum.VerticalAlignment.Center
+                })
+
+                -- Контейнер страниц
+                Items["PagesHolder"] = Instances:Create("Frame", {
+                    Parent = Items["Content"].Instance,
+                    Name = "PagesHolder",
+                    Position = UDim2New(0, 0, 0, 0),
+                    Size = UDim2New(1, 0, 1, 0),
+                    BackgroundTransparency = 1,
+                    BorderSizePixel = 0
                 })
 
                 Items["Input"] = Instances:Create("TextBox", {
@@ -2509,176 +2531,177 @@ local Library do
         end
 
         -- ============================================================
-        -- PAGE (Часть 2 SALAD Style — табы)
+        -- PAGE (обновлённый — главные вкладки слева + SubPage)
         -- ============================================================
-        Library.Page = function(self, Data)
-            Data = Data or { }
+        Library.Page = function(Window, Data)
+            Data = Data or {}
 
             local Page = {
-                Window = self,
-
-                Name = Data.Name or Data.name or "Tab",
+                Window = Window,
+                Name = Data.Name or Data.name or "Page",
                 Icon = Data.Icon or Data.icon or nil,
-
-                Items = { },
-                Sections = { },
-                Active = false
+                SubPages = {},
+                CurrentSubPage = nil,
+                Items = {},
+                ColumnsData = {},
+                Sections = {},
+                Active = false,
+                HasSubPages = false
             }
 
-            local Items = { } do
-                Items["TabButton"] = Instances:Create("TextButton", {
-                    Parent = Page.Window.Items["Pages"].Instance,
-                    Name = "\0",
-                    BackgroundTransparency = 1,
-                    Size = UDim2New(0, 0, 1, 0),
-                    AutomaticSize = Enum.AutomaticSize.X,
-                    Text = "",
-                    AutoButtonColor = false
-                })
+            local Items = {}
 
-                Items["TabContent"] = Instances:Create("Frame", {
-                    Parent = Items["TabButton"].Instance,
-                    Name = "\0",
-                    Size = UDim2New(1, 0, 1, 0),
-                    BackgroundTransparency = 1
-                })
+            -- Кнопка главной вкладки (в TabsHolder, слева)
+            local TabButton = Instances:Create("TextButton", {
+                Parent = Window.Items["TabsHolder"].Instance,
+                Name = Page.Name,
+                FontFace = Library.Font,
+                TextColor3 = FromRGB(120, 124, 133),
+                Text = Page.Name,
+                AutoButtonColor = false,
+                BackgroundTransparency = 1,
+                Size = UDim2New(0, 0, 1, 0),
+                BorderSizePixel = 0,
+                AutomaticSize = Enum.AutomaticSize.X,
+                TextSize = 14
+            })
 
-                Instances:Create("UIListLayout", {
-                    Parent = Items["TabContent"].Instance,
-                    Name = "\0",
-                    FillDirection = Enum.FillDirection.Horizontal,
-                    VerticalAlignment = Enum.VerticalAlignment.Center,
-                    HorizontalAlignment = Enum.HorizontalAlignment.Center,
-                    Padding = UDimNew(0, 6),
-                    SortOrder = Enum.SortOrder.LayoutOrder
-                })
-
-                if Page.Icon then
-                    Items["TabIcon"] = Instances:Create("ImageLabel", {
-                        Parent = Items["TabContent"].Instance,
-                        Name = "\0",
-                        Size = UDim2New(0, 14, 0, 14),
-                        BackgroundTransparency = 1,
-                        Image = Page.Icon,
-                        ImageColor3 = Library.Theme["Dark Text"]
-                    })  Items["TabIcon"]:AddToTheme({ImageColor3 = "Dark Text"})
+            TabButton:OnHover(function()
+                if Window.CurrentPage ~= Page then 
+                    TabButton:Tween(TweenInfo.new(0.2, Enum.EasingStyle.Quad, Enum.EasingDirection.Out), { TextColor3 = FromRGB(240, 240, 245) })
                 end
+            end)
 
-                Items["TabText"] = Instances:Create("TextLabel", {
-                    Parent = Items["TabContent"].Instance,
-                    Name = "\0",
-                    FontFace = Library.Font,
-                    Text = Page.Name,
-                    TextColor3 = Library.Theme["Dark Text"],
-                    TextSize = 13,
-                    BackgroundTransparency = 1,
-                    AutomaticSize = Enum.AutomaticSize.X,
-                    Size = UDim2New(0, 0, 1, 0)
-                })  Items["TabText"]:AddToTheme({TextColor3 = "Dark Text"})
-
-                Items["TabIndicator"] = Instances:Create("Frame", {
-                    Parent = Items["TabButton"].Instance,
-                    Name = "\0",
-                    AnchorPoint = Vector2New(0.5, 1),
-                    Position = UDim2New(0.5, 0, 1, 0),
-                    Size = UDim2New(0, 0, 0, 2),
-                    BackgroundColor3 = Library.Theme.Accent,
-                    BorderSizePixel = 0
-                })  Items["TabIndicator"]:AddToTheme({BackgroundColor3 = "Accent"})
-
-                Items["PageFrame"] = Instances:Create("Frame", {
-                    Parent = Page.Window.Items["Page"].Instance,
-                    Name = "\0",
-                    Size = UDim2New(1, 0, 1, 0),
-                    BackgroundTransparency = 1,
-                    Visible = false
-                })
-
-                Items["LeftColumn"] = Instances:Create("ScrollingFrame", {
-                    Parent = Items["PageFrame"].Instance,
-                    Name = "\0",
-                    Size = UDim2New(0.5, -5, 1, 0),
-                    Position = UDim2New(0, 0, 0, 0),
-                    BackgroundTransparency = 1,
-                    BorderSizePixel = 0,
-                    ScrollBarThickness = 2,
-                    ScrollBarImageColor3 = Library.Theme["Dark Text"],
-                    CanvasSize = UDim2New(0, 0, 0, 0),
-                    AutomaticCanvasSize = Enum.AutomaticSize.Y
-                })  Items["LeftColumn"]:AddToTheme({ScrollBarImageColor3 = "Dark Text"})
-
-                Items["RightColumn"] = Instances:Create("ScrollingFrame", {
-                    Parent = Items["PageFrame"].Instance,
-                    Name = "\0",
-                    Size = UDim2New(0.5, -5, 1, 0),
-                    Position = UDim2New(0.5, 5, 0, 0),
-                    BackgroundTransparency = 1,
-                    BorderSizePixel = 0,
-                    ScrollBarThickness = 2,
-                    ScrollBarImageColor3 = Library.Theme["Dark Text"],
-                    CanvasSize = UDim2New(0, 0, 0, 0),
-                    AutomaticCanvasSize = Enum.AutomaticSize.Y
-                })  Items["RightColumn"]:AddToTheme({ScrollBarImageColor3 = "Dark Text"})
-
-                for _, Column in ipairs({Items["LeftColumn"], Items["RightColumn"]}) do
-                    Instances:Create("UIListLayout", {
-                        Parent = Column.Instance,
-                        Padding = UDimNew(0, 10),
-                        SortOrder = Enum.SortOrder.LayoutOrder
-                    })
-                    Instances:Create("UIPadding", {
-                        Parent = Column.Instance,
-                        PaddingRight = UDimNew(0, 4)
-                    })
+            TabButton:OnHoverLeave(function()
+                if Window.CurrentPage ~= Page then 
+                    TabButton:Tween(TweenInfo.new(0.2, Enum.EasingStyle.Quad, Enum.EasingDirection.Out), { TextColor3 = FromRGB(120, 124, 133) })
                 end
+            end)
 
-                Page.Items = Items
-            end
+            -- Дефолтный фрейм с колонками (если у Page нет SubPage)
+            local PageFrame = Instances:Create("Frame", {
+                Parent = Window.Items["PagesHolder"].Instance,
+                Name = Page.Name,
+                Size = UDim2New(1, 0, 1, 0),
+                BackgroundTransparency = 1,
+                BorderSizePixel = 0,
+                Visible = false
+            })
 
-            Library.SearchItems[Page] = { }
+            local LeftColumn = Instances:Create("ScrollingFrame", {
+                Parent = PageFrame.Instance,
+                Name = "LeftColumn",
+                Size = UDim2New(0.5, -12, 1, -16),
+                Position = UDim2New(0, 16, 0, 8),
+                BackgroundTransparency = 1,
+                BorderSizePixel = 0,
+                ScrollBarThickness = 2,
+                ScrollBarImageColor3 = Library.Theme.Outline,
+                CanvasSize = UDim2New(0, 0, 0, 0),
+                AutomaticCanvasSize = Enum.AutomaticSize.Y
+            })
 
+            local RightColumn = Instances:Create("ScrollingFrame", {
+                Parent = PageFrame.Instance,
+                Name = "RightColumn",
+                Size = UDim2New(0.5, -12, 1, -16),
+                Position = UDim2New(0.5, 4, 0, 8),
+                BackgroundTransparency = 1,
+                BorderSizePixel = 0,
+                ScrollBarThickness = 2,
+                ScrollBarImageColor3 = Library.Theme.Outline,
+                CanvasSize = UDim2New(0, 0, 0, 0),
+                AutomaticCanvasSize = Enum.AutomaticSize.Y
+            })
+
+            Instances:Create("UIListLayout", {
+                Parent = LeftColumn.Instance,
+                Padding = UDimNew(0, 8),
+                SortOrder = Enum.SortOrder.LayoutOrder
+            })
+            Instances:Create("UIListLayout", {
+                Parent = RightColumn.Instance,
+                Padding = UDimNew(0, 8),
+                SortOrder = Enum.SortOrder.LayoutOrder
+            })
+
+            Page.ColumnsData = { [1] = LeftColumn, [2] = RightColumn }
+            Page.Items["TabButton"] = TabButton
+            Page.Items["PageFrame"] = PageFrame
+
+            -- Выбор главной вкладки
             function Page:Select()
-                for _, TargetPage in ipairs(Page.Window.Pages) do 
-                    if TargetPage ~= Page then TargetPage:Deselect() end
+                if Window.CurrentPage == Page then return end
+
+                if Window.CurrentPage then 
+                    Window.CurrentPage:Deselect()
                 end
-                Items["PageFrame"].Instance.Visible = true
-                Items["TabText"]:Tween(nil, {TextColor3 = Library.Theme.Text})
-                if Items["TabIcon"] then
-                    Items["TabIcon"]:Tween(nil, {ImageColor3 = Library.Theme.Text})
+
+                Window.CurrentPage = Page
+                TabButton:Tween(TweenInfo.new(0.2, Enum.EasingStyle.Quad, Enum.EasingDirection.Out), { TextColor3 = FromRGB(240, 240, 245) })
+
+                -- Анимация индикатора
+                local Indicator = Window.Items["TabIndicator"]
+                Indicator.Instance.Visible = true
+                task.defer(function()
+                    local btnInst = TabButton.Instance
+                    local containerInst = Window.Items["TabsContainer"].Instance
+                    local posX = btnInst.AbsolutePosition.X - containerInst.AbsolutePosition.X
+                    local width = btnInst.AbsoluteSize.X
+                    Indicator:Tween(TweenInfo.new(0.3, Enum.EasingStyle.Quart, Enum.EasingDirection.Out), { Position = UDim2New(0, posX, 1, -2), Size = UDim2New(0, width, 0, 2) })
+                end)
+
+                -- Переключение суб-вкладок
+                if Page.HasSubPages and #Page.SubPages > 0 then 
+                    Window.Items["SubTabsContainer"].Instance.Visible = true
+                    Window.Items["PagesHolder"].Instance.Position = UDim2New(0, 0, 0, 38)
+                    Window.Items["PagesHolder"].Instance.Size = UDim2New(1, 0, 1, -38)
+                    PageFrame.Instance.Visible = false
+
+                    for _, sub in ipairs(Page.SubPages) do 
+                        sub.Items["TabButton"].Instance.Visible = true
+                    end
+
+                    if not Page.CurrentSubPage then 
+                        Page.SubPages[1]:Select()
+                    else 
+                        Page.CurrentSubPage:Select()
+                    end
+                else
+                    Window.Items["SubTabsContainer"].Instance.Visible = false
+                    Window.Items["PagesHolder"].Instance.Position = UDim2New(0, 0, 0, 0)
+                    Window.Items["PagesHolder"].Instance.Size = UDim2New(1, 0, 1, 0)
+                    PageFrame.Instance.Visible = true
+                    PageFrame:FadeItem(true, 0.15)
                 end
-                Items["TabIndicator"]:Tween(nil, {Size = UDim2New(1, 0, 0, 2)})
-                Page.Active = true
-                Library.CurrentPage = Page
             end
 
+            -- Снятие выбора
             function Page:Deselect()
-                Items["PageFrame"].Instance.Visible = false
-                Items["TabText"]:Tween(nil, {TextColor3 = Library.Theme["Dark Text"]})
-                if Items["TabIcon"] then
-                    Items["TabIcon"]:Tween(nil, {ImageColor3 = Library.Theme["Dark Text"]})
+                TabButton:Tween(TweenInfo.new(0.2, Enum.EasingStyle.Quad, Enum.EasingDirection.Out), { TextColor3 = FromRGB(120, 124, 133) })
+                PageFrame.Instance.Visible = false
+                if Page.HasSubPages then 
+                    for _, sub in ipairs(Page.SubPages) do 
+                        sub.Items["TabButton"].Instance.Visible = false
+                        sub:Deselect()
+                    end
                 end
-                Items["TabIndicator"]:Tween(nil, {Size = UDim2New(0, 0, 0, 2)})
-                Page.Active = false
             end
 
-            Items["TabButton"]:OnHover(function()
-                if not Page.Active then
-                    Items["TabText"]:Tween(nil, {TextColor3 = Library.Theme.Text})
-                end
-            end)
-
-            Items["TabButton"]:OnHoverLeave(function()
-                if not Page.Active then
-                    Items["TabText"]:Tween(nil, {TextColor3 = Library.Theme["Dark Text"]})
-                end
-            end)
-
-            Items["TabButton"]:Connect("MouseButton1Click", function()
+            TabButton:Connect("MouseButton1Click", function()
                 Page:Select()
             end)
 
-            TableInsert(Page.Window.Pages, Page)
-            if #Page.Window.Pages == 1 then
+            function Page:SubPage(SubData)
+                return Library.Page.SubPage(Page, SubData)
+            end
+
+            function Page:Section(SectionData)
+                return Library.Pages.Section(Page, SectionData)
+            end
+
+            TableInsert(Window.Pages, Page)
+            if #Window.Pages == 1 then 
                 Page:Select()
             end
 
@@ -2686,26 +2709,175 @@ local Library do
         end
 
         -- ============================================================
-        -- SECTION (Часть 3 SALAD Style)
+        -- SUB PAGE (внутри Page)
+        -- ============================================================
+        Library.Page.SubPage = function(Page, Data)
+            Data = Data or {}
+            local Window = Page.Window
+
+            local SubPage = {
+                Page = Page,
+                Name = Data.Name or Data.name or "SubPage",
+                Items = {},
+                ColumnsData = {}
+            }
+
+            Page.HasSubPages = true
+            if Page.Items["PageFrame"] then 
+                Page.Items["PageFrame"].Instance.Visible = false
+            end
+
+            -- Кнопка суб-вкладки
+            local TabButton = Instances:Create("TextButton", {
+                Parent = Window.Items["SubTabsContainer"].Instance,
+                Name = SubPage.Name,
+                FontFace = Library.Font,
+                TextColor3 = FromRGB(200, 200, 200),
+                Text = SubPage.Name,
+                AutoButtonColor = false,
+                BackgroundColor3 = FromRGB(24, 27, 32),
+                BorderSizePixel = 0,
+                AutomaticSize = Enum.AutomaticSize.X,
+                Size = UDim2New(0, 0, 1, 0),
+                TextSize = 13,
+                Visible = (Window.CurrentPage == Page)
+            })
+
+            Instances:Create("UICorner", {
+                Parent = TabButton.Instance,
+                CornerRadius = UDimNew(0, 6)
+            })
+
+            Instances:Create("UIPadding", {
+                Parent = TabButton.Instance,
+                PaddingLeft = UDimNew(0, 12),
+                PaddingRight = UDimNew(0, 12),
+                PaddingTop = UDimNew(0, 5),
+                PaddingBottom = UDimNew(0, 5)
+            })
+
+            TabButton:OnHover(function()
+                if Page.CurrentSubPage ~= SubPage then 
+                    TabButton:Tween(TweenInfo.new(0.15, Enum.EasingStyle.Quad, Enum.EasingDirection.Out), { BackgroundColor3 = FromRGB(35, 38, 45) })
+                end
+            end)
+
+            TabButton:OnHoverLeave(function()
+                if Page.CurrentSubPage ~= SubPage then 
+                    TabButton:Tween(TweenInfo.new(0.15, Enum.EasingStyle.Quad, Enum.EasingDirection.Out), { BackgroundColor3 = FromRGB(24, 27, 32) })
+                end
+            end)
+
+            -- Контейнер суб-вкладки с 2 колонками
+            local PageFrame = Instances:Create("Frame", {
+                Parent = Window.Items["PagesHolder"].Instance,
+                Name = SubPage.Name,
+                Size = UDim2New(1, 0, 1, 0),
+                BackgroundTransparency = 1,
+                BorderSizePixel = 0,
+                Visible = false
+            })
+
+            local LeftColumn = Instances:Create("ScrollingFrame", {
+                Parent = PageFrame.Instance,
+                Name = "LeftColumn",
+                Size = UDim2New(0.5, -12, 1, -16),
+                Position = UDim2New(0, 16, 0, 8),
+                BackgroundTransparency = 1,
+                BorderSizePixel = 0,
+                ScrollBarThickness = 2,
+                ScrollBarImageColor3 = Library.Theme.Outline,
+                CanvasSize = UDim2New(0, 0, 0, 0),
+                AutomaticCanvasSize = Enum.AutomaticSize.Y
+            })
+
+            local RightColumn = Instances:Create("ScrollingFrame", {
+                Parent = PageFrame.Instance,
+                Name = "RightColumn",
+                Size = UDim2New(0.5, -12, 1, -16),
+                Position = UDim2New(0.5, 4, 0, 8),
+                BackgroundTransparency = 1,
+                BorderSizePixel = 0,
+                ScrollBarThickness = 2,
+                ScrollBarImageColor3 = Library.Theme.Outline,
+                CanvasSize = UDim2New(0, 0, 0, 0),
+                AutomaticCanvasSize = Enum.AutomaticSize.Y
+            })
+
+            Instances:Create("UIListLayout", {
+                Parent = LeftColumn.Instance,
+                Padding = UDimNew(0, 8),
+                SortOrder = Enum.SortOrder.LayoutOrder
+            })
+            Instances:Create("UIListLayout", {
+                Parent = RightColumn.Instance,
+                Padding = UDimNew(0, 8),
+                SortOrder = Enum.SortOrder.LayoutOrder
+            })
+
+            SubPage.ColumnsData = { [1] = LeftColumn, [2] = RightColumn }
+            SubPage.Items["TabButton"] = TabButton
+            SubPage.Items["PageFrame"] = PageFrame
+
+            function SubPage:Select()
+                if Page.CurrentSubPage and Page.CurrentSubPage ~= SubPage then 
+                    Page.CurrentSubPage:Deselect()
+                end
+                Page.CurrentSubPage = SubPage
+                TabButton:Tween(TweenInfo.new(0.2, Enum.EasingStyle.Quad, Enum.EasingDirection.Out), { BackgroundColor3 = FromRGB(255, 255, 255), TextColor3 = FromRGB(14, 15, 18) })
+                PageFrame.Instance.Visible = true
+                PageFrame:FadeItem(true, 0.15)
+            end
+
+            function SubPage:Deselect()
+                TabButton:Tween(TweenInfo.new(0.2, Enum.EasingStyle.Quad, Enum.EasingDirection.Out), { BackgroundColor3 = FromRGB(24, 27, 32), TextColor3 = FromRGB(200, 200, 200) })
+                PageFrame.Instance.Visible = false
+            end
+
+            function SubPage:Section(SectionData)
+                return Library.Pages.Section(SubPage, SectionData)
+            end
+
+            TabButton:Connect("MouseButton1Click", function()
+                SubPage:Select()
+            end)
+
+            TableInsert(Page.SubPages, SubPage)
+
+            if #Page.SubPages == 1 and Window.CurrentPage == Page then 
+                Window.Items["SubTabsContainer"].Instance.Visible = true
+                Window.Items["PagesHolder"].Instance.Position = UDim2New(0, 0, 0, 38)
+                Window.Items["PagesHolder"].Instance.Size = UDim2New(1, 0, 1, -38)
+                SubPage:Select()
+            end
+
+            return SubPage
+        end
+
+        -- ============================================================
+        -- SECTION (совместимо и с Page, и с SubPage)
         -- ============================================================
         Library.Pages.Section = function(self, Data)
-            Data = Data or { }
+            Data = Data or {}
+
+            local Side = Data.Side or Data.side or 1
+            local Column = self.ColumnsData and self.ColumnsData[Side]
+            if not Column then return end
 
             local Section = {
-                Window = self.Window,
-                Page = self,
-
+                Window = self.Window or (self.Page and self.Page.Window) or nil,
+                Page = self.Page or self,
+                SubPage = self.Page and self or nil,
                 Name = Data.Name or Data.name or "Section",
                 Icon = Data.Icon or Data.icon or "131145598162617",
-                Side = Data.Side or Data.side or 1,
-
-                Items = { }
+                Side = Side,
+                Items = {}
             }
 
             local Items = { } do
                 Items["Section"] = Instances:Create("Frame", {
-                    Parent = Section.Page.ColumnsData and Section.Page.ColumnsData[Section.Side].Instance or (Section.Side == 2 and Section.Page.Items["RightColumn"].Instance or Section.Page.Items["LeftColumn"].Instance),
-                    Name = "\0",
+                    Parent = Column.Instance,
+                    Name = Section.Name,
                     Size = UDim2New(1, 0, 0, 45),
                     BorderColor3 = FromRGB(0, 0, 0),
                     BorderSizePixel = 0,
@@ -2715,13 +2887,11 @@ local Library do
                 
                 Instances:Create("UICorner", {
                     Parent = Items["Section"].Instance,
-                    Name = "\0",
                     CornerRadius = UDimNew(0, 8)
                 })
                 
                 Instances:Create("UIStroke", {
                     Parent = Items["Section"].Instance,
-                    Name = "\0",
                     Color = Library.Theme.Outline,
                     ApplyStrokeMode = Enum.ApplyStrokeMode.Border
                 }):AddToTheme({Color = "Outline"})
@@ -2744,7 +2914,6 @@ local Library do
                 
                 Instances:Create("UICorner", {
                     Parent = Items["IconBackground"].Instance,
-                    Name = "\0",
                     CornerRadius = UDimNew(0, 6)
                 })
                 
@@ -2780,7 +2949,7 @@ local Library do
                 
                 Items["Content"] = Instances:Create("Frame", {
                     Parent = Items["Section"].Instance,
-                    Name = "\0",
+                    Name = "Container",
                     BorderColor3 = FromRGB(0, 0, 0),
                     BackgroundTransparency = 1,
                     Position = UDim2New(0, 10, 0, 40),
@@ -2792,14 +2961,12 @@ local Library do
                 
                 Instances:Create("UIListLayout", {
                     Parent = Items["Content"].Instance,
-                    Name = "\0",
                     Padding = UDimNew(0, 6),
                     SortOrder = Enum.SortOrder.LayoutOrder
                 })
 
                 Instances:Create("UIPadding", {
                     Parent = Items["Section"].Instance,
-                    Name = "\0",
                     PaddingBottom = UDimNew(0, 10)
                 })                
                 
@@ -2810,7 +2977,7 @@ local Library do
         end
 
         -- ============================================================
-        -- TOGGLE (Часть 4)
+        -- TOGGLE
         -- ============================================================
         Library.Sections.Toggle = function(self, Data)
             Data = Data or { }
@@ -2855,7 +3022,6 @@ local Library do
                 
                 Instances:Create("UICorner", {
                     Parent = Items["Indicator"].Instance,
-                    Name = "\0",
                     CornerRadius = UDimNew(0, 5)
                 })
                 
@@ -2873,13 +3039,11 @@ local Library do
                 
                 Instances:Create("UICorner", {
                     Parent = Items["Accent"].Instance,
-                    Name = "\0",
                     CornerRadius = UDimNew(0, 5)
                 })
                 
                 Instances:Create("UIGradient", {
                     Parent = Items["Accent"].Instance,
-                    Name = "\0",
                     Color = RGBSequence{RGBSequenceKeypoint(0, FromRGB(255, 255, 255)), RGBSequenceKeypoint(1, FromRGB(209, 209, 209))}
                 })
                 
@@ -2930,7 +3094,6 @@ local Library do
                 
                 Instances:Create("UIListLayout", {
                     Parent = Items["SubElements"].Instance,
-                    Name = "\0",
                     VerticalAlignment = Enum.VerticalAlignment.Center,
                     FillDirection = Enum.FillDirection.Horizontal,
                     HorizontalAlignment = Enum.HorizontalAlignment.Right,
@@ -3047,7 +3210,7 @@ local Library do
         end
 
         -- ============================================================
-        -- BUTTON (Часть 4)
+        -- BUTTON
         -- ============================================================
         Library.Sections.Button = function(self, Data)
             Data = Data or { }
@@ -3078,7 +3241,6 @@ local Library do
                 
                 Instances:Create("UICorner", {
                     Parent = Items["Button"].Instance,
-                    Name = "\0",
                     CornerRadius = UDimNew(0, 5)
                 })
                 
@@ -3114,13 +3276,11 @@ local Library do
                 
                 Instances:Create("UICorner", {
                     Parent = Items["Accent"].Instance,
-                    Name = "\0",
                     CornerRadius = UDimNew(0, 5)
                 })
                 
                 Instances:Create("UIGradient", {
                     Parent = Items["Accent"].Instance,
-                    Name = "\0",
                     Color = RGBSequence{RGBSequenceKeypoint(0, FromRGB(255, 255, 255)), RGBSequenceKeypoint(1, FromRGB(209, 209, 209))}
                 })
 
@@ -3163,7 +3323,7 @@ local Library do
         end
 
         -- ============================================================
-        -- SLIDER (Часть 4)
+        -- SLIDER
         -- ============================================================
         Library.Sections.Slider = function(self, Data)
             Data = Data or { }
@@ -3230,7 +3390,6 @@ local Library do
                 
                 Instances:Create("UICorner", {
                     Parent = Items["RealSlider"].Instance,
-                    Name = "\0",
                     CornerRadius = UDimNew(1, 0)
                 })
                 
@@ -3245,7 +3404,6 @@ local Library do
                 
                 Instances:Create("UICorner", {
                     Parent = Items["Accent"].Instance,
-                    Name = "\0",
                     CornerRadius = UDimNew(1, 0)
                 })
                 
@@ -3262,19 +3420,16 @@ local Library do
                 
                 Instances:Create("UICorner", {
                     Parent = Items["Dragger"].Instance,
-                    Name = "\0",
                     CornerRadius = UDimNew(1, 0)
                 })
                 
                 Instances:Create("UIGradient", {
                     Parent = Items["Dragger"].Instance,
-                    Name = "\0",
                     Color = RGBSequence{RGBSequenceKeypoint(0, FromRGB(255, 255, 255)), RGBSequenceKeypoint(1, FromRGB(170, 170, 170))}
                 })
                 
                 Instances:Create("UIGradient", {
                     Parent = Items["Accent"].Instance,
-                    Name = "\0",
                     Color = RGBSequence{RGBSequenceKeypoint(0, FromRGB(255, 255, 255)), RGBSequenceKeypoint(1, FromRGB(170, 170, 170))}
                 })
                 
@@ -3375,7 +3530,7 @@ local Library do
         end
 
         -- ============================================================
-        -- DROPDOWN (Часть 4)
+        -- DROPDOWN
         -- ============================================================
         Library.Sections.Dropdown = function(self, Data)
             Data = Data or { }
@@ -3442,7 +3597,6 @@ local Library do
                 
                 Instances:Create("UICorner", {
                     Parent = Items["RealDropdown"].Instance,
-                    Name = "\0",
                     CornerRadius = UDimNew(0, 5)
                 })
                 
@@ -3496,13 +3650,11 @@ local Library do
                 
                 Instances:Create("UICorner", {
                     Parent = Items["OptionHolder"].Instance,
-                    Name = "\0",
                     CornerRadius = UDimNew(0, 6)
                 })
                 
                 Instances:Create("UIStroke", {
                     Parent = Items["OptionHolder"].Instance,
-                    Name = "\0",
                     Color = FromRGB(26, 30, 36),
                     ApplyStrokeMode = Enum.ApplyStrokeMode.Border
                 }):AddToTheme({Color = "Outline"})
@@ -3525,14 +3677,12 @@ local Library do
                 
                 Instances:Create("UIListLayout", {
                     Parent = Items["Holder"].Instance,
-                    Name = "\0",
                     Padding = UDimNew(0, 8),
                     SortOrder = Enum.SortOrder.LayoutOrder
                 })
                 
                 Instances:Create("UIPadding", {
                     Parent = Items["Holder"].Instance,
-                    Name = "\0",
                     PaddingTop = UDimNew(0, 1),
                     PaddingBottom = UDimNew(0, 1),
                     PaddingRight = UDimNew(0, 1),
@@ -3673,12 +3823,10 @@ local Library do
                 
                 Instances:Create("UIGradient", {
                     Parent = OptionButton.Instance,
-                    Name = "\0",
                     Color = RGBSequence{RGBSequenceKeypoint(0, FromRGB(255, 255, 255)), RGBSequenceKeypoint(1, FromRGB(170, 170, 170))}
                 })
                 Instances:Create("UICorner", {
                     Parent = OptionButton.Instance,
-                    Name = "\0",
                     CornerRadius = UDimNew(0, 6)
                 })
                 
@@ -3805,7 +3953,7 @@ local Library do
         end
 
         -- ============================================================
-        -- LABEL (уже есть)
+        -- LABEL
         -- ============================================================
         Library.Sections.Label = function(self, Name)
             local Label = {
@@ -3856,7 +4004,6 @@ local Library do
                 
                 Instances:Create("UIListLayout", {
                     Parent = Items["SubElements"].Instance,
-                    Name = "\0",
                     VerticalAlignment = Enum.VerticalAlignment.Center,
                     FillDirection = Enum.FillDirection.Horizontal,
                     HorizontalAlignment = Enum.HorizontalAlignment.Right,
@@ -3938,7 +4085,7 @@ local Library do
         end
 
         -- ============================================================
-        -- TEXTBOX (Часть 7 — адаптировано)
+        -- TEXTBOX
         -- ============================================================
         Library.Sections.Textbox = function(self, Data)
             Data = Data or { }
@@ -4048,7 +4195,7 @@ local Library do
         end
 
         -- ============================================================
-        -- MULTI DROPDOWN (Часть 7 — адаптировано)
+        -- MULTI DROPDOWN
         -- ============================================================
         Library.Sections.MultiDropdown = function(self, Data)
             Data = Data or { }
@@ -4235,7 +4382,7 @@ local Library do
         end
 
         -- ============================================================
-        -- SETTINGS PAGE (уже было)
+        -- SETTINGS PAGE
         -- ============================================================
         Library.CreateSettingsPage = function(self, Window)
             local SettingsPage = Window:Page({Name = "Settings", Icon = "77861834748434"})
