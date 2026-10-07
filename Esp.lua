@@ -2693,7 +2693,7 @@ local Library do
             end)
 
             function Page:SubPage(SubData)
-                return Library.Page.SubPage(Page, SubData)
+                return Library.Pages.SubPage(Page, SubData)
             end
 
             function Page:Section(SectionData)
@@ -2709,9 +2709,9 @@ local Library do
         end
 
         -- ============================================================
-        -- SUB PAGE (внутри Page)
+        -- SUB PAGE (привязано к Library.Pages)
         -- ============================================================
-        Library.Page.SubPage = function(Page, Data)
+        Library.Pages.SubPage = function(Page, Data)
             Data = Data or {}
             local Window = Page.Window
 
