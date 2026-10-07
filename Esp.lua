@@ -2062,7 +2062,7 @@ local Library do
         end
 
         -- ============================================================
-        -- WINDOW (обновлённый, с TabsContainer / SubTabsContainer / PagesHolder)
+        -- WINDOW (обновлённый, с обновлённым SubTabsContainer и TabsHolder)
         -- ============================================================
         Library.Window = function(self, Data)
             Data = Data or { }
@@ -2187,22 +2187,10 @@ local Library do
 
                 Instances:Create("UIListLayout", {
                     Parent = Items["TabsHolder"].Instance,
-                    Padding = UDimNew(0, 16),
+                    Padding = UDimNew(0, 4),
                     FillDirection = Enum.FillDirection.Horizontal,
                     SortOrder = Enum.SortOrder.LayoutOrder,
                     VerticalAlignment = Enum.VerticalAlignment.Center
-                })
-
-                -- Плавный бегунок-индикатор под активной главной вкладкой
-                Items["TabIndicator"] = Instances:Create("Frame", {
-                    Parent = Items["TabsContainer"].Instance,
-                    Name = "TabIndicator",
-                    Position = UDim2New(0, 0, 1, -2),
-                    Size = UDim2New(0, 0, 0, 2),
-                    BorderSizePixel = 0,
-                    BackgroundColor3 = FromRGB(240, 240, 245),
-                    Visible = false,
-                    ZIndex = 5
                 })
 
                 -- Right controls (Search, Settings, Close)
@@ -2382,20 +2370,41 @@ local Library do
                     BorderSizePixel = 0
                 })
 
-                -- Контейнер суб-вкладок
+                -- Контейнер суб-вкладок («Таблетка»)
                 Items["SubTabsContainer"] = Instances:Create("Frame", {
                     Parent = Items["Content"].Instance,
                     Name = "SubTabsContainer",
-                    Position = UDim2New(0, 16, 0, 8),
-                    Size = UDim2New(1, -32, 0, 26),
-                    BackgroundTransparency = 1,
+                    Position = UDim2New(0, 16, 0, 12),
+                    Size = UDim2New(0, 0, 0, 38),
+                    AutomaticSize = Enum.AutomaticSize.X,
+                    BackgroundColor3 = FromRGB(14, 15, 18),
                     BorderSizePixel = 0,
                     Visible = false
                 })
 
+                Instances:Create("UICorner", {
+                    Parent = Items["SubTabsContainer"].Instance,
+                    CornerRadius = UDimNew(0, 8)
+                })
+
+                Instances:Create("UIStroke", {
+                    Parent = Items["SubTabsContainer"].Instance,
+                    Color = FromRGB(26, 30, 36),
+                    Thickness = 1,
+                    ApplyStrokeMode = Enum.ApplyStrokeMode.Border
+                })
+
+                Instances:Create("UIPadding", {
+                    Parent = Items["SubTabsContainer"].Instance,
+                    PaddingLeft = UDimNew(0, 4),
+                    PaddingRight = UDimNew(0, 4),
+                    PaddingTop = UDimNew(0, 4),
+                    PaddingBottom = UDimNew(0, 4)
+                })
+
                 Instances:Create("UIListLayout", {
                     Parent = Items["SubTabsContainer"].Instance,
-                    Padding = UDimNew(0, 8),
+                    Padding = UDimNew(0, 4),
                     FillDirection = Enum.FillDirection.Horizontal,
                     SortOrder = Enum.SortOrder.LayoutOrder,
                     VerticalAlignment = Enum.VerticalAlignment.Center
@@ -2531,7 +2540,7 @@ local Library do
         end
 
         -- ============================================================
-        -- PAGE (обновлённый — главные вкладки слева + SubPage)
+        -- PAGE (главные вкладки с мягкой подложкой TabBackground)
         -- ============================================================
         Library.Page = function(Window, Data)
             Data = Data or {}
@@ -2551,7 +2560,7 @@ local Library do
 
             local Items = {}
 
-            -- Кнопка главной вкладки (в TabsHolder, слева)
+            -- Кнопка главной вкладки (в TabsHolder)
             local TabButton = Instances:Create("TextButton", {
                 Parent = Window.Items["TabsHolder"].Instance,
                 Name = Page.Name,
@@ -2563,7 +2572,33 @@ local Library do
                 Size = UDim2New(0, 0, 1, 0),
                 BorderSizePixel = 0,
                 AutomaticSize = Enum.AutomaticSize.X,
-                TextSize = 14
+                TextSize = 14,
+                ZIndex = 2
+            })
+
+            -- Подложка под активную вкладку
+            local TabBackground = Instances:Create("Frame", {
+                Parent = TabButton.Instance,
+                Name = "TabBackground",
+                Size = UDim2New(1, 0, 1, -8),
+                Position = UDim2New(0, 0, 0, 4),
+                BackgroundColor3 = FromRGB(24, 27, 32),
+                BackgroundTransparency = 1,
+                BorderSizePixel = 0,
+                ZIndex = 1
+            })
+
+            Instances:Create("UICorner", {
+                Parent = TabBackground.Instance,
+                CornerRadius = UDimNew(0, 6)
+            })
+
+            Instances:Create("UIPadding", {
+                Parent = TabButton.Instance,
+                PaddingLeft = UDimNew(0, 12),
+                PaddingRight = UDimNew(0, 12),
+                PaddingTop = UDimNew(0, 6),
+                PaddingBottom = UDimNew(0, 6)
             })
 
             TabButton:OnHover(function()
@@ -2627,6 +2662,7 @@ local Library do
 
             Page.ColumnsData = { [1] = LeftColumn, [2] = RightColumn }
             Page.Items["TabButton"] = TabButton
+            Page.Items["TabBackground"] = TabBackground
             Page.Items["PageFrame"] = PageFrame
 
             -- Выбор главной вкладки
@@ -2638,24 +2674,14 @@ local Library do
                 end
 
                 Window.CurrentPage = Page
-                TabButton:Tween(TweenInfo.new(0.2, Enum.EasingStyle.Quad, Enum.EasingDirection.Out), { TextColor3 = FromRGB(240, 240, 245) })
-
-                -- Анимация индикатора
-                local Indicator = Window.Items["TabIndicator"]
-                Indicator.Instance.Visible = true
-                task.defer(function()
-                    local btnInst = TabButton.Instance
-                    local containerInst = Window.Items["TabsContainer"].Instance
-                    local posX = btnInst.AbsolutePosition.X - containerInst.AbsolutePosition.X
-                    local width = btnInst.AbsoluteSize.X
-                    Indicator:Tween(TweenInfo.new(0.3, Enum.EasingStyle.Quart, Enum.EasingDirection.Out), { Position = UDim2New(0, posX, 1, -2), Size = UDim2New(0, width, 0, 2) })
-                end)
+                TabButton:Tween(TweenInfo.new(0.25, Enum.EasingStyle.Quad, Enum.EasingDirection.Out), { TextColor3 = FromRGB(240, 240, 245) })
+                TabBackground:Tween(TweenInfo.new(0.25, Enum.EasingStyle.Quad, Enum.EasingDirection.Out), { BackgroundTransparency = 0 })
 
                 -- Переключение суб-вкладок
                 if Page.HasSubPages and #Page.SubPages > 0 then 
                     Window.Items["SubTabsContainer"].Instance.Visible = true
-                    Window.Items["PagesHolder"].Instance.Position = UDim2New(0, 0, 0, 38)
-                    Window.Items["PagesHolder"].Instance.Size = UDim2New(1, 0, 1, -38)
+                    Window.Items["PagesHolder"].Instance.Position = UDim2New(0, 0, 0, 56)
+                    Window.Items["PagesHolder"].Instance.Size = UDim2New(1, 0, 1, -56)
                     PageFrame.Instance.Visible = false
 
                     for _, sub in ipairs(Page.SubPages) do 
@@ -2678,7 +2704,8 @@ local Library do
 
             -- Снятие выбора
             function Page:Deselect()
-                TabButton:Tween(TweenInfo.new(0.2, Enum.EasingStyle.Quad, Enum.EasingDirection.Out), { TextColor3 = FromRGB(120, 124, 133) })
+                TabButton:Tween(TweenInfo.new(0.25, Enum.EasingStyle.Quad, Enum.EasingDirection.Out), { TextColor3 = FromRGB(120, 124, 133) })
+                TabBackground:Tween(TweenInfo.new(0.25, Enum.EasingStyle.Quad, Enum.EasingDirection.Out), { BackgroundTransparency = 1 })
                 PageFrame.Instance.Visible = false
                 if Page.HasSubPages then 
                     for _, sub in ipairs(Page.SubPages) do 
@@ -2709,7 +2736,7 @@ local Library do
         end
 
         -- ============================================================
-        -- SUB PAGE (привязано к Library.Pages)
+        -- SUB PAGE (суб-вкладки внутри контейнера-таблетки)
         -- ============================================================
         Library.Pages.SubPage = function(Page, Data)
             Data = Data or {}
@@ -2738,7 +2765,7 @@ local Library do
                 BackgroundColor3 = FromRGB(24, 27, 32),
                 BorderSizePixel = 0,
                 AutomaticSize = Enum.AutomaticSize.X,
-                Size = UDim2New(0, 0, 1, 0),
+                Size = UDim2New(0, 0, 0, 30),
                 TextSize = 13,
                 Visible = (Window.CurrentPage == Page)
             })
@@ -2750,21 +2777,21 @@ local Library do
 
             Instances:Create("UIPadding", {
                 Parent = TabButton.Instance,
-                PaddingLeft = UDimNew(0, 12),
-                PaddingRight = UDimNew(0, 12),
-                PaddingTop = UDimNew(0, 5),
-                PaddingBottom = UDimNew(0, 5)
+                PaddingLeft = UDimNew(0, 14),
+                PaddingRight = UDimNew(0, 14),
+                PaddingTop = UDimNew(0, 0),
+                PaddingBottom = UDimNew(0, 0)
             })
 
             TabButton:OnHover(function()
                 if Page.CurrentSubPage ~= SubPage then 
-                    TabButton:Tween(TweenInfo.new(0.15, Enum.EasingStyle.Quad, Enum.EasingDirection.Out), { BackgroundColor3 = FromRGB(35, 38, 45) })
+                    TabButton:Tween(TweenInfo.new(0.2, Enum.EasingStyle.Quad, Enum.EasingDirection.Out), { BackgroundColor3 = FromRGB(35, 38, 45) })
                 end
             end)
 
             TabButton:OnHoverLeave(function()
                 if Page.CurrentSubPage ~= SubPage then 
-                    TabButton:Tween(TweenInfo.new(0.15, Enum.EasingStyle.Quad, Enum.EasingDirection.Out), { BackgroundColor3 = FromRGB(24, 27, 32) })
+                    TabButton:Tween(TweenInfo.new(0.2, Enum.EasingStyle.Quad, Enum.EasingDirection.Out), { BackgroundColor3 = FromRGB(24, 27, 32) })
                 end
             end)
 
@@ -2846,8 +2873,8 @@ local Library do
 
             if #Page.SubPages == 1 and Window.CurrentPage == Page then 
                 Window.Items["SubTabsContainer"].Instance.Visible = true
-                Window.Items["PagesHolder"].Instance.Position = UDim2New(0, 0, 0, 38)
-                Window.Items["PagesHolder"].Instance.Size = UDim2New(1, 0, 1, -38)
+                Window.Items["PagesHolder"].Instance.Position = UDim2New(0, 0, 0, 56)
+                Window.Items["PagesHolder"].Instance.Size = UDim2New(1, 0, 1, -56)
                 SubPage:Select()
             end
 
