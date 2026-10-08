@@ -48,6 +48,9 @@ function MacLib:Window(Settings)
 		acrylicBlur = true
 	end
 
+	local Camera = workspace.CurrentCamera
+	local isMobile = UserInputService.TouchEnabled
+
 	local macLib = Instance.new("ScreenGui")
 	macLib.Name = "MacLib"
 	macLib.ResetOnSpawn = false
@@ -96,6 +99,30 @@ function MacLib:Window(Settings)
 	local baseUIScale = Instance.new("UIScale")
 	baseUIScale.Name = "BaseUIScale"
 	baseUIScale.Parent = base
+
+	--// Автоматическая подгонка размера под сенсорные экраны
+	local function AutoScaleForMobile()
+		if not base or not baseUIScale then return end
+		local viewportSize = Camera.ViewportSize
+		if viewportSize.X == 0 or viewportSize.Y == 0 then return end
+
+		local targetSize = Settings.Size or UDim2.fromOffset(868, 650)
+		local baseWidth = targetSize.X.Offset > 0 and targetSize.X.Offset or 868
+		local baseHeight = targetSize.Y.Offset > 0 and targetSize.Y.Offset or 650
+
+		local scaleX = (viewportSize.X * 0.92) / baseWidth
+		local scaleY = (viewportSize.Y * 0.92) / baseHeight
+		local finalScale = math.min(scaleX, scaleY)
+
+		if isMobile or finalScale < 1 then
+			baseUIScale.Scale = math.clamp(finalScale, 0.35, 1)
+		else
+			baseUIScale.Scale = Settings.Scale or 1
+		end
+	end
+
+	Camera:GetPropertyChangedSignal("ViewportSize"):Connect(AutoScaleForMobile)
+	task.spawn(AutoScaleForMobile)
 
 	local baseUICorner = Instance.new("UICorner")
 	baseUICorner.Name = "BaseUICorner"
@@ -159,7 +186,7 @@ function MacLib:Window(Settings)
 	uIPadding.Parent = controls
 	
 	local windowControlSettings = {
-		sizes = { enabled = UDim2.fromOffset(8, 8), disabled = UDim2.fromOffset(7, 7) },
+		sizes = { enabled = UDim2.fromOffset(12, 12), disabled = UDim2.fromOffset(8, 8) },
 		transparencies = { enabled = 0, disabled = 1 },
 		strokeTransparency = 0.9,
 	}
@@ -696,6 +723,7 @@ function MacLib:Window(Settings)
 		ChangemoveIconState("Default")
 	end)
 
+	--// Адаптированная логика перетаскивания под сенсорный ввод и UIScale
 	local dragging_ = false
 	local dragInput
 	local dragStart
@@ -703,7 +731,17 @@ function MacLib:Window(Settings)
 
 	local function update(input)
 		local delta = input.Position - dragStart
-		base.Position = UDim2.new(startPos.X.Scale, startPos.X.Offset + delta.X, startPos.Y.Scale, startPos.Y.Offset + delta.Y)
+		local currentScale = (baseUIScale and baseUIScale.Scale > 0) and baseUIScale.Scale or 1
+		
+		-- Корректируем смещение с учётом текущего масштаба UIScale
+		local adjustedDeltaX = delta.X / currentScale
+		local adjustedDeltaY = delta.Y / currentScale
+		base.Position = UDim2.new(
+			startPos.X.Scale,
+			startPos.X.Offset + adjustedDeltaX,
+			startPos.Y.Scale,
+			startPos.Y.Offset + adjustedDeltaY
+		)
 	end
 
 	local function onDragStart(input)
