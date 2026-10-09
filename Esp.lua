@@ -1,7 +1,4 @@
---[[
-!! УСТАРЕВШИЙ РЕПОЗИТОРИЙ !! Пожалуйста, используйте новый репозиторий:
-https://github.com/biggaboy212/Maclib/tree/main
-]]
+
 
 local MacLib = {}
 
