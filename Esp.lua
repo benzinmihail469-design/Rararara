@@ -1,31 +1,31 @@
 --[[
-!! OUTDATED REPOSITORY !! Please use the new repository:
+!! УСТАРЕВШИЙ РЕПОЗИТОРИЙ !! Пожалуйста, используйте новый репозиторий:
 https://github.com/biggaboy212/Maclib/tree/main
 ]]
 
 local MacLib = {}
 
---// Services
+--// Услуги
 local TweenService = game:GetService("TweenService")
-local RunService = game:GetService("RunService")
+локальный RunService = игра:GetService("RunService")
 local HttpService = game:GetService("HttpService")
 local ContentProvider = game:GetService("ContentProvider")
 local UserInputService = game:GetService("UserInputService")
 local Players = game:GetService("Players")
 
---// Variables
-local isStudio = RunService:IsStudio()
-local LocalPlayer = Players.LocalPlayer
+--// Переменные
+локальный isStudio = RunService:IsStudio()
+localLocalPlayer = Players.LocalPlayer
 
-local windowState
-local acrylicBlur
+локальное состояние окна
+локальный акрилРазмытие
 local hasGlobalSetting
 
-local tabs = {}
+локальные вкладки = {}
 local currentTabInstance = nil
 local tabIndex = 0
 
-local assets = {
+локальные активы = {
 	interFont = "rbxassetid://12187365364",
 	userInfoBlurred = "rbxassetid://18824089198",
 	toggleBackground = "rbxassetid://18772190202",
@@ -34,21 +34,21 @@ local assets = {
 	searchIcon = "rbxassetid://86737463322606"
 }
 
---// Functions
-local function Tween(instance, tweeninfo, propertytable)
+--// Функции
+локальная функция Tween(instance, tweeninfo, propertytable)
 	return TweenService:Create(instance, tweeninfo, propertytable)
-end
+конец
 
---// Library Functions
-function MacLib:Window(Settings)
+--// Функции библиотеки
+функция MacLib:Window(Settings)
 	local WindowFunctions = {}
-	if Settings.AcrylicBlur ~= nil then
+	Если Settings.AcrylicBlur ≤ nil, то
 		acrylicBlur = Settings.AcrylicBlur
-	else
+	еще
 		acrylicBlur = true
-	end
+	конец
 
-	local Camera = workspace.CurrentCamera
+	локальная камера = рабочая область.Текущая камера
 	local isMobile = UserInputService.TouchEnabled
 
 	local macLib = Instance.new("ScreenGui")
@@ -58,10 +58,10 @@ function MacLib:Window(Settings)
 	macLib.IgnoreGuiInset = true
 	macLib.ScreenInsets = Enum.ScreenInsets.None
 	macLib.ZIndexBehavior = Enum.ZIndexBehavior.Sibling
-	macLib.Parent = (isStudio and LocalPlayer.PlayerGui) or game:GetService("CoreGui")
+	macLib.Parent = (isStudio и LocalPlayer.PlayerGui) или game:GetService("CoreGui")
 
-	local notifications = Instance.new("Frame")
-	notifications.Name = "Notifications"
+	локальные уведомления = Instance.new("Frame")
+	notifications.Name = "Уведомления"
 	notifications.BackgroundColor3 = Color3.fromRGB(255, 255, 255)
 	notifications.BackgroundTransparency = 1
 	notifications.BorderColor3 = Color3.fromRGB(0, 0, 0)
@@ -97,12 +97,12 @@ function MacLib:Window(Settings)
 	base.Size = Settings.Size or UDim2.fromOffset(868, 650)
 
 	local baseUIScale = Instance.new("UIScale")
-	baseUIScale.Name = "BaseUIScale"
+	baseUIScale.Name = "БасеUIScale"
 	baseUIScale.Parent = base
 
-	--// Автоматическая подгонка размера под сенсорные экраны
-	local function AutoScaleForMobile()
-		if not base or not baseUIScale then return end
+	--// РђРІС‚РѕРјР°С‚РёС‡РµСЃРєР°СЏ РїРѕРґРѕРЅРє° СЂР°Р·РјРµСЂР° РїРѕРґ СЃРµРЅСЃРѕСЂРЅС‹Рµ СЌРєСЂР°РЅС‹
+	локальная функция AutoScaleForMobile()
+		если не base или не baseUIScale, то вернуть end
 		local viewportSize = Camera.ViewportSize
 		if viewportSize.X == 0 or viewportSize.Y == 0 then return end
 
@@ -114,12 +114,12 @@ function MacLib:Window(Settings)
 		local scaleY = (viewportSize.Y * 0.92) / baseHeight
 		local finalScale = math.min(scaleX, scaleY)
 
-		if isMobile or finalScale < 1 then
+		если isMobile или finalScale < 1, то
 			baseUIScale.Scale = math.clamp(finalScale, 0.35, 1)
-		else
+		еще
 			baseUIScale.Scale = Settings.Scale or 1
-		end
-	end
+		конец
+	конец
 
 	Camera:GetPropertyChangedSignal("ViewportSize"):Connect(AutoScaleForMobile)
 	task.spawn(AutoScaleForMobile)
@@ -146,7 +146,7 @@ function MacLib:Window(Settings)
 	sidebar.Size = UDim2.fromScale(0.325, 1)
 
 	local divider = Instance.new("Frame")
-	divider.Name = "Divider"
+	divider.Name = "Разделитель"
 	divider.AnchorPoint = Vector2.new(1, 0)
 	divider.BackgroundColor3 = Color3.fromRGB(255, 255, 255)
 	divider.BackgroundTransparency = 0.9
@@ -164,7 +164,7 @@ function MacLib:Window(Settings)
 	windowControls.BorderSizePixel = 0
 	windowControls.Size = UDim2.new(1, 0, 0, 31)
 
-	local controls = Instance.new("Frame")
+	локальные элементы управления = Instance.new("Frame")
 	controls.Name = "Controls"
 	controls.BackgroundColor3 = Color3.fromRGB(119, 174, 94)
 	controls.BackgroundTransparency = 1
@@ -187,7 +187,7 @@ function MacLib:Window(Settings)
 	
 	local windowControlSettings = {
 		sizes = { enabled = UDim2.fromOffset(12, 12), disabled = UDim2.fromOffset(8, 8) },
-		transparencies = { enabled = 0, disabled = 1 },
+		прозрачность = { включено = 0, отключено = 1 },
 		strokeTransparency = 0.9,
 	}
 
@@ -198,7 +198,7 @@ function MacLib:Window(Settings)
 	stroke.Transparency = windowControlSettings.strokeTransparency
 
 	local exit = Instance.new("TextButton")
-	exit.Name = "Exit"
+	exit.Name = "Выход"
 	exit.FontFace = Font.new("rbxasset://fonts/families/SourceSansPro.json")
 	exit.Text = ""
 	exit.TextColor3 = Color3.fromRGB(0, 0, 0)
@@ -253,24 +253,24 @@ function MacLib:Window(Settings)
 
 	maximize.Parent = controls
 	
-	local function applyState(button, enabled)
+	локальная функция applyState(button, enabled)
 		local size = enabled and windowControlSettings.sizes.enabled or windowControlSettings.sizes.disabled
 		local transparency = enabled and windowControlSettings.transparencies.enabled or windowControlSettings.transparencies.disabled
 
 		button.Size = size
-		button.BackgroundTransparency = transparency
+		button.BackgroundTransparency = прозрачность
 		button.Active = enabled
 		button.Interactable = enabled
 
 		for _, child in ipairs(button:GetChildren()) do
-			if child:IsA("UIStroke") then
-				child.Transparency = transparency
-			end
-		end
-		if not enabled then
+			если child:IsA("UIStroke") then
+				child.Transparency = прозрачность
+			конец
+		конец
+		если не включено, то
 			stroke:Clone().Parent = button
-		end
-	end
+		конец
+	конец
 
 	applyState(maximize, false)
 	
@@ -279,17 +279,17 @@ function MacLib:Window(Settings)
 		local buttonName = button.Name
 		local isEnabled = true
 
-		if Settings.DisabledWindowControls and table.find(Settings.DisabledWindowControls, buttonName) then
+		Если Settings.DisabledWindowControls и table.find(Settings.DisabledWindowControls, buttonName), то
 			isEnabled = false
-		end
+		конец
 
 		applyState(button, isEnabled)
-	end
+	конец
 
 	controls.Parent = windowControls
 
 	local divider1 = Instance.new("Frame")
-	divider1.Name = "Divider"
+	divider1.Name = "Разделитель"
 	divider1.AnchorPoint = Vector2.new(0, 1)
 	divider1.BackgroundColor3 = Color3.fromRGB(255, 255, 255)
 	divider1.BackgroundTransparency = 0.9
@@ -301,17 +301,17 @@ function MacLib:Window(Settings)
 
 	windowControls.Parent = sidebar
 
-	local information = Instance.new("Frame")
-	information.Name = "Information"
+	локальная информация = Instance.new("Frame")
+	information.Name = "Информация"
 	information.BackgroundColor3 = Color3.fromRGB(255, 255, 255)
-	information.BackgroundTransparency = 1
+	информация.ФонПрозрачность = 1
 	information.BorderColor3 = Color3.fromRGB(0, 0, 0)
 	information.BorderSizePixel = 0
 	information.Position = UDim2.fromOffset(0, 31)
 	information.Size = UDim2.new(1, 0, 0, 60)
 
 	local divider2 = Instance.new("Frame")
-	divider2.Name = "Divider"
+	divider2.Name = "Разделитель"
 	divider2.AnchorPoint = Vector2.new(0, 1)
 	divider2.BackgroundColor3 = Color3.fromRGB(255, 255, 255)
 	divider2.BackgroundTransparency = 0.9
@@ -322,7 +322,7 @@ function MacLib:Window(Settings)
 	divider2.Parent = information
 
 	local informationHolder = Instance.new("Frame")
-	informationHolder.Name = "InformationHolder"
+	InformationHolder.Name = "ИнформационныйХолдер"
 	informationHolder.BackgroundColor3 = Color3.fromRGB(255, 255, 255)
 	informationHolder.BackgroundTransparency = 1
 	informationHolder.BorderColor3 = Color3.fromRGB(0, 0, 0)
@@ -340,7 +340,7 @@ function MacLib:Window(Settings)
 	local globalSettingsButton = Instance.new("ImageButton")
 	globalSettingsButton.Name = "GlobalSettingsButton"
 	globalSettingsButton.Image = "rbxassetid://18767849817"
-	globalSettingsButton.ImageTransparency = 0.4
+	globalSettingsButton.ImageTransparency = 0,4
 	globalSettingsButton.AnchorPoint = Vector2.new(1, 0.5)
 	globalSettingsButton.BackgroundColor3 = Color3.fromRGB(255, 255, 255)
 	globalSettingsButton.BackgroundTransparency = 1
@@ -350,27 +350,27 @@ function MacLib:Window(Settings)
 	globalSettingsButton.Size = UDim2.fromOffset(15, 15)
 	globalSettingsButton.Parent = informationHolder
 
-	local function ChangeGlobalSettingsButtonState(State)
-		if State == "Default" then
+	локальная функция ChangeGlobalSettingsButtonState(State)
+		если State == "Default", то
 			Tween(globalSettingsButton, TweenInfo.new(0.2, Enum.EasingStyle.Sine), {
-				ImageTransparency = 0.4
-			}):Play()
+				Прозрачность изображения = 0,4
+			}):Играть()
 		elseif State == "Hover" then
 			Tween(globalSettingsButton, TweenInfo.new(0.2, Enum.EasingStyle.Sine), {
-				ImageTransparency = 0.2
-			}):Play()
-		end
-	end
+				Прозрачность изображения = 0,2
+			}):Играть()
+		конец
+	конец
 
 	globalSettingsButton.MouseEnter:Connect(function()
 		ChangeGlobalSettingsButtonState("Hover")
-	end)
+	конец)
 	globalSettingsButton.MouseLeave:Connect(function()
 		ChangeGlobalSettingsButtonState("Default")
-	end)
+	конец)
 
-	local titleFrame = Instance.new("Frame")
-	titleFrame.Name = "TitleFrame"
+	локальный titleFrame = Instance.new("Frame")
+	titleFrame.Name = "Рамка заголовка"
 	titleFrame.BackgroundColor3 = Color3.fromRGB(255, 255, 255)
 	titleFrame.BackgroundTransparency = 1
 	titleFrame.BorderColor3 = Color3.fromRGB(0, 0, 0)
@@ -436,7 +436,7 @@ function MacLib:Window(Settings)
 
 	informationHolder.Parent = information
 
-	information.Parent = sidebar
+	информация.Родитель = боковая панель
 
 	local sidebarGroup = Instance.new("Frame")
 	sidebarGroup.Name = "SidebarGroup"
@@ -473,7 +473,7 @@ function MacLib:Window(Settings)
 
 	local informationGroupUIListLayout = Instance.new("UIListLayout")
 	informationGroupUIListLayout.Name = "InformationGroupUIListLayout"
-	informationGroupUIListLayout.FillDirection = Enum.FillDirection.Horizontal
+	InformationGroupUIListLayout.FillDirection = Enum.FillDirection.Horizontal
 	informationGroupUIListLayout.SortOrder = Enum.SortOrder.LayoutOrder
 	informationGroupUIListLayout.VerticalAlignment = Enum.VerticalAlignment.Center
 	informationGroupUIListLayout.Parent = informationGroup
@@ -483,7 +483,7 @@ function MacLib:Window(Settings)
 	local thumbSize = Enum.ThumbnailSize.Size48x48
 	local headshotImage, isReady = Players:GetUserThumbnailAsync(userId, thumbType, thumbSize)
 
-	local headshot = Instance.new("ImageLabel")
+	локальный снимок экрана = Instance.new("ImageLabel")
 	headshot.Name = "Headshot"
 	headshot.BackgroundColor3 = Color3.fromRGB(255, 255, 255)
 	headshot.BackgroundTransparency = 1
@@ -550,14 +550,14 @@ function MacLib:Window(Settings)
 	userAndDisplayFrameUIListLayout.Parent = userAndDisplayFrame
 
 	local username = Instance.new("TextLabel")
-	username.Name = "Username"
+	username.Name = "Имя пользователя"
 	username.FontFace = Font.new(
 		assets.interFont,
 		Enum.FontWeight.SemiBold,
 		Enum.FontStyle.Normal
 	)
 	username.Text = "@"..LocalPlayer.Name
-	username.TextColor3 = Color3.fromRGB(255, 255, 255)
+	имя пользователя.TextColor3 = Color3.fromRGB(255, 255, 255)
 	username.TextSize = 12
 	username.TextTransparency = 0.8
 	username.TextTruncate = Enum.TextTruncate.SplitWord
@@ -632,7 +632,7 @@ function MacLib:Window(Settings)
 
 	sidebar.Parent = base
 
-	local content = Instance.new("Frame")
+	локальное содержимое = Instance.new("Frame")
 	content.Name = "Content"
 	content.AnchorPoint = Vector2.new(1, 0)
 	content.BackgroundColor3 = Color3.fromRGB(255, 255, 255)
@@ -651,7 +651,7 @@ function MacLib:Window(Settings)
 	topbar.Size = UDim2.new(1, 0, 0, 63)
 
 	local divider4 = Instance.new("Frame")
-	divider4.Name = "Divider"
+	divider4.Name = "Разделитель"
 	divider4.AnchorPoint = Vector2.new(0, 1)
 	divider4.BackgroundColor3 = Color3.fromRGB(255, 255, 255)
 	divider4.BackgroundTransparency = 0.9
@@ -661,7 +661,7 @@ function MacLib:Window(Settings)
 	divider4.Size = UDim2.new(1, 0, 0, 1)
 	divider4.Parent = topbar
 
-	local elements = Instance.new("Frame")
+	локальные элементы = Instance.new("Frame")
 	elements.Name = "Elements"
 	elements.BackgroundColor3 = Color3.fromRGB(255, 255, 255)
 	elements.BackgroundTransparency = 1
@@ -704,48 +704,48 @@ function MacLib:Window(Settings)
 	interact.Size = UDim2.fromOffset(30, 30)
 	interact.Parent = moveIcon
 
-	local function ChangemoveIconState(State)
-		if State == "Default" then
+	локальная функция ChangemoveIconState(State)
+		если State == "Default", то
 			Tween(moveIcon, TweenInfo.new(0.2, Enum.EasingStyle.Sine), {
-				ImageTransparency = 0.5
-			}):Play()
+				Прозрачность изображения = 0,5
+			}):Играть()
 		elseif State == "Hover" then
 			Tween(moveIcon, TweenInfo.new(0.2, Enum.EasingStyle.Sine), {
-				ImageTransparency = 0.2
-			}):Play()
-		end
-	end
+				Прозрачность изображения = 0,2
+			}):Играть()
+		конец
+	конец
 
 	interact.MouseEnter:Connect(function()
 		ChangemoveIconState("Hover")
-	end)
+	конец)
 	interact.MouseLeave:Connect(function()
 		ChangemoveIconState("Default")
-	end)
+	конец)
 
-	--// Адаптированная логика перетаскивания под сенсорный ввод и UIScale
+	--// РђРґР°РїС‚РёСЂРѕРІР°РЅРЅР°СЏ Р»РѕРіРёРєР° РїРµСЂРµС‚Р°СЃРєРёРІР°РЅРёСЏ РїРѕРґ СЃРμРЅСЃРѕСЂРЅС‹Р№ РІРІРѕРґ на UIScale
 	local dragging_ = false
-	local dragInput
-	local dragStart
-	local startPos
+	локальный перетаскивающий ввод
+	локальный dragStart
+	локальная стартовая позиция
 
-	local function update(input)
+	локальная функция update(input)
 		local delta = input.Position - dragStart
 		local currentScale = (baseUIScale and baseUIScale.Scale > 0) and baseUIScale.Scale or 1
 		
-		-- Корректируем смещение с учётом текущего масштаба UIScale
+		-- РљРѕСЂСЂРµРєС‚РёСЂСѓРµРј СЃРјРµС‰РµРЅРёРµ СЃ СѓС‡С'С‚РѕРј С‚РµРєСѓС‰РµРіРѕ Доступ к UIScale
 		local adjustedDeltaX = delta.X / currentScale
 		local adjustedDeltaY = delta.Y / currentScale
 		base.Position = UDim2.new(
 			startPos.X.Scale,
 			startPos.X.Offset + adjustedDeltaX,
 			startPos.Y.Scale,
-			startPos.Y.Offset + adjustedDeltaY
+			startPos.Y.Offset + скорректированнаяDeltaY
 		)
-	end
+	конец
 
-	local function onDragStart(input)
-		if input.UserInputType == Enum.UserInputType.MouseButton1 or input.UserInputType == Enum.UserInputType.Touch then
+	локальная функция onDragStart(input)
+		если input.UserInputType == Enum.UserInputType.MouseButton1 или input.UserInputType == Enum.UserInputType.Touch тогда
 			dragging_ = true
 			dragStart = input.Position
 			startPos = base.Position
@@ -753,58 +753,58 @@ function MacLib:Window(Settings)
 			input.Changed:Connect(function()
 				if input.UserInputState == Enum.UserInputState.End then
 					dragging_ = false
-				end
-			end)
-		end
-	end
+				конец
+			конец)
+		конец
+	конец
 
-	local function onDragUpdate(input)
-		if dragging_ and (input.UserInputType == Enum.UserInputType.MouseMovement or input.UserInputType == Enum.UserInputType.Touch) then
+	локальная функция onDragUpdate(input)
+		Если dragging_ и (input.UserInputType == Enum.UserInputType.MouseMovement или input.UserInputType == Enum.UserInputType.Touch), то
 			dragInput = input
-		end
-	end
+		конец
+	конец
 
-	if not Settings.DragStyle or Settings.DragStyle == 1 then
+	если Settings.DragStyle не равно 1, то
 		interact.InputBegan:Connect(function(input)
-			if input.UserInputType == Enum.UserInputType.MouseButton1 or input.UserInputType == Enum.UserInputType.Touch then
+			если input.UserInputType == Enum.UserInputType.MouseButton1 или input.UserInputType == Enum.UserInputType.Touch тогда
 				onDragStart(input)
-			end
-		end)
+			конец
+		конец)
 
 		interact.InputChanged:Connect(onDragUpdate)
 
 		UserInputService.InputChanged:Connect(function(input)
-			if input == dragInput and dragging_ then
-				update(input)
-			end
-		end)
+			если input == dragInput и dragging_ тогда
+				обновить(вход)
+			конец
+		конец)
 
 		interact.InputEnded:Connect(function(input)
-			if input.UserInputType == Enum.UserInputType.MouseButton1 or input.UserInputType == Enum.UserInputType.Touch then
+			если input.UserInputType == Enum.UserInputType.MouseButton1 или input.UserInputType == Enum.UserInputType.Touch тогда
 				dragging_ = false
-			end
-		end)
+			конец
+		конец)
 	elseif Settings.DragStyle == 2 then
 		base.InputBegan:Connect(function(input)
-			if input.UserInputType == Enum.UserInputType.MouseButton1 or input.UserInputType == Enum.UserInputType.Touch then
+			если input.UserInputType == Enum.UserInputType.MouseButton1 или input.UserInputType == Enum.UserInputType.Touch тогда
 				onDragStart(input)
-			end
-		end)
+			конец
+		конец)
 
 		base.InputChanged:Connect(onDragUpdate)
 
 		UserInputService.InputChanged:Connect(function(input)
-			if input == dragInput and dragging_ then
-				update(input)
-			end
-		end)
+			если input == dragInput и dragging_ тогда
+				обновить(вход)
+			конец
+		конец)
 
 		base.InputEnded:Connect(function(input)
-			if input.UserInputType == Enum.UserInputType.MouseButton1 or input.UserInputType == Enum.UserInputType.Touch then
+			если input.UserInputType == Enum.UserInputType.MouseButton1 или input.UserInputType == Enum.UserInputType.Touch тогда
 				dragging_ = false
-			end
-		end)
-	end
+			конец
+		конец)
+	конец
 
 	local currentTab = Instance.new("TextLabel")
 	currentTab.Name = "CurrentTab"
@@ -879,56 +879,56 @@ function MacLib:Window(Settings)
 
 	function WindowFunctions:UpdateTitle(NewTitle)
 		title.Text = NewTitle
-	end
+	конец
 
 	function WindowFunctions:UpdateSubtitle(NewSubtitle)
 		subtitle.Text = NewSubtitle
-	end
+	конец
 
-	local hovering
+	локальное зависание
 	local toggled = globalSettingsUIScale.Scale == 1 and true or false
-	local function toggle()
-		if not toggled then
+	локальная функция toggle()
+		если не включено, то
 			local intween = Tween(globalSettingsUIScale, TweenInfo.new(0.2, Enum.EasingStyle.Exponential, Enum.EasingDirection.Out), {
-				Scale = 1
+				Масштаб = 1
 			})
 			intween:Play()
 			intween.Completed:Wait()
 			toggled = true
-		elseif toggled then
+		иначе если переключено тогда
 			local outtween = Tween(globalSettingsUIScale, TweenInfo.new(0.2, Enum.EasingStyle.Exponential, Enum.EasingDirection.Out), {
-				Scale = 0
+				Масштаб = 0
 			})
 			outtween:Play()
 			outtween.Completed:Wait()
 			toggled = false
-		end
-	end
+		конец
+	конец
 	globalSettingsButton.MouseButton1Click:Connect(function()
 		if not hasGlobalSetting then return end
-		toggle()
-	end)
+		переключать()
+	конец)
 	globalSettings.MouseEnter:Connect(function()
 		hovering = true
-	end)
+	конец)
 	globalSettings.MouseLeave:Connect(function()
 		hovering = false
-	end)
+	конец)
 	UserInputService.InputEnded:Connect(function(inp)
-		if inp.UserInputType == Enum.UserInputType.MouseButton1 and toggled and not hovering then
-			toggle()
-		end
-	end)
+		Если inp.UserInputType == Enum.UserInputType.MouseButton1 и кнопка переключена, а не находится под курсором, то
+			переключать()
+		конец
+	конец)
 
 	local BlurTarget = base
 
 	local HS = game:GetService('HttpService')
-	local camera = workspace.CurrentCamera
-	local MTREL = "Glass"
-	local binds = {}
+	локальная камера = рабочая область.ТекущаяКамера
+	local MTREL = "Стекло"
+	локальные привязки = {}
 	local wedgeguid = HS:GenerateGUID(true)
 
-	local DepthOfField
+	локальная глубина резкости
 
 	for _,v in pairs(game:GetService("Lighting"):GetChildren()) do
 		if not v:IsA("DepthOfFieldEffect") and v:HasTag(".") then
@@ -938,21 +938,21 @@ function MacLib:Window(Settings)
 			DepthOfField.InFocusRadius = 50
 			DepthOfField.NearIntensity = 1
 			DepthOfField.Name = HS:GenerateGUID(true)
-			DepthOfField:AddTag(".")
-		elseif v:IsA("DepthOfFieldEffect") and v:HasTag(".") then
-			DepthOfField = v
-		end
-	end
+			DepthOfField:AddTag()."
+		elseif v:IsA("DepthOfFieldEffect") and v:HasTag()" then
+			Глубина резкости = v
+		конец
+	конец
 
-	if not DepthOfField then
+	если не глубина резкости, то
 		DepthOfField = Instance.new('DepthOfFieldEffect', game:GetService('Lighting'))
 		DepthOfField.FarIntensity = 0
 		DepthOfField.FocusDistance = 51.6
 		DepthOfField.InFocusRadius = 50
 		DepthOfField.NearIntensity = 1
 		DepthOfField.Name = HS:GenerateGUID(true)
-		DepthOfField:AddTag(".")
-	end
+		DepthOfField:AddTag()."
+	конец
 
 	local frame = Instance.new('Frame')
 	frame.Parent = BlurTarget
@@ -962,43 +962,43 @@ function MacLib:Window(Settings)
 	frame.BackgroundTransparency = 1
 	frame.Name = HS:GenerateGUID(true)
 
-	do
-		local function IsNotNaN(x)
+	делать
+		локальная функция IsNotNaN(x)
 			return x == x
-		end
+		конец
 		local continue = IsNotNaN(camera:ScreenPointToRay(0,0).Origin.x)
-		while not continue do
+		пока не продолжать делать
 			RunService.RenderStepped:wait()
 			continue = IsNotNaN(camera:ScreenPointToRay(0,0).Origin.x)
-		end
-	end
+		конец
+	конец
 
 	local DrawQuad; do
 		local acos, max, pi, sqrt = math.acos, math.max, math.pi, math.sqrt
-		local sz = 0.2
+		локальный sz = 0.2
 
-		local function DrawTriangle(v1, v2, v3, p0, p1)
-			local s1 = (v1 - v2).magnitude
-			local s2 = (v2 - v3).magnitude
-			local s3 = (v3 - v1).magnitude
+		локальная функция DrawTriangle(v1, v2, v3, p0, p1)
+			локальный s1 = (v1 - v2).величина
+			локальный s2 = (v2 - v3).величина
+			локальный s3 = (v3 - v1).величина
 			local smax = max(s1, s2, s3)
-			local A, B, C
-			if s1 == smax then
+			местный A, B, C
+			если s1 == smax, то
 				A, B, C = v1, v2, v3
-			elseif s2 == smax then
+			иначе, если s2 == smax тогда
 				A, B, C = v2, v3, v1
 			elseif s3 == smax then
 				A, B, C = v3, v1, v2
-			end
+			конец
 
-			local para = ( (B-A).x*(C-A).x + (B-A).y*(C-A).y + (B-A).z*(C-A).z ) / (A-B).magnitude
-			local perp = sqrt((C-A).magnitude^2 - para*para)
-			local dif_para = (A - B).magnitude - para
+			локальный параграф = ( (BA).x*(CA).x + (BA).y*(CA).y + (BA).z*(CA).z ) / (AB).величина
+			локальный перп = sqrt((CA).величина^2 - пара*пара)
+			локальный dif_para = (A - B).величина - пункт
 
 			local st = CFrame.new(B, A)
-			local za = CFrame.Angles(pi/2,0,0)
+			локальный za = CFrame.Angles(pi/2,0,0)
 
-			local cf0 = st
+			локальный cf0 = ст
 
 			local Top_Look = (cf0 * za).lookVector
 			local Mid_Point = A + CFrame.new(A, B).lookVector * para
@@ -1008,18 +1008,18 @@ function MacLib:Window(Settings)
 			local ac = CFrame.Angles(0, 0, acos(dot))
 
 			cf0 = cf0 * ac
-			if ((cf0 * za).lookVector - Needed_Look).magnitude > 0.01 then
+			если ((cf0 * za).lookVector - Needed_Look).magnitude > 0.01 тогда
 				cf0 = cf0 * CFrame.Angles(0, 0, -2*acos(dot))
-			end
+			конец
 			cf0 = cf0 * CFrame.new(0, perp/2, -(dif_para + para/2))
 
 			local cf1 = st * ac * CFrame.Angles(0, pi, 0)
-			if ((cf1 * za).lookVector - Needed_Look).magnitude > 0.01 then
+			если ((cf1 * za).lookVector - Needed_Look).magnitude > 0.01 тогда
 				cf1 = cf1 * CFrame.Angles(0, 0, 2*acos(dot))
-			end
+			конец
 			cf1 = cf1 * CFrame.new(0, perp/2, dif_para/2)
 
-			if not p0 then
+			если не p0, то
 				p0 = Instance.new('Part')
 				p0.FormFactor = 'Custom'
 				p0.TopSurface = 0
@@ -1027,115 +1027,115 @@ function MacLib:Window(Settings)
 				p0.Anchored = true
 				p0.CanCollide = false
 				p0.CastShadow = false
-				p0.Material = MTREL
+				p0.Материал = MTREL
 				p0.Size = Vector3.new(sz, sz, sz)
 				p0.Name = HS:GenerateGUID(true)
-				local mesh = Instance.new('SpecialMesh', p0)
+				локальная сетка = Instance.new('SpecialMesh', p0)
 				mesh.MeshType = 2
 				mesh.Name = wedgeguid
-			end
+			конец
 			p0[wedgeguid].Scale = Vector3.new(0, perp/sz, para/sz)
 			p0.CFrame = cf0
 
-			if not p1 then
+			если не p1, то
 				p1 = p0:clone()
-			end
+			конец
 			p1[wedgeguid].Scale = Vector3.new(0, perp/sz, dif_para/sz)
 			p1.CFrame = cf1
 
-			return p0, p1
-		end
+			возвращаем p0, p1
+		конец
 
-		function DrawQuad(v1, v2, v3, v4, parts)
+		функция DrawQuad(v1, v2, v3, v4, части)
 			parts[1], parts[2] = DrawTriangle(v1, v2, v3, parts[1], parts[2])
 			parts[3], parts[4] = DrawTriangle(v3, v2, v4, parts[3], parts[4])
-		end
-	end
+		конец
+	конец
 
-	if binds[frame] then
+	если binds[frame] then
 		return binds[frame].parts
-	end
+	конец
 
-	local parts = {}
+	локальные части = {}
 
-	local parents = {}
-	do
-		local function add(child)
-			if child:IsA'GuiObject' then
-				parents[#parents + 1] = child
-				add(child.Parent)
-			end
-		end
-		add(frame)
-	end
+	локальные родители = {}
+	делать
+		локальная функция add(child)
+			если child:IsA'GuiObject' then
+				родители[#родителей + 1] = ребенок
+				добавить(child.Parent)
+			конец
+		конец
+		добавить(фрейм)
+	конец
 
-	local function IsVisible(instance)
-		while instance do
-			if instance:IsA("GuiObject") then
-				if not instance.Visible then
-					return false
-				end
+	локальная функция IsVisible(instance)
+		пока экземпляр делает
+			если instance:IsA("GuiObject") then
+				если не instance.Visible, то
+					вернуть false
+				конец
 			elseif instance:IsA("ScreenGui") then
-				if not instance.Enabled then
-					return false
-				end
-				break
-			end
+				Если не включен экземпляр, то
+					вернуть false
+				конец
+				перерыв
+			конец
 			instance = instance.Parent
-		end
-		return true
-	end
+		конец
+		вернуть true
+	конец
 
-	local function UpdateOrientation(fetchProps)
+	локальная функция UpdateOrientation(fetchProps)
 		if not IsVisible(frame) or not acrylicBlur then
 			for _, pt in pairs(parts) do
 				pt.Parent = nil
 				DepthOfField.Enabled = false
-			end
-			return
-		end
+			конец
+			возвращаться
+		конец
 		DepthOfField.Enabled = true
-		local properties = {
-			Transparency = 0.98;
+		локальные свойства = {
+			Прозрачность = 0,98;
 			BrickColor = BrickColor.new('Institutional white');
 		}
 		local zIndex = 1 - 0.05*frame.ZIndex
 
 		local tl, br = frame.AbsolutePosition, frame.AbsolutePosition + frame.AbsoluteSize
 		local tr, bl = Vector2.new(br.x, tl.y), Vector2.new(tl.x, br.y)
-		do
-			local rot = 0;
+		делать
+			локальное гниение = 0;
 			for _, v in ipairs(parents) do
 				rot = rot + v.Rotation
-			end
-			if rot ~= 0 and rot%180 ~= 0 then
+			конец
+			если rot ≤ 0 и rot%180 ≤ 0, то
 				local mid = tl:lerp(br, 0.5)
 				local s, c = math.sin(math.rad(rot)), math.cos(math.rad(rot))
-				local vec = tl
+				локальный вектор = tl
 				tl = Vector2.new(c*(tl.x - mid.x) - s*(tl.y - mid.y), s*(tl.x - mid.x) + c*(tl.y - mid.y)) + mid
 				tr = Vector2.new(c*(tr.x - mid.x) - s*(tr.y - mid.y), s*(tr.x - mid.x) + c*(tr.y - mid.y)) + mid
 				bl = Vector2.new(c*(bl.x - mid.x) - s*(bl.y - mid.y), s*(bl.x - mid.x) + c*(bl.y - mid.y)) + mid
 				br = Vector2.new(c*(br.x - mid.x) - s*(br.y - mid.y), s*(br.x - mid.x) + c*(br.y - mid.y)) + mid
-			end
-		end
+			конец
+		конец
 		DrawQuad(
-			camera:ScreenPointToRay(tl.x, tl.y, zIndex).Origin, 
-			camera:ScreenPointToRay(tr.x, tr.y, zIndex).Origin, 
-			camera:ScreenPointToRay(bl.x, bl.y, zIndex).Origin, 
-			camera:ScreenPointToRay(br.x, br.y, zIndex).Origin, 
-			parts
+			camera:ScreenPointToRay(tl.x, tl.y, zIndex).Origin,
+			camera:ScreenPointToRay(tr.x, tr.y, zIndex).Origin,
+			camera:ScreenPointToRay(bl.x, bl.y, zIndex).Origin,
+			camera:ScreenPointToRay(br.x, br.y, zIndex).Origin,
+			детали
 		)
-		if fetchProps then
+		если fetchProps тогда
 			for _, pt in pairs(parts) do
 				pt.Parent = camera
-			end
+			конец
 			for propName, propValue in pairs(properties) do
 				for _, pt in pairs(parts) do
 					pt[propName] = propValue
-				end
-			end
-		end
-	end
+				конец
+			конец
+		конец
+	конец
 
 	UpdateOrientation(true)
 
@@ -1194,14 +1194,14 @@ function MacLib:Window(Settings)
 		globalSettingToggleUIListLayout.VerticalAlignment = Enum.VerticalAlignment.Center
 		globalSettingToggleUIListLayout.Parent = globalSetting
 
-		local checkmark = Instance.new("TextLabel")
+		локальная галочка = Instance.new("TextLabel")
 		checkmark.Name = "Checkmark"
 		checkmark.FontFace = Font.new(
 			assets.interFont,
 			Enum.FontWeight.Medium,
 			Enum.FontStyle.Normal
 		)
-		checkmark.Text = "✓"
+		checkmark.Text = "вњ“"
 		checkmark.TextColor3 = Color3.fromRGB(255, 255, 255)
 		checkmark.TextSize = 13
 		checkmark.TextTransparency = 1
@@ -1220,22 +1220,22 @@ function MacLib:Window(Settings)
 
 		globalSetting.Parent = globalSettings
 
-		local tweensettings = {
-			duration = 0.2,
+		локальные настройки твитов = {
+			длительность = 0,2,
 			easingStyle = Enum.EasingStyle.Quint,
-			transparencyIn = 0.2,
+			прозрачностьIn = 0,2,
 			transparencyOut = 0.5,
 			checkSizeIncrease = 12,
 			checkSizeDecrease = -globalSettingToggleUIListLayout.Padding.Offset,
 			waitTime = 1
 		}
 
-		local tweens = {
+		локальные анимации = {
 			checkIn = Tween(checkmark, TweenInfo.new(tweensettings.duration, tweensettings.easingStyle), {
-				Size = UDim2.new(checkmark.Size.X.Scale, tweensettings.checkSizeIncrease, checkmark.Size.Y.Scale, checkmark.Size.Y.Offset)
+				Размер = UDim2.new(checkmark.Size.X.Scale, tweensettings.checkSizeIncrease, checkmark.Size.Y.Scale, checkmark.Size.Y.Offset)
 			}),
 			checkOut = Tween(checkmark, TweenInfo.new(tweensettings.duration, tweensettings.easingStyle),{
-				Size = UDim2.new(checkmark.Size.X.Scale, tweensettings.checkSizeDecrease, checkmark.Size.Y.Scale, checkmark.Size.Y.Offset)
+				Размер = UDim2.new(checkmark.Size.X.Scale, tweensettings.checkSizeDecrease, checkmark.Size.Y.Scale, checkmark.Size.Y.Offset)
 			}),
 			nameIn = Tween(settingName, TweenInfo.new(tweensettings.duration, tweensettings.easingStyle),{
 				TextTransparency = tweensettings.transparencyIn
@@ -1245,58 +1245,58 @@ function MacLib:Window(Settings)
 			})
 		}
 
-		local function Toggle(State)
-			if not State then
+		локальная функция Toggle(State)
+			если не штат, то
 				tweens.checkOut:Play()
 				tweens.nameOut:Play()
 				checkmark:GetPropertyChangedSignal("AbsoluteSize"):Connect(function()
-					if checkmark.AbsoluteSize.X <= 0 then
+					Если checkmark.AbsoluteSize.X <= 0, то
 						checkmark.TextTransparency = 1
-					end
-				end)
-			else
+					конец
+				конец)
+			еще
 				tweens.checkIn:Play()
 				tweens.nameIn:Play()
 				checkmark:GetPropertyChangedSignal("AbsoluteSize"):Connect(function()
-					if checkmark.AbsoluteSize.X > 0 then
+					если checkmark.AbsoluteSize.X > 0, то
 						checkmark.TextTransparency = 0
-					end
-				end)
-			end
-		end
+					конец
+				конец)
+			конец
+		конец
 
 		local toggled = Settings.Default
 		Toggle(toggled)
 
 		globalSetting.MouseButton1Click:Connect(function()
-			toggled = not toggled
+			включено = не включено
 			Toggle(toggled)
 
 			task.spawn(function()
-				if Settings.Callback then
-					Settings.Callback(toggled)
-				end
-			end)
-		end)
+				если Settings.Callback тогда
+					Настройки.Обратный вызов (отключено)
+				конец
+			конец)
+		конец)
 
-		function GlobalSettingFunctions:UpdateName(NewName)
+		функция GlobalSettingFunctions:UpdateName(NewName)
 			settingName.Text = NewName
-		end
+		конец
 
-		function GlobalSettingFunctions:UpdateState(NewState)
+		функция GlobalSettingFunctions:UpdateState(NewState)
 			Toggle(NewState)
 			toggled = NewState
 			task.spawn(function()
-				if Settings.Callback then
-					Settings.Callback(toggled)
-				end
-			end)
-		end
+				если Settings.Callback тогда
+					Настройки.Обратный вызов (отключено)
+				конец
+			конец)
+		конец
 
 		return GlobalSettingFunctions
-	end
+	конец
 
-	function WindowFunctions:TabGroup()
+	функция WindowFunctions:TabGroup()
 		local SectionFunctions = {}
 
 		local tabGroup = Instance.new("Frame")
@@ -1309,7 +1309,7 @@ function MacLib:Window(Settings)
 		tabGroup.Size = UDim2.fromScale(1, 0)
 
 		local divider3 = Instance.new("Frame")
-		divider3.Name = "Divider"
+		divider3.Name = "Разделитель"
 		divider3.AnchorPoint = Vector2.new(0.5, 1)
 		divider3.BackgroundColor3 = Color3.fromRGB(255, 255, 255)
 		divider3.BackgroundTransparency = 0.9
@@ -1342,7 +1342,7 @@ function MacLib:Window(Settings)
 		sectionTabSwitchers.Parent = tabGroup
 		tabGroup.Parent = tabSwitchersScrollingFrame
 
-		function SectionFunctions:Tab(Settings)
+		функция SectionFunctions:Tab(Settings)
 			local TabFunctions = {}
 			local tabSwitcher = Instance.new("TextButton")
 			tabSwitcher.Name = "TabSwitcher"
@@ -1381,7 +1381,7 @@ function MacLib:Window(Settings)
 			tabSwitcherUIListLayout.VerticalAlignment = Enum.VerticalAlignment.Center
 			tabSwitcherUIListLayout.Parent = tabSwitcher
 
-			if Settings.Image then
+			если Settings.Image тогда
 				local tabImage = Instance.new("ImageLabel")
 				tabImage.Name = "TabImage"
 				tabImage.Image = Settings.Image
@@ -1392,7 +1392,7 @@ function MacLib:Window(Settings)
 				tabImage.BorderSizePixel = 0
 				tabImage.Size = UDim2.fromOffset(16, 16)
 				tabImage.Parent = tabSwitcher
-			end
+			конец
 
 			local tabSwitcherName = Instance.new("TextLabel")
 			tabSwitcherName.Name = "TabSwitcherName"
@@ -1510,9 +1510,9 @@ function MacLib:Window(Settings)
 
 			elementsScrolling.Parent = elements1
 
-			function TabFunctions:Section(Settings)
+			функция TabFunctions:Section(Settings)
 				local SectionFunctions = {}
-				local section = Instance.new("Frame")
+				локальный раздел = Instance.new("Frame")
 				section.Name = "Section"
 				section.AutomaticSize = Enum.AutomaticSize.Y
 				section.BackgroundColor3 = Color3.fromRGB(255, 255, 255)
@@ -1550,7 +1550,7 @@ function MacLib:Window(Settings)
 
 				function SectionFunctions:Button(Settings)
 					local ButtonFunctions = {}
-					local button = Instance.new("Frame")
+					локальная кнопка = Instance.new("Frame")
 					button.Name = "Button"
 					button.AutomaticSize = Enum.AutomaticSize.Y
 					button.BackgroundColor3 = Color3.fromRGB(0, 0, 0)
@@ -1601,46 +1601,46 @@ function MacLib:Window(Settings)
 						EasingStyle = Enum.EasingStyle.Sine
 					}
 
-					local function ChangeState(State)
-						if State == "Idle" then
+					локальная функция ChangeState(State)
+						если State == "Idle", то
 							Tween(buttonInteract, TweenInfo.new(0.2, TweenSettings.EasingStyle), {
 								TextTransparency = TweenSettings.DefaultTransparency
-							}):Play()
+							}):Играть()
 							Tween(buttonImage, TweenInfo.new(0.2, TweenSettings.EasingStyle), {
 								ImageTransparency = TweenSettings.DefaultTransparency
-							}):Play()
+							}):Играть()
 						elseif State == "Hover" then
 							Tween(buttonInteract, TweenInfo.new(0.2, TweenSettings.EasingStyle), {
 								TextTransparency = TweenSettings.HoverTransparency
-							}):Play()
+							}):Играть()
 							Tween(buttonImage, TweenInfo.new(0.2, TweenSettings.EasingStyle), {
 								ImageTransparency = TweenSettings.HoverTransparency
-							}):Play()
-						end
-					end
+							}):Играть()
+						конец
+					конец
 
-					local function Callback()
-						if Settings.Callback then
+					локальная функция Callback()
+						если Settings.Callback тогда
 							Settings.Callback()
-						end
-					end
+						конец
+					конец
 
 					buttonInteract.MouseEnter:Connect(function()
 						ChangeState("Hover")
-					end)
+					конец)
 					buttonInteract.MouseLeave:Connect(function()
 						ChangeState("Idle")
-					end)
+					конец)
 
 					buttonInteract.MouseButton1Click:Connect(Callback)
-					function ButtonFunctions:UpdateName(Name)
-						buttonInteract.Text = Name
-					end
-					function ButtonFunctions:SetVisibility(State)
+					функция ButtonFunctions:UpdateName(Name)
+						buttonInteract.Text = Имя
+					конец
+					функция ButtonFunctions:SetVisibility(State)
 						button.Visible = State
-					end
+					конец
 					return ButtonFunctions
-				end
+				конец
 
 				function SectionFunctions:Toggle(Settings)
 					local ToggleFunctions = {}
@@ -1726,72 +1726,72 @@ function MacLib:Window(Settings)
 						DisabledPosition = UDim2.new(0.5, 0, 0.5, 0),
 					}
 
-					local function ToggleState(State)
-						if State then
+					локальная функция ToggleState(State)
+						если штат, то
 							Tween(toggle1, TweenSettings.Info, {
 								ImageColor3 = TweenSettings.EnabledColors.Toggle
-							}):Play()
+							}):Играть()
 
 							Tween(togglerHead, TweenSettings.Info, {
 								ImageColor3 = TweenSettings.EnabledColors.ToggleHead
-							}):Play()
+							}):Играть()
 
 							Tween(togglerHead, TweenSettings.Info, {
-								Position = TweenSettings.EnabledPosition
-							}):Play()
-						else
+								Позиция = TweenSettings.EnabledPosition
+							}):Играть()
+						еще
 							Tween(toggle1, TweenSettings.Info, {
 								ImageColor3 = TweenSettings.DisabledColors.Toggle
-							}):Play()
+							}):Играть()
 
 							Tween(togglerHead, TweenSettings.Info, {
 								ImageColor3 = TweenSettings.DisabledColors.ToggleHead
-							}):Play()
+							}):Играть()
 
 							Tween(togglerHead, TweenSettings.Info, {
-								Position = TweenSettings.DisabledPosition
-							}):Play()
-						end
+								Позиция = TweenSettings.DisabledPosition
+							}):Играть()
+						конец
 						
 						ToggleFunctions.State = State
-					end
+					конец
 
 					local togglebool = Settings.Default
 					ToggleState(togglebool)
 
-					local function Toggle()
+					локальная функция Toggle()
 						togglebool = not togglebool
 						ToggleState(togglebool)
-						if Settings.Callback then
+						если Settings.Callback тогда
 							Settings.Callback(togglebool)
-						end
-					end
+						конец
+					конец
 
 					toggle1.MouseButton1Click:Connect(Toggle)
 
-					function ToggleFunctions:Toggle()
-						Toggle()
-					end
+					функция ToggleFunctions:Toggle()
+						Переключать()
+					конец
 					function ToggleFunctions:UpdateState(State)
 						togglebool = State
 						ToggleState(togglebool)
-						if Settings.Callback then
+						если Settings.Callback тогда
 							Settings.Callback(togglebool)
-						end
-					end
-					function ToggleFunctions:GetState()
+						конец
+					конец
+					функция ToggleFunctions:GetState()
 						return togglebool
-					end
-					function ToggleFunctions:UpdateName(Name)
-						toggleName.Text = Name
-					end
-					function ToggleFunctions:SetVisibility(State)
+					конец
+					функция ToggleFunctions:UpdateName(Name)
+						toggleName.Text = Имя
+					конец
+					функция ToggleFunctions:SetVisibility(State)
 						toggle.Visible = State
-					end
+					конец
 					return ToggleFunctions
-				end
+				конец
 
-				function SectionFunctions:Slider(Settings)
+				функция SectionFunctions:Slider(Settings)
 					local SliderFunctions = {}
 					local slider = Instance.new("Frame")
 					slider.Name = "Slider"
@@ -1812,7 +1812,7 @@ function MacLib:Window(Settings)
 					)
 					sliderName.Text = Settings.Name
 					sliderName.RichText = true
-					sliderName.TextColor3 = Color3.fromRGB(255, 255, 255)
+					Имя слайдера.TextColor3 = Цвет3.fromRGB(255, 255, 255)
 					sliderName.TextSize = 13
 					sliderName.TextTransparency = 0.5
 					sliderName.TextTruncate = Enum.TextTruncate.AtEnd
@@ -1824,7 +1824,7 @@ function MacLib:Window(Settings)
 					sliderName.BackgroundTransparency = 1
 					sliderName.BorderColor3 = Color3.fromRGB(0, 0, 0)
 					sliderName.BorderSizePixel = 0
-					sliderName.Position = UDim2.fromScale(1.3e-07, 0.5)
+					Имя слайдера.Позиция = UDim2.fromScale(1.3e-07, 0.5)
 					sliderName.Parent = slider
 
 					local sliderElements = Instance.new("Frame")
@@ -1845,7 +1845,7 @@ function MacLib:Window(Settings)
 						Enum.FontStyle.Normal
 					)
 					sliderValue.Text = "100%"
-					sliderValue.TextColor3 = Color3.fromRGB(255, 255, 255)
+					слайдерЗначение.TextColor3 = Color3.fromRGB(255, 255, 255)
 					sliderValue.TextSize = 12
 					sliderValue.TextTransparency = 0.4
 					sliderValue.TextTruncate = Enum.TextTruncate.AtEnd
@@ -1880,7 +1880,7 @@ function MacLib:Window(Settings)
 					local sliderElementsUIListLayout = Instance.new("UIListLayout")
 					sliderElementsUIListLayout.Name = "SliderElementsUIListLayout"
 					sliderElementsUIListLayout.Padding = UDim.new(0, 20)
-					sliderElementsUIListLayout.FillDirection = Enum.FillDirection.Horizontal
+					SliderElementsUIListLayout.FillDirection = Enum.FillDirection.Horizontal
 					sliderElementsUIListLayout.HorizontalAlignment = Enum.HorizontalAlignment.Right
 					sliderElementsUIListLayout.SortOrder = Enum.SortOrder.LayoutOrder
 					sliderElementsUIListLayout.VerticalAlignment = Enum.VerticalAlignment.Center
@@ -1918,43 +1918,43 @@ function MacLib:Window(Settings)
 
 					sliderElements.Parent = slider
 
-					local dragging = false
+					локальное перетаскивание = false
 
 					local DisplayMethods = {
-						Hundredths = function(sliderValue)
+						Сотые доли = функция(sliderValue)
 							return string.format("%.2f", sliderValue)
-						end,
-						Tenths = function(sliderValue)
+						конец,
+						Десятые доли = функция(sliderValue)
 							return string.format("%.1f", sliderValue)
-						end,
+						конец,
 						Round = function(sliderValue)
 							return tostring(math.round(sliderValue))
-						end,
-						Degrees = function(sliderValue)
-							return tostring(math.round(sliderValue)) .. "°"
-						end,
-						Percent = function(sliderValue)
-							local percentage = (sliderValue - Settings.Minimum) / (Settings.Maximum - Settings.Minimum) * 100
+						конец,
+						Градусы = функция(sliderValue)
+							return tostring(math.round(sliderValue)) .. "В°"
+						конец,
+						Процент = функция(sliderValue)
+							локальный процент = (sliderValue - Settings.Minimum) / (Settings.Maximum - Settings.Minimum) * 100
 							return tostring(math.round(percentage)) .. "%"
-						end,
-						Value = function(sliderValue)
+						конец,
+						Значение = функция(sliderValue)
 							return tostring(sliderValue)
-						end
+						конец
 					}
 
 					local ValueDisplayMethod = DisplayMethods[Settings.DisplayMethod]
-					local finalValue
+					локальное финальное значение
 
-					local function SetValue(val, ignorecallback)
-						local posXScale
+					локальная функция SetValue(val, ignorecallback)
+						локальный posXScale
 
-						if typeof(val) == "Instance" then
-							local input = val
+						если typeof(val) == "Instance", то
+							локальный ввод = значение
 							posXScale = math.clamp((input.Position.X - sliderBar.AbsolutePosition.X) / sliderBar.AbsoluteSize.X, 0, 1)
-						else
-							local value = val
+						еще
+							локальное значение = значение
 							posXScale = (value - Settings.Minimum) / (Settings.Maximum - Settings.Minimum)
-						end
+						конец
 
 						local pos = UDim2.new(posXScale, 0, 0.5, 0)
 						sliderHead.Position = pos
@@ -1962,58 +1962,58 @@ function MacLib:Window(Settings)
 						finalValue = posXScale * (Settings.Maximum - Settings.Minimum) + Settings.Minimum
 						sliderValue.Text = ValueDisplayMethod(finalValue)
 
-						if not ignorecallback then
+						если не игнорировать обратный вызов, то
 							task.spawn(function()
-								if Settings.Callback then
+								если Settings.Callback тогда
 									Settings.Callback(finalValue)
-								end
-							end)
-						end
+								конец
+							конец)
+						конец
 						
 						SliderFunctions.Value = finalValue
-					end
+					конец
 
 					SetValue(Settings.Default, true)
 
 					sliderHead.InputBegan:Connect(function(input)
-						if input.UserInputType == Enum.UserInputType.MouseButton1 or input.UserInputType == Enum.UserInputType.Touch then
-							dragging = true
+						если input.UserInputType == Enum.UserInputType.MouseButton1 или input.UserInputType == Enum.UserInputType.Touch тогда
+							перетаскивание = true
 							SetValue(input)
-						end
-					end)
+						конец
+					конец)
 
 					sliderHead.InputEnded:Connect(function(input)
-						if input.UserInputType == Enum.UserInputType.MouseButton1 or input.UserInputType == Enum.UserInputType.Touch then
-							dragging = false
-						end
-					end)
+						если input.UserInputType == Enum.UserInputType.MouseButton1 или input.UserInputType == Enum.UserInputType.Touch тогда
+							перетаскивание = false
+						конец
+					конец)
 
 					sliderValue.FocusLost:Connect(function(enterPressed)
 						local inputText = sliderValue.Text
-						local value, isPercent = inputText:match("^(%-?%d+%.?%d*)(%%?)$")
+						локальное значение, isPercent = inputText:match("^(%-?%d+%.?%d*)(%%?)$")
 
-						if value then
-							value = tonumber(value)
+						если значение тогда
+							значение = tonumber(значение)
 							isPercent = isPercent == "%"
 
-							if isPercent then
-								value = Settings.Minimum + (value / 100) * (Settings.Maximum - Settings.Minimum)
-							end
+							если isPercent тогда
+								значение = Settings.Minimum + (значение / 100) * (Settings.Maximum - Settings.Minimum)
+							конец
 
 							local newValue = math.clamp(value, Settings.Minimum, Settings.Maximum)
 							SetValue(newValue)
-						else
+						еще
 							sliderValue.Text = ValueDisplayMethod(sliderValue)
-						end
-					end)
+						конец
+					конец)
 
 					UserInputService.InputChanged:Connect(function(input)
-						if dragging and (input.UserInputType == Enum.UserInputType.MouseMovement or input.UserInputType == Enum.UserInputType.Touch) then
+						Если выполняется перетаскивание и (input.UserInputType == Enum.UserInputType.MouseMovement или input.UserInputType == Enum.UserInputType.Touch), то
 							SetValue(input)
-						end
-					end)
+						конец
+					конец)
 
-					local function updateSliderBarSize()
+					локальная функция updateSliderBarSize()
 						local padding = sliderElementsUIListLayout.Padding.Offset
 						local sliderValueWidth = sliderValue.AbsoluteSize.X
 						local sliderNameWidth = sliderName.AbsoluteSize.X
@@ -2021,29 +2021,29 @@ function MacLib:Window(Settings)
 
 						local newBarWidth = totalWidth - (padding + sliderValueWidth + sliderNameWidth + 20)
 						sliderBar.Size = UDim2.new(sliderBar.Size.X.Scale, newBarWidth, sliderBar.Size.Y.Scale, sliderBar.Size.Y.Offset)
-					end
+					конец
 
 					updateSliderBarSize()
 
 					sliderName:GetPropertyChangedSignal("AbsoluteSize"):Connect(updateSliderBarSize)
 					section:GetPropertyChangedSignal("AbsoluteSize"):Connect(updateSliderBarSize)
 
-					function SliderFunctions:UpdateName(Name)
-						sliderName = Name
-					end
-					function SliderFunctions:SetVisibility(State)
+					функция SliderFunctions:UpdateName(Name)
+						sliderName = Имя
+					конец
+					функция SliderFunctions:SetVisibility(State)
 						slider.Visible = State
-					end
-					function SliderFunctions:UpdateValue(Value)
+					конец
+					функция SliderFunctions:UpdateValue(Value)
 						SetValue(Value)
-					end
-					function SliderFunctions:GetValue()
+					конец
+					функция SliderFunctions:GetValue()
 						return finalValue
-					end
+					конец
 					return SliderFunctions
-				end
+				конец
 
-				function SectionFunctions:Input(Settings)
+				функция SectionFunctions:Input(Settings)
 					local InputFunctions = {}
 					local input = Instance.new("Frame")
 					input.Name = "Input"
@@ -2086,7 +2086,7 @@ function MacLib:Window(Settings)
 						Enum.FontWeight.Medium,
 						Enum.FontStyle.Normal
 					)
-					inputBox.Text = "Hello world!"
+					inputBox.Text = "Привет, мир!"
 					inputBox.TextColor3 = Color3.fromRGB(255, 255, 255)
 					inputBox.TextSize = 12
 					inputBox.TextTransparency = 0.4
@@ -2125,40 +2125,40 @@ function MacLib:Window(Settings)
 
 					inputBox.Parent = input
 
-					local Input = input
+					локальный ввод = ввод
 					local InputBox = inputBox
 					local InputName = inputName
 					local Constraint = inputBoxUISizeConstraint
 
 					local CharacterSubs = {
 						All = function(value)
-							return value
-						end,
-						Numeric = function(value)
+							возвращаемое значение
+						конец,
+						Числовое значение = функция(значение)
 							return value:match("^%-?%d*$") and value or value:gsub("[^%d-]", ""):gsub("(%-)", function(match, pos, original)
-								if pos == 1 then
-									return match
-								else
-									return ""
-								end
-							end)
-						end,
-						Alphabetic = function(value)
-							return value:gsub("[^a-zA-Z ]", "")
-						end,
+								если pos == 1, то
+									ответный матч
+								еще
+									возвращаться ""
+								конец
+							конец)
+						конец,
+						Алфавитный = функция(значение)
+							возвращаемое значение: gsub("[^a-zA-Z ]", "")
+						конец,
 					}
 
 					local AcceptedCharacters = CharacterSubs[Settings.AcceptedCharacters] or CharacterSubs.All
 
 					InputBox.AutomaticSize = Enum.AutomaticSize.X
 
-					local function checkSize()
+					локальная функция checkSize()
 						local nameWidth = InputName.AbsoluteSize.X
 						local totalWidth = Input.AbsoluteSize.X
 
 						local maxWidth = totalWidth - nameWidth - 20
 						Constraint.MaxSize = Vector2.new(maxWidth, 9e9)
-					end
+					конец
 
 					checkSize()
 					InputName:GetPropertyChangedSignal("AbsoluteSize"):Connect(checkSize)
@@ -2168,39 +2168,39 @@ function MacLib:Window(Settings)
 						local filteredText = AcceptedCharacters(inputText)
 						InputBox.Text = filteredText
 						task.spawn(function()
-							if Settings.Callback then
+							если Settings.Callback тогда
 								Settings.Callback(filteredText)
-							end
-						end)
-					end)
+							конец
+						конец)
+					конец)
 					InputBox.Text = Settings.Default or ""
 					InputBox.PlaceholderText = Settings.Placeholder or ""
 
 					InputBox:GetPropertyChangedSignal("Text"):Connect(function()
 						InputBox.Text = AcceptedCharacters(InputBox.Text)
-						if Settings.onChanged then
-							Settings.onChanged(InputBox.Text)
-						end
+						Если Settings.onChanged, то
+							Settings.onChange(InputBox.Text)
+						конец
 						InputFunctions.Text = InputBox.Text
-					end)
+					конец)
 
-					function InputFunctions:UpdateName(Name)
-						inputName.Text = Name
-					end
-					function InputFunctions:SetVisibility(State)
+					функция InputFunctions:UpdateName(Name)
+						inputName.Text = Имя
+					конец
+					функция InputFunctions:SetVisibility(State)
 						input.Visible = State
-					end
-					function InputFunctions:GetInput()
+					конец
+					функция InputFunctions:GetInput()
 						return InputBox.Text
-					end
-					function InputFunctions:UpdatePlaceholder(Placeholder)
+					конец
+					функция InputFunctions:UpdatePlaceholder(Placeholder)
 						inputBox.PlaceholderText = Placeholder
-					end
-					function InputFunctions:UpdateText(Text)
-						inputBox.Text = Text
-					end
+					конец
+					функция InputFunctions:UpdateText(Text)
+						inputBox.Text = Текст
+					конец
 					return InputFunctions
-				end
+				конец
 
 				function SectionFunctions:Keybind(Settings)
 					local KeybindFunctions = {}
@@ -2248,7 +2248,7 @@ function MacLib:Window(Settings)
 					)
 					binderBox.PlaceholderText = "..."
 					binderBox.Text = ""
-					binderBox.TextColor3 = Color3.fromRGB(255, 255, 255)
+					BinderBox.TextColor3 = Color3.fromRGB(255, 255, 255)
 					binderBox.TextSize = 12
 					binderBox.TextTransparency = 0.4
 					binderBox.AnchorPoint = Vector2.new(1, 0.5)
@@ -2275,7 +2275,7 @@ function MacLib:Window(Settings)
 					binderBoxUIStroke.Parent = binderBox
 
 					local binderBoxUIPadding = Instance.new("UIPadding")
-					binderBoxUIPadding.Name = "BinderBoxUIPadding"
+					BinderBoxUIPadding.Name = "BinderBoxUIPadding"
 					binderBoxUIPadding.PaddingLeft = UDim.new(0, 5)
 					binderBoxUIPadding.PaddingRight = UDim.new(0, 5)
 					binderBoxUIPadding.Parent = binderBox
@@ -2286,69 +2286,69 @@ function MacLib:Window(Settings)
 
 					binderBox.Parent = keybind
 
-					local focused
+					ориентированный на местный рынок
 					local binded = Settings.Default
-					if binded then
+					если связано, то
 						binderBox.Text = binded.Name
-					end
+					конец
 
 					binderBox.Focused:Connect(function()
 						focused = true
-					end)
+					конец)
 					binderBox.FocusLost:Connect(function()
 						focused = false
-					end)
+					конец)
 				
 					UserInputService.InputEnded:Connect(function(inp)
-						if macLib ~= nil then
-							if focused and inp.KeyCode.Name ~= "Unknown" then
+						если macLib ≤ nil, то
+							Если фокус и inp.KeyCode.Name ~= "Unknown", то
 								binded = inp.KeyCode
 								KeybindFunctions.Bind = binded
 								binderBox.Text = inp.KeyCode.Name
 								binderBox:ReleaseFocus()
-								if Settings.onBinded then
+								Если Settings.onBinded, то
 									Settings.onBinded(binded)
-								end
+								конец
 							elseif inp.KeyCode == binded then
-								if Settings.Callback then
+								если Settings.Callback тогда
 									Settings.Callback(binded)
-								end
-							end
-						end
-					end)
-					function KeybindFunctions:Bind(Key)
-						binded = Key
+								конец
+							конец
+						конец
+					конец)
+					функция KeybindFunctions:Bind(Key)
+						привязанный = ключ
 						binderBox.Text = Key.Name
-					end
-					function KeybindFunctions:Unbind()
-						binded = nil
+					конец
+					функция KeybindFunctions:Unbind()
+						привязано = нул
 						binderBox.Text = ""
-					end
-					function KeybindFunctions:GetBind()
-						return binded
-					end
-					function KeybindFunctions:UpdateName(Name)
+					конец
+					функция KeybindFunctions:GetBind()
+						возврат связанного
+					конец
+					функция KeybindFunctions:UpdateName(Name)
 						keybindName = Name
-					end
-					function KeybindFunctions:SetVisibility(State)
+					конец
+					функция KeybindFunctions:SetVisibility(State)
 						keybind.Visible = State
-					end
+					конец
 					return KeybindFunctions
-				end
+				конец
 
-				function SectionFunctions:Dropdown(Settings)
+				функция SectionFunctions:Dropdown(Settings)
 					local DropdownFunctions = {}
 					local Selected = {}
 					local OptionObjs = {}
 
 					local dropdown = Instance.new("Frame")
-					dropdown.Name = "Dropdown"
+					dropdown.Name = "Выпадающий список"
 					dropdown.BackgroundColor3 = Color3.fromRGB(255, 255, 255)
 					dropdown.BackgroundTransparency = 0.985
 					dropdown.BorderColor3 = Color3.fromRGB(0, 0, 0)
 					dropdown.BorderSizePixel = 0
 					dropdown.Size = UDim2.new(1, 0, 0, 38)
-					dropdown.Parent = section
+					выпадающий список. Родительский раздел
 					dropdown.ClipsDescendants = true
 					
 					local dropdownUIPadding = Instance.new("UIPadding")
@@ -2440,7 +2440,7 @@ function MacLib:Window(Settings)
 					dropdownFrameUIListLayout.SortOrder = Enum.SortOrder.LayoutOrder
 					dropdownFrameUIListLayout.Parent = dropdownFrame
 					
-					local search = Instance.new("Frame")
+					локальный поиск = Instance.new("Frame")
 					search.Name = "Search"
 					search.BackgroundColor3 = Color3.fromRGB(255, 255, 255)
 					search.BackgroundTransparency = 0.95
@@ -2482,7 +2482,7 @@ function MacLib:Window(Settings)
 						Enum.FontStyle.Normal
 					)
 					searchBox.PlaceholderColor3 = Color3.fromRGB(150, 150, 150)
-					searchBox.PlaceholderText = "Search..."
+					searchBox.PlaceholderText = "Поиск..."
 					searchBox.Text = ""
 					searchBox.TextColor3 = Color3.fromRGB(200, 200, 200)
 					searchBox.TextSize = 14
@@ -2493,8 +2493,8 @@ function MacLib:Window(Settings)
 					searchBox.BorderSizePixel = 0
 					searchBox.Size = UDim2.fromScale(1, 1)
 					
-					local function CalculateDropdownSize()
-						local totalHeight = 0
+					локальная функция CalculateDropdownSize()
+						локальный totalHeight = 0
 						local visibleChildrenCount = 0
 						local padding = dropdownFrameUIPadding.PaddingTop.Offset + dropdownFrameUIPadding.PaddingBottom.Offset
 
@@ -2502,28 +2502,28 @@ function MacLib:Window(Settings)
 							if not v:IsA("UIComponent") and v.Visible then
 								totalHeight += v.AbsoluteSize.Y
 								visibleChildrenCount += 1
-							end
-						end
+							конец
+						конец
 
 						local spacing = dropdownFrameUIListLayout.Padding.Offset * (visibleChildrenCount - 1)
 
 						return totalHeight + spacing + padding
-					end
+					конец
 
-					local function findOption()
+					локальная функция findOption()
 						local searchTerm = searchBox.Text:lower()
 
 						for _, v in pairs(OptionObjs) do
 							local optionText = v.NameLabel.Text:lower()
 							local isVisible = string.find(optionText, searchTerm) ~= nil
 
-							if v.Button.Visible ~= isVisible then
+							если v.Button.Visible ~= isVisible, то
 								v.Button.Visible = isVisible
-							end
-						end
+							конец
+						конец
 
 						dropdown.Size = UDim2.new(1, 0, 0, CalculateDropdownSize())
-					end
+					конец
 
 					searchBox:GetPropertyChangedSignal("Text"):Connect(findOption)
 
@@ -2534,115 +2534,115 @@ function MacLib:Window(Settings)
 
 					searchBox.Parent = search
 					
-					local tweensettings = {
-						duration = 0.2,
+					локальные настройки твитов = {
+						длительность = 0,2,
 						easingStyle = Enum.EasingStyle.Quint,
-						transparencyIn = 0.2,
+						прозрачностьIn = 0,2,
 						transparencyOut = 0.5,
 						checkSizeIncrease = 12,
 						checkSizeDecrease = -13,
 						waitTime = 1
 					}
 					
-					local function Toggle(optionName, State)
-						local option = OptionObjs[optionName]
+					локальная функция Toggle(optionName, State)
+						локальная опция = OptionObjs[optionName]
 
-						if not option then return end
+						Если нет варианта, то вернуться к концу.
 
-						local checkmark = option.Checkmark
+						локальная галочка = опция.Галочка
 						local optionNameLabel = option.NameLabel
 
-						if State then
-							if Settings.Multi then
+						если штат, то
+							Если Settings.Multi, то
 								if not table.find(Selected, optionName) then
 									table.insert(Selected, optionName)
 									DropdownFunctions.Value = Selected
-								end
-							else
-								for name, opt in pairs(OptionObjs) do
-									if name ~= optionName then
+								конец
+							еще
+								для имени, выберите в парах (OptionObjs) do
+									если name ~= optionName тогда
 										Tween(opt.Checkmark, TweenInfo.new(tweensettings.duration, tweensettings.easingStyle), {
-											Size = UDim2.new(opt.Checkmark.Size.X.Scale, tweensettings.checkSizeDecrease, opt.Checkmark.Size.Y.Scale, opt.Checkmark.Size.Y.Offset)
-										}):Play()
+											Размер = UDim2.new(opt.Checkmark.Size.X.Scale, tweensettings.checkSizeDecrease, opt.Checkmark.Size.Y.Scale, opt.Checkmark.Size.Y.Offset)
+										}):Играть()
 										Tween(opt.NameLabel, TweenInfo.new(tweensettings.duration, tweensettings.easingStyle), {
 											TextTransparency = tweensettings.transparencyOut
-										}):Play()
+										}):Играть()
 										opt.Checkmark.TextTransparency = 1
-									end
-								end
-								Selected = {optionName}
+									конец
+								конец
+								Выбрано = {optionName}
 								DropdownFunctions.Value = Selected[1]
-							end
+							конец
 							Tween(checkmark, TweenInfo.new(tweensettings.duration, tweensettings.easingStyle), {
-								Size = UDim2.new(checkmark.Size.X.Scale, tweensettings.checkSizeIncrease, checkmark.Size.Y.Scale, checkmark.Size.Y.Offset)
-							}):Play()
+								Размер = UDim2.new(checkmark.Size.X.Scale, tweensettings.checkSizeIncrease, checkmark.Size.Y.Scale, checkmark.Size.Y.Offset)
+							}):Играть()
 							Tween(optionNameLabel, TweenInfo.new(tweensettings.duration, tweensettings.easingStyle), {
 								TextTransparency = tweensettings.transparencyIn
-							}):Play()
+							}):Играть()
 							checkmark.TextTransparency = 0
-						else
-							if Settings.Multi then
+						еще
+							Если Settings.Multi, то
 								local idx = table.find(Selected, optionName)
-								if idx then
+								если idx тогда
 									table.remove(Selected, idx)
-								end
-							else
-								Selected = {}
-							end
+								конец
+							еще
+								Выбрано = {}
+							конец
 							Tween(checkmark, TweenInfo.new(tweensettings.duration, tweensettings.easingStyle), {
-								Size = UDim2.new(checkmark.Size.X.Scale, tweensettings.checkSizeDecrease, checkmark.Size.Y.Scale, checkmark.Size.Y.Offset)
-							}):Play()
+								Размер = UDim2.new(checkmark.Size.X.Scale, tweensettings.checkSizeDecrease, checkmark.Size.Y.Scale, checkmark.Size.Y.Offset)
+							}):Играть()
 							Tween(optionNameLabel, TweenInfo.new(tweensettings.duration, tweensettings.easingStyle), {
 								TextTransparency = tweensettings.transparencyOut
-							}):Play()
+							}):Играть()
 							checkmark.TextTransparency = 1
-						end
+						конец
 
-						if Settings.Required and #Selected == 0 and not State then
-							return
-						end
+						Если Settings.Required и #Selected == 0 и не State, то
+							возвращаться
+						конец
 
-						if #Selected > 0 then
-							dropdownName.Text = Settings.Name .. " • " .. table.concat(Selected, ", ")
-						else
+						если #Selected > 0, то
+							dropdownName.Text = Settings.Name .. " вЂў " .. table.concat(Selected, ", ")
+						еще
 							dropdownName.Text = Settings.Name
-						end
-					end
+						конец
+					конец
 
 					local dropped = false
-					local db = false
+					локальная база данных = false
 					
-					local function ToggleDropdown()
-						if db then return end
+					локальная функция ToggleDropdown()
+						если база данных, то вернуть конец
 						db = true
 						local defaultDropdownSize = 38
 						local isDropdownOpen = not dropped
 						local targetSize = isDropdownOpen and UDim2.new(1, 0, 0, CalculateDropdownSize()) or UDim2.new(1, 0, 0, defaultDropdownSize)
 
 						local tween = Tween(dropdown, TweenInfo.new(0.2, Enum.EasingStyle.Exponential, Enum.EasingDirection.Out), {
-							Size = targetSize
+							Размер = целевойРазмер
 						})
 
 						tween:Play()
 
-						if isDropdownOpen then
+						если isDropdownOpen тогда
 							dropdownFrame.Visible = true
 							tween.Completed:Connect(function()
 								db = false
-							end)
-						else
+							конец)
+						еще
 							tween.Completed:Connect(function()
 								dropdownFrame.Visible = false
 								db = false
-							end)
-						end
+							конец)
+						конец
 
 						dropped = isDropdownOpen
-					end
+					конец
 
 					interact.MouseButton1Click:Connect(ToggleDropdown)
 					
-					local function addOption(i, v)
+					локальная функция addOption(i, v)
 						local option = Instance.new("TextButton")
 						option.Name = "Option"
 						option.FontFace = Font.new("rbxasset://fonts/families/SourceSansPro.json")
@@ -2692,14 +2692,14 @@ function MacLib:Window(Settings)
 						optionUIListLayout.VerticalAlignment = Enum.VerticalAlignment.Center
 						optionUIListLayout.Parent = option
 
-						local checkmark = Instance.new("TextLabel")
+						локальная галочка = Instance.new("TextLabel")
 						checkmark.Name = "Checkmark"
 						checkmark.FontFace = Font.new(
 							assets.interFont,
 							Enum.FontWeight.Medium,
 							Enum.FontStyle.Normal
 						)
-						checkmark.Text = "✓"
+						checkmark.Text = "вњ“"
 						checkmark.TextColor3 = Color3.fromRGB(255, 255, 255)
 						checkmark.TextSize = 13
 						checkmark.TextTransparency = 1
@@ -2720,27 +2720,27 @@ function MacLib:Window(Settings)
 
 						dropdownFrame.Parent = dropdown
 						OptionObjs[v] = {
-							Index = i,
-							Button = option,
+							Индекс = i,
+							Кнопка = опция,
 							NameLabel = optionName,
-							Checkmark = checkmark
+							Галочка = галочка
 						}
 
-						local tweensettings = {
-							duration = 0.2,
+						локальные настройки твитов = {
+							длительность = 0,2,
 							easingStyle = Enum.EasingStyle.Quint,
-							transparencyIn = 0.2,
+							прозрачностьIn = 0,2,
 							transparencyOut = 0.5,
 							checkSizeIncrease = 12,
 							checkSizeDecrease = -optionUIListLayout.Padding.Offset,
 							waitTime = 1
 						}
-						local tweens = {
+						локальные анимации = {
 							checkIn = Tween(checkmark, TweenInfo.new(tweensettings.duration, tweensettings.easingStyle), {
-								Size = UDim2.new(checkmark.Size.X.Scale, tweensettings.checkSizeIncrease, checkmark.Size.Y.Scale, checkmark.Size.Y.Offset)
+								Размер = UDim2.new(checkmark.Size.X.Scale, tweensettings.checkSizeIncrease, checkmark.Size.Y.Scale, checkmark.Size.Y.Offset)
 							}),
 							checkOut = Tween(checkmark, TweenInfo.new(tweensettings.duration, tweensettings.easingStyle),{
-								Size = UDim2.new(checkmark.Size.X.Scale, tweensettings.checkSizeDecrease, checkmark.Size.Y.Scale, checkmark.Size.Y.Offset)
+								Размер = UDim2.new(checkmark.Size.X.Scale, tweensettings.checkSizeDecrease, checkmark.Size.Y.Scale, checkmark.Size.Y.Offset)
 							}),
 							nameIn = Tween(optionName, TweenInfo.new(tweensettings.duration, tweensettings.easingStyle),{
 								TextTransparency = tweensettings.transparencyIn
@@ -2751,13 +2751,13 @@ function MacLib:Window(Settings)
 						}
 
 						local isSelected = false
-						if Settings.Default then
-							if Settings.Multi then
+						Если Settings.Default, то
+							Если Settings.Multi, то
 								isSelected = table.find(Settings.Default, v) and true or false
-							else
+							еще
 								isSelected = (Settings.Default == i) and true or false
-							end
-						end
+							конец
+						конец
 						Toggle(v, isSelected)
 
 						local option = OptionObjs[v].Button
@@ -2766,113 +2766,113 @@ function MacLib:Window(Settings)
 							local isSelected = table.find(Selected, v) and true or false
 							local newSelected = not isSelected
 
-							if Settings.Required and not newSelected and #Selected <= 1 then
-								return
-							end
+							Если Settings.Required не равно newSelected и #Selected <= 1, то
+								возвращаться
+							конец
 
 							Toggle(v, newSelected)
 
 							task.spawn(function()
-								if Settings.Multi then
-									local Return = {}
+								Если Settings.Multi, то
+									локальный Return = {}
 									for _, opt in ipairs(Selected) do
-										Return[opt] = true
-									end
-									if Settings.Callback then
+										Возвращать[opt] = true
+									конец
+									если Settings.Callback тогда
 										Settings.Callback(Return)
-									end
+									конец
 
-								else
-									if newSelected and Settings.Callback then
+								еще
+									Если newSelected и Settings.Callback, то
 										Settings.Callback(Selected[1] or nil)
-									end
-								end
-							end)
-						end)
+									конец
+								конец
+							конец)
+						конец)
 						
-						if dropped then
+						если уронить, то
 							dropdown.Size = UDim2.new(1, 0, 0, CalculateDropdownSize())
-						end
-					end
+						конец
+					конец
 
 					for i, v in pairs(Settings.Options) do
 						addOption(i, v)
-					end
+					конец
 					
 					function DropdownFunctions:UpdateName(New)
 						dropdownName.Text = New
-					end
+					конец
 					function DropdownFunctions:SetVisibility(State)
 						dropdown.Visible = State
-					end
+					конец
 					function DropdownFunctions:UpdateSelection(newSelection)
-						if type(newSelection) == "number" then
-							for option, data in pairs(OptionObjs) do
+						если type(newSelection) == "number", то
+							для опции данные в парах (OptionObjs) делают
 								local isSelected = data.Index == newSelection
 								Toggle(option, isSelected)
-							end
+							конец
 						elseif type(newSelection) == "table" then
-							for option, data in pairs(OptionObjs) do
+							для опции данные в парах (OptionObjs) делают
 								local isSelected = table.find(newSelection, option) ~= nil
 								Toggle(option, isSelected)
-							end
-						end
-					end
+							конец
+						конец
+					конец
 					function DropdownFunctions:InsertOptions(newOptions)
 						Settings.Options = newOptions
 						for i, v in pairs(newOptions) do
 							addOption(i, v)
-						end
-					end
-					function DropdownFunctions:ClearOptions()
+						конец
+					конец
+					функция DropdownFunctions:ClearOptions()
 						for _, optionData in pairs(OptionObjs) do
 							optionData.Button:Destroy()
-						end
+						конец
 						OptionObjs = {}
-						Selected = {}
+						Выбрано = {}
 						
-						if dropped then
+						если уронить, то
 							dropdown.Size = UDim2.new(1, 0, 0, CalculateDropdownSize())
-						end
-					end
-					function DropdownFunctions:GetOptions()
+						конец
+					конец
+					функция DropdownFunctions:GetOptions()
 						local optionsStatus = {}
 
-						for option, data in pairs(OptionObjs) do
+						для опции данные в парах (OptionObjs) делают
 							local isSelected = table.find(Selected, option) and true or false
 							optionsStatus[option] = isSelected
-						end
+						конец
 
-						return optionsStatus
-					end
+						возвращаемые параметры статуса
+					конец
 					
 					function DropdownFunctions:RemoveOptions(remove)
 						for _, optionName in ipairs(remove) do
 							local optionData = OptionObjs[optionName]
 
-							if optionData then
+							если optionData тогда
 								for i = #Selected, 1, -1 do
-									if Selected[i] == optionName then
+									если Selected[i] == optionName тогда
 										table.remove(Selected, i)
-									end
-								end
+									конец
+								конец
 
 								optionData.Button:Destroy()
 
 								OptionObjs[optionName] = nil
-							end
-						end
+							конец
+						конец
 						
-						if dropped then
+						если уронить, то
 							dropdown.Size = UDim2.new(1, 0, 0, CalculateDropdownSize())
-						end
-					end
+						конец
+					конец
 					function DropdownFunctions:IsOption(optionName)
 						return OptionObjs[optionName] ~= nil
-					end
+					конец
 
 					return DropdownFunctions
-				end
+				конец
 				
 				function SectionFunctions:Colorpicker(Settings)
 					local ColorpickerFunctions = {}
@@ -2930,10 +2930,10 @@ function MacLib:Window(Settings)
 
 					local colorC = Instance.new("Frame")
 					colorC.Name = "Color"
-					colorC.AnchorPoint = Vector2.new(0.5, 0.5)
+					colorC.AnchorPoint = Vector2.new(0,5, 0,5)
 					colorC.BackgroundColor3 = ColorpickerFunctions.Color
 					colorC.BorderSizePixel = 0
-					colorC.Position = UDim2.fromScale(0.5, 0.5)
+					colorC.Position = UDim2.fromScale(0,5, 0,5)
 					colorC.Size = UDim2.fromScale(1, 1)
 					colorC.BackgroundTransparency = ColorpickerFunctions.Alpha or 0
 
@@ -3017,7 +3017,7 @@ function MacLib:Window(Settings)
 					colorOptions.LayoutOrder = 1
 					colorOptions.Size = UDim2.fromScale(1, 0)
 
-					local value = Instance.new("TextButton")
+					локальное значение = Instance.new("TextButton")
 					value.Name = "Value"
 					value.FontFace = Font.new("rbxasset://fonts/families/SourceSansPro.json")
 					value.Text = ""
@@ -3037,10 +3037,10 @@ function MacLib:Window(Settings)
 						ColorSequenceKeypoint.new(0, Color3.fromRGB(255, 255, 255)),
 						ColorSequenceKeypoint.new(1, Color3.fromRGB(0, 0, 0)),
 					})
-					uIGradient.Parent = value
+					uIGradient.Parent = значение
 
 					local slide = Instance.new("Frame")
-					slide.Name = "Slide"
+					slide.Name = "Слайд"
 					slide.AnchorPoint = Vector2.new(0, 0.5)
 					slide.BackgroundColor3 = Color3.fromRGB(255, 255, 255)
 					slide.BorderColor3 = Color3.fromRGB(27, 42, 53)
@@ -3092,7 +3092,7 @@ function MacLib:Window(Settings)
 					uIListLayout1.Parent = colorOptions
 
 					local wheel = Instance.new("Frame")
-					wheel.Name = "Wheel"
+					wheel.Name = "Колесо"
 					wheel.AutomaticSize = Enum.AutomaticSize.Y
 					wheel.BackgroundColor3 = Color3.fromRGB(255, 255, 255)
 					wheel.BackgroundTransparency = 1
@@ -3101,7 +3101,7 @@ function MacLib:Window(Settings)
 					wheel.Size = UDim2.new(1, 0, 0, 100)
 
 					local wheel1 = Instance.new("ImageButton")
-					wheel1.Name = "Wheel"
+					wheel1.Name = "Колесо"
 					wheel1.Image = "rbxassetid://2849458409"
 					wheel1.AutoButtonColor = false
 					wheel1.Active = false
@@ -3127,7 +3127,7 @@ function MacLib:Window(Settings)
 
 					wheel1.Parent = wheel
 
-					local inputs = Instance.new("Frame")
+					локальные входные данные = Instance.new("Frame")
 					inputs.Name = "Inputs"
 					inputs.AnchorPoint = Vector2.new(1, 0.5)
 					inputs.AutomaticSize = Enum.AutomaticSize.XY
@@ -3161,7 +3161,7 @@ function MacLib:Window(Settings)
 						Enum.FontWeight.Medium,
 						Enum.FontStyle.Normal
 					)
-					inputName.Text = "Red"
+					inputName.Text = "Красный"
 					inputName.TextColor3 = Color3.fromRGB(255, 255, 255)
 					inputName.TextSize = 13
 					inputName.TextTransparency = 0.5
@@ -3253,7 +3253,7 @@ function MacLib:Window(Settings)
 						Enum.FontWeight.Medium,
 						Enum.FontStyle.Normal
 					)
-					inputName1.Text = "Green"
+					inputName1.Text = "Зеленый"
 					inputName1.TextColor3 = Color3.fromRGB(255, 255, 255)
 					inputName1.TextSize = 13
 					inputName1.TextTransparency = 0.5
@@ -3630,7 +3630,7 @@ function MacLib:Window(Settings)
 					local newColor = Instance.new("ImageLabel")
 					newColor.Name = "NewColor"
 					newColor.Image = "rbxassetid://121484455191370"
-					newColor.ScaleType = Enum.ScaleType.Tile
+					новыйЦвет.ТипМасштаба = Перечисление.ТипМасштаба.Плитка
 					newColor.TileSize = UDim2.fromOffset(500, 500)
 					newColor.BackgroundColor3 = Color3.fromRGB(255, 255, 255)
 					newColor.BackgroundTransparency = 1
@@ -3642,7 +3642,7 @@ function MacLib:Window(Settings)
 					uICorner2.Name = "UICorner"
 					uICorner2.Parent = newColor
 
-					local color = Instance.new("Frame")
+					локальный цвет = Instance.new("Frame")
 					color.Name = "Color"
 					color.AnchorPoint = Vector2.new(0.5, 0.5)
 					color.BorderColor3 = Color3.fromRGB(27, 42, 53)
@@ -3694,7 +3694,7 @@ function MacLib:Window(Settings)
 
 					colorOptions.Parent = prompt
 
-					local interactions = Instance.new("Frame")
+					локальные взаимодействия = Instance.new("Frame")
 					interactions.Name = "Interactions"
 					interactions.AutomaticSize = Enum.AutomaticSize.Y
 					interactions.BackgroundColor3 = Color3.fromRGB(0, 0, 0)
@@ -3717,11 +3717,11 @@ function MacLib:Window(Settings)
 						Enum.FontWeight.SemiBold,
 						Enum.FontStyle.Normal
 					)
-					confirm.Text = "Confirm"
-					confirm.TextColor3 = Color3.fromRGB(255, 255, 255)
+					confirm.Text = "Подтвердить"
+					Confirm.TextColor3 = Color3.fromRGB(255, 255, 255)
 					confirm.TextSize = 15
 					confirm.TextTransparency = 0.5
-					confirm.TextTruncate = Enum.TextTruncate.AtEnd
+					подтвердите.TextTruncate = Enum.TextTruncate.AtEnd
 					confirm.AutoButtonColor = false
 					confirm.AutomaticSize = Enum.AutomaticSize.Y
 					confirm.BackgroundColor3 = Color3.fromRGB(25, 25, 25)
@@ -3745,13 +3745,13 @@ function MacLib:Window(Settings)
 					confirm.Parent = interactions
 
 					local cancel = Instance.new("TextButton")
-					cancel.Name = "Cancel"
+					cancel.Name = "Отмена"
 					cancel.FontFace = Font.new(
 						"rbxassetid://12187365364",
 						Enum.FontWeight.SemiBold,
 						Enum.FontStyle.Normal
 					)
-					cancel.Text = "Cancel"
+					cancel.Text = "Отмена"
 					cancel.TextColor3 = Color3.fromRGB(255, 255, 255)
 					cancel.TextSize = 15
 					cancel.TextTransparency = 0.5
@@ -3793,7 +3793,7 @@ function MacLib:Window(Settings)
 					globalSettingsUIPadding.PaddingTop = UDim.new(0, 20)
 					globalSettingsUIPadding.Parent = prompt
 
-					local paragraph = Instance.new("Frame")
+					локальный абзац = Instance.new("Frame")
 					paragraph.Name = "Paragraph"
 					paragraph.AutomaticSize = Enum.AutomaticSize.Y
 					paragraph.BackgroundColor3 = Color3.fromRGB(0, 0, 0)
@@ -3809,9 +3809,9 @@ function MacLib:Window(Settings)
 						Enum.FontWeight.SemiBold,
 						Enum.FontStyle.Normal
 					)
-					paragraphHeader.RichText = true
+					параграфHeader.RichText = правда
 					paragraphHeader.Text = Settings.Name
-					paragraphHeader.TextColor3 = Color3.fromRGB(255, 255, 255)
+					абзацHeader.TextColor3 = Color3.fromRGB(255, 255, 255)
 					paragraphHeader.TextSize = 18
 					paragraphHeader.TextTransparency = 0.4
 					paragraphHeader.TextWrapped = true
@@ -3836,7 +3836,7 @@ function MacLib:Window(Settings)
 					uIPadding4.PaddingBottom = UDim.new(0, 15)
 					uIPadding4.Parent = paragraph
 
-					local line = Instance.new("Frame")
+					локальная строка = Instance.new("Frame")
 					line.Name = "Line"
 					line.BackgroundColor3 = Color3.fromRGB(255, 255, 255)
 					line.BackgroundTransparency = 0.9
@@ -3854,110 +3854,110 @@ function MacLib:Window(Settings)
 					
 					local fromHSV, fromRGB, v2, udim2 = Color3.fromHSV, Color3.fromRGB, Vector2.new, UDim2.new
 
-					local wheel = wheel1
-					local ring = target
-					local slider = value
-					local colour = color
+					локальное колесо = колесо1
+					локальное кольцо = цель
+					локальный ползунок = значение
+					локальный цвет = цвет
 
-					local modifierInputs = {
+					локальный модификаторВходов = {
 						Hex = hex.InputBox,
-						Red = red.InputBox,
-						Green = green.InputBox,
-						Blue = blue.InputBox,
-						Alpha = alpha.InputBox
+						Красный = red.InputBox,
+						Зеленый = green.InputBox,
+						Синий = blue.InputBox,
+						Альфа = alpha.InputBox
 					}
 
 					local Mouse = LocalPlayer:GetMouse()
 
 					local WheelDown, SlideDown = false, false
-					local hue, saturation, value = 0, 0, 1
+					локальный оттенок, насыщенность, яркость = 0, 0, 1
 
-					local function toPolar(v)
-						return math.atan2(v.y, v.x), v.magnitude
-					end
+					локальная функция toPolar(v)
+						return math.atan2(vy, vx), v.magnitude
+					конец
 
-					local function radToDeg(x)
+					локальная функция radToDeg(x)
 						return ((x + math.pi) / (2 * math.pi)) * 360
-					end
+					конец
 
-					local function degToRad(degrees)
-						return degrees * (math.pi / 180)
-					end
+					локальная функция degToRad(degrees)
+						градусов возврата * (math.pi / 180)
+					конец
 
-					local function hexToRGB(hex)
+					локальная функция hexToRGB(hex)
 						hex = hex:gsub("#","")
-						if #hex ~= 6 then return 0, 0, 0 end
+						если #hex ~= 6, то вернуть 0, 0, 0.
 						local r = tonumber(hex:sub(1, 2), 16) or 0
 						local g = tonumber(hex:sub(3, 4), 16) or 0
 						local b = tonumber(hex:sub(5, 6), 16) or 0
-						return r, g, b
-					end
+						возвращать r, g, b
+					конец
 
-					local function clampInput(value, min, max)
+					локальная функция clampInput(value, min, max)
 						local num = tonumber(value)
-						if num then
+						если число тогда
 							return math.clamp(num, min, max)
-						end
-						return min
-					end
+						конец
+						возврат мин
+					конец
 
-					local function update()
+					локальная функция update()
 						local c = fromHSV(hue, saturation, value)
 						colour.BackgroundColor3 = c
 						colour.BackgroundTransparency = clampInput(modifierInputs.Alpha.Text, 0, 1)
 
-						modifierInputs.Red.Text = tostring(math.floor(c.r * 255 + 0.5))
-						modifierInputs.Green.Text = tostring(math.floor(c.g * 255 + 0.5))
-						modifierInputs.Blue.Text = tostring(math.floor(c.b * 255 + 0.5))
+						modifierInputs.Red.Text = tostring(math.floor(cr * 255 + 0.5))
+						modifierInputs.Green.Text = tostring(math.floor(cg * 255 + 0.5))
+						modifierInputs.Blue.Text = tostring(math.floor(cb * 255 + 0.5))
 						modifierInputs.Alpha.Text = clampInput(modifierInputs.Alpha.Text, 0, 1)
 
-						local hexColor = string.format("#%02X%02X%02X", 
-							math.floor(c.r * 255 + 0.5),
-							math.floor(c.g * 255 + 0.5),
-							math.floor(c.b * 255 + 0.5))
+						local hexColor = string.format("#%02X%02X%02X",
+							math.floor(cr * 255 + 0.5),
+							math.floor(cg * 255 + 0.5),
+							math.floor(cb * 255 + 0.5))
 						modifierInputs.Hex.Text = hexColor
-					end
+					конец
 
-					local function UpdateSlide(iX)
+					локальная функция UpdateSlide(iX)
 						local rY = iX - slider.AbsolutePosition.X
 						local cY = math.clamp(rY, 0, slider.AbsoluteSize.X - slide.AbsoluteSize.X)
 						slide.Position = udim2(0, cY, 0.5, 0)
-						value = 1 - (cY / (slider.AbsoluteSize.X - slide.AbsoluteSize.X))
-						update()
-					end
+						значение = 1 - (cY / (slider.AbsoluteSize.X - slide.AbsoluteSize.X))
+						обновлять()
+					конец
 
-					local function UpdateRing(iX, iY)
+					локальная функция UpdateRing(iX, iY)
 						local r = wheel.AbsoluteSize.x / 2
 						local d = v2(iX, iY) - wheel.AbsolutePosition - wheel.AbsoluteSize / 2
 
-						if d:Dot(d) > r * r then
-							d = d.unit * r
-						end
+						если d:Dot(d) > r * r тогда
+							d = d.единица * r
+						конец
 
-						ring.Position = udim2(0.5, d.x, 0.5, d.y)
-						local phi, len = toPolar(d * v2(1, -1))
-						hue, saturation = radToDeg(phi) / 360, math.clamp(len / r, 0, 1)
+						ring.Position = udim2(0.5, dx, 0.5, dy)
+						локальное фи, len = toPolar(d * v2(1, -1))
+						оттенок, насыщенность = radToDeg(phi) / 360, math.clamp(len / r, 0, 1)
 						slider.BackgroundColor3 = fromHSV(hue, saturation, 1)
-						update()
-					end
+						обновлять()
+					конец
 
-					local function UpdateSlideFromValue(value)
+					локальная функция UpdateSlideFromValue(value)
 						local cY = (1 - value) * (slider.AbsoluteSize.X - slide.AbsoluteSize.X)
 						slide.Position = UDim2.new(0, cY, 0.5, 0)
-					end
+					конец
 
-					local function UpdateRingFromHSV(hue, saturation)
+					локальная функция UpdateRingFromHSV(hue, saturation)
 						local r = wheel.AbsoluteSize.X / 2
-						local phi = degToRad(hue * 360)
-						local len = saturation * r
+						локальное фи = degToRad (оттенок * 360)
+						локальная длина = насыщенность * r
 						local x = len * math.cos(phi)
 						local y = len * math.sin(phi)
 
 						ring.Position = UDim2.new(0.5, -x, 0.5, y)
 						slider.BackgroundColor3 = fromHSV(hue, saturation, 1)
-					end
+					конец
 
-					local function updateFromRGB()
+					локальная функция updateFromRGB()
 						local r = clampInput(modifierInputs.Red.Text, 0, 255)
 						local g = clampInput(modifierInputs.Green.Text, 0, 255)
 						local b = clampInput(modifierInputs.Blue.Text, 0, 255)
@@ -3965,14 +3965,14 @@ function MacLib:Window(Settings)
 						modifierInputs.Green.Text = g
 						modifierInputs.Blue.Text = b
 
-						hue, saturation, value = Color3.fromRGB(r, g, b):ToHSV()
+						оттенок, насыщенность, значение = Color3.fromRGB(r, g, b):ToHSV()
 
 						UpdateSlideFromValue(value)
 						UpdateRingFromHSV(hue, saturation)
-						update()
-					end
+						обновлять()
+					конец
 
-					local function updateFromHex()
+					локальная функция updateFromHex()
 						local hex = modifierInputs.Hex.Text
 						local r, g, b = hexToRGB(hex)
 
@@ -3984,13 +3984,13 @@ function MacLib:Window(Settings)
 						modifierInputs.Green.Text = g
 						modifierInputs.Blue.Text = b
 
-						hue, saturation, value = Color3.fromRGB(r, g, b):ToHSV()
+						оттенок, насыщенность, значение = Color3.fromRGB(r, g, b):ToHSV()
 						UpdateSlideFromValue(value)
 						UpdateRingFromHSV(hue, saturation)
-						update()
-					end
+						обновлять()
+					конец
 					
-					local function updateFromSettings()
+					локальная функция updateFromSettings()
 						local r = math.floor(ColorpickerFunctions.Color.R * 255 + 0.5)
 						local g = math.floor(ColorpickerFunctions.Color.G * 255 + 0.5)
 						local b = math.floor(ColorpickerFunctions.Color.B * 255 + 0.5)
@@ -4002,7 +4002,7 @@ function MacLib:Window(Settings)
 						local hexColor = string.format("#%02X%02X%02X", r,g,b)
 						modifierInputs.Hex.Text = hexColor
 
-						hue, saturation, value = Color3.fromRGB(r, g, b):ToHSV()
+						оттенок, насыщенность, значение = Color3.fromRGB(r, g, b):ToHSV()
 						
 						color1.BackgroundColor3 = ColorpickerFunctions.Color
 						color1.BackgroundTransparency = isAlpha and ColorpickerFunctions.Alpha or 0
@@ -4012,49 +4012,49 @@ function MacLib:Window(Settings)
 
 						UpdateSlideFromValue(value)
 						UpdateRingFromHSV(hue, saturation)
-					end
+					конец
 
 					wheel.InputBegan:Connect(function(input)
-						if input.UserInputType == Enum.UserInputType.MouseButton1 or input.UserInputType == Enum.UserInputType.Touch then
+						если input.UserInputType == Enum.UserInputType.MouseButton1 или input.UserInputType == Enum.UserInputType.Touch тогда
 							WheelDown = true
 							UpdateRing(Mouse.X, Mouse.Y)
-						end
-					end)
+						конец
+					конец)
 
 					slider.InputBegan:Connect(function(input)
-						if input.UserInputType == Enum.UserInputType.MouseButton1 or input.UserInputType == Enum.UserInputType.Touch then
+						если input.UserInputType == Enum.UserInputType.MouseButton1 или input.UserInputType == Enum.UserInputType.Touch тогда
 							SlideDown = true
 							UpdateSlide(Mouse.X)
-						end
-					end)
+						конец
+					конец)
 
 					slider.InputEnded:Connect(function(input)
-						if input.UserInputType == Enum.UserInputType.MouseButton1 or input.UserInputType == Enum.UserInputType.Touch then
+						если input.UserInputType == Enum.UserInputType.MouseButton1 или input.UserInputType == Enum.UserInputType.Touch тогда
 							SlideDown = false
-						end
-					end)
+						конец
+					конец)
 
 					wheel.InputEnded:Connect(function(input)
-						if input.UserInputType == Enum.UserInputType.MouseButton1 or input.UserInputType == Enum.UserInputType.Touch then
+						если input.UserInputType == Enum.UserInputType.MouseButton1 или input.UserInputType == Enum.UserInputType.Touch тогда
 							WheelDown = false
-						end
-					end)
+						конец
+					конец)
 
 					UserInputService.InputChanged:Connect(function(input)
-						if input.UserInputType == Enum.UserInputType.MouseMovement or input.UserInputType == Enum.UserInputType.Touch then
-							if SlideDown then
+						Если input.UserInputType == Enum.UserInputType.MouseMovement или input.UserInputType == Enum.UserInputType.Touch, то
+							если SlideDown тогда
 								UpdateSlide(Mouse.X)
 							elseif WheelDown then
 								UpdateRing(Mouse.X, Mouse.Y)
-							end
-						end
-					end)
+							конец
+						конец
+					конец)
 
-					local function onFocusEnter(instance)
-						local placeholder = instance.Text
+					локальная функция onFocusEnter(instance)
+						локальный заполнитель = экземпляр.текст
 						instance.Text = ""
 						instance.PlaceholderText = placeholder
-					end
+					конец
 
 					modifierInputs.Hex.FocusLost:Connect(updateFromHex)
 					modifierInputs.Red.FocusLost:Connect(updateFromRGB)
@@ -4064,21 +4064,21 @@ function MacLib:Window(Settings)
 
 					modifierInputs.Hex.Focused:Connect(function()
 						onFocusEnter(modifierInputs.Hex)
-					end)
+					конец)
 					modifierInputs.Red.Focused:Connect(function()
 						onFocusEnter(modifierInputs.Red)
-					end)
+					конец)
 					modifierInputs.Green.Focused:Connect(function()
 						onFocusEnter(modifierInputs.Green)
-					end)
+					конец)
 					modifierInputs.Blue.Focused:Connect(function()
 						onFocusEnter(modifierInputs.Blue)
-					end)
+					конец)
 					modifierInputs.Alpha.Focused:Connect(function()
 						onFocusEnter(modifierInputs.Alpha)
-					end)
+					конец)
 					
-					local function makeCanvas()
+					локальная функция makeCanvas()
 						local ColorPickerCanvas = Instance.new("CanvasGroup")
 						ColorPickerCanvas.Name = "ColorPickerCanvas"
 						ColorPickerCanvas.BackgroundTransparency = 1
@@ -4089,9 +4089,9 @@ function MacLib:Window(Settings)
 						ColorPickerCanvas.Parent = base
 						ColorPickerCanvas.Visible = false
 						return ColorPickerCanvas
-					end
+					конец
 
-					local function transition(isIn)
+					локальная функция transition(isIn)
 						local canvas = makeCanvas()
 						local tweenTransparency = isIn and 0 or 1
 						local stateTransparency = isIn and 1 or 0
@@ -4105,22 +4105,22 @@ function MacLib:Window(Settings)
 						canvasTween:Play()
 						canvasTween.Completed:Wait()
 
-						if not isIn then
+						если не isIn тогда
 							colorPicker.Visible = false
 							canvas.Visible = false
-						end
+						конец
 
 						colorPicker.Parent = base
 						canvas:Destroy()
-					end
+					конец
 
-					local function colorpickerIn()
-						transition(true)
-					end
+					локальная функция colorpickerIn()
+						переход(истина)
+					конец
 
-					local function colorpickerOut()
+					локальная функция colorpickerOut()
 						transition(false)
-					end
+					конец
 
 					interact.MouseButton1Click:Connect(colorpickerIn)
 					
@@ -4128,7 +4128,7 @@ function MacLib:Window(Settings)
 					confirm.MouseButton1Click:Connect(function()
 						colorpickerOut()
 						local c = fromHSV(hue, saturation, value)
-						ColorpickerFunctions.Color = Color3.fromRGB(c.r * 255, c.g * 255, c.b * 255)
+						ColorpickerFunctions.Color = Color3.fromRGB(cr * 255, cg * 255, cb * 255)
 						ColorpickerFunctions.Alpha = isAlpha and clampInput(modifierInputs.Alpha.Text, 0, 1)
 						
 						color1.BackgroundColor3 = ColorpickerFunctions.Color
@@ -4137,23 +4137,23 @@ function MacLib:Window(Settings)
 						colorC.BackgroundColor3 = ColorpickerFunctions.Color
 						colorC.BackgroundTransparency = isAlpha and ColorpickerFunctions.Alpha or 0
 						
-						if Settings.Callback then
+						если Settings.Callback тогда
 							task.spawn(function()
 								Settings.Callback(ColorpickerFunctions.Color, isAlpha and ColorpickerFunctions.Alpha)
-							end)
-						end
-					end)
+							конец)
+						конец
+					конец)
 					
 					updateFromSettings()
 					
-					function ColorpickerFunctions:UpdateName(New)
+					функция ColorpickerFunctions:UpdateName(New)
 						colorpickerName.Text = New
-					end
-					function ColorpickerFunctions:SetVisibility(State)
+					конец
+					функция ColorpickerFunctions:SetVisibility(State)
 						colorpicker.Visible = State
-					end
+					конец
 			
-					function ColorpickerFunctions:SetColor(color3)
+					функция ColorpickerFunctions:SetColor(color3)
 						ColorpickerFunctions.Color = color3
 						colorC.BackgroundColor3 = color3
 						
@@ -4167,28 +4167,28 @@ function MacLib:Window(Settings)
 						local hexColor = string.format("#%02X%02X%02X", r,g,b)
 						modifierInputs.Hex.Text = hexColor
 
-						hue, saturation, value = Color3.fromRGB(r, g, b):ToHSV()
+						оттенок, насыщенность, значение = Color3.fromRGB(r, g, b):ToHSV()
 
 						color1.BackgroundColor3 = ColorpickerFunctions.Color
 						colour.BackgroundColor3 = Color3.fromRGB(r,g,b)
 
 						UpdateSlideFromValue(value)
 						UpdateRingFromHSV(hue, saturation)
-					end
+					конец
 					
-					function ColorpickerFunctions:SetAlpha(alpha)
+					функция ColorpickerFunctions:SetAlpha(alpha)
 						ColorpickerFunctions.Alpha = alpha
 						colorC.Transparency = alpha
 						updateFromSettings()
-					end
+					конец
 					
 					return ColorpickerFunctions
-				end
+				конец
 				
-				function SectionFunctions:Header(Settings)
+				функция SectionFunctions:Header(Settings)
 					local HeaderFunctions = {}
 					
-					local header = Instance.new("Frame")
+					локальный заголовок = Instance.new("Frame")
 					header.Name = "Header"
 					header.AutomaticSize = Enum.AutomaticSize.Y
 					header.BackgroundColor3 = Color3.fromRGB(0, 0, 0)
@@ -4226,20 +4226,20 @@ function MacLib:Window(Settings)
 					headerText.Size = UDim2.fromScale(1, 0)
 					headerText.Parent = header
 					
-					function HeaderFunctions:UpdateName(New)
-						headerText.Text = New
-					end
-					function HeaderFunctions:SetVisibility(State)
+					функция HeaderFunctions:UpdateName(New)
+						headerText.Text = Новый
+					конец
+					функция HeaderFunctions:SetVisibility(State)
 						header.Visible = State
-					end
+					конец
 					
 					return HeaderFunctions
-				end
+				конец
 				
-				function SectionFunctions:Label(Settings)
+				функция SectionFunctions:Label(Settings)
 					local LabelFunctions = {}
 					
-					local label = Instance.new("Frame")
+					локальная метка = Instance.new("Frame")
 					label.Name = "Label"
 					label.AutomaticSize = Enum.AutomaticSize.Y
 					label.BackgroundColor3 = Color3.fromRGB(0, 0, 0)
@@ -4257,10 +4257,10 @@ function MacLib:Window(Settings)
 						Enum.FontStyle.Normal
 					)
 					labelText.RichText = true
-					labelText.Text = Settings.Text or Settings.Name -- Settings.Name Deprecated
+					labelText.Text = Settings.Text или Settings.Name -- Settings.Name Устарело
 					labelText.TextColor3 = Color3.fromRGB(255, 255, 255)
 					labelText.TextSize = 13
-					labelText.TextTransparency = 0.5
+					labelText.TextTransparency = 0,5
 					labelText.TextWrapped = true
 					labelText.TextXAlignment = Enum.TextXAlignment.Left
 					labelText.AutomaticSize = Enum.AutomaticSize.Y
@@ -4271,15 +4271,15 @@ function MacLib:Window(Settings)
 					labelText.Size = UDim2.fromScale(1, 1)
 					labelText.Parent = label
 					
-					function LabelFunctions:UpdateName(New)
-						labelText.Text = New
-					end
-					function LabelFunctions:SetVisibility(State)
+					функция LabelFunctions:UpdateName(New)
+						labelText.Text = Новый
+					конец
+					функция LabelFunctions:SetVisibility(State)
 						label.Visible = State
-					end
+					конец
 					
 					return LabelFunctions
-				end
+				конец
 				
 				function SectionFunctions:SubLabel(Settings)
 					local SubLabelFunctions = {}
@@ -4302,7 +4302,7 @@ function MacLib:Window(Settings)
 						Enum.FontStyle.Normal
 					)
 					subLabelText.RichText = true
-					subLabelText.Text = Settings.Text or Settings.Name -- Settings.Name Deprecated
+					subLabelText.Text = Settings.Text или Settings.Name -- Settings.Name Устарело
 					subLabelText.TextColor3 = Color3.fromRGB(255, 255, 255)
 					subLabelText.TextSize = 11
 					subLabelText.TextTransparency = 0.7
@@ -4316,20 +4316,20 @@ function MacLib:Window(Settings)
 					subLabelText.Size = UDim2.fromScale(1, 1)
 					subLabelText.Parent = subLabel
 
-					function SubLabelFunctions:UpdateName(New)
-						subLabelText.Text = New
-					end
-					function SubLabelFunctions:SetVisibility(State)
+					функция SubLabelFunctions:UpdateName(New)
+						subLabelText.Text = "Новый"
+					конец
+					функция SubLabelFunctions:SetVisibility(State)
 						subLabel.Visible = State
-					end
+					конец
 
 					return SubLabelFunctions
-				end
+				конец
 				
-				function SectionFunctions:Paragraph(Settings)
+				функция SectionFunctions:Paragraph(Settings)
 					local ParagraphFunctions = {}
 
-					local paragraph = Instance.new("Frame")
+					локальный абзац = Instance.new("Frame")
 					paragraph.Name = "Paragraph"
 					paragraph.AutomaticSize = Enum.AutomaticSize.Y
 					paragraph.BackgroundColor3 = Color3.fromRGB(0, 0, 0)
@@ -4346,9 +4346,9 @@ function MacLib:Window(Settings)
 						Enum.FontWeight.Medium,
 						Enum.FontStyle.Normal
 					)
-					paragraphHeader.RichText = true
+					параграфHeader.RichText = правда
 					paragraphHeader.Text = Settings.Header
-					paragraphHeader.TextColor3 = Color3.fromRGB(255, 255, 255)
+					абзацHeader.TextColor3 = Color3.fromRGB(255, 255, 255)
 					paragraphHeader.TextSize = 16
 					paragraphHeader.TextTransparency = 0.4
 					paragraphHeader.TextWrapped = true
@@ -4372,7 +4372,7 @@ function MacLib:Window(Settings)
 					paragraphBody.FontFace = Font.new(assets.interFont)
 					paragraphBody.RichText = true
 					paragraphBody.Text = Settings.Body
-					paragraphBody.TextColor3 = Color3.fromRGB(255, 255, 255)
+					параграфBody.TextColor3 = Color3.fromRGB(255, 255, 255)
 					paragraphBody.TextSize = 13
 					paragraphBody.TextTransparency = 0.5
 					paragraphBody.TextWrapped = true
@@ -4386,24 +4386,24 @@ function MacLib:Window(Settings)
 					paragraphBody.Size = UDim2.fromScale(1, 0)
 					paragraphBody.Parent = paragraph
 
-					function ParagraphFunctions:UpdateHeader(New)
+					функция ParagraphFunctions:UpdateHeader(New)
 						paragraphHeader.Text = New
-					end
-					function ParagraphFunctions:UpdateBody(New)
+					конец
+					функция ParagraphFunctions:UpdateBody(New)
 						paragraphBody.Text = New
-					end
-					function ParagraphFunctions:SetVisibility(State)
+					конец
+					функция ParagraphFunctions:SetVisibility(State)
 						paragraph.Visible = State
-					end
+					конец
 
 					return ParagraphFunctions
-				end
+				конец
 				
-				function SectionFunctions:Divider()
+				функция SectionFunctions:Divider()
 					local DividerFunctions = {}
 					
 					local divider = Instance.new("Frame")
-					divider.Name = "Divider"
+					divider.Name = "Разделитель"
 					divider.AnchorPoint = Vector2.new(0, 1)
 					divider.AutomaticSize = Enum.AutomaticSize.Y
 					divider.BackgroundColor3 = Color3.fromRGB(255, 255, 255)
@@ -4425,7 +4425,7 @@ function MacLib:Window(Settings)
 					uIListLayout.SortOrder = Enum.SortOrder.LayoutOrder
 					uIListLayout.Parent = divider
 
-					local line = Instance.new("Frame")
+					локальная строка = Instance.new("Frame")
 					line.Name = "Line"
 					line.BackgroundColor3 = Color3.fromRGB(255, 255, 255)
 					line.BackgroundTransparency = 0.9
@@ -4434,17 +4434,17 @@ function MacLib:Window(Settings)
 					line.Size = UDim2.new(1, 0, 0, 1)
 					line.Parent = divider
 					
-					function DividerFunctions:Remove()
+					функция DividerFunctions:Remove()
 						divider:Destroy()
-					end
-					function DividerFunctions:SetVisibility(State)
+					конец
+					функция DividerFunctions:SetVisibility(State)
 						divider.Visible = State
-					end
+					конец
 					
 					return DividerFunctions
-				end
+				конец
 				
-				function SectionFunctions:Spacer()
+				функция SectionFunctions:Spacer()
 					local SpacerFunctions = {}
 
 					local spacer = Instance.new("Frame")
@@ -4457,68 +4457,68 @@ function MacLib:Window(Settings)
 					spacer.Position = UDim2.fromScale(0, 1)
 					spacer.Parent = section
 
-					function SpacerFunctions:Remove()
+					функция SpacerFunctions:Remove()
 						spacer:Destroy()
-					end
-					function SpacerFunctions:SetVisibility(State)
+					конец
+					функция SpacerFunctions:SetVisibility(State)
 						spacer.Visible = State
-					end
+					конец
 
 					return SpacerFunctions
-				end
+				конец
 				return SectionFunctions
-			end
+			конец
 
-			local function SelectCurrentTab()
+			локальная функция SelectCurrentTab()
 				local easetime = 0.15
 
-				if currentTabInstance then
+				если currentTabInstance, то
 					currentTabInstance.Parent = nil
-				end
+				конец
 
 				for _, v in pairs(tabSwitchersScrollingFrame:GetDescendants()) do
-					if v.Name == "TabSwitcher" then
+					если v.Name == "TabSwitcher", то
 						Tween(v, TweenInfo.new(easetime, Enum.EasingStyle.Sine), {
 							BackgroundTransparency = 1
-						}):Play()
+						}):Играть()
 						Tween(v:FindFirstChild("TabSwitcherUIStroke"), TweenInfo.new(easetime, Enum.EasingStyle.Sine), {
-							Transparency = 1
-						}):Play()
-					end
-				end
+							Прозрачность = 1
+						}):Играть()
+					конец
+				конец
 
 				tabs[tabSwitcher].Parent = content
 				currentTabInstance = tabs[tabSwitcher]
 				currentTab.Text = Settings.Name
 
 				Tween(tabSwitcher, TweenInfo.new(easetime, Enum.EasingStyle.Sine), {
-					BackgroundTransparency = 0.98
-				}):Play()
+					Прозрачность фона = 0,98
+				}):Играть()
 				Tween(tabSwitcherUIStroke, TweenInfo.new(easetime, Enum.EasingStyle.Sine), {
-					Transparency = 0.95
-				}):Play()
-			end
+					Прозрачность = 0,95
+				}):Играть()
+			конец
 
 			tabSwitcher.MouseButton1Click:Connect(function()
 				SelectCurrentTab()
-			end)
+			конец)
 
-			function TabFunctions:Select()
+			функция TabFunctions:Select()
 				SelectCurrentTab()
-			end
+			конец
 
 			tabs[tabSwitcher] = elements1
 			return TabFunctions
-		end
+		конец
 
 		return SectionFunctions
-	end
+	конец
 
 	function WindowFunctions:Notify(Settings)
 		local NotificationFunctions = {}
 		
-		local notification = Instance.new("Frame")
-		notification.Name = "Notification"
+		локальное уведомление = Instance.new("Frame")
+		notification.Name = "Уведомление"
 		notification.AnchorPoint = Vector2.new(0.5, 0.5)
 		notification.AutomaticSize = Enum.AutomaticSize.Y
 		notification.BackgroundColor3 = Color3.fromRGB(15, 15, 15)
@@ -4564,7 +4564,7 @@ function MacLib:Window(Settings)
 		)
 		notificationTitle.RichText = true
 		notificationTitle.Text = Settings.Title
-		notificationTitle.TextColor3 = Color3.fromRGB(255, 255, 255)
+		NotificationTitle.TextColor3 = Color3.fromRGB(255, 255, 255)
 		notificationTitle.TextSize = 13
 		notificationTitle.TextTransparency = 0.2
 		notificationTitle.TextTruncate = Enum.TextTruncate.SplitWord
@@ -4592,7 +4592,7 @@ function MacLib:Window(Settings)
 			Enum.FontStyle.Normal
 		)
 		notificationDescription.Text = Settings.Description
-		notificationDescription.TextColor3 = Color3.fromRGB(255, 255, 255)
+		NotificationDescription.TextColor3 = Color3.fromRGB(255, 255, 255)
 		notificationDescription.TextSize = 11
 		notificationDescription.TextTransparency = 0.5
 		notificationDescription.TextWrapped = true
@@ -4636,8 +4636,8 @@ function MacLib:Window(Settings)
 		local interactable = Instance.new("TextButton")
 		interactable.Name = "Interactable"
 		interactable.FontFace = Font.new(assets.interFont)
-		interactable.Text = "✓"
-		interactable.TextColor3 = Color3.fromRGB(255, 255, 255)
+		interactable.Text = "вњ“"
+		интерактивный.TextColor3 = Color3.fromRGB(255, 255, 255)
 		interactable.TextSize = 17
 		interactable.TextTransparency = 0.2
 		interactable.AnchorPoint = Vector2.new(1, 0.5)
@@ -4659,72 +4659,72 @@ function MacLib:Window(Settings)
 
 		notificationControls.Parent = notification
 		
-		local tweens = {
+		локальные анимации = {
 			In = Tween(notificationUIScale, TweenInfo.new(0.2, Enum.EasingStyle.Exponential, Enum.EasingDirection.Out), {
-				Scale = Settings.Scale or 1
+				Масштаб = Settings.Scale или 1
 			}),
 			Out = Tween(notificationUIScale, TweenInfo.new(0.2, Enum.EasingStyle.Exponential, Enum.EasingDirection.Out), {
-				Scale = 0
+				Масштаб = 0
 			}),
 		}
 		
-		local styles = {
+		локальные стили = {
 			None = function() interactable:Destroy() end,
-			Confirm = function() interactable.Text = "✓" end,
-			Cancel = function() interactable.Text = "✗" end
+			Confirm = function() interactable.Text = "вњ"" end,
+			Отмена = функция() interactable.Text = "вњ—" конец
 		}
 
 		local style = styles[Settings.Style] or function() interactable:Destroy() end
-		style()
+		стиль()
 
-		if interactable then
+		если он интерактивный, то
 			interactable.MouseButton1Click:Connect(function()
 				NotificationFunctions:Cancel()
-				if Settings.Callback then
+				если Settings.Callback тогда
 					task.spawn(Settings.Callback)
-				end
-			end)
-		end
+				конец
+			конец)
+		конец
 	
 		local AnimateNotification = task.spawn(function()
 			tweens.In:Play()
 			
-			Settings.Lifetime = Settings.Lifetime or 3
+			Settings.Lifetime = Settings.Lifetime или 3
 
-			if Settings.Lifetime ~= 0 then
+			Если Settings.Lifetime ≤ 0, то
 				task.wait(Settings.Lifetime)
 
 				local out = tweens.Out
 				out:Play()
 				out.Completed:Wait()
-				notification:Destroy()
-			end
-		end)
+				уведомление:Уничтожить()
+			конец
+		конец)
 		
-		function NotificationFunctions:UpdateTitle(New)
-			notificationTitle.Text = New
-		end
+		функция NotificationFunctions:UpdateTitle(New)
+			notificationTitle.Text = "Новый"
+		конец
 		
-		function NotificationFunctions:UpdateDescription(New)
-			notificationDescription.Text = New
-		end
+		функция NotificationFunctions:UpdateDescription(New)
+			notificationDescription.Text = Новый
+		конец
 		
-		function NotificationFunctions:Resize(X)
-			local targ = X or 250
+		функция NotificationFunctions:Resize(X)
+			локальная цель = X или 250
 			notification.Size = UDim2.fromOffset(targ, 0)
-		end
+		конец
 		
-		function NotificationFunctions:Cancel()
+		функция NotificationFunctions:Cancel()
 			task.cancel(AnimateNotification)
 			
 			local out = tweens.Out
 			out:Play()
 			out.Completed:Wait()
-			notification:Destroy()
-		end
+			уведомление:Уничтожить()
+		конец
 		
 		return NotificationFunctions
-	end
+	конец
 	
 	function WindowFunctions:Dialog(Settings)
 		local DialogFunctions = {}
@@ -4740,7 +4740,7 @@ function MacLib:Window(Settings)
 		dialogCanvas.Parent = base
 
 		local dialog = Instance.new("Frame")
-		dialog.Name = "Dialog"
+		dialog.Name = "Диалог"
 		dialog.BackgroundColor3 = Color3.fromRGB(0, 0, 0)
 		dialog.BackgroundTransparency = 0.5
 		dialog.BorderColor3 = Color3.fromRGB(0, 0, 0)
@@ -4782,7 +4782,7 @@ function MacLib:Window(Settings)
 		globalSettingsUIPadding.PaddingTop = UDim.new(0, 20)
 		globalSettingsUIPadding.Parent = prompt
 
-		local paragraph = Instance.new("Frame")
+		локальный абзац = Instance.new("Frame")
 		paragraph.Name = "Paragraph"
 		paragraph.AutomaticSize = Enum.AutomaticSize.Y
 		paragraph.BackgroundColor3 = Color3.fromRGB(0, 0, 0)
@@ -4798,9 +4798,9 @@ function MacLib:Window(Settings)
 			Enum.FontWeight.SemiBold,
 			Enum.FontStyle.Normal
 		)
-		paragraphHeader.RichText = true
+		параграфHeader.RichText = правда
 		paragraphHeader.Text = Settings.Title
-		paragraphHeader.TextColor3 = Color3.fromRGB(255, 255, 255)
+		абзацHeader.TextColor3 = Color3.fromRGB(255, 255, 255)
 		paragraphHeader.TextSize = 18
 		paragraphHeader.TextTransparency = 0.4
 		paragraphHeader.TextWrapped = true
@@ -4827,7 +4827,7 @@ function MacLib:Window(Settings)
 		)
 		paragraphBody.RichText = true
 		paragraphBody.Text = Settings.Description
-		paragraphBody.TextColor3 = Color3.fromRGB(255, 255, 255)
+		параграфBody.TextColor3 = Color3.fromRGB(255, 255, 255)
 		paragraphBody.TextSize = 14
 		paragraphBody.TextTransparency = 0.5
 		paragraphBody.TextWrapped = true
@@ -4842,7 +4842,7 @@ function MacLib:Window(Settings)
 
 		paragraph.Parent = prompt
 
-		local interactions = Instance.new("Frame")
+		локальные взаимодействия = Instance.new("Frame")
 		interactions.Name = "Interactions"
 		interactions.AutomaticSize = Enum.AutomaticSize.Y
 		interactions.BackgroundColor3 = Color3.fromRGB(0, 0, 0)
@@ -4881,22 +4881,22 @@ function MacLib:Window(Settings)
 			GroupTransparency = 1,
 		})
 		
-		local function dialogIn()
+		локальная функция dialogIn()
 			canvasIn:Play()
 			canvasIn.Completed:Wait()
 			dialog.Parent = base
-		end
+		конец
 		
-		local function dialogOut()
+		локальная функция dialogOut()
 			dialog.Parent = dialogCanvas
 
 			canvasOut:Play()
 			canvasOut.Completed:Wait()
 			dialogCanvas:Destroy()
-		end
+		конец
 		
 		for _, v in pairs(Settings.Buttons) do
-			local button = Instance.new("TextButton")
+			локальная кнопка = Instance.new("TextButton")
 			button.Name = "Button"
 			button.FontFace = Font.new(
 				assets.interFont,
@@ -4939,185 +4939,185 @@ function MacLib:Window(Settings)
 				EasingStyle = Enum.EasingStyle.Sine
 			}
 			
-			local function ChangeState(State)
-				if State == "Idle" then
+			локальная функция ChangeState(State)
+				если State == "Idle", то
 					Tween(button, TweenInfo.new(0.2, TweenSettings.EasingStyle), {
 						BackgroundTransparency = TweenSettings.DefaultTransparency,
 						TextTransparency = TweenSettings.DefaultTransparency2
-					}):Play()
+					}):Играть()
 				elseif State == "Hover" then
 					Tween(button, TweenInfo.new(0.2, TweenSettings.EasingStyle), {
 						BackgroundTransparency = TweenSettings.HoverTransparency,
 						TextTransparency = TweenSettings.HoverTransparency2
-					}):Play()
-				end
-			end
+					}):Играть()
+				конец
+			конец
 			
 			button.MouseButton1Click:Connect(function()
 				if dialogCanvas.GroupTransparency ~= 0 then return end
-				if v.Callback then
+				если v.Callback тогда
 					v.Callback()
-				end
+				конец
 				
 				dialog.Parent = dialogCanvas
 				
 				dialogOut()
-			end)
+			конец)
 			
 			button.MouseEnter:Connect(function()
 				ChangeState("Hover")
-			end)
+			конец)
 			button.MouseLeave:Connect(function()
 				ChangeState("Idle")
-			end)
-		end
+			конец)
+		конец
 		
 		dialogIn()
 		
-		function DialogFunctions:UpdateTitle(New)
+		функция DialogFunctions:UpdateTitle(New)
 			paragraphHeader.Text = New
-		end
-		function DialogFunctions:UpdateDescription(New)
+		конец
+		функция DialogFunctions:UpdateDescription(New)
 			paragraphBody.Text = New
-		end
+		конец
 		
-		function DialogFunctions:Cancel()
+		функция DialogFunctions:Cancel()
 			dialogOut()
-		end
+		конец
 		
 		return DialogFunctions
-	end
+	конец
 
-	function WindowFunctions:SetNotificationsState(State)
+	функция WindowFunctions:SetNotificationsState(State)
 		notifications.Visible = State
-	end
+	конец
 
 	function WindowFunctions:GetNotificationsState(State)
-		return notifications.Visible
-	end
+		уведомления о возврате.Видимо
+	конец
 
-	function WindowFunctions:SetState(State)
+	функция WindowFunctions:SetState(State)
 		windowState = State
 		base.Visible = State
-	end
+	конец
 
-	function WindowFunctions:GetState()
+	функция WindowFunctions:GetState()
 		return windowState
-	end
+	конец
 	
-	local onUnloadCallback
+	локальный onUnloadCallback
 
-	function WindowFunctions:Unload()
-		if onUnloadCallback then
+	функция WindowFunctions:Unload()
+		если onUnloadCallback тогда
 			onUnloadCallback()  
-		end
+		конец
 		macLib:Destroy()
-	end
+	конец
 
 	function WindowFunctions.onUnloaded(callback)
 		onUnloadCallback = callback
-	end
+	конец
 
 	local MenuKeybind = Settings.Keybind or Enum.KeyCode.RightControl
 
-	local function ToggleMenu()
+	локальная функция ToggleMenu()
 		local state = not WindowFunctions:GetState()
-		WindowFunctions:SetState(state)
+		WindowFunctions:SetState(состояние)
 		WindowFunctions:Notify({
-			Title = Settings.Title,
-			Description = (state and "Maximized " or "Minimized ") .. "the menu. Use " .. tostring(MenuKeybind.Name) .. " to toggle it.",
-			Lifetime = 5
+			Заголовок = Настройки.Заголовок,
+			Описание = (состояние и "Развернуто" или "Свернуто") .. "меню. Используйте " .. tostring(MenuKeybind.Name) .. " для переключения."
+			Продолжительность жизни = 5
 		})
-	end
+	конец
 
 	UserInputService.InputEnded:Connect(function(inp, gpe)
-		if gpe then return end
-		if inp.KeyCode == MenuKeybind then
+		если gpe, то вернуть конец
+		если inp.KeyCode == MenuKeybind, то
 			ToggleMenu()
-		end
-	end)
+		конец
+	конец)
 
 	minimize.MouseButton1Click:Connect(ToggleMenu)
 	exit.MouseButton1Click:Connect(function()
 		WindowFunctions:Unload()
-	end)
+	конец)
 
-	function WindowFunctions:SetKeybind(Keycode)
+	функция WindowFunctions:SetKeybind(Keycode)
 		MenuKeybind = Keycode
-	end
+	конец
 
 	function WindowFunctions:SetAcrylicBlurState(State)
 		acrylicBlur = State
 		base.BackgroundTransparency = State and 0.05 or 0
-	end
+	конец
 
-	function WindowFunctions:GetAcrylicBlurState()
-		return acrylicBlur
-	end
+	функция WindowFunctions:GetAcrylicBlurState()
+		возврат акрилРазмытие
+	конец
 
-	local function _SetUserInfoState(State)
-		if State then
+	локальная функция _SetUserInfoState(State)
+		если штат, то
 			headshot.Image = (isReady and headshotImage) or "rbxassetid://0"
 			username.Text = "@"..LocalPlayer.Name
 			displayName.Text = LocalPlayer.DisplayName
-		else
+		еще
 			headshot.Image = assets.userInfoBlurred
 			local nameLength = #LocalPlayer.Name
 			local displayNameLength = #LocalPlayer.DisplayName
 			username.Text = "@"..string.rep(".", nameLength)
 			displayName.Text = string.rep(".", displayNameLength)
-		end
-	end
+		конец
+	конец
 
 	local showUserInfo
-	if Settings.ShowUserInfo ~= nil then
+	Если Settings.ShowUserInfo ≤ nil, то
 		showUserInfo = Settings.ShowUserInfo
-	else
+	еще
 		showUserInfo = true
-	end
+	конец
 
 	_SetUserInfoState(showUserInfo)
 
-	function WindowFunctions:SetUserInfoState(State)
+	функция WindowFunctions:SetUserInfoState(State)
 		_SetUserInfoState(State)
-	end
-	function WindowFunctions:GetUserInfoState(State)
+	конец
+	функция WindowFunctions:GetUserInfoState(State)
 		return showUserInfo
-	end
+	конец
 	
-	function WindowFunctions:SetSize(Size)
-		base.Size = Size
-	end
-	function WindowFunctions:GetSize(Size)
-		return base.Size
-	end
+	функция WindowFunctions:SetSize(Size)
+		base.Size = Размер
+	конец
+	функция WindowFunctions:GetSize(Size)
+		возврат базы.Размер
+	конец
 	
-	function WindowFunctions:SetScale(Scale)
+	функция WindowFunctions:SetScale(Scale)
 		baseUIScale.Scale = Scale
-	end
-	function WindowFunctions:GetScale()
+	конец
+	функция WindowFunctions:GetScale()
 		return baseUIScale.Scale
-	end
+	конец
 
 	macLib.Enabled = false
 	
 	local assetList = {}
 	for _, assetId in pairs(assets) do
 		table.insert(assetList, assetId)
-	end
+	конец
 	
 	ContentProvider:PreloadAsync(assetList)
 	macLib.Enabled = true
 	windowState = true
 
 	return WindowFunctions
-end
+конец
 
-function MacLib:Demo()
+функция MacLib:Demo()
 	local Window = MacLib:Window({
-		Title = "MacLib Demo",
-		Subtitle = "This is a subtitle.",
-		Size = UDim2.fromOffset(868, 650),
+		Заголовок = "Демонстрация MacLib",
+		Субтитры = "Это субтитры."
+		Размер = UDim2.fromOffset(868, 650),
 		DragStyle = 1,
 		DisabledWindowControls = {},
 		ShowUserInfo = true,
@@ -5125,42 +5125,42 @@ function MacLib:Demo()
 		AcrylicBlur = true,
 	})
 
-	local globalSettings = {
+	локальные глобальные настройки = {
 		UIBlurToggle = Window:GlobalSetting({
 			Name = "UI Blur",
 			Default = Window:GetAcrylicBlurState(),
-			Callback = function(bool)
+			Функция обратного вызова = function(bool)
 				Window:SetAcrylicBlurState(bool)
 				Window:Notify({
-					Title = "MacLib Demo",
-					Description = (bool and "Enabled" or "Disabled") .. " UI Blur",
-					Lifetime = 5
+					Заголовок = "Демонстрация MacLib",
+					Описание = (логическое значение и "Включено" или "Отключено") .. "Размытие пользовательского интерфейса",
+					Продолжительность жизни = 5
 				})
-			end,
+			конец,
 		}),
 		NotificationToggler = Window:GlobalSetting({
-			Name = "Notifications",
-			Default = Window:GetNotificationsState(),
-			Callback = function(bool)
+			Имя = "Уведомления",
+			По умолчанию = Window:GetNotificationsState(),
+			Функция обратного вызова = function(bool)
 				Window:SetNotificationsState(bool)
 				Window:Notify({
-					Title = "MacLib Demo",
-					Description = (bool and "Enabled" or "Disabled") .. " Notifications",
-					Lifetime = 5
+					Заголовок = "Демонстрация MacLib",
+					Описание = (логическое значение и "Включено" или "Отключено") .. "Уведомления",
+					Продолжительность жизни = 5
 				})
-			end,
+			конец,
 		}),
 		ShowUserInfo = Window:GlobalSetting({
-			Name = "Show User Info",
-			Default = Window:GetUserInfoState(),
-			Callback = function(bool)
+			Имя = "Показать информацию о пользователе",
+			По умолчанию = Window:GetUserInfoState(),
+			Функция обратного вызова = function(bool)
 				Window:SetUserInfoState(bool)
 				Window:Notify({
-					Title = "MacLib Demo",
-					Description = (bool and "Showing" or "Redacted") .. " User Info",
-					Lifetime = 5
+					Заголовок = "Демонстрация MacLib",
+					Описание = (логическое значение и "Отображается" или "Засекречено") .. "Информация о пользователе",
+					Продолжительность жизни = 5
 				})
-			end,
+			конец,
 		})
 	}
 	
@@ -5168,201 +5168,201 @@ function MacLib:Demo()
 		TabGroup1 = Window:TabGroup()
 	}
 
-	local tabs = {
+	локальные вкладки = {
 		Main = tabGroups.TabGroup1:Tab({ Name = "Demo", Image = "rbxassetid://18821914323" })
 	}
 	
-	local sections = {
+	локальные разделы = {
 		MainSection1 = tabs.Main:Section({ Side = "Left" })
 	}
 
 	sections.MainSection1:Header({
-		Name = "Header #1"
+		Имя = "Заголовок №1"
 	})
 
 	sections.MainSection1:Button({
-		Name = "Button",
-		Callback = function()
+		Имя = "Кнопка",
+		Функция обратного вызова = function()
 			Window:Dialog({
-				Title = "MacLib Demo",
-				Description = "Lorem ipsum odor amet, consectetuer adipiscing elit. Eros vestibulum aliquet mattis, ex platea nunc.",
-				Buttons = {
+				Заголовок = "Демонстрация MacLib",
+				Описание = "Lorem ipsum odor amet, consectetuer adipiscing elit. Eros вестибулум aliquet mattis, ex Platea nunc.",
+				Кнопки = {
 					{
-						Name = "Confirm",
-						Callback = function()
-							print("Confirmed!")
-						end,
+						Имя = "Подтвердить",
+						Функция обратного вызова = function()
+							print("Подтверждено!")
+						конец,
 					},
 					{
-						Name = "Cancel"
+						Имя = "Отмена"
 					}
 				}
 			})
-		end,
+		конец,
 	})
 
 	sections.MainSection1:Input({
-		Name = "Input",
-		Placeholder = "Input",
+		Имя = "Ввод",
+		Заполнитель = "Ввод",
 		AcceptedCharacters = "All",
-		Callback = function(input)
+		Функция обратного вызова = function(input)
 			Window:Notify({
-				Title = "MacLib Demo",
-				Description = "Successfully set input to " .. input
+				Заголовок = "Демонстрация MacLib",
+				Описание = "Входной сигнал успешно установлен на " .. вход
 			})
-		end,
+		конец,
 		onChanged = function(input)
-			print("Input is now ".. input)
-		end,
+			print("Ввод теперь ".. input)
+		конец,
 	})
 
-	sections.MainSection1:Slider({
-		Name = "Slider",
-		Default = 50,
-		Minimum = 0,
-		Maximum = 100,
+	разделы.MainSection1:Slider({
+		Имя = "Слайдер",
+		По умолчанию = 50,
+		Минимум = 0,
+		Максимум = 100,
 		DisplayMethod = "Percent",
-		Callback = function(Value)
-			print("Changed to ".. Value)
-		end,
+		Функция обратного вызова = function(Value)
+			print("Изменено на ".. Значение)
+		конец,
 	})
 
 	sections.MainSection1:Toggle({
-		Name = "Toggle",
-		Default = false,
-		Callback = function(value)
+		Имя = "Переключатель",
+		По умолчанию = false,
+		Функция обратного вызова = function(value)
 			Window:Notify({
-				Title = "MacLib Demo",
-				Description = (value and "Enabled " or "Disabled ") .. "Toggle"
+				Заголовок = "Демонстрация MacLib",
+				Описание = (значение и "Включено" или "Выключено") .. "Переключатель"
 			})
-		end,
+		конец,
 	})
 
 	sections.MainSection1:Keybind({
-		Name = "Keybind",
-		Callback = function(binded)
+		Имя = "Привязка клавиш",
+		Функция обратного вызова = function(binded)
 			Window:Notify({
-				Title = "Demo Window",
-				Description = "Pressed keybind - "..tostring(binded.Name),
-				Lifetime = 3
+				Заголовок = "Демонстрационное окно",
+				Описание = "Нажата комбинация клавиш - "..tostring(binded.Name),
+				Продолжительность жизни = 3
 			})
-		end,
+		конец,
 		onBinded = function(bind)
 			Window:Notify({
-				Title = "Demo Window",
-				Description = "Successfully Binded Keybind to - "..tostring(bind.Name),
-				Lifetime = 3
+				Заголовок = "Демонстрационное окно",
+				Описание = "Успешно назначена клавиша для - "..tostring(bind.Name),
+				Продолжительность жизни = 3
 			})
-		end,
+		конец,
 	})
 
-	sections.MainSection1:Colorpicker({
-		Name = "Colorpicker",
-		Default = Color3.fromRGB(0, 255, 255),
-		Callback = function(color)
-			print("Color: ", color)
-		end,
+	разделы.MainSection1:Colorpicker({
+		Имя = "Выбор цвета",
+		По умолчанию = Color3.fromRGB(0, 255, 255),
+		Функция обратного вызова = function(color)
+			print("Цвет: ", color)
+		конец,
 	})
 
 	local alphaColorPicker = sections.MainSection1:Colorpicker({
-		Name = "Transparency Colorpicker",
-		Default = Color3.fromRGB(255,0,0),
-		Alpha = 0,
-		Callback = function(color, alpha)
-			print("Color: ", color, " Alpha: ", alpha)
-		end,
+		Имя = "Выбор цвета прозрачности",
+		По умолчанию = Color3.fromRGB(255,0,0),
+		Альфа = 0,
+		Функция обратного вызова = function(color, alpha)
+			print("Цвет: ", color, " Альфа: ", alpha)
+		конец,
 	})
 	
-	local rainbowActive
-	local rainbowConnection
-	local hue = 0
+	локальный rainbowActive
+	локальное радужное соединение
+	локальный оттенок = 0
 
 	sections.MainSection1:Toggle({
-		Name = "Rainbow",
-		Default = false,
-		Callback = function(value)
-			rainbowActive = value
-			if rainbowActive then
+		Имя = "Радуга",
+		По умолчанию = false,
+		Функция обратного вызова = function(value)
+			rainbowActive = значение
+			если rainbowActive тогда
 				rainbowConnection = game:GetService("RunService").RenderStepped:Connect(function(deltaTime)
-					hue = (hue + deltaTime * 0.1) % 1
+					оттенок = (оттенок + deltaTime * 0,1) % 1
 					local newColor = Color3.fromHSV(hue, 1, 1)
 					alphaColorPicker:SetColor(newColor)
-				end)
-			else
-				if rainbowConnection then
+				конец)
+			еще
+				если rainbowConnection, то
 					rainbowConnection:Disconnect()
 					rainbowConnection = nil
-				end
-			end
-		end,
+				конец
+			конец
+		конец,
 	})
 	
 	local optionTable = {}
 	
-	for i = 1,10 do
+	для i = 1,10 do
 		local formatted = "Option ".. tostring(i)
 		table.insert(optionTable, formatted)
-	end
+	конец
 
 	local Dropdown = sections.MainSection1:Dropdown({
-		Name = "Dropdown",
+		Имя = "Выпадающий список",
 		Multi = false,
-		Required = true,
+		Обязательно = true,
 		Options = optionTable,
-		Default = 1,
-		Callback = function(Value)
-			print("Dropdown changed: ".. Value)
-		end,
+		По умолчанию = 1,
+		Функция обратного вызова = function(Value)
+			print("Изменение выпадающего списка: ".. Значение)
+		конец,
 	})
 
 	local MultiDropdown = sections.MainSection1:Dropdown({
-		Name = "Multi Dropdown",
-		Search = true,
+		Название = "Множественный выпадающий список",
+		Поиск = true,
 		Multi = true,
-		Required = false,
+		Обязательно = false,
 		Options = optionTable,
-		Default = {"Option 1", "Option 3"},
-		Callback = function(Value)
-			local Values = {}
-			for Value, State in next, Value do
+		По умолчанию = {"Вариант 1", "Вариант 3"},
+		Функция обратного вызова = function(Value)
+			локальные значения = {}
+			для значения, состояние в следующем, значение сделать
 				table.insert(Values, Value)
-			end
-			print("Mutlidropdown changed:", table.concat(Values, ", "))
-		end,
+			конец
+			print("Изменение в выпадающем списке:", table.concat(Values, ", "))
+		конец,
 	})
 
 	sections.MainSection1:Button({
-		Name = "Update Selection",
-		Callback = function()
-			Dropdown:UpdateSelection(4)
-			MultiDropdown:UpdateSelection({"Option 2", "Option 5"})
-		end,
+		Имя = "Обновить выбранное",
+		Функция обратного вызова = function()
+			Выпадающий список:ОбновитьВыбор(4)
+			MultiDropdown:UpdateSelection({"Вариант 2", "Вариант 5"})
+		конец,
 	})
 
 	sections.MainSection1:Divider()
 
 	sections.MainSection1:Header({
-		Text = "Header #2"
+		Текст = "Заголовок #2"
 	})
 
 	sections.MainSection1:Paragraph({
-		Header = "Paragraph",
-		Body = "Paragraph body. Lorem ipsum odor amet, consectetuer adipiscing elit. Morbi tempus netus aliquet per velit est gravida."
+		Заголовок = "Абзац",
+		Body = "Тело абзаца. Lorem ipsum odor amet, consectetuer adipiscing elit. Morbi tempus netus aliquet per velit est gradida."
 	})
 
 	sections.MainSection1:Label({
-		Text = "Label. Lorem ipsum odor amet, consectetuer adipiscing elit."
+		Text = "Этикетка. Lorem ipsum odor amet, consectetuer adipiscing elit."
 	})
 
 	sections.MainSection1:SubLabel({
-		Text = "Sub-Label. Lorem ipsum odor amet, consectetuer adipiscing elit."
+		Text = "Подэтикетка. Lorem ipsum odor amet, consectetuer adipiscing elit."
 	})
 	
 	Window.onUnloaded(function()
 		print("Unloaded!")
-	end)
+	конец)
 
 	tabs.Main:Select()
-end
+конец
 
-return MacLib
+вернуть MacLib
