@@ -1511,15 +1511,15 @@ function MacLib:Window(Settings)
 			elementsScrolling.Parent = elements1
 
 			-- =========================================================================
-			-- ОБНОВЛЕННАЯ СЕКЦИЯ: сворачивание, серый градиентный контур и фикс 1 иконки
+			-- ИНТЕГРИРОВАННАЯ СЕКЦИЯ: градиентный контур, иконка, заголовок, сворачивание
 			-- =========================================================================
 			function TabFunctions:Section(Settings)
 				local SectionFunctions = {}
 				local section = Instance.new("Frame")
 				section.Name = "Section"
 				section.AutomaticSize = Enum.AutomaticSize.Y
-				section.BackgroundColor3 = Color3.fromRGB(255, 255, 255)
-				section.BackgroundTransparency = 0.98
+				section.BackgroundColor3 = Color3.fromRGB(18, 18, 18)
+				section.BackgroundTransparency = 0.35
 				section.BorderColor3 = Color3.fromRGB(0, 0, 0)
 				section.BorderSizePixel = 0
 				section.ClipsDescendants = true
@@ -1531,20 +1531,22 @@ function MacLib:Window(Settings)
 				sectionUICorner.CornerRadius = UDim.new(0, 10)
 				sectionUICorner.Parent = section
 
-				-- 3. Градиентный серый контур с белым бликом
+				-- Премиальный серый контур с плавными переходами и белым бликом
 				local sectionUIStroke = Instance.new("UIStroke")
 				sectionUIStroke.Name = "SectionUIStroke"
 				sectionUIStroke.ApplyStrokeMode = Enum.ApplyStrokeMode.Border
-				sectionUIStroke.Color = Color3.fromRGB(255, 255, 255)
-				sectionUIStroke.Transparency = 0.82
+				sectionUIStroke.Thickness = 1.2
+				sectionUIStroke.Transparency = 0.15
 				sectionUIStroke.Parent = section
 
 				local strokeGradient = Instance.new("UIGradient")
 				strokeGradient.Name = "StrokeGradient"
 				strokeGradient.Color = ColorSequence.new({
-					ColorSequenceKeypoint.new(0, Color3.fromRGB(140, 140, 140)), -- Серый край
-					ColorSequenceKeypoint.new(0.5, Color3.fromRGB(255, 255, 255)), -- Плавный белый блик
-					ColorSequenceKeypoint.new(1, Color3.fromRGB(140, 140, 140))  -- Серый край
+					ColorSequenceKeypoint.new(0.0, Color3.fromRGB(70, 70, 70)),
+					ColorSequenceKeypoint.new(0.3, Color3.fromRGB(140, 140, 140)),
+					ColorSequenceKeypoint.new(0.5, Color3.fromRGB(255, 255, 255)),
+					ColorSequenceKeypoint.new(0.7, Color3.fromRGB(140, 140, 140)),
+					ColorSequenceKeypoint.new(1.0, Color3.fromRGB(70, 70, 70))
 				})
 				strokeGradient.Rotation = 45
 				strokeGradient.Parent = sectionUIStroke
@@ -1554,28 +1556,28 @@ function MacLib:Window(Settings)
 				sectionMainLayout.SortOrder = Enum.SortOrder.LayoutOrder
 				sectionMainLayout.Parent = section
 
-				-- Верхняя шапка секции
+				-- Верхняя шапка секции (ровно одна иконка + название + стрелочка)
 				local sectionHeaderTop = Instance.new("Frame")
 				sectionHeaderTop.Name = "SectionHeaderTop"
 				sectionHeaderTop.BackgroundTransparency = 1
-				sectionHeaderTop.Size = UDim2.new(1, 0, 0, 36)
+				sectionHeaderTop.Size = UDim2.new(1, 0, 0, 40)
 				sectionHeaderTop.LayoutOrder = 0
 				sectionHeaderTop.Visible = (Settings.Name ~= nil or Settings.Icon ~= nil)
 				sectionHeaderTop.Parent = section
 
 				local headerPadding = Instance.new("UIPadding")
-				headerPadding.PaddingLeft = UDim.new(0, 14)
-				headerPadding.PaddingRight = UDim.new(0, 14)
+				headerPadding.PaddingLeft = UDim.new(0, 16)
+				headerPadding.PaddingRight = UDim.new(0, 16)
 				headerPadding.Parent = sectionHeaderTop
 
 				local headerLayout = Instance.new("UIListLayout")
 				headerLayout.FillDirection = Enum.FillDirection.Horizontal
 				headerLayout.VerticalAlignment = Enum.VerticalAlignment.Center
-				headerLayout.Padding = UDim.new(0, 8)
+				headerLayout.Padding = UDim.new(0, 10)
 				headerLayout.SortOrder = Enum.SortOrder.LayoutOrder
 				headerLayout.Parent = sectionHeaderTop
 
-				-- 2. ЕДИНСТВЕННАЯ ИКОНКА (убран дубликат)
+				-- Единственная иконка секции (исправлено задвоение)
 				if Settings.Icon then
 					local sectionIcon = Instance.new("ImageLabel")
 					sectionIcon.Name = "SectionIcon"
@@ -1587,7 +1589,7 @@ function MacLib:Window(Settings)
 
 					local iconGradient = Instance.new("UIGradient")
 					iconGradient.Color = ColorSequence.new({
-						ColorSequenceKeypoint.new(0, Color3.fromRGB(200, 200, 200)),
+						ColorSequenceKeypoint.new(0, Color3.fromRGB(180, 180, 180)),
 						ColorSequenceKeypoint.new(1, Color3.fromRGB(255, 255, 255))
 					})
 					iconGradient.Rotation = 90
@@ -1608,14 +1610,14 @@ function MacLib:Window(Settings)
 
 					local titleGradient = Instance.new("UIGradient")
 					titleGradient.Color = ColorSequence.new({
-						ColorSequenceKeypoint.new(0, Color3.fromRGB(190, 190, 190)),
+						ColorSequenceKeypoint.new(0, Color3.fromRGB(200, 200, 200)),
 						ColorSequenceKeypoint.new(1, Color3.fromRGB(255, 255, 255))
 					})
 					titleGradient.Rotation = 90
 					titleGradient.Parent = sectionTitle
 				end
 
-				-- Кнопка-стрелочка для сворачивания (справа)
+				-- Кнопка сворачивания (стрелочка справа)
 				local collapseButton = Instance.new("ImageButton")
 				collapseButton.Name = "CollapseButton"
 				collapseButton.Image = "rbxassetid://18865373378"
@@ -1626,7 +1628,7 @@ function MacLib:Window(Settings)
 				collapseButton.Rotation = 0
 				collapseButton.Parent = sectionHeaderTop
 
-				-- Контейнер с элементами секции
+				-- Контейнер для содержимого секции
 				local sectionContainer = Instance.new("Frame")
 				sectionContainer.Name = "SectionContainer"
 				sectionContainer.BackgroundTransparency = 1
@@ -1643,15 +1645,15 @@ function MacLib:Window(Settings)
 
 				local sectionUIPadding = Instance.new("UIPadding")
 				sectionUIPadding.Name = "SectionUIPadding"
-				sectionUIPadding.PaddingBottom = UDim.new(0, 14)
-				sectionUIPadding.PaddingLeft = UDim.new(0, 16)
-				sectionUIPadding.PaddingRight = UDim.new(0, 14)
-				sectionUIPadding.PaddingTop = UDim.new(0, Settings.Name and 4 or 14)
+				sectionUIPadding.PaddingBottom = UDim.new(0, 16)
+				sectionUIPadding.PaddingLeft = UDim.new(0, 18)
+				sectionUIPadding.PaddingRight = UDim.new(0, 16)
+				sectionUIPadding.PaddingTop = UDim.new(0, Settings.Name and 6 or 16)
 				sectionUIPadding.Parent = sectionContainer
 
-				-- 1. Плавная и медленная анимация сворачивания
+				-- Плавная, медленная и мягкая анимация сворачивания
 				local isCollapsed = false
-				local originalHeight = 0
+				local originalHeight = sectionContainer.AbsoluteSize.Y
 
 				sectionContainer:GetPropertyChangedSignal("AbsoluteSize"):Connect(function()
 					if not isCollapsed and sectionContainer.AbsoluteSize.Y > 0 then
@@ -1662,53 +1664,43 @@ function MacLib:Window(Settings)
 				local function ToggleCollapse()
 					isCollapsed = not isCollapsed
 					
-					-- Анимация вращения стрелочки (0.4 секунды)
-					TweenService:Create(collapseButton, TweenInfo.new(0.4, Enum.EasingStyle.Exponential, Enum.EasingDirection.Out), {
+					-- Плавный поворот стрелочки (0.45с, стиль Quart для мягкости)
+					TweenService:Create(collapseButton, TweenInfo.new(0.45, Enum.EasingStyle.Quart, Enum.EasingDirection.Out), {
 						Rotation = isCollapsed and -90 or 0
 					}):Play()
 
 					if isCollapsed then
-						-- Сворачивание
-						TweenService:Create(sectionContainer, TweenInfo.new(0.4, Enum.EasingStyle.Exponential, Enum.EasingDirection.Out), {
+						TweenService:Create(sectionContainer, TweenInfo.new(0.45, Enum.EasingStyle.Quart, Enum.EasingDirection.Out), {
 							Size = UDim2.new(1, 0, 0, 0)
 						}):Play()
 						
-						task.delay(0.4, function()
-							if isCollapsed then 
-								sectionContainer.Visible = false 
-							end
+						task.delay(0.45, function()
+							if isCollapsed then sectionContainer.Visible = false end
 						end)
 					else
 						sectionContainer.Visible = true
-						-- Разворачивание
-						TweenService:Create(sectionContainer, TweenInfo.new(0.4, Enum.EasingStyle.Exponential, Enum.EasingDirection.Out), {
+						sectionContainer.Size = UDim2.new(1, 0, 0, 0)
+						TweenService:Create(sectionContainer, TweenInfo.new(0.45, Enum.EasingStyle.Quart, Enum.EasingDirection.Out), {
 							Size = UDim2.new(1, 0, 0, originalHeight)
 						}):Play()
 						
-						task.delay(0.4, function()
+						task.delay(0.45, function()
 							if not isCollapsed then
-								sectionContainer.Size = UDim2.new(1, 0, 0, 0) -- Возврат авто-размера
+								sectionContainer.Size = UDim2.new(1, 0, 0, 0)
 							end
 						end)
 					end
 				end
 
 				collapseButton.MouseButton1Click:Connect(ToggleCollapse)
-				sectionHeaderTop.InputBegan:Connect(function(input)
-					if input.UserInputType == Enum.UserInputType.MouseButton1 or input.UserInputType == Enum.UserInputType.Touch then
-						ToggleCollapse()
-					end
-				end)
-
-				-- Дополнительная функция управления через код
-				function SectionFunctions:ToggleCollapse()
-					ToggleCollapse()
+				if Settings.Name or Settings.Icon then
+					sectionHeaderTop.InputBegan:Connect(function(input)
+						if input.UserInputType == Enum.UserInputType.MouseButton1 or input.UserInputType == Enum.UserInputType.Touch then
+							ToggleCollapse()
+						end
+					end)
 				end
 
-				function SectionFunctions:SetVisibility(State)
-					section.Visible = State
-				end
-				
 				-- =============================================================
 				-- ЭЛЕМЕНТЫ СЕКЦИИ — parent = sectionContainer
 				-- =============================================================
@@ -4629,6 +4621,17 @@ function MacLib:Window(Settings)
 					end
 
 					return SpacerFunctions
+				end
+
+				-- =============================================================
+				-- Методы управления секцией
+				-- =============================================================
+				function SectionFunctions:ToggleCollapse()
+					ToggleCollapse()
+				end
+
+				function SectionFunctions:SetVisibility(State)
+					section.Visible = State
 				end
 
 				return SectionFunctions
