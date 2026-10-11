@@ -1554,7 +1554,7 @@ function MacLib:Window(Settings)
 				sectionMainLayout.SortOrder = Enum.SortOrder.LayoutOrder
 				sectionMainLayout.Parent = section
 
-				-- Шапка секции (иконка, название и стрелочка сворачивания)
+				-- Шапка секции (размещается вверху секции)
 				local sectionHeaderTop = Instance.new("Frame")
 				sectionHeaderTop.Name = "SectionHeaderTop"
 				sectionHeaderTop.BackgroundTransparency = 1
@@ -1568,14 +1568,22 @@ function MacLib:Window(Settings)
 				headerPadding.PaddingRight = UDim.new(0, 16)
 				headerPadding.Parent = sectionHeaderTop
 
+				-- Левый контейнер: только ОДНА иконка и название секции
+				local headerTitleHolder = Instance.new("Frame")
+				headerTitleHolder.Name = "HeaderTitleHolder"
+				headerTitleHolder.BackgroundTransparency = 1
+				headerTitleHolder.Size = UDim2.new(1, -30, 1, 0)
+				headerTitleHolder.Position = UDim2.fromScale(0, 0)
+				headerTitleHolder.Parent = sectionHeaderTop
+
 				local headerLayout = Instance.new("UIListLayout")
 				headerLayout.FillDirection = Enum.FillDirection.Horizontal
 				headerLayout.VerticalAlignment = Enum.VerticalAlignment.Center
-				headerLayout.Padding = UDim.new(0, 10)
+				headerLayout.Padding = UDim.new(0, 8)
 				headerLayout.SortOrder = Enum.SortOrder.LayoutOrder
-				headerLayout.Parent = sectionHeaderTop
+				headerLayout.Parent = headerTitleHolder
 
-				-- Исправление: теперь выводится ровно одна иконка без дублирования
+				-- Вывод ровно одной иконки (только если она передана в Settings.Icon)
 				if Settings.Icon then
 					local sectionIcon = Instance.new("ImageLabel")
 					sectionIcon.Name = "SectionIcon"
@@ -1583,7 +1591,7 @@ function MacLib:Window(Settings)
 					sectionIcon.BackgroundTransparency = 1
 					sectionIcon.Size = UDim2.fromOffset(16, 16)
 					sectionIcon.LayoutOrder = 1
-					sectionIcon.Parent = sectionHeaderTop
+					sectionIcon.Parent = headerTitleHolder
 				end
 
 				if Settings.Name then
@@ -1596,15 +1604,17 @@ function MacLib:Window(Settings)
 					sectionTitle.BackgroundTransparency = 1
 					sectionTitle.AutomaticSize = Enum.AutomaticSize.XY
 					sectionTitle.LayoutOrder = 2
-					sectionTitle.Parent = sectionHeaderTop
+					sectionTitle.Parent = headerTitleHolder
 				end
 
+				-- Стрелка сворачивания: привязана к правому краю, а не к заголовку
 				local collapseButton = Instance.new("ImageButton")
 				collapseButton.Name = "CollapseButton"
 				collapseButton.Image = "rbxassetid://18865373378"
+				collapseButton.ImageColor3 = Color3.fromRGB(210, 210, 210)
 				collapseButton.BackgroundTransparency = 1
 				collapseButton.AnchorPoint = Vector2.new(1, 0.5)
-				collapseButton.Position = UDim2.fromScale(1, 0.5)
+				collapseButton.Position = UDim2.new(1, 0, 0.5, 0)
 				collapseButton.Size = UDim2.fromOffset(14, 14)
 				collapseButton.Rotation = 0
 				collapseButton.Parent = sectionHeaderTop
@@ -1613,10 +1623,10 @@ function MacLib:Window(Settings)
 				local sectionContainer = Instance.new("Frame")
 				sectionContainer.Name = "SectionContainer"
 				sectionContainer.BackgroundTransparency = 1
+				sectionContainer.ClipsDescendants = true
 				sectionContainer.AutomaticSize = Enum.AutomaticSize.Y
 				sectionContainer.Size = UDim2.new(1, 0, 0, 0)
 				sectionContainer.LayoutOrder = 1
-				sectionContainer.ClipsDescendants = true
 				sectionContainer.Parent = section
 
 				local sectionUIListLayout = Instance.new("UIListLayout")
@@ -1633,64 +1643,61 @@ function MacLib:Window(Settings)
 				sectionUIPadding.PaddingTop = UDim.new(0, Settings.Name and 6 or 16)
 				sectionUIPadding.Parent = sectionContainer
 
-				-- Рабочая плавная анимация сворачивания с обходом AutomaticSize
+				-- Логика плавного и слегка замедленного сворачивания
 				local isCollapsed = false
-				local currentTween = nil
+				local isAnimating = false
 
 				local function ToggleCollapse()
+					if isAnimating then return end
+					isAnimating = true
 					isCollapsed = not isCollapsed
 
-					if currentTween then
-						currentTween:Cancel()
-					end
+					-- Время 0.45с и Quart дают размеренную, плавную динамику
+					local tweenDuration = 0.45
+					local tweenInfo = TweenInfo.new(tweenDuration, Enum.EasingStyle.Quart, Enum.EasingDirection.Out)
 
-					-- Плавный поворот стрелочки (0.45 сек)
-					TweenService:Create(collapseButton, TweenInfo.new(0.45, Enum.EasingStyle.Quart, Enum.EasingDirection.Out), {
+					-- Плавный поворот стрелки
+					TweenService:Create(collapseButton, tweenInfo, {
 						Rotation = isCollapsed and -90 or 0
 					}):Play()
 
 					if isCollapsed then
-						-- 1. Запоминаем текущую реальную высоту перед сворачиванием
-						local currentHeight = sectionContainer.AbsoluteSize.Y
+						-- Фиксация текущей высоты перед анимацией сжатия в ноль
 						sectionContainer.AutomaticSize = Enum.AutomaticSize.None
-						sectionContainer.Size = UDim2.new(1, 0, 0, currentHeight)
+						sectionContainer.Size = UDim2.new(1, 0, 0, sectionContainer.AbsoluteSize.Y)
 
-						-- 2. Анимируем уменьшение высоты до 0
-						currentTween = TweenService:Create(sectionContainer, TweenInfo.new(0.45, Enum.EasingStyle.Quart, Enum.EasingDirection.Out), {
+						local collapseTween = TweenService:Create(sectionContainer, tweenInfo, {
 							Size = UDim2.new(1, 0, 0, 0)
 						})
-						currentTween:Play()
-
-						currentTween.Completed:Connect(function()
+						collapseTween:Play()
+						collapseTween.Completed:Connect(function()
 							if isCollapsed then
 								sectionContainer.Visible = false
 							end
+							isAnimating = false
 						end)
 					else
-						-- 1. Делаем видимым и выключаем авто-размер для ручного твина
 						sectionContainer.Visible = true
 						sectionContainer.AutomaticSize = Enum.AutomaticSize.None
-						sectionContainer.Size = UDim2.new(1, 0, 0, 0)
 
-						-- 2. Вычисляем точный размер всех элементов внутри секции
-						local targetHeight = sectionUIListLayout.AbsoluteContentSize.Y + sectionUIPadding.PaddingTop.Offset + sectionUIPadding.PaddingBottom.Offset
+						local targetHeight = sectionUIListLayout.AbsoluteContentSize.Y 
+							+ sectionUIPadding.PaddingTop.Offset 
+							+ sectionUIPadding.PaddingBottom.Offset
 
-						-- 3. Анимируем увеличение высоты до нужного значения
-						currentTween = TweenService:Create(sectionContainer, TweenInfo.new(0.45, Enum.EasingStyle.Quart, Enum.EasingDirection.Out), {
+						local expandTween = TweenService:Create(sectionContainer, tweenInfo, {
 							Size = UDim2.new(1, 0, 0, targetHeight)
 						})
-						currentTween:Play()
-
-						currentTween.Completed:Connect(function()
+						expandTween:Play()
+						expandTween.Completed:Connect(function()
 							if not isCollapsed then
-								-- Возвращаем AutomaticSize, чтобы секция могла подстраиваться, если добавятся элементы
 								sectionContainer.AutomaticSize = Enum.AutomaticSize.Y
 							end
+							isAnimating = false
 						end)
 					end
 				end
 
-				-- Обработка кликов по стрелочке и шапке секции (поддерживает ПК и мобильные нажатия)
+				-- Сворачивание по клику на стрелочку или по всей шапке
 				collapseButton.MouseButton1Click:Connect(ToggleCollapse)
 				if Settings.Name or Settings.Icon then
 					sectionHeaderTop.InputBegan:Connect(function(input)
