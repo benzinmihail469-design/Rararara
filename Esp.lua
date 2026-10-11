@@ -1619,11 +1619,12 @@ function MacLib:Window(Settings)
 				collapseButton.Rotation = 90 -- 90° = смотрит вниз (развернуто)
 				collapseButton.Parent = sectionHeaderTop
 
-				-- Контейнер элементов секции
+				-- Контейнер элементов секции с автоматической адаптацией под любой объём функций
 				local sectionContainer = Instance.new("Frame")
 				sectionContainer.Name = "SectionContainer"
 				sectionContainer.BackgroundTransparency = 1
 				sectionContainer.ClipsDescendants = true
+				sectionContainer.AutomaticSize = Enum.AutomaticSize.Y -- Динамическая адаптация под все элементы
 				sectionContainer.Size = UDim2.new(1, 0, 0, 0)
 				sectionContainer.LayoutOrder = 1
 				sectionContainer.Parent = section
@@ -1642,63 +1643,96 @@ function MacLib:Window(Settings)
 				sectionUIPadding.PaddingTop = UDim.new(0, Settings.Name and 6 or 16)
 				sectionUIPadding.Parent = sectionContainer
 
-				-- Точный расчет высоты всех элементов с учетом отступов
-				local function getContentHeight()
-					local contentY = sectionUIListLayout.AbsoluteContentSize.Y
-					if contentY > 0 then
-						return contentY + sectionUIPadding.PaddingTop.Offset + sectionUIPadding.PaddingBottom.Offset
-					end
-					return 0
-				end
-
 				-- Логика плавной анимации без рывков и скачков
 				local isCollapsed = false
 				local currentTween = nil
 				local currentArrowTween = nil
+				local lastOpenHeight = 0
 
-				-- Автоматическое расширение контейнера при раскрытии списков Dropdown или добавлении опций
-				sectionUIListLayout:GetPropertyChangedSignal("AbsoluteContentSize"):Connect(function()
-					if not isCollapsed and (not currentTween or currentTween.PlaybackState ~= Enum.PlaybackState.Playing) then
-						sectionContainer.Size = UDim2.new(1, 0, 0, getContentHeight())
+				-- Динамическое кэширование актуальной высоты содержимого
+				local function getTargetHeight()
+					local contentY = sectionUIListLayout.AbsoluteContentSize.Y
+					if contentY > 0 then
+						return contentY + sectionUIPadding.PaddingTop.Offset + sectionUIPadding.PaddingBottom.Offset
 					end
-				end)
+					if lastOpenHeight > 0 then
+						return lastOpenHeight
+					end
+					local total = sectionUIPadding.PaddingTop.Offset + sectionUIPadding.PaddingBottom.Offset
+					for _, child in ipairs(sectionContainer:GetChildren()) do
+						if child:IsA("GuiObject") and child.Visible then
+							total = total + child.AbsoluteSize.Y + sectionUIListLayout.Padding.Offset
+						end
+					end
+					return total > 0 and total or 250
+				end
 
-				-- Начальная установка высоты после загрузки всех элементов
-				task.defer(function()
-					if not isCollapsed and (not currentTween or currentTween.PlaybackState ~= Enum.PlaybackState.Playing) then
-						sectionContainer.Size = UDim2.new(1, 0, 0, getContentHeight())
+				sectionUIListLayout:GetPropertyChangedSignal("AbsoluteContentSize"):Connect(function()
+					if not isCollapsed then
+						local contentY = sectionUIListLayout.AbsoluteContentSize.Y
+						if contentY > 0 then
+							lastOpenHeight = contentY + sectionUIPadding.PaddingTop.Offset + sectionUIPadding.PaddingBottom.Offset
+						end
 					end
 				end)
 
 				local function ToggleCollapse()
 					isCollapsed = not isCollapsed
 
-					-- Отменяем текущую анимацию для мгновенного плавного реверса
+					-- Отменяем прошлые твины для мгновенного плавного отклика
 					if currentTween then currentTween:Cancel() end
 					if currentArrowTween then currentArrowTween:Cancel() end
 
-					local tweenInfo = TweenInfo.new(0.32, Enum.EasingStyle.Cubic, Enum.EasingDirection.Out)
+					local tweenInfo = TweenInfo.new(0.35, Enum.EasingStyle.Quart, Enum.EasingDirection.Out)
 
-					-- Плавный поворот стрелки
+					-- Плавный поворот шеврона
 					currentArrowTween = TweenService:Create(collapseButton, tweenInfo, {
 						Rotation = isCollapsed and 0 or 90
 					})
 					currentArrowTween:Play()
 
-					local targetHeight = isCollapsed and 0 or getContentHeight()
-
-					currentTween = TweenService:Create(sectionContainer, tweenInfo, {
-						Size = UDim2.new(1, 0, 0, targetHeight)
-					})
-					currentTween:Play()
-
-					currentTween.Completed:Connect(function(playbackState)
-						if playbackState == Enum.PlaybackState.Completed and not isCollapsed then
-							sectionContainer.Size = UDim2.new(1, 0, 0, getContentHeight())
+					if isCollapsed then
+						-- Фиксируем текущий физический размер перед анимацией сжатия
+						lastOpenHeight = sectionContainer.AbsoluteSize.Y
+						if lastOpenHeight <= 0 then
+							lastOpenHeight = getTargetHeight()
 						end
-					end)
+
+						sectionContainer.AutomaticSize = Enum.AutomaticSize.None
+						sectionContainer.Size = UDim2.new(1, 0, 0, lastOpenHeight)
+
+						currentTween = TweenService:Create(sectionContainer, tweenInfo, {
+							Size = UDim2.new(1, 0, 0, 0)
+						})
+						currentTween:Play()
+
+						currentTween.Completed:Connect(function(playbackState)
+							if playbackState == Enum.PlaybackState.Completed and isCollapsed then
+								sectionContainer.Visible = false
+							end
+						end)
+					else
+						-- Разворачивание: сразу отображаем контейнер и интерполируем к полной высоте
+						sectionContainer.Visible = true
+						sectionContainer.AutomaticSize = Enum.AutomaticSize.None
+
+						local targetHeight = getTargetHeight()
+
+						currentTween = TweenService:Create(sectionContainer, tweenInfo, {
+							Size = UDim2.new(1, 0, 0, targetHeight)
+						})
+						currentTween:Play()
+
+						currentTween.Completed:Connect(function(playbackState)
+							if playbackState == Enum.PlaybackState.Completed and not isCollapsed then
+								-- Бесшовное включение: размер УЖЕ равен targetHeight, поэтому визуального скачка нет
+								sectionContainer.AutomaticSize = Enum.AutomaticSize.Y
+							end
+						end)
+					end
 				end
 
+				-- Клик по кнопке или по всей шапке секции
 				collapseButton.MouseButton1Click:Connect(ToggleCollapse)
 				if Settings.Name or Settings.Icon then
 					sectionHeaderTop.InputBegan:Connect(function(input)
@@ -5170,8 +5204,7 @@ function MacLib:Window(Settings)
 					v.Callback()
 				end
 				
-				dialog.Parent = dialogCanvas
-				
+				dialog.Parent = dialogCanvas				
 				dialogOut()
 			end)
 			
