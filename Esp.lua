@@ -1858,6 +1858,28 @@ function MacLib:Window(Settings)
 					toggle1.Position = UDim2.fromScale(1, 0.5)
 					toggle1.Size = UDim2.fromOffset(41, 21)
 
+					local toggle1Corner = Instance.new("UICorner")
+					toggle1Corner.Name = "Toggle1Corner"
+					toggle1Corner.CornerRadius = UDim.new(1, 0)
+					toggle1Corner.Parent = toggle1
+
+					local toggleUIStroke = Instance.new("UIStroke")
+					toggleUIStroke.Name = "ToggleUIStroke"
+					toggleUIStroke.ApplyStrokeMode = Enum.ApplyStrokeMode.Border
+					toggleUIStroke.Color = Color3.fromRGB(255, 255, 255)
+					toggleUIStroke.Transparency = 0.4
+					toggleUIStroke.Parent = toggle1
+
+					local toggleStrokeGradient = Instance.new("UIGradient")
+					toggleStrokeGradient.Name = "ToggleStrokeGradient"
+					toggleStrokeGradient.Color = ColorSequence.new({
+						ColorSequenceKeypoint.new(0, Color3.fromRGB(120, 120, 120)),   -- Серый контур
+						ColorSequenceKeypoint.new(0.5, Color3.fromRGB(255, 255, 255)), -- Белый блик
+						ColorSequenceKeypoint.new(1, Color3.fromRGB(120, 120, 120))
+					})
+					toggleStrokeGradient.Rotation = 45
+					toggleStrokeGradient.Parent = toggleUIStroke
+
 					local toggleUIPadding = Instance.new("UIPadding")
 					toggleUIPadding.Name = "ToggleUIPadding"
 					toggleUIPadding.PaddingBottom = UDim.new(0, 1)
@@ -1885,8 +1907,19 @@ function MacLib:Window(Settings)
 					local TweenSettings = {
 						Info = TweenInfo.new(0.2, Enum.EasingStyle.Sine),
 
-						EnabledColors = {Toggle = Color3.fromRGB(87, 86, 86), ToggleHead = Color3.fromRGB(255, 255, 255)},
-						DisabledColors = {Toggle = Color3.fromRGB(61, 61, 61), ToggleHead = Color3.fromRGB(91, 91, 91)},
+						EnabledColors = {
+							Toggle = Color3.fromRGB(87, 86, 86),
+							ToggleHead = Color3.fromRGB(255, 255, 255)
+						},
+						DisabledColors = {
+							Toggle = Color3.fromRGB(61, 61, 61),
+							ToggleHead = Color3.fromRGB(91, 91, 91)
+						},
+
+						StrokeTransparency = {
+							Enabled = 0.15, -- Выраженный блик при включении
+							Disabled = 0.5   -- Приглушенный контур при выключении
+						},
 
 						EnabledPosition = UDim2.new(1, 0, 0.5, 0),
 						DisabledPosition = UDim2.new(0.5, 0, 0.5, 0),
@@ -1899,11 +1932,12 @@ function MacLib:Window(Settings)
 							}):Play()
 
 							Tween(togglerHead, TweenSettings.Info, {
-								ImageColor3 = TweenSettings.EnabledColors.ToggleHead
+								ImageColor3 = TweenSettings.EnabledColors.ToggleHead,
+								Position = TweenSettings.EnabledPosition
 							}):Play()
 
-							Tween(togglerHead, TweenSettings.Info, {
-								Position = TweenSettings.EnabledPosition
+							Tween(toggleUIStroke, TweenSettings.Info, {
+								Transparency = TweenSettings.StrokeTransparency.Enabled
 							}):Play()
 						else
 							Tween(toggle1, TweenSettings.Info, {
@@ -1911,11 +1945,12 @@ function MacLib:Window(Settings)
 							}):Play()
 
 							Tween(togglerHead, TweenSettings.Info, {
-								ImageColor3 = TweenSettings.DisabledColors.ToggleHead
+								ImageColor3 = TweenSettings.DisabledColors.ToggleHead,
+								Position = TweenSettings.DisabledPosition
 							}):Play()
 
-							Tween(togglerHead, TweenSettings.Info, {
-								Position = TweenSettings.DisabledPosition
+							Tween(toggleUIStroke, TweenSettings.Info, {
+								Transparency = TweenSettings.StrokeTransparency.Disabled
 							}):Play()
 						end
 						
@@ -3590,8 +3625,7 @@ function MacLib:Window(Settings)
 					alpha.BackgroundColor3 = Color3.fromRGB(0, 0, 0)
 					alpha.BackgroundTransparency = 1
 					alpha.BorderColor3 = Color3.fromRGB(0, 0, 0)
-					alpha.BorderSizePixel = 0
-					alpha.LayoutOrder = 4
+					alpha.BorderSizePixel = 0					alpha.LayoutOrder = 4
 					alpha.Size = UDim2.fromOffset(0, 38)
 					alpha.Visible = isAlpha
 
