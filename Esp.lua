@@ -1554,7 +1554,7 @@ function MacLib:Window(Settings)
 				sectionMainLayout.SortOrder = Enum.SortOrder.LayoutOrder
 				sectionMainLayout.Parent = section
 
-				-- Шапка секции (размещается вверху секции)
+				-- Шапка секции (фиксированная высота 36px)
 				local sectionHeaderTop = Instance.new("Frame")
 				sectionHeaderTop.Name = "SectionHeaderTop"
 				sectionHeaderTop.BackgroundTransparency = 1
@@ -1568,7 +1568,7 @@ function MacLib:Window(Settings)
 				headerPadding.PaddingRight = UDim.new(0, 16)
 				headerPadding.Parent = sectionHeaderTop
 
-				-- Левый контейнер: только ОДНА иконка и название секции
+				-- Левый контейнер: ОДНА иконка и заголовок
 				local headerTitleHolder = Instance.new("Frame")
 				headerTitleHolder.Name = "HeaderTitleHolder"
 				headerTitleHolder.BackgroundTransparency = 1
@@ -1583,7 +1583,7 @@ function MacLib:Window(Settings)
 				headerLayout.SortOrder = Enum.SortOrder.LayoutOrder
 				headerLayout.Parent = headerTitleHolder
 
-				-- Вывод ровно одной иконки (только если она передана в Settings.Icon)
+				-- Ровно одна иконка секции
 				if Settings.Icon then
 					local sectionIcon = Instance.new("ImageLabel")
 					sectionIcon.Name = "SectionIcon"
@@ -1607,16 +1607,16 @@ function MacLib:Window(Settings)
 					sectionTitle.Parent = headerTitleHolder
 				end
 
-				-- Стрелка сворачивания: привязана к правому краю, а не к заголовку
+				-- Стрелочка сворачивания: настоящий шеврон (assets.buttonImage) вместо кубика
 				local collapseButton = Instance.new("ImageButton")
 				collapseButton.Name = "CollapseButton"
-				collapseButton.Image = "rbxassetid://18865373378"
-				collapseButton.ImageColor3 = Color3.fromRGB(210, 210, 210)
+				collapseButton.Image = assets.buttonImage
+				collapseButton.ImageColor3 = Color3.fromRGB(220, 220, 220)
 				collapseButton.BackgroundTransparency = 1
 				collapseButton.AnchorPoint = Vector2.new(1, 0.5)
 				collapseButton.Position = UDim2.new(1, 0, 0.5, 0)
 				collapseButton.Size = UDim2.fromOffset(14, 14)
-				collapseButton.Rotation = 0
+				collapseButton.Rotation = 90 -- 90° = стрелочка смотрит вниз (развернуто)
 				collapseButton.Parent = sectionHeaderTop
 
 				-- Контейнер элементов секции
@@ -1643,28 +1643,42 @@ function MacLib:Window(Settings)
 				sectionUIPadding.PaddingTop = UDim.new(0, Settings.Name and 6 or 16)
 				sectionUIPadding.Parent = sectionContainer
 
-				-- Логика плавного и слегка замедленного сворачивания
+				-- Логика плавной анимации без рывков
 				local isCollapsed = false
 				local isAnimating = false
+				local savedHeight = 0
+
+				-- Кэшируем точную высоту содержимого, пока секция открыта
+				local function updateSavedHeight()
+					if not isCollapsed and sectionContainer.Visible then
+						local contentY = sectionUIListLayout.AbsoluteContentSize.Y
+						if contentY > 0 then
+							savedHeight = contentY + sectionUIPadding.PaddingTop.Offset + sectionUIPadding.PaddingBottom.Offset
+						end
+					end
+				end
+
+				sectionUIListLayout:GetPropertyChangedSignal("AbsoluteContentSize"):Connect(updateSavedHeight)
 
 				local function ToggleCollapse()
 					if isAnimating then return end
 					isAnimating = true
 					isCollapsed = not isCollapsed
 
-					-- Время 0.45с и Quart дают размеренную, плавную динамику
-					local tweenDuration = 0.45
-					local tweenInfo = TweenInfo.new(tweenDuration, Enum.EasingStyle.Quart, Enum.EasingDirection.Out)
+					local tweenInfo = TweenInfo.new(0.4, Enum.EasingStyle.Quart, Enum.EasingDirection.Out)
 
-					-- Плавный поворот стрелки
+					-- Плавный поворот стрелки: 90° (вниз при открытии), 0° (вправо при закрытии)
 					TweenService:Create(collapseButton, tweenInfo, {
-						Rotation = isCollapsed and -90 or 0
+						Rotation = isCollapsed and 0 or 90
 					}):Play()
 
 					if isCollapsed then
-						-- Фиксация текущей высоты перед анимацией сжатия в ноль
+						-- Запоминаем текущую высоту и отключаем AutomaticSize перед анимацией
+						if sectionContainer.AbsoluteSize.Y > 0 then
+							savedHeight = sectionContainer.AbsoluteSize.Y
+						end
 						sectionContainer.AutomaticSize = Enum.AutomaticSize.None
-						sectionContainer.Size = UDim2.new(1, 0, 0, sectionContainer.AbsoluteSize.Y)
+						sectionContainer.Size = UDim2.new(1, 0, 0, savedHeight)
 
 						local collapseTween = TweenService:Create(sectionContainer, tweenInfo, {
 							Size = UDim2.new(1, 0, 0, 0)
@@ -1677,12 +1691,17 @@ function MacLib:Window(Settings)
 							isAnimating = false
 						end)
 					else
+						-- Разворачивание: восстанавливаем отображение и плавно раскрываем до точной высоты
 						sectionContainer.Visible = true
 						sectionContainer.AutomaticSize = Enum.AutomaticSize.None
+						sectionContainer.Size = UDim2.new(1, 0, 0, 0)
 
-						local targetHeight = sectionUIListLayout.AbsoluteContentSize.Y 
-							+ sectionUIPadding.PaddingTop.Offset 
-							+ sectionUIPadding.PaddingBottom.Offset
+						local targetHeight = savedHeight
+						if targetHeight <= 0 then
+							targetHeight = sectionUIListLayout.AbsoluteContentSize.Y 
+								+ sectionUIPadding.PaddingTop.Offset 
+								+ sectionUIPadding.PaddingBottom.Offset
+						end
 
 						local expandTween = TweenService:Create(sectionContainer, tweenInfo, {
 							Size = UDim2.new(1, 0, 0, targetHeight)
@@ -1697,7 +1716,7 @@ function MacLib:Window(Settings)
 					end
 				end
 
-				-- Сворачивание по клику на стрелочку или по всей шапке
+				-- Обработка клика по стрелке или шапке
 				collapseButton.MouseButton1Click:Connect(ToggleCollapse)
 				if Settings.Name or Settings.Icon then
 					sectionHeaderTop.InputBegan:Connect(function(input)
@@ -2955,9 +2974,7 @@ function MacLib:Window(Settings)
 						if dropped then
 							dropdown.Size = UDim2.new(1, 0, 0, CalculateDropdownSize())
 						end
-					end
-
-					for i, v in pairs(Settings.Options) do
+					end					for i, v in pairs(Settings.Options) do
 						addOption(i, v)
 					end
 					
