@@ -1616,6 +1616,7 @@ function MacLib:Window(Settings)
 				sectionContainer.AutomaticSize = Enum.AutomaticSize.Y
 				sectionContainer.Size = UDim2.new(1, 0, 0, 0)
 				sectionContainer.LayoutOrder = 1
+				sectionContainer.ClipsDescendants = true
 				sectionContainer.Parent = section
 
 				local sectionUIListLayout = Instance.new("UIListLayout")
@@ -1634,40 +1635,52 @@ function MacLib:Window(Settings)
 
 				-- Плавная, слегка замедленная анимация сворачивания/разворачивания
 				local isCollapsed = false
-				local originalHeight = sectionContainer.AbsoluteSize.Y
-
-				sectionContainer:GetPropertyChangedSignal("AbsoluteSize"):Connect(function()
-					if not isCollapsed then
-						originalHeight = sectionContainer.AbsoluteSize.Y
-					end
-				end)
+				local currentTween = nil
 
 				local function ToggleCollapse()
 					isCollapsed = not isCollapsed
-					
-					-- Плавный поворот стрелки
-					TweenService:Create(collapseButton, TweenInfo.new(0.45, Enum.EasingStyle.Exponential, Enum.EasingDirection.Out), {
+
+					-- Отменяем текущий твин, если он выполняется
+					if currentTween then
+						currentTween:Cancel()
+					end
+
+					-- Плавное вращение иконки-стрелочки (0.5 сек)
+					TweenService:Create(collapseButton, TweenInfo.new(0.5, Enum.EasingStyle.Quart, Enum.EasingDirection.Out), {
 						Rotation = isCollapsed and -90 or 0
 					}):Play()
 
 					if isCollapsed then
-						TweenService:Create(sectionContainer, TweenInfo.new(0.45, Enum.EasingStyle.Exponential, Enum.EasingDirection.Out), {
+						-- Фиксируем текущую высоту контейнера перед анимацией
+						local startHeight = sectionContainer.AbsoluteSize.Y
+						sectionContainer.AutomaticSize = Enum.AutomaticSize.None
+						sectionContainer.Size = UDim2.new(1, 0, 0, startHeight)
+
+						currentTween = TweenService:Create(sectionContainer, TweenInfo.new(0.5, Enum.EasingStyle.Quart, Enum.EasingDirection.Out), {
 							Size = UDim2.new(1, 0, 0, 0)
-						}):Play()
-						
-						task.delay(0.45, function()
+						})
+						currentTween:Play()
+
+						currentTween.Completed:Connect(function()
 							if isCollapsed then sectionContainer.Visible = false end
 						end)
 					else
 						sectionContainer.Visible = true
-						TweenService:Create(sectionContainer, TweenInfo.new(0.45, Enum.EasingStyle.Exponential, Enum.EasingDirection.Out), {
-							Size = UDim2.new(1, 0, 0, originalHeight)
-						}):Play()
-						
-						task.delay(0.45, function()
-							if not isCollapsed then
-								sectionContainer.Size = UDim2.new(1, 0, 0, 0)
-							end
+						sectionContainer.AutomaticSize = Enum.AutomaticSize.Y
+
+						-- Вычисляем целевую высоту всех встроенных элементов
+						local targetHeight = sectionUIListLayout.AbsoluteContentSize.Y + sectionUIPadding.PaddingTop.Offset + sectionUIPadding.PaddingBottom.Offset
+
+						sectionContainer.AutomaticSize = Enum.AutomaticSize.None
+						sectionContainer.Size = UDim2.new(1, 0, 0, 0)
+
+						currentTween = TweenService:Create(sectionContainer, TweenInfo.new(0.5, Enum.EasingStyle.Quart, Enum.EasingDirection.Out), {
+							Size = UDim2.new(1, 0, 0, targetHeight)
+						})
+						currentTween:Play()
+
+						currentTween.Completed:Connect(function()
+							if not isCollapsed then sectionContainer.AutomaticSize = Enum.AutomaticSize.Y end
 						end)
 					end
 				end
