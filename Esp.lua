@@ -1609,7 +1609,7 @@ function MacLib:Window(Settings)
 				collapseButton.Rotation = 0
 				collapseButton.Parent = sectionHeaderTop
 
-				-- Контейнер элементов и плавная медленная анимация сворачивания
+				-- Контейнер элементов секции
 				local sectionContainer = Instance.new("Frame")
 				sectionContainer.Name = "SectionContainer"
 				sectionContainer.BackgroundTransparency = 1
@@ -1633,58 +1633,64 @@ function MacLib:Window(Settings)
 				sectionUIPadding.PaddingTop = UDim.new(0, Settings.Name and 6 or 16)
 				sectionUIPadding.Parent = sectionContainer
 
-				-- Плавная, слегка замедленная анимация сворачивания/разворачивания
+				-- Рабочая плавная анимация сворачивания с обходом AutomaticSize
 				local isCollapsed = false
 				local currentTween = nil
 
 				local function ToggleCollapse()
 					isCollapsed = not isCollapsed
 
-					-- Отменяем текущий твин, если он выполняется
 					if currentTween then
 						currentTween:Cancel()
 					end
 
-					-- Плавное вращение иконки-стрелочки (0.5 сек)
-					TweenService:Create(collapseButton, TweenInfo.new(0.5, Enum.EasingStyle.Quart, Enum.EasingDirection.Out), {
+					-- Плавный поворот стрелочки (0.45 сек)
+					TweenService:Create(collapseButton, TweenInfo.new(0.45, Enum.EasingStyle.Quart, Enum.EasingDirection.Out), {
 						Rotation = isCollapsed and -90 or 0
 					}):Play()
 
 					if isCollapsed then
-						-- Фиксируем текущую высоту контейнера перед анимацией
-						local startHeight = sectionContainer.AbsoluteSize.Y
+						-- 1. Запоминаем текущую реальную высоту перед сворачиванием
+						local currentHeight = sectionContainer.AbsoluteSize.Y
 						sectionContainer.AutomaticSize = Enum.AutomaticSize.None
-						sectionContainer.Size = UDim2.new(1, 0, 0, startHeight)
+						sectionContainer.Size = UDim2.new(1, 0, 0, currentHeight)
 
-						currentTween = TweenService:Create(sectionContainer, TweenInfo.new(0.5, Enum.EasingStyle.Quart, Enum.EasingDirection.Out), {
+						-- 2. Анимируем уменьшение высоты до 0
+						currentTween = TweenService:Create(sectionContainer, TweenInfo.new(0.45, Enum.EasingStyle.Quart, Enum.EasingDirection.Out), {
 							Size = UDim2.new(1, 0, 0, 0)
 						})
 						currentTween:Play()
 
 						currentTween.Completed:Connect(function()
-							if isCollapsed then sectionContainer.Visible = false end
+							if isCollapsed then
+								sectionContainer.Visible = false
+							end
 						end)
 					else
+						-- 1. Делаем видимым и выключаем авто-размер для ручного твина
 						sectionContainer.Visible = true
-						sectionContainer.AutomaticSize = Enum.AutomaticSize.Y
-
-						-- Вычисляем целевую высоту всех встроенных элементов
-						local targetHeight = sectionUIListLayout.AbsoluteContentSize.Y + sectionUIPadding.PaddingTop.Offset + sectionUIPadding.PaddingBottom.Offset
-
 						sectionContainer.AutomaticSize = Enum.AutomaticSize.None
 						sectionContainer.Size = UDim2.new(1, 0, 0, 0)
 
-						currentTween = TweenService:Create(sectionContainer, TweenInfo.new(0.5, Enum.EasingStyle.Quart, Enum.EasingDirection.Out), {
+						-- 2. Вычисляем точный размер всех элементов внутри секции
+						local targetHeight = sectionUIListLayout.AbsoluteContentSize.Y + sectionUIPadding.PaddingTop.Offset + sectionUIPadding.PaddingBottom.Offset
+
+						-- 3. Анимируем увеличение высоты до нужного значения
+						currentTween = TweenService:Create(sectionContainer, TweenInfo.new(0.45, Enum.EasingStyle.Quart, Enum.EasingDirection.Out), {
 							Size = UDim2.new(1, 0, 0, targetHeight)
 						})
 						currentTween:Play()
 
 						currentTween.Completed:Connect(function()
-							if not isCollapsed then sectionContainer.AutomaticSize = Enum.AutomaticSize.Y end
+							if not isCollapsed then
+								-- Возвращаем AutomaticSize, чтобы секция могла подстраиваться, если добавятся элементы
+								sectionContainer.AutomaticSize = Enum.AutomaticSize.Y
+							end
 						end)
 					end
 				end
 
+				-- Обработка кликов по стрелочке и шапке секции (поддерживает ПК и мобильные нажатия)
 				collapseButton.MouseButton1Click:Connect(ToggleCollapse)
 				if Settings.Name or Settings.Icon then
 					sectionHeaderTop.InputBegan:Connect(function(input)
