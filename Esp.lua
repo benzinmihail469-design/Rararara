@@ -1512,6 +1512,7 @@ function MacLib:Window(Settings)
 
 			-- =========================================================================
 			-- ИНТЕГРИРОВАННАЯ СЕКЦИЯ: градиентный контур, иконка, заголовок, сворачивание
+			-- (Оптимизированная анимация: Quad Out, без Visible=false, без AutomaticSize переключений)
 			-- =========================================================================
 			function TabFunctions:Section(Settings)
 				local SectionFunctions = {}
@@ -1542,8 +1543,8 @@ function MacLib:Window(Settings)
 				local strokeGradient = Instance.new("UIGradient")
 				strokeGradient.Name = "StrokeGradient"
 				strokeGradient.Color = ColorSequence.new({
-					ColorSequenceKeypoint.new(0, Color3.fromRGB(120, 120, 120)), -- Серый цвет контура
-					ColorSequenceKeypoint.new(0.5, Color3.fromRGB(255, 255, 255)), -- Белый блик
+					ColorSequenceKeypoint.new(0, Color3.fromRGB(120, 120, 120)),
+					ColorSequenceKeypoint.new(0.5, Color3.fromRGB(255, 255, 255)),
 					ColorSequenceKeypoint.new(1, Color3.fromRGB(120, 120, 120))
 				})
 				strokeGradient.Rotation = 45
@@ -1568,7 +1569,7 @@ function MacLib:Window(Settings)
 				headerPadding.PaddingRight = UDim.new(0, 16)
 				headerPadding.Parent = sectionHeaderTop
 
-				-- Левый контейнер: только одна иконка и название секции
+				-- Левый контейнер: иконка и заголовок
 				local headerTitleHolder = Instance.new("Frame")
 				headerTitleHolder.Name = "HeaderTitleHolder"
 				headerTitleHolder.BackgroundTransparency = 1
@@ -1583,7 +1584,6 @@ function MacLib:Window(Settings)
 				headerLayout.SortOrder = Enum.SortOrder.LayoutOrder
 				headerLayout.Parent = headerTitleHolder
 
-				-- Вывод ровно одной иконки (только если она передана в Settings.Icon)
 				if Settings.Icon then
 					local sectionIcon = Instance.new("ImageLabel")
 					sectionIcon.Name = "SectionIcon"
@@ -1607,7 +1607,7 @@ function MacLib:Window(Settings)
 					sectionTitle.Parent = headerTitleHolder
 				end
 
-				-- Стрелочка сворачивания: аккуратный шеврон (assets.buttonImage)
+				-- Стрелочка сворачивания (шеврон)
 				local collapseButton = Instance.new("ImageButton")
 				collapseButton.Name = "CollapseButton"
 				collapseButton.Image = assets.buttonImage
@@ -1616,15 +1616,15 @@ function MacLib:Window(Settings)
 				collapseButton.AnchorPoint = Vector2.new(1, 0.5)
 				collapseButton.Position = UDim2.new(1, 0, 0.5, 0)
 				collapseButton.Size = UDim2.fromOffset(14, 14)
-				collapseButton.Rotation = 90 -- 90° = смотрит вниз (развернуто)
+				collapseButton.Rotation = 90
 				collapseButton.Parent = sectionHeaderTop
 
-				-- Контейнер элементов секции с автоматической адаптацией под любой объём функций
+				-- Контейнер элементов секции (всегда видимый, ClipsDescendants = true)
 				local sectionContainer = Instance.new("Frame")
 				sectionContainer.Name = "SectionContainer"
 				sectionContainer.BackgroundTransparency = 1
 				sectionContainer.ClipsDescendants = true
-				sectionContainer.AutomaticSize = Enum.AutomaticSize.Y -- Динамическая адаптация под все элементы
+				sectionContainer.AutomaticSize = Enum.AutomaticSize.None
 				sectionContainer.Size = UDim2.new(1, 0, 0, 0)
 				sectionContainer.LayoutOrder = 1
 				sectionContainer.Parent = section
@@ -1643,93 +1643,59 @@ function MacLib:Window(Settings)
 				sectionUIPadding.PaddingTop = UDim.new(0, Settings.Name and 6 or 16)
 				sectionUIPadding.Parent = sectionContainer
 
-				-- Логика плавной анимации без рывков и скачков
-				local isCollapsed = false
-				local currentTween = nil
-				local currentArrowTween = nil
-				local lastOpenHeight = 0
-
-				-- Динамическое кэширование актуальной высоты содержимого
-				local function getTargetHeight()
+				-- Мгновенное получение точной высоты всех элементов
+				local function getContentHeight()
 					local contentY = sectionUIListLayout.AbsoluteContentSize.Y
 					if contentY > 0 then
 						return contentY + sectionUIPadding.PaddingTop.Offset + sectionUIPadding.PaddingBottom.Offset
 					end
-					if lastOpenHeight > 0 then
-						return lastOpenHeight
-					end
-					local total = sectionUIPadding.PaddingTop.Offset + sectionUIPadding.PaddingBottom.Offset
-					for _, child in ipairs(sectionContainer:GetChildren()) do
-						if child:IsA("GuiObject") and child.Visible then
-							total = total + child.AbsoluteSize.Y + sectionUIListLayout.Padding.Offset
-						end
-					end
-					return total > 0 and total or 250
+					return 250
 				end
 
+				local isCollapsed = false
+				local currentTween = nil
+				local currentArrowTween = nil
+
+				-- Автоматическое обновление высоты при открытии Dropdown (когда анимация не идёт)
 				sectionUIListLayout:GetPropertyChangedSignal("AbsoluteContentSize"):Connect(function()
+					if not isCollapsed and (not currentTween or currentTween.PlaybackState ~= Enum.PlaybackState.Playing) then
+						sectionContainer.Size = UDim2.new(1, 0, 0, getContentHeight())
+					end
+				end)
+
+				-- Установка размера при первом запуске
+				task.defer(function()
 					if not isCollapsed then
-						local contentY = sectionUIListLayout.AbsoluteContentSize.Y
-						if contentY > 0 then
-							lastOpenHeight = contentY + sectionUIPadding.PaddingTop.Offset + sectionUIPadding.PaddingBottom.Offset
-						end
+						sectionContainer.Size = UDim2.new(1, 0, 0, getContentHeight())
 					end
 				end)
 
 				local function ToggleCollapse()
 					isCollapsed = not isCollapsed
 
-					-- Отменяем прошлые твины для мгновенного плавного отклика
 					if currentTween then currentTween:Cancel() end
 					if currentArrowTween then currentArrowTween:Cancel() end
 
-					local tweenInfo = TweenInfo.new(0.35, Enum.EasingStyle.Quart, Enum.EasingDirection.Out)
+					-- Равномерное, естественное замедление без "зависаний"
+					local tweenInfo = TweenInfo.new(0.28, Enum.EasingStyle.Quad, Enum.EasingDirection.Out)
 
-					-- Плавный поворот шеврона
 					currentArrowTween = TweenService:Create(collapseButton, tweenInfo, {
 						Rotation = isCollapsed and 0 or 90
 					})
 					currentArrowTween:Play()
 
-					if isCollapsed then
-						-- Фиксируем текущий физический размер перед анимацией сжатия
-						lastOpenHeight = sectionContainer.AbsoluteSize.Y
-						if lastOpenHeight <= 0 then
-							lastOpenHeight = getTargetHeight()
+					local targetHeight = isCollapsed and 0 or getContentHeight()
+
+					currentTween = TweenService:Create(sectionContainer, tweenInfo, {
+						Size = UDim2.new(1, 0, 0, targetHeight)
+					})
+					currentTween:Play()
+
+					currentTween.Completed:Connect(function(playbackState)
+						if playbackState == Enum.PlaybackState.Completed and not isCollapsed then
+							sectionContainer.Size = UDim2.new(1, 0, 0, getContentHeight())
 						end
-
-						sectionContainer.AutomaticSize = Enum.AutomaticSize.None
-						sectionContainer.Size = UDim2.new(1, 0, 0, lastOpenHeight)
-
-						currentTween = TweenService:Create(sectionContainer, tweenInfo, {
-							Size = UDim2.new(1, 0, 0, 0)
-						})
-						currentTween:Play()
-
-						currentTween.Completed:Connect(function(playbackState)
-							if playbackState == Enum.PlaybackState.Completed and isCollapsed then
-								sectionContainer.Visible = false
-							end
-						end)
-					else
-						-- Разворачивание: сразу отображаем контейнер и интерполируем к полной высоте
-						sectionContainer.Visible = true
-						sectionContainer.AutomaticSize = Enum.AutomaticSize.None
-
-						local targetHeight = getTargetHeight()
-
-						currentTween = TweenService:Create(sectionContainer, tweenInfo, {
-							Size = UDim2.new(1, 0, 0, targetHeight)
-						})
-						currentTween:Play()
-
-						currentTween.Completed:Connect(function(playbackState)
-							if playbackState == Enum.PlaybackState.Completed and not isCollapsed then
-								-- Бесшовное включение: размер УЖЕ равен targetHeight, поэтому визуального скачка нет
-								sectionContainer.AutomaticSize = Enum.AutomaticSize.Y
-							end
-						end)
-					end
+					end)
 				end
 
 				-- Клик по кнопке или по всей шапке секции
@@ -1904,8 +1870,8 @@ function MacLib:Window(Settings)
 					local toggleStrokeGradient = Instance.new("UIGradient")
 					toggleStrokeGradient.Name = "ToggleStrokeGradient"
 					toggleStrokeGradient.Color = ColorSequence.new({
-						ColorSequenceKeypoint.new(0, Color3.fromRGB(120, 120, 120)),   -- Серый контур
-						ColorSequenceKeypoint.new(0.5, Color3.fromRGB(255, 255, 255)), -- Белый блик
+						ColorSequenceKeypoint.new(0, Color3.fromRGB(120, 120, 120)),
+						ColorSequenceKeypoint.new(0.5, Color3.fromRGB(255, 255, 255)),
 						ColorSequenceKeypoint.new(1, Color3.fromRGB(120, 120, 120))
 					})
 					toggleStrokeGradient.Rotation = 45
@@ -1948,8 +1914,8 @@ function MacLib:Window(Settings)
 						},
 
 						StrokeTransparency = {
-							Enabled = 0.15, -- Выраженный блик при включении
-							Disabled = 0.5   -- Приглушенный контур при выключении
+							Enabled = 0.15,
+							Disabled = 0.5
 						},
 
 						EnabledPosition = UDim2.new(1, 0, 0.5, 0),
@@ -2258,7 +2224,16 @@ function MacLib:Window(Settings)
 					updateSliderBarSize()
 
 					sliderName:GetPropertyChangedSignal("AbsoluteSize"):Connect(updateSliderBarSize)
-					section:GetPropertyChangedSignal("AbsoluteSize"):Connect(updateSliderBarSize)
+
+					-- Оптимизация: реагируем только на изменение ШИРИНЫ секции,
+					-- чтобы не вызывать 60 пересчётов в секунду во время твина высоты.
+					local lastSectionWidth = section.AbsoluteSize.X
+					section:GetPropertyChangedSignal("AbsoluteSize"):Connect(function()
+						if section.AbsoluteSize.X ~= lastSectionWidth then
+							lastSectionWidth = section.AbsoluteSize.X
+							updateSliderBarSize()
+						end
+					end)
 
 					function SliderFunctions:UpdateName(Name)
 						sliderName = Name
