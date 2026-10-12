@@ -2448,7 +2448,6 @@ function MacLib:Window(Settings)
 					keybind.AutomaticSize = Enum.AutomaticSize.Y
 					keybind.BackgroundColor3 = Color3.fromRGB(0, 0, 0)
 					keybind.BackgroundTransparency = 1
-					keybind.BorderColor3 = Color3.fromRGB(0, 0, 0)
 					keybind.BorderSizePixel = 0
 					keybind.Size = UDim2.new(1, 0, 0, 38)
 					keybind.Parent = sectionContainer
@@ -2477,97 +2476,131 @@ function MacLib:Window(Settings)
 					keybindName.Position = UDim2.fromScale(0, 0.5)
 					keybindName.Parent = keybind
 
-					local binderBox = Instance.new("TextBox")
-					binderBox.Name = "BinderBox"
-					binderBox.CursorPosition = -1
-					binderBox.FontFace = Font.new(
+					local binderBtn = Instance.new("TextButton")
+					binderBtn.Name = "BinderBtn"
+					binderBtn.FontFace = Font.new(
 						assets.interFont,
 						Enum.FontWeight.Medium,
 						Enum.FontStyle.Normal
 					)
-					binderBox.PlaceholderText = "..."
-					binderBox.Text = ""
-					binderBox.TextColor3 = Color3.fromRGB(255, 255, 255)
-					binderBox.TextSize = 12
-					binderBox.TextTransparency = 0.4
-					binderBox.AnchorPoint = Vector2.new(1, 0.5)
-					binderBox.AutomaticSize = Enum.AutomaticSize.X
-					binderBox.BackgroundColor3 = Color3.fromRGB(255, 255, 255)
-					binderBox.BackgroundTransparency = 0.95
-					binderBox.BorderColor3 = Color3.fromRGB(0, 0, 0)
-					binderBox.BorderSizePixel = 0
-					binderBox.ClipsDescendants = true
-					binderBox.LayoutOrder = 1
-					binderBox.Position = UDim2.fromScale(1, 0.5)
-					binderBox.Size = UDim2.fromOffset(21, 21)
+					binderBtn.Text = "None"
+					binderBtn.TextColor3 = Color3.fromRGB(255, 255, 255)
+					binderBtn.TextSize = 12
+					binderBtn.TextTransparency = 0.3
+					binderBtn.AnchorPoint = Vector2.new(1, 0.5)
+					binderBtn.AutomaticSize = Enum.AutomaticSize.X
+					binderBtn.BackgroundColor3 = Color3.fromRGB(255, 255, 255)
+					binderBtn.BackgroundTransparency = 0.95
+					binderBtn.BorderSizePixel = 0
+					binderBtn.Position = UDim2.fromScale(1, 0.5)
+					binderBtn.Size = UDim2.fromOffset(36, 22)
+					binderBtn.Parent = keybind
 
-					local binderBoxUICorner = Instance.new("UICorner")
-					binderBoxUICorner.Name = "BinderBoxUICorner"
-					binderBoxUICorner.CornerRadius = UDim.new(0, 4)
-					binderBoxUICorner.Parent = binderBox
+					local binderCorner = Instance.new("UICorner")
+					binderCorner.CornerRadius = UDim.new(0, 5)
+					binderCorner.Parent = binderBtn
 
-					local binderBoxUIStroke = Instance.new("UIStroke")
-					binderBoxUIStroke.Name = "BinderBoxUIStroke"
-					binderBoxUIStroke.ApplyStrokeMode = Enum.ApplyStrokeMode.Border
-					binderBoxUIStroke.Color = Color3.fromRGB(255, 255, 255)
-					binderBoxUIStroke.Transparency = 0.9
-					binderBoxUIStroke.Parent = binderBox
+					-- Контур с градиентом как у секции
+					local binderStroke = Instance.new("UIStroke")
+					binderStroke.Name = "BinderStroke"
+					binderStroke.ApplyStrokeMode = Enum.ApplyStrokeMode.Border
+					binderStroke.Color = Color3.fromRGB(255, 255, 255)
+					binderStroke.Transparency = 0.4
+					binderStroke.Parent = binderBtn
 
-					local binderBoxUIPadding = Instance.new("UIPadding")
-					binderBoxUIPadding.Name = "BinderBoxUIPadding"
-					binderBoxUIPadding.PaddingLeft = UDim.new(0, 5)
-					binderBoxUIPadding.PaddingRight = UDim.new(0, 5)
-					binderBoxUIPadding.Parent = binderBox
+					local binderGradient = Instance.new("UIGradient")
+					binderGradient.Name = "BinderGradient"
+					binderGradient.Color = ColorSequence.new({
+						ColorSequenceKeypoint.new(0, Color3.fromRGB(120, 120, 120)),
+						ColorSequenceKeypoint.new(0.5, Color3.fromRGB(255, 255, 255)),
+						ColorSequenceKeypoint.new(1, Color3.fromRGB(120, 120, 120))
+					})
+					binderGradient.Rotation = 45
+					binderGradient.Parent = binderStroke
 
-					local binderBoxUISizeConstraint = Instance.new("UISizeConstraint")
-					binderBoxUISizeConstraint.Name = "BinderBoxUISizeConstraint"
-					binderBoxUISizeConstraint.Parent = binderBox
+					local binderPadding = Instance.new("UIPadding")
+					binderPadding.PaddingLeft = UDim.new(0, 8)
+					binderPadding.PaddingRight = UDim.new(0, 8)
+					binderPadding.Parent = binderBtn
 
-					binderBox.Parent = keybind
+					local binding = false
+					local currentBind = Settings.Default
+					local inputConn = nil
 
-					local focused
-					local binded = Settings.Default
-					if binded then
-						binderBox.Text = binded.Name
+					local function formatKeyName(key)
+						if not key then return "None" end
+						if typeof(key) == "EnumItem" then
+							return key.Name
+						end
+						return tostring(key)
 					end
 
-					binderBox.Focused:Connect(function()
-						focused = true
-					end)
-					binderBox.FocusLost:Connect(function()
-						focused = false
-					end)
-				
-					UserInputService.InputEnded:Connect(function(inp)
-						if macLib ~= nil then
-							if focused and inp.KeyCode.Name ~= "Unknown" then
-								binded = inp.KeyCode
-								KeybindFunctions.Bind = binded
-								binderBox.Text = inp.KeyCode.Name
-								binderBox:ReleaseFocus()
-								if Settings.onBinded then
-									Settings.onBinded(binded)
+					binderBtn.Text = formatKeyName(currentBind)
+
+					-- Выбор любой клавиши или кнопки мыши
+					binderBtn.MouseButton1Click:Connect(function()
+						if binding then return end
+						binding = true
+						binderBtn.Text = "..."
+						Tween(binderStroke, TweenInfo.new(0.2), { Transparency = 0.15 }):Play()
+						local connection
+						connection = UserInputService.InputBegan:Connect(function(input)
+							if input.UserInputType == Enum.UserInputType.MouseMovement then return end
+							local chosenKey = nil
+							if input.UserInputType == Enum.UserInputType.Keyboard then
+								if input.KeyCode == Enum.KeyCode.Escape or input.KeyCode == Enum.KeyCode.Backspace then
+									chosenKey = nil
+								else
+									chosenKey = input.KeyCode
 								end
-							elseif inp.KeyCode == binded then
-								if Settings.Callback then
-									Settings.Callback(binded)
-								end
+							elseif input.UserInputType == Enum.UserInputType.MouseButton1 then
+								chosenKey = Enum.UserInputType.MouseButton1
+							elseif input.UserInputType == Enum.UserInputType.MouseButton2 then
+								chosenKey = Enum.UserInputType.MouseButton2
+							elseif input.UserInputType == Enum.UserInputType.MouseButton3 then
+								chosenKey = Enum.UserInputType.MouseButton3
 							end
+							connection:Disconnect()
+							currentBind = chosenKey
+							KeybindFunctions.Bind = currentBind
+							binderBtn.Text = formatKeyName(currentBind)
+							binding = false
+							Tween(binderStroke, TweenInfo.new(0.2), { Transparency = 0.4 }):Play()
+							if Settings.onBinded then
+								task.spawn(Settings.onBinded, currentBind)
+							end
+						end)
+					end)
+
+					-- Мгновенная активация функции в момент нажатия
+					inputConn = UserInputService.InputBegan:Connect(function(input, gameProcessed)
+						if gameProcessed or binding or not currentBind then return end
+						local match = false
+						if input.UserInputType == Enum.UserInputType.Keyboard and input.KeyCode == currentBind then
+							match = true
+						elseif input.UserInputType == currentBind then
+							match = true
+						end
+						if match and Settings.Callback then
+							task.spawn(Settings.Callback, currentBind)
 						end
 					end)
+
 					function KeybindFunctions:Bind(Key)
-						binded = Key
-						binderBox.Text = Key.Name
+						currentBind = Key
+						KeybindFunctions.Bind = currentBind
+						binderBtn.Text = formatKeyName(currentBind)
 					end
 					function KeybindFunctions:Unbind()
-						binded = nil
-						binderBox.Text = ""
+						currentBind = nil
+						KeybindFunctions.Bind = nil
+						binderBtn.Text = "None"
 					end
 					function KeybindFunctions:GetBind()
-						return binded
+						return currentBind
 					end
 					function KeybindFunctions:UpdateName(Name)
-						keybindName = Name
+						keybindName.Text = Name
 					end
 					function KeybindFunctions:SetVisibility(State)
 						keybind.Visible = State
