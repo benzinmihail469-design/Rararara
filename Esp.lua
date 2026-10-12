@@ -1512,7 +1512,7 @@ function MacLib:Window(Settings)
 
 			-- =========================================================================
 			-- ИНТЕГРИРОВАННАЯ СЕКЦИЯ: градиентный контур, иконка, заголовок, сворачивание
-			-- (Оптимизированная анимация: Sine Out, без обрезаний, без спама перерасчётов)
+			-- Оптимизированная двухуровневая анимация без обрезаний и фризов
 			-- =========================================================================
 			function TabFunctions:Section(Settings)
 				local SectionFunctions = {}
@@ -1543,8 +1543,8 @@ function MacLib:Window(Settings)
 				local strokeGradient = Instance.new("UIGradient")
 				strokeGradient.Name = "StrokeGradient"
 				strokeGradient.Color = ColorSequence.new({
-					ColorSequenceKeypoint.new(0, Color3.fromRGB(120, 120, 120)), -- Серый цвет контура
-					ColorSequenceKeypoint.new(0.5, Color3.fromRGB(255, 255, 255)), -- Белый блик
+					ColorSequenceKeypoint.new(0, Color3.fromRGB(120, 120, 120)),
+					ColorSequenceKeypoint.new(0.5, Color3.fromRGB(255, 255, 255)),
 					ColorSequenceKeypoint.new(1, Color3.fromRGB(120, 120, 120))
 				})
 				strokeGradient.Rotation = 45
@@ -1620,15 +1620,23 @@ function MacLib:Window(Settings)
 				collapseButton.Rotation = 90 -- 90° = смотрит вниз (развернуто)
 				collapseButton.Parent = sectionHeaderTop
 
-				-- Контейнер элементов секции (автоматически растягивается на ВСЕ элементы)
+				-- Внешняя маска для плавной анимации без рывков
+				local contentHolder = Instance.new("Frame")
+				contentHolder.Name = "ContentHolder"
+				contentHolder.BackgroundTransparency = 1
+				contentHolder.ClipsDescendants = true
+				contentHolder.Size = UDim2.new(1, 0, 0, 0)
+				contentHolder.AutomaticSize = Enum.AutomaticSize.Y -- В открытом состоянии сразу подстраивается под контент
+				contentHolder.LayoutOrder = 1
+				contentHolder.Parent = section
+
+				-- Внутренний контейнер: содержит функции и всегда точно знает свою высоту
 				local sectionContainer = Instance.new("Frame")
 				sectionContainer.Name = "SectionContainer"
 				sectionContainer.BackgroundTransparency = 1
-				sectionContainer.ClipsDescendants = true
-				sectionContainer.AutomaticSize = Enum.AutomaticSize.Y -- Динамическая адаптация под все элементы
+				sectionContainer.AutomaticSize = Enum.AutomaticSize.Y -- Всегда знает точную высоту всех элементов
 				sectionContainer.Size = UDim2.new(1, 0, 0, 0)
-				sectionContainer.LayoutOrder = 1
-				sectionContainer.Parent = section
+				sectionContainer.Parent = contentHolder
 
 				local sectionUIListLayout = Instance.new("UIListLayout")
 				sectionUIListLayout.Name = "SectionUIListLayout"
@@ -1648,42 +1656,6 @@ function MacLib:Window(Settings)
 				local isCollapsed = false
 				local currentTween = nil
 				local currentArrowTween = nil
-				local lastOpenHeight = 0
-
-				-- Динамический расчет полной высоты ВСЕХ элементов (без обрезаний)
-				local function getFullContentHeight()
-					local listY = sectionUIListLayout.AbsoluteContentSize.Y
-					if listY > 0 then
-						return listY + sectionUIPadding.PaddingTop.Offset + sectionUIPadding.PaddingBottom.Offset
-					end
-					if lastOpenHeight > 0 then
-						return lastOpenHeight
-					end
-					-- Если движок ещё не отрисовал элементы — суммируем их реальные размеры
-					local total = sectionUIPadding.PaddingTop.Offset + sectionUIPadding.PaddingBottom.Offset
-					local count = 0
-					for _, child in ipairs(sectionContainer:GetChildren()) do
-						if child:IsA("GuiObject") and child.Visible then
-							local h = child.AbsoluteSize.Y > 0 and child.AbsoluteSize.Y or (child.Size.Y.Offset > 0 and child.Size.Y.Offset or 38)
-							total = total + h
-							count = count + 1
-						end
-					end
-					if count > 1 then
-						total = total + (count - 1) * sectionUIListLayout.Padding.Offset
-					end
-					return total
-				end
-
-				-- Кэшируем актуальную высоту содержимого в открытом состоянии
-				sectionUIListLayout:GetPropertyChangedSignal("AbsoluteContentSize"):Connect(function()
-					if not isCollapsed then
-						local h = sectionUIListLayout.AbsoluteContentSize.Y
-						if h > 0 then
-							lastOpenHeight = h + sectionUIPadding.PaddingTop.Offset + sectionUIPadding.PaddingBottom.Offset
-						end
-					end
-				end)
 
 				local function ToggleCollapse()
 					isCollapsed = not isCollapsed
@@ -1692,8 +1664,8 @@ function MacLib:Window(Settings)
 					if currentTween then currentTween:Cancel() end
 					if currentArrowTween then currentArrowTween:Cancel() end
 
-					-- Равномерная плавная интерполяция Sine (0.28 сек) — без «зависания» на середине
-					local tweenInfo = TweenInfo.new(0.28, Enum.EasingStyle.Sine, Enum.EasingDirection.Out)
+					-- Равномерная плавная интерполяция Quad Out (0.28 сек)
+					local tweenInfo = TweenInfo.new(0.28, Enum.EasingStyle.Quad, Enum.EasingDirection.Out)
 
 					-- Плавный поворот шеврона
 					currentArrowTween = TweenService:Create(collapseButton, tweenInfo, {
@@ -1702,37 +1674,39 @@ function MacLib:Window(Settings)
 					currentArrowTween:Play()
 
 					if isCollapsed then
-						-- Сворачивание: фиксируем текущую высоту и плавно сжимаем в 0
-						lastOpenHeight = sectionContainer.AbsoluteSize.Y > 0 and sectionContainer.AbsoluteSize.Y or getFullContentHeight()
-						sectionContainer.AutomaticSize = Enum.AutomaticSize.None
-						sectionContainer.Size = UDim2.new(1, 0, 0, lastOpenHeight)
+						-- Сворачивание: берем нативную высоту и плавно сжимаем маску в 0
+						local startHeight = sectionContainer.AbsoluteSize.Y
+						if startHeight <= 0 then
+							startHeight = contentHolder.AbsoluteSize.Y
+						end
 
-						currentTween = TweenService:Create(sectionContainer, tweenInfo, {
+						contentHolder.AutomaticSize = Enum.AutomaticSize.None
+						contentHolder.Size = UDim2.new(1, 0, 0, startHeight)
+
+						currentTween = TweenService:Create(contentHolder, tweenInfo, {
 							Size = UDim2.new(1, 0, 0, 0)
 						})
 						currentTween:Play()
-
-						currentTween.Completed:Connect(function(playbackState)
-							if playbackState == Enum.PlaybackState.Completed and isCollapsed then
-								sectionContainer.Visible = false
-							end
-						end)
 					else
-						-- Разворачивание: плавно раскрываем от 0 до полной высоты ВСЕХ элементов
-						sectionContainer.Visible = true
-						sectionContainer.AutomaticSize = Enum.AutomaticSize.None
+						-- Разворачивание: открываем маску ровно до полной высоты ВСЕХ функций
+						local targetHeight = sectionContainer.AbsoluteSize.Y
+						if targetHeight <= 0 then
+							local listY = sectionUIListLayout.AbsoluteContentSize.Y
+							targetHeight = listY + sectionUIPadding.PaddingTop.Offset + sectionUIPadding.PaddingBottom.Offset
+						end
 
-						local targetHeight = getFullContentHeight()
+						contentHolder.AutomaticSize = Enum.AutomaticSize.None
 
-						currentTween = TweenService:Create(sectionContainer, tweenInfo, {
+						currentTween = TweenService:Create(contentHolder, tweenInfo, {
 							Size = UDim2.new(1, 0, 0, targetHeight)
 						})
 						currentTween:Play()
 
 						currentTween.Completed:Connect(function(playbackState)
 							if playbackState == Enum.PlaybackState.Completed and not isCollapsed then
-								-- Бесшовное включение AutomaticSize: секция адаптируется дальше сама
-								sectionContainer.AutomaticSize = Enum.AutomaticSize.Y
+								-- Включаем авто-размер: секция продолжает сама адаптироваться под открытие списков и новые функции
+								contentHolder.AutomaticSize = Enum.AutomaticSize.Y
+								contentHolder.Size = UDim2.new(1, 0, 0, 0)
 							end
 						end)
 					end
@@ -1746,6 +1720,14 @@ function MacLib:Window(Settings)
 							ToggleCollapse()
 						end
 					end)
+				end
+
+				function SectionFunctions:ToggleCollapse()
+					ToggleCollapse()
+				end
+
+				function SectionFunctions:SetVisibility(State)
+					section.Visible = State
 				end
 
 				-- =============================================================
