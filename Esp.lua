@@ -2013,6 +2013,7 @@ function MacLib:Window(Settings)
 
 				function SectionFunctions:Slider(Settings)
 					local SliderFunctions = {}
+
 					local slider = Instance.new("Frame")
 					slider.Name = "Slider"
 					slider.AutomaticSize = Enum.AutomaticSize.Y
@@ -2028,7 +2029,7 @@ function MacLib:Window(Settings)
 					sliderLayout.Padding = UDim.new(0, 6)
 					sliderLayout.Parent = slider
 
-					-- Верхняя строка: заголовок и окошко со значением
+					-- Верхняя строка: заголовок и поле со значением
 					local sliderTop = Instance.new("Frame")
 					sliderTop.Name = "SliderTop"
 					sliderTop.BackgroundTransparency = 1
@@ -2058,12 +2059,12 @@ function MacLib:Window(Settings)
 					sliderValue.Text = "0"
 					sliderValue.TextColor3 = Color3.fromRGB(255, 255, 255)
 					sliderValue.TextSize = 12
-					sliderValue.TextTransparency = 0.3
+					sliderValue.TextTransparency = 0.25
 					sliderValue.TextTruncate = Enum.TextTruncate.AtEnd
 					sliderValue.TextXAlignment = Enum.TextXAlignment.Center
 					sliderValue.AnchorPoint = Vector2.new(1, 0.5)
 					sliderValue.Position = UDim2.new(1, 0, 0.5, 0)
-					sliderValue.Size = UDim2.fromOffset(46, 20)
+					sliderValue.Size = UDim2.fromOffset(48, 20)
 					sliderValue.BackgroundColor3 = Color3.fromRGB(255, 255, 255)
 					sliderValue.BackgroundTransparency = 0.95
 					sliderValue.BorderSizePixel = 0
@@ -2077,20 +2078,10 @@ function MacLib:Window(Settings)
 					sliderValueStroke.Name = "SliderValueStroke"
 					sliderValueStroke.ApplyStrokeMode = Enum.ApplyStrokeMode.Border
 					sliderValueStroke.Color = Color3.fromRGB(255, 255, 255)
-					sliderValueStroke.Transparency = 0.4
+					sliderValueStroke.Transparency = 0.85
 					sliderValueStroke.Parent = sliderValue
 
-					local sliderValueGradient = Instance.new("UIGradient")
-					sliderValueGradient.Name = "SliderValueGradient"
-					sliderValueGradient.Color = ColorSequence.new({
-						ColorSequenceKeypoint.new(0, Color3.fromRGB(120, 120, 120)),
-						ColorSequenceKeypoint.new(0.5, Color3.fromRGB(255, 255, 255)),
-						ColorSequenceKeypoint.new(1, Color3.fromRGB(120, 120, 120))
-					})
-					sliderValueGradient.Rotation = 45
-					sliderValueGradient.Parent = sliderValue
-
-					-- Нижняя строка: трек на всю длину
+					-- Нижняя строка: трек слайдера во всю ширину
 					local sliderTrackArea = Instance.new("TextButton")
 					sliderTrackArea.Name = "SliderTrackArea"
 					sliderTrackArea.Text = ""
@@ -2106,7 +2097,7 @@ function MacLib:Window(Settings)
 					sliderBar.AnchorPoint = Vector2.new(0.5, 0.5)
 					sliderBar.Position = UDim2.fromScale(0.5, 0.5)
 					sliderBar.Size = UDim2.new(1, 0, 0, 5)
-					sliderBar.BackgroundColor3 = Color3.fromRGB(30, 30, 30)
+					sliderBar.BackgroundColor3 = Color3.fromRGB(28, 28, 28)
 					sliderBar.BorderSizePixel = 0
 					sliderBar.Parent = sliderTrackArea
 
@@ -2118,18 +2109,8 @@ function MacLib:Window(Settings)
 					sliderBarStroke.Name = "SliderBarStroke"
 					sliderBarStroke.ApplyStrokeMode = Enum.ApplyStrokeMode.Border
 					sliderBarStroke.Color = Color3.fromRGB(255, 255, 255)
-					sliderBarStroke.Transparency = 0.45
+					sliderBarStroke.Transparency = 0.88
 					sliderBarStroke.Parent = sliderBar
-
-					local sliderBarGradient = Instance.new("UIGradient")
-					sliderBarGradient.Name = "SliderBarGradient"
-					sliderBarGradient.Color = ColorSequence.new({
-						ColorSequenceKeypoint.new(0, Color3.fromRGB(120, 120, 120)),
-						ColorSequenceKeypoint.new(0.5, Color3.fromRGB(255, 255, 255)),
-						ColorSequenceKeypoint.new(1, Color3.fromRGB(120, 120, 120))
-					})
-					sliderBarGradient.Rotation = 45
-					sliderBarGradient.Parent = sliderBarStroke
 
 					local sliderFill = Instance.new("Frame")
 					sliderFill.Name = "SliderFill"
@@ -2141,7 +2122,9 @@ function MacLib:Window(Settings)
 
 					local sliderFillCorner = Instance.new("UICorner")
 					sliderFillCorner.CornerRadius = UDim.new(1, 0)
-					sliderFillCorner.Parent = sliderFill					local sliderHead = Instance.new("Frame")
+					sliderFillCorner.Parent = sliderFill
+
+					local sliderHead = Instance.new("Frame")
 					sliderHead.Name = "SliderHead"
 					sliderHead.AnchorPoint = Vector2.new(0.5, 0.5)
 					sliderHead.Position = UDim2.new(0, 0, 0.5, 0)
@@ -2156,12 +2139,12 @@ function MacLib:Window(Settings)
 
 					local sliderHeadStroke = Instance.new("UIStroke")
 					sliderHeadStroke.ApplyStrokeMode = Enum.ApplyStrokeMode.Border
-					sliderHeadStroke.Color = Color3.fromRGB(15, 15, 15)
+					sliderHeadStroke.Color = Color3.fromRGB(20, 20, 20)
 					sliderHeadStroke.Transparency = 0.5
 					sliderHeadStroke.Parent = sliderHead
 
 					local dragging = false
-					local finalValue = Settings.Default or Settings.Minimum or 0
+					local finalValue = math.round(Settings.Default or Settings.Minimum or 0)
 
 					local DisplayMethods = {
 						Hundredths = function(val) return string.format("%.2f", val) end,
@@ -2173,7 +2156,7 @@ function MacLib:Window(Settings)
 							local pct = range > 0 and ((val - Settings.Minimum) / range * 100) or 0
 							return tostring(math.round(pct)) .. "%"
 						end,
-						Value = function(val) return tostring(val) end
+						Value = function(val) return tostring(math.round(val)) end
 					}
 
 					local ValueDisplayMethod = DisplayMethods[Settings.DisplayMethod] or DisplayMethods.Value
@@ -2188,14 +2171,15 @@ function MacLib:Window(Settings)
 								local relativeX = math.clamp(val.Position.X - sliderBar.AbsolutePosition.X, 0, barWidth)
 								posXScale = relativeX / barWidth
 							end
-							finalValue = range > 0 and (Settings.Minimum + (posXScale * range)) or Settings.Minimum
+							local calculated = range > 0 and (Settings.Minimum + (posXScale * range)) or Settings.Minimum
+							finalValue = math.round(calculated)
+							posXScale = range > 0 and math.clamp((finalValue - Settings.Minimum) / range, 0, 1) or 0
 						else
 							local num = math.clamp(tonumber(val) or Settings.Minimum, Settings.Minimum, Settings.Maximum)
-							finalValue = num
-							posXScale = range > 0 and math.clamp((num - Settings.Minimum) / range, 0, 1) or 0
+							finalValue = math.round(num)
+							posXScale = range > 0 and math.clamp((finalValue - Settings.Minimum) / range, 0, 1) or 0
 						end
 
-						-- Мгновенное аппаратное позиционирование без перерасчетов лейаута
 						sliderFill.Size = UDim2.new(posXScale, 0, 1, 0)
 						sliderHead.Position = UDim2.new(posXScale, 0, 0.5, 0)
 						sliderValue.Text = ValueDisplayMethod(finalValue)
@@ -2211,7 +2195,6 @@ function MacLib:Window(Settings)
 
 					SetValue(Settings.Default or Settings.Minimum or 0, true)
 
-					-- Активация перетаскивания по всей интерактивной полосе
 					sliderTrackArea.InputBegan:Connect(function(input)
 						if input.UserInputType == Enum.UserInputType.MouseButton1 or input.UserInputType == Enum.UserInputType.Touch then
 							dragging = true
@@ -2219,21 +2202,18 @@ function MacLib:Window(Settings)
 						end
 					end)
 
-					-- Плавное отслеживание движения курсора/пальца без задержек
 					UserInputService.InputChanged:Connect(function(input)
 						if dragging and (input.UserInputType == Enum.UserInputType.MouseMovement or input.UserInputType == Enum.UserInputType.Touch) then
 							SetValue(input)
 						end
 					end)
 
-					-- Глобальный сброс перетаскивания при отпускании в любом месте экрана
 					UserInputService.InputEnded:Connect(function(input)
 						if input.UserInputType == Enum.UserInputType.MouseButton1 or input.UserInputType == Enum.UserInputType.Touch then
 							dragging = false
 						end
 					end)
 
-					-- Ручной ввод числа с клавиатуры
 					sliderValue.FocusLost:Connect(function()
 						local inputText = sliderValue.Text
 						local value, isPercent = inputText:match("^(%-?%d+%.?%d*)(%%?)$")
@@ -2243,7 +2223,7 @@ function MacLib:Window(Settings)
 							if isPercent == "%" then
 								value = Settings.Minimum + ((value / 100) * (Settings.Maximum - Settings.Minimum))
 							end
-							SetValue(value)
+							SetValue(math.round(value))
 						else
 							sliderValue.Text = ValueDisplayMethod(finalValue)
 						end
@@ -2252,15 +2232,19 @@ function MacLib:Window(Settings)
 					function SliderFunctions:UpdateName(Name)
 						sliderName.Text = Name
 					end
+
 					function SliderFunctions:SetVisibility(State)
 						slider.Visible = State
 					end
+
 					function SliderFunctions:UpdateValue(Value)
 						SetValue(Value)
 					end
+
 					function SliderFunctions:GetValue()
 						return finalValue
 					end
+
 					return SliderFunctions
 				end
 
