@@ -2014,26 +2014,60 @@ function MacLib:Window(Settings)
 				function SectionFunctions:Slider(Settings)
 					local SliderFunctions = {}
 
+					-- Карточка слайдера в едином стиле секции
 					local slider = Instance.new("Frame")
 					slider.Name = "Slider"
 					slider.AutomaticSize = Enum.AutomaticSize.Y
-					slider.BackgroundTransparency = 1
+					slider.BackgroundColor3 = Color3.fromRGB(255, 255, 255)
+					slider.BackgroundTransparency = 0.985
+					slider.BorderColor3 = Color3.fromRGB(0, 0, 0)
 					slider.BorderSizePixel = 0
-					slider.Size = UDim2.new(1, 0, 0, 44)
+					slider.Size = UDim2.new(1, 0, 0, 52)
 					slider.Parent = sectionContainer
+
+					local sliderCorner = Instance.new("UICorner")
+					sliderCorner.Name = "SliderCorner"
+					sliderCorner.CornerRadius = UDim.new(0, 8)
+					sliderCorner.Parent = slider
+
+					-- Градиентный контур как у секции
+					local sliderStroke = Instance.new("UIStroke")
+					sliderStroke.Name = "SliderStroke"
+					sliderStroke.ApplyStrokeMode = Enum.ApplyStrokeMode.Border
+					sliderStroke.Color = Color3.fromRGB(255, 255, 255)
+					sliderStroke.Transparency = 0.35
+					sliderStroke.Parent = slider
+
+					local sliderStrokeGradient = Instance.new("UIGradient")
+					sliderStrokeGradient.Name = "SliderStrokeGradient"
+					sliderStrokeGradient.Color = ColorSequence.new({
+						ColorSequenceKeypoint.new(0, Color3.fromRGB(120, 120, 120)),   -- Серый контур
+						ColorSequenceKeypoint.new(0.5, Color3.fromRGB(255, 255, 255)), -- Белый блик
+						ColorSequenceKeypoint.new(1, Color3.fromRGB(120, 120, 120))
+					})
+					sliderStrokeGradient.Rotation = 45
+					sliderStrokeGradient.Parent = sliderStroke
+
+					local sliderPadding = Instance.new("UIPadding")
+					sliderPadding.Name = "SliderPadding"
+					sliderPadding.PaddingBottom = UDim.new(0, 10)
+					sliderPadding.PaddingLeft = UDim.new(0, 14)
+					sliderPadding.PaddingRight = UDim.new(0, 14)
+					sliderPadding.PaddingTop = UDim.new(0, 9)
+					sliderPadding.Parent = slider
 
 					local sliderLayout = Instance.new("UIListLayout")
 					sliderLayout.Name = "SliderLayout"
 					sliderLayout.FillDirection = Enum.FillDirection.Vertical
 					sliderLayout.SortOrder = Enum.SortOrder.LayoutOrder
-					sliderLayout.Padding = UDim.new(0, 6)
+					sliderLayout.Padding = UDim.new(0, 8)
 					sliderLayout.Parent = slider
 
 					-- Верхняя строка: заголовок и поле со значением
 					local sliderTop = Instance.new("Frame")
 					sliderTop.Name = "SliderTop"
 					sliderTop.BackgroundTransparency = 1
-					sliderTop.Size = UDim2.new(1, 0, 0, 20)
+					sliderTop.Size = UDim2.new(1, 0, 0, 18)
 					sliderTop.LayoutOrder = 1
 					sliderTop.Parent = slider
 
@@ -2049,7 +2083,7 @@ function MacLib:Window(Settings)
 					sliderName.TextXAlignment = Enum.TextXAlignment.Left
 					sliderName.TextYAlignment = Enum.TextYAlignment.Center
 					sliderName.BackgroundTransparency = 1
-					sliderName.Size = UDim2.new(1, -60, 1, 0)
+					sliderName.Size = UDim2.new(1, -55, 1, 0)
 					sliderName.Position = UDim2.fromScale(0, 0)
 					sliderName.Parent = sliderTop
 
@@ -2064,7 +2098,7 @@ function MacLib:Window(Settings)
 					sliderValue.TextXAlignment = Enum.TextXAlignment.Center
 					sliderValue.AnchorPoint = Vector2.new(1, 0.5)
 					sliderValue.Position = UDim2.new(1, 0, 0.5, 0)
-					sliderValue.Size = UDim2.fromOffset(48, 20)
+					sliderValue.Size = UDim2.fromOffset(46, 18)
 					sliderValue.BackgroundColor3 = Color3.fromRGB(255, 255, 255)
 					sliderValue.BackgroundTransparency = 0.95
 					sliderValue.BorderSizePixel = 0
@@ -2088,7 +2122,7 @@ function MacLib:Window(Settings)
 					sliderTrackArea.AutoButtonColor = false
 					sliderTrackArea.BackgroundTransparency = 1
 					sliderTrackArea.BorderSizePixel = 0
-					sliderTrackArea.Size = UDim2.new(1, 0, 0, 16)
+					sliderTrackArea.Size = UDim2.new(1, 0, 0, 14)
 					sliderTrackArea.LayoutOrder = 2
 					sliderTrackArea.Parent = slider
 
@@ -2096,8 +2130,8 @@ function MacLib:Window(Settings)
 					sliderBar.Name = "SliderBar"
 					sliderBar.AnchorPoint = Vector2.new(0.5, 0.5)
 					sliderBar.Position = UDim2.fromScale(0.5, 0.5)
-					sliderBar.Size = UDim2.new(1, 0, 0, 5)
-					sliderBar.BackgroundColor3 = Color3.fromRGB(28, 28, 28)
+					sliderBar.Size = UDim2.new(1, 0, 0, 4)
+					sliderBar.BackgroundColor3 = Color3.fromRGB(38, 38, 38)
 					sliderBar.BorderSizePixel = 0
 					sliderBar.Parent = sliderTrackArea
 
@@ -2109,13 +2143,13 @@ function MacLib:Window(Settings)
 					sliderBarStroke.Name = "SliderBarStroke"
 					sliderBarStroke.ApplyStrokeMode = Enum.ApplyStrokeMode.Border
 					sliderBarStroke.Color = Color3.fromRGB(255, 255, 255)
-					sliderBarStroke.Transparency = 0.88
+					sliderBarStroke.Transparency = 0.9
 					sliderBarStroke.Parent = sliderBar
 
 					local sliderFill = Instance.new("Frame")
 					sliderFill.Name = "SliderFill"
 					sliderFill.BackgroundColor3 = Color3.fromRGB(255, 255, 255)
-					sliderFill.BackgroundTransparency = 0.15
+					sliderFill.BackgroundTransparency = 0.1
 					sliderFill.BorderSizePixel = 0
 					sliderFill.Size = UDim2.new(0, 0, 1, 0)
 					sliderFill.Parent = sliderBar
@@ -2128,7 +2162,7 @@ function MacLib:Window(Settings)
 					sliderHead.Name = "SliderHead"
 					sliderHead.AnchorPoint = Vector2.new(0.5, 0.5)
 					sliderHead.Position = UDim2.new(0, 0, 0.5, 0)
-					sliderHead.Size = UDim2.fromOffset(13, 13)
+					sliderHead.Size = UDim2.fromOffset(12, 12)
 					sliderHead.BackgroundColor3 = Color3.fromRGB(255, 255, 255)
 					sliderHead.BorderSizePixel = 0
 					sliderHead.Parent = sliderBar
