@@ -2443,168 +2443,295 @@ function MacLib:Window(Settings)
 
 				function SectionFunctions:Keybind(Settings)
 					local KeybindFunctions = {}
+
+					-- Карточка кейбинда в едином стиле секции
 					local keybind = Instance.new("Frame")
 					keybind.Name = "Keybind"
-					keybind.AutomaticSize = Enum.AutomaticSize.Y
-					keybind.BackgroundColor3 = Color3.fromRGB(0, 0, 0)
-					keybind.BackgroundTransparency = 1
+					keybind.BackgroundColor3 = Color3.fromRGB(255, 255, 255)
+					keybind.BackgroundTransparency = 0.985
 					keybind.BorderSizePixel = 0
 					keybind.Size = UDim2.new(1, 0, 0, 38)
 					keybind.Parent = sectionContainer
 
-					local keybindName = Instance.new("TextLabel")
-					keybindName.Name = "KeybindName"
-					keybindName.FontFace = Font.new(
-						assets.interFont,
-						Enum.FontWeight.Medium,
-						Enum.FontStyle.Normal
-					)
-					keybindName.Text = Settings.Name
-					keybindName.RichText = true
-					keybindName.TextColor3 = Color3.fromRGB(255, 255, 255)
-					keybindName.TextSize = 13
-					keybindName.TextTransparency = 0.5
-					keybindName.TextTruncate = Enum.TextTruncate.AtEnd
-					keybindName.TextXAlignment = Enum.TextXAlignment.Left
-					keybindName.TextYAlignment = Enum.TextYAlignment.Top
-					keybindName.AnchorPoint = Vector2.new(0, 0.5)
-					keybindName.AutomaticSize = Enum.AutomaticSize.XY
-					keybindName.BackgroundColor3 = Color3.fromRGB(255, 255, 255)
-					keybindName.BackgroundTransparency = 1
-					keybindName.BorderColor3 = Color3.fromRGB(0, 0, 0)
-					keybindName.BorderSizePixel = 0
-					keybindName.Position = UDim2.fromScale(0, 0.5)
-					keybindName.Parent = keybind
+					local keybindCorner = Instance.new("UICorner")
+					keybindCorner.Name = "KeybindCorner"
+					keybindCorner.CornerRadius = UDim.new(0, 8)
+					keybindCorner.Parent = keybind
 
-					local binderBtn = Instance.new("TextButton")
-					binderBtn.Name = "BinderBtn"
-					binderBtn.FontFace = Font.new(
-						assets.interFont,
-						Enum.FontWeight.Medium,
-						Enum.FontStyle.Normal
-					)
-					binderBtn.Text = "None"
-					binderBtn.TextColor3 = Color3.fromRGB(255, 255, 255)
-					binderBtn.TextSize = 12
-					binderBtn.TextTransparency = 0.3
-					binderBtn.AnchorPoint = Vector2.new(1, 0.5)
-					binderBtn.AutomaticSize = Enum.AutomaticSize.X
-					binderBtn.BackgroundColor3 = Color3.fromRGB(255, 255, 255)
-					binderBtn.BackgroundTransparency = 0.95
-					binderBtn.BorderSizePixel = 0
-					binderBtn.Position = UDim2.fromScale(1, 0.5)
-					binderBtn.Size = UDim2.fromOffset(36, 22)
-					binderBtn.Parent = keybind
+					-- Градиентный контур в стиле секции
+					local keybindStroke = Instance.new("UIStroke")
+					keybindStroke.Name = "KeybindStroke"
+					keybindStroke.ApplyStrokeMode = Enum.ApplyStrokeMode.Border
+					keybindStroke.Color = Color3.fromRGB(255, 255, 255)
+					keybindStroke.Transparency = 0.35
+					keybindStroke.Parent = keybind
 
-					local binderCorner = Instance.new("UICorner")
-					binderCorner.CornerRadius = UDim.new(0, 5)
-					binderCorner.Parent = binderBtn
-
-					-- Контур с градиентом как у секции
-					local binderStroke = Instance.new("UIStroke")
-					binderStroke.Name = "BinderStroke"
-					binderStroke.ApplyStrokeMode = Enum.ApplyStrokeMode.Border
-					binderStroke.Color = Color3.fromRGB(255, 255, 255)
-					binderStroke.Transparency = 0.4
-					binderStroke.Parent = binderBtn
-
-					local binderGradient = Instance.new("UIGradient")
-					binderGradient.Name = "BinderGradient"
-					binderGradient.Color = ColorSequence.new({
+					local keybindStrokeGradient = Instance.new("UIGradient")
+					keybindStrokeGradient.Name = "KeybindStrokeGradient"
+					keybindStrokeGradient.Color = ColorSequence.new({
 						ColorSequenceKeypoint.new(0, Color3.fromRGB(120, 120, 120)),
 						ColorSequenceKeypoint.new(0.5, Color3.fromRGB(255, 255, 255)),
 						ColorSequenceKeypoint.new(1, Color3.fromRGB(120, 120, 120))
 					})
-					binderGradient.Rotation = 45
-					binderGradient.Parent = binderStroke
+					keybindStrokeGradient.Rotation = 45
+					keybindStrokeGradient.Parent = keybindStroke
 
-					local binderPadding = Instance.new("UIPadding")
-					binderPadding.PaddingLeft = UDim.new(0, 8)
-					binderPadding.PaddingRight = UDim.new(0, 8)
-					binderPadding.Parent = binderBtn
+					local keybindPadding = Instance.new("UIPadding")
+					keybindPadding.PaddingLeft = UDim.new(0, 14)
+					keybindPadding.PaddingRight = UDim.new(0, 14)
+					keybindPadding.Parent = keybind
+
+					-- Название слева
+					local keybindName = Instance.new("TextLabel")
+					keybindName.Name = "KeybindName"
+					keybindName.FontFace = Font.new(assets.interFont, Enum.FontWeight.Medium, Enum.FontStyle.Normal)
+					keybindName.Text = Settings.Name
+					keybindName.RichText = true
+					keybindName.TextColor3 = Color3.fromRGB(255, 255, 255)
+					keybindName.TextSize = 13
+					keybindName.TextTransparency = 0.4
+					keybindName.TextTruncate = Enum.TextTruncate.AtEnd
+					keybindName.TextXAlignment = Enum.TextXAlignment.Left
+					keybindName.TextYAlignment = Enum.TextYAlignment.Center
+					keybindName.AnchorPoint = Vector2.new(0, 0.5)
+					keybindName.Position = UDim2.fromScale(0, 0.5)
+					keybindName.Size = UDim2.new(1, -75, 1, 0)
+					keybindName.BackgroundTransparency = 1
+					keybindName.BorderSizePixel = 0
+					keybindName.Parent = keybind
+
+					-- Кнопка выбора клавиши справа
+					local binderBtn = Instance.new("TextButton")
+					binderBtn.Name = "BinderBtn"
+					binderBtn.FontFace = Font.new(assets.interFont, Enum.FontWeight.SemiBold, Enum.FontStyle.Normal)
+					binderBtn.Text = "None"
+					binderBtn.TextColor3 = Color3.fromRGB(255, 255, 255)
+					binderBtn.TextSize = 12
+					binderBtn.TextTransparency = 0.25
+					binderBtn.AnchorPoint = Vector2.new(1, 0.5)
+					binderBtn.AutomaticSize = Enum.AutomaticSize.X
+					binderBtn.BackgroundColor3 = Color3.fromRGB(255, 255, 255)
+					binderBtn.BackgroundTransparency = 0.94
+					binderBtn.BorderSizePixel = 0
+					binderBtn.Position = UDim2.fromScale(1, 0.5)
+					binderBtn.Size = UDim2.fromOffset(40, 22)
+					binderBtn.Parent = keybind
+
+					local binderBtnCorner = Instance.new("UICorner")
+					binderBtnCorner.CornerRadius = UDim.new(0, 5)
+					binderBtnCorner.Parent = binderBtn
+
+					local binderBtnStroke = Instance.new("UIStroke")
+					binderBtnStroke.ApplyStrokeMode = Enum.ApplyStrokeMode.Border
+					binderBtnStroke.Color = Color3.fromRGB(255, 255, 255)
+					binderBtnStroke.Transparency = 0.8
+					binderBtnStroke.Parent = binderBtn
+
+					local binderBtnPadding = Instance.new("UIPadding")
+					binderBtnPadding.PaddingLeft = UDim.new(0, 8)
+					binderBtnPadding.PaddingRight = UDim.new(0, 8)
+					binderBtnPadding.Parent = binderBtn
+
+					local mobileBox = Instance.new("TextBox")
+					mobileBox.Name = "MobileBox"
+					mobileBox.Text = ""
+					mobileBox.BackgroundTransparency = 1
+					mobileBox.Size = UDim2.fromScale(1, 1)
+					mobileBox.Visible = false
+					mobileBox.Parent = binderBtn
 
 					local binding = false
-					local currentBind = Settings.Default
-					local inputConn = nil
+					local currentBind = nil
 
-					local function formatKeyName(key)
+					local function parseKey(inputName)
+						if not inputName or inputName == "" then return nil end
+						local clean = tostring(inputName):gsub("%s+", ""):upper()
+
+						local aliases = {
+							["NONE"] = nil,
+							["ESC"] = Enum.KeyCode.Escape,
+							["ESCAPE"] = Enum.KeyCode.Escape,
+							["DEL"] = Enum.KeyCode.Delete,
+							["DELETE"] = Enum.KeyCode.Delete,
+							["BACKSPACE"] = nil,
+							["SPACE"] = Enum.KeyCode.Space,
+							["SHIFT"] = Enum.KeyCode.LeftShift,
+							["LSHIFT"] = Enum.KeyCode.LeftShift,
+							["RSHIFT"] = Enum.KeyCode.RightShift,
+							["CTRL"] = Enum.KeyCode.LeftControl,
+							["LCTRL"] = Enum.KeyCode.LeftControl,
+							["RCTRL"] = Enum.KeyCode.RightControl,
+							["ALT"] = Enum.KeyCode.LeftAlt,
+							["LALT"] = Enum.KeyCode.LeftAlt,
+							["RALT"] = Enum.KeyCode.RightAlt,
+							["TAB"] = Enum.KeyCode.Tab,
+							["ENTER"] = Enum.KeyCode.Return,
+							["RETURN"] = Enum.KeyCode.Return,
+							["MB1"] = Enum.UserInputType.MouseButton1,
+							["M1"] = Enum.UserInputType.MouseButton1,
+							["MB2"] = Enum.UserInputType.MouseButton2,
+							["M2"] = Enum.UserInputType.MouseButton2,
+							["MB3"] = Enum.UserInputType.MouseButton3,
+							["M3"] = Enum.UserInputType.MouseButton3,
+						}
+
+						if aliases[clean] ~= nil or clean == "NONE" or clean == "BACKSPACE" then
+							return aliases[clean]
+						end
+
+						local ok, code = pcall(function() return Enum.KeyCode[clean] end)
+						if ok and code then return code end
+
+						if #clean == 1 then
+							local s, c = pcall(function() return Enum.KeyCode[clean] end)
+							if s and c then return c end
+						end
+						return nil
+					end
+
+					local function formatKey(key)
 						if not key then return "None" end
 						if typeof(key) == "EnumItem" then
+							if key == Enum.UserInputType.MouseButton1 then return "MB1" end
+							if key == Enum.UserInputType.MouseButton2 then return "MB2" end
+							if key == Enum.UserInputType.MouseButton3 then return "MB3" end
 							return key.Name
 						end
 						return tostring(key)
 					end
 
-					binderBtn.Text = formatKeyName(currentBind)
+					if Settings.Default ~= nil then
+						currentBind = typeof(Settings.Default) == "string" and parseKey(Settings.Default) or Settings.Default
+					end
+					binderBtn.Text = formatKey(currentBind)
 
-					-- Выбор любой клавиши или кнопки мыши
 					binderBtn.MouseButton1Click:Connect(function()
 						if binding then return end
 						binding = true
 						binderBtn.Text = "..."
-						Tween(binderStroke, TweenInfo.new(0.2), { Transparency = 0.15 }):Play()
-						local connection
-						connection = UserInputService.InputBegan:Connect(function(input)
-							if input.UserInputType == Enum.UserInputType.MouseMovement then return end
-							local chosenKey = nil
-							if input.UserInputType == Enum.UserInputType.Keyboard then
-								if input.KeyCode == Enum.KeyCode.Escape or input.KeyCode == Enum.KeyCode.Backspace then
-									chosenKey = nil
-								else
-									chosenKey = input.KeyCode
-								end
-							elseif input.UserInputType == Enum.UserInputType.MouseButton1 then
-								chosenKey = Enum.UserInputType.MouseButton1
-							elseif input.UserInputType == Enum.UserInputType.MouseButton2 then
-								chosenKey = Enum.UserInputType.MouseButton2
-							elseif input.UserInputType == Enum.UserInputType.MouseButton3 then
-								chosenKey = Enum.UserInputType.MouseButton3
-							end
-							connection:Disconnect()
-							currentBind = chosenKey
-							KeybindFunctions.Bind = currentBind
-							binderBtn.Text = formatKeyName(currentBind)
+						Tween(binderBtnStroke, TweenInfo.new(0.2), { Transparency = 0.2 }):Play()
+
+						mobileBox.Visible = true
+						mobileBox.Text = ""
+						task.defer(function()
+							mobileBox:CaptureFocus()
+						end)
+
+						local inputConnection = nil
+						local textConnection = nil
+						local focusLostConnection = nil
+
+						local function finish(chosen)
+							if not binding then return end
 							binding = false
-							Tween(binderStroke, TweenInfo.new(0.2), { Transparency = 0.4 }):Play()
+
+							if inputConnection then inputConnection:Disconnect(); inputConnection = nil end
+							if textConnection then textConnection:Disconnect(); textConnection = nil end
+							if focusLostConnection then focusLostConnection:Disconnect(); focusLostConnection = nil end
+
+							mobileBox.Visible = false
+							mobileBox:ReleaseFocus()
+
+							currentBind = chosen
+							KeybindFunctions.Bind = currentBind
+							binderBtn.Text = formatKey(currentBind)
+
+							Tween(binderBtnStroke, TweenInfo.new(0.2), { Transparency = 0.8 }):Play()
+
 							if Settings.onBinded then
 								task.spawn(Settings.onBinded, currentBind)
 							end
+						end
+
+						textConnection = mobileBox:GetPropertyChangedSignal("Text"):Connect(function()
+							local val = mobileBox.Text
+							if val ~= "" and val ~= "..." then
+								local key = parseKey(val)
+								if key ~= nil or val:upper() == "NONE" or val:upper() == "ESC" then
+									finish(key)
+								end
+							end
+						end)
+
+						focusLostConnection = mobileBox.FocusLost:Connect(function()
+							if mobileBox.Text ~= "" then
+								finish(parseKey(mobileBox.Text))
+							else
+								finish(currentBind)
+							end
+						end)
+
+						task.defer(function()
+							if not binding then return end
+							inputConnection = UserInputService.InputBegan:Connect(function(inp)
+								if inp.UserInputType == Enum.UserInputType.MouseMovement then return end
+
+								local selected = nil
+								if inp.UserInputType == Enum.UserInputType.Keyboard then
+									if inp.KeyCode == Enum.KeyCode.Escape or inp.KeyCode == Enum.KeyCode.Backspace or inp.KeyCode == Enum.KeyCode.Delete then
+										selected = nil
+									else
+										selected = inp.KeyCode
+									end
+									finish(selected)
+								elseif inp.UserInputType == Enum.UserInputType.MouseButton1 then
+									finish(Enum.UserInputType.MouseButton1)
+								elseif inp.UserInputType == Enum.UserInputType.MouseButton2 then
+									finish(Enum.UserInputType.MouseButton2)
+								elseif inp.UserInputType == Enum.UserInputType.MouseButton3 then
+									finish(Enum.UserInputType.MouseButton3)
+								end
+							end)
 						end)
 					end)
 
-					-- Мгновенная активация функции в момент нажатия
-					inputConn = UserInputService.InputBegan:Connect(function(input, gameProcessed)
-						if gameProcessed or binding or not currentBind then return end
-						local match = false
-						if input.UserInputType == Enum.UserInputType.Keyboard and input.KeyCode == currentBind then
-							match = true
-						elseif input.UserInputType == currentBind then
-							match = true
+					local keyActivation = UserInputService.InputBegan:Connect(function(inp)
+						if UserInputService:GetFocusedTextBox() then return end
+						if binding or not currentBind then return end
+
+						local isTriggered = false
+						if inp.UserInputType == Enum.UserInputType.Keyboard and inp.KeyCode == currentBind then
+							isTriggered = true
+						elseif inp.UserInputType == currentBind then
+							isTriggered = true
 						end
-						if match and Settings.Callback then
+
+						if isTriggered and Settings.Callback then
 							task.spawn(Settings.Callback, currentBind)
 						end
 					end)
 
+					keybind.Destroying:Connect(function()
+						if keyActivation then
+							keyActivation:Disconnect()
+							keyActivation = nil
+						end
+					end)
+
 					function KeybindFunctions:Bind(Key)
-						currentBind = Key
+						currentBind = typeof(Key) == "string" and parseKey(Key) or Key
 						KeybindFunctions.Bind = currentBind
-						binderBtn.Text = formatKeyName(currentBind)
+						binderBtn.Text = formatKey(currentBind)
 					end
+
 					function KeybindFunctions:Unbind()
 						currentBind = nil
 						KeybindFunctions.Bind = nil
 						binderBtn.Text = "None"
 					end
+
 					function KeybindFunctions:GetBind()
 						return currentBind
 					end
+
 					function KeybindFunctions:UpdateName(Name)
 						keybindName.Text = Name
 					end
+
 					function KeybindFunctions:SetVisibility(State)
 						keybind.Visible = State
 					end
+
 					return KeybindFunctions
 				end
 
@@ -4232,8 +4359,7 @@ function MacLib:Window(Settings)
 						local r = clampInput(modifierInputs.Red.Text, 0, 255)
 						local g = clampInput(modifierInputs.Green.Text, 0, 255)
 						local b = clampInput(modifierInputs.Blue.Text, 0, 255)
-						modifierInputs.Red.Text = r
-						modifierInputs.Green.Text = g
+						modifierInputs.Red.Text = r						modifierInputs.Green.Text = g
 						modifierInputs.Blue.Text = b
 
 						hue, saturation, value = Color3.fromRGB(r, g, b):ToHSV()
