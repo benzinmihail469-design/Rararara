@@ -2016,249 +2016,241 @@ function MacLib:Window(Settings)
 					local slider = Instance.new("Frame")
 					slider.Name = "Slider"
 					slider.AutomaticSize = Enum.AutomaticSize.Y
-					slider.BackgroundColor3 = Color3.fromRGB(0, 0, 0)
 					slider.BackgroundTransparency = 1
-					slider.BorderColor3 = Color3.fromRGB(0, 0, 0)
 					slider.BorderSizePixel = 0
-					slider.Size = UDim2.new(1, 0, 0, 38)
+					slider.Size = UDim2.new(1, 0, 0, 44)
 					slider.Parent = sectionContainer
+
+					local sliderLayout = Instance.new("UIListLayout")
+					sliderLayout.Name = "SliderLayout"
+					sliderLayout.FillDirection = Enum.FillDirection.Vertical
+					sliderLayout.SortOrder = Enum.SortOrder.LayoutOrder
+					sliderLayout.Padding = UDim.new(0, 6)
+					sliderLayout.Parent = slider
+
+					-- Верхняя строка: заголовок и окошко со значением
+					local sliderTop = Instance.new("Frame")
+					sliderTop.Name = "SliderTop"
+					sliderTop.BackgroundTransparency = 1
+					sliderTop.Size = UDim2.new(1, 0, 0, 20)
+					sliderTop.LayoutOrder = 1
+					sliderTop.Parent = slider
 
 					local sliderName = Instance.new("TextLabel")
 					sliderName.Name = "SliderName"
-					sliderName.FontFace = Font.new(
-						assets.interFont,
-						Enum.FontWeight.Medium,
-						Enum.FontStyle.Normal
-					)
+					sliderName.FontFace = Font.new(assets.interFont, Enum.FontWeight.Medium, Enum.FontStyle.Normal)
 					sliderName.Text = Settings.Name
 					sliderName.RichText = true
 					sliderName.TextColor3 = Color3.fromRGB(255, 255, 255)
 					sliderName.TextSize = 13
-					sliderName.TextTransparency = 0.5
+					sliderName.TextTransparency = 0.4
 					sliderName.TextTruncate = Enum.TextTruncate.AtEnd
 					sliderName.TextXAlignment = Enum.TextXAlignment.Left
-					sliderName.TextYAlignment = Enum.TextYAlignment.Top
-					sliderName.AnchorPoint = Vector2.new(0, 0.5)
-					sliderName.AutomaticSize = Enum.AutomaticSize.XY
-					sliderName.BackgroundColor3 = Color3.fromRGB(255, 255, 255)
+					sliderName.TextYAlignment = Enum.TextYAlignment.Center
 					sliderName.BackgroundTransparency = 1
-					sliderName.BorderColor3 = Color3.fromRGB(0, 0, 0)
-					sliderName.BorderSizePixel = 0
-					sliderName.Position = UDim2.fromScale(1.3e-07, 0.5)
-					sliderName.Parent = slider
-
-					local sliderElements = Instance.new("Frame")
-					sliderElements.Name = "SliderElements"
-					sliderElements.AnchorPoint = Vector2.new(1, 0)
-					sliderElements.BackgroundColor3 = Color3.fromRGB(255, 255, 255)
-					sliderElements.BackgroundTransparency = 1
-					sliderElements.BorderColor3 = Color3.fromRGB(0, 0, 0)
-					sliderElements.BorderSizePixel = 0
-					sliderElements.Position = UDim2.fromScale(1, 0)
-					sliderElements.Size = UDim2.fromScale(1, 1)
+					sliderName.Size = UDim2.new(1, -60, 1, 0)
+					sliderName.Position = UDim2.fromScale(0, 0)
+					sliderName.Parent = sliderTop
 
 					local sliderValue = Instance.new("TextBox")
 					sliderValue.Name = "SliderValue"
-					sliderValue.FontFace = Font.new(
-						assets.interFont,
-						Enum.FontWeight.Medium,
-						Enum.FontStyle.Normal
-					)
-					sliderValue.Text = "100%"
+					sliderValue.FontFace = Font.new(assets.interFont, Enum.FontWeight.Medium, Enum.FontStyle.Normal)
+					sliderValue.Text = "0"
 					sliderValue.TextColor3 = Color3.fromRGB(255, 255, 255)
 					sliderValue.TextSize = 12
-					sliderValue.TextTransparency = 0.4
+					sliderValue.TextTransparency = 0.3
 					sliderValue.TextTruncate = Enum.TextTruncate.AtEnd
+					sliderValue.TextXAlignment = Enum.TextXAlignment.Center
+					sliderValue.AnchorPoint = Vector2.new(1, 0.5)
+					sliderValue.Position = UDim2.new(1, 0, 0.5, 0)
+					sliderValue.Size = UDim2.fromOffset(46, 20)
 					sliderValue.BackgroundColor3 = Color3.fromRGB(255, 255, 255)
 					sliderValue.BackgroundTransparency = 0.95
-					sliderValue.BorderColor3 = Color3.fromRGB(0, 0, 0)
 					sliderValue.BorderSizePixel = 0
-					sliderValue.LayoutOrder = 1
-					sliderValue.Position = UDim2.fromScale(-0.0789, 0.171)
-					sliderValue.Size = UDim2.fromOffset(41, 21)
+					sliderValue.Parent = sliderTop
 
-					local sliderValueUICorner = Instance.new("UICorner")
-					sliderValueUICorner.Name = "SliderValueUICorner"
-					sliderValueUICorner.CornerRadius = UDim.new(0, 4)
-					sliderValueUICorner.Parent = sliderValue
+					local sliderValueCorner = Instance.new("UICorner")
+					sliderValueCorner.CornerRadius = UDim.new(0, 4)
+					sliderValueCorner.Parent = sliderValue
 
-					local sliderValueUIStroke = Instance.new("UIStroke")
-					sliderValueUIStroke.Name = "SliderValueUIStroke"
-					sliderValueUIStroke.ApplyStrokeMode = Enum.ApplyStrokeMode.Border
-					sliderValueUIStroke.Color = Color3.fromRGB(255, 255, 255)
-					sliderValueUIStroke.Transparency = 0.9
-					sliderValueUIStroke.Parent = sliderValue
+					local sliderValueStroke = Instance.new("UIStroke")
+					sliderValueStroke.Name = "SliderValueStroke"
+					sliderValueStroke.ApplyStrokeMode = Enum.ApplyStrokeMode.Border
+					sliderValueStroke.Color = Color3.fromRGB(255, 255, 255)
+					sliderValueStroke.Transparency = 0.4
+					sliderValueStroke.Parent = sliderValue
 
-					local sliderValueUIPadding = Instance.new("UIPadding")
-					sliderValueUIPadding.Name = "SliderValueUIPadding"
-					sliderValueUIPadding.PaddingLeft = UDim.new(0, 2)
-					sliderValueUIPadding.PaddingRight = UDim.new(0, 2)
-					sliderValueUIPadding.Parent = sliderValue
+					local sliderValueGradient = Instance.new("UIGradient")
+					sliderValueGradient.Name = "SliderValueGradient"
+					sliderValueGradient.Color = ColorSequence.new({
+						ColorSequenceKeypoint.new(0, Color3.fromRGB(120, 120, 120)),
+						ColorSequenceKeypoint.new(0.5, Color3.fromRGB(255, 255, 255)),
+						ColorSequenceKeypoint.new(1, Color3.fromRGB(120, 120, 120))
+					})
+					sliderValueGradient.Rotation = 45
+					sliderValueGradient.Parent = sliderValue
 
-					sliderValue.Parent = sliderElements
+					-- Нижняя строка: трек на всю длину
+					local sliderTrackArea = Instance.new("TextButton")
+					sliderTrackArea.Name = "SliderTrackArea"
+					sliderTrackArea.Text = ""
+					sliderTrackArea.AutoButtonColor = false
+					sliderTrackArea.BackgroundTransparency = 1
+					sliderTrackArea.BorderSizePixel = 0
+					sliderTrackArea.Size = UDim2.new(1, 0, 0, 16)
+					sliderTrackArea.LayoutOrder = 2
+					sliderTrackArea.Parent = slider
 
-					local sliderElementsUIListLayout = Instance.new("UIListLayout")
-					sliderElementsUIListLayout.Name = "SliderElementsUIListLayout"
-					sliderElementsUIListLayout.Padding = UDim.new(0, 20)
-					sliderElementsUIListLayout.FillDirection = Enum.FillDirection.Horizontal
-					sliderElementsUIListLayout.HorizontalAlignment = Enum.HorizontalAlignment.Right
-					sliderElementsUIListLayout.SortOrder = Enum.SortOrder.LayoutOrder
-					sliderElementsUIListLayout.VerticalAlignment = Enum.VerticalAlignment.Center
-					sliderElementsUIListLayout.Parent = sliderElements
-
-					local sliderBar = Instance.new("ImageLabel")
+					local sliderBar = Instance.new("Frame")
 					sliderBar.Name = "SliderBar"
-					sliderBar.Image = "rbxassetid://18772615246"
-					sliderBar.ImageColor3 = Color3.fromRGB(87, 86, 86)
-					sliderBar.BackgroundColor3 = Color3.fromRGB(255, 255, 255)
-					sliderBar.BackgroundTransparency = 1
-					sliderBar.BorderColor3 = Color3.fromRGB(0, 0, 0)
+					sliderBar.AnchorPoint = Vector2.new(0.5, 0.5)
+					sliderBar.Position = UDim2.fromScale(0.5, 0.5)
+					sliderBar.Size = UDim2.new(1, 0, 0, 5)
+					sliderBar.BackgroundColor3 = Color3.fromRGB(30, 30, 30)
 					sliderBar.BorderSizePixel = 0
-					sliderBar.Position = UDim2.fromScale(0.219, 0.457)
-					sliderBar.Size = UDim2.fromOffset(123, 3)
+					sliderBar.Parent = sliderTrackArea
 
-					local sliderHead = Instance.new("ImageButton")
+					local sliderBarCorner = Instance.new("UICorner")
+					sliderBarCorner.CornerRadius = UDim.new(1, 0)
+					sliderBarCorner.Parent = sliderBar
+
+					local sliderBarStroke = Instance.new("UIStroke")
+					sliderBarStroke.Name = "SliderBarStroke"
+					sliderBarStroke.ApplyStrokeMode = Enum.ApplyStrokeMode.Border
+					sliderBarStroke.Color = Color3.fromRGB(255, 255, 255)
+					sliderBarStroke.Transparency = 0.45
+					sliderBarStroke.Parent = sliderBar
+
+					local sliderBarGradient = Instance.new("UIGradient")
+					sliderBarGradient.Name = "SliderBarGradient"
+					sliderBarGradient.Color = ColorSequence.new({
+						ColorSequenceKeypoint.new(0, Color3.fromRGB(120, 120, 120)),
+						ColorSequenceKeypoint.new(0.5, Color3.fromRGB(255, 255, 255)),
+						ColorSequenceKeypoint.new(1, Color3.fromRGB(120, 120, 120))
+					})
+					sliderBarGradient.Rotation = 45
+					sliderBarGradient.Parent = sliderBarStroke
+
+					local sliderFill = Instance.new("Frame")
+					sliderFill.Name = "SliderFill"
+					sliderFill.BackgroundColor3 = Color3.fromRGB(255, 255, 255)
+					sliderFill.BackgroundTransparency = 0.15
+					sliderFill.BorderSizePixel = 0
+					sliderFill.Size = UDim2.new(0, 0, 1, 0)
+					sliderFill.Parent = sliderBar
+
+					local sliderFillCorner = Instance.new("UICorner")
+					sliderFillCorner.CornerRadius = UDim.new(1, 0)
+					sliderFillCorner.Parent = sliderFill					local sliderHead = Instance.new("Frame")
 					sliderHead.Name = "SliderHead"
-					sliderHead.Image = "rbxassetid://18772834246"
 					sliderHead.AnchorPoint = Vector2.new(0.5, 0.5)
+					sliderHead.Position = UDim2.new(0, 0, 0.5, 0)
+					sliderHead.Size = UDim2.fromOffset(13, 13)
 					sliderHead.BackgroundColor3 = Color3.fromRGB(255, 255, 255)
-					sliderHead.BackgroundTransparency = 1
-					sliderHead.BorderColor3 = Color3.fromRGB(0, 0, 0)
 					sliderHead.BorderSizePixel = 0
-					sliderHead.Position = UDim2.fromScale(1, 0.5)
-					sliderHead.Size = UDim2.fromOffset(12, 12)
 					sliderHead.Parent = sliderBar
 
-					sliderBar.Parent = sliderElements
+					local sliderHeadCorner = Instance.new("UICorner")
+					sliderHeadCorner.CornerRadius = UDim.new(1, 0)
+					sliderHeadCorner.Parent = sliderHead
 
-					local sliderElementsUIPadding = Instance.new("UIPadding")
-					sliderElementsUIPadding.Name = "SliderElementsUIPadding"
-					sliderElementsUIPadding.PaddingTop = UDim.new(0, 3)
-					sliderElementsUIPadding.Parent = sliderElements
-
-					sliderElements.Parent = slider
+					local sliderHeadStroke = Instance.new("UIStroke")
+					sliderHeadStroke.ApplyStrokeMode = Enum.ApplyStrokeMode.Border
+					sliderHeadStroke.Color = Color3.fromRGB(15, 15, 15)
+					sliderHeadStroke.Transparency = 0.5
+					sliderHeadStroke.Parent = sliderHead
 
 					local dragging = false
+					local finalValue = Settings.Default or Settings.Minimum or 0
 
 					local DisplayMethods = {
-						Hundredths = function(sliderValue)
-							return string.format("%.2f", sliderValue)
+						Hundredths = function(val) return string.format("%.2f", val) end,
+						Tenths = function(val) return string.format("%.1f", val) end,
+						Round = function(val) return tostring(math.round(val)) end,
+						Degrees = function(val) return tostring(math.round(val)) .. "°" end,
+						Percent = function(val)
+							local range = (Settings.Maximum - Settings.Minimum)
+							local pct = range > 0 and ((val - Settings.Minimum) / range * 100) or 0
+							return tostring(math.round(pct)) .. "%"
 						end,
-						Tenths = function(sliderValue)
-							return string.format("%.1f", sliderValue)
-						end,
-						Round = function(sliderValue)
-							return tostring(math.round(sliderValue))
-						end,
-						Degrees = function(sliderValue)
-							return tostring(math.round(sliderValue)) .. "°"
-						end,
-						Percent = function(sliderValue)
-							local percentage = (sliderValue - Settings.Minimum) / (Settings.Maximum - Settings.Minimum) * 100
-							return tostring(math.round(percentage)) .. "%"
-						end,
-						Value = function(sliderValue)
-							return tostring(sliderValue)
-						end
+						Value = function(val) return tostring(val) end
 					}
 
-					local ValueDisplayMethod = DisplayMethods[Settings.DisplayMethod]
-					local finalValue
+					local ValueDisplayMethod = DisplayMethods[Settings.DisplayMethod] or DisplayMethods.Value
 
-					local function SetValue(val, ignorecallback)
-						local posXScale
+					local function SetValue(val, ignoreCallback)
+						local posXScale = 0
+						local range = Settings.Maximum - Settings.Minimum
 
-						if typeof(val) == "Instance" then
-							local input = val
-							posXScale = math.clamp((input.Position.X - sliderBar.AbsolutePosition.X) / sliderBar.AbsoluteSize.X, 0, 1)
+						if typeof(val) == "Instance" or (typeof(val) == "table" and val.Position) then
+							local barWidth = sliderBar.AbsoluteSize.X
+							if barWidth > 0 then
+								local relativeX = math.clamp(val.Position.X - sliderBar.AbsolutePosition.X, 0, barWidth)
+								posXScale = relativeX / barWidth
+							end
+							finalValue = range > 0 and (Settings.Minimum + (posXScale * range)) or Settings.Minimum
 						else
-							local value = val
-							posXScale = (value - Settings.Minimum) / (Settings.Maximum - Settings.Minimum)
+							local num = math.clamp(tonumber(val) or Settings.Minimum, Settings.Minimum, Settings.Maximum)
+							finalValue = num
+							posXScale = range > 0 and math.clamp((num - Settings.Minimum) / range, 0, 1) or 0
 						end
 
-						local pos = UDim2.new(posXScale, 0, 0.5, 0)
-						sliderHead.Position = pos
-
-						finalValue = posXScale * (Settings.Maximum - Settings.Minimum) + Settings.Minimum
+						-- Мгновенное аппаратное позиционирование без перерасчетов лейаута
+						sliderFill.Size = UDim2.new(posXScale, 0, 1, 0)
+						sliderHead.Position = UDim2.new(posXScale, 0, 0.5, 0)
 						sliderValue.Text = ValueDisplayMethod(finalValue)
 
-						if not ignorecallback then
+						if not ignoreCallback and Settings.Callback then
 							task.spawn(function()
-								if Settings.Callback then
-									Settings.Callback(finalValue)
-								end
+								Settings.Callback(finalValue)
 							end)
 						end
-						
+
 						SliderFunctions.Value = finalValue
 					end
 
-					SetValue(Settings.Default, true)
+					SetValue(Settings.Default or Settings.Minimum or 0, true)
 
-					sliderHead.InputBegan:Connect(function(input)
+					-- Активация перетаскивания по всей интерактивной полосе
+					sliderTrackArea.InputBegan:Connect(function(input)
 						if input.UserInputType == Enum.UserInputType.MouseButton1 or input.UserInputType == Enum.UserInputType.Touch then
 							dragging = true
 							SetValue(input)
 						end
 					end)
 
-					sliderHead.InputEnded:Connect(function(input)
-						if input.UserInputType == Enum.UserInputType.MouseButton1 or input.UserInputType == Enum.UserInputType.Touch then
-							dragging = false
-						end
-					end)
-
-					sliderValue.FocusLost:Connect(function(enterPressed)
-						local inputText = sliderValue.Text
-						local value, isPercent = inputText:match("^(%-?%d+%.?%d*)(%%?)$")
-
-						if value then
-							value = tonumber(value)
-							isPercent = isPercent == "%"
-
-							if isPercent then
-								value = Settings.Minimum + (value / 100) * (Settings.Maximum - Settings.Minimum)
-							end
-
-							local newValue = math.clamp(value, Settings.Minimum, Settings.Maximum)
-							SetValue(newValue)
-						else
-							sliderValue.Text = ValueDisplayMethod(sliderValue)
-						end
-					end)
-
+					-- Плавное отслеживание движения курсора/пальца без задержек
 					UserInputService.InputChanged:Connect(function(input)
 						if dragging and (input.UserInputType == Enum.UserInputType.MouseMovement or input.UserInputType == Enum.UserInputType.Touch) then
 							SetValue(input)
 						end
 					end)
 
-					local function updateSliderBarSize()
-						local padding = sliderElementsUIListLayout.Padding.Offset
-						local sliderValueWidth = sliderValue.AbsoluteSize.X
-						local sliderNameWidth = sliderName.AbsoluteSize.X
-						local totalWidth = sliderElements.AbsoluteSize.X
+					-- Глобальный сброс перетаскивания при отпускании в любом месте экрана
+					UserInputService.InputEnded:Connect(function(input)
+						if input.UserInputType == Enum.UserInputType.MouseButton1 or input.UserInputType == Enum.UserInputType.Touch then
+							dragging = false
+						end
+					end)
 
-						local newBarWidth = totalWidth - (padding + sliderValueWidth + sliderNameWidth + 20)
-						sliderBar.Size = UDim2.new(sliderBar.Size.X.Scale, newBarWidth, sliderBar.Size.Y.Scale, sliderBar.Size.Y.Offset)
-					end
+					-- Ручной ввод числа с клавиатуры
+					sliderValue.FocusLost:Connect(function()
+						local inputText = sliderValue.Text
+						local value, isPercent = inputText:match("^(%-?%d+%.?%d*)(%%?)$")
 
-					updateSliderBarSize()
-
-					sliderName:GetPropertyChangedSignal("AbsoluteSize"):Connect(updateSliderBarSize)
-
-					-- Оптимизация: реагируем только на изменение ШИРИНЫ секции,
-					-- чтобы не вызывать 60 пересчётов в секунду во время твина высоты.
-					local lastSectionWidth = section.AbsoluteSize.X
-					section:GetPropertyChangedSignal("AbsoluteSize"):Connect(function()
-						if section.AbsoluteSize.X ~= lastSectionWidth then
-							lastSectionWidth = section.AbsoluteSize.X
-							updateSliderBarSize()
+						if value then
+							value = tonumber(value)
+							if isPercent == "%" then
+								value = Settings.Minimum + ((value / 100) * (Settings.Maximum - Settings.Minimum))
+							end
+							SetValue(value)
+						else
+							sliderValue.Text = ValueDisplayMethod(finalValue)
 						end
 					end)
 
 					function SliderFunctions:UpdateName(Name)
-						sliderName = Name
+						sliderName.Text = Name
 					end
 					function SliderFunctions:SetVisibility(State)
 						slider.Visible = State
@@ -4376,8 +4368,7 @@ function MacLib:Window(Settings)
 					
 					function ColorpickerFunctions:UpdateName(New)
 						colorpickerName.Text = New
-					end
-					function ColorpickerFunctions:SetVisibility(State)
+					end					function ColorpickerFunctions:SetVisibility(State)
 						colorpicker.Visible = State
 					end
 			
