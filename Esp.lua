@@ -1453,8 +1453,7 @@ function MacLib:Window(Settings)
 			elementsScrolling.BackgroundColor3 = Color3.fromRGB(255, 255, 255)
 			elementsScrolling.BackgroundTransparency = 1
 			elementsScrolling.BorderColor3 = Color3.fromRGB(0, 0, 0)
-			elementsScrolling.BorderSizePixel = 0
-			elementsScrolling.Size = UDim2.fromScale(1, 1)
+			elementsScrolling.BorderSizePixel = 0			elementsScrolling.Size = UDim2.fromScale(1, 1)
 
 			local elementsScrollingUIPadding = Instance.new("UIPadding")
 			elementsScrollingUIPadding.Name = "ElementsScrollingUIPadding"
@@ -2739,6 +2738,17 @@ function MacLib:Window(Settings)
 					local DropdownFunctions = {}
 					local Selected = {}
 					local OptionObjs = {}
+					local OptionOrder = 0
+
+					local HEADER_HEIGHT = 38
+					local OPTION_HEIGHT = 30
+					local SEARCH_HEIGHT = 30
+					local LIST_PADDING = 5
+					local BOTTOM_PADDING = 10
+
+					-- Настройки плавной, слегка замедленной анимации без рывков
+					local dropdownTweenInfo = TweenInfo.new(0.38, Enum.EasingStyle.Quart, Enum.EasingDirection.Out)
+					local optionTweenInfo = TweenInfo.new(0.25, Enum.EasingStyle.Quart, Enum.EasingDirection.Out)
 
 					local dropdown = Instance.new("Frame")
 					dropdown.Name = "Dropdown"
@@ -2746,27 +2756,48 @@ function MacLib:Window(Settings)
 					dropdown.BackgroundTransparency = 0.985
 					dropdown.BorderColor3 = Color3.fromRGB(0, 0, 0)
 					dropdown.BorderSizePixel = 0
-					dropdown.Size = UDim2.new(1, 0, 0, 38)
-					dropdown.Parent = sectionContainer
+					dropdown.Size = UDim2.new(1, 0, 0, HEADER_HEIGHT)
 					dropdown.ClipsDescendants = true
-					
+					dropdown.Parent = sectionContainer
+
+					local dropdownUICorner = Instance.new("UICorner")
+					dropdownUICorner.Name = "DropdownUICorner"
+					dropdownUICorner.CornerRadius = UDim.new(0, 8)
+					dropdownUICorner.Parent = dropdown
+
+					-- Градиентный контур в стиле секции
+					local dropdownUIStroke = Instance.new("UIStroke")
+					dropdownUIStroke.Name = "DropdownUIStroke"
+					dropdownUIStroke.ApplyStrokeMode = Enum.ApplyStrokeMode.Border
+					dropdownUIStroke.Color = Color3.fromRGB(255, 255, 255)
+					dropdownUIStroke.Transparency = 0.35
+					dropdownUIStroke.Parent = dropdown
+
+					local dropdownStrokeGradient = Instance.new("UIGradient")
+					dropdownStrokeGradient.Name = "DropdownStrokeGradient"
+					dropdownStrokeGradient.Color = ColorSequence.new({
+						ColorSequenceKeypoint.new(0, Color3.fromRGB(120, 120, 120)),
+						ColorSequenceKeypoint.new(0.5, Color3.fromRGB(255, 255, 255)),
+						ColorSequenceKeypoint.new(1, Color3.fromRGB(120, 120, 120))
+					})
+					dropdownStrokeGradient.Rotation = 45
+					dropdownStrokeGradient.Parent = dropdownUIStroke
+
 					local dropdownUIPadding = Instance.new("UIPadding")
 					dropdownUIPadding.Name = "DropdownUIPadding"
-					dropdownUIPadding.PaddingLeft = UDim.new(0, 15)
-					dropdownUIPadding.PaddingRight = UDim.new(0, 15)
+					dropdownUIPadding.PaddingLeft = UDim.new(0, 14)
+					dropdownUIPadding.PaddingRight = UDim.new(0, 14)
 					dropdownUIPadding.Parent = dropdown
 
+					-- Кнопка-шапка дропдауна
 					local interact = Instance.new("TextButton")
 					interact.Name = "Interact"
-					interact.FontFace = Font.new("rbxasset://fonts/families/SourceSansPro.json")
 					interact.Text = ""
-					interact.TextColor3 = Color3.fromRGB(0, 0, 0)
-					interact.TextSize = 14
-					interact.BackgroundColor3 = Color3.fromRGB(255, 255, 255)
+					interact.AutoButtonColor = false
 					interact.BackgroundTransparency = 1
-					interact.BorderColor3 = Color3.fromRGB(0, 0, 0)
 					interact.BorderSizePixel = 0
-					interact.Size = UDim2.new(1, 0, 0, 38)
+					interact.Size = UDim2.new(1, 0, 0, HEADER_HEIGHT)
+					interact.ZIndex = 2
 					interact.Parent = dropdown
 
 					local dropdownName = Instance.new("TextLabel")
@@ -2780,97 +2811,85 @@ function MacLib:Window(Settings)
 					dropdownName.RichText = true
 					dropdownName.TextColor3 = Color3.fromRGB(255, 255, 255)
 					dropdownName.TextSize = 13
-					dropdownName.TextTransparency = 0.5
-					dropdownName.TextTruncate = Enum.TextTruncate.SplitWord
+					dropdownName.TextTransparency = 0.4
+					dropdownName.TextTruncate = Enum.TextTruncate.AtEnd
 					dropdownName.TextXAlignment = Enum.TextXAlignment.Left
-					dropdownName.AutomaticSize = Enum.AutomaticSize.Y
-					dropdownName.BackgroundColor3 = Color3.fromRGB(255, 255, 255)
+					dropdownName.TextYAlignment = Enum.TextYAlignment.Center
 					dropdownName.BackgroundTransparency = 1
-					dropdownName.BorderColor3 = Color3.fromRGB(0, 0, 0)
 					dropdownName.BorderSizePixel = 0
-					dropdownName.Size = UDim2.new(1, -20, 0, 38)
+					dropdownName.Size = UDim2.new(1, -26, 0, HEADER_HEIGHT)
 					dropdownName.Parent = dropdown
 
-					local dropdownUIStroke = Instance.new("UIStroke")
-					dropdownUIStroke.Name = "DropdownUIStroke"
-					dropdownUIStroke.ApplyStrokeMode = Enum.ApplyStrokeMode.Border
-					dropdownUIStroke.Color = Color3.fromRGB(255, 255, 255)
-					dropdownUIStroke.Transparency = 0.95
-					dropdownUIStroke.Parent = dropdown
-
-					local dropdownUICorner = Instance.new("UICorner")
-					dropdownUICorner.Name = "DropdownUICorner"
-					dropdownUICorner.CornerRadius = UDim.new(0, 6)
-					dropdownUICorner.Parent = dropdown
-
+					-- Стрелочка дропдауна (шеврон как у секции)
 					local dropdownImage = Instance.new("ImageLabel")
 					dropdownImage.Name = "DropdownImage"
-					dropdownImage.Image = "rbxassetid://18865373378"
-					dropdownImage.ImageTransparency = 0.5
-					dropdownImage.AnchorPoint = Vector2.new(1, 0)
-					dropdownImage.BackgroundColor3 = Color3.fromRGB(255, 255, 255)
+					dropdownImage.Image = assets.buttonImage
+					dropdownImage.ImageColor3 = Color3.fromRGB(220, 220, 220)
+					dropdownImage.ImageTransparency = 0.35
+					dropdownImage.AnchorPoint = Vector2.new(1, 0.5)
 					dropdownImage.BackgroundTransparency = 1
-					dropdownImage.BorderColor3 = Color3.fromRGB(0, 0, 0)
 					dropdownImage.BorderSizePixel = 0
-					dropdownImage.Position = UDim2.new(1, 0, 0, 12)
+					dropdownImage.Position = UDim2.new(1, 0, 0, HEADER_HEIGHT / 2)
 					dropdownImage.Size = UDim2.fromOffset(14, 14)
+					dropdownImage.Rotation = 0 -- 0° = закрыто (>), 90° = открыто (v)
 					dropdownImage.Parent = dropdown
 
+					-- Контейнер элементов без конфликтующего AutomaticSize
 					local dropdownFrame = Instance.new("Frame")
 					dropdownFrame.Name = "DropdownFrame"
-					dropdownFrame.BackgroundColor3 = Color3.fromRGB(255, 255, 255)
 					dropdownFrame.BackgroundTransparency = 1
-					dropdownFrame.BorderColor3 = Color3.fromRGB(0, 0, 0)
 					dropdownFrame.BorderSizePixel = 0
-					dropdownFrame.ClipsDescendants = true
-					dropdownFrame.Size = UDim2.fromScale(1, 1)
-					dropdownFrame.Visible = false
+					dropdownFrame.Position = UDim2.fromOffset(0, HEADER_HEIGHT)
+					dropdownFrame.Size = UDim2.new(1, 0, 0, 0)
 					dropdownFrame.AutomaticSize = Enum.AutomaticSize.Y
+					dropdownFrame.Visible = false
+					dropdownFrame.Parent = dropdown
 
 					local dropdownFrameUIPadding = Instance.new("UIPadding")
 					dropdownFrameUIPadding.Name = "DropdownFrameUIPadding"
-					dropdownFrameUIPadding.PaddingTop = UDim.new(0, 38)
-					dropdownFrameUIPadding.PaddingBottom = UDim.new(0, 10)
+					dropdownFrameUIPadding.PaddingTop = UDim.new(0, 2)
+					dropdownFrameUIPadding.PaddingBottom = UDim.new(0, BOTTOM_PADDING)
 					dropdownFrameUIPadding.Parent = dropdownFrame
 
 					local dropdownFrameUIListLayout = Instance.new("UIListLayout")
 					dropdownFrameUIListLayout.Name = "DropdownFrameUIListLayout"
-					dropdownFrameUIListLayout.Padding = UDim.new(0, 5)
+					dropdownFrameUIListLayout.Padding = UDim.new(0, LIST_PADDING)
 					dropdownFrameUIListLayout.SortOrder = Enum.SortOrder.LayoutOrder
 					dropdownFrameUIListLayout.Parent = dropdownFrame
-					
+
+					-- Поле поиска
 					local search = Instance.new("Frame")
 					search.Name = "Search"
 					search.BackgroundColor3 = Color3.fromRGB(255, 255, 255)
-					search.BackgroundTransparency = 0.95
-					search.BorderColor3 = Color3.fromRGB(0, 0, 0)
+					search.BackgroundTransparency = 0.96
 					search.BorderSizePixel = 0
 					search.LayoutOrder = -1
-					search.Size = UDim2.new(1, 0, 0, 30)
+					search.Size = UDim2.new(1, 0, 0, SEARCH_HEIGHT)
+					search.Visible = Settings.Search == true
 					search.Parent = dropdownFrame
-					search.Visible = Settings.Search
 
-					local sectionUICorner = Instance.new("UICorner")
-					sectionUICorner.Name = "SectionUICorner"
-					sectionUICorner.Parent = search
+					local searchUICorner = Instance.new("UICorner")
+					searchUICorner.Name = "SearchUICorner"
+					searchUICorner.CornerRadius = UDim.new(0, 6)
+					searchUICorner.Parent = search
+
+					local searchUIStroke = Instance.new("UIStroke")
+					searchUIStroke.Name = "SearchUIStroke"
+					searchUIStroke.ApplyStrokeMode = Enum.ApplyStrokeMode.Border
+					searchUIStroke.Color = Color3.fromRGB(255, 255, 255)
+					searchUIStroke.Transparency = 0.88
+					searchUIStroke.Parent = search
 
 					local searchIcon = Instance.new("ImageLabel")
 					searchIcon.Name = "SearchIcon"
 					searchIcon.Image = assets.searchIcon
 					searchIcon.ImageColor3 = Color3.fromRGB(180, 180, 180)
 					searchIcon.AnchorPoint = Vector2.new(0, 0.5)
-					searchIcon.BackgroundColor3 = Color3.fromRGB(255, 255, 255)
 					searchIcon.BackgroundTransparency = 1
-					searchIcon.BorderColor3 = Color3.fromRGB(0, 0, 0)
 					searchIcon.BorderSizePixel = 0
-					searchIcon.Position = UDim2.fromScale(0, 0.5)
+					searchIcon.Position = UDim2.new(0, 10, 0.5, 0)
 					searchIcon.Size = UDim2.fromOffset(12, 12)
 					searchIcon.Parent = search
-
-					local uIPadding = Instance.new("UIPadding")
-					uIPadding.Name = "UIPadding"
-					uIPadding.PaddingLeft = UDim.new(0, 15)
-					uIPadding.Parent = search
 
 					local searchBox = Instance.new("TextBox")
 					searchBox.Name = "SearchBox"
@@ -2883,124 +2902,76 @@ function MacLib:Window(Settings)
 					searchBox.PlaceholderColor3 = Color3.fromRGB(150, 150, 150)
 					searchBox.PlaceholderText = "Search..."
 					searchBox.Text = ""
-					searchBox.TextColor3 = Color3.fromRGB(200, 200, 200)
-					searchBox.TextSize = 14
+					searchBox.TextColor3 = Color3.fromRGB(220, 220, 220)
+					searchBox.TextSize = 13
 					searchBox.TextXAlignment = Enum.TextXAlignment.Left
-					searchBox.BackgroundColor3 = Color3.fromRGB(255, 255, 255)
 					searchBox.BackgroundTransparency = 1
-					searchBox.BorderColor3 = Color3.fromRGB(0, 0, 0)
 					searchBox.BorderSizePixel = 0
-					searchBox.Size = UDim2.fromScale(1, 1)
-					
-					local function CalculateDropdownSize()
-						local totalHeight = 0
-						local visibleChildrenCount = 0
-						local padding = dropdownFrameUIPadding.PaddingTop.Offset + dropdownFrameUIPadding.PaddingBottom.Offset
+					searchBox.Position = UDim2.fromOffset(28, 0)
+					searchBox.Size = UDim2.new(1, -34, 1, 0)
+					searchBox.Parent = search
 
-						for _, v in pairs(dropdownFrame:GetChildren()) do
-							if not v:IsA("UIComponent") and v.Visible then
-								totalHeight += v.AbsoluteSize.Y
-								visibleChildrenCount += 1
+					-- Быстрый математический расчет высоты без фризов
+					local function CalculateDropdownSize()
+						local visibleCount = 0
+						local totalItemsHeight = 0
+
+						if search.Visible then
+							visibleCount += 1
+							totalItemsHeight += SEARCH_HEIGHT
+						end
+
+						for _, opt in pairs(OptionObjs) do
+							if opt.Button.Visible then
+								visibleCount += 1
+								totalItemsHeight += OPTION_HEIGHT
 							end
 						end
 
-						local spacing = dropdownFrameUIListLayout.Padding.Offset * (visibleChildrenCount - 1)
+						if visibleCount == 0 then
+							return HEADER_HEIGHT
+						end
 
-						return totalHeight + spacing + padding
+						local spacing = LIST_PADDING * math.max(0, visibleCount - 1)
+						return HEADER_HEIGHT + 2 + totalItemsHeight + spacing + BOTTOM_PADDING
+					end
+
+					local dropped = false
+					local activeSizeTween = nil
+					local activeArrowTween = nil
+					local activeStrokeTween = nil
+					local activeTitleTween = nil
+					local animToken = 0
+
+					local function AnimateDropdownSize(targetHeight)
+						if activeSizeTween then
+							activeSizeTween:Cancel()
+						end
+						activeSizeTween = Tween(dropdown, dropdownTweenInfo, {
+							Size = UDim2.new(1, 0, 0, targetHeight)
+						})
+						activeSizeTween:Play()
+						return activeSizeTween
 					end
 
 					local function findOption()
 						local searchTerm = searchBox.Text:lower()
 
 						for _, v in pairs(OptionObjs) do
-							local optionText = v.NameLabel.Text:lower()
-							local isVisible = string.find(optionText, searchTerm) ~= nil
-
+							local isVisible = (searchTerm == "") or (string.find(v.LowerName, searchTerm, 1, true) ~= nil)
 							if v.Button.Visible ~= isVisible then
 								v.Button.Visible = isVisible
 							end
 						end
 
-						dropdown.Size = UDim2.new(1, 0, 0, CalculateDropdownSize())
+						if dropped then
+							AnimateDropdownSize(CalculateDropdownSize())
+						end
 					end
 
 					searchBox:GetPropertyChangedSignal("Text"):Connect(findOption)
 
-					local uIPadding1 = Instance.new("UIPadding")
-					uIPadding1.Name = "UIPadding"
-					uIPadding1.PaddingLeft = UDim.new(0, 23)
-					uIPadding1.Parent = searchBox
-
-					searchBox.Parent = search
-					
-					local tweensettings = {
-						duration = 0.2,
-						easingStyle = Enum.EasingStyle.Quint,
-						transparencyIn = 0.2,
-						transparencyOut = 0.5,
-						checkSizeIncrease = 12,
-						checkSizeDecrease = -13,
-						waitTime = 1
-					}
-					
-					local function Toggle(optionName, State)
-						local option = OptionObjs[optionName]
-
-						if not option then return end
-
-						local checkmark = option.Checkmark
-						local optionNameLabel = option.NameLabel
-
-						if State then
-							if Settings.Multi then
-								if not table.find(Selected, optionName) then
-									table.insert(Selected, optionName)
-									DropdownFunctions.Value = Selected
-								end
-							else
-								for name, opt in pairs(OptionObjs) do
-									if name ~= optionName then
-										Tween(opt.Checkmark, TweenInfo.new(tweensettings.duration, tweensettings.easingStyle), {
-											Size = UDim2.new(opt.Checkmark.Size.X.Scale, tweensettings.checkSizeDecrease, opt.Checkmark.Size.Y.Scale, opt.Checkmark.Size.Y.Offset)
-										}):Play()
-										Tween(opt.NameLabel, TweenInfo.new(tweensettings.duration, tweensettings.easingStyle), {
-											TextTransparency = tweensettings.transparencyOut
-										}):Play()
-										opt.Checkmark.TextTransparency = 1
-									end
-								end
-								Selected = {optionName}
-								DropdownFunctions.Value = Selected[1]
-							end
-							Tween(checkmark, TweenInfo.new(tweensettings.duration, tweensettings.easingStyle), {
-								Size = UDim2.new(checkmark.Size.X.Scale, tweensettings.checkSizeIncrease, checkmark.Size.Y.Scale, checkmark.Size.Y.Offset)
-							}):Play()
-							Tween(optionNameLabel, TweenInfo.new(tweensettings.duration, tweensettings.easingStyle), {
-								TextTransparency = tweensettings.transparencyIn
-							}):Play()
-							checkmark.TextTransparency = 0
-						else
-							if Settings.Multi then
-								local idx = table.find(Selected, optionName)
-								if idx then
-									table.remove(Selected, idx)
-								end
-							else
-								Selected = {}
-							end
-							Tween(checkmark, TweenInfo.new(tweensettings.duration, tweensettings.easingStyle), {
-								Size = UDim2.new(checkmark.Size.X.Scale, tweensettings.checkSizeDecrease, checkmark.Size.Y.Scale, checkmark.Size.Y.Offset)
-							}):Play()
-							Tween(optionNameLabel, TweenInfo.new(tweensettings.duration, tweensettings.easingStyle), {
-								TextTransparency = tweensettings.transparencyOut
-							}):Play()
-							checkmark.TextTransparency = 1
-						end
-
-						if Settings.Required and #Selected == 0 and not State then
-							return
-						end
-
+					local function UpdateHeaderText()
 						if #Selected > 0 then
 							dropdownName.Text = Settings.Name .. " • " .. table.concat(Selected, ", ")
 						else
@@ -3008,56 +2979,162 @@ function MacLib:Window(Settings)
 						end
 					end
 
-					local dropped = false
-					local db = false
-					
-					local function ToggleDropdown()
-						if db then return end
-						db = true
-						local defaultDropdownSize = 38
-						local isDropdownOpen = not dropped
-						local targetSize = isDropdownOpen and UDim2.new(1, 0, 0, CalculateDropdownSize()) or UDim2.new(1, 0, 0, defaultDropdownSize)
-
-						local tween = Tween(dropdown, TweenInfo.new(0.2, Enum.EasingStyle.Exponential, Enum.EasingDirection.Out), {
-							Size = targetSize
-						})
-
-						tween:Play()
-
-						if isDropdownOpen then
-							dropdownFrame.Visible = true
-							tween.Completed:Connect(function()
-								db = false
-							end)
+					local function SetOptionVisual(opt, isSelected, instant)
+						if instant then
+							opt.Checkmark.Size = UDim2.fromOffset(isSelected and 14 or 0, 14)
+							opt.Checkmark.ImageTransparency = isSelected and 0.1 or 1
+							opt.NameLabel.TextTransparency = isSelected and 0.15 or 0.5
+							opt.Button.BackgroundTransparency = isSelected and 0.96 or 1
+							opt.Stroke.Transparency = isSelected and 0.75 or 1
 						else
-							tween.Completed:Connect(function()
-								dropdownFrame.Visible = false
-								db = false
-							end)
+							if isSelected then
+								opt.Tweens.CheckIn:Play()
+								opt.Tweens.NameIn:Play()
+								opt.Tweens.BgIn:Play()
+								opt.Tweens.StrokeIn:Play()
+							else
+								opt.Tweens.CheckOut:Play()
+								opt.Tweens.NameOut:Play()
+								opt.Tweens.BgOut:Play()
+								opt.Tweens.StrokeOut:Play()
+							end
+						end
+					end
+
+					local function Toggle(optionName, State, instant)
+						local option = OptionObjs[optionName]
+						if not option then return end
+
+						if State then
+							if Settings.Multi then
+								if not table.find(Selected, optionName) then
+									table.insert(Selected, optionName)
+								end
+								DropdownFunctions.Value = Selected
+							else
+								for name, opt in pairs(OptionObjs) do
+									if name ~= optionName and opt.Selected then
+										opt.Selected = false
+										SetOptionVisual(opt, false, instant)
+									end
+								end
+								Selected = {optionName}
+								DropdownFunctions.Value = optionName
+							end
+							option.Selected = true
+							SetOptionVisual(option, true, instant)
+						else
+							if Settings.Required and #Selected <= 1 and table.find(Selected, optionName) then
+								return
+							end
+							if Settings.Multi then
+								local idx = table.find(Selected, optionName)
+								if idx then
+									table.remove(Selected, idx)
+								end
+								DropdownFunctions.Value = Selected
+							else
+								Selected = {}
+								DropdownFunctions.Value = nil
+							end
+							option.Selected = false
+							SetOptionVisual(option, false, instant)
 						end
 
-						dropped = isDropdownOpen
+						UpdateHeaderText()
+					end
+
+					local function ToggleDropdown()
+						dropped = not dropped
+						animToken += 1
+						local currentToken = animToken
+
+						if activeArrowTween then activeArrowTween:Cancel() end
+						if activeStrokeTween then activeStrokeTween:Cancel() end
+						if activeTitleTween then activeTitleTween:Cancel() end
+
+						local targetHeight = dropped and CalculateDropdownSize() or HEADER_HEIGHT
+
+						if dropped then
+							dropdownFrame.Visible = true
+						end
+
+						activeArrowTween = Tween(dropdownImage, dropdownTweenInfo, {
+							Rotation = dropped and 90 or 0,
+							ImageTransparency = dropped and 0.1 or 0.35
+						})
+						activeStrokeTween = Tween(dropdownUIStroke, dropdownTweenInfo, {
+							Transparency = dropped and 0.15 or 0.35
+						})
+						activeTitleTween = Tween(dropdownName, dropdownTweenInfo, {
+							TextTransparency = dropped and 0.15 or 0.4
+						})
+
+						activeArrowTween:Play()
+						activeStrokeTween:Play()
+						activeTitleTween:Play()
+
+						local sizeTween = AnimateDropdownSize(targetHeight)
+						if not dropped then
+							sizeTween.Completed:Connect(function(playbackState)
+								if playbackState == Enum.PlaybackState.Completed and animToken == currentToken and not dropped then
+									dropdownFrame.Visible = false
+								end
+							end)
+						end
 					end
 
 					interact.MouseButton1Click:Connect(ToggleDropdown)
-					
+
 					local function addOption(i, v)
+						OptionOrder += 1
+
 						local option = Instance.new("TextButton")
 						option.Name = "Option"
-						option.FontFace = Font.new("rbxasset://fonts/families/SourceSansPro.json")
 						option.Text = ""
-						option.TextColor3 = Color3.fromRGB(0, 0, 0)
-						option.TextSize = 14
+						option.AutoButtonColor = false
 						option.BackgroundColor3 = Color3.fromRGB(255, 255, 255)
 						option.BackgroundTransparency = 1
-						option.BorderColor3 = Color3.fromRGB(0, 0, 0)
 						option.BorderSizePixel = 0
-						option.Size = UDim2.new(1, 0, 0, 30)
+						option.LayoutOrder = OptionOrder
+						option.Size = UDim2.new(1, 0, 0, OPTION_HEIGHT)
+						option.Parent = dropdownFrame
+
+						local optionCorner = Instance.new("UICorner")
+						optionCorner.CornerRadius = UDim.new(0, 6)
+						optionCorner.Parent = option
+
+						local optionStroke = Instance.new("UIStroke")
+						optionStroke.ApplyStrokeMode = Enum.ApplyStrokeMode.Border
+						optionStroke.Color = Color3.fromRGB(255, 255, 255)
+						optionStroke.Transparency = 1
+						optionStroke.Parent = option
 
 						local optionUIPadding = Instance.new("UIPadding")
 						optionUIPadding.Name = "OptionUIPadding"
-						optionUIPadding.PaddingLeft = UDim.new(0, 15)
+						optionUIPadding.PaddingLeft = UDim.new(0, 10)
+						optionUIPadding.PaddingRight = UDim.new(0, 10)
 						optionUIPadding.Parent = option
+
+						local optionUIListLayout = Instance.new("UIListLayout")
+						optionUIListLayout.Name = "OptionUIListLayout"
+						optionUIListLayout.Padding = UDim.new(0, 8)
+						optionUIListLayout.FillDirection = Enum.FillDirection.Horizontal
+						optionUIListLayout.SortOrder = Enum.SortOrder.LayoutOrder
+						optionUIListLayout.VerticalAlignment = Enum.VerticalAlignment.Center
+						optionUIListLayout.Parent = option
+
+						-- Стрелочка-индикатор выбранного пункта
+						local checkmark = Instance.new("ImageLabel")
+						checkmark.Name = "Checkmark"
+						checkmark.Image = assets.buttonImage
+						checkmark.ImageColor3 = Color3.fromRGB(255, 255, 255)
+						checkmark.ImageTransparency = 1
+						checkmark.BackgroundTransparency = 1
+						checkmark.BorderSizePixel = 0
+						checkmark.LayoutOrder = -1
+						checkmark.Size = UDim2.fromOffset(0, 14)
+						checkmark.Parent = option
 
 						local optionName = Instance.new("TextLabel")
 						optionName.Name = "OptionName"
@@ -3073,103 +3150,78 @@ function MacLib:Window(Settings)
 						optionName.TextTransparency = 0.5
 						optionName.TextTruncate = Enum.TextTruncate.AtEnd
 						optionName.TextXAlignment = Enum.TextXAlignment.Left
-						optionName.TextYAlignment = Enum.TextYAlignment.Top
-						optionName.AnchorPoint = Vector2.new(0, 0.5)
-						optionName.AutomaticSize = Enum.AutomaticSize.XY
-						optionName.BackgroundColor3 = Color3.fromRGB(255, 255, 255)
+						optionName.TextYAlignment = Enum.TextYAlignment.Center
 						optionName.BackgroundTransparency = 1
-						optionName.BorderColor3 = Color3.fromRGB(0, 0, 0)
 						optionName.BorderSizePixel = 0
-						optionName.Position = UDim2.fromScale(1.3e-07, 0.5)
+						optionName.Size = UDim2.new(1, -22, 1, 0)
 						optionName.Parent = option
 
-						local optionUIListLayout = Instance.new("UIListLayout")
-						optionUIListLayout.Name = "OptionUIListLayout"
-						optionUIListLayout.Padding = UDim.new(0, 10)
-						optionUIListLayout.FillDirection = Enum.FillDirection.Horizontal
-						optionUIListLayout.SortOrder = Enum.SortOrder.LayoutOrder
-						optionUIListLayout.VerticalAlignment = Enum.VerticalAlignment.Center
-						optionUIListLayout.Parent = option
+						-- Кешируем твины один раз для каждой опции (без утечек памяти)
+						local cachedTweens = {
+							CheckIn = Tween(checkmark, optionTweenInfo, {
+								Size = UDim2.fromOffset(14, 14),
+								ImageTransparency = 0.1
+							}),
+							CheckOut = Tween(checkmark, optionTweenInfo, {
+								Size = UDim2.fromOffset(0, 14),
+								ImageTransparency = 1
+							}),
+							NameIn = Tween(optionName, optionTweenInfo, {
+								TextTransparency = 0.15
+							}),
+							NameOut = Tween(optionName, optionTweenInfo, {
+								TextTransparency = 0.5
+							}),
+							BgIn = Tween(option, optionTweenInfo, {
+								BackgroundTransparency = 0.96
+							}),
+							BgOut = Tween(option, optionTweenInfo, {
+								BackgroundTransparency = 1
+							}),
+							StrokeIn = Tween(optionStroke, optionTweenInfo, {
+								Transparency = 0.75
+							}),
+							StrokeOut = Tween(optionStroke, optionTweenInfo, {
+								Transparency = 1
+							})
+						}
 
-						local checkmark = Instance.new("TextLabel")
-						checkmark.Name = "Checkmark"
-						checkmark.FontFace = Font.new(
-							assets.interFont,
-							Enum.FontWeight.Medium,
-							Enum.FontStyle.Normal
-						)
-						checkmark.Text = "✓"
-						checkmark.TextColor3 = Color3.fromRGB(255, 255, 255)
-						checkmark.TextSize = 13
-						checkmark.TextTransparency = 1
-						checkmark.TextXAlignment = Enum.TextXAlignment.Left
-						checkmark.TextYAlignment = Enum.TextYAlignment.Top
-						checkmark.AnchorPoint = Vector2.new(0, 0.5)
-						checkmark.AutomaticSize = Enum.AutomaticSize.Y
-						checkmark.BackgroundColor3 = Color3.fromRGB(255, 255, 255)
-						checkmark.BackgroundTransparency = 1
-						checkmark.BorderColor3 = Color3.fromRGB(0, 0, 0)
-						checkmark.BorderSizePixel = 0
-						checkmark.LayoutOrder = -1
-						checkmark.Position = UDim2.fromScale(1.3e-07, 0.5)
-						checkmark.Size = UDim2.fromOffset(-10, 0)
-						checkmark.Parent = option
-
-						option.Parent = dropdownFrame
-
-						dropdownFrame.Parent = dropdown
 						OptionObjs[v] = {
 							Index = i,
 							Button = option,
 							NameLabel = optionName,
-							Checkmark = checkmark
-						}
-
-						local tweensettings = {
-							duration = 0.2,
-							easingStyle = Enum.EasingStyle.Quint,
-							transparencyIn = 0.2,
-							transparencyOut = 0.5,
-							checkSizeIncrease = 12,
-							checkSizeDecrease = -optionUIListLayout.Padding.Offset,
-							waitTime = 1
-						}
-						local tweens = {
-							checkIn = Tween(checkmark, TweenInfo.new(tweensettings.duration, tweensettings.easingStyle), {
-								Size = UDim2.new(checkmark.Size.X.Scale, tweensettings.checkSizeIncrease, checkmark.Size.Y.Scale, checkmark.Size.Y.Offset)
-							}),
-							checkOut = Tween(checkmark, TweenInfo.new(tweensettings.duration, tweensettings.easingStyle),{
-								Size = UDim2.new(checkmark.Size.X.Scale, tweensettings.checkSizeDecrease, checkmark.Size.Y.Scale, checkmark.Size.Y.Offset)
-							}),
-							nameIn = Tween(optionName, TweenInfo.new(tweensettings.duration, tweensettings.easingStyle),{
-								TextTransparency = tweensettings.transparencyIn
-							}),
-							nameOut = Tween(optionName, TweenInfo.new(tweensettings.duration, tweensettings.easingStyle),{
-								TextTransparency = tweensettings.transparencyOut
-							})
+							Checkmark = checkmark,
+							Stroke = optionStroke,
+							LowerName = tostring(v):lower(),
+							Selected = false,
+							Tweens = cachedTweens
 						}
 
 						local isSelected = false
 						if Settings.Default then
-							if Settings.Multi then
-								isSelected = table.find(Settings.Default, v) and true or false
+							if Settings.Multi and type(Settings.Default) == "table" then
+								isSelected = table.find(Settings.Default, v) ~= nil
 							else
-								isSelected = (Settings.Default == i) and true or false
+								isSelected = (Settings.Default == i or Settings.Default == v)
 							end
 						end
-						Toggle(v, isSelected)
 
-						local option = OptionObjs[v].Button
+						-- Мгновенная установка начального состояния без нагрузки на TweenService
+						if isSelected then
+							Toggle(v, true, true)
+						else
+							SetOptionVisual(OptionObjs[v], false, true)
+						end
 
 						option.MouseButton1Click:Connect(function()
-							local isSelected = table.find(Selected, v) and true or false
-							local newSelected = not isSelected
+							local currentlySelected = OptionObjs[v] and OptionObjs[v].Selected or false
+							local newSelected = not currentlySelected
 
 							if Settings.Required and not newSelected and #Selected <= 1 then
 								return
 							end
 
-							Toggle(v, newSelected)
+							Toggle(v, newSelected, false)
 
 							task.spawn(function()
 								if Settings.Multi then
@@ -3180,7 +3232,6 @@ function MacLib:Window(Settings)
 									if Settings.Callback then
 										Settings.Callback(Return)
 									end
-
 								else
 									if newSelected and Settings.Callback then
 										Settings.Callback(Selected[1] or nil)
@@ -3188,84 +3239,91 @@ function MacLib:Window(Settings)
 								end
 							end)
 						end)
-						
-						if dropped then
-							dropdown.Size = UDim2.new(1, 0, 0, CalculateDropdownSize())
-						end
 					end
 
-					for i, v in pairs(Settings.Options) do
-						addOption(i, v)
-					end
-					
-					function DropdownFunctions:UpdateName(New)
-						dropdownName.Text = New
-					end
-					function DropdownFunctions:SetVisibility(State)
-						dropdown.Visible = State
-					end
-					function DropdownFunctions:UpdateSelection(newSelection)
-						if type(newSelection) == "number" then
-							for option, data in pairs(OptionObjs) do
-								local isSelected = data.Index == newSelection
-								Toggle(option, isSelected)
-							end
-						elseif type(newSelection) == "table" then
-							for option, data in pairs(OptionObjs) do
-								local isSelected = table.find(newSelection, option) ~= nil
-								Toggle(option, isSelected)
-							end
-						end
-					end
-					function DropdownFunctions:InsertOptions(newOptions)
-						Settings.Options = newOptions
-						for i, v in pairs(newOptions) do
+					if Settings.Options then
+						for i, v in pairs(Settings.Options) do
 							addOption(i, v)
 						end
 					end
+
+					function DropdownFunctions:UpdateName(New)
+						Settings.Name = New
+						UpdateHeaderText()
+					end
+
+					function DropdownFunctions:SetVisibility(State)
+						dropdown.Visible = State
+					end
+
+					function DropdownFunctions:UpdateSelection(newSelection)
+						if type(newSelection) == "number" then
+							for option, data in pairs(OptionObjs) do
+								Toggle(option, data.Index == newSelection, false)
+							end
+						elseif type(newSelection) == "string" then
+							for option in pairs(OptionObjs) do
+								Toggle(option, option == newSelection, false)
+							end
+						elseif type(newSelection) == "table" then
+							for option in pairs(OptionObjs) do
+								Toggle(option, table.find(newSelection, option) ~= nil, false)
+							end
+						end
+					end
+
+					function DropdownFunctions:InsertOptions(newOptions)
+						for i, v in pairs(newOptions) do
+							if not OptionObjs[v] then
+								addOption(i, v)
+							end
+						end
+						if dropped then
+							AnimateDropdownSize(CalculateDropdownSize())
+						end
+					end
+
 					function DropdownFunctions:ClearOptions()
 						for _, optionData in pairs(OptionObjs) do
 							optionData.Button:Destroy()
 						end
 						OptionObjs = {}
 						Selected = {}
-						
+						OptionOrder = 0
+						UpdateHeaderText()
+
 						if dropped then
-							dropdown.Size = UDim2.new(1, 0, 0, CalculateDropdownSize())
+							AnimateDropdownSize(CalculateDropdownSize())
 						end
 					end
+
 					function DropdownFunctions:GetOptions()
 						local optionsStatus = {}
-
 						for option, data in pairs(OptionObjs) do
-							local isSelected = table.find(Selected, option) and true or false
-							optionsStatus[option] = isSelected
+							optionsStatus[option] = data.Selected == true
 						end
-
 						return optionsStatus
 					end
-					
+
 					function DropdownFunctions:RemoveOptions(remove)
 						for _, optionName in ipairs(remove) do
 							local optionData = OptionObjs[optionName]
-
 							if optionData then
-								for i = #Selected, 1, -1 do
-									if Selected[i] == optionName then
-										table.remove(Selected, i)
-									end
+								local idx = table.find(Selected, optionName)
+								if idx then
+									table.remove(Selected, idx)
 								end
-
 								optionData.Button:Destroy()
-
 								OptionObjs[optionName] = nil
 							end
 						end
-						
+						UpdateHeaderText()
+
 						if dropped then
-							dropdown.Size = UDim2.new(1, 0, 0, CalculateDropdownSize())
+							AnimateDropdownSize(CalculateDropdownSize())
 						end
 					end
+
 					function DropdownFunctions:IsOption(optionName)
 						return OptionObjs[optionName] ~= nil
 					end
