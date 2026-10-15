@@ -1453,7 +1453,8 @@ function MacLib:Window(Settings)
 			elementsScrolling.BackgroundColor3 = Color3.fromRGB(255, 255, 255)
 			elementsScrolling.BackgroundTransparency = 1
 			elementsScrolling.BorderColor3 = Color3.fromRGB(0, 0, 0)
-			elementsScrolling.BorderSizePixel = 0			elementsScrolling.Size = UDim2.fromScale(1, 1)
+			elementsScrolling.BorderSizePixel = 0
+			elementsScrolling.Size = UDim2.fromScale(1, 1)
 
 			local elementsScrollingUIPadding = Instance.new("UIPadding")
 			elementsScrollingUIPadding.Name = "ElementsScrollingUIPadding"
@@ -2740,32 +2741,67 @@ function MacLib:Window(Settings)
 					local OptionObjs = {}
 					local OptionOrder = 0
 
+					-- Точные размеры для работы без AutomaticSize и без лагов секции
+					local TITLE_HEIGHT = 18
+					local TITLE_GAP = 6
+					local TOP_OFFSET = TITLE_HEIGHT + TITLE_GAP -- 24px над карточкой дропдауна
+
 					local HEADER_HEIGHT = 38
 					local OPTION_HEIGHT = 30
 					local SEARCH_HEIGHT = 30
 					local LIST_PADDING = 5
-					local BOTTOM_PADDING = 10
+					local LIST_TOP_PAD = 6
+					local LIST_BOTTOM_PAD = 10
 
-					-- Настройки плавной, слегка замедленной анимации без рывков
-					local dropdownTweenInfo = TweenInfo.new(0.38, Enum.EasingStyle.Quart, Enum.EasingDirection.Out)
-					local optionTweenInfo = TweenInfo.new(0.25, Enum.EasingStyle.Quart, Enum.EasingDirection.Out)
+					local dropdownTweenInfo = TweenInfo.new(0.36, Enum.EasingStyle.Quint, Enum.EasingDirection.Out)
+					local optionTweenInfo = TweenInfo.new(0.24, Enum.EasingStyle.Quart, Enum.EasingDirection.Out)
 
+					-- Внешний контейнер (держит название сверху + сам дропдаун снизу)
+					local dropdownWrapper = Instance.new("Frame")
+					dropdownWrapper.Name = "DropdownWrapper"
+					dropdownWrapper.BackgroundTransparency = 1
+					dropdownWrapper.BorderSizePixel = 0
+					dropdownWrapper.Size = UDim2.new(1, 0, 0, TOP_OFFSET + HEADER_HEIGHT)
+					dropdownWrapper.Parent = sectionContainer
+
+					-- Отдельное красивое название НАД дропдауном
+					local dropdownTitle = Instance.new("TextLabel")
+					dropdownTitle.Name = "DropdownTitle"
+					dropdownTitle.FontFace = Font.new(
+						assets.interFont,
+						Enum.FontWeight.Medium,
+						Enum.FontStyle.Normal
+					)
+					dropdownTitle.Text = Settings.Name or "Dropdown"
+					dropdownTitle.RichText = true
+					dropdownTitle.TextColor3 = Color3.fromRGB(255, 255, 255)
+					dropdownTitle.TextSize = 13
+					dropdownTitle.TextTransparency = 0.35
+					dropdownTitle.TextTruncate = Enum.TextTruncate.AtEnd
+					dropdownTitle.TextXAlignment = Enum.TextXAlignment.Left
+					dropdownTitle.TextYAlignment = Enum.TextYAlignment.Center
+					dropdownTitle.BackgroundTransparency = 1
+					dropdownTitle.BorderSizePixel = 0
+					dropdownTitle.Position = UDim2.fromOffset(2, 0)
+					dropdownTitle.Size = UDim2.new(1, -4, 0, TITLE_HEIGHT)
+					dropdownTitle.Parent = dropdownWrapper
+
+					-- Сама карточка дропдауна (с контуром как у секции)
 					local dropdown = Instance.new("Frame")
 					dropdown.Name = "Dropdown"
 					dropdown.BackgroundColor3 = Color3.fromRGB(255, 255, 255)
 					dropdown.BackgroundTransparency = 0.985
-					dropdown.BorderColor3 = Color3.fromRGB(0, 0, 0)
 					dropdown.BorderSizePixel = 0
+					dropdown.Position = UDim2.fromOffset(0, TOP_OFFSET)
 					dropdown.Size = UDim2.new(1, 0, 0, HEADER_HEIGHT)
 					dropdown.ClipsDescendants = true
-					dropdown.Parent = sectionContainer
+					dropdown.Parent = dropdownWrapper
 
 					local dropdownUICorner = Instance.new("UICorner")
 					dropdownUICorner.Name = "DropdownUICorner"
 					dropdownUICorner.CornerRadius = UDim.new(0, 8)
 					dropdownUICorner.Parent = dropdown
 
-					-- Градиентный контур в стиле секции
 					local dropdownUIStroke = Instance.new("UIStroke")
 					dropdownUIStroke.Name = "DropdownUIStroke"
 					dropdownUIStroke.ApplyStrokeMode = Enum.ApplyStrokeMode.Border
@@ -2789,7 +2825,7 @@ function MacLib:Window(Settings)
 					dropdownUIPadding.PaddingRight = UDim.new(0, 14)
 					dropdownUIPadding.Parent = dropdown
 
-					-- Кнопка-шапка дропдауна
+					-- Кнопка клика по шапке карточки
 					local interact = Instance.new("TextButton")
 					interact.Name = "Interact"
 					interact.Text = ""
@@ -2800,27 +2836,28 @@ function MacLib:Window(Settings)
 					interact.ZIndex = 2
 					interact.Parent = dropdown
 
-					local dropdownName = Instance.new("TextLabel")
-					dropdownName.Name = "DropdownName"
-					dropdownName.FontFace = Font.new(
+					-- Текст выбранного значения внутри самого дропдауна
+					local dropdownValue = Instance.new("TextLabel")
+					dropdownValue.Name = "DropdownValue"
+					dropdownValue.FontFace = Font.new(
 						assets.interFont,
 						Enum.FontWeight.Medium,
 						Enum.FontStyle.Normal
 					)
-					dropdownName.Text = Settings.Name
-					dropdownName.RichText = true
-					dropdownName.TextColor3 = Color3.fromRGB(255, 255, 255)
-					dropdownName.TextSize = 13
-					dropdownName.TextTransparency = 0.4
-					dropdownName.TextTruncate = Enum.TextTruncate.AtEnd
-					dropdownName.TextXAlignment = Enum.TextXAlignment.Left
-					dropdownName.TextYAlignment = Enum.TextYAlignment.Center
-					dropdownName.BackgroundTransparency = 1
-					dropdownName.BorderSizePixel = 0
-					dropdownName.Size = UDim2.new(1, -26, 0, HEADER_HEIGHT)
-					dropdownName.Parent = dropdown
+					dropdownValue.Text = "..."
+					dropdownValue.RichText = true
+					dropdownValue.TextColor3 = Color3.fromRGB(255, 255, 255)
+					dropdownValue.TextSize = 13
+					dropdownValue.TextTransparency = 0.25
+					dropdownValue.TextTruncate = Enum.TextTruncate.AtEnd
+					dropdownValue.TextXAlignment = Enum.TextXAlignment.Left
+					dropdownValue.TextYAlignment = Enum.TextYAlignment.Center
+					dropdownValue.BackgroundTransparency = 1
+					dropdownValue.BorderSizePixel = 0
+					dropdownValue.Size = UDim2.new(1, -26, 0, HEADER_HEIGHT)
+					dropdownValue.Parent = dropdown
 
-					-- Стрелочка дропдауна (шеврон как у секции)
+					-- Стрелочка справа
 					local dropdownImage = Instance.new("ImageLabel")
 					dropdownImage.Name = "DropdownImage"
 					dropdownImage.Image = assets.buttonImage
@@ -2831,24 +2868,33 @@ function MacLib:Window(Settings)
 					dropdownImage.BorderSizePixel = 0
 					dropdownImage.Position = UDim2.new(1, 0, 0, HEADER_HEIGHT / 2)
 					dropdownImage.Size = UDim2.fromOffset(14, 14)
-					dropdownImage.Rotation = 0 -- 0° = закрыто (>), 90° = открыто (v)
+					dropdownImage.Rotation = 0
 					dropdownImage.Parent = dropdown
 
-					-- Контейнер элементов без конфликтующего AutomaticSize
+					-- Тонкая линия-разделитель между шапкой и списком
+					local headerDivider = Instance.new("Frame")
+					headerDivider.Name = "HeaderDivider"
+					headerDivider.BackgroundColor3 = Color3.fromRGB(255, 255, 255)
+					headerDivider.BackgroundTransparency = 1
+					headerDivider.BorderSizePixel = 0
+					headerDivider.Position = UDim2.fromOffset(0, HEADER_HEIGHT - 1)
+					headerDivider.Size = UDim2.new(1, 0, 0, 1)
+					headerDivider.Parent = dropdown
+
+					-- Контейнер опций (без AutomaticSize — исключает фризы при сворачивании секции)
 					local dropdownFrame = Instance.new("Frame")
 					dropdownFrame.Name = "DropdownFrame"
 					dropdownFrame.BackgroundTransparency = 1
 					dropdownFrame.BorderSizePixel = 0
 					dropdownFrame.Position = UDim2.fromOffset(0, HEADER_HEIGHT)
 					dropdownFrame.Size = UDim2.new(1, 0, 0, 0)
-					dropdownFrame.AutomaticSize = Enum.AutomaticSize.Y
 					dropdownFrame.Visible = false
 					dropdownFrame.Parent = dropdown
 
 					local dropdownFrameUIPadding = Instance.new("UIPadding")
 					dropdownFrameUIPadding.Name = "DropdownFrameUIPadding"
-					dropdownFrameUIPadding.PaddingTop = UDim.new(0, 2)
-					dropdownFrameUIPadding.PaddingBottom = UDim.new(0, BOTTOM_PADDING)
+					dropdownFrameUIPadding.PaddingTop = UDim.new(0, LIST_TOP_PAD)
+					dropdownFrameUIPadding.PaddingBottom = UDim.new(0, LIST_BOTTOM_PAD)
 					dropdownFrameUIPadding.Parent = dropdownFrame
 
 					local dropdownFrameUIListLayout = Instance.new("UIListLayout")
@@ -2911,47 +2957,59 @@ function MacLib:Window(Settings)
 					searchBox.Size = UDim2.new(1, -34, 1, 0)
 					searchBox.Parent = search
 
-					-- Быстрый математический расчет высоты без фризов
-					local function CalculateDropdownSize()
+					-- Точный расчет высоты списка без обращения к AbsoluteSize
+					local function CalculateListHeight()
 						local visibleCount = 0
-						local totalItemsHeight = 0
+						local itemsHeight = 0
 
 						if search.Visible then
 							visibleCount += 1
-							totalItemsHeight += SEARCH_HEIGHT
+							itemsHeight += SEARCH_HEIGHT
 						end
 
 						for _, opt in pairs(OptionObjs) do
 							if opt.Button.Visible then
 								visibleCount += 1
-								totalItemsHeight += OPTION_HEIGHT
+								itemsHeight += OPTION_HEIGHT
 							end
 						end
 
 						if visibleCount == 0 then
-							return HEADER_HEIGHT
+							return 0
 						end
 
 						local spacing = LIST_PADDING * math.max(0, visibleCount - 1)
-						return HEADER_HEIGHT + 2 + totalItemsHeight + spacing + BOTTOM_PADDING
+						return LIST_TOP_PAD + itemsHeight + spacing + LIST_BOTTOM_PAD
 					end
 
 					local dropped = false
-					local activeSizeTween = nil
+					local activeCardTween = nil
+					local activeWrapperTween = nil
 					local activeArrowTween = nil
 					local activeStrokeTween = nil
-					local activeTitleTween = nil
+					local activeDividerTween = nil
 					local animToken = 0
 
-					local function AnimateDropdownSize(targetHeight)
-						if activeSizeTween then
-							activeSizeTween:Cancel()
+					local function AnimateDropdownHeight(listHeight)
+						local cardHeight = HEADER_HEIGHT + listHeight
+						local wrapperHeight = TOP_OFFSET + cardHeight
+
+						if listHeight > 0 then
+							dropdownFrame.Size = UDim2.new(1, 0, 0, listHeight)
 						end
-						activeSizeTween = Tween(dropdown, dropdownTweenInfo, {
-							Size = UDim2.new(1, 0, 0, targetHeight)
+
+						if activeCardTween then activeCardTween:Cancel() end
+						if activeWrapperTween then activeWrapperTween:Cancel() end
+
+						activeCardTween = Tween(dropdown, dropdownTweenInfo, {
+							Size = UDim2.new(1, 0, 0, cardHeight)
 						})
-						activeSizeTween:Play()
-						return activeSizeTween
+						activeWrapperTween = Tween(dropdownWrapper, dropdownTweenInfo, {
+							Size = UDim2.new(1, 0, 0, wrapperHeight)
+						})
+						activeCardTween:Play()
+						activeWrapperTween:Play()
+						return activeCardTween
 					end
 
 					local function findOption()
@@ -2965,17 +3023,19 @@ function MacLib:Window(Settings)
 						end
 
 						if dropped then
-							AnimateDropdownSize(CalculateDropdownSize())
+							AnimateDropdownHeight(CalculateListHeight())
 						end
 					end
 
 					searchBox:GetPropertyChangedSignal("Text"):Connect(findOption)
 
-					local function UpdateHeaderText()
+					local function UpdateValueText()
 						if #Selected > 0 then
-							dropdownName.Text = Settings.Name .. " • " .. table.concat(Selected, ", ")
+							dropdownValue.Text = table.concat(Selected, ", ")
+							dropdownValue.TextTransparency = 0.15
 						else
-							dropdownName.Text = Settings.Name
+							dropdownValue.Text = "Не выбрано"
+							dropdownValue.TextTransparency = 0.5
 						end
 					end
 
@@ -2984,8 +3044,8 @@ function MacLib:Window(Settings)
 							opt.Checkmark.Size = UDim2.fromOffset(isSelected and 14 or 0, 14)
 							opt.Checkmark.ImageTransparency = isSelected and 0.1 or 1
 							opt.NameLabel.TextTransparency = isSelected and 0.15 or 0.5
-							opt.Button.BackgroundTransparency = isSelected and 0.96 or 1
-							opt.Stroke.Transparency = isSelected and 0.75 or 1
+							opt.Button.BackgroundTransparency = isSelected and 0.955 or 1
+							opt.Stroke.Transparency = isSelected and 0.72 or 1
 						else
 							if isSelected then
 								opt.Tweens.CheckIn:Play()
@@ -3041,7 +3101,7 @@ function MacLib:Window(Settings)
 							SetOptionVisual(option, false, instant)
 						end
 
-						UpdateHeaderText()
+						UpdateValueText()
 					end
 
 					local function ToggleDropdown()
@@ -3051,9 +3111,9 @@ function MacLib:Window(Settings)
 
 						if activeArrowTween then activeArrowTween:Cancel() end
 						if activeStrokeTween then activeStrokeTween:Cancel() end
-						if activeTitleTween then activeTitleTween:Cancel() end
+						if activeDividerTween then activeDividerTween:Cancel() end
 
-						local targetHeight = dropped and CalculateDropdownSize() or HEADER_HEIGHT
+						local listHeight = dropped and CalculateListHeight() or 0
 
 						if dropped then
 							dropdownFrame.Visible = true
@@ -3066,17 +3126,17 @@ function MacLib:Window(Settings)
 						activeStrokeTween = Tween(dropdownUIStroke, dropdownTweenInfo, {
 							Transparency = dropped and 0.15 or 0.35
 						})
-						activeTitleTween = Tween(dropdownName, dropdownTweenInfo, {
-							TextTransparency = dropped and 0.15 or 0.4
+						activeDividerTween = Tween(headerDivider, dropdownTweenInfo, {
+							BackgroundTransparency = dropped and 0.9 or 1
 						})
 
 						activeArrowTween:Play()
 						activeStrokeTween:Play()
-						activeTitleTween:Play()
+						activeDividerTween:Play()
 
-						local sizeTween = AnimateDropdownSize(targetHeight)
+						local cardTween = AnimateDropdownHeight(listHeight)
 						if not dropped then
-							sizeTween.Completed:Connect(function(playbackState)
+							cardTween.Completed:Connect(function(playbackState)
 								if playbackState == Enum.PlaybackState.Completed and animToken == currentToken and not dropped then
 									dropdownFrame.Visible = false
 								end
@@ -3124,7 +3184,6 @@ function MacLib:Window(Settings)
 						optionUIListLayout.VerticalAlignment = Enum.VerticalAlignment.Center
 						optionUIListLayout.Parent = option
 
-						-- Стрелочка-индикатор выбранного пункта
 						local checkmark = Instance.new("ImageLabel")
 						checkmark.Name = "Checkmark"
 						checkmark.Image = assets.buttonImage
@@ -3156,7 +3215,6 @@ function MacLib:Window(Settings)
 						optionName.Size = UDim2.new(1, -22, 1, 0)
 						optionName.Parent = option
 
-						-- Кешируем твины один раз для каждой опции (без утечек памяти)
 						local cachedTweens = {
 							CheckIn = Tween(checkmark, optionTweenInfo, {
 								Size = UDim2.fromOffset(14, 14),
@@ -3173,13 +3231,13 @@ function MacLib:Window(Settings)
 								TextTransparency = 0.5
 							}),
 							BgIn = Tween(option, optionTweenInfo, {
-								BackgroundTransparency = 0.96
+								BackgroundTransparency = 0.955
 							}),
 							BgOut = Tween(option, optionTweenInfo, {
 								BackgroundTransparency = 1
 							}),
 							StrokeIn = Tween(optionStroke, optionTweenInfo, {
-								Transparency = 0.75
+								Transparency = 0.72
 							}),
 							StrokeOut = Tween(optionStroke, optionTweenInfo, {
 								Transparency = 1
@@ -3206,7 +3264,6 @@ function MacLib:Window(Settings)
 							end
 						end
 
-						-- Мгновенная установка начального состояния без нагрузки на TweenService
 						if isSelected then
 							Toggle(v, true, true)
 						else
@@ -3247,13 +3304,15 @@ function MacLib:Window(Settings)
 						end
 					end
 
+					UpdateValueText()
+
 					function DropdownFunctions:UpdateName(New)
 						Settings.Name = New
-						UpdateHeaderText()
+						dropdownTitle.Text = New
 					end
 
 					function DropdownFunctions:SetVisibility(State)
-						dropdown.Visible = State
+						dropdownWrapper.Visible = State
 					end
 
 					function DropdownFunctions:UpdateSelection(newSelection)
@@ -3279,7 +3338,7 @@ function MacLib:Window(Settings)
 							end
 						end
 						if dropped then
-							AnimateDropdownSize(CalculateDropdownSize())
+							AnimateDropdownHeight(CalculateListHeight())
 						end
 					end
 
@@ -3290,10 +3349,10 @@ function MacLib:Window(Settings)
 						OptionObjs = {}
 						Selected = {}
 						OptionOrder = 0
-						UpdateHeaderText()
+						UpdateValueText()
 
 						if dropped then
-							AnimateDropdownSize(CalculateDropdownSize())
+							AnimateDropdownHeight(CalculateListHeight())
 						end
 					end
 
@@ -3317,10 +3376,10 @@ function MacLib:Window(Settings)
 								OptionObjs[optionName] = nil
 							end
 						end
-						UpdateHeaderText()
+						UpdateValueText()
 
 						if dropped then
-							AnimateDropdownSize(CalculateDropdownSize())
+							AnimateDropdownHeight(CalculateListHeight())
 						end
 					end
 
