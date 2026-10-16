@@ -1877,6 +1877,11 @@ function MacLib:Window(Settings)
 					toggle1.Position = UDim2.fromScale(1, 0.5)
 					toggle1.Size = UDim2.fromOffset(41, 21)
 
+					local toggleScale = Instance.new("UIScale")
+					toggleScale.Name = "ToggleUIScale"
+					toggleScale.Scale = 1
+					toggleScale.Parent = toggle1
+
 					local toggle1Corner = Instance.new("UICorner")
 					toggle1Corner.Name = "Toggle1Corner"
 					toggle1Corner.CornerRadius = UDim.new(1, 0)
@@ -1892,8 +1897,8 @@ function MacLib:Window(Settings)
 					local toggleStrokeGradient = Instance.new("UIGradient")
 					toggleStrokeGradient.Name = "ToggleStrokeGradient"
 					toggleStrokeGradient.Color = ColorSequence.new({
-						ColorSequenceKeypoint.new(0, Color3.fromRGB(120, 120, 120)),   -- Серый контур
-						ColorSequenceKeypoint.new(0.5, Color3.fromRGB(255, 255, 255)), -- Белый блик
+						ColorSequenceKeypoint.new(0, Color3.fromRGB(120, 120, 120)),
+						ColorSequenceKeypoint.new(0.5, Color3.fromRGB(255, 255, 255)),
 						ColorSequenceKeypoint.new(1, Color3.fromRGB(120, 120, 120))
 					})
 					toggleStrokeGradient.Rotation = 45
@@ -1909,7 +1914,7 @@ function MacLib:Window(Settings)
 
 					local togglerHead = Instance.new("ImageLabel")
 					togglerHead.Name = "TogglerHead"
-					togglerHead.Image = "rbxassetid://18772309008"
+					togglerHead.Image = assets.togglerHead or "rbxassetid://18772309008"
 					togglerHead.ImageColor3 = Color3.fromRGB(91, 91, 91)
 					togglerHead.AnchorPoint = Vector2.new(1, 0.5)
 					togglerHead.BackgroundColor3 = Color3.fromRGB(255, 255, 255)
@@ -1924,68 +1929,173 @@ function MacLib:Window(Settings)
 					toggle1.Parent = toggle
 
 					local TweenSettings = {
-						Info = TweenInfo.new(0.2, Enum.EasingStyle.Sine),
+						StateInfo = TweenInfo.new(0.22, Enum.EasingStyle.Quart, Enum.EasingDirection.Out),
+						HoverInfo = TweenInfo.new(0.18, Enum.EasingStyle.Sine, Enum.EasingDirection.Out),
+						PressInfo = TweenInfo.new(0.14, Enum.EasingStyle.Quad, Enum.EasingDirection.Out),
+						ReleaseInfo = TweenInfo.new(0.24, Enum.EasingStyle.Back, Enum.EasingDirection.Out),
 
 						EnabledColors = {
 							Toggle = Color3.fromRGB(87, 86, 86),
+							ToggleHover = Color3.fromRGB(100, 100, 100),
+							TogglePress = Color3.fromRGB(112, 112, 112),
 							ToggleHead = Color3.fromRGB(255, 255, 255)
 						},
 						DisabledColors = {
 							Toggle = Color3.fromRGB(61, 61, 61),
-							ToggleHead = Color3.fromRGB(91, 91, 91)
+							ToggleHover = Color3.fromRGB(74, 74, 74),
+							TogglePress = Color3.fromRGB(84, 84, 84),
+							ToggleHead = Color3.fromRGB(91, 91, 91),
+							ToggleHeadHover = Color3.fromRGB(130, 130, 130),
+							ToggleHeadPress = Color3.fromRGB(160, 160, 160)
 						},
 
 						StrokeTransparency = {
-							Enabled = 0.15, -- Выраженный блик при включении
-							Disabled = 0.5   -- Приглушенный контур при выключении
+							Enabled = 0.15,
+							EnabledHover = 0.05,
+							Disabled = 0.5,
+							DisabledHover = 0.28,
+							Pressed = 0.02
 						},
 
-						EnabledPosition = UDim2.new(1, 0, 0.5, 0),
-						DisabledPosition = UDim2.new(0.5, 0, 0.5, 0),
+						HeadSizes = {
+							Default = UDim2.fromOffset(15, 15),
+							Hover = UDim2.fromOffset(16, 16),
+							Pressed = UDim2.fromOffset(19, 14)
+						}
 					}
 
-					local function ToggleState(State)
-						if State then
-							Tween(toggle1, TweenSettings.Info, {
-								ImageColor3 = TweenSettings.EnabledColors.Toggle
-							}):Play()
+					local togglebool = Settings.Default and true or false
+					local isHovered = false
+					local isPressed = false
 
-							Tween(togglerHead, TweenSettings.Info, {
-								ImageColor3 = TweenSettings.EnabledColors.ToggleHead,
-								Position = TweenSettings.EnabledPosition
-							}):Play()
+					local function UpdateVisuals(animType)
+						local mainTweenInfo = TweenSettings.StateInfo
+						local scaleTweenInfo = TweenSettings.ReleaseInfo
 
-							Tween(toggleUIStroke, TweenSettings.Info, {
-								Transparency = TweenSettings.StrokeTransparency.Enabled
-							}):Play()
-						else
-							Tween(toggle1, TweenSettings.Info, {
-								ImageColor3 = TweenSettings.DisabledColors.Toggle
-							}):Play()
-
-							Tween(togglerHead, TweenSettings.Info, {
-								ImageColor3 = TweenSettings.DisabledColors.ToggleHead,
-								Position = TweenSettings.DisabledPosition
-							}):Play()
-
-							Tween(toggleUIStroke, TweenSettings.Info, {
-								Transparency = TweenSettings.StrokeTransparency.Disabled
-							}):Play()
+						if animType == "Press" then
+							mainTweenInfo = TweenSettings.PressInfo
+							scaleTweenInfo = TweenSettings.PressInfo
+						elseif animType == "Hover" then
+							mainTweenInfo = TweenSettings.HoverInfo
 						end
-						
-						ToggleFunctions.State = State
+
+						local targetBgColor
+						local targetHeadColor
+						local targetHeadPos
+						local targetHeadSize
+						local targetStrokeTrans
+						local targetGradientRot
+						local targetTextTrans
+						local targetScale
+
+						if isPressed then
+							targetScale = 0.92
+							targetHeadSize = TweenSettings.HeadSizes.Pressed
+							targetStrokeTrans = TweenSettings.StrokeTransparency.Pressed
+						elseif isHovered then
+							targetScale = 1.04
+							targetHeadSize = TweenSettings.HeadSizes.Hover
+							targetStrokeTrans = togglebool and TweenSettings.StrokeTransparency.EnabledHover or TweenSettings.StrokeTransparency.DisabledHover
+						else
+							targetScale = 1
+							targetHeadSize = TweenSettings.HeadSizes.Default
+							targetStrokeTrans = togglebool and TweenSettings.StrokeTransparency.Enabled or TweenSettings.StrokeTransparency.Disabled
+						end
+
+						if togglebool then
+							targetBgColor = isPressed and TweenSettings.EnabledColors.TogglePress
+								or (isHovered and TweenSettings.EnabledColors.ToggleHover or TweenSettings.EnabledColors.Toggle)
+							targetHeadColor = TweenSettings.EnabledColors.ToggleHead
+							targetHeadPos = UDim2.new(1, 0, 0.5, 0)
+							targetGradientRot = isHovered and 135 or 45
+							targetTextTrans = isHovered and 0.1 or 0.2
+						else
+							targetBgColor = isPressed and TweenSettings.DisabledColors.TogglePress
+								or (isHovered and TweenSettings.DisabledColors.ToggleHover or TweenSettings.DisabledColors.Toggle)
+							targetHeadColor = isPressed and TweenSettings.DisabledColors.ToggleHeadPress
+								or (isHovered and TweenSettings.DisabledColors.ToggleHeadHover or TweenSettings.DisabledColors.ToggleHead)
+
+							-- При зажатии в выключенном состоянии компенсируем ширину, чтобы ползунок тянулся вправо
+							local xOffset = isPressed and 4 or (isHovered and 1 or 0)
+							targetHeadPos = UDim2.new(0.5, xOffset, 0.5, 0)
+							targetGradientRot = isHovered and 90 or 45
+							targetTextTrans = isHovered and 0.3 or 0.5
+						end
+
+						Tween(toggle1, mainTweenInfo, {
+							ImageColor3 = targetBgColor
+						}):Play()
+
+						Tween(togglerHead, mainTweenInfo, {
+							ImageColor3 = targetHeadColor,
+							Position = targetHeadPos,
+							Size = targetHeadSize
+						}):Play()
+
+						Tween(toggleUIStroke, mainTweenInfo, {
+							Transparency = targetStrokeTrans
+						}):Play()
+
+						Tween(toggleStrokeGradient, mainTweenInfo, {
+							Rotation = targetGradientRot
+						}):Play()
+
+						Tween(toggleName, mainTweenInfo, {
+							TextTransparency = targetTextTrans
+						}):Play()
+
+						Tween(toggleScale, scaleTweenInfo, {
+							Scale = targetScale
+						}):Play()
+
+						ToggleFunctions.State = togglebool
 					end
 
-					local togglebool = Settings.Default
+					local function ToggleState(State)
+						togglebool = State and true or false
+						UpdateVisuals("State")
+					end
+
 					ToggleState(togglebool)
 
 					local function Toggle()
 						togglebool = not togglebool
-						ToggleState(togglebool)
+						UpdateVisuals("State")
 						if Settings.Callback then
 							Settings.Callback(togglebool)
 						end
 					end
+
+					-- Наведение мыши (на саму строку или тумблер)
+					toggle.MouseEnter:Connect(function()
+						isHovered = true
+						UpdateVisuals("Hover")
+					end)
+
+					toggle.MouseLeave:Connect(function()
+						isHovered = false
+						if isPressed then
+							isPressed = false
+						end
+						UpdateVisuals("Hover")
+					end)
+
+					-- Анимация зажатия и отпускания (ЛКМ + Сенсорный экран)
+					toggle1.InputBegan:Connect(function(input)
+						if input.UserInputType == Enum.UserInputType.MouseButton1 or input.UserInputType == Enum.UserInputType.Touch then
+							isPressed = true
+							UpdateVisuals("Press")
+						end
+					end)
+
+					toggle1.InputEnded:Connect(function(input)
+						if input.UserInputType == Enum.UserInputType.MouseButton1 or input.UserInputType == Enum.UserInputType.Touch then
+							if isPressed then
+								isPressed = false
+								UpdateVisuals("State")
+							end
+						end
+					end)
 
 					toggle1.MouseButton1Click:Connect(Toggle)
 
@@ -1993,7 +2103,7 @@ function MacLib:Window(Settings)
 						Toggle()
 					end
 					function ToggleFunctions:UpdateState(State)
-						togglebool = State
+						togglebool = State and true or false
 						ToggleState(togglebool)
 						if Settings.Callback then
 							Settings.Callback(togglebool)
@@ -2041,8 +2151,8 @@ function MacLib:Window(Settings)
 					local sliderStrokeGradient = Instance.new("UIGradient")
 					sliderStrokeGradient.Name = "SliderStrokeGradient"
 					sliderStrokeGradient.Color = ColorSequence.new({
-						ColorSequenceKeypoint.new(0, Color3.fromRGB(120, 120, 120)),   -- Серый контур
-						ColorSequenceKeypoint.new(0.5, Color3.fromRGB(255, 255, 255)), -- Белый блик
+						ColorSequenceKeypoint.new(0, Color3.fromRGB(120, 120, 120)),
+						ColorSequenceKeypoint.new(0.5, Color3.fromRGB(255, 255, 255)),
 						ColorSequenceKeypoint.new(1, Color3.fromRGB(120, 120, 120))
 					})
 					sliderStrokeGradient.Rotation = 45
@@ -2066,7 +2176,7 @@ function MacLib:Window(Settings)
 					-- Верхняя строка: заголовок и поле со значением
 					local sliderTop = Instance.new("Frame")
 					sliderTop.Name = "SliderTop"
-					sliderTop.BackgroundTransparency = 1
+						sliderTop.BackgroundTransparency = 1
 					sliderTop.Size = UDim2.new(1, 0, 0, 18)
 					sliderTop.LayoutOrder = 1
 					sliderTop.Parent = slider
