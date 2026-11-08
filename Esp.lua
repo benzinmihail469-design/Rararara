@@ -1511,20 +1511,24 @@ function MacLib:Window(Settings)
 			elementsScrolling.Parent = elements1
 
 			-- =========================================================================
-			-- ИНТЕГРИРОВАННАЯ СЕКЦИЯ: градиентный контур, иконка, заголовок, сворачивание
-			-- Оптимизированная двухуровневая анимация без обрезаний и фризов
+			-- ЧАСТЬ 1: СЕКЦИЯ И ОПТИМИЗИРОВАННАЯ АНИМАЦИЯ СВОРАЧИВАНИЯ БЕЗ ФРИЗОВ
 			-- =========================================================================
 			function TabFunctions:Section(Settings)
 				local SectionFunctions = {}
+
+				local hasHeader = (Settings.Name ~= nil or Settings.Icon ~= nil)
+				local HEADER_HEIGHT = hasHeader and 36 or 0
+				local COLLAPSE_DURATION = 0.26
+
 				local section = Instance.new("Frame")
 				section.Name = "Section"
-				section.AutomaticSize = Enum.AutomaticSize.Y
+				section.AutomaticSize = Enum.AutomaticSize.None
 				section.BackgroundColor3 = Color3.fromRGB(255, 255, 255)
 				section.BackgroundTransparency = 0.98
 				section.BorderColor3 = Color3.fromRGB(0, 0, 0)
 				section.BorderSizePixel = 0
-				section.ClipsDescendants = true
-				section.Size = UDim2.fromScale(1, 0)
+				section.ClipsDescendants = false
+				section.Size = UDim2.new(1, 0, 0, HEADER_HEIGHT)
 				section.Parent = Settings.Side == "Left" and left or right
 
 				local sectionUICorner = Instance.new("UICorner")
@@ -1561,7 +1565,7 @@ function MacLib:Window(Settings)
 				sectionHeaderTop.BackgroundTransparency = 1
 				sectionHeaderTop.Size = UDim2.new(1, 0, 0, 36)
 				sectionHeaderTop.LayoutOrder = 0
-				sectionHeaderTop.Visible = (Settings.Name ~= nil or Settings.Icon ~= nil)
+				sectionHeaderTop.Visible = hasHeader
 				sectionHeaderTop.Parent = section
 
 				local headerPadding = Instance.new("UIPadding")
@@ -1569,7 +1573,7 @@ function MacLib:Window(Settings)
 				headerPadding.PaddingRight = UDim.new(0, 16)
 				headerPadding.Parent = sectionHeaderTop
 
-				-- Левый контейнер: только одна иконка и название секции
+				-- Левый контейнер: иконка и название секции
 				local headerTitleHolder = Instance.new("Frame")
 				headerTitleHolder.Name = "HeaderTitleHolder"
 				headerTitleHolder.BackgroundTransparency = 1
@@ -1584,7 +1588,6 @@ function MacLib:Window(Settings)
 				headerLayout.SortOrder = Enum.SortOrder.LayoutOrder
 				headerLayout.Parent = headerTitleHolder
 
-				-- Вывод ровно одной иконки (только если она передана в Settings.Icon)
 				if Settings.Icon then
 					local sectionIcon = Instance.new("ImageLabel")
 					sectionIcon.Name = "SectionIcon"
@@ -1608,33 +1611,34 @@ function MacLib:Window(Settings)
 					sectionTitle.Parent = headerTitleHolder
 				end
 
-				-- Стрелочка сворачивания: аккуратный шеврон (assets.buttonImage)
+				-- Стрелочка сворачивания: шеврон
 				local collapseButton = Instance.new("ImageButton")
 				collapseButton.Name = "CollapseButton"
 				collapseButton.Image = assets.buttonImage
 				collapseButton.ImageColor3 = Color3.fromRGB(220, 220, 220)
 				collapseButton.BackgroundTransparency = 1
+				collapseButton.AutoButtonColor = false
 				collapseButton.AnchorPoint = Vector2.new(1, 0.5)
 				collapseButton.Position = UDim2.new(1, 0, 0.5, 0)
 				collapseButton.Size = UDim2.fromOffset(14, 14)
-				collapseButton.Rotation = 90 -- 90° = смотрит вниз (развернуто)
+				collapseButton.Rotation = 90
 				collapseButton.Parent = sectionHeaderTop
 
-				-- Внешняя маска для плавной анимации без рывков
+				-- Внешняя маска (единственный ClipsDescendants, без AutomaticSize)
 				local contentHolder = Instance.new("Frame")
 				contentHolder.Name = "ContentHolder"
 				contentHolder.BackgroundTransparency = 1
 				contentHolder.ClipsDescendants = true
+				contentHolder.AutomaticSize = Enum.AutomaticSize.None
 				contentHolder.Size = UDim2.new(1, 0, 0, 0)
-				contentHolder.AutomaticSize = Enum.AutomaticSize.Y -- В открытом состоянии сразу подстраивается под контент
 				contentHolder.LayoutOrder = 1
 				contentHolder.Parent = section
 
-				-- Внутренний контейнер: содержит функции и всегда точно знает свою высоту
+				-- Внутренний контейнер элементов (без AutomaticSize-переключений)
 				local sectionContainer = Instance.new("Frame")
 				sectionContainer.Name = "SectionContainer"
 				sectionContainer.BackgroundTransparency = 1
-				sectionContainer.AutomaticSize = Enum.AutomaticSize.Y -- Всегда знает точную высоту всех элементов
+				sectionContainer.AutomaticSize = Enum.AutomaticSize.None
 				sectionContainer.Size = UDim2.new(1, 0, 0, 0)
 				sectionContainer.Parent = contentHolder
 
@@ -1652,86 +1656,198 @@ function MacLib:Window(Settings)
 				sectionUIPadding.PaddingTop = UDim.new(0, Settings.Name and 6 or 16)
 				sectionUIPadding.Parent = sectionContainer
 
-				-- Логика плавной анимации без рывков и «зависания» на середине
-				local isCollapsed = false
-				local currentTween = nil
-				local currentArrowTween = nil
+				-- Точное получение текущего масштаба UIScale
+				local function GetCurrentScale()
+					local s = (baseUIScale and baseUIScale.Scale) or 1
+					return (s > 0) and s or 1
+				end
 
-				local function ToggleCollapse()
-					isCollapsed = not isCollapsed
+				-- Безошибочный расчёт высоты контента в локальных Offset-координатах
+				local function GetTargetContentHeight()
+					local scale = GetCurrentScale()
+					local padTop = sectionUIPadding.PaddingTop.Offset
+					local padBottom = sectionUIPadding.PaddingBottom.Offset
 
-					-- Мгновенная отмена предыдущих твинов при быстром нажатии
-					if currentTween then currentTween:Cancel() end
-					if currentArrowTween then currentArrowTween:Cancel() end
+					local rawContentY = sectionUIListLayout.AbsoluteContentSize.Y
+					if rawContentY > 0 then
+						return math.round(rawContentY / scale) + padTop + padBottom
+					end
 
-					-- Равномерная плавная интерполяция Quad Out (0.28 сек)
-					local tweenInfo = TweenInfo.new(0.28, Enum.EasingStyle.Quad, Enum.EasingDirection.Out)
+					-- Fallback, если layout ещё не пересчитан в текущем кадре
+					local fallbackY = 0
+					local visibleItems = 0
+					local itemPadding = sectionUIListLayout.Padding.Offset
 
-					-- Плавный поворот шеврона
-					currentArrowTween = TweenService:Create(collapseButton, tweenInfo, {
-						Rotation = isCollapsed and 0 or 90
-					})
-					currentArrowTween:Play()
-
-					if isCollapsed then
-						-- Сворачивание: берем нативную высоту и плавно сжимаем маску в 0
-						local startHeight = sectionContainer.AbsoluteSize.Y
-						if startHeight <= 0 then
-							startHeight = contentHolder.AbsoluteSize.Y
-						end
-
-						contentHolder.AutomaticSize = Enum.AutomaticSize.None
-						contentHolder.Size = UDim2.new(1, 0, 0, startHeight)
-
-						currentTween = TweenService:Create(contentHolder, tweenInfo, {
-							Size = UDim2.new(1, 0, 0, 0)
-						})
-						currentTween:Play()
-					else
-						-- Разворачивание: открываем маску ровно до полной высоты ВСЕХ функций
-						local targetHeight = sectionContainer.AbsoluteSize.Y
-						if targetHeight <= 0 then
-							local listY = sectionUIListLayout.AbsoluteContentSize.Y
-							targetHeight = listY + sectionUIPadding.PaddingTop.Offset + sectionUIPadding.PaddingBottom.Offset
-						end
-
-						contentHolder.AutomaticSize = Enum.AutomaticSize.None
-
-						currentTween = TweenService:Create(contentHolder, tweenInfo, {
-							Size = UDim2.new(1, 0, 0, targetHeight)
-						})
-						currentTween:Play()
-
-						currentTween.Completed:Connect(function(playbackState)
-							if playbackState == Enum.PlaybackState.Completed and not isCollapsed then
-								-- Включаем авто-размер: секция продолжает сама адаптироваться под открытие списков и новые функции
-								contentHolder.AutomaticSize = Enum.AutomaticSize.Y
-								contentHolder.Size = UDim2.new(1, 0, 0, 0)
+					for _, child in ipairs(sectionContainer:GetChildren()) do
+						if child:IsA("GuiObject") and child.Visible then
+							visibleItems += 1
+							local h = child.Size.Y.Offset
+							if h <= 0 and child.AbsoluteSize.Y > 0 then
+								h = math.round(child.AbsoluteSize.Y / scale)
 							end
-						end)
+							fallbackY += h
+						end
+					end
+
+					if visibleItems == 0 then
+						return 0
+					end
+
+					fallbackY += math.max(0, visibleItems - 1) * itemPadding
+					return fallbackY + padTop + padBottom
+				end
+
+				local isCollapsed = false
+				local isAnimating = false
+				local animToken = 0
+
+				local currentContentTween = nil
+				local currentSectionTween = nil
+				local currentArrowTween = nil
+				local completedConn = nil
+
+				local function CleanupTweens()
+					if completedConn then
+						completedConn:Disconnect()
+						completedConn = nil
+					end
+					if currentContentTween then
+						currentContentTween:Cancel()
+						currentContentTween = nil
+					end
+					if currentSectionTween then
+						currentSectionTween:Cancel()
+						currentSectionTween = nil
+					end
+					if currentArrowTween then
+						currentArrowTween:Cancel()
+						currentArrowTween = nil
 					end
 				end
 
-				-- Клик по кнопке или по всей шапке секции
-				collapseButton.MouseButton1Click:Connect(ToggleCollapse)
-				if Settings.Name or Settings.Icon then
+				-- Авто-синхронизация высоты при открытии Dropdown / изменении элементов
+				local function SyncExpandedHeight()
+					local targetH = GetTargetContentHeight()
+					sectionContainer.Size = UDim2.new(1, 0, 0, targetH)
+
+					if not isCollapsed and not isAnimating then
+						contentHolder.Size = UDim2.new(1, 0, 0, targetH)
+						section.Size = UDim2.new(1, 0, 0, HEADER_HEIGHT + targetH)
+					end
+				end
+
+				local layoutSignalConn = sectionUIListLayout:GetPropertyChangedSignal("AbsoluteContentSize"):Connect(SyncExpandedHeight)
+
+				local function ToggleCollapse()
+					isCollapsed = not isCollapsed
+					animToken += 1
+					local myToken = animToken
+
+					CleanupTweens()
+
+					local fullHeight = GetTargetContentHeight()
+					sectionContainer.Size = UDim2.new(1, 0, 0, fullHeight)
+
+					if not isCollapsed then
+						contentHolder.Visible = true
+					end
+
+					local currentHeight = contentHolder.Size.Y.Offset
+					local goalHeight = isCollapsed and 0 or fullHeight
+
+					-- Масштабируем время при реверсе на полпути, чтобы не было затянутости
+					local distance = math.abs(goalHeight - currentHeight)
+					local ratio = (fullHeight > 0) and (distance / fullHeight) or 1
+					local duration = math.clamp(COLLAPSE_DURATION * math.max(0.45, ratio), 0.12, COLLAPSE_DURATION)
+
+					local tweenInfo = TweenInfo.new(duration, Enum.EasingStyle.Quart, Enum.EasingDirection.Out)
+
+					isAnimating = true
+
+					currentArrowTween = TweenService:Create(collapseButton, tweenInfo, {
+						Rotation = isCollapsed and 0 or 90
+					})
+					currentContentTween = TweenService:Create(contentHolder, tweenInfo, {
+						Size = UDim2.new(1, 0, 0, goalHeight)
+					})
+					currentSectionTween = TweenService:Create(section, tweenInfo, {
+						Size = UDim2.new(1, 0, 0, HEADER_HEIGHT + goalHeight)
+					})
+
+					completedConn = currentContentTween.Completed:Connect(function(playbackState)
+						if myToken ~= animToken then
+							return
+						end
+						completedConn = nil
+						if playbackState == Enum.PlaybackState.Completed then
+							isAnimating = false
+							if isCollapsed then
+								contentHolder.Size = UDim2.new(1, 0, 0, 0)
+								section.Size = UDim2.new(1, 0, 0, HEADER_HEIGHT)
+								contentHolder.Visible = false
+							else
+								local latestH = GetTargetContentHeight()
+								sectionContainer.Size = UDim2.new(1, 0, 0, latestH)
+								contentHolder.Size = UDim2.new(1, 0, 0, latestH)
+								section.Size = UDim2.new(1, 0, 0, HEADER_HEIGHT + latestH)
+							end
+						end
+					end)
+
+					currentArrowTween:Play()
+					currentContentTween:Play()
+					currentSectionTween:Play()
+				end
+
+				-- Единая обработка клика по стрелке и шапке без двойного вызова и ложных срабатываний при скролле
+				local lastToggleClock = 0
+				local function SafeTriggerToggle()
+					local now = os.clock()
+					if now - lastToggleClock < 0.05 then
+						return
+					end
+					lastToggleClock = now
+					ToggleCollapse()
+				end
+
+				collapseButton.MouseButton1Click:Connect(SafeTriggerToggle)
+
+				if hasHeader then
+					local pressStartPos = nil
+					local activePointer = nil
+
 					sectionHeaderTop.InputBegan:Connect(function(input)
 						if input.UserInputType == Enum.UserInputType.MouseButton1 or input.UserInputType == Enum.UserInputType.Touch then
-							ToggleCollapse()
+							pressStartPos = input.Position
+							activePointer = input
+						end
+					end)
+
+					sectionHeaderTop.InputEnded:Connect(function(input)
+						if input == activePointer and pressStartPos then
+							local delta = (input.Position - pressStartPos).Magnitude
+							pressStartPos = nil
+							activePointer = nil
+							if delta <= 8 then
+								SafeTriggerToggle()
+							end
 						end
 					end)
 				end
 
-				function SectionFunctions:ToggleCollapse()
-					ToggleCollapse()
-				end
+				section.Destroying:Connect(function()
+					CleanupTweens()
+					if layoutSignalConn then
+						layoutSignalConn:Disconnect()
+						layoutSignalConn = nil
+					end
+				end)
 
-				function SectionFunctions:SetVisibility(State)
-					section.Visible = State
-				end
+				task.defer(SyncExpandedHeight)
+
 
 				-- =============================================================
-				-- ЭЛЕМЕНТЫ СЕКЦИИ — parent = sectionContainer
+				-- ЧАСТЬ 2: ЭЛЕМЕНТЫ BUTTON, TOGGLE, SLIDER, INPUT
 				-- =============================================================
 				function SectionFunctions:Button(Settings)
 					local ButtonFunctions = {}
@@ -1782,7 +1898,6 @@ function MacLib:Window(Settings)
 					local TweenSettings = {
 						DefaultTransparency = 0.5,
 						HoverTransparency = 0.3,
-
 						EasingStyle = Enum.EasingStyle.Sine
 					}
 
@@ -2015,7 +2130,6 @@ function MacLib:Window(Settings)
 							targetHeadColor = isPressed and TweenSettings.DisabledColors.ToggleHeadPress
 								or (isHovered and TweenSettings.DisabledColors.ToggleHeadHover or TweenSettings.DisabledColors.ToggleHead)
 
-							-- При зажатии в выключенном состоянии компенсируем ширину, чтобы ползунок тянулся вправо
 							local xOffset = isPressed and 4 or (isHovered and 1 or 0)
 							targetHeadPos = UDim2.new(0.5, xOffset, 0.5, 0)
 							targetGradientRot = isHovered and 90 or 45
@@ -2066,7 +2180,6 @@ function MacLib:Window(Settings)
 						end
 					end
 
-					-- Наведение мыши (на саму строку или тумблер)
 					toggle.MouseEnter:Connect(function()
 						isHovered = true
 						UpdateVisuals("Hover")
@@ -2080,7 +2193,6 @@ function MacLib:Window(Settings)
 						UpdateVisuals("Hover")
 					end)
 
-					-- Анимация зажатия и отпускания (ЛКМ + Сенсорный экран)
 					toggle1.InputBegan:Connect(function(input)
 						if input.UserInputType == Enum.UserInputType.MouseButton1 or input.UserInputType == Enum.UserInputType.Touch then
 							isPressed = true
@@ -2124,7 +2236,6 @@ function MacLib:Window(Settings)
 				function SectionFunctions:Slider(Settings)
 					local SliderFunctions = {}
 
-					-- Карточка слайдера в едином стиле секции
 					local slider = Instance.new("Frame")
 					slider.Name = "Slider"
 					slider.AutomaticSize = Enum.AutomaticSize.Y
@@ -2140,7 +2251,6 @@ function MacLib:Window(Settings)
 					sliderCorner.CornerRadius = UDim.new(0, 8)
 					sliderCorner.Parent = slider
 
-					-- Градиентный контур как у секции
 					local sliderStroke = Instance.new("UIStroke")
 					sliderStroke.Name = "SliderStroke"
 					sliderStroke.ApplyStrokeMode = Enum.ApplyStrokeMode.Border
@@ -2173,10 +2283,9 @@ function MacLib:Window(Settings)
 					sliderLayout.Padding = UDim.new(0, 8)
 					sliderLayout.Parent = slider
 
-					-- Верхняя строка: заголовок и поле со значением
 					local sliderTop = Instance.new("Frame")
 					sliderTop.Name = "SliderTop"
-						sliderTop.BackgroundTransparency = 1
+					sliderTop.BackgroundTransparency = 1
 					sliderTop.Size = UDim2.new(1, 0, 0, 18)
 					sliderTop.LayoutOrder = 1
 					sliderTop.Parent = slider
@@ -2225,7 +2334,6 @@ function MacLib:Window(Settings)
 					sliderValueStroke.Transparency = 0.85
 					sliderValueStroke.Parent = sliderValue
 
-					-- Нижняя строка: трек слайдера во всю ширину
 					local sliderTrackArea = Instance.new("TextButton")
 					sliderTrackArea.Name = "SliderTrackArea"
 					sliderTrackArea.Text = ""
@@ -2484,7 +2592,7 @@ function MacLib:Window(Settings)
 							return value
 						end,
 						Numeric = function(value)
-							return value:match("^%-?%d*$") and value or value:gsub("[^%d-]", ""):gsub("(%-)", function(match, pos, original)
+							return value:match("^%-?%d*$") and value or value:gsub("[^%d-]", ""):gsub("(%-)", function(match, pos)
 								if pos == 1 then
 									return match
 								else
@@ -2551,10 +2659,15 @@ function MacLib:Window(Settings)
 					return InputFunctions
 				end
 
+
+
+
+				-- =============================================================
+				-- ЧАСТЬ 3: ЭЛЕМЕНТЫ KEYBIND И DROPDOWN
+				-- =============================================================
 				function SectionFunctions:Keybind(Settings)
 					local KeybindFunctions = {}
 
-					-- Карточка кейбинда в едином стиле секции
 					local keybind = Instance.new("Frame")
 					keybind.Name = "Keybind"
 					keybind.BackgroundColor3 = Color3.fromRGB(255, 255, 255)
@@ -2568,7 +2681,6 @@ function MacLib:Window(Settings)
 					keybindCorner.CornerRadius = UDim.new(0, 8)
 					keybindCorner.Parent = keybind
 
-					-- Градиентный контур в стиле секции
 					local keybindStroke = Instance.new("UIStroke")
 					keybindStroke.Name = "KeybindStroke"
 					keybindStroke.ApplyStrokeMode = Enum.ApplyStrokeMode.Border
@@ -2591,7 +2703,6 @@ function MacLib:Window(Settings)
 					keybindPadding.PaddingRight = UDim.new(0, 14)
 					keybindPadding.Parent = keybind
 
-					-- Название слева
 					local keybindName = Instance.new("TextLabel")
 					keybindName.Name = "KeybindName"
 					keybindName.FontFace = Font.new(assets.interFont, Enum.FontWeight.Medium, Enum.FontStyle.Normal)
@@ -2610,7 +2721,6 @@ function MacLib:Window(Settings)
 					keybindName.BorderSizePixel = 0
 					keybindName.Parent = keybind
 
-					-- Кнопка выбора клавиши справа
 					local binderBtn = Instance.new("TextButton")
 					binderBtn.Name = "BinderBtn"
 					binderBtn.FontFace = Font.new(assets.interFont, Enum.FontWeight.SemiBold, Enum.FontStyle.Normal)
@@ -2851,10 +2961,9 @@ function MacLib:Window(Settings)
 					local OptionObjs = {}
 					local OptionOrder = 0
 
-					-- Точные размеры для работы без AutomaticSize и без лагов секции
 					local TITLE_HEIGHT = 18
 					local TITLE_GAP = 6
-					local TOP_OFFSET = TITLE_HEIGHT + TITLE_GAP -- 24px над карточкой дропдауна
+					local TOP_OFFSET = TITLE_HEIGHT + TITLE_GAP
 
 					local HEADER_HEIGHT = 38
 					local OPTION_HEIGHT = 30
@@ -2866,7 +2975,6 @@ function MacLib:Window(Settings)
 					local dropdownTweenInfo = TweenInfo.new(0.36, Enum.EasingStyle.Quint, Enum.EasingDirection.Out)
 					local optionTweenInfo = TweenInfo.new(0.24, Enum.EasingStyle.Quart, Enum.EasingDirection.Out)
 
-					-- Внешний контейнер (держит название сверху + сам дропдаун снизу)
 					local dropdownWrapper = Instance.new("Frame")
 					dropdownWrapper.Name = "DropdownWrapper"
 					dropdownWrapper.BackgroundTransparency = 1
@@ -2874,7 +2982,6 @@ function MacLib:Window(Settings)
 					dropdownWrapper.Size = UDim2.new(1, 0, 0, TOP_OFFSET + HEADER_HEIGHT)
 					dropdownWrapper.Parent = sectionContainer
 
-					-- Отдельное красивое название НАД дропдауном
 					local dropdownTitle = Instance.new("TextLabel")
 					dropdownTitle.Name = "DropdownTitle"
 					dropdownTitle.FontFace = Font.new(
@@ -2896,7 +3003,6 @@ function MacLib:Window(Settings)
 					dropdownTitle.Size = UDim2.new(1, -4, 0, TITLE_HEIGHT)
 					dropdownTitle.Parent = dropdownWrapper
 
-					-- Сама карточка дропдауна (с контуром как у секции)
 					local dropdown = Instance.new("Frame")
 					dropdown.Name = "Dropdown"
 					dropdown.BackgroundColor3 = Color3.fromRGB(255, 255, 255)
@@ -2935,7 +3041,6 @@ function MacLib:Window(Settings)
 					dropdownUIPadding.PaddingRight = UDim.new(0, 14)
 					dropdownUIPadding.Parent = dropdown
 
-					-- Кнопка клика по шапке карточки
 					local interact = Instance.new("TextButton")
 					interact.Name = "Interact"
 					interact.Text = ""
@@ -2946,7 +3051,6 @@ function MacLib:Window(Settings)
 					interact.ZIndex = 2
 					interact.Parent = dropdown
 
-					-- Текст выбранного значения внутри самого дропдауна
 					local dropdownValue = Instance.new("TextLabel")
 					dropdownValue.Name = "DropdownValue"
 					dropdownValue.FontFace = Font.new(
@@ -2967,7 +3071,6 @@ function MacLib:Window(Settings)
 					dropdownValue.Size = UDim2.new(1, -26, 0, HEADER_HEIGHT)
 					dropdownValue.Parent = dropdown
 
-					-- Стрелочка справа
 					local dropdownImage = Instance.new("ImageLabel")
 					dropdownImage.Name = "DropdownImage"
 					dropdownImage.Image = assets.buttonImage
@@ -2981,7 +3084,6 @@ function MacLib:Window(Settings)
 					dropdownImage.Rotation = 0
 					dropdownImage.Parent = dropdown
 
-					-- Тонкая линия-разделитель между шапкой и списком
 					local headerDivider = Instance.new("Frame")
 					headerDivider.Name = "HeaderDivider"
 					headerDivider.BackgroundColor3 = Color3.fromRGB(255, 255, 255)
@@ -2991,7 +3093,6 @@ function MacLib:Window(Settings)
 					headerDivider.Size = UDim2.new(1, 0, 0, 1)
 					headerDivider.Parent = dropdown
 
-					-- Контейнер опций (без AutomaticSize — исключает фризы при сворачивании секции)
 					local dropdownFrame = Instance.new("Frame")
 					dropdownFrame.Name = "DropdownFrame"
 					dropdownFrame.BackgroundTransparency = 1
@@ -3013,7 +3114,6 @@ function MacLib:Window(Settings)
 					dropdownFrameUIListLayout.SortOrder = Enum.SortOrder.LayoutOrder
 					dropdownFrameUIListLayout.Parent = dropdownFrame
 
-					-- Поле поиска
 					local search = Instance.new("Frame")
 					search.Name = "Search"
 					search.BackgroundColor3 = Color3.fromRGB(255, 255, 255)
@@ -3067,7 +3167,6 @@ function MacLib:Window(Settings)
 					searchBox.Size = UDim2.new(1, -34, 1, 0)
 					searchBox.Parent = search
 
-					-- Точный расчет высоты списка без обращения к AbsoluteSize
 					local function CalculateListHeight()
 						local visibleCount = 0
 						local itemsHeight = 0
@@ -3499,14 +3598,20 @@ function MacLib:Window(Settings)
 
 					return DropdownFunctions
 				end
-				
+
+
+
+
+				-- =============================================================
+				-- ЧАСТЬ 4: COLORPICKER, ТЕКСТОВЫЕ ЭЛЕМЕНТЫ И ЗАВЕРШЕНИЕ SECTION
+				-- =============================================================
 				function SectionFunctions:Colorpicker(Settings)
 					local ColorpickerFunctions = {}
-					
+
 					local isAlpha = Settings.Alpha and true or false
 					ColorpickerFunctions.Color = Settings.Default
 					ColorpickerFunctions.Alpha = isAlpha and Settings.Alpha
-					
+
 					local colorpicker = Instance.new("Frame")
 					colorpicker.Name = "Colorpicker"
 					colorpicker.AutomaticSize = Enum.AutomaticSize.Y
@@ -3598,7 +3703,7 @@ function MacLib:Window(Settings)
 					colorPicker.BorderSizePixel = 0
 					colorPicker.Size = UDim2.fromScale(1, 1)
 					colorPicker.Visible = false
-					
+
 					local baseUICorner = Instance.new("UICorner")
 					baseUICorner.Name = "BaseUICorner"
 					baseUICorner.CornerRadius = UDim.new(0, 10)
@@ -3674,10 +3779,10 @@ function MacLib:Window(Settings)
 					slide.Position = UDim2.fromScale(0, 0.5)
 					slide.Size = UDim2.new(0, 13, 1, 8)
 
-					local uICorner = Instance.new("UICorner")
-					uICorner.Name = "UICorner"
-					uICorner.CornerRadius = UDim.new(1, 0)
-					uICorner.Parent = slide
+					local uICorner2 = Instance.new("UICorner")
+					uICorner2.Name = "UICorner"
+					uICorner2.CornerRadius = UDim.new(1, 0)
+					uICorner2.Parent = slide
 
 					local uIStroke = Instance.new("UIStroke")
 					uIStroke.Name = "UIStroke"
@@ -3687,10 +3792,10 @@ function MacLib:Window(Settings)
 
 					slide.Parent = value
 
-					local uICorner1 = Instance.new("UICorner")
-					uICorner1.Name = "UICorner"
-					uICorner1.CornerRadius = UDim.new(0, 6)
-					uICorner1.Parent = value
+					local uICorner3 = Instance.new("UICorner")
+					uICorner3.Name = "UICorner"
+					uICorner3.CornerRadius = UDim.new(0, 6)
+					uICorner3.Parent = value
 
 					local uIStroke1 = Instance.new("UIStroke")
 					uIStroke1.Name = "UIStroke"
@@ -3737,7 +3842,7 @@ function MacLib:Window(Settings)
 					wheel1.Selectable = false
 					wheel1.Size = UDim2.fromOffset(220, 220)
 					wheel1.SizeConstraint = Enum.SizeConstraint.RelativeYY
-		
+
 					local target = Instance.new("ImageLabel")
 					target.Name = "Target"
 					target.Image = "rbxassetid://73265255323268"
@@ -3859,7 +3964,6 @@ function MacLib:Window(Settings)
 					inputBoxUIPadding.Parent = inputBox
 
 					inputBox.Parent = red
-
 					red.Parent = inputs
 
 					local green = Instance.new("Frame")
@@ -3950,7 +4054,6 @@ function MacLib:Window(Settings)
 					inputBoxUIPadding1.Parent = inputBox1
 
 					inputBox1.Parent = green
-
 					green.Parent = inputs
 
 					local blue = Instance.new("Frame")
@@ -4041,7 +4144,6 @@ function MacLib:Window(Settings)
 					inputBoxUIPadding2.Parent = inputBox2
 
 					inputBox2.Parent = blue
-
 					blue.Parent = inputs
 
 					local alpha = Instance.new("Frame")
@@ -4050,7 +4152,8 @@ function MacLib:Window(Settings)
 					alpha.BackgroundColor3 = Color3.fromRGB(0, 0, 0)
 					alpha.BackgroundTransparency = 1
 					alpha.BorderColor3 = Color3.fromRGB(0, 0, 0)
-					alpha.BorderSizePixel = 0					alpha.LayoutOrder = 4
+					alpha.BorderSizePixel = 0
+					alpha.LayoutOrder = 4
 					alpha.Size = UDim2.fromOffset(0, 38)
 					alpha.Visible = isAlpha
 
@@ -4132,7 +4235,6 @@ function MacLib:Window(Settings)
 					inputBoxUIPadding3.Parent = inputBox3
 
 					inputBox3.Parent = alpha
-
 					alpha.Parent = inputs
 
 					local hex = Instance.new("Frame")
@@ -4223,7 +4325,6 @@ function MacLib:Window(Settings)
 					inputBoxUIPadding4.Parent = inputBox4
 
 					inputBox4.Parent = hex
-
 					hex.Parent = inputs
 
 					inputs.Parent = wheel
@@ -4263,9 +4364,9 @@ function MacLib:Window(Settings)
 					newColor.BorderSizePixel = 0
 					newColor.Size = UDim2.fromOffset(100, 100)
 
-					local uICorner2 = Instance.new("UICorner")
-					uICorner2.Name = "UICorner"
-					uICorner2.Parent = newColor
+					local uICorner4 = Instance.new("UICorner")
+					uICorner4.Name = "UICorner"
+					uICorner4.Parent = newColor
 
 					local color = Instance.new("Frame")
 					color.Name = "Color"
@@ -4275,12 +4376,11 @@ function MacLib:Window(Settings)
 					color.Position = UDim2.fromScale(0.5, 0.5)
 					color.Size = UDim2.new(1, 1, 1, 1)
 
-					local uICorner3 = Instance.new("UICorner")
-					uICorner3.Name = "UICorner"
-					uICorner3.Parent = color
+					local uICorner5 = Instance.new("UICorner")
+					uICorner5.Name = "UICorner"
+					uICorner5.Parent = color
 
 					color.Parent = newColor
-
 					newColor.Parent = colorWells
 
 					local oldColor = Instance.new("ImageLabel")
@@ -4295,9 +4395,9 @@ function MacLib:Window(Settings)
 					oldColor.LayoutOrder = 1
 					oldColor.Size = UDim2.fromOffset(100, 100)
 
-					local uICorner4 = Instance.new("UICorner")
-					uICorner4.Name = "UICorner"
-					uICorner4.Parent = oldColor
+					local uICorner6 = Instance.new("UICorner")
+					uICorner6.Name = "UICorner"
+					uICorner6.Parent = oldColor
 
 					local color1 = Instance.new("Frame")
 					color1.Name = "Color"
@@ -4307,16 +4407,14 @@ function MacLib:Window(Settings)
 					color1.Position = UDim2.fromScale(0.5, 0.5)
 					color1.Size = UDim2.new(1, 1, 1, 1)
 
-					local uICorner5 = Instance.new("UICorner")
-					uICorner5.Name = "UICorner"
-					uICorner5.Parent = color1
+					local uICorner7 = Instance.new("UICorner")
+					uICorner7.Name = "UICorner"
+					uICorner7.Parent = color1
 
 					color1.Parent = oldColor
-
 					oldColor.Parent = colorWells
 
 					colorWells.Parent = colorOptions
-
 					colorOptions.Parent = prompt
 
 					local interactions = Instance.new("Frame")
@@ -4362,10 +4460,10 @@ function MacLib:Window(Settings)
 					uIPadding1.PaddingTop = UDim.new(0, 9)
 					uIPadding1.Parent = confirm
 
-					local baseUICorner = Instance.new("UICorner")
-					baseUICorner.Name = "BaseUICorner"
-					baseUICorner.CornerRadius = UDim.new(0, 10)
-					baseUICorner.Parent = confirm
+					local baseUICorner1 = Instance.new("UICorner")
+					baseUICorner1.Name = "BaseUICorner"
+					baseUICorner1.CornerRadius = UDim.new(0, 10)
+					baseUICorner1.Parent = confirm
 
 					confirm.Parent = interactions
 
@@ -4388,10 +4486,10 @@ function MacLib:Window(Settings)
 					cancel.BorderSizePixel = 0
 					cancel.Size = UDim2.fromScale(1, 0)
 
-					local baseUICorner1 = Instance.new("UICorner")
-					baseUICorner1.Name = "BaseUICorner"
-					baseUICorner1.CornerRadius = UDim.new(0, 10)
-					baseUICorner1.Parent = cancel
+					local baseUICorner2 = Instance.new("UICorner")
+					baseUICorner2.Name = "BaseUICorner"
+					baseUICorner2.CornerRadius = UDim.new(0, 10)
+					baseUICorner2.Parent = cancel
 
 					local uIPadding2 = Instance.new("UIPadding")
 					uIPadding2.Name = "UIPadding"
@@ -4472,16 +4570,14 @@ function MacLib:Window(Settings)
 					line.Parent = paragraph
 
 					paragraph.Parent = prompt
-
 					prompt.Parent = colorPicker
-
 					colorPicker.Parent = base
-					
+
 					local fromHSV, fromRGB, v2, udim2 = Color3.fromHSV, Color3.fromRGB, Vector2.new, UDim2.new
 
-					local wheel = wheel1
+					local wheelBtn = wheel1
 					local ring = target
-					local slider = value
+					local sliderBtn = value
 					local colour = color
 
 					local modifierInputs = {
@@ -4495,7 +4591,7 @@ function MacLib:Window(Settings)
 					local Mouse = LocalPlayer:GetMouse()
 
 					local WheelDown, SlideDown = false, false
-					local hue, saturation, value = 0, 0, 1
+					local hue, saturation, valHSV = 0, 0, 1
 
 					local function toPolar(v)
 						return math.atan2(v.y, v.x), v.magnitude
@@ -4509,17 +4605,17 @@ function MacLib:Window(Settings)
 						return degrees * (math.pi / 180)
 					end
 
-					local function hexToRGB(hex)
-						hex = hex:gsub("#","")
-						if #hex ~= 6 then return 0, 0, 0 end
-						local r = tonumber(hex:sub(1, 2), 16) or 0
-						local g = tonumber(hex:sub(3, 4), 16) or 0
-						local b = tonumber(hex:sub(5, 6), 16) or 0
+					local function hexToRGB(hexStr)
+						hexStr = hexStr:gsub("#", "")
+						if #hexStr ~= 6 then return 0, 0, 0 end
+						local r = tonumber(hexStr:sub(1, 2), 16) or 0
+						local g = tonumber(hexStr:sub(3, 4), 16) or 0
+						local b = tonumber(hexStr:sub(5, 6), 16) or 0
 						return r, g, b
 					end
 
-					local function clampInput(value, min, max)
-						local num = tonumber(value)
+					local function clampInput(v, min, max)
+						local num = tonumber(v)
 						if num then
 							return math.clamp(num, min, max)
 						end
@@ -4527,16 +4623,16 @@ function MacLib:Window(Settings)
 					end
 
 					local function update()
-						local c = fromHSV(hue, saturation, value)
+						local c = fromHSV(hue, saturation, valHSV)
 						colour.BackgroundColor3 = c
 						colour.BackgroundTransparency = clampInput(modifierInputs.Alpha.Text, 0, 1)
 
 						modifierInputs.Red.Text = tostring(math.floor(c.r * 255 + 0.5))
 						modifierInputs.Green.Text = tostring(math.floor(c.g * 255 + 0.5))
 						modifierInputs.Blue.Text = tostring(math.floor(c.b * 255 + 0.5))
-						modifierInputs.Alpha.Text = clampInput(modifierInputs.Alpha.Text, 0, 1)
+						modifierInputs.Alpha.Text = tostring(clampInput(modifierInputs.Alpha.Text, 0, 1))
 
-						local hexColor = string.format("#%02X%02X%02X", 
+						local hexColor = string.format("#%02X%02X%02X",
 							math.floor(c.r * 255 + 0.5),
 							math.floor(c.g * 255 + 0.5),
 							math.floor(c.b * 255 + 0.5))
@@ -4544,16 +4640,18 @@ function MacLib:Window(Settings)
 					end
 
 					local function UpdateSlide(iX)
-						local rY = iX - slider.AbsolutePosition.X
-						local cY = math.clamp(rY, 0, slider.AbsoluteSize.X - slide.AbsoluteSize.X)
+						local rY = iX - sliderBtn.AbsolutePosition.X
+						local maxSlide = math.max(1, sliderBtn.AbsoluteSize.X - slide.AbsoluteSize.X)
+						local cY = math.clamp(rY, 0, maxSlide)
 						slide.Position = udim2(0, cY, 0.5, 0)
-						value = 1 - (cY / (slider.AbsoluteSize.X - slide.AbsoluteSize.X))
+						valHSV = 1 - (cY / maxSlide)
 						update()
 					end
 
 					local function UpdateRing(iX, iY)
-						local r = wheel.AbsoluteSize.x / 2
-						local d = v2(iX, iY) - wheel.AbsolutePosition - wheel.AbsoluteSize / 2
+						local r = wheelBtn.AbsoluteSize.x / 2
+						if r <= 0 then return end
+						local d = v2(iX, iY) - wheelBtn.AbsolutePosition - wheelBtn.AbsoluteSize / 2
 
 						if d:Dot(d) > r * r then
 							d = d.unit * r
@@ -4562,103 +4660,104 @@ function MacLib:Window(Settings)
 						ring.Position = udim2(0.5, d.x, 0.5, d.y)
 						local phi, len = toPolar(d * v2(1, -1))
 						hue, saturation = radToDeg(phi) / 360, math.clamp(len / r, 0, 1)
-						slider.BackgroundColor3 = fromHSV(hue, saturation, 1)
+						sliderBtn.BackgroundColor3 = fromHSV(hue, saturation, 1)
 						update()
 					end
 
-					local function UpdateSlideFromValue(value)
-						local cY = (1 - value) * (slider.AbsoluteSize.X - slide.AbsoluteSize.X)
+					local function UpdateSlideFromValue(v)
+						local cY = (1 - v) * (sliderBtn.AbsoluteSize.X - slide.AbsoluteSize.X)
 						slide.Position = UDim2.new(0, cY, 0.5, 0)
 					end
 
-					local function UpdateRingFromHSV(hue, saturation)
-						local r = wheel.AbsoluteSize.X / 2
-						local phi = degToRad(hue * 360)
-						local len = saturation * r
+					local function UpdateRingFromHSV(h, s)
+						local r = wheelBtn.AbsoluteSize.X / 2
+						local phi = degToRad(h * 360)
+						local len = s * r
 						local x = len * math.cos(phi)
 						local y = len * math.sin(phi)
 
 						ring.Position = UDim2.new(0.5, -x, 0.5, y)
-						slider.BackgroundColor3 = fromHSV(hue, saturation, 1)
+						sliderBtn.BackgroundColor3 = fromHSV(h, s, 1)
 					end
 
 					local function updateFromRGB()
 						local r = clampInput(modifierInputs.Red.Text, 0, 255)
 						local g = clampInput(modifierInputs.Green.Text, 0, 255)
 						local b = clampInput(modifierInputs.Blue.Text, 0, 255)
-						modifierInputs.Red.Text = r						modifierInputs.Green.Text = g
-						modifierInputs.Blue.Text = b
+						modifierInputs.Red.Text = tostring(r)
+						modifierInputs.Green.Text = tostring(g)
+						modifierInputs.Blue.Text = tostring(b)
 
-						hue, saturation, value = Color3.fromRGB(r, g, b):ToHSV()
+						hue, saturation, valHSV = Color3.fromRGB(r, g, b):ToHSV()
 
-						UpdateSlideFromValue(value)
+						UpdateSlideFromValue(valHSV)
 						UpdateRingFromHSV(hue, saturation)
 						update()
 					end
 
 					local function updateFromHex()
-						local hex = modifierInputs.Hex.Text
-						local r, g, b = hexToRGB(hex)
+						local hexStr = modifierInputs.Hex.Text
+						local r, g, b = hexToRGB(hexStr)
 
 						r = clampInput(r, 0, 255)
 						g = clampInput(g, 0, 255)
 						b = clampInput(b, 0, 255)
 
-						modifierInputs.Red.Text = r
-						modifierInputs.Green.Text = g
-						modifierInputs.Blue.Text = b
+						modifierInputs.Red.Text = tostring(r)
+						modifierInputs.Green.Text = tostring(g)
+						modifierInputs.Blue.Text = tostring(b)
 
-						hue, saturation, value = Color3.fromRGB(r, g, b):ToHSV()
-						UpdateSlideFromValue(value)
+						hue, saturation, valHSV = Color3.fromRGB(r, g, b):ToHSV()
+						UpdateSlideFromValue(valHSV)
 						UpdateRingFromHSV(hue, saturation)
 						update()
 					end
-					
+
 					local function updateFromSettings()
 						local r = math.floor(ColorpickerFunctions.Color.R * 255 + 0.5)
 						local g = math.floor(ColorpickerFunctions.Color.G * 255 + 0.5)
 						local b = math.floor(ColorpickerFunctions.Color.B * 255 + 0.5)
-						modifierInputs.Red.Text = r
-						modifierInputs.Green.Text = g
-						modifierInputs.Blue.Text = b
-						modifierInputs.Alpha.Text = isAlpha and ColorpickerFunctions.Alpha or 0
-						
-						local hexColor = string.format("#%02X%02X%02X", r,g,b)
+						modifierInputs.Red.Text = tostring(r)
+						modifierInputs.Green.Text = tostring(g)
+						modifierInputs.Blue.Text = tostring(b)
+						modifierInputs.Alpha.Text = tostring(isAlpha and ColorpickerFunctions.Alpha or 0)
+
+						local hexColor = string.format("#%02X%02X%02X", r, g, b)
 						modifierInputs.Hex.Text = hexColor
 
-						hue, saturation, value = Color3.fromRGB(r, g, b):ToHSV()
-						
+						hue, saturation, valHSV = Color3.fromRGB(r, g, b):ToHSV()
+
 						color1.BackgroundColor3 = ColorpickerFunctions.Color
 						color1.BackgroundTransparency = isAlpha and ColorpickerFunctions.Alpha or 0
 
-						colour.BackgroundColor3 = Color3.fromRGB(r,g,b)
+						colour.BackgroundColor3 = Color3.fromRGB(r, g, b)
 						colour.BackgroundTransparency = isAlpha and ColorpickerFunctions.Alpha or 0
 
-						UpdateSlideFromValue(value)
+						UpdateSlideFromValue(valHSV)
 						UpdateRingFromHSV(hue, saturation)
 					end
 
-					wheel.InputBegan:Connect(function(input)
+					wheelBtn.InputBegan:Connect(function(input)
 						if input.UserInputType == Enum.UserInputType.MouseButton1 or input.UserInputType == Enum.UserInputType.Touch then
 							WheelDown = true
 							UpdateRing(Mouse.X, Mouse.Y)
 						end
 					end)
 
-					slider.InputBegan:Connect(function(input)
+					sliderBtn.InputBegan:Connect(function(input)
 						if input.UserInputType == Enum.UserInputType.MouseButton1 or input.UserInputType == Enum.UserInputType.Touch then
 							SlideDown = true
 							UpdateSlide(Mouse.X)
 						end
 					end)
 
-					slider.InputEnded:Connect(function(input)
+					sliderBtn.InputEnded:Connect(function(input)
 						if input.UserInputType == Enum.UserInputType.MouseButton1 or input.UserInputType == Enum.UserInputType.Touch then
 							SlideDown = false
 						end
 					end)
 
-					wheel.InputEnded:Connect(function(input)
+					wheelBtn.InputEnded:Connect(function(input)
 						if input.UserInputType == Enum.UserInputType.MouseButton1 or input.UserInputType == Enum.UserInputType.Touch then
 							WheelDown = false
 						end
@@ -4701,7 +4800,7 @@ function MacLib:Window(Settings)
 					modifierInputs.Alpha.Focused:Connect(function()
 						onFocusEnter(modifierInputs.Alpha)
 					end)
-					
+
 					local function makeCanvas()
 						local ColorPickerCanvas = Instance.new("CanvasGroup")
 						ColorPickerCanvas.Name = "ColorPickerCanvas"
@@ -4747,70 +4846,72 @@ function MacLib:Window(Settings)
 					end
 
 					interact.MouseButton1Click:Connect(colorpickerIn)
-					
+
 					cancel.MouseButton1Click:Connect(colorpickerOut)
 					confirm.MouseButton1Click:Connect(function()
 						colorpickerOut()
-						local c = fromHSV(hue, saturation, value)
+						local c = fromHSV(hue, saturation, valHSV)
 						ColorpickerFunctions.Color = Color3.fromRGB(c.r * 255, c.g * 255, c.b * 255)
 						ColorpickerFunctions.Alpha = isAlpha and clampInput(modifierInputs.Alpha.Text, 0, 1)
-						
+
 						color1.BackgroundColor3 = ColorpickerFunctions.Color
 						color1.BackgroundTransparency = isAlpha and ColorpickerFunctions.Alpha or 0
-						
+
 						colorC.BackgroundColor3 = ColorpickerFunctions.Color
 						colorC.BackgroundTransparency = isAlpha and ColorpickerFunctions.Alpha or 0
-						
+
 						if Settings.Callback then
 							task.spawn(function()
 								Settings.Callback(ColorpickerFunctions.Color, isAlpha and ColorpickerFunctions.Alpha)
 							end)
 						end
 					end)
-					
+
 					updateFromSettings()
-					
+
 					function ColorpickerFunctions:UpdateName(New)
 						colorpickerName.Text = New
-					end					function ColorpickerFunctions:SetVisibility(State)
+					end
+
+					function ColorpickerFunctions:SetVisibility(State)
 						colorpicker.Visible = State
 					end
-			
+
 					function ColorpickerFunctions:SetColor(color3)
 						ColorpickerFunctions.Color = color3
 						colorC.BackgroundColor3 = color3
-						
+
 						local r = math.floor(ColorpickerFunctions.Color.R * 255 + 0.5)
 						local g = math.floor(ColorpickerFunctions.Color.G * 255 + 0.5)
 						local b = math.floor(ColorpickerFunctions.Color.B * 255 + 0.5)
-						modifierInputs.Red.Text = r
-						modifierInputs.Green.Text = g
-						modifierInputs.Blue.Text = b
+						modifierInputs.Red.Text = tostring(r)
+						modifierInputs.Green.Text = tostring(g)
+						modifierInputs.Blue.Text = tostring(b)
 
-						local hexColor = string.format("#%02X%02X%02X", r,g,b)
+						local hexColor = string.format("#%02X%02X%02X", r, g, b)
 						modifierInputs.Hex.Text = hexColor
 
-						hue, saturation, value = Color3.fromRGB(r, g, b):ToHSV()
+						hue, saturation, valHSV = Color3.fromRGB(r, g, b):ToHSV()
 
 						color1.BackgroundColor3 = ColorpickerFunctions.Color
-						colour.BackgroundColor3 = Color3.fromRGB(r,g,b)
+						colour.BackgroundColor3 = Color3.fromRGB(r, g, b)
 
-						UpdateSlideFromValue(value)
+						UpdateSlideFromValue(valHSV)
 						UpdateRingFromHSV(hue, saturation)
 					end
-					
-					function ColorpickerFunctions:SetAlpha(alpha)
-						ColorpickerFunctions.Alpha = alpha
-						colorC.Transparency = alpha
+
+					function ColorpickerFunctions:SetAlpha(newAlpha)
+						ColorpickerFunctions.Alpha = newAlpha
+						colorC.Transparency = newAlpha
 						updateFromSettings()
 					end
-					
+
 					return ColorpickerFunctions
 				end
-				
+
 				function SectionFunctions:Header(Settings)
 					local HeaderFunctions = {}
-					
+
 					local header = Instance.new("Frame")
 					header.Name = "Header"
 					header.AutomaticSize = Enum.AutomaticSize.Y
@@ -4821,7 +4922,7 @@ function MacLib:Window(Settings)
 					header.LayoutOrder = 0
 					header.Size = UDim2.fromScale(1, 0)
 					header.Parent = sectionContainer
-					
+
 					local uIPadding = Instance.new("UIPadding")
 					uIPadding.Name = "UIPadding"
 					uIPadding.PaddingBottom = UDim.new(0, 5)
@@ -4848,20 +4949,20 @@ function MacLib:Window(Settings)
 					headerText.BorderSizePixel = 0
 					headerText.Size = UDim2.fromScale(1, 0)
 					headerText.Parent = header
-					
+
 					function HeaderFunctions:UpdateName(New)
 						headerText.Text = New
 					end
 					function HeaderFunctions:SetVisibility(State)
 						header.Visible = State
 					end
-					
+
 					return HeaderFunctions
 				end
-				
+
 				function SectionFunctions:Label(Settings)
 					local LabelFunctions = {}
-					
+
 					local label = Instance.new("Frame")
 					label.Name = "Label"
 					label.AutomaticSize = Enum.AutomaticSize.Y
@@ -4880,9 +4981,10 @@ function MacLib:Window(Settings)
 						Enum.FontStyle.Normal
 					)
 					labelText.RichText = true
-					labelText.Text = Settings.Text or Settings.Name -- Settings.Name Deprecated
+					labelText.Text = Settings.Text or Settings.Name
 					labelText.TextColor3 = Color3.fromRGB(255, 255, 255)
-					labelText.TextSize = 13					labelText.TextTransparency = 0.5
+					labelText.TextSize = 13
+					labelText.TextTransparency = 0.5
 					labelText.TextWrapped = true
 					labelText.TextXAlignment = Enum.TextXAlignment.Left
 					labelText.AutomaticSize = Enum.AutomaticSize.Y
@@ -4892,17 +4994,17 @@ function MacLib:Window(Settings)
 					labelText.BorderSizePixel = 0
 					labelText.Size = UDim2.fromScale(1, 1)
 					labelText.Parent = label
-					
+
 					function LabelFunctions:UpdateName(New)
 						labelText.Text = New
 					end
 					function LabelFunctions:SetVisibility(State)
 						label.Visible = State
 					end
-					
+
 					return LabelFunctions
 				end
-				
+
 				function SectionFunctions:SubLabel(Settings)
 					local SubLabelFunctions = {}
 
@@ -4924,7 +5026,7 @@ function MacLib:Window(Settings)
 						Enum.FontStyle.Normal
 					)
 					subLabelText.RichText = true
-					subLabelText.Text = Settings.Text or Settings.Name -- Settings.Name Deprecated
+					subLabelText.Text = Settings.Text or Settings.Name
 					subLabelText.TextColor3 = Color3.fromRGB(255, 255, 255)
 					subLabelText.TextSize = 11
 					subLabelText.TextTransparency = 0.7
@@ -4935,7 +5037,7 @@ function MacLib:Window(Settings)
 					subLabelText.BackgroundTransparency = 1
 					subLabelText.BorderColor3 = Color3.fromRGB(0, 0, 0)
 					subLabelText.BorderSizePixel = 0
-					subLabelText.Size = UDim2.fromScale(1, 1)
+					subLabelText.Size = UDim2.fromScale(1, 0)
 					subLabelText.Parent = subLabel
 
 					function SubLabelFunctions:UpdateName(New)
@@ -4947,7 +5049,7 @@ function MacLib:Window(Settings)
 
 					return SubLabelFunctions
 				end
-				
+
 				function SectionFunctions:Paragraph(Settings)
 					local ParagraphFunctions = {}
 
@@ -5020,10 +5122,10 @@ function MacLib:Window(Settings)
 
 					return ParagraphFunctions
 				end
-				
+
 				function SectionFunctions:Divider()
 					local DividerFunctions = {}
-					
+
 					local divider = Instance.new("Frame")
 					divider.Name = "Divider"
 					divider.AnchorPoint = Vector2.new(0, 1)
@@ -5055,17 +5157,17 @@ function MacLib:Window(Settings)
 					line.BorderSizePixel = 0
 					line.Size = UDim2.new(1, 0, 0, 1)
 					line.Parent = divider
-					
+
 					function DividerFunctions:Remove()
 						divider:Destroy()
 					end
 					function DividerFunctions:SetVisibility(State)
 						divider.Visible = State
 					end
-					
+
 					return DividerFunctions
 				end
-				
+
 				function SectionFunctions:Spacer()
 					local SpacerFunctions = {}
 
