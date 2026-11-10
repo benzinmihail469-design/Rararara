@@ -1853,92 +1853,180 @@ function MacLib:Window(Settings)
 					local ButtonFunctions = {}
 					local button = Instance.new("Frame")
 					button.Name = "Button"
-					button.AutomaticSize = Enum.AutomaticSize.Y
-					button.BackgroundColor3 = Color3.fromRGB(0, 0, 0)
 					button.BackgroundTransparency = 1
-					button.BorderColor3 = Color3.fromRGB(0, 0, 0)
 					button.BorderSizePixel = 0
 					button.Size = UDim2.new(1, 0, 0, 38)
 					button.Parent = sectionContainer
 
-					local buttonInteract = Instance.new("TextButton")
-					buttonInteract.Name = "ButtonInteract"
-					buttonInteract.FontFace = Font.new(
+					local buttonCard = Instance.new("Frame")
+					buttonCard.Name = "ButtonCard"
+					buttonCard.AnchorPoint = Vector2.new(0.5, 0.5)
+					buttonCard.Position = UDim2.fromScale(0.5, 0.5)
+					buttonCard.Size = UDim2.fromScale(1, 1)
+					buttonCard.BackgroundColor3 = Color3.fromRGB(255, 255, 255)
+					buttonCard.BackgroundTransparency = 0.95
+					buttonCard.BorderSizePixel = 0
+					buttonCard.Parent = button
+
+					local buttonCorner = Instance.new("UICorner")
+					buttonCorner.Name = "ButtonCorner"
+					buttonCorner.CornerRadius = UDim.new(0, 8)
+					buttonCorner.Parent = buttonCard
+
+					local buttonScale = Instance.new("UIScale")
+					buttonScale.Name = "ButtonScale"
+					buttonScale.Scale = 1
+					buttonScale.Parent = buttonCard
+
+					local buttonStroke = Instance.new("UIStroke")
+					buttonStroke.Name = "ButtonStroke"
+					buttonStroke.ApplyStrokeMode = Enum.ApplyStrokeMode.Border
+					buttonStroke.Color = Color3.fromRGB(255, 255, 255)
+					buttonStroke.Transparency = 0.4
+					buttonStroke.Parent = buttonCard
+
+					local strokeGradient = Instance.new("UIGradient")
+					strokeGradient.Name = "StrokeGradient"
+					strokeGradient.Color = ColorSequence.new({
+						ColorSequenceKeypoint.new(0, Color3.fromRGB(120, 120, 120)),
+						ColorSequenceKeypoint.new(0.5, Color3.fromRGB(255, 255, 255)),
+						ColorSequenceKeypoint.new(1, Color3.fromRGB(120, 120, 120))
+					})
+					strokeGradient.Rotation = 45
+					strokeGradient.Parent = buttonStroke
+
+					local buttonPadding = Instance.new("UIPadding")
+					buttonPadding.Name = "ButtonPadding"
+					buttonPadding.PaddingLeft = UDim.new(0, 14)
+					buttonPadding.PaddingRight = UDim.new(0, 14)
+					buttonPadding.Parent = buttonCard
+
+					local buttonTitle = Instance.new("TextLabel")
+					buttonTitle.Name = "ButtonTitle"
+					buttonTitle.FontFace = Font.new(
 						assets.interFont,
 						Enum.FontWeight.Medium,
 						Enum.FontStyle.Normal
 					)
-					buttonInteract.RichText = true
-					buttonInteract.TextColor3 = Color3.fromRGB(255, 255, 255)
-					buttonInteract.TextSize = 13
-					buttonInteract.TextTransparency = 0.5
-					buttonInteract.TextTruncate = Enum.TextTruncate.AtEnd
-					buttonInteract.TextXAlignment = Enum.TextXAlignment.Left
-					buttonInteract.BackgroundColor3 = Color3.fromRGB(255, 255, 255)
+					buttonTitle.Text = Settings.Name or "Action Button"
+					buttonTitle.RichText = true
+					buttonTitle.TextColor3 = Color3.fromRGB(255, 255, 255)
+					buttonTitle.TextSize = 13
+					buttonTitle.TextTransparency = 0.5
+					buttonTitle.TextTruncate = Enum.TextTruncate.AtEnd
+					buttonTitle.TextXAlignment = Enum.TextXAlignment.Left
+					buttonTitle.TextYAlignment = Enum.TextYAlignment.Center
+					buttonTitle.AnchorPoint = Vector2.new(0, 0.5)
+					buttonTitle.Position = UDim2.fromScale(0, 0.5)
+					buttonTitle.Size = UDim2.new(1, -28, 1, 0)
+					buttonTitle.BackgroundTransparency = 1
+					buttonTitle.BorderSizePixel = 0
+					buttonTitle.Parent = buttonCard
+
+					local buttonIcon = Instance.new("ImageLabel")
+					buttonIcon.Name = "ButtonIcon"
+					buttonIcon.Image = Settings.Icon or assets.buttonImage
+					buttonIcon.ImageColor3 = Color3.fromRGB(255, 255, 255)
+					buttonIcon.ImageTransparency = 0.5
+					buttonIcon.AnchorPoint = Vector2.new(1, 0.5)
+					buttonIcon.Position = UDim2.fromScale(1, 0.5)
+					buttonIcon.Size = UDim2.fromOffset(15, 15)
+					buttonIcon.BackgroundTransparency = 1
+					buttonIcon.BorderSizePixel = 0
+					buttonIcon.Parent = buttonCard
+
+					local buttonInteract = Instance.new("TextButton")
+					buttonInteract.Name = "ButtonInteract"
+					buttonInteract.Text = ""
+					buttonInteract.AutoButtonColor = false
 					buttonInteract.BackgroundTransparency = 1
-					buttonInteract.BorderColor3 = Color3.fromRGB(0, 0, 0)
 					buttonInteract.BorderSizePixel = 0
 					buttonInteract.Size = UDim2.fromScale(1, 1)
-					buttonInteract.Parent = button
-					buttonInteract.Text = Settings.Name
+					buttonInteract.ZIndex = 2
+					buttonInteract.Parent = buttonCard
 
-					local buttonImage = Instance.new("ImageLabel")
-					buttonImage.Name = "ButtonImage"
-					buttonImage.Image = assets.buttonImage
-					buttonImage.ImageTransparency = 0.5
-					buttonImage.AnchorPoint = Vector2.new(1, 0.5)
-					buttonImage.BackgroundColor3 = Color3.fromRGB(255, 255, 255)
-					buttonImage.BackgroundTransparency = 1
-					buttonImage.BorderColor3 = Color3.fromRGB(0, 0, 0)
-					buttonImage.BorderSizePixel = 0
-					buttonImage.Position = UDim2.fromScale(1, 0.5)
-					buttonImage.Size = UDim2.fromOffset(15, 15)
-					buttonImage.Parent = button
+					local hoverTweenInfo = TweenInfo.new(0.2, Enum.EasingStyle.Sine, Enum.EasingDirection.Out)
+					local pressTweenInfo = TweenInfo.new(0.1, Enum.EasingStyle.Quad, Enum.EasingDirection.Out)
+					local releaseTweenInfo = TweenInfo.new(0.2, Enum.EasingStyle.Back, Enum.EasingDirection.Out)
 
-					local TweenSettings = {
-						DefaultTransparency = 0.5,
-						HoverTransparency = 0.3,
-						EasingStyle = Enum.EasingStyle.Sine
-					}
+					local isHovered = false
+					local isPressed = false
 
-					local function ChangeState(State)
-						if State == "Idle" then
-							Tween(buttonInteract, TweenInfo.new(0.2, TweenSettings.EasingStyle), {
-								TextTransparency = TweenSettings.DefaultTransparency
-							}):Play()
-							Tween(buttonImage, TweenInfo.new(0.2, TweenSettings.EasingStyle), {
-								ImageTransparency = TweenSettings.DefaultTransparency
-							}):Play()
-						elseif State == "Hover" then
-							Tween(buttonInteract, TweenInfo.new(0.2, TweenSettings.EasingStyle), {
-								TextTransparency = TweenSettings.HoverTransparency
-							}):Play()
-							Tween(buttonImage, TweenInfo.new(0.2, TweenSettings.EasingStyle), {
-								ImageTransparency = TweenSettings.HoverTransparency
-							}):Play()
-						end
+					local function PlayHoverState(hovered)
+						local targetTextTrans = hovered and 0.1 or 0.5
+						local targetStrokeTrans = hovered and 0.2 or 0.4
+						local targetBgTrans = hovered and 0.92 or 0.95
+
+						Tween(buttonTitle, hoverTweenInfo, { TextTransparency = targetTextTrans }):Play()
+						Tween(buttonIcon, hoverTweenInfo, { ImageTransparency = targetTextTrans }):Play()
+						Tween(buttonStroke, hoverTweenInfo, { Transparency = targetStrokeTrans }):Play()
+						Tween(buttonCard, hoverTweenInfo, { BackgroundTransparency = targetBgTrans }):Play()
 					end
 
-					local function Callback()
-						if Settings.Callback then
-							Settings.Callback()
-						end
+					local function PlayPressState()
+						Tween(buttonScale, pressTweenInfo, { Scale = 0.94 }):Play()
+						Tween(buttonTitle, pressTweenInfo, { TextTransparency = 0.05 }):Play()
+						Tween(buttonIcon, pressTweenInfo, { ImageTransparency = 0.05 }):Play()
+						Tween(buttonStroke, pressTweenInfo, { Transparency = 0.15 }):Play()
+					end
+
+					local function PlayReleaseState()
+						Tween(buttonScale, releaseTweenInfo, { Scale = 1 }):Play()
+						PlayHoverState(isHovered)
 					end
 
 					buttonInteract.MouseEnter:Connect(function()
-						ChangeState("Hover")
-					end)
-					buttonInteract.MouseLeave:Connect(function()
-						ChangeState("Idle")
+						isHovered = true
+						if not isPressed then
+							PlayHoverState(true)
+						end
 					end)
 
-					buttonInteract.MouseButton1Click:Connect(Callback)
+					buttonInteract.MouseLeave:Connect(function()
+						isHovered = false
+						if isPressed then
+							isPressed = false
+							Tween(buttonScale, releaseTweenInfo, { Scale = 1 }):Play()
+						end
+						PlayHoverState(false)
+					end)
+
+					buttonInteract.InputBegan:Connect(function(input)
+						if input.UserInputType == Enum.UserInputType.MouseButton1 or input.UserInputType == Enum.UserInputType.Touch then
+							isPressed = true
+							PlayPressState()
+						end
+					end)
+
+					buttonInteract.InputEnded:Connect(function(input)
+						if input.UserInputType == Enum.UserInputType.MouseButton1 or input.UserInputType == Enum.UserInputType.Touch then
+							if isPressed then
+								isPressed = false
+								PlayReleaseState()
+							end
+						end
+					end)
+
+					buttonInteract.Activated:Connect(function()
+						if Settings.Callback then
+							task.spawn(Settings.Callback)
+						end
+					end)
+
 					function ButtonFunctions:UpdateName(Name)
-						buttonInteract.Text = Name
+						buttonTitle.Text = Name
 					end
+
 					function ButtonFunctions:SetVisibility(State)
 						button.Visible = State
 					end
+
+					function ButtonFunctions:Fire()
+						if Settings.Callback then
+							task.spawn(Settings.Callback)
+						end
+					end
+
 					return ButtonFunctions
 				end
 
