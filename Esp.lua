@@ -3703,11 +3703,24 @@ function MacLib:Window(Settings)
 					ColorpickerFunctions.Color = savedColor
 					ColorpickerFunctions.Alpha = isAlpha and savedAlpha or nil
 
+					-- Ассеты и иконки (Lucide / MacLib Dark Style)
 					local CHECKERBOARD_ASSET = "rbxassetid://121484455191370"
 					local WHEEL_ASSET = "rbxassetid://2849458409"
 					local TARGET_ASSET = "rbxassetid://73265255323268"
 
-					-- 1. КАРТОЧКА COLORPICKER В СЕКЦИИ (В СТИЛЕ BUTTON / KEYBIND)
+					local ICONS = {
+						Palette = "rbxassetid://10734950309",
+						Confirm = "rbxassetid://10709790644",
+						Cancel = "rbxassetid://10747384394",
+						Hex = "rbxassetid://10723407389",
+						Channel = "rbxassetid://10734949856",
+						Alpha = "rbxassetid://10723346959",
+						Brightness = "rbxassetid://10734974297"
+					}
+
+					-- =========================================================================
+					-- 1. КАРТОЧКА COLORPICKER В СЕКЦИИ
+					-- =========================================================================
 					local colorpicker = Instance.new("Frame")
 					colorpicker.Name = "Colorpicker"
 					colorpicker.BackgroundColor3 = Color3.fromRGB(255, 255, 255)
@@ -3761,20 +3774,20 @@ function MacLib:Window(Settings)
 					colorpickerName.TextYAlignment = Enum.TextYAlignment.Center
 					colorpickerName.AnchorPoint = Vector2.new(0, 0.5)
 					colorpickerName.Position = UDim2.fromScale(0, 0.5)
-					colorpickerName.Size = UDim2.new(1, -40, 1, 0)
+					colorpickerName.Size = UDim2.new(1, -46, 1, 0)
 					colorpickerName.BackgroundTransparency = 1
 					colorpickerName.BorderSizePixel = 0
 					colorpickerName.Parent = colorpicker
 
-					-- Превью-квадрат цвета справа
+					-- Превью-квадрат цвета справа в карточке
 					local colorCbg = Instance.new("ImageLabel")
 					colorCbg.Name = "ColorPreviewBg"
 					colorCbg.Image = CHECKERBOARD_ASSET
 					colorCbg.ScaleType = Enum.ScaleType.Tile
-					colorCbg.TileSize = UDim2.fromOffset(500, 500)
+					colorCbg.TileSize = UDim2.fromOffset(8, 8)
 					colorCbg.AnchorPoint = Vector2.new(1, 0.5)
-					colorCbg.BackgroundColor3 = Color3.fromRGB(255, 255, 255)
-					colorCbg.BackgroundTransparency = 1
+					colorCbg.BackgroundColor3 = Color3.fromRGB(30, 30, 30)
+					colorCbg.BackgroundTransparency = 0
 					colorCbg.BorderSizePixel = 0
 					colorCbg.Position = UDim2.fromScale(1, 0.5)
 					colorCbg.Size = UDim2.fromOffset(22, 22)
@@ -3787,7 +3800,7 @@ function MacLib:Window(Settings)
 					local previewBgStroke = Instance.new("UIStroke")
 					previewBgStroke.ApplyStrokeMode = Enum.ApplyStrokeMode.Border
 					previewBgStroke.Color = Color3.fromRGB(255, 255, 255)
-					previewBgStroke.Transparency = 0.65
+					previewBgStroke.Transparency = 0.55
 					previewBgStroke.Parent = colorCbg
 
 					local previewScale = Instance.new("UIScale")
@@ -3815,19 +3828,22 @@ function MacLib:Window(Settings)
 					interact.BackgroundTransparency = 1
 					interact.BorderSizePixel = 0
 					interact.Size = UDim2.fromScale(1, 1)
-						interact.ZIndex = 2
+					interact.ZIndex = 2
 					interact.Parent = colorpicker
 
-					-- 2. МОДАЛЬНОЕ ОКНО COLORPICKER (КЭШИРОВАННЫЙ CANVASGROUP)
+					-- =========================================================================
+					-- 2. МОДАЛЬНОЕ ОКНО COLORPICKER (CANVASGROUP)
+					-- =========================================================================
 					local colorPickerCanvas = Instance.new("CanvasGroup")
 					colorPickerCanvas.Name = "ColorPickerCanvas"
 					colorPickerCanvas.BackgroundColor3 = Color3.fromRGB(0, 0, 0)
-					colorPickerCanvas.BackgroundTransparency = 0.45
+					colorPickerCanvas.BackgroundTransparency = 0.42
 					colorPickerCanvas.BorderSizePixel = 0
 					colorPickerCanvas.Size = UDim2.fromScale(1, 1)
-					colorPickerCanvas.ZIndex = 25
+					colorPickerCanvas.ZIndex = 30
 					colorPickerCanvas.GroupTransparency = 1
 					colorPickerCanvas.Visible = false
+					colorPickerCanvas.Active = true
 					colorPickerCanvas.Parent = base
 
 					local canvasUICorner = Instance.new("UICorner")
@@ -3835,7 +3851,7 @@ function MacLib:Window(Settings)
 					canvasUICorner.CornerRadius = UDim.new(0, 10)
 					canvasUICorner.Parent = colorPickerCanvas
 
-					-- Кнопка-подложка для блокировки кликов сквозь оверлей
+					-- Блокировщик кликов сквозь модальное окно
 					local backdropBlocker = Instance.new("TextButton")
 					backdropBlocker.Name = "BackdropBlocker"
 					backdropBlocker.Text = ""
@@ -3843,6 +3859,7 @@ function MacLib:Window(Settings)
 					backdropBlocker.BackgroundTransparency = 1
 					backdropBlocker.BorderSizePixel = 0
 					backdropBlocker.Size = UDim2.fromScale(1, 1)
+					backdropBlocker.Active = true
 					backdropBlocker.ZIndex = 1
 					backdropBlocker.Parent = colorPickerCanvas
 
@@ -3850,16 +3867,17 @@ function MacLib:Window(Settings)
 					prompt.Name = "Prompt"
 					prompt.AnchorPoint = Vector2.new(0.5, 0.5)
 					prompt.AutomaticSize = Enum.AutomaticSize.Y
-					prompt.BackgroundColor3 = Color3.fromRGB(16, 16, 16)
+					prompt.BackgroundColor3 = Color3.fromRGB(16, 16, 18)
 					prompt.BorderSizePixel = 0
 					prompt.Position = UDim2.fromScale(0.5, 0.5)
-					prompt.Size = UDim2.fromOffset(420, 0)
+					prompt.Size = UDim2.fromOffset(424, 0)
+					prompt.Active = true
 					prompt.ZIndex = 2
 					prompt.Parent = colorPickerCanvas
 
 					local promptScale = Instance.new("UIScale")
 					promptScale.Name = "PromptUIScale"
-					promptScale.Scale = 0.95
+					promptScale.Scale = 0.94
 					promptScale.Parent = prompt
 
 					local promptUICorner = Instance.new("UICorner")
@@ -3871,7 +3889,7 @@ function MacLib:Window(Settings)
 					promptUIStroke.Name = "PromptUIStroke"
 					promptUIStroke.ApplyStrokeMode = Enum.ApplyStrokeMode.Border
 					promptUIStroke.Color = Color3.fromRGB(255, 255, 255)
-					promptUIStroke.Transparency = 0.35
+					promptUIStroke.Transparency = 0.32
 					promptUIStroke.Parent = prompt
 
 					local promptStrokeGradient = Instance.new("UIGradient")
@@ -3899,7 +3917,7 @@ function MacLib:Window(Settings)
 					promptUIListLayout.SortOrder = Enum.SortOrder.LayoutOrder
 					promptUIListLayout.Parent = prompt
 
-					-- Шапка модального окна (Заголовок + разделитель)
+					-- Шапка модального окна с иконкой палитры
 					local headerFrame = Instance.new("Frame")
 					headerFrame.Name = "HeaderFrame"
 					headerFrame.AutomaticSize = Enum.AutomaticSize.Y
@@ -3916,6 +3934,31 @@ function MacLib:Window(Settings)
 					headerLayout.SortOrder = Enum.SortOrder.LayoutOrder
 					headerLayout.Parent = headerFrame
 
+					local headerTopRow = Instance.new("Frame")
+					headerTopRow.Name = "HeaderTopRow"
+					headerTopRow.AutomaticSize = Enum.AutomaticSize.Y
+					headerTopRow.BackgroundTransparency = 1
+					headerTopRow.Size = UDim2.fromScale(1, 0)
+					headerTopRow.LayoutOrder = 0
+					headerTopRow.Parent = headerFrame
+
+					local headerTopRowLayout = Instance.new("UIListLayout")
+					headerTopRowLayout.FillDirection = Enum.FillDirection.Horizontal
+					headerTopRowLayout.VerticalAlignment = Enum.VerticalAlignment.Center
+					headerTopRowLayout.Padding = UDim.new(0, 8)
+					headerTopRowLayout.SortOrder = Enum.SortOrder.LayoutOrder
+					headerTopRowLayout.Parent = headerTopRow
+
+					local headerIcon = Instance.new("ImageLabel")
+					headerIcon.Name = "HeaderIcon"
+					headerIcon.Image = ICONS.Palette
+					headerIcon.ImageColor3 = Color3.fromRGB(255, 255, 255)
+					headerIcon.ImageTransparency = 0.25
+					headerIcon.BackgroundTransparency = 1
+					headerIcon.Size = UDim2.fromOffset(16, 16)
+					headerIcon.LayoutOrder = 1
+					headerIcon.Parent = headerTopRow
+
 					local paragraphHeader = Instance.new("TextLabel")
 					paragraphHeader.Name = "ParagraphHeader"
 					paragraphHeader.FontFace = Font.new(
@@ -3926,26 +3969,27 @@ function MacLib:Window(Settings)
 					paragraphHeader.RichText = true
 					paragraphHeader.Text = Settings.Name or "Colorpicker"
 					paragraphHeader.TextColor3 = Color3.fromRGB(255, 255, 255)
-					paragraphHeader.TextSize = 17
-					paragraphHeader.TextTransparency = 0.2
+					paragraphHeader.TextSize = 16
+					paragraphHeader.TextTransparency = 0.15
 					paragraphHeader.TextWrapped = true
 					paragraphHeader.TextXAlignment = Enum.TextXAlignment.Left
 					paragraphHeader.AutomaticSize = Enum.AutomaticSize.Y
 					paragraphHeader.BackgroundTransparency = 1
 					paragraphHeader.BorderSizePixel = 0
-					paragraphHeader.Size = UDim2.fromScale(1, 0)
-					paragraphHeader.Parent = headerFrame
+					paragraphHeader.Size = UDim2.new(1, -28, 0, 0)
+					paragraphHeader.LayoutOrder = 2
+					paragraphHeader.Parent = headerTopRow
 
 					local headerLine = Instance.new("Frame")
 					headerLine.Name = "Line"
 					headerLine.BackgroundColor3 = Color3.fromRGB(255, 255, 255)
-					headerLine.BackgroundTransparency = 0.9
+					headerLine.BackgroundTransparency = 0.88
 					headerLine.BorderSizePixel = 0
 					headerLine.LayoutOrder = 1
 					headerLine.Size = UDim2.new(1, 0, 0, 1)
 					headerLine.Parent = headerFrame
 
-					-- Контейнер кнопок Confirm / Cancel
+					-- Контейнер кнопок Confirm / Cancel (с иконками и UIScale)
 					local interactions = Instance.new("Frame")
 					interactions.Name = "Interactions"
 					interactions.AutomaticSize = Enum.AutomaticSize.Y
@@ -3957,34 +4001,32 @@ function MacLib:Window(Settings)
 
 					local interactionsLayout = Instance.new("UIListLayout")
 					interactionsLayout.Name = "InteractionsLayout"
-					interactionsLayout.Padding = UDim.new(0, 8)
+					interactionsLayout.FillDirection = Enum.FillDirection.Horizontal
+					interactionsLayout.HorizontalAlignment = Enum.HorizontalAlignment.Center
+					interactionsLayout.Padding = UDim.new(0, 10)
 					interactionsLayout.SortOrder = Enum.SortOrder.LayoutOrder
 					interactionsLayout.Parent = interactions
 
 					local interactionsPadding = Instance.new("UIPadding")
 					interactionsPadding.Name = "InteractionsPadding"
-					interactionsPadding.PaddingTop = UDim.new(0, 4)
+					interactionsPadding.PaddingTop = UDim.new(0, 2)
 					interactionsPadding.Parent = interactions
 
-					local function createModalButton(btnName, btnText, order)
+					local function createModalButton(btnName, btnText, iconId, order)
 						local btn = Instance.new("TextButton")
 						btn.Name = btnName
-						btn.FontFace = Font.new(
-							assets.interFont,
-							Enum.FontWeight.SemiBold,
-							Enum.FontStyle.Normal
-						)
-						btn.Text = btnText
-						btn.TextColor3 = Color3.fromRGB(255, 255, 255)
-						btn.TextSize = 14
-						btn.TextTransparency = 0.35
+						btn.Text = ""
 						btn.AutoButtonColor = false
-						btn.BackgroundColor3 = Color3.fromRGB(26, 26, 26)
-						btn.BackgroundTransparency = 0.1
+						btn.BackgroundColor3 = Color3.fromRGB(26, 26, 28)
+						btn.BackgroundTransparency = 0.08
 						btn.BorderSizePixel = 0
 						btn.LayoutOrder = order
-						btn.Size = UDim2.new(1, 0, 0, 34)
+						btn.Size = UDim2.new(0.5, -5, 0, 36)
 						btn.Parent = interactions
+
+						local scale = Instance.new("UIScale")
+						scale.Scale = 1
+						scale.Parent = btn
 
 						local corner = Instance.new("UICorner")
 						corner.CornerRadius = UDim.new(0, 8)
@@ -3993,7 +4035,7 @@ function MacLib:Window(Settings)
 						local stroke = Instance.new("UIStroke")
 						stroke.ApplyStrokeMode = Enum.ApplyStrokeMode.Border
 						stroke.Color = Color3.fromRGB(255, 255, 255)
-						stroke.Transparency = 0.55
+						stroke.Transparency = 0.5
 						stroke.Parent = btn
 
 						local gradient = Instance.new("UIGradient")
@@ -4005,13 +4047,55 @@ function MacLib:Window(Settings)
 						gradient.Rotation = 45
 						gradient.Parent = stroke
 
-						return btn, stroke
+						local contentRow = Instance.new("Frame")
+						contentRow.Name = "ContentRow"
+						contentRow.BackgroundTransparency = 1
+						contentRow.Size = UDim2.fromScale(1, 1)
+						contentRow.Parent = btn
+
+						local rowLayout = Instance.new("UIListLayout")
+						rowLayout.FillDirection = Enum.FillDirection.Horizontal
+						rowLayout.HorizontalAlignment = Enum.HorizontalAlignment.Center
+						rowLayout.VerticalAlignment = Enum.VerticalAlignment.Center
+						rowLayout.Padding = UDim.new(0, 7)
+						rowLayout.SortOrder = Enum.SortOrder.LayoutOrder
+						rowLayout.Parent = contentRow
+
+						local icon = Instance.new("ImageLabel")
+						icon.Name = "Icon"
+						icon.Image = iconId
+						icon.ImageColor3 = Color3.fromRGB(255, 255, 255)
+						icon.ImageTransparency = 0.35
+						icon.BackgroundTransparency = 1
+						icon.Size = UDim2.fromOffset(14, 14)
+						icon.LayoutOrder = 1
+						icon.Parent = contentRow
+
+						local label = Instance.new("TextLabel")
+						label.Name = "Label"
+						label.FontFace = Font.new(
+							assets.interFont,
+							Enum.FontWeight.SemiBold,
+							Enum.FontStyle.Normal
+						)
+						label.Text = btnText
+						label.TextColor3 = Color3.fromRGB(255, 255, 255)
+						label.TextSize = 13
+						label.TextTransparency = 0.35
+						label.AutomaticSize = Enum.AutomaticSize.XY
+						label.BackgroundTransparency = 1
+						label.LayoutOrder = 2
+						label.Parent = contentRow
+
+						return btn, stroke, label, icon, scale
 					end
 
-					local confirm, confirmStroke = createModalButton("Confirm", "Confirm", 1)
-					local cancel, cancelStroke = createModalButton("Cancel", "Cancel", 2)
+					local confirm, confirmStroke, confirmLabel, confirmIcon, confirmScale = createModalButton("Confirm", "Confirm", ICONS.Confirm, 1)
+					local cancel, cancelStroke, cancelLabel, cancelIcon, cancelScale = createModalButton("Cancel", "Cancel", ICONS.Cancel, 2)
 
-					-- 3. КОНТЕЙНЕР ОПЦИЙ ЦВЕТА (WHEEL, INPUTS, SLIDER, COLOR WELLS)
+					-- =========================================================================
+					-- 3. КОНТЕЙНЕР ОПЦИЙ ЦВЕТА (WHEEL, TARGET, INPUTS, SLIDER, COLOR WELLS)
+					-- =========================================================================
 					local colorOptions = Instance.new("Frame")
 					colorOptions.Name = "ColorOptions"
 					colorOptions.AutomaticSize = Enum.AutomaticSize.Y
@@ -4023,7 +4107,7 @@ function MacLib:Window(Settings)
 
 					local colorOptionsLayout = Instance.new("UIListLayout")
 					colorOptionsLayout.Name = "ColorOptionsLayout"
-					colorOptionsLayout.Padding = UDim.new(0, 16)
+					colorOptionsLayout.Padding = UDim.new(0, 14)
 					colorOptionsLayout.SortOrder = Enum.SortOrder.LayoutOrder
 					colorOptionsLayout.Parent = colorOptions
 
@@ -4033,30 +4117,94 @@ function MacLib:Window(Settings)
 					wheelAndInputs.BackgroundTransparency = 1
 					wheelAndInputs.BorderSizePixel = 0
 					wheelAndInputs.LayoutOrder = 1
-					wheelAndInputs.Size = UDim2.new(1, 0, 0, 200)
+					wheelAndInputs.Size = UDim2.new(1, 0, 0, 196)
 					wheelAndInputs.Parent = colorOptions
+
+					-- Подложка-кольцо вокруг цветового круга
+					local wheelFrame = Instance.new("Frame")
+					wheelFrame.Name = "WheelFrame"
+					wheelFrame.AnchorPoint = Vector2.new(0, 0.5)
+					wheelFrame.Position = UDim2.fromScale(0, 0.5)
+					wheelFrame.Size = UDim2.fromOffset(192, 192)
+					wheelFrame.BackgroundColor3 = Color3.fromRGB(22, 22, 25)
+					wheelFrame.BackgroundTransparency = 0.2
+					wheelFrame.BorderSizePixel = 0
+					wheelFrame.Parent = wheelAndInputs
+
+					local wheelFrameCorner = Instance.new("UICorner")
+					wheelFrameCorner.CornerRadius = UDim.new(1, 0)
+					wheelFrameCorner.Parent = wheelFrame
+
+					local wheelFrameStroke = Instance.new("UIStroke")
+					wheelFrameStroke.ApplyStrokeMode = Enum.ApplyStrokeMode.Border
+					wheelFrameStroke.Color = Color3.fromRGB(255, 255, 255)
+					wheelFrameStroke.Transparency = 0.72
+					wheelFrameStroke.Thickness = 1.2
+					wheelFrameStroke.Parent = wheelFrame
 
 					local wheelBtn = Instance.new("ImageButton")
 					wheelBtn.Name = "Wheel"
 					wheelBtn.Image = WHEEL_ASSET
+					wheelBtn.ImageColor3 = Color3.fromRGB(255, 255, 255)
+					wheelBtn.ImageTransparency = 0
 					wheelBtn.AutoButtonColor = false
-					wheelBtn.AnchorPoint = Vector2.new(0, 0.5)
-					wheelBtn.Position = UDim2.fromScale(0, 0.5)
+					wheelBtn.AnchorPoint = Vector2.new(0.5, 0.5)
+					wheelBtn.Position = UDim2.fromScale(0.5, 0.5)
 					wheelBtn.BackgroundTransparency = 1
 					wheelBtn.BorderSizePixel = 0
-					wheelBtn.Size = UDim2.fromOffset(195, 195)
-					wheelBtn.Parent = wheelAndInputs
+					wheelBtn.Size = UDim2.new(1, -6, 1, -6)
+					wheelBtn.Parent = wheelFrame
 
-					local target = Instance.new("ImageLabel")
+					-- Улучшенный контрастный двухконтурный прицел (Target) с динамическим центром
+					local target = Instance.new("Frame")
 					target.Name = "Target"
-					target.Image = TARGET_ASSET
-					target.ImageColor3 = Color3.fromRGB(0, 0, 0)
 					target.AnchorPoint = Vector2.new(0.5, 0.5)
-					target.BackgroundTransparency = 1
-					target.BorderSizePixel = 0
 					target.Position = UDim2.fromScale(0.5, 0.5)
-					target.Size = UDim2.fromOffset(20, 20)
+					target.Size = UDim2.fromOffset(18, 18)
+					target.BackgroundColor3 = Color3.fromRGB(255, 255, 255)
+					target.BackgroundTransparency = 0
+					target.BorderSizePixel = 0
+					target.ZIndex = 4
 					target.Parent = wheelBtn
+
+					local targetScale = Instance.new("UIScale")
+					targetScale.Scale = 1
+					targetScale.Parent = target
+
+					local targetCorner = Instance.new("UICorner")
+					targetCorner.CornerRadius = UDim.new(1, 0)
+					targetCorner.Parent = target
+
+					-- Внешний тёмный контур прицела для читаемости на светлых участках круга
+					local targetOuterStroke = Instance.new("UIStroke")
+					targetOuterStroke.Name = "TargetOuterStroke"
+					targetOuterStroke.ApplyStrokeMode = Enum.ApplyStrokeMode.Border
+					targetOuterStroke.Color = Color3.fromRGB(10, 10, 12)
+					targetOuterStroke.Thickness = 2
+					targetOuterStroke.Transparency = 0.1
+					targetOuterStroke.Parent = target
+
+					-- Внутренний белый ободок вокруг цветного ядра
+					local targetInnerRing = Instance.new("Frame")
+					targetInnerRing.Name = "TargetInnerRing"
+					targetInnerRing.AnchorPoint = Vector2.new(0.5, 0.5)
+					targetInnerRing.Position = UDim2.fromScale(0.5, 0.5)
+					targetInnerRing.Size = UDim2.new(1, -4, 1, -4)
+					targetInnerRing.BackgroundColor3 = savedColor
+					targetInnerRing.BorderSizePixel = 0
+					targetInnerRing.ZIndex = 5
+					targetInnerRing.Parent = target
+
+					local targetInnerCorner = Instance.new("UICorner")
+					targetInnerCorner.CornerRadius = UDim.new(1, 0)
+					targetInnerCorner.Parent = targetInnerRing
+
+					local targetInnerStroke = Instance.new("UIStroke")
+					targetInnerStroke.ApplyStrokeMode = Enum.ApplyStrokeMode.Border
+					targetInnerStroke.Color = Color3.fromRGB(255, 255, 255)
+					targetInnerStroke.Thickness = 1.5
+					targetInnerStroke.Transparency = 0
+					targetInnerStroke.Parent = targetInnerRing
 
 					-- Правая колонка с полями ввода (Hex, Red, Green, Blue, Alpha)
 					local inputs = Instance.new("Frame")
@@ -4066,18 +4214,18 @@ function MacLib:Window(Settings)
 					inputs.BackgroundTransparency = 1
 					inputs.BorderSizePixel = 0
 					inputs.Position = UDim2.fromScale(1, 0.5)
-					inputs.Size = UDim2.fromOffset(162, 0)
+					inputs.Size = UDim2.fromOffset(176, 0)
 					inputs.Parent = wheelAndInputs
 
 					local inputsLayout = Instance.new("UIListLayout")
 					inputsLayout.Name = "InputsLayout"
-					inputsLayout.Padding = UDim.new(0, 8)
+					inputsLayout.Padding = UDim.new(0, 7)
 					inputsLayout.SortOrder = Enum.SortOrder.LayoutOrder
 					inputsLayout.Parent = inputs
 
 					local modifierInputs = {}
 
-					local function createColorInputRow(fieldName, labelText, defaultText, order, visible)
+					local function createColorInputRow(fieldName, labelText, iconId, accentColor, defaultText, order, visible)
 						local row = Instance.new("Frame")
 						row.Name = fieldName
 						row.BackgroundTransparency = 1
@@ -4086,6 +4234,31 @@ function MacLib:Window(Settings)
 						row.Size = UDim2.new(1, 0, 0, 28)
 						row.Visible = visible
 						row.Parent = inputs
+
+						local leftGroup = Instance.new("Frame")
+						leftGroup.Name = "LeftGroup"
+						leftGroup.AnchorPoint = Vector2.new(0, 0.5)
+						leftGroup.Position = UDim2.fromScale(0, 0.5)
+						leftGroup.Size = UDim2.new(1, -86, 1, 0)
+						leftGroup.BackgroundTransparency = 1
+						leftGroup.Parent = row
+
+						local leftLayout = Instance.new("UIListLayout")
+						leftLayout.FillDirection = Enum.FillDirection.Horizontal
+						leftLayout.VerticalAlignment = Enum.VerticalAlignment.Center
+						leftLayout.Padding = UDim.new(0, 6)
+						leftLayout.SortOrder = Enum.SortOrder.LayoutOrder
+						leftLayout.Parent = leftGroup
+
+						local fieldIcon = Instance.new("ImageLabel")
+						fieldIcon.Name = "FieldIcon"
+						fieldIcon.Image = iconId
+						fieldIcon.ImageColor3 = accentColor
+						fieldIcon.ImageTransparency = 0.25
+						fieldIcon.BackgroundTransparency = 1
+						fieldIcon.Size = UDim2.fromOffset(13, 13)
+						fieldIcon.LayoutOrder = 1
+						fieldIcon.Parent = leftGroup
 
 						local label = Instance.new("TextLabel")
 						label.Name = "InputName"
@@ -4096,15 +4269,14 @@ function MacLib:Window(Settings)
 						)
 						label.Text = labelText
 						label.TextColor3 = Color3.fromRGB(255, 255, 255)
-						label.TextSize = 13
-						label.TextTransparency = 0.45
+						label.TextSize = 12
+						label.TextTransparency = 0.4
 						label.TextXAlignment = Enum.TextXAlignment.Left
-						label.AnchorPoint = Vector2.new(0, 0.5)
-						label.Position = UDim2.fromScale(0, 0.5)
-						label.Size = UDim2.new(1, -85, 1, 0)
+						label.AutomaticSize = Enum.AutomaticSize.XY
 						label.BackgroundTransparency = 1
 						label.BorderSizePixel = 0
-						label.Parent = row
+						label.LayoutOrder = 2
+						label.Parent = leftGroup
 
 						local box = Instance.new("TextBox")
 						box.Name = "InputBox"
@@ -4117,11 +4289,11 @@ function MacLib:Window(Settings)
 						box.Text = defaultText
 						box.TextColor3 = Color3.fromRGB(255, 255, 255)
 						box.TextSize = 12
-						box.TextTransparency = 0.25
-						box.TextXAlignment = Enum.TextXAlignment.Left
+						box.TextTransparency = 0.2
+						box.TextXAlignment = Enum.TextXAlignment.Center
 						box.AnchorPoint = Vector2.new(1, 0.5)
 						box.Position = UDim2.fromScale(1, 0.5)
-						box.Size = UDim2.fromOffset(80, 25)
+						box.Size = UDim2.fromOffset(82, 25)
 						box.BackgroundColor3 = Color3.fromRGB(255, 255, 255)
 						box.BackgroundTransparency = 0.95
 						box.BorderSizePixel = 0
@@ -4129,43 +4301,63 @@ function MacLib:Window(Settings)
 						box.Parent = row
 
 						local boxCorner = Instance.new("UICorner")
-						boxCorner.CornerRadius = UDim.new(0, 5)
+						boxCorner.CornerRadius = UDim.new(0, 6)
 						boxCorner.Parent = box
 
 						local boxStroke = Instance.new("UIStroke")
 						boxStroke.ApplyStrokeMode = Enum.ApplyStrokeMode.Border
 						boxStroke.Color = Color3.fromRGB(255, 255, 255)
-						boxStroke.Transparency = 0.85
+						boxStroke.Transparency = 0.82
 						boxStroke.Parent = box
 
 						local boxPadding = Instance.new("UIPadding")
-						boxPadding.PaddingLeft = UDim.new(0, 8)
-						boxPadding.PaddingRight = UDim.new(0, 8)
+						boxPadding.PaddingLeft = UDim.new(0, 6)
+						boxPadding.PaddingRight = UDim.new(0, 6)
 						boxPadding.Parent = box
 
 						modifierInputs[fieldName] = box
 						return row, box, boxStroke
 					end
 
-					createColorInputRow("Hex", "Hex", "#FFFFFF", 0, true)
-					createColorInputRow("Red", "Red", "255", 1, true)
-					createColorInputRow("Green", "Green", "255", 2, true)
-					createColorInputRow("Blue", "Blue", "255", 3, true)
-					createColorInputRow("Alpha", "Alpha", "0", 4, isAlpha)
+					createColorInputRow("Hex", "Hex", ICONS.Hex, Color3.fromRGB(210, 210, 210), "#FFFFFF", 0, true)
+					createColorInputRow("Red", "Red", ICONS.Channel, Color3.fromRGB(255, 110, 110), "255", 1, true)
+					createColorInputRow("Green", "Green", ICONS.Channel, Color3.fromRGB(110, 240, 140), "255", 2, true)
+					createColorInputRow("Blue", "Blue", ICONS.Channel, Color3.fromRGB(110, 175, 255), "255", 3, true)
+					createColorInputRow("Alpha", "Alpha", ICONS.Alpha, Color3.fromRGB(200, 200, 200), "0", 4, isAlpha)
 
-					-- Слайдер яркости (Value)
+					-- Слайдер яркости (Value) с иконкой и расширенным хитбоксом для тача
+					local valueContainer = Instance.new("Frame")
+					valueContainer.Name = "ValueContainer"
+					valueContainer.BackgroundTransparency = 1
+					valueContainer.Size = UDim2.new(1, 0, 0, 22)
+					valueContainer.LayoutOrder = 2
+					valueContainer.Parent = colorOptions
+
+					local brightnessIcon = Instance.new("ImageLabel")
+					brightnessIcon.Name = "BrightnessIcon"
+					brightnessIcon.Image = ICONS.Brightness
+					brightnessIcon.ImageColor3 = Color3.fromRGB(255, 255, 255)
+					brightnessIcon.ImageTransparency = 0.4
+					brightnessIcon.AnchorPoint = Vector2.new(0, 0.5)
+					brightnessIcon.Position = UDim2.fromScale(0, 0.5)
+					brightnessIcon.Size = UDim2.fromOffset(15, 15)
+					brightnessIcon.BackgroundTransparency = 1
+					brightnessIcon.Parent = valueContainer
+
 					local valueSliderBtn = Instance.new("TextButton")
 					valueSliderBtn.Name = "Value"
 					valueSliderBtn.Text = ""
 					valueSliderBtn.AutoButtonColor = false
+					valueSliderBtn.AnchorPoint = Vector2.new(1, 0.5)
+					valueSliderBtn.Position = UDim2.fromScale(1, 0.5)
 					valueSliderBtn.BackgroundColor3 = Color3.fromRGB(255, 255, 255)
+					valueSliderBtn.BackgroundTransparency = 0
 					valueSliderBtn.BorderSizePixel = 0
-					valueSliderBtn.LayoutOrder = 2
-					valueSliderBtn.Size = UDim2.new(1, 0, 0, 14)
-					valueSliderBtn.Parent = colorOptions
+					valueSliderBtn.Size = UDim2.new(1, -24, 0, 14)
+					valueSliderBtn.Parent = valueContainer
 
 					local valueCorner = Instance.new("UICorner")
-					valueCorner.CornerRadius = UDim.new(0, 6)
+					valueCorner.CornerRadius = UDim.new(1, 0)
 					valueCorner.Parent = valueSliderBtn
 
 					local valueGradient = Instance.new("UIGradient")
@@ -4179,7 +4371,7 @@ function MacLib:Window(Settings)
 					local valueStroke = Instance.new("UIStroke")
 					valueStroke.ApplyStrokeMode = Enum.ApplyStrokeMode.Border
 					valueStroke.Color = Color3.fromRGB(255, 255, 255)
-					valueStroke.Transparency = 0.85
+					valueStroke.Transparency = 0.78
 					valueStroke.Parent = valueSliderBtn
 
 					local slide = Instance.new("Frame")
@@ -4188,9 +4380,13 @@ function MacLib:Window(Settings)
 					slide.BackgroundColor3 = Color3.fromRGB(255, 255, 255)
 					slide.BorderSizePixel = 0
 					slide.Position = UDim2.fromScale(0, 0.5)
-					slide.Size = UDim2.fromOffset(12, 20)
-					slide.ZIndex = 2
+					slide.Size = UDim2.fromOffset(14, 20)
+					slide.ZIndex = 3
 					slide.Parent = valueSliderBtn
+
+					local slideScale = Instance.new("UIScale")
+					slideScale.Scale = 1
+					slideScale.Parent = slide
 
 					local slideCorner = Instance.new("UICorner")
 					slideCorner.CornerRadius = UDim.new(1, 0)
@@ -4198,11 +4394,12 @@ function MacLib:Window(Settings)
 
 					local slideStroke = Instance.new("UIStroke")
 					slideStroke.ApplyStrokeMode = Enum.ApplyStrokeMode.Border
-					slideStroke.Color = Color3.fromRGB(15, 15, 15)
-					slideStroke.Transparency = 0.35
+					slideStroke.Color = Color3.fromRGB(15, 15, 18)
+					slideStroke.Thickness = 2
+					slideStroke.Transparency = 0.15
 					slideStroke.Parent = slide
 
-					-- Блок сравнения цветов (NewColor и OldColor)
+					-- Блок сравнения цветов (New Color и Current Color) с подписями и яркими слотами
 					local colorWells = Instance.new("Frame")
 					colorWells.Name = "ColorWells"
 					colorWells.AutomaticSize = Enum.AutomaticSize.Y
@@ -4215,18 +4412,18 @@ function MacLib:Window(Settings)
 					local wellsGridLayout = Instance.new("UIGridLayout")
 					wellsGridLayout.Name = "UIGridLayout"
 					wellsGridLayout.CellPadding = UDim2.fromOffset(10, 0)
-					wellsGridLayout.CellSize = UDim2.new(0.5, -5, 0, 30)
+					wellsGridLayout.CellSize = UDim2.new(0.5, -5, 0, 34)
 					wellsGridLayout.SortOrder = Enum.SortOrder.LayoutOrder
 					wellsGridLayout.Parent = colorWells
 
-					local function createColorWell(wellName, order)
+					local function createColorWell(wellName, badgeText, order)
 						local wellBg = Instance.new("ImageLabel")
 						wellBg.Name = wellName
 						wellBg.Image = CHECKERBOARD_ASSET
 						wellBg.ScaleType = Enum.ScaleType.Tile
-						wellBg.TileSize = UDim2.fromOffset(500, 500)
-						wellBg.BackgroundColor3 = Color3.fromRGB(255, 255, 255)
-						wellBg.BackgroundTransparency = 1
+						wellBg.TileSize = UDim2.fromOffset(10, 10)
+						wellBg.BackgroundColor3 = Color3.fromRGB(28, 28, 30)
+						wellBg.BackgroundTransparency = 0
 						wellBg.BorderSizePixel = 0
 						wellBg.LayoutOrder = order
 						wellBg.Parent = colorWells
@@ -4238,7 +4435,7 @@ function MacLib:Window(Settings)
 						local bgStroke = Instance.new("UIStroke")
 						bgStroke.ApplyStrokeMode = Enum.ApplyStrokeMode.Border
 						bgStroke.Color = Color3.fromRGB(255, 255, 255)
-						bgStroke.Transparency = 0.85
+						bgStroke.Transparency = 0.75
 						bgStroke.Parent = wellBg
 
 						local fill = Instance.new("Frame")
@@ -4246,20 +4443,51 @@ function MacLib:Window(Settings)
 						fill.AnchorPoint = Vector2.new(0.5, 0.5)
 						fill.Position = UDim2.fromScale(0.5, 0.5)
 						fill.Size = UDim2.fromScale(1, 1)
+						fill.BackgroundColor3 = savedColor
+						fill.BackgroundTransparency = isAlpha and savedAlpha or 0
 						fill.BorderSizePixel = 0
+						fill.ZIndex = 2
 						fill.Parent = wellBg
 
 						local fillCorner = Instance.new("UICorner")
 						fillCorner.CornerRadius = UDim.new(0, 8)
 						fillCorner.Parent = fill
 
+						local badge = Instance.new("TextLabel")
+						badge.Name = "Badge"
+						badge.FontFace = Font.new(assets.interFont, Enum.FontWeight.SemiBold, Enum.FontStyle.Normal)
+						badge.Text = badgeText
+						badge.TextSize = 10
+						badge.TextColor3 = Color3.fromRGB(255, 255, 255)
+						badge.TextTransparency = 0.15
+						badge.BackgroundColor3 = Color3.fromRGB(12, 12, 14)
+						badge.BackgroundTransparency = 0.35
+						badge.AnchorPoint = Vector2.new(0, 0.5)
+						badge.Position = UDim2.new(0, 8, 0.5, 0)
+						badge.AutomaticSize = Enum.AutomaticSize.XY
+						badge.ZIndex = 3
+						badge.Parent = wellBg
+
+						local badgeCorner = Instance.new("UICorner")
+						badgeCorner.CornerRadius = UDim.new(0, 4)
+						badgeCorner.Parent = badge
+
+						local badgePadding = Instance.new("UIPadding")
+						badgePadding.PaddingLeft = UDim.new(0, 5)
+						badgePadding.PaddingRight = UDim.new(0, 5)
+						badgePadding.PaddingTop = UDim.new(0, 2)
+						badgePadding.PaddingBottom = UDim.new(0, 2)
+						badgePadding.Parent = badge
+
 						return fill
 					end
 
-					local newColorFill = createColorWell("NewColor", 0)
-					local oldColorFill = createColorWell("OldColor", 1)
+					local newColorFill = createColorWell("NewColor", "NEW", 0)
+					local oldColorFill = createColorWell("OldColor", "CURRENT", 1)
 
-					-- 4. МАТЕМАТИКА ЦВЕТА И БЕЗОШИБОЧНАЯ ОБРАБОТКА ВВОДА (PC + MOBILE + UISCALE)
+					-- =========================================================================
+					-- 4. МАТЕМАТИКА ЦВЕТА, ПОЗИЦИОНИРОВАНИЕ С УЧЕТОМ UISCALE И АНИМАЦИИ
+					-- =========================================================================
 					local fromHSV, fromRGB = Color3.fromHSV, Color3.fromRGB
 
 					local hue, saturation, valHSV = savedColor:ToHSV()
@@ -4270,6 +4498,12 @@ function MacLib:Window(Settings)
 					local activeInputObject = nil
 					local isModalOpen = false
 
+					-- Настройки плавных анимаций (0.25 - 0.38 сек, Quart / Sine)
+					local TWEEN_MODAL = TweenInfo.new(0.32, Enum.EasingStyle.Quart, Enum.EasingDirection.Out)
+					local TWEEN_HOVER = TweenInfo.new(0.26, Enum.EasingStyle.Sine, Enum.EasingDirection.Out)
+					local TWEEN_HANDLE = TweenInfo.new(0.25, Enum.EasingStyle.Quart, Enum.EasingDirection.Out)
+					local TWEEN_COLOR = TweenInfo.new(0.28, Enum.EasingStyle.Sine, Enum.EasingDirection.Out)
+
 					local function clampNum(val, minVal, maxVal)
 						local n = tonumber(val)
 						if not n then return minVal end
@@ -4278,13 +4512,6 @@ function MacLib:Window(Settings)
 
 					local function formatAlphaText(a)
 						return tostring(math.round(a * 100) / 100)
-					end
-
-					local function rgbToHex(c)
-						local r = math.clamp(math.round(c.R * 255), 0, 255)
-						local g = math.clamp(math.round(c.G * 255), 0, 255)
-						local b = math.clamp(math.round(c.B * 255), 0, 255)
-						return string.format("#%02X%02X%02X", r, g, b)
 					end
 
 					local function hexToRGB(hexStr)
@@ -4304,28 +4531,60 @@ function MacLib:Window(Settings)
 						return r, g, b
 					end
 
-					-- Синхронизация положения маркеров (Scale-координаты не ломаются от UIScale и скрытых фреймов)
-					local function SyncVisualHandles()
+					-- Безопасное получение текущего масштаба окна (защита от багов на мобилках)
+					local function GetEffectiveScale()
+						local s = (baseUIScale and baseUIScale.Scale) or 1
+						return (s > 0) and s or 1
+					end
+
+					-- Синхронизация положения ползунков и цветов (с поддержкой плавного Tween и мгновенного режима)
+					local function SyncVisualHandles(instant)
 						local angle = hue * math.pi * 2
 						local normX = -math.cos(angle) * saturation
 						local normY = math.sin(angle) * saturation
 
-						target.Position = UDim2.fromScale(0.5 + normX * 0.5, 0.5 + normY * 0.5)
-						valueSliderBtn.BackgroundColor3 = fromHSV(hue, saturation, 1)
-
+						local targetGoalPos = UDim2.fromScale(0.5 + normX * 0.5, 0.5 + normY * 0.5)
 						local slideRatio = math.clamp(1 - valHSV, 0, 1)
-						slide.Position = UDim2.fromScale(slideRatio, 0.5)
+						local slideGoalPos = UDim2.fromScale(slideRatio, 0.5)
+
+						local fullBrightColor = fromHSV(hue, saturation, 1)
+						local currentColor = fromHSV(hue, saturation, valHSV)
+
+						-- Внешнее кольцо прицела адаптируется к яркости для 100% контраста
+						local ringContrastColor = (valHSV > 0.65 and saturation < 0.35)
+							and Color3.fromRGB(20, 20, 24)
+							or Color3.fromRGB(255, 255, 255)
+
+						targetInnerRing.BackgroundColor3 = currentColor
+						targetInnerStroke.Color = ringContrastColor
+						valueSliderBtn.BackgroundColor3 = fullBrightColor
+
+						if instant or not isModalOpen then
+							target.Position = targetGoalPos
+							slide.Position = slideGoalPos
+						else
+							Tween(target, TWEEN_HANDLE, { Position = targetGoalPos }):Play()
+							Tween(slide, TWEEN_HANDLE, { Position = slideGoalPos }):Play()
+						end
 					end
 
-					-- Синхронизация текста и превью-слота NewColor
-					local function SyncTextAndNewWell()
+					-- Синхронизация полей ввода и превью NewColor
+					local function SyncTextAndNewWell(instant)
 						local c = fromHSV(hue, saturation, valHSV)
 						local r = math.clamp(math.round(c.R * 255), 0, 255)
 						local g = math.clamp(math.round(c.G * 255), 0, 255)
 						local b = math.clamp(math.round(c.B * 255), 0, 255)
+						local targetAlpha = isAlpha and currentAlpha or 0
 
-						newColorFill.BackgroundColor3 = c
-						newColorFill.BackgroundTransparency = isAlpha and currentAlpha or 0
+						if instant or not isModalOpen then
+							newColorFill.BackgroundColor3 = c
+							newColorFill.BackgroundTransparency = targetAlpha
+						else
+							Tween(newColorFill, TWEEN_COLOR, {
+								BackgroundColor3 = c,
+								BackgroundTransparency = targetAlpha
+							}):Play()
+						end
 
 						modifierInputs.Red.Text = tostring(r)
 						modifierInputs.Green.Text = tostring(g)
@@ -4336,50 +4595,61 @@ function MacLib:Window(Settings)
 						end
 					end
 
-					local function UpdateAllPickerVisuals()
-						SyncVisualHandles()
-						SyncTextAndNewWell()
+					local function UpdateAllPickerVisuals(instant)
+						SyncVisualHandles(instant)
+						SyncTextAndNewWell(instant)
 					end
 
-					-- Обновление слайдера яркости от экранных координат указателя
+					-- Точный расчёт позиции на слайдере с учётом UIScale и AbsolutePosition
 					local function UpdateSlideFromPointer(screenPos)
+						local scale = GetEffectiveScale()
 						local absPos = valueSliderBtn.AbsolutePosition
 						local absSize = valueSliderBtn.AbsoluteSize
-						if absSize.X <= 0 then return end
 
-						local ratio = math.clamp((screenPos.X - absPos.X) / absSize.X, 0, 1)
+						local unscaledWidth = absSize.X / scale
+						if unscaledWidth <= 0 then return end
+
+						local localX = (screenPos.X - absPos.X) / scale
+						local ratio = math.clamp(localX / unscaledWidth, 0, 1)
 						valHSV = 1 - ratio
-						UpdateAllPickerVisuals()
+
+						UpdateAllPickerVisuals(false)
 					end
 
-					-- Обновление цветового круга от экранных координат указателя
+					-- Точный расчёт позиции на цветовом круге с учётом UIScale и AbsolutePosition
 					local function UpdateWheelFromPointer(screenPos)
+						local scale = GetEffectiveScale()
 						local absPos = wheelBtn.AbsolutePosition
 						local absSize = wheelBtn.AbsoluteSize
-						local radius = absSize.X * 0.5
-						if radius <= 0 then return end
 
-						local center = absPos + (absSize * 0.5)
-						local delta = Vector2.new(screenPos.X - center.X, screenPos.Y - center.Y)
+						local unscaledRadius = (absSize.X / scale) * 0.5
+						if unscaledRadius <= 0 then return end
 
-						local dist = delta.Magnitude
-						if dist > radius then
-							delta = delta.Unit * radius
-							dist = radius
+						local centerScreen = absPos + (absSize * 0.5)
+						local localDelta = Vector2.new(
+							(screenPos.X - centerScreen.X) / scale,
+							(screenPos.Y - centerScreen.Y) / scale
+						)
+
+						local dist = localDelta.Magnitude
+						if dist > unscaledRadius then
+							localDelta = localDelta.Unit * unscaledRadius
+							dist = unscaledRadius
 						end
 
-						local phi = math.atan2(-delta.Y, delta.X)
+						local phi = math.atan2(-localDelta.Y, localDelta.X)
 						hue = ((phi + math.pi) / (2 * math.pi)) % 1
-						saturation = math.clamp(dist / radius, 0, 1)
+						saturation = math.clamp(dist / unscaledRadius, 0, 1)
 
-						UpdateAllPickerVisuals()
+						UpdateAllPickerVisuals(false)
 					end
 
-					-- События перетаскивания круга и слайдера
+					-- События начала перетаскивания круга и слайдера
 					wheelBtn.InputBegan:Connect(function(input)
 						if input.UserInputType == Enum.UserInputType.MouseButton1 or input.UserInputType == Enum.UserInputType.Touch then
 							wheelDragging = true
 							activeInputObject = input
+							Tween(targetScale, TWEEN_HOVER, { Scale = 1.22 }):Play()
 							UpdateWheelFromPointer(input.Position)
 						end
 					end)
@@ -4388,6 +4658,7 @@ function MacLib:Window(Settings)
 						if input.UserInputType == Enum.UserInputType.MouseButton1 or input.UserInputType == Enum.UserInputType.Touch then
 							slideDragging = true
 							activeInputObject = input
+							Tween(slideScale, TWEEN_HOVER, { Scale = 1.18 }):Play()
 							UpdateSlideFromPointer(input.Position)
 						end
 					end)
@@ -4411,6 +4682,12 @@ function MacLib:Window(Settings)
 					local globalInputEndedConn = UserInputService.InputEnded:Connect(function(input)
 						if input.UserInputType == Enum.UserInputType.MouseButton1 or input.UserInputType == Enum.UserInputType.Touch then
 							if activeInputObject == nil or input == activeInputObject or input.UserInputType == Enum.UserInputType.MouseButton1 then
+								if wheelDragging then
+									Tween(targetScale, TWEEN_HOVER, { Scale = 1 }):Play()
+								end
+								if slideDragging then
+									Tween(slideScale, TWEEN_HOVER, { Scale = 1 }):Play()
+								end
 								wheelDragging = false
 								slideDragging = false
 								activeInputObject = nil
@@ -4418,18 +4695,20 @@ function MacLib:Window(Settings)
 						end
 					end)
 
-					-- Обработка ручного ввода в текстовые поля (RGB, Hex, Alpha)
+					-- Анимации фокуса и валидация текстовых полей (RGB, Hex, Alpha)
 					for _, box in pairs(modifierInputs) do
 						local stroke = box:FindFirstChildOfClass("UIStroke")
 						box.Focused:Connect(function()
 							box.PlaceholderText = box.Text
+							Tween(box, TWEEN_HOVER, { BackgroundTransparency = 0.9 }):Play()
 							if stroke then
-								Tween(stroke, TweenInfo.new(0.18, Enum.EasingStyle.Sine), { Transparency = 0.35 }):Play()
+								Tween(stroke, TWEEN_HOVER, { Transparency = 0.3 }):Play()
 							end
 						end)
 						box.FocusLost:Connect(function()
+							Tween(box, TWEEN_HOVER, { BackgroundTransparency = 0.95 }):Play()
 							if stroke then
-								Tween(stroke, TweenInfo.new(0.18, Enum.EasingStyle.Sine), { Transparency = 0.85 }):Play()
+								Tween(stroke, TWEEN_HOVER, { Transparency = 0.82 }):Play()
 							end
 						end)
 					end
@@ -4439,7 +4718,7 @@ function MacLib:Window(Settings)
 						local g = clampNum(modifierInputs.Green.Text, 0, 255)
 						local b = clampNum(modifierInputs.Blue.Text, 0, 255)
 						hue, saturation, valHSV = fromRGB(r, g, b):ToHSV()
-						UpdateAllPickerVisuals()
+						UpdateAllPickerVisuals(false)
 					end
 
 					local function ApplyHexInput()
@@ -4447,7 +4726,7 @@ function MacLib:Window(Settings)
 						if r and g and b then
 							hue, saturation, valHSV = fromRGB(r, g, b):ToHSV()
 						end
-						UpdateAllPickerVisuals()
+						UpdateAllPickerVisuals(false)
 					end
 
 					local function ApplyAlphaInput()
@@ -4458,7 +4737,7 @@ function MacLib:Window(Settings)
 							end
 							currentAlpha = math.clamp(raw, 0, 1)
 						end
-						UpdateAllPickerVisuals()
+						UpdateAllPickerVisuals(false)
 					end
 
 					modifierInputs.Red.FocusLost:Connect(ApplyRGBInputs)
@@ -4467,8 +4746,8 @@ function MacLib:Window(Settings)
 					modifierInputs.Hex.FocusLost:Connect(ApplyHexInput)
 					modifierInputs.Alpha.FocusLost:Connect(ApplyAlphaInput)
 
-					-- Синхронизация состояния из сохранённых настроек
-					local function LoadSavedStateIntoModal()
+					-- Загрузка сохранённого цвета при открытии окна
+					local function LoadSavedStateIntoModal(instant)
 						hue, saturation, valHSV = savedColor:ToHSV()
 						currentAlpha = isAlpha and savedAlpha or 0
 
@@ -4478,46 +4757,54 @@ function MacLib:Window(Settings)
 						colorC.BackgroundColor3 = savedColor
 						colorC.BackgroundTransparency = isAlpha and savedAlpha or 0
 
-						UpdateAllPickerVisuals()
+						UpdateAllPickerVisuals(instant)
 					end
 
+					-- =========================================================================
 					-- 5. АНИМАЦИИ КАРТОЧКИ, КНОПОК И ОТКРЫТИЯ МОДАЛЬНОГО ОКНА
-					local hoverInfo = TweenInfo.new(0.2, Enum.EasingStyle.Sine, Enum.EasingDirection.Out)
-					local modalInfo = TweenInfo.new(0.22, Enum.EasingStyle.Quart, Enum.EasingDirection.Out)
-
+					-- =========================================================================
 					interact.MouseEnter:Connect(function()
-						Tween(colorpickerName, hoverInfo, { TextTransparency = 0.15 }):Play()
-						Tween(pickerCardStroke, hoverInfo, { Transparency = 0.18 }):Play()
-						Tween(colorpicker, hoverInfo, { BackgroundTransparency = 0.96 }):Play()
-						Tween(previewScale, hoverInfo, { Scale = 1.06 }):Play()
+						Tween(colorpickerName, TWEEN_HOVER, { TextTransparency = 0.15 }):Play()
+						Tween(pickerCardStroke, TWEEN_HOVER, { Transparency = 0.18 }):Play()
+						Tween(colorpicker, TWEEN_HOVER, { BackgroundTransparency = 0.955 }):Play()
+						Tween(previewScale, TWEEN_HOVER, { Scale = 1.08 }):Play()
 					end)
 
 					interact.MouseLeave:Connect(function()
-						Tween(colorpickerName, hoverInfo, { TextTransparency = 0.4 }):Play()
-						Tween(pickerCardStroke, hoverInfo, { Transparency = 0.35 }):Play()
-						Tween(colorpicker, hoverInfo, { BackgroundTransparency = 0.985 }):Play()
-						Tween(previewScale, hoverInfo, { Scale = 1 }):Play()
+						Tween(colorpickerName, TWEEN_HOVER, { TextTransparency = 0.4 }):Play()
+						Tween(pickerCardStroke, TWEEN_HOVER, { Transparency = 0.35 }):Play()
+						Tween(colorpicker, TWEEN_HOVER, { BackgroundTransparency = 0.985 }):Play()
+						Tween(previewScale, TWEEN_HOVER, { Scale = 1 }):Play()
 					end)
 
-					local function bindModalButtonHover(btn, stroke)
+					local function bindModalButtonAnimations(btn, stroke, label, icon, scale)
 						btn.MouseEnter:Connect(function()
-							Tween(btn, hoverInfo, {
-								BackgroundColor3 = Color3.fromRGB(36, 36, 36),
-								TextTransparency = 0.1
-							}):Play()
-							Tween(stroke, hoverInfo, { Transparency = 0.25 }):Play()
+							Tween(btn, TWEEN_HOVER, { BackgroundColor3 = Color3.fromRGB(36, 36, 40) }):Play()
+							Tween(stroke, TWEEN_HOVER, { Transparency = 0.22 }):Play()
+							Tween(label, TWEEN_HOVER, { TextTransparency = 0.08 }):Play()
+							Tween(icon, TWEEN_HOVER, { ImageTransparency = 0.08 }):Play()
 						end)
 						btn.MouseLeave:Connect(function()
-							Tween(btn, hoverInfo, {
-								BackgroundColor3 = Color3.fromRGB(26, 26, 26),
-								TextTransparency = 0.35
-							}):Play()
-							Tween(stroke, hoverInfo, { Transparency = 0.55 }):Play()
+							Tween(btn, TWEEN_HOVER, { BackgroundColor3 = Color3.fromRGB(26, 26, 28) }):Play()
+							Tween(stroke, TWEEN_HOVER, { Transparency = 0.5 }):Play()
+							Tween(label, TWEEN_HOVER, { TextTransparency = 0.35 }):Play()
+							Tween(icon, TWEEN_HOVER, { ImageTransparency = 0.35 }):Play()
+							Tween(scale, TWEEN_HOVER, { Scale = 1 }):Play()
+						end)
+						btn.InputBegan:Connect(function(inp)
+							if inp.UserInputType == Enum.UserInputType.MouseButton1 or inp.UserInputType == Enum.UserInputType.Touch then
+								Tween(scale, TweenInfo.new(0.14, Enum.EasingStyle.Quad, Enum.EasingDirection.Out), { Scale = 0.95 }):Play()
+							end
+						end)
+						btn.InputEnded:Connect(function(inp)
+							if inp.UserInputType == Enum.UserInputType.MouseButton1 or inp.UserInputType == Enum.UserInputType.Touch then
+								Tween(scale, TWEEN_HOVER, { Scale = 1 }):Play()
+							end
 						end)
 					end
 
-					bindModalButtonHover(confirm, confirmStroke)
-					bindModalButtonHover(cancel, cancelStroke)
+					bindModalButtonAnimations(confirm, confirmStroke, confirmLabel, confirmIcon, confirmScale)
+					bindModalButtonAnimations(cancel, cancelStroke, cancelLabel, cancelIcon, cancelScale)
 
 					local modalTweenToken = 0
 					local activeCanvasTween = nil
@@ -4532,21 +4819,24 @@ function MacLib:Window(Settings)
 							wheelDragging = false
 							slideDragging = false
 							activeInputObject = nil
+							targetScale.Scale = 1
+							slideScale.Scale = 1
 						end
 
 						if activeCanvasTween then activeCanvasTween:Cancel() end
 						if activeScaleTween then activeScaleTween:Cancel() end
 
 						if state then
-							LoadSavedStateIntoModal()
+							LoadSavedStateIntoModal(true)
 							colorPickerCanvas.Visible = true
-							activeCanvasTween = Tween(colorPickerCanvas, modalInfo, { GroupTransparency = 0 })
-							activeScaleTween = Tween(promptScale, modalInfo, { Scale = 1 })
+							promptScale.Scale = 0.94
+							activeCanvasTween = Tween(colorPickerCanvas, TWEEN_MODAL, { GroupTransparency = 0 })
+							activeScaleTween = Tween(promptScale, TWEEN_MODAL, { Scale = 1 })
 							activeCanvasTween:Play()
 							activeScaleTween:Play()
 						else
-							activeCanvasTween = Tween(colorPickerCanvas, modalInfo, { GroupTransparency = 1 })
-							activeScaleTween = Tween(promptScale, modalInfo, { Scale = 0.95 })
+							activeCanvasTween = Tween(colorPickerCanvas, TWEEN_MODAL, { GroupTransparency = 1 })
+							activeScaleTween = Tween(promptScale, TWEEN_MODAL, { Scale = 0.94 })
 							activeCanvasTween:Play()
 							activeScaleTween:Play()
 
@@ -4563,7 +4853,7 @@ function MacLib:Window(Settings)
 					end)
 
 					cancel.MouseButton1Click:Connect(function()
-						LoadSavedStateIntoModal()
+						LoadSavedStateIntoModal(true)
 						SetModalOpen(false)
 					end)
 
@@ -4582,8 +4872,10 @@ function MacLib:Window(Settings)
 						oldColorFill.BackgroundColor3 = savedColor
 						oldColorFill.BackgroundTransparency = isAlpha and savedAlpha or 0
 
-						colorC.BackgroundColor3 = savedColor
-						colorC.BackgroundTransparency = isAlpha and savedAlpha or 0
+						Tween(colorC, TWEEN_COLOR, {
+							BackgroundColor3 = savedColor,
+							BackgroundTransparency = isAlpha and savedAlpha or 0
+						}):Play()
 
 						SetModalOpen(false)
 
@@ -4594,7 +4886,7 @@ function MacLib:Window(Settings)
 						end
 					end)
 
-					-- Очистка глобальных подписок и модального окна при удалении элемента
+					-- Очистка ресурсов при уничтожении элемента
 					colorpicker.Destroying:Connect(function()
 						if globalInputChangedConn then
 							globalInputChangedConn:Disconnect()
@@ -4609,9 +4901,11 @@ function MacLib:Window(Settings)
 						end
 					end)
 
-					LoadSavedStateIntoModal()
+					LoadSavedStateIntoModal(true)
 
-					-- 6. ПУБЛИЧНЫЕ МЕТОДЫ COLORPICKER (БЕЗ ЛИШНИХ TWEEN В ЦИКЛЕ RAINBOW)
+					-- =========================================================================
+					-- 6. ПУБЛИЧНЫЕ МЕТОДЫ COLORPICKER
+					-- =========================================================================
 					function ColorpickerFunctions:UpdateName(New)
 						Settings.Name = New
 						colorpickerName.Text = New
@@ -4631,9 +4925,8 @@ function MacLib:Window(Settings)
 						hue, saturation, valHSV = savedColor:ToHSV()
 						oldColorFill.BackgroundColor3 = savedColor
 
-						-- Если окно закрыто (например, при работе Rainbow в RenderStepped), не тратим ресурсы на пересчёт скрытых TextBox
 						if isModalOpen then
-							UpdateAllPickerVisuals()
+							UpdateAllPickerVisuals(true)
 						else
 							newColorFill.BackgroundColor3 = savedColor
 						end
