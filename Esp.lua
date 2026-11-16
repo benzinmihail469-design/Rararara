@@ -189,11 +189,30 @@ GlobalWindow.ZIndexBehavior = Enum.ZIndexBehavior.Global;
 GlobalWindow.ResetOnSpawn = false;
 GlobalWindow.Parent = CoreGui;
 
+local IsTouchDevice = UserInputService.TouchEnabled and not UserInputService.KeyboardEnabled;
+
+local MobileUIScale = Instance.new("UIScale");
+MobileUIScale.Parent = GlobalWindow;
+
+local function UpdateMobileScale()
+	if not IsTouchDevice then
+		MobileUIScale.Scale = 1;
+		return;
+	end;
+	local vp = CurrentCamera.ViewportSize;
+	local scaleX = (vp.X - 30) / 620;
+	local scaleY = (vp.Y - 30) / 410;
+	MobileUIScale.Scale = math.clamp(math.min(scaleX, scaleY), 0.55, 1);
+end;
+
+UpdateMobileScale();
+CurrentCamera:GetPropertyChangedSignal("ViewportSize"):Connect(UpdateMobileScale);
+
 NeverLose.Scales = {
-	Small = UDim2.fromOffset(540,380),
-	Mobile = UDim2.fromOffset(640,385),
-	Default = UDim2.fromOffset(640 , 480),
-	Large = UDim2.fromOffset(800 , 600)
+	Small = UDim2.fromOffset(520, 360),
+	Mobile = UDim2.fromOffset(580, 370),
+	Default = IsTouchDevice and UDim2.fromOffset(580, 370) or UDim2.fromOffset(640, 480),
+	Large = UDim2.fromOffset(800, 600)
 };
 
 NeverLose.IconColor = Color3.fromRGB(255, 255, 255);
@@ -1220,8 +1239,8 @@ NeverLose.LoadIcon = LPH_NO_VIRTUALIZE(function()
 end);
 
 NeverLose.IsMouseOverFrame = LPH_NO_VIRTUALIZE(function(self , Frame)
-	if not Frame then
-		return;
+	if not Frame or not Frame.Visible then
+		return false;
 	end;
 
 	if NeverLose.Global3DRenderMode then
@@ -1232,11 +1251,17 @@ NeverLose.IsMouseOverFrame = LPH_NO_VIRTUALIZE(function(self , Frame)
 		return false;
 	end;
 
+	local pos = UserInputService:GetMouseLocation();
+	local inset = game:GetService("GuiService"):GetGuiInset();
+	local mx, my = pos.X, pos.Y - (GlobalWindow.IgnoreGuiInset and 0 or inset.Y);
+
 	local AbsPos: Vector2, AbsSize: Vector2 = Frame.AbsolutePosition, Frame.AbsoluteSize;
 
-	if Mouse.X >= AbsPos.X and Mouse.X <= AbsPos.X + AbsSize.X and Mouse.Y >= AbsPos.Y and Mouse.Y <= AbsPos.Y + AbsSize.Y then
+	if mx >= AbsPos.X and mx <= AbsPos.X + AbsSize.X and my >= AbsPos.Y and my <= AbsPos.Y + AbsSize.Y then
 		return true;
 	end;
+
+	return false;
 end);
 
 NeverLose.CreateSignal = LPH_NO_VIRTUALIZE(function(self , DefaultValue)
@@ -1389,7 +1414,7 @@ NeverLose.ProcessParams = LPH_NO_VIRTUALIZE(function(self , Params , Fixed)
 	return k;
 end);
 
-NeverLose.EnabledBlur = true;
+NeverLose.EnabledBlur = not IsTouchDevice;
 NeverLose.BlurModuleParent = workspace.CurrentCamera;
 
 NeverLose.GetCalculatePosition = LPH_NO_VIRTUALIZE(function(planePos, planeNormal, rayOrigin, rayDirection)
@@ -4263,7 +4288,7 @@ function NeverLose:CreateWindow(Config)
 		Logo = NeverLose.GlobalLogo,
 		Name = "Neverlose",
 		Content = "Counter-Strike 2",
-		Size = UDim2.new(0, 640, 0, 480),
+		Size = IsTouchDevice and NeverLose.Scales.Mobile or UDim2.new(0, 640, 0, 480),
 		ConfigFolder = "NeverLoseConfigs",
 		Enable3DRenderer = false,
 		Keybind = "RightControl"
@@ -5148,6 +5173,10 @@ function NeverLose:CreateWindow(Config)
 			Name = "Tab",
 			Type = "Double"
 		});
+
+		if IsTouchDevice and Config.Type == "Double" then
+			Config.Type = "Single";
+		end;
 
 		local Tab = {
 			Signal = NeverLose:CreateSignal(false);
@@ -6595,6 +6624,16 @@ function NeverLose:CreateWindow(Config)
 	function Window:AttachMenuIcon(MenuIcon)
 		Window._MenuIcon = MenuIcon;
 		Window:_RegisterMenuIconSettings(MenuIcon);
+	end;
+
+	if IsTouchDevice and not Window._MenuIcon then
+		local autoIcon = NeverLose:CreateMenuIcon({
+			Size = 44,
+			Image = "shield-check",
+			Draggable = true
+		});
+		autoIcon.Root.Position = UDim2.new(0, 15, 0, 65);
+		Window:AttachMenuIcon(autoIcon);
 	end;
 
 	return CaseInsensitive(Window);
