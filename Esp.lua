@@ -176,7 +176,15 @@ local FastTween = TweenInfo.new(0.05);
 local VSlowTween = TweenInfo.new(0.5,Enum.EasingStyle.Quint);
 local Encryption = {};
 
-NeverLose.UserProfile = Players:GetUserThumbnailAsync(LocalPlayer.UserId , Enum.ThumbnailType.HeadShot , Enum.ThumbnailSize.Size150x150)
+NeverLose.UserProfile = "";
+task.spawn(function()
+	local ok, thumb = pcall(function()
+		return Players:GetUserThumbnailAsync(LocalPlayer.UserId , Enum.ThumbnailType.HeadShot , Enum.ThumbnailSize.Size150x150);
+	end);
+	if ok and thumb then
+		NeverLose.UserProfile = thumb;
+	end;
+end);
 NeverLose.RandomString = LPH_NO_VIRTUALIZE(function()
 	return string.rep(string.char(math.random(1,7)),math.random(1,4))..string.rep(string.char(math.random(1,7)),math.random(1,4))..string.rep(string.char(math.random(1,7)),math.random(1,4))..string.rep(string.char(math.random(1,7)),math.random(1,4))..string.rep(string.char(math.random(1,7)),math.random(1,4))..string.rep(string.char(math.random(1,7)),math.random(1,4))..string.rep(string.char(math.random(1,7)),math.random(1,4))..string.rep(string.char(math.random(1,7)),math.random(1,4))..string.rep(string.char(math.random(1,7)),math.random(1,4))..string.rep(string.char(math.random(1,7)),math.random(1,4))..string.rep(string.char(math.random(1,7)),math.random(1,4));
 end);
@@ -200,13 +208,36 @@ local function UpdateMobileScale()
 		return;
 	end;
 	local vp = CurrentCamera.ViewportSize;
-	local scaleX = (vp.X - 30) / 620;
-	local scaleY = (vp.Y - 30) / 410;
-	MobileUIScale.Scale = math.clamp(math.min(scaleX, scaleY), 0.55, 1);
+	if vp.X <= 0 or vp.Y <= 0 then
+		MobileUIScale.Scale = 0.85;
+		return;
+	end;
+	local scaleX = (vp.X - 24) / 560;
+	local scaleY = (vp.Y - 24) / 380;
+	MobileUIScale.Scale = math.clamp(math.min(scaleX, scaleY), 0.6, 1);
 end;
 
 UpdateMobileScale();
 CurrentCamera:GetPropertyChangedSignal("ViewportSize"):Connect(UpdateMobileScale);
+
+local function GetUIScale()
+	return (MobileUIScale and MobileUIScale.Scale > 0) and MobileUIScale.Scale or 1;
+end;
+
+local function ToUnscaledOffset(absX, absY)
+	local s = GetUIScale();
+	return absX / s, absY / s;
+end;
+
+local function ClampPopupPosition(rawX, rawY, width, height, anchorX, anchorY)
+	local s = GetUIScale();
+	local vp = GlobalWindow.AbsoluteSize / s;
+	local left = rawX - (width * anchorX);
+	local top = rawY - (height * anchorY);
+	left = math.clamp(left, 6, math.max(6, vp.X - width - 6));
+	top = math.clamp(top, 6, math.max(6, vp.Y - height - 6));
+	return UDim2.fromOffset(left + (width * anchorX), top + (height * anchorY));
+end;
 
 NeverLose.Scales = {
 	Small = UDim2.fromOffset(520, 360),
@@ -536,10 +567,11 @@ function NeverLose:CreateMenuIcon(Config)
 		local dragStart, startPos;
 
 		local function clampPosition(pos)
-			local screenSize = NeverLose.ScreenGui.AbsoluteSize;
+			local s = GetUIScale();
+			local screenSize = NeverLose.ScreenGui.AbsoluteSize / s;
 			local sz2 = MenuIconLib._size;
-			local nx = math.clamp(pos.X.Offset, 0, screenSize.X - sz2);
-			local ny = math.clamp(pos.Y.Scale * screenSize.Y + pos.Y.Offset, sz2/2, screenSize.Y - sz2/2);
+			local nx = math.clamp(pos.X.Offset, 4, math.max(4, screenSize.X - sz2 - 4));
+			local ny = math.clamp(pos.Y.Scale * screenSize.Y + pos.Y.Offset, sz2/2 + 4, math.max(sz2/2 + 4, screenSize.Y - sz2/2 - 4));
 			return UDim2.new(0, nx, 0, ny);
 		end;
 
@@ -570,9 +602,10 @@ function NeverLose:CreateMenuIcon(Config)
 					if delta.Magnitude > DRAG_THRESHOLD and MenuIconLib._draggable then
 						moved    = true;
 						dragging = true;
+						local s = GetUIScale();
 						local raw = UDim2.new(
-							startPos.X.Scale, startPos.X.Offset + delta.X,
-							startPos.Y.Scale, startPos.Y.Offset + delta.Y
+							startPos.X.Scale, startPos.X.Offset + (delta.X / s),
+							startPos.Y.Scale, startPos.Y.Offset + (delta.Y / s)
 						);
 						IconRoot.Position = clampPosition(raw);
 					end;
@@ -1237,9 +1270,10 @@ NeverLose.LoadIcon = LPH_NO_VIRTUALIZE(function()
 		["youtube"] = "youtube"
 	};
 end);
+NeverLose.LoadIcon();
 
-NeverLose.IsMouseOverFrame = LPH_NO_VIRTUALIZE(function(self , Frame)
-	if not Frame or not Frame.Visible then
+NeverLose.IsMouseOverFrame = LPH_NO_VIRTUALIZE(function(self , Frame , InputPos)
+	if not Frame or not Frame.Visible or not Frame.Parent then
 		return false;
 	end;
 
@@ -1251,9 +1285,14 @@ NeverLose.IsMouseOverFrame = LPH_NO_VIRTUALIZE(function(self , Frame)
 		return false;
 	end;
 
-	local pos = UserInputService:GetMouseLocation();
-	local inset = game:GetService("GuiService"):GetGuiInset();
-	local mx, my = pos.X, pos.Y - (GlobalWindow.IgnoreGuiInset and 0 or inset.Y);
+	local mx, my;
+	if InputPos then
+		mx, my = InputPos.X, InputPos.Y;
+	else
+		local pos = UserInputService:GetMouseLocation();
+		local inset = game:GetService("GuiService"):GetGuiInset();
+		mx, my = pos.X, pos.Y - (GlobalWindow.IgnoreGuiInset and 0 or inset.Y);
+	end;
 
 	local AbsPos: Vector2, AbsSize: Vector2 = Frame.AbsolutePosition, Frame.AbsoluteSize;
 
@@ -1328,10 +1367,11 @@ NeverLose.CreateInput = LPH_NO_VIRTUALIZE(function(self , Frame , Callback)
 	Button.Size = UDim2.fromScale(1,1);
 	Button.BackgroundTransparency = 1;
 	Button.ImageTransparency = 1;
-	Button.Image = "rbxasset://textuers/translateIcon.png";
+	Button.AutoButtonColor = false;
+	Button.Image = "";
 
 	if Callback then
-		local bth_signal = Button.MouseButton1Click:Connect(Callback);
+		local bth_signal = Button.Activated:Connect(Callback);
 
 		return Button , bth_signal;
 	end;
@@ -1354,7 +1394,8 @@ NeverLose.Drag = LPH_NO_VIRTUALIZE(function(InputFrame: Frame, MoveFrame: Frame,
 	local Tween = TweenInfo.new(Speed);
 
 	local updateInput = function(input)
-		local delta = input.Position - dragStart;
+		local s = GetUIScale();
+		local delta = (input.Position - dragStart) / s;
 		local position = UDim2.new(startPos.X.Scale, startPos.X.Offset + delta.X,
 			startPos.Y.Scale, startPos.Y.Offset + delta.Y);
 
@@ -1740,13 +1781,19 @@ function NeverLose:CreateOptionWindow(Frame: Frame , Zindex)
 
 	local FollowingThread;
 	local SetPosition = LPH_NO_VIRTUALIZE(function()
-		if NeverLose:MoreThanHalfY(Frame.AbsolutePosition.Y + 65) then
-			OptionHandler.AnchorPoint = Vector2.new(0,1)
-		else
-			OptionHandler.AnchorPoint = Vector2.new(0,0)
-		end;
+		local fx, fy = ToUnscaledOffset(Frame.AbsolutePosition.X, Frame.AbsolutePosition.Y);
+		local fw, fh = ToUnscaledOffset(Frame.AbsoluteSize.X, Frame.AbsoluteSize.Y);
+		local s = GetUIScale();
+		local ow, oh = OptionHandler.AbsoluteSize.X / s, OptionHandler.AbsoluteSize.Y / s;
+		if ow <= 0 then ow = 220; end;
+		if oh <= 0 then oh = 75; end;
 
-		OptionHandler.Position = UDim2.fromOffset(Frame.AbsolutePosition.X + 18 , Frame.AbsolutePosition.Y + 65);
+		local openUp = NeverLose:MoreThanHalfY(Frame.AbsolutePosition.Y + Frame.AbsoluteSize.Y);
+		local anchorY = openUp and 1 or 0;
+		OptionHandler.AnchorPoint = Vector2.new(0, anchorY);
+
+		local targetY = openUp and (fy - 6) or (fy + fh + 6);
+		OptionHandler.Position = ClampPopupPosition(fx, targetY, ow, oh, 0, anchorY);
 	end);
 
 	Window.SetRender = LPH_NO_VIRTUALIZE(function(value)
@@ -1947,7 +1994,11 @@ function NeverLose:CreateColorPicker(HandleFrame: Frame)
 
 	ColorPickerLib.SetRender = LPH_NO_VIRTUALIZE(function(value)
 		if value then
-			ColorPickerHandler.Position = UDim2.new(0,HandleFrame.AbsolutePosition.X + 20 , 0 ,HandleFrame.AbsolutePosition.Y + 75);
+			local hx, hy = ToUnscaledOffset(HandleFrame.AbsolutePosition.X, HandleFrame.AbsolutePosition.Y);
+			local hw, hh = ToUnscaledOffset(HandleFrame.AbsoluteSize.X, HandleFrame.AbsoluteSize.Y);
+			local openUp = NeverLose:MoreThanHalfY(HandleFrame.AbsolutePosition.Y + HandleFrame.AbsoluteSize.Y);
+			local targetY = openUp and (hy - 246) or (hy + hh + 6);
+			ColorPickerHandler.Position = ClampPopupPosition(hx - 180 + hw, targetY, 200, 240, 0, 0);
 
 			NeverLose.PlayAnimate(ColorPickerHandler,SlowyTween , {
 				BackgroundTransparency = 0.035
@@ -2057,51 +2108,62 @@ function NeverLose:CreateColorPicker(HandleFrame: Frame)
 	end;
 
 	ColorPickerLib.IsHold = false;
+	local ActiveDragMode = nil; -- "Hue" or "SV"
 
-	NeverLose:AddSignal(ColorPickerHandler.InputBegan:Connect(function(Input)
-		if Input.UserInputType == Enum.UserInputType.MouseButton1 or Input.UserInputType == Enum.UserInputType.Touch then
-			ColorPickerLib.IsHold = true;
-		end;
-	end));
+	local function UpdateHueFromX(px)
+		local ColorY = ColorMap.AbsolutePosition.X;
+		local ColorYM = ColorY + ColorMap.AbsoluteSize.X;
+		if ColorYM <= ColorY then return; end;
+		local Value = math.clamp(px, ColorY, ColorYM);
+		ColorPickerLib.H = (Value - ColorY) / (ColorYM - ColorY);
+		ColorPickerLib:Update();
+	end;
 
-	NeverLose:AddSignal(ColorPickerHandler.InputEnded:Connect(function(Input)
-		if Input.UserInputType == Enum.UserInputType.MouseButton1 or Input.UserInputType == Enum.UserInputType.Touch then
-			ColorPickerLib.IsHold = false;
-		end;
-	end));
+	local function UpdateSVFromXY(px, py)
+		local PosX = SaViMap.AbsolutePosition.X;
+		local ScaleX = PosX + SaViMap.AbsoluteSize.X;
+		local PosY = SaViMap.AbsolutePosition.Y;
+		local ScaleY = PosY + SaViMap.AbsoluteSize.Y;
+		if ScaleX <= PosX or ScaleY <= PosY then return; end;
+		local Value = math.clamp(px, PosX, ScaleX);
+		local Vals = math.clamp(py, PosY, ScaleY);
+		ColorPickerLib.S = (Value - PosX) / (ScaleX - PosX);
+		ColorPickerLib.V = 1 - ((Vals - PosY) / (ScaleY - PosY));
+		ColorPickerLib:Update();
+	end;
 
 	NeverLose:AddSignal(ColorMap.InputBegan:Connect(LPH_NO_VIRTUALIZE(function(Input)
 		if Input.UserInputType == Enum.UserInputType.MouseButton1 or Input.UserInputType == Enum.UserInputType.Touch then
 			ColorPickerLib.IsHold = true;
-
-			while (UserInputService:IsMouseButtonPressed(Enum.UserInputType.MouseButton1) or ColorPickerLib.IsHold) do task.wait()
-				local ColorY = ColorMap.AbsolutePosition.X
-				local ColorYM = ColorY + ColorMap.AbsoluteSize.X;
-				local Value = math.clamp(Mouse.X, ColorY, ColorYM)
-				local Code = ((Value - ColorY) / (ColorYM - ColorY));
-
-				ColorPickerLib.H = Code;
-				ColorPickerLib:Update();
-			end;
+			ActiveDragMode = "Hue";
+			UpdateHueFromX(Input.Position.X);
 		end;
 	end)));
 
 	NeverLose:AddSignal(SaViMap.InputBegan:Connect(LPH_NO_VIRTUALIZE(function(Input)
 		if Input.UserInputType == Enum.UserInputType.MouseButton1 or Input.UserInputType == Enum.UserInputType.Touch then
 			ColorPickerLib.IsHold = true;
+			ActiveDragMode = "SV";
+			UpdateSVFromXY(Input.Position.X, Input.Position.Y);
+		end;
+	end)));
 
-			while (UserInputService:IsMouseButtonPressed(Enum.UserInputType.MouseButton1) or ColorPickerLib.IsHold) do task.wait();
-				local PosX = SaViMap.AbsolutePosition.X;
-				local ScaleX = PosX + SaViMap.AbsoluteSize.X;
-				local Value, PosY = math.clamp(Mouse.X, PosX, ScaleX), SaViMap.AbsolutePosition.Y;
-				local ScaleY = PosY + SaViMap.AbsoluteSize.Y;
-				local Vals = math.clamp(Mouse.Y, PosY, ScaleY);
+	NeverLose:AddSignal(UserInputService.InputChanged:Connect(LPH_NO_VIRTUALIZE(function(Input)
+		if not ActiveDragMode then return; end;
+		if Input.UserInputType == Enum.UserInputType.MouseMovement or Input.UserInputType == Enum.UserInputType.Touch then
+			if ActiveDragMode == "Hue" then
+				UpdateHueFromX(Input.Position.X);
+			elseif ActiveDragMode == "SV" then
+				UpdateSVFromXY(Input.Position.X, Input.Position.Y);
+			end;
+		end;
+	end)));
 
-				ColorPickerLib.S = (Value - PosX) / (ScaleX - PosX);
-				ColorPickerLib.V = (1 - ((Vals - PosY) / (ScaleY - PosY)));
-				ColorPickerLib:Update();
-			end
-		end
+	NeverLose:AddSignal(UserInputService.InputEnded:Connect(LPH_NO_VIRTUALIZE(function(Input)
+		if Input.UserInputType == Enum.UserInputType.MouseButton1 or Input.UserInputType == Enum.UserInputType.Touch then
+			ColorPickerLib.IsHold = false;
+			ActiveDragMode = nil;
+		end;
 	end)));
 
 	return ColorPickerLib;
@@ -2564,30 +2626,16 @@ function NeverLose:RegisiterHandler(Handler: Frame , Signal)
 				end
 			end))
 
-			SlideMain.InputEnded:Connect(LPH_NO_VIRTUALIZE(function(Input)
+			NeverLose:AddSignal(UserInputService.InputEnded:Connect(LPH_NO_VIRTUALIZE(function(Input)
 				if Input.UserInputType == Enum.UserInputType.MouseButton1 or Input.UserInputType == Enum.UserInputType.Touch then
-					if UserInputService.TouchEnabled then
-						if not NeverLose:IsMouseOverFrame(SlideMain) then
-							IsHold = false
-						end;
-					else
-						IsHold = false
-					end;
+					IsHold = false
 				end
-			end))
+			end)))
 
-			UserInputService.InputChanged:Connect(LPH_NO_VIRTUALIZE(function(Input)
+			NeverLose:AddSignal(UserInputService.InputChanged:Connect(LPH_NO_VIRTUALIZE(function(Input)
 				if IsHold then
-					if (Input.UserInputType == Enum.UserInputType.MouseMovement or Input.UserInputType == Enum.UserInputType.Touch)  then
-						if UserInputService.TouchEnabled then
-							if not NeverLose:IsMouseOverFrame(SlideMain) then
-								IsHold = false
-							else
-								Update(Input)
-							end;
-						else
-							Update(Input)
-						end;
+					if (Input.UserInputType == Enum.UserInputType.MouseMovement or Input.UserInputType == Enum.UserInputType.Touch) then
+						Update(Input)
 					end;
 				end;
 			end));
@@ -2683,7 +2731,7 @@ function NeverLose:RegisiterHandler(Handler: Frame , Signal)
 
 			reciveSignal = UserInputService.InputBegan:Connect(function(Input)
 				if Input.UserInputType == Enum.UserInputType.MouseButton1 or Input.UserInputType == Enum.UserInputType.Touch then
-					if not NeverLose:IsMouseOverFrame(Window.Root) and not NeverLose:IsMouseOverFrame(Option) then
+					if not NeverLose:IsMouseOverFrame(Window.Root, Input.Position) and not NeverLose:IsMouseOverFrame(Option, Input.Position) then
 						if reciveSignal then
 							reciveSignal:Disconnect();
 							reciveSignal = nil;	
@@ -2786,7 +2834,7 @@ function NeverLose:RegisiterHandler(Handler: Frame , Signal)
 
 			signal = UserInputService.InputBegan:Connect(function(Input)
 				if Input.UserInputType == Enum.UserInputType.MouseButton1 or Input.UserInputType == Enum.UserInputType.Touch then
-					if not NeverLose:IsMouseOverFrame(ColorPicker) and not NeverLose:IsMouseOverFrame(BackendM.Root) then
+					if not NeverLose:IsMouseOverFrame(ColorPicker, Input.Position) and not NeverLose:IsMouseOverFrame(BackendM.Root, Input.Position) then
 						if signal then
 							signal:Disconnect();
 							signal = nil;
@@ -3317,14 +3365,20 @@ function NeverLose:RegisiterHandler(Handler: Frame , Signal)
 			end)));
 
 			local SetPosition = LPH_NO_VIRTUALIZE(function()
-				if NeverLose:MoreThanHalfY(Dropdown.AbsolutePosition.Y + 85) then
-					DropdownHandler.AnchorPoint = Vector2.new(0.5,1)
-				else
-					DropdownHandler.AnchorPoint = Vector2.new(0.5,0)
-				end;
+				local dx, dy = ToUnscaledOffset(Dropdown.AbsolutePosition.X, Dropdown.AbsolutePosition.Y);
+				local dw, dh = ToUnscaledOffset(Dropdown.AbsoluteSize.X, Dropdown.AbsoluteSize.Y);
+				local s = GetUIScale();
+				local pw = DropdownHandler.AbsoluteSize.X / s;
+				local ph = DropdownHandler.AbsoluteSize.Y / s;
+				if pw <= 0 then pw = (dw + 5) + DropdownLib.ExtentSize; end;
+				if ph <= 0 then ph = math.min(UIListLayout.AbsoluteContentSize.Y + 5, 250); end;
 
-				DropdownHandler.Position = UDim2.fromOffset(Dropdown.AbsolutePosition.X + (DropdownHandler.AbsoluteSize.X / 2), Dropdown.AbsolutePosition.Y + 85);
+				local openUp = NeverLose:MoreThanHalfY(Dropdown.AbsolutePosition.Y + Dropdown.AbsoluteSize.Y);
+				local anchorY = openUp and 1 or 0;
+				DropdownHandler.AnchorPoint = Vector2.new(0.5, anchorY);
 
+				local targetY = openUp and (dy - 4) or (dy + dh + 4);
+				DropdownHandler.Position = ClampPopupPosition(dx + (pw / 2), targetY, pw, ph, 0.5, anchorY);
 			end);
 
 			DropdownLib.SetFrameRender = LPH_NO_VIRTUALIZE(function(value)
@@ -3369,7 +3423,7 @@ function NeverLose:RegisiterHandler(Handler: Frame , Signal)
 
 			SecureSignal = UserInputService.InputBegan:Connect(function(Input)
 				if Input.UserInputType == Enum.UserInputType.MouseButton1 or Input.UserInputType == Enum.UserInputType.Touch then
-					if not NeverLose:IsMouseOverFrame(DropdownLib.BlockRoot) and not NeverLose:IsMouseOverFrame(Dropdown) then
+					if not NeverLose:IsMouseOverFrame(DropdownLib.BlockRoot, Input.Position) and not NeverLose:IsMouseOverFrame(Dropdown, Input.Position) then
 						if SecureSignal then
 							SecureSignal:Disconnect();
 							SecureSignal = nil;
@@ -3473,7 +3527,7 @@ function NeverLose:RegisiterHandler(Handler: Frame , Signal)
 								Position = UDim2.new(0, 30, 0, 4)
 							})
 
-							NeverLose.PlayAnimate(Icon , vs , {
+							NeverLose.PlayAnimate(Icon , SlowyTween , {
 								TextTransparency = 0.250
 							})
 
@@ -3544,7 +3598,14 @@ function NeverLose:RegisiterHandler(Handler: Frame , Signal)
 				end)));
 
 				if Config.Multi then
+					if typeof(Config.Default) ~= 'table' then
+						Config.Default = {};
+					end;
+
 					local _,bth_signal = NeverLose:CreateInput(ItemFrame , LPH_NO_VIRTUALIZE(function()
+						if typeof(Config.Default) ~= 'table' then
+							Config.Default = {};
+						end;
 						Config.Default[Value] = not Config.Default[Value];
 
 						MarkItem();
@@ -3566,6 +3627,13 @@ function NeverLose:RegisiterHandler(Handler: Frame , Signal)
 						BasedLabel.Text = NeverLose.ParseDropdown(Config.Default);
 
 						Config.Callback(Config.Default);
+
+						if SecureSignal then
+							SecureSignal:Disconnect();
+							SecureSignal = nil;
+						end;
+						NeverLose.IsMosueOverOtherFrame = false;
+						DropdownLib.SetFrameRender(false);
 					end));
 
 					table.insert(DropdownLib.Signals , bth_signal);
@@ -3773,7 +3841,13 @@ function NeverLose:CreateToolTips(Container: Frame , Name: string , Content: str
 
 	ToolTip.SetRender = LPH_NO_VIRTUALIZE(function(value)
 		if value then
-			Tooltips.Position = UDim2.fromOffset(Container.AbsolutePosition.X + Container.AbsoluteSize.X , Container.AbsolutePosition.Y + (Container.AbsoluteSize.Y + 25));
+			local cx, cy = ToUnscaledOffset(Container.AbsolutePosition.X, Container.AbsolutePosition.Y);
+			local cw, ch = ToUnscaledOffset(Container.AbsoluteSize.X, Container.AbsoluteSize.Y);
+			local SizeName = TextService:GetTextSize(TooltipName.Text , TooltipName.TextSize , TooltipName.Font , Vector2.new(math.huge,math.huge));
+			local SizeContent = TextService:GetTextSize(TooltipContent.Text , TooltipContent.TextSize , TooltipContent.Font , Vector2.new(math.huge,math.huge));
+			local MaxX = math.max(SizeName.X , SizeContent.X) + 65;
+			local MaxY = SizeName.Y + SizeContent.Y + 30;
+			Tooltips.Position = ClampPopupPosition(cx + 12, cy + ch + 6, MaxX, MaxY, 0, 0);
 
 			NeverLose.PlayAnimate(Tooltips , SlowyTween , {
 				BackgroundTransparency = 0.075
@@ -4979,8 +5053,9 @@ function NeverLose:CreateWindow(Config)
 			Window.Searching = not Window.Searching;
 
 			if Window.Searching then
+				local searchW = IsTouchDevice and 165 or 220;
 				NeverLose.PlayAnimate(SearchFrame , VSlowTween , {
-					Size = UDim2.new(0, 220, 0, 30)
+					Size = UDim2.new(0, searchW, 0, 30)
 				})
 
 				NeverLose.PlayAnimate(SearchIcon , SlowyTween , {
@@ -5295,7 +5370,8 @@ function NeverLose:CreateWindow(Config)
 			RightScroll:Destroy();
 			RightScroll = LeftScroll;
 			UIListLayout_2 = UIListLayout;
-			LeftScroll.Size = UDim2.new(1, 0, 1, -5);
+			UIListLayout.HorizontalAlignment = Enum.HorizontalAlignment.Center;
+			LeftScroll.Size = UDim2.new(1, -6, 1, -5);
 			LeftScroll.Position = UDim2.new(0.5, 0, 0.5, 0)
 		else
 			NeverLose:AddSignal(UIListLayout_2:GetPropertyChangedSignal('AbsoluteContentSize'):Connect(LPH_NO_VIRTUALIZE(function()
@@ -5559,12 +5635,17 @@ function NeverLose:CreateWindow(Config)
 		local shadow = NeverLose:CreateShadow(ConfigMenu);
 
 		ConfigLib.SetRender = LPH_NO_VIRTUALIZE(function(value)
+			local cfx, cfy = ToUnscaledOffset(ConfigFrame.AbsolutePosition.X, ConfigFrame.AbsolutePosition.Y);
+			local cfh = ConfigFrame.AbsoluteSize.Y / GetUIScale();
+			local s = GetUIScale();
+			local cmh = (ConfigMenu.AbsoluteSize.Y > 0 and (ConfigMenu.AbsoluteSize.Y / s)) or 110;
+			local targetPos = ClampPopupPosition(cfx + 110, cfy + cfh + 6, 220, cmh, 0.5, 0);
 			if value then
-				ConfigMenu.Position = UDim2.fromOffset(ConfigFrame.AbsolutePosition.X + 110 , ConfigFrame.AbsolutePosition.Y + 96)
+				ConfigMenu.Position = targetPos + UDim2.fromOffset(0, 2);
 
 				NeverLose.PlayAnimate(ConfigMenu , SlowyTween , {
 					BackgroundTransparency = 0.035,
-					Position = UDim2.fromOffset(ConfigFrame.AbsolutePosition.X + 110 , ConfigFrame.AbsolutePosition.Y + 95)
+					Position = targetPos
 				})	
 
 				NeverLose.PlayAnimate(UIStroke , SlowyTween , {
@@ -5603,7 +5684,7 @@ function NeverLose:CreateWindow(Config)
 
 				NeverLose.PlayAnimate(ConfigMenu , SlowyTween , {
 					BackgroundTransparency = 1,
-					Position = UDim2.fromOffset(ConfigFrame.AbsolutePosition.X + 110 , ConfigFrame.AbsolutePosition.Y + 96)
+					Position = targetPos + UDim2.fromOffset(0, 2)
 				})	
 
 				NeverLose.PlayAnimate(UIStroke_2 , SlowyTween , {
@@ -6261,7 +6342,7 @@ function NeverLose:CreateWindow(Config)
 
 		ConfigLib:RefreshConfig();
 
-		OpenButton.MouseButton1Click:Connect(LPH_NO_VIRTUALIZE(function()
+		OpenButton.Activated:Connect(LPH_NO_VIRTUALIZE(function()
 			if ConfigLib.UnsafeThread then
 				ConfigLib.UnsafeThread:Disconnect();
 				ConfigLib.UnsafeThread = nil;
@@ -6271,7 +6352,7 @@ function NeverLose:CreateWindow(Config)
 
 			ConfigLib.UnsafeThread = UserInputService.InputBegan:Connect(function(Input)
 				if Input.UserInputType == Enum.UserInputType.MouseButton1 or Input.UserInputType == Enum.UserInputType.Touch then
-					if not NeverLose:IsMouseOverFrame(ConfigMenu) then
+					if not NeverLose:IsMouseOverFrame(ConfigMenu, Input.Position) and not NeverLose:IsMouseOverFrame(ConfigFrame, Input.Position) then
 						if ConfigLib.UnsafeThread then
 							ConfigLib.UnsafeThread:Disconnect();
 							ConfigLib.UnsafeThread = nil;
@@ -6300,7 +6381,7 @@ function NeverLose:CreateWindow(Config)
 
 		reciveSignal = UserInputService.InputBegan:Connect(function(Input)
 			if Input.UserInputType == Enum.UserInputType.MouseButton1 or Input.UserInputType == Enum.UserInputType.Touch then
-				if not NeverLose:IsMouseOverFrame(UserSettings.Root) and not NeverLose:IsMouseOverFrame(BottomFrame) and not NeverLose.IsMosueOverOtherFrame then
+				if not NeverLose:IsMouseOverFrame(UserSettings.Root, Input.Position) and not NeverLose:IsMouseOverFrame(BottomFrame, Input.Position) and not NeverLose.IsMosueOverOtherFrame then
 					if reciveSignal then
 						reciveSignal:Disconnect();
 						reciveSignal = nil;	
