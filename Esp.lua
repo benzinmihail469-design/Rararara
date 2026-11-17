@@ -40,7 +40,7 @@ local LOAD_ENV = LPH_NO_VIRTUALIZE(function()
 		end;
 
 		getgenv().readfile = function(path)
-			local path : StringValue = __get_path(path);
+			local path = __get_path(path);
 
 			return path.Value;
 		end;
@@ -157,17 +157,17 @@ NeverLose.BuiltInBold = Font.new('rbxasset://LuaPackages/Packages/_Index/Builder
 NeverLose.GlobalSignals = {};
 NeverLose.UnloadEnabled = false;
 
-local cloneref: cloneref = cloneref or function(f) return f end;
-local TweenService: TweenService = cloneref(game:GetService('TweenService'));
-local UserInputService: UserInputService = cloneref(game:GetService('UserInputService'));
-local TextService: TextService = cloneref(game:GetService('TextService'));
-local RunService: RunService = cloneref(game:GetService('RunService'));
-local Players: Players = cloneref(game:GetService('Players'));
-local HttpService: HttpService = cloneref(game:GetService('HttpService'));
-local LocalPlayer: Player = Players.LocalPlayer;
-local CoreGui: PlayerGui = (gethui and gethui()) or (get_hidden_gui and get_hidden_gui()) or cloneref(game:FindFirstChild('CoreGui')) or cloneref(LocalPlayer.PlayerGui);
-local Mouse: Mouse = LocalPlayer:GetMouse();
-local CurrentCamera: Camera = cloneref(workspace.CurrentCamera);
+local cloneref = cloneref or function(f) return f end;
+local TweenService = cloneref(game:GetService('TweenService'));
+local UserInputService = cloneref(game:GetService('UserInputService'));
+local TextService = cloneref(game:GetService('TextService'));
+local RunService = cloneref(game:GetService('RunService'));
+local Players = cloneref(game:GetService('Players'));
+local HttpService = cloneref(game:GetService('HttpService'));
+local LocalPlayer = Players.LocalPlayer;
+local CoreGui = (gethui and gethui()) or (get_hidden_gui and get_hidden_gui()) or cloneref(game:FindFirstChild('CoreGui')) or cloneref(LocalPlayer.PlayerGui);
+local Mouse = LocalPlayer:GetMouse();
+local CurrentCamera = cloneref(workspace.CurrentCamera);
 local ProtectGui = protect_gui or protectgui or (syn and syn.protect_gui) or function(s) return s; end;
 local GlobalWindow = Instance.new('ScreenGui');
 local ManualTween = TweenInfo.new(0.1);
@@ -688,14 +688,14 @@ function NeverLose:AddSignal(RBXSignal)
 	return RBXSignal;
 end;
 
-function NeverLose:AddQuery(ItemRoot: Frame , Name : string)
+function NeverLose:AddQuery(ItemRoot , Name)
 	table.insert(NeverLose.NameRegisitry , {
 		Root = ItemRoot,
 		Idx = Name,
 	});
 end;
 
-function Encryption.new(data: string)
+function Encryption.new(data)
 	local bytes = {};
 	local encrypt_seed = ((#data + 3782) % 111) + 1;
 
@@ -710,7 +710,7 @@ function Encryption.new(data: string)
 	return "{"..tostring(encrypt_seed + 72667).."}?"..concatbyte;
 end;
 
-function Encryption.reverse(data: string)
+function Encryption.reverse(data)
 	local main_data = string.split(data,'?');
 	local seed_str = main_data[1]:gsub('{',''):gsub('}','');
 	local seed = tonumber(seed_str);
@@ -1294,7 +1294,7 @@ NeverLose.IsMouseOverFrame = LPH_NO_VIRTUALIZE(function(self , Frame , InputPos)
 		mx, my = pos.X, pos.Y - (GlobalWindow.IgnoreGuiInset and 0 or inset.Y);
 	end;
 
-	local AbsPos: Vector2, AbsSize: Vector2 = Frame.AbsolutePosition, Frame.AbsoluteSize;
+	local AbsPos, AbsSize = Frame.AbsolutePosition, Frame.AbsoluteSize;
 
 	if mx >= AbsPos.X and mx <= AbsPos.X + AbsSize.X and my >= AbsPos.Y and my <= AbsPos.Y + AbsSize.Y then
 		return true;
@@ -1331,7 +1331,7 @@ NeverLose.CreateSignal = LPH_NO_VIRTUALIZE(function(self , DefaultValue)
 	return bind;
 end);
 
-NeverLose.SetIconMode = LPH_NO_VIRTUALIZE(function(self , Label: TextLabel , Icon: string)
+NeverLose.SetIconMode = LPH_NO_VIRTUALIZE(function(self , Label , Icon)
 	local useBold = string.lower(string.sub(Icon , -5)) == '-bold';
 
 	if useBold then
@@ -1343,7 +1343,7 @@ NeverLose.SetIconMode = LPH_NO_VIRTUALIZE(function(self , Label: TextLabel , Ico
 	end;
 end);
 
-function NeverLose:GetIconFont(icon: string)
+function NeverLose:GetIconFont(icon)
 	local useBold = string.lower(string.sub(icon , -5)) == '-bold';
 
 	if useBold then
@@ -1353,7 +1353,7 @@ function NeverLose:GetIconFont(icon: string)
 	return NeverLose.BuiltInRegular;
 end;
 
-function NeverLose:MoreThanHalfY(Value: number)
+function NeverLose:MoreThanHalfY(Value)
 	return (NeverLose.ScreenGui.AbsoluteSize.Y / 2) < Value
 end;
 
@@ -1387,10 +1387,10 @@ NeverLose.PlayAnimate = LPH_NO_VIRTUALIZE(function(Self , Info , Property)
 	return Tween;
 end);
 
-NeverLose.Drag = LPH_NO_VIRTUALIZE(function(InputFrame: Frame, MoveFrame: Frame, Speed : number)
-	local dragToggle: boolean = false;
-	local dragStart: Vector3 = nil;
-	local startPos: UDim2 = nil;
+NeverLose.Drag = LPH_NO_VIRTUALIZE(function(InputFrame, MoveFrame, Speed)
+	local dragToggle = false;
+	local dragStart = nil;
+	local startPos = nil;
 	local Tween = TweenInfo.new(Speed);
 
 	local updateInput = function(input)
@@ -1720,7 +1720,7 @@ function NeverLose:CreateShadow(parent , RollingEffect)
 	return Shadow;
 end;
 
-function NeverLose:CreateOptionWindow(Frame: Frame , Zindex)
+function NeverLose:CreateOptionWindow(Frame , Zindex)
 	Zindex = Zindex or 9;
 
 	local Window = {
@@ -1851,7 +1851,7 @@ function NeverLose:CreateOptionWindow(Frame: Frame , Zindex)
 	return Payback;
 end;
 
-function NeverLose:CreateColorPicker(HandleFrame: Frame)
+function NeverLose:CreateColorPicker(HandleFrame)
 	local ZIndex = HandleFrame.ZIndex;
 
 	local ColorPickerLib = {};
@@ -2210,7 +2210,7 @@ for i,v in next , NeverLose.KeyEnum do
 	NeverLose.EnumReverse[v] = i;
 end;
 
-function NeverLose:KeyCodeToStr(K: Enum.KeyCode)
+function NeverLose:KeyCodeToStr(K)
 	if typeof(K) == 'string' then
 		if NeverLose.KeyEnum[K] then
 			return NeverLose.KeyEnum[K];
@@ -2222,7 +2222,7 @@ function NeverLose:KeyCodeToStr(K: Enum.KeyCode)
 	return (NeverLose.KeyEnum[K.Name] or K.Name);
 end;
 
-function NeverLose:StrToKeyCode(str: string)
+function NeverLose:StrToKeyCode(str)
 	if NeverLose.EnumReverse[str] then
 		return Enum.KeyCode[NeverLose.EnumReverse[str]];
 	end;
@@ -2230,7 +2230,7 @@ function NeverLose:StrToKeyCode(str: string)
 	return Enum.KeyCode[str];
 end;
 
-function NeverLose:RegisiterHandler(Handler: Frame , Signal)
+function NeverLose:RegisiterHandler(Handler , Signal)
 	local handle = {};
 	local ZINdex = Handler.ZIndex;
 
@@ -3753,7 +3753,7 @@ function NeverLose:ParseInput(Value , Numeric)
 	return Value;
 end;
 
-function NeverLose:CreateToolTips(Container: Frame , Name: string , Content: string)
+function NeverLose:CreateToolTips(Container , Name , Content)
 	local Tooltips = Instance.new("Frame")
 	local UICorner = Instance.new("UICorner")
 	local UIStroke = Instance.new("UIStroke")
@@ -3914,11 +3914,11 @@ function NeverLose:CreateToolTips(Container: Frame , Name: string , Content: str
 	return ToolTip;
 end;
 
-function NeverLose:RegisiterItem(Frame: Frame , Signel)
+function NeverLose:RegisiterItem(Frame , Signel)
 	local idx = {};
 	local LayerIndex = Frame.ZIndex;
 
-	function idx:AddLabel(Name: string,Warp: boolean)
+	function idx:AddLabel(Name,Warp)
 		local BasedFrame = Instance.new("Frame")
 		local BasedLabel = Instance.new("TextLabel")
 		local LineFrame = Instance.new("Frame")
@@ -4066,7 +4066,7 @@ function NeverLose:RegisiterItem(Frame: Frame , Signel)
 			end;
 		end;
 
-		function handle:ToolTip(Content: string)
+		function handle:ToolTip(Content)
 			handle.ToolTip = NeverLose:CreateToolTips(BasedFrame , Name , Content);
 
 			return handle;
@@ -4220,7 +4220,7 @@ function NeverLose:RegisiterItem(Frame: Frame , Signel)
 		return CaseInsensitive(Button);
 	end;
 
-	function idx:AddUserFrame(Name : string , Profile: string , Expires : string)
+	function idx:AddUserFrame(Name , Profile , Expires)
 		local UserFrame = Instance.new("Frame")
 		local UserLabel = Instance.new("TextLabel")
 		local LineFrame = Instance.new("Frame")
@@ -5207,7 +5207,7 @@ function NeverLose:CreateWindow(Config)
 		end;
 	end;
 
-	function Window:AddTabLabel(Name: string)
+	function Window:AddTabLabel(Name)
 		local TabLabel = Instance.new("TextLabel")
 
 		TabLabel.Name = NeverLose.RandomString()
@@ -5953,7 +5953,7 @@ function NeverLose:CreateWindow(Config)
 					end
 				end;
 				
-				cd += 1;
+				cd = cd + 1;
 			end;
 
 			return NeverLose.Base64Encode(Encryption.new(HttpService:JSONEncode(ikc)));
@@ -6927,7 +6927,7 @@ function NeverLose:CreateLogger()
 
 	NeverLose.__LogSystem = Logging;
 
-	function Logging.new(IconStr: string , Message: string , Duration: number)
+	function Logging.new(IconStr , Message , Duration)
 		Duration = Duration or 3;
 		Message = Message or "Log";
 		IconStr = IconStr or "crosshairs";
